@@ -64,6 +64,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.*;
 import java.util.Hashtable;
+import java.util.HashSet;
 
 /**
  * Analyzer for Czech language. Supports an external list of stopwords (words that
@@ -102,26 +103,32 @@ public final class CzechAnalyzer extends Analyzer {
 	/**
 	 * Contains the stopwords used with the StopFilter.
 	 */
-	private Hashtable stoptable = new Hashtable();
+	private HashSet stoptable;
 
 	/**
 	 * Builds an analyzer.
 	 */
 	public CzechAnalyzer() {
-		stoptable = StopFilter.makeStopTable( STOP_WORDS );
+		stoptable = StopFilter.makeStopSet( STOP_WORDS );
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
 	public CzechAnalyzer( String[] stopwords ) {
-		stoptable = StopFilter.makeStopTable( stopwords );
+		stoptable = StopFilter.makeStopSet( stopwords );
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
+   *
+   * @deprecated
 	 */
 	public CzechAnalyzer( Hashtable stopwords ) {
+		stoptable = new HashSet(stopwords.keySet());
+	}
+
+	public CzechAnalyzer( HashSet stopwords ) {
 		stoptable = stopwords;
 	}
 
@@ -129,7 +136,7 @@ public final class CzechAnalyzer extends Analyzer {
 	 * Builds an analyzer with the given stop words.
 	 */
 	public CzechAnalyzer( File stopwords ) {
-		stoptable = WordlistLoader.getWordtable( stopwords );
+		stoptable = new HashSet(WordlistLoader.getWordtable( stopwords ).keySet());
 	}
 
     /**
@@ -139,12 +146,12 @@ public final class CzechAnalyzer extends Analyzer {
      */
     public void loadStopWords( InputStream wordfile, String encoding ) {
         if ( wordfile == null ) {
-            stoptable = new Hashtable();
+            stoptable = new HashSet();
             return;
         }
         try {
             // clear any previous table (if present)
-            stoptable = new Hashtable();
+            stoptable = new HashSet();
 
             InputStreamReader isr;
             if (encoding == null)
@@ -156,7 +163,7 @@ public final class CzechAnalyzer extends Analyzer {
             LineNumberReader lnr = new LineNumberReader(isr);
             String word;
             while ( ( word = lnr.readLine() ) != null ) {
-                stoptable.put(word, word);
+                stoptable.add(word);
             }
 
         } catch ( IOException e ) {

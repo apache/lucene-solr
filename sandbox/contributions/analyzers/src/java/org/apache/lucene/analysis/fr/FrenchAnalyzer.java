@@ -63,6 +63,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.File;
 import java.io.Reader;
 import java.util.Hashtable;
+import java.util.HashSet;
+
 import org.apache.lucene.analysis.de.WordlistLoader;
 
 /**
@@ -108,57 +110,59 @@ public final class FrenchAnalyzer extends Analyzer {
 	/**
 	 * Contains the stopwords used with the StopFilter.
 	 */
-	private Hashtable stoptable = new Hashtable();
+	private HashSet stoptable = new HashSet();
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */
-	private Hashtable excltable = new Hashtable();
+	private HashSet excltable = new HashSet();
 
 	/**
 	 * Builds an analyzer.
 	 */
 	public FrenchAnalyzer() {
-		stoptable = StopFilter.makeStopTable( FRENCH_STOP_WORDS );
+		stoptable = StopFilter.makeStopSet( FRENCH_STOP_WORDS );
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
 	public FrenchAnalyzer( String[] stopwords ) {
-		stoptable = StopFilter.makeStopTable( stopwords );
+		stoptable = StopFilter.makeStopSet( stopwords );
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
+   *
+   * @deprecated
 	 */
 	public FrenchAnalyzer( Hashtable stopwords ) {
-		stoptable = stopwords;
+		stoptable = new HashSet(stopwords.keySet());
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
 	public FrenchAnalyzer( File stopwords ) {
-		stoptable = WordlistLoader.getWordtable( stopwords );
+		stoptable = new HashSet(WordlistLoader.getWordtable( stopwords ).keySet());
 	}
 
 	/**
 	 * Builds an exclusionlist from an array of Strings.
 	 */
 	public void setStemExclusionTable( String[] exclusionlist ) {
-		excltable = StopFilter.makeStopTable( exclusionlist );
+		excltable = StopFilter.makeStopSet( exclusionlist );
 	}
 	/**
 	 * Builds an exclusionlist from a Hashtable.
 	 */
 	public void setStemExclusionTable( Hashtable exclusionlist ) {
-		excltable = exclusionlist;
+		excltable = new HashSet(exclusionlist.keySet());
 	}
 	/**
 	 * Builds an exclusionlist from the words contained in the given file.
 	 */
 	public void setStemExclusionTable( File exclusionlist ) {
-		excltable = WordlistLoader.getWordtable( exclusionlist );
+		excltable = new HashSet(WordlistLoader.getWordtable( exclusionlist ).keySet());
 	}
 
 	/**

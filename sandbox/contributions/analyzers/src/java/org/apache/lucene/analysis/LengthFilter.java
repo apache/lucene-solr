@@ -35,7 +35,7 @@ public final class LengthFilter extends TokenFilter {
    */
   public LengthFilter(TokenStream in, int min, int max)
   {
-    input = in;
+    super(in);
     this.min = min;
     this.max =max;
   }

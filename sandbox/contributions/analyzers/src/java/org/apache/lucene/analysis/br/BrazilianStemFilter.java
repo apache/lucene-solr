@@ -59,6 +59,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.HashSet;
 
 /**
  * Based on (copied) the GermanStemFilter
@@ -79,7 +80,7 @@ public final class BrazilianStemFilter extends TokenFilter {
 	 */
 	private Token token = null;
 	private BrazilianStemmer stemmer = null;
-	private Hashtable exclusions = null;
+	private HashSet exclusions = null;
 
 	public BrazilianStemFilter( TokenStream in ) {
     super(in);
@@ -88,8 +89,15 @@ public final class BrazilianStemFilter extends TokenFilter {
 
 	/**
 	 * Builds a BrazilianStemFilter that uses an exclusiontable.
+   * 
+   * @deprecated
 	 */
 	public BrazilianStemFilter( TokenStream in, Hashtable exclusiontable ) {
+		this( in );
+		this.exclusions = new HashSet(exclusiontable.keySet());
+	}
+
+	public BrazilianStemFilter( TokenStream in, HashSet exclusiontable ) {
 		this( in );
 		this.exclusions = exclusiontable;
 	}

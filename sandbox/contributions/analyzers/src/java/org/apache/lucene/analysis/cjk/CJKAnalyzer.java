@@ -63,6 +63,7 @@ import org.apache.lucene.analysis.TokenStream;
 import java.io.Reader;
 
 import java.util.Hashtable;
+import java.util.HashSet;
 
 
 /**
@@ -91,7 +92,7 @@ public class CJKAnalyzer extends Analyzer {
     //~ Instance fields --------------------------------------------------------
 
     /** stop word list */
-    private Hashtable stopTable;
+    private HashSet stopTable;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -99,7 +100,7 @@ public class CJKAnalyzer extends Analyzer {
      * Builds an analyzer which removes words in STOP_WORDS.
      */
     public CJKAnalyzer() {
-        stopTable = StopFilter.makeStopTable(stopWords);
+        stopTable = StopFilter.makeStopSet(stopWords);
     }
 
     /**
@@ -108,7 +109,7 @@ public class CJKAnalyzer extends Analyzer {
      * @param stopWords stop word array
      */
     public CJKAnalyzer(String[] stopWords) {
-        stopTable = StopFilter.makeStopTable(stopWords);
+        stopTable = StopFilter.makeStopSet(stopWords);
     }
 
     //~ Methods ----------------------------------------------------------------
