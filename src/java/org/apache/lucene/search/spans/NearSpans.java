@@ -177,10 +177,20 @@ class NearSpans implements Spans {
 
       if (atMatch())
         return true;
-
-      more = min().next();                        // trigger further scanning
-      if (more)
-        queue.adjustTop();                        // maintain queue
+      
+      // trigger further scanning
+      if (inOrder && checkSlop()) {
+        /* There is a non ordered match within slop and an ordered match is needed. */
+        more = firstNonOrderedNextToPartialList();
+        if (more) {
+          partialListToQueue();                            
+        }
+      } else {
+        more = min().next();
+        if (more) {
+          queue.adjustTop();                      // maintain queue
+        }
+      }
     }
     return false;                                 // no more matches
   }
@@ -258,23 +268,50 @@ class NearSpans implements Spans {
       addToList((SpansCell)queue.pop());
     }
   }
+  
+  private boolean firstNonOrderedNextToPartialList() throws IOException {
+    /* Creates a partial list consisting of first non ordered and earlier.
+     * Returns first non ordered .next().
+     */
+    last = first = null;
+    int orderedIndex = 0;
+    while (queue.top() != null) {
+      SpansCell cell = (SpansCell)queue.pop();
+      addToList(cell);
+      if (cell.index == orderedIndex) {
+        orderedIndex++;
+      } else {
+        return cell.next();
+        // FIXME: continue here, rename to eg. checkOrderedMatch():
+        // when checkSlop() and not ordered, repeat cell.next().
+        // when checkSlop() and ordered, add to list and repeat queue.pop()
+        // without checkSlop(): no match, rebuild the queue from the partial list.
+        // When queue is empty and checkSlop() and ordered there is a match.
+      }
+    }
+    throw new AssertionError("Unexpected: ordered");
+  }
 
   private void listToQueue() {
-    queue.clear();
+    queue.clear(); // rebuild queue
+    partialListToQueue();
+  }
+
+  private void partialListToQueue() {
     for (SpansCell cell = first; cell != null; cell = cell.next) {
-      queue.put(cell);                      // build queue from list
+      queue.put(cell);                      // add to queue from list
     }
   }
 
   private boolean atMatch() {
-    if (min().doc() == max.doc()) {               // at a match?
-      int matchLength = max.end() - min().start();
-      if (((matchLength - totalLength) <= slop)   // check slop
-          && (!inOrder || matchIsOrdered())) {    // check order
-        return true;
-      }
-    }
-    return false;
+    return (min().doc() == max.doc())
+          && checkSlop()
+          && (!inOrder || matchIsOrdered());
+  }
+  
+  private boolean checkSlop() {
+    int matchLength = max.end() - min().start();
+    return (matchLength - totalLength) <= slop;
   }
 
   private boolean matchIsOrdered() {
@@ -287,5 +324,4 @@ class NearSpans implements Spans {
     }
     return true;
   }
-
 }
