@@ -17,7 +17,11 @@ $Id$
     (otis)
     
  4. Added id method to Hits to be able to access the index global id.
-    Required for sorting options. (carlson)
+    Required for sorting options.
+    (carlson)
+
+ 5. Added the ability to retrieve HTML documents' META tag values to HTMLParser.jj.
+    (Mark Harwood via otis)
     
 1.2 RC6
 
