@@ -1667,9 +1667,17 @@ limitations under the License.
                   <p>NumTerms --&gt; VInt</p>
                   <p>NumDistinct --&gt; VInt -- Future Use</p>
                   <p>TermFreqs --&gt; &lt;TermText, TermFreq&gt;<sup>NumTerms</sup></p>
-                  <p>TermText --&gt; String</p>
+                  <p>TermText --&gt; &lt;PrefixLength, Suffix&gt;</p>
+                  <p>PrefixLength --&gt; VInt</p>
+                  <p>Suffix --&gt; String</p>
                   <p>TermFreq --&gt; VInt</p>
-                  <p />
+                  <p>Term
+                      text prefixes are shared.  The PrefixLength is the number of initial
+                      characters from the previous term which must be pre-pended to a
+                      term's suffix in order to form the term's text.  Thus, if the
+                      previous term's text was "bone" and the term is "boy",
+                      the PrefixLength is two and the suffix is "y".
+                  </p>
                 </li>
               </ol>
                             </blockquote>
