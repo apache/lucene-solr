@@ -70,6 +70,25 @@ public class TestDocument extends TestCase
     assertEquals(0, doc.fields.size());
   }
 
+  public void testConstructorExceptions()
+  {
+    new Field("name", "value", Field.Store.YES, Field.Index.NO);  // okay
+    new Field("name", "value", Field.Store.NO, Field.Index.UN_TOKENIZED);  // okay
+    try {
+      new Field("name", "value", Field.Store.NO, Field.Index.NO);
+      fail();
+    } catch(IllegalArgumentException e) {
+      // expected exception
+    }
+    new Field("name", "value", Field.Store.YES, Field.Index.NO, Field.TermVector.NO); // okay
+    try {
+      new Field("name", "value", Field.Store.YES, Field.Index.NO, Field.TermVector.YES);
+      fail();
+    } catch(IllegalArgumentException e) {
+      // expected exception
+    }
+  }
+  
     /**
      * Tests {@link Document#getValues(String)} method for a brand new Document
      * that has not been indexed yet.
