@@ -83,11 +83,11 @@ function doCheckLuceneQueryValue(query)
         var i = query.indexOf(':');
         if(i == -1)
         {
-          queryField.value = query.toLowerCase();
+          query.value = query.toLowerCase();
         }
         else // found a wildcard field search
         {
-          queryField.value = query.substring(0, i) + query.substring(i).toLowerCase();
+          query.value = query.substring(0, i) + query.substring(i).toLowerCase();
         }
       }
     }
