@@ -110,9 +110,11 @@ public class QueryParser {
    *  @param query	the query string to be parsed.
    *  @param field	the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
+   *  @throws ParseException if the parsing fails
+   *  @throws TokenMgrError if the parsing fails
    */
   static public Query parse(String query, String field, Analyzer analyzer)
-       throws ParseException {
+       throws ParseException, TokenMgrError {
     QueryParser parser = new QueryParser(field, analyzer);
     return parser.parse(query);
   }
@@ -134,8 +136,10 @@ public class QueryParser {
   /** Parses a query string, returning a
    * <a href="lucene.search.Query.html">Query</a>.
    *  @param query	the query string to be parsed.
+   *  @throws ParseException if the parsing fails
+   *  @throws TokenMgrError if ther parsing fails
    */
-  public Query parse(String query) throws ParseException {
+  public Query parse(String query) throws ParseException, TokenMgrError {
     ReInit(new FastCharStream(new StringReader(query)));
     return Query(field);
   }
