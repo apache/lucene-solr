@@ -209,16 +209,16 @@
                 <p>
                     The LARM web crawler is a result of experiences with the errors as
                     mentioned above, connected with a lot of monitoring to get the maximum out
-                    of the given system ressources. It  was designed with several different
+                    of the given system resources. It  was designed with several different
                     aspects in mind:
                 </p>
 
                 <ul>
 
                     <li>Speed. This involves balancing the resources to prevent
-                        bottlenecks. The crawler is multithreaded. A lot of work went in avoiding
+                        bottlenecks. The crawler is multi-threaded. A lot of work went in avoiding
                         synchronization between threads, i.e. by rewriting or replacing the standard
-                        Java classes, which slows down multithreaded programs a lot
+                        Java classes, which slows down multi-threaded programs a lot
                     </li>
 
 
@@ -233,13 +233,13 @@
 
                     <li>Scalability. The crawler was supposed to be able to crawl <i>large
                             intranets</i> with hundreds of servers and hundreds of thousands of
-                        documents within a reasonable amount of time. It was not ment to be
+                        documents within a reasonable amount of time. It was not meant to be
                         scalable to the whole Internet.</li>
 
                     <li>Java. Although there are many crawlers around at the time when I
                         started to think about it (in Summer 2000), I couldn't find a good
                         available implementation in Java. If this crawler would have to be integrated
-                        in a Java search engine, a homogenous system would be an advantage. And
+                        in a Java search engine, a homogeneous system would be an advantage. And
                         after all, I wanted to see if a fast implementation could be done in
                         this language.
                     </li>
@@ -296,7 +296,7 @@
                         class to the pipeline.
                     </li><li>The storage mechanism is also pluggable. One of the next
                         issues would be to include this storage mechanism into the pipeline, to
-                        allow a seperation of logging, processing, and storage
+                        allow a separation of logging, processing, and storage
                     </li>
                 </ul>
 
@@ -314,7 +314,7 @@
                         Still, there's a relatively high memory overhead <i>per server</i> and
                         also some overhead <i>per page</i>, especially since a map of already
                         crawled pages is held in memory at this time. Although some of the
-                        in-memory structures are already put on disc, memory consumption is still
+                        in-memory structures are already put on disk, memory consumption is still
                         linear to the number of pages crawled. We have lots of ideas on how to
                         move that out, but since then, as an example with 500 MB RAM, the crawler
                         scales up to some 100.000 files on some 100s of hosts.
@@ -574,7 +574,7 @@
                     that dots "." were not supported in mapped properties indexes. As with
                     the new version (1.5 at the time of this writing) this is supposed to be
                     removed, but I have not tried yet. Therefore, the comma "," was made a
-                    synonymon for dots. Since "," is not allowed in domain names, you can
+                    synonym for dots. Since "," is not allowed in domain names, you can
                     still use (and even mix) them if you want, or if you only have an older
                     BeanUtils version available.
                 </p>
@@ -585,7 +585,7 @@
 
                 <p>
                     LARM currently provides a very simple LuceneStorage that allows for
-                    integrating the crawler with Lucene. It's ment to be a working example on
+                    integrating the crawler with Lucene. It's meant to be a working example on
                     how this can be accomplished, not a final implementation. If you like
                     to volunteer on that part, contributions are welcome.</p>
 
@@ -692,7 +692,7 @@
                         Probably it is copied through several buffers until it is complete.
                         This will take some CPU time, but mostly it will wait for the next packet
                         to arrive. The network transfer by itself is also affected by a lot of
-                        factors, i.e. the speed of the web server, acknowledgement messages,
+                        factors, i.e. the speed of the web server, acknowledgment messages,
                         resent packages etc. so 100% network utilization will almost never be
                         reached.</li>
                     <li>The document is processed, which will take up the whole CPU. The
@@ -747,7 +747,7 @@
                     this until you have read the standard literature and have made at least
                     10 mistakes (and solved them!).</p>
                 <p>
-                    Multithreading doesn't come without a cost, however. First, there is
+                    Multi-threading doesn't come without a cost, however. First, there is
                     the cost of thread scheduling. I don't have numbers for that in Java, but
                     I suppose that this should not be very expensive. MutExes can affect
                     the whole program a lot . I noticed that they should be avoided like
@@ -966,7 +966,7 @@
                 <p>
                     In the first implementation the fetcher would simply distribute the
                     incoming URLs to the threads. The thread pool would use a simple queue to
-                    store the remaining tasks. But this can lead to a very "unpolite"
+                    store the remaining tasks. But this can lead to a very "impolite"
                     distribution of the tasks: Since ¾ of the links in a page point to the same
                     server, and all links of a page are added to the message handler at
                     once, groups of successive tasks would all try to access the same server,
@@ -1010,7 +1010,7 @@
                         already resolved host names.</li>
 
                     <li>the crawler itself was designed to crawl large local networks, and
-                        not the internet. Thus, the number of hosts is very limited.</li>
+                        not the Internet. Thus, the number of hosts is very limited.</li>
 
                 </ul>
 
@@ -1095,9 +1095,9 @@
                 </ul>
 
                 <p>
-                    One thing to keep in mind is that the number of URLs transferred to
-                    other nodes should be as large as possible. </p>
-
+                    One thing to keep in mind is that the transfer of URLs to
+                    other nodes should be done in batches with hundreds or
+                    thousands or more URLs per batch.</p>
                 <p>
                     The next thing to be distributed is the storage mechanism. Here, the
                     number of pure crawling nodes and the number of storing (post processing)
