@@ -292,8 +292,6 @@
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
 
-    <copy file="${basedir}/COPYING.txt" todir="${dist.dir}"/>
-    <copy file="${basedir}/README.txt" todir="${dist.dir}"/>
     <copy todir="${dist.dir}/docs">
       <fileset dir="${docs.dir}"/>
     </copy>
