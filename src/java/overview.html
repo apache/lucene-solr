@@ -4,30 +4,61 @@
 </head>
 <body>
 
-Jakarta Lucene is a high-performance, full-featured text search engine library.
-The API is divided into several packages:
+<p>Jakarta Lucene is a high-performance, full-featured text search engine library.
+Here's a simple example how to use Lucene for indexing and searching (using JUnit
+to check if the results are what we expect):</p>
+
+<!-- ======================================================== -->
+<!-- = Java Sourcecode to HTML automatically converted code = -->
+<!-- =   Java2Html Converter V4.1 2004 by Markus Gebhard  markus@jave.de   = -->
+<!-- =     Further information: http://www.java2html.de     = -->
+<div align="left" class="java">
+<table border="0" cellpadding="3" cellspacing="0" bgcolor="#ffffff">
+   <tr>
+  <!-- start source code -->
+   <td nowrap="nowrap" valign="top" align="left">
+    <code>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Analyzer&nbsp;analyzer&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">StandardAnalyzer</font><font color="#000000">()</font><font color="#000000">;</font><br/>
+<font color="#ffffff"></font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Store&nbsp;the&nbsp;index&nbsp;in&nbsp;memory:</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Directory&nbsp;directory&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">RAMDirectory</font><font color="#000000">()</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;To&nbsp;store&nbsp;an&nbsp;index&nbsp;on&nbsp;disk,&nbsp;use&nbsp;this&nbsp;instead&nbsp;(note&nbsp;that&nbsp;the&nbsp;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;parameter&nbsp;true&nbsp;will&nbsp;overwrite&nbsp;the&nbsp;index&nbsp;in&nbsp;that&nbsp;directory</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;if&nbsp;one&nbsp;exists):</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//Directory&nbsp;directory&nbsp;=&nbsp;FSDirectory.getDirectory(&#34;/tmp/testindex&#34;,&nbsp;true);</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">IndexWriter&nbsp;iwriter&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexWriter</font><font color="#000000">(</font><font color="#000000">directory,&nbsp;analyzer,&nbsp;</font><font color="#7f0055"><b>true</b></font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Document&nbsp;doc&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Document</font><font color="#000000">()</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">String&nbsp;text&nbsp;=&nbsp;</font><font color="#2a00ff">&#34;This&nbsp;is&nbsp;the&nbsp;text&nbsp;to&nbsp;be&nbsp;indexed.&#34;</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">doc.add</font><font color="#000000">(</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Field</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">,&nbsp;text,&nbsp;Field.Store.YES,</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Field.Index.TOKENIZED</font><font color="#000000">))</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.addDocument</font><font color="#000000">(</font><font color="#000000">doc</font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.close</font><font color="#000000">()</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Now&nbsp;search&nbsp;the&nbsp;index:</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">IndexSearcher&nbsp;isearcher&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexSearcher</font><font color="#000000">(</font><font color="#000000">directory</font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Parse&nbsp;a&nbsp;simple&nbsp;query&nbsp;that&nbsp;searches&nbsp;for&nbsp;&#34;text&#34;:</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Query&nbsp;query&nbsp;=&nbsp;QueryParser.parse</font><font color="#000000">(</font><font color="#2a00ff">&#34;text&#34;</font><font color="#000000">,&nbsp;</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">,&nbsp;analyzer</font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Hits&nbsp;hits&nbsp;=&nbsp;isearcher.search</font><font color="#000000">(</font><font color="#000000">query</font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">assertEquals</font><font color="#000000">(</font><font color="#990000">1</font><font color="#000000">,&nbsp;hits.length</font><font color="#000000">())</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Iterate&nbsp;through&nbsp;the&nbsp;results:</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#7f0055"><b>for&nbsp;</b></font><font color="#000000">(</font><font color="#7f0055"><b>int&nbsp;</b></font><font color="#000000">i&nbsp;=&nbsp;</font><font color="#990000">0</font><font color="#000000">;&nbsp;i&nbsp;&lt;&nbsp;hits.length</font><font color="#000000">()</font><font color="#000000">;&nbsp;i++</font><font color="#000000">)&nbsp;{</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Document&nbsp;hitDoc&nbsp;=&nbsp;hits.doc</font><font color="#000000">(</font><font color="#000000">i</font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">assertEquals</font><font color="#000000">(</font><font color="#2a00ff">&#34;This&nbsp;is&nbsp;the&nbsp;text&nbsp;to&nbsp;be&nbsp;indexed.&#34;</font><font color="#000000">,&nbsp;hitDoc.get</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">))</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">}</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">isearcher.close</font><font color="#000000">()</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">directory.close</font><font color="#000000">()</font><font color="#000000">;</font></code>
+    
+   </td>
+  <!-- end source code -->
+   </tr>
+</table>
+</div>
+<!-- =       END of automatically generated HTML code       = -->
+<!-- ======================================================== -->
+
+<p>The Lucene API is divided into several packages:</p>
 
 <ul>
-<li>
-<b><a href="org/apache/lucene/util/package-summary.html">org.apache.lucene.util</a></b>
-contains a few handy data structures, e.g., <a href="org/apache/lucene/util/BitVector.html">BitVector</a>
-and <a href="org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>.</li>
-
-<li>
-<b><a href="org/apache/lucene/store/package-summary.html">org.apache.lucene.store</a></b>
-defines an abstract class for storing persistent data, the <a href="org/apache/lucene/store/Directory.html">Directory</a>,
-a collection of named files written by an <a href="org/apache/lucene/store/OutputStream.html">OutputStream</a>
-and read by an <a href="org/apache/lucene/store/IndexInput.html">IndexInput</a>.&nbsp;
-Two implementations are provided, <a href="org/apache/lucene/store/FSDirectory.html">FSDirectory</a>,
-which uses a file system directory to store files, and <a href="org/apache/lucene/store/RAMDirectory.html">RAMDirectory</a>
-which implements files as memory-resident data structures.</li>
-
-<li>
-<b><a href="org/apache/lucene/document/package-summary.html">org.apache.lucene.document</a></b>
-provides a simple <a href="org/apache/lucene/document/Document.html">Document</a>
-class.&nbsp; A document is simply a set of named <a href="org/apache/lucene/document/Field.html">Field</a>'s,
-whose values may be strings or instances of <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/io/Reader.html">java.io.Reader</a>.</li>
-
 <li>
 <b><a href="org/apache/lucene/analysis/package-summary.html">org.apache.lucene.analysis</a></b>
 defines an abstract <a href="org/apache/lucene/analysis/Analyzer.html">Analyzer</a>
@@ -38,6 +69,12 @@ A TokenStream is composed by applying <a href="org/apache/lucene/analysis/TokenF
 to the output of a <a href="org/apache/lucene/analysis/Tokenizer.html">Tokenizer</a>.&nbsp;
 A few simple implemenations are provided, including <a href="org/apache/lucene/analysis/StopAnalyzer.html">StopAnalyzer</a>
 and the grammar-based <a href="org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.</li>
+
+<li>
+<b><a href="org/apache/lucene/document/package-summary.html">org.apache.lucene.document</a></b>
+provides a simple <a href="org/apache/lucene/document/Document.html">Document</a>
+class.&nbsp; A document is simply a set of named <a href="org/apache/lucene/document/Field.html">Field</a>'s,
+whose values may be strings or instances of <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/io/Reader.html">java.io.Reader</a>.</li>
 
 <li>
 <b><a href="org/apache/lucene/index/package-summary.html">org.apache.lucene.index</a></b>
@@ -59,6 +96,20 @@ implements search over a single IndexReader.</li>
 <b><a href="org/apache/lucene/queryParser/package-summary.html">org.apache.lucene.queryParser</a></b>
 uses <a href="http://javacc.dev.java.net">JavaCC</a> to implement a
 <a href="org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.</li>
+
+<li>
+<b><a href="org/apache/lucene/store/package-summary.html">org.apache.lucene.store</a></b>
+defines an abstract class for storing persistent data, the <a href="org/apache/lucene/store/Directory.html">Directory</a>,
+a collection of named files written by an <a href="org/apache/lucene/store/IndexOutput.html">IndexOutput</a>
+and read by an <a href="org/apache/lucene/store/IndexInput.html">IndexInput</a>.&nbsp;
+Two implementations are provided, <a href="org/apache/lucene/store/FSDirectory.html">FSDirectory</a>,
+which uses a file system directory to store files, and <a href="org/apache/lucene/store/RAMDirectory.html">RAMDirectory</a>
+which implements files as memory-resident data structures.</li>
+
+<li>
+<b><a href="org/apache/lucene/util/package-summary.html">org.apache.lucene.util</a></b>
+contains a few handy data structures, e.g., <a href="org/apache/lucene/util/BitVector.html">BitVector</a>
+and <a href="org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>.</li>
 </ul>
 To use Lucene, an application should:
 <ol>
