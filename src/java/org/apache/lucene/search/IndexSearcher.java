@@ -74,18 +74,22 @@ public class IndexSearcher extends Searcher implements Searchable {
   public IndexSearcher(String path) throws IOException {
     this(IndexReader.open(path));
   }
-    
+
   /** Creates a searcher searching the index in the provided directory. */
   public IndexSearcher(Directory directory) throws IOException {
     this(IndexReader.open(directory));
   }
-    
+
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
     reader = r;
   }
-    
-  /** Frees resources associated with this Searcher. */
+
+  /**
+   * Frees resources associated with this Searcher.
+   * Be careful not to call this method while you are still using objects
+   * like {@link Hits}.
+   */
   public void close() throws IOException {
     reader.close();
   }
@@ -148,7 +152,7 @@ public class IndexSearcher extends Searcher implements Searchable {
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
       scoreDocs[i] = (ScoreDoc)hq.pop();
-    
+
     return new TopDocs(totalHits[0], scoreDocs);
   }
 
