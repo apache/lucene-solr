@@ -7,19 +7,7 @@
 </properties>
 <body>
 
-<section name="OVERVIEW">
-<h3>Lucene: Better Searching Through Java</h3>
-</section>
-
-<section name="*** UNDER CONSTRUCTION ***">
-<p>
-This site will be the home of Jakarta Lucene. The product is still being transferred. 
-For now, the home of the Lucene project is still at SourceForge. See 
-<a href="http://www.lucene.com/">www.lucene.com</a> for those links.
-</p>
-</section>
-
-<section name="What is Lucene?">
+<section name="Jakarta Lucene">
 <p>
 Jakarta Lucene is a high-performance, full-featured text search engine
 written entirely in Java.  It is a technology suitable for nearly any
