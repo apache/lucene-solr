@@ -201,6 +201,7 @@ public class Syns2Index
 
         // override the specific index if it already exists
         IndexWriter writer = new IndexWriter(indexDir, ana, true);
+        writer.setUseCompoundFile(true);
         Iterator i1 = word2Nums.keySet().iterator();
         while (i1.hasNext()) // for each word
         {
