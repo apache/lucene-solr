@@ -33,7 +33,11 @@ import org.apache.lucene.queryParser.QueryParser;
 class SearchFiles {
   public static void main(String[] args) throws Exception {
     String usage =
-      "java org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] ";
+      "Usage: java org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] ";
+    if (args.length > 0 && ("-h".equals(args[0]) || "-help".equals(args[0]))) {
+      System.out.println(usage);
+      System.exit(0);
+    }
 
     String index = "index";
     String field = "contents";
