@@ -41,7 +41,6 @@ public class TestTermVectors extends TestCase {
             = new IndexWriter(directory, new SimpleAnalyzer(), true);
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
-    StringBuffer buffer = new StringBuffer();
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
       doc.add(Field.Text("field", English.intToEnglish(i), true));
@@ -99,8 +98,6 @@ public class TestTermVectors extends TestCase {
   }
   
   public void testKnownSetOfDocuments() {
-    String [] termArray = {"eating", "chocolate", "in", "a", "computer", "lab", "grows", "old", "colored",
-                      "with", "an"};
     String test1 = "eating chocolate in a computer lab"; //6 terms
     String test2 = "computer in a computer lab"; //5 terms
     String test3 = "a chocolate lab grows old"; //5 terms
