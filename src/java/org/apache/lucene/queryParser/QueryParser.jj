@@ -452,6 +452,25 @@ public class QueryParser {
     return new String(caDest, 0, j);
   }
 
+  /**
+   * Returns a String where those characters that QueryParser
+   * expects to be escaped are escaped, i.e. preceded by a <code>\</code>.
+   */
+  public static String escape(String s) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      // NOTE: keep this in sync with _ESCAPED_CHAR below!
+      if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+      	|| c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+      	|| c == '*' || c == '?') {
+        sb.append('\\');
+      }
+      sb.append(c);
+    }
+    return sb.toString();
+  }
+
   public static void main(String[] args) throws Exception {
     QueryParser qp = new QueryParser("field",
                            new org.apache.lucene.analysis.SimpleAnalyzer());
@@ -468,6 +487,7 @@ PARSER_END(QueryParser)
 
 <*> TOKEN : {
   <#_NUM_CHAR:   ["0"-"9"] >
+// NOTE: keep this in sync with escape(String) above!
 | <#_ESCAPED_CHAR: "\\" [ "\\", "+", "-", "!", "(", ")", ":", "^",
                           "[", "]", "\"", "{", "}", "~", "*", "?" ] >
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "+", "-", "!", "(", ")", ":", "^",
