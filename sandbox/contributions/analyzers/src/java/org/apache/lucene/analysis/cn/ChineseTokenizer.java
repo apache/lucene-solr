@@ -64,6 +64,23 @@ import org.apache.lucene.analysis.*;
  *              Rule: A Chinese character as a single token
  * Copyright:   Copyright (c) 2001
  * Company:
+ *
+ * The difference between thr ChineseTokenizer and the
+ * CJKTokenizer (id=23545) is that they have different
+ * token parsing logic.
+ * 
+ * Let me use an example. If having a Chinese text
+ * "C1C2C3C4" to be indexed, the tokens returned from the
+ * ChineseTokenizer are C1, C2, C3, C4. And the tokens
+ * returned from the CJKTokenizer are C1C2, C2C3, C3C4.
+ *
+ * Therefore the index the CJKTokenizer created is much
+ * larger.
+ *
+ * The problem is that when searching for C1, C1C2, C1C3,
+ * C4C2, C1C2C3 ... the ChineseTokenizer works, but the
+ * CJKTokenizer will not work.
+ *
  * @author Yiyi Sun
  * @version 1.0
  *
