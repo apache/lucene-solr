@@ -42,6 +42,9 @@ public class WildcardTermEnum extends FilteredTermEnum {
    * Creates a new <code>WildcardTermEnum</code>.  Passing in a
    * {@link org.apache.lucene.index.Term Term} that does not contain a
    * <code>WILDCARD_CHAR</code> will cause an exception to be thrown.
+   * <p>
+   * After calling the constructor the enumeration is already pointing to the first 
+   * valid term if such a term exists.
    */
   public WildcardTermEnum(IndexReader reader, Term term) throws IOException {
     super();

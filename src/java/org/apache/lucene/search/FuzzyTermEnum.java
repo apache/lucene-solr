@@ -54,6 +54,9 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
 
   /**
    * Creates a FuzzyTermEnum with an empty prefix and a minSimilarity of 0.5f.
+   * <p>
+   * After calling the constructor the enumeration is already pointing to the first 
+   * valid term if such a term exists. 
    * 
    * @param reader
    * @param term
@@ -66,6 +69,9 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     
   /**
    * Creates a FuzzyTermEnum with an empty prefix.
+   * <p>
+   * After calling the constructor the enumeration is already pointing to the first 
+   * valid term if such a term exists. 
    * 
    * @param reader
    * @param term
@@ -80,7 +86,10 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
   /**
    * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
    * length <code>prefixLength</code> with <code>term</code> and which have a fuzzy similarity &gt;
-   * <code>minSimilarity</code>. 
+   * <code>minSimilarity</code>.
+   * <p>
+   * After calling the constructor the enumeration is already pointing to the first 
+   * valid term if such a term exists. 
    * 
    * @param reader Delivers terms.
    * @param term Pattern term.

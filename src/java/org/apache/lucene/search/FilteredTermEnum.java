@@ -50,7 +50,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     
     /** 
      * Returns the docFreq of the current Term in the enumeration.
-     * Initially invalid, valid after next() called for the first time. 
+     * Returns -1 if no Term matches or all terms have been enumerated.
      */
     public int docFreq() {
         if (actualEnum == null) return -1;
@@ -77,7 +77,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     }
     
     /** Returns the current Term in the enumeration.
-     * Initially invalid, valid after next() called for the first time. */
+     * Returns null if no Term matches or all terms have been enumerated. */
     public Term term() {
         return currentTerm;
     }
