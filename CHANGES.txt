@@ -61,6 +61,10 @@ $Id$
     BufferedIndexInput.  InputStream is now deprecated and FSDirectory
     is now subclassable. (cutting)
 
+13. Fixed bug #31241: Sorting could lead to incorrect results (documents
+    missing, others duplicated) if the sort keys were not unique and there
+    were more than 100 matches. (Daniel Naber)
+
 1.4.1
 
  1. Fixed a performance bug in hit sorting code, where values were not
