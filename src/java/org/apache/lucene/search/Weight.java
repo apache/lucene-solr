@@ -21,7 +21,13 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 
 /** Expert: Calculate query weights and build query scorers.
- * <br>A <code>Weight</code> is used in the following way:
+ * <p>
+ * The purpose of Weight is to make it so that searching does not modify
+ * a Query, so that a Query instance can be reused. <br>
+ * Searcher dependent state of the query should reside in the Weight. <br>
+ * IndexReader dependent state should reside in the Scorer.
+ * <p>
+ * A <code>Weight</code> is used in the following way:
  * <ol>
  * <li>A <code>Weight</code> is constructed by a top-level query,
  *     given a <code>Searcher</code> ({@link Query#createWeight(Searcher)}).

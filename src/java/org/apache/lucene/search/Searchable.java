@@ -24,14 +24,20 @@ import org.apache.lucene.index.IndexReader;       // for javadoc
 
 /** The interface for search implementations.
  *
- * <p>Implementations provide search over a single index, over multiple
+ * <p>Searchable is the abstract network protocol for searching. 
+ * Implementations provide search over a single index, over multiple
  * indices, and over indices on remote servers.
+ *
+ * <p>Queries, filters and sort criteria are designed to be compact so that
+ * they may be efficiently passed to a remote index, with only the top-scoring
+ * hits being returned, rather than every non-zero scoring hit.
  */
 public interface Searchable extends java.rmi.Remote {
   /** Lower-level search API.
    *
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
    * scoring document.
+   * <br>HitCollector-based access to remote indexes is discouraged.
    *
    * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
