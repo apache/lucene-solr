@@ -71,6 +71,12 @@ New features
 
 11. Added NumberTools, a utility class indexing numeric fields.
     (adapted from code contributed by Matt Quail; committed by Erik)
+
+12. Added public static CompoundFileReader.main(String[] args) method.
+    CompoundFileReader can now be directly used at command line level
+    to list and optional extract the individual files from an existing
+    compound index file.
+    (adapted from code contributed by Garrett Rooney; committed by Bernhard)
     
 API Changes
 
