@@ -65,13 +65,7 @@ public class StandardAnalyzer extends Analyzer {
 
     /** An array containing some common English words that are usually not
 	useful for searching. */
-    public static final String[] STOP_WORDS = {
-	"a", "and", "are", "as", "at", "be", "but", "by",
-	"for", "if", "in", "into", "is", "it",
-	"no", "not", "of", "on", "or", "s", "such",
-	"t", "that", "the", "their", "then", "there", "these",
-	"they", "this", "to", "was", "will", "with"
-    };
+    public static final String[] STOP_WORDS = StopAnalyzer.ENGLISH_STOP_WORDS;
 
     /** Builds an analyzer. */
     public StandardAnalyzer() {
