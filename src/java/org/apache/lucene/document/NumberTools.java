@@ -23,8 +23,8 @@ package org.apache.lucene.document;
  * 
  * <p>
  * That is, if l1 is less than l2 for any two longs l1 and l2, then
- * LongField.longToString(l1) is lexicographically less than
- * LongField.longToString(l2). (Similarly for "greater than" and "equals".)
+ * NumberTools.longToString(l1) is lexicographically less than
+ * NumberTools.longToString(l2). (Similarly for "greater than" and "equals".)
  * 
  * <p>
  * This class handles <b>all</b> long values (unlike
