@@ -64,7 +64,7 @@ import org.apache.lucene.index.Term;
  * <p>Applications usually need only call the inherited {@link #search(Query)}
  * or {@link #search(Query,Filter)} methods.
  */
-public class MultiSearcher extends Searcher implements Searchable {
+public class MultiSearcher extends Searcher {
   private Searchable[] searchables;
   private int[] starts;
   private int maxDoc = 0;
@@ -194,7 +194,7 @@ public class MultiSearcher extends Searcher implements Searchable {
 
     }
   }
-  
+
   public Query rewrite(Query original) throws IOException {
     Query[] queries = new Query[searchables.length];
     for (int i = 0; i < searchables.length; i++) {

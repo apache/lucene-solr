@@ -67,7 +67,7 @@ import org.apache.lucene.index.Term;
  * <p>Applications usually need only call the inherited {@link #search(Query)}
  * or {@link #search(Query,Filter)} methods.
  */
-public class IndexSearcher extends Searcher implements Searchable {
+public class IndexSearcher extends Searcher {
   IndexReader reader;
 
   /** Creates a searcher searching the index in the named directory. */
