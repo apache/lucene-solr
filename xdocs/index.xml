@@ -17,7 +17,8 @@
             <p>
                 Jakarta Lucene is an open source project available for
                 <!-- <a href="http://jakarta.apache.org/site/binindex.html">free download</a> -->
-                <a href="http://cvs.apache.org/dist/jakarta/lucene/">free download</a> from Apache Jakarta.
+                <!-- <a href="http://cvs.apache.org/dist/jakarta/lucene/">free download</a> from Apache Jakarta. -->
+				<a href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">free download</a> from Apache Jakarta.
                 Please use the links on the left to access Lucene.
             </p>
         </section>

@@ -34,8 +34,8 @@
     </menu>
 
     <menu name="Download">
-        <item name="Binaries"           href="/site/binindex.html"/>
-        <item name="Source Code"        href="/site/sourceindex.html"/>
+        <item name="Binaries"           href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/binaries/"/>
+        <item name="Source Code"        href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/source/"/>
         <item name="CVS Repositories"   href="/site/cvsindex.html"/>
     </menu>
 
