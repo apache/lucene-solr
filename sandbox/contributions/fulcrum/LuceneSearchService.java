@@ -116,7 +116,7 @@ public class LuceneSearchService
         try
         {
             acquireIndexLock();
-            new IndexerThread(new SearchIndexer());
+            new IndexerThread(new SearchIndexer(), this);
         }
         catch (IOException ioe)
         {
@@ -130,7 +130,7 @@ public class LuceneSearchService
 
     public boolean isIndexing()
     {
-        return IndexerThread.isIndexing || indexLocked;
+        return indexLocked;
     }
 
     public Analyzer getAnalyzer()
@@ -142,30 +142,37 @@ public class LuceneSearchService
         return analyzer;
     }
 
-    private void acquireIndexLock() throws InterruptedException
+    protected synchronized void acquireIndexLock() throws InterruptedException
     {
         while (isIndexing())
         {
             wait(500);
         }
+        indexLocked = true;
+    }
+
+    protected synchronized void releaseIndexLock()
+    {
+        indexLocked = false;
     }
 }
 
 class IndexerThread extends Thread
 {
-    protected static boolean isIndexing = false;
     private static Category cat = Category.getInstance(IndexerThread.class);
 
     private SearchIndexer indexer;
+    private LuceneSearchService service;
 
     public IndexerThread()
     {
         super();
     }
 
-    public IndexerThread(SearchIndexer indexer)
+    public IndexerThread(SearchIndexer indexer, LuceneSearchService service)
+        throws InterruptedException
     {
-        isIndexing = true;
+        service.acquireIndexLock();
         this.indexer = indexer;
         start();
     }
@@ -182,7 +189,7 @@ class IndexerThread extends Thread
         }
         finally
         {
-            isIndexing = false;
+            service.releaseIndexLock();
         }
     }
 }
