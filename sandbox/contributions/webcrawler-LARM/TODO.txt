@@ -1,11 +1,39 @@
 
 Todos for 1.0 (not yet ordered in decreasing priority)
 
-$id: $
+$Id$
+
+-----------------------------------------------------------------------------------------------
+solved:
+-----------------------------------------------------------------------------------------------
+
+Bugs:
+	- some relative URLs are not appended appropriately, leading to wrong and growing URLs
+	  - 301/302 URLs were not updated: the docs were saved under the old URL, which lead to
+	    wrong relative URLs (cmarschner, 2002-06-17)
+
+URLs: 
+	- include a URLNormalizer
+	  * lowercase host names
+	  * avoid ambiguities like '%20' / '+'
+	  * make sure http://host URLs end with "/"
+	  * avoid host name aliases
+	    - two host names / one ip adress can point to the same web site: www.lmu.de / www.uni-muenchen.de
+	    - two host names / one ip adress can point to different web sites (then other URLs / pages must differ)
+	      suche.lmu.de / interesse.lmu.de
+	  * cater 301/302 result codes
+	STATUS: seems to be solved except that URL parameters can occur in different orders, which is NOT resolved
+		host names are resolved by hand, via a synonym in HostManager. (cmarschner, 2002-06-17)
+		problem: URLMessage size doubles
+
+-----------------------------------------------------------------------------------------------
+remaining:
+-----------------------------------------------------------------------------------------------
 
 * Bugs
 	- on very fast LAN connections (100MBit), sockets are not freed as fast as allocated
-	- some relative URLs are not appended appropriately, leading to wrong and growing URLs
+	  probably this will be solved by changing from HTTPClient.* to Jakarta HTTP client and reuse sockets
+
 
 * Build
 	- added build.xml, but build.bat and build.sh are still working without ANT. Change that.
@@ -16,16 +44,6 @@ $id: $
 * Configuration
 	- move all configuration stuff into a meaningful properties file
 
-* URLs: 
-	- include a URLNormalizer
-	  * lowercase host names
-	  * avoid ambiguities like '%20' / '+'
-	  * make sure http://host URLs end with "/"
-	  * avoid host name aliases
-	    - two host names / one ip adress can point to the same web site: www.lmu.de / www.uni-muenchen.de
-	    - two host names / one ip adress can point to different web sites (then other URLs / pages must differ)
-	      suche.lmu.de / interesse.lmu.de
-	  * cater 301/302 result codes
 
 * Repository
 	- optionally use a database as repository (caches, queues, logs)
@@ -50,13 +68,22 @@ $id: $
 * Politeness
 	- add the option to restrict the number of host accesses per hour/minute
 
+* URL Extraction
+	- URLs can be encoded in different encoding styles - see http://www.unicode.org/unicode/faq/unicode_web.html
+
+* I18N, HTML encoding
+	- determine document encoding style in content-type, meta tag (http-equiv), or Doctype-tag; adapt URLs to
+	  encoding style
+
 * Anchor text extraction
 	  * read until a meaningful end tag, not just the first encountered
 	  * remove entities
 	  * optionally remove Tags, leave ALT attribute
 	  * remove redundant spaces
 
-
+* URLNormalizer
+	* add possibility to add synonyms to top level domains, i.e. "d1.com = d2.com" --> "sub1.d1.com = sub1.d2.com"
+	* add possibility to detect synonyms automatically, i.e. by comparing IP addresses or file checksums
 
 Nice-to-have:
 
