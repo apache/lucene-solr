@@ -489,6 +489,9 @@ class SegmentReader extends IndexReader {
       return null;
     
     TermVectorsReader termVectorsReader = getTermVectorsReader();
+    if (termVectorsReader == null)
+      return null;
+    
     return termVectorsReader.get(docNumber, field);
   }
 
@@ -505,6 +508,9 @@ class SegmentReader extends IndexReader {
       return null;
     
     TermVectorsReader termVectorsReader = getTermVectorsReader();
+    if (termVectorsReader == null)
+      return null;
+    
     return termVectorsReader.get(docNumber);
   }
 }

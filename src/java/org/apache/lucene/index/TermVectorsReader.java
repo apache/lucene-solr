@@ -295,6 +295,10 @@ class TermVectorsReader implements Cloneable {
   }
 
   protected Object clone() {
+    
+    if (tvx == null || tvd == null || tvf == null)
+      return null;
+    
     TermVectorsReader clone = null;
     try {
       clone = (TermVectorsReader) super.clone();
