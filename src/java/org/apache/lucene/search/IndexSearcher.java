@@ -83,6 +83,10 @@ public class IndexSearcher extends Searcher {
   // inherit javadoc
   public TopDocs search(Query query, Filter filter, final int nDocs)
        throws IOException {
+
+    if (nDocs <= 0)  // null might be returned from hq.top() below.
+      throw new IllegalArgumentException("nDocs must be > 0");
+
     Scorer scorer = query.weight(this).scorer(reader);
     if (scorer == null)
       return new TopDocs(0, new ScoreDoc[0]);
