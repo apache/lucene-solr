@@ -64,6 +64,11 @@ extends PriorityQueue {
 	/** Stores the sort criteria being used. */
 	protected SortField[] fields;
 
+	/** Stores the maximum score value encountered, for normalizing.
+	 *  we only care about scores greater than 1.0 - if all the scores
+	 *  are less than 1.0, we don't have to normalize. */
+	protected float maxscore = 1.0f;
+
 
 	/**
 	 * Returns whether <code>a</code> is less relevant than <code>b</code>.
@@ -74,6 +79,12 @@ extends PriorityQueue {
 	protected final boolean lessThan (final Object a, final Object b) {
 		final ScoreDoc docA = (ScoreDoc) a;
 		final ScoreDoc docB = (ScoreDoc) b;
+
+		// keep track of maximum score
+		if (docA.score > maxscore) maxscore = docA.score;
+		if (docB.score > maxscore) maxscore = docB.score;
+
+		// run comparators
 		final int n = comparators.length;
 		int c = 0;
 		for (int i=0; i<n && c==0; ++i) {
@@ -100,6 +111,7 @@ extends PriorityQueue {
 		for (int i=0; i<n; ++i)
 			fields[i] = comparators[i].sortValue(doc);
 		doc.fields = fields;
+		if (maxscore > 1.0f) doc.score /= maxscore;   // normalize scores
 		return doc;
 	}
 
@@ -108,4 +120,5 @@ extends PriorityQueue {
 	SortField[] getFields() {
 		return fields;
 	}
+
 }
