@@ -115,6 +115,20 @@ public class QueryParser implements QueryParserConstants {
     }
   }
 
+   /**
+   * @return Returns the analyzer.
+   */
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
+
+  /**
+   * @return Returns the field.
+   */
+  public String getField() {
+    return field;
+  }
+
   /**
    * Sets the default slop for phrases.  If zero, then exact phrase matches
    * are required.  Default value is zero.
@@ -225,9 +239,7 @@ public class QueryParser implements QueryParserConstants {
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field,
-                                Analyzer analyzer,
-                                String queryText)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -269,17 +281,15 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,Analyzer,String)}.
+   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field,
-                                Analyzer analyzer,
-                                String queryText,
-                                int slop)  throws ParseException {
-    Query query = getFieldQuery(field, analyzer, queryText);
+  protected Query getFieldQuery(String field, String queryText, int slop)
+        throws ParseException {
+    Query query = getFieldQuery(field, queryText);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -292,7 +302,6 @@ public class QueryParser implements QueryParserConstants {
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getRangeQuery(String field,
-                                Analyzer analyzer,
                                 String part1,
                                 String part2,
                                 boolean inclusive) throws ParseException
@@ -681,7 +690,7 @@ public class QueryParser implements QueryParserConstants {
        } else if (fuzzy) {
          q = getFuzzyQuery(field, termImage);
        } else {
-         q = getFieldQuery(field, analyzer, termImage);
+         q = getFieldQuery(field, termImage);
        }
       break;
     case RANGEIN_START:
@@ -738,7 +747,7 @@ public class QueryParser implements QueryParserConstants {
       } else {
         goop2.image = discardEscapeChar(goop2.image);
       }
-          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
+          q = getRangeQuery(field, goop1.image, goop2.image, true);
       break;
     case RANGEEX_START:
       jj_consume_token(RANGEEX_START);
@@ -795,7 +804,7 @@ public class QueryParser implements QueryParserConstants {
         goop2.image = discardEscapeChar(goop2.image);
       }
 
-          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, goop1.image, goop2.image, false);
       break;
     case QUOTED:
       term = jj_consume_token(QUOTED);
@@ -824,9 +833,7 @@ public class QueryParser implements QueryParserConstants {
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, analyzer,
-                           term.image.substring(1, term.image.length()-1),
-                           s);
+         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
       break;
     default:
       jj_la1[21] = jj_gen;
