@@ -100,6 +100,18 @@ extends Query {
     };
   }
 
+  /** Rewrites the wrapped query. */
+  public Query rewrite(IndexReader reader) throws IOException {
+    Query rewritten = query.rewrite(reader);
+    if (rewritten != query) {
+      FilteredQuery clone = (FilteredQuery)this.clone();
+      clone.query = rewritten;
+      return clone;
+    } else {
+      return this;
+    }
+  }
+
   /** Prints a user-readable version of this query. */
   public String toString (String s) {
     return "filtered("+query.toString(s)+")->"+filter;
