@@ -31,7 +31,7 @@ class IndexTest {
       IndexWriter writer = new IndexWriter("F:\\test", new SimpleAnalyzer(),
 					   true);
 
-      writer.mergeFactor = 20;
+      writer.setMergeFactor(20);
 
       // FIXME: OG: what's with this hard-coded dirs??
       indexDocs(writer, new File("F:\\recipes"));
