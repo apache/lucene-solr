@@ -94,10 +94,10 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   public float getBoost() { return boost; }
 
   /** Prints a query to a string, with <code>field</code> as the default field
-   * for terms.  <p>The representation used is one that is readable by {@link
-   * org.apache.lucene.queryParser.QueryParser QueryParser} (although, if the
-   * query was created by the parser, the printed representation may not be
-   * exactly what was parsed).
+   * for terms.  <p>The representation used is one that is readable by
+   * {@link org.apache.lucene.queryParser.QueryParser QueryParser}
+   * (although, if the query was created by the parser, the printed
+   * representation may not be exactly what was parsed).
    */
   public abstract String toString(String field);
 
@@ -113,7 +113,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   protected Weight createWeight(Searcher searcher) {
     throw new UnsupportedOperationException();
   }
-  
+
   /** Expert: Constructs an initializes a Weight for a top-level query. */
   public Weight weight(Searcher searcher)
     throws IOException {
