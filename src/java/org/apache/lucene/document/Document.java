@@ -153,14 +153,11 @@ public final class Document implements java.io.Serializable {
        }
      }
      int fieldCount = tempFieldList.size();
-     if (fieldCount == 0)
+     if (fieldCount == 0) {
        return null;
+     }
      else {
-       Field[] fields = new Field[fieldCount];
-       for (int i = 0; i < fieldCount; i++) {
-         fields[i] = (Field) tempFieldList.get(i);
-       }
-       return fields;
+       return (Field[])tempFieldList.toArray(new Field[] {});
      }
    }
 
