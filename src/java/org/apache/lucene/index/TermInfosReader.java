@@ -82,7 +82,7 @@ final class TermInfosReader {
     return termEnum;
   }
 
-  private final void ensureIndexIsRead() throws IOException {
+  private synchronized void ensureIndexIsRead() throws IOException {
     if (indexTerms != null)                       // index already read
       return;                                     // do nothing
     try {
