@@ -80,7 +80,7 @@ public final class StopFilter extends TokenFilter {
    * Constructs a filter which removes words from the input
    * TokenStream that are named in the Hashtable.
    *
-   * @deprecated Use {@link #StopFilter(TokenStream, Set)} StopFilter(TokenStream,Map)} instead
+   * @deprecated Use {@link #StopFilter(TokenStream, Set)} instead
    */
   public StopFilter(TokenStream in, Hashtable stopTable) {
     super(in);
@@ -106,7 +106,7 @@ public final class StopFilter extends TokenFilter {
    * This permits this table construction to be cached once when
    * an Analyzer is constructed.
    *
-   * @deprecated Use {@link #makeStopSet(String[] makeStopSet) instead.
+   * @deprecated Use {@link #makeStopSet(String[])} instead.
    */
   public static final Hashtable makeStopTable(String[] stopWords) {
     Hashtable stopTable = new Hashtable(stopWords.length);

@@ -120,7 +120,7 @@ public final class Hits {
     return length;
   }
 
-  /** Returns the nth document in this set.
+  /** Returns the stored fields of the n<sup>th</sup> document in this set.
    <p>Documents are cached, so that repeated requests for the same element may
    return the same Document object. */
   public final Document doc(int n) throws IOException {

@@ -86,44 +86,27 @@ public class IndexSearcher extends Searcher {
     reader = r;
   }
 
-  /**
-   * Frees resources associated with this Searcher.
-   * Be careful not to call this method while you are still using objects
-   * like {@link Hits}.
-   */
+  // inherit javadoc
   public void close() throws IOException {
     reader.close();
   }
 
-  /** Expert: Returns the number of documents containing <code>term</code>.
-   * Called by search code to compute term weights.
-   * @see IndexReader#docFreq(Term).
-   */
+  // inherit javadoc
   public int docFreq(Term term) throws IOException {
     return reader.docFreq(term);
   }
 
-  /** For use by {@link HitCollector} implementations. */
+  // inherit javadoc
   public Document doc(int i) throws IOException {
     return reader.document(i);
   }
 
-  /** Expert: Returns one greater than the largest possible document number.
-   * Called by search code to compute term weights.
-   * @see IndexReader#maxDoc().
-   */
+  // inherit javadoc
   public int maxDoc() throws IOException {
     return reader.maxDoc();
   }
 
-  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   *
-   * <p>Called by {@link Hits}.
-   *
-   * <p>Applications should usually call {@link #search(Query)} or {@link
-   * #search(Query,Filter)} instead.
-   */
+  // inherit javadoc
   public TopDocs search(Query query, Filter filter, final int nDocs)
        throws IOException {
     Scorer scorer = query.weight(this).scorer(reader);
@@ -150,15 +133,7 @@ public class IndexSearcher extends Searcher {
     return new TopDocs(totalHits[0], scoreDocs);
   }
 
-  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   * Results are ordered as specified by <code>sort</code>.
-   *
-   * <p>Called by {@link Hits}.
-   *
-   * <p>Applications should usually call {@link #search(Query)} or {@link
-   * #search(Query,Filter)} instead.
-   */
+  // inherit javadoc
   public TopFieldDocs search(Query query, Filter filter, final int nDocs,
                              Sort sort)
     throws IOException {
@@ -188,20 +163,7 @@ public class IndexSearcher extends Searcher {
   }
 
 
-  /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
-   * scoring document.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   *
-   * @param query to match documents
-   * @param filter if non-null, a bitset used to eliminate some documents
-   * @param results to receive hits
-   */
+  // inherit javadoc
   public void search(Query query, Filter filter,
                      final HitCollector results) throws IOException {
     HitCollector collector = results;

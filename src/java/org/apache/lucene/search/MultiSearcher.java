@@ -85,7 +85,7 @@ public class MultiSearcher extends Searcher {
   	return starts;
   }
 
-  /** Frees resources associated with this <code>Searcher</code>. */
+  // inherit javadoc
   public void close() throws IOException {
     for (int i = 0; i < searchables.length; i++)
       searchables[i].close();
@@ -98,7 +98,7 @@ public class MultiSearcher extends Searcher {
     return docFreq;
   }
 
-  /** For use by {@link HitCollector} implementations. */
+  // inherit javadoc
   public Document doc(int n) throws IOException {
     int i = subSearcher(n);			  // find searcher index
     return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
@@ -196,20 +196,7 @@ public class MultiSearcher extends Searcher {
   }
 
 
-  /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
-   * scoring document.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   *
-   * @param query to match documents
-   * @param filter if non-null, a bitset used to eliminate some documents
-   * @param results to receive hits
-   */
+  // inherit javadoc
   public void search(Query query, Filter filter, final HitCollector results)
     throws IOException {
     for (int i = 0; i < searchables.length; i++) {

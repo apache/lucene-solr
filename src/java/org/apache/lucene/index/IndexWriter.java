@@ -163,7 +163,7 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param IOException if the directory cannot be read/written to, or
+   * @throws IOException if the directory cannot be read/written to, or
    *  if it does not exist, and <code>create</code> is
    *  <code>false</code>
    */
@@ -183,7 +183,7 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param IOException if the directory cannot be read/written to, or
+   * @throws IOException if the directory cannot be read/written to, or
    *  if it does not exist, and <code>create</code> is
    *  <code>false</code>
    */
@@ -198,12 +198,12 @@ public class IndexWriter {
    * is true, then a new, empty index will be created in
    * <code>d</code>, replacing the index already there, if any.
    *
-   * @param path the path to the index directory
+   * @param d the index directory
    * @param a the analyzer to use
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
-   * @param IOException if the directory cannot be read/written to, or
+   * @throws IOException if the directory cannot be read/written to, or
    *  if it does not exist, and <code>create</code> is
    *  <code>false</code>
    */

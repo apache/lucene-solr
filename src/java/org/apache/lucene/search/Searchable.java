@@ -83,7 +83,10 @@ public interface Searchable extends java.rmi.Remote {
   void search(Query query, Filter filter, HitCollector results)
     throws IOException;
 
-  /** Frees resources associated with this Searcher. */
+  /** Frees resources associated with this Searcher.
+   * Be careful not to call this method while you are still using objects
+   * like {@link Hits}.
+   */
   void close() throws IOException;
 
   /** Expert: Returns the number of documents containing <code>term</code>.

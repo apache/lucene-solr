@@ -58,7 +58,7 @@ import java.io.Serializable;
  * not be tokenized.  The values are sorted according to their
  * {@link Comparable natural order}.  Note that using this type
  * of term value has higher memory requirements than the other
- * two types - see {@link FieldSortedHitQueue FieldSortedHitQueue}.
+ * two types.
  *
  * <p><h3>Object Reuse</h3>
  *
