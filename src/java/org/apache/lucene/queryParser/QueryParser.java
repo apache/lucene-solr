@@ -706,6 +706,9 @@ public class QueryParser implements QueryParserConstants {
           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
           } catch (Exception ignored) { }
+         if(fms < 0.0f || fms > 1.0f){
+           {if (true) throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");}
+         }
          q = getFuzzyQuery(field, termImage, fms);
        } else {
          q = getFieldQuery(field, termImage);
