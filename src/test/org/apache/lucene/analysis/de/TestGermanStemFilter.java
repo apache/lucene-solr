@@ -40,7 +40,7 @@ public class TestGermanStemFilter extends TestCase {
   public void testStemming() {
     try {
       // read test cases from external file:
-      File dataDir = new File(System.getProperty("dataDir"));
+      File dataDir = new File(System.getProperty("dataDir", "./bin"));
       File testFile = new File(dataDir, "org/apache/lucene/analysis/de/data.txt");
       FileInputStream fis = new FileInputStream(testFile);
       InputStreamReader isr = new InputStreamReader(fis, "iso-8859-1");
