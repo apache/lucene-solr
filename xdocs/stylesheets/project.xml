@@ -10,14 +10,17 @@
         <item name="Powered by Lucene"  href="/powered.html"/>
         <item name="Who We Are"         href="/whoweare.html"/>
         <item name="Mailing Lists"      href="/site/mail.html"/>
-        <item name="Bugs"               href="/site/bugs.html"/>
     </menu>
 
-    <menu name="Documentation">
-        <item name="FAQ"               href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
-	<item name="Getting Started"   href="/gettingstarted.html"/>
+    <menu name="Resources">
+        <item name="FAQ (Official)"    href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
+        <item name="Getting Started"   href="/gettingstarted.html"/>
+        <item name="JGuru FAQ"         href="http://www.jguru.com/faq/Lucene"/>
+        <item name="Bugs"              href="/site/bugs.html"/>
+        <item name="Lucene Bugs"       href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;email1=&amp;emailtype1=substring&amp;emailassigned_to1=1&amp;email2=&amp;emailtype2=substring&amp;emailreporter2=1&amp;bugidtype=include&amp;bug_id=&amp;changedin=&amp;votes=&amp;chfieldfrom=&amp;chfieldto=Now&amp;chfieldvalue=&amp;product=Lucene&amp;short_desc=&amp;short_desc_type=allwordssubstr&amp;long_desc=&amp;long_desc_type=allwordssubstr&amp;bug_file_loc=&amp;bug_file_loc_type=allwordssubstr&amp;keywords=&amp;keywords_type=anywords&amp;field0-0-0=noop&amp;type0-0-0=noop&amp;value0-0-0=&amp;cmdtype=doit&amp;order=%27Importance%27"/>
         <item name="Articles"          href="/resources.html"/>
-        <item name="Javadoc"            href="/api/index.html"/>
+        <item name="Javadoc"           href="/api/index.html"/>
+        <item name="Contributions"     href="/contributions.html"/>
     </menu>
 
     <menu name="Download">
