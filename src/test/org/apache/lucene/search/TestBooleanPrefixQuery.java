@@ -78,7 +78,7 @@ public class TestBooleanPrefixQuery extends TestCase {
       rw1 = query.rewrite(reader);
       
       BooleanQuery bq = new BooleanQuery();
-      bq.add(query, true, false);
+      bq.add(query, BooleanClause.Occur.MUST);
       
       rw2 = bq.rewrite(reader);
     } catch (IOException e) {
