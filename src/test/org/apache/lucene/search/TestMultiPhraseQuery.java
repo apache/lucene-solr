@@ -37,40 +37,23 @@ import java.util.LinkedList;
  * @author Otis Gospodnetic, Daniel Naber
  * @version $Id$
  */
-public class TestMultiPhraseQuery
-    extends TestCase
+public class TestMultiPhraseQuery extends TestCase
 {
     public TestMultiPhraseQuery(String name)
     {
         super(name);
     }
 
-    /**
-     *
-     */
-    public void testPhrasePrefix()
-        throws IOException
+    public void testPhrasePrefix() throws IOException
     {
         RAMDirectory indexStore = new RAMDirectory();
         IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
-        Document doc1 = new Document();
-        Document doc2 = new Document();
-        Document doc3 = new Document();
-        Document doc4 = new Document();
-        Document doc5 = new Document();
-        Document doc6 = new Document();
-        doc1.add(new Field("body", "blueberry pie", Field.Store.YES, Field.Index.TOKENIZED));
-        doc2.add(new Field("body", "blueberry strudel", Field.Store.YES, Field.Index.TOKENIZED));
-        doc3.add(new Field("body", "blueberry pizza", Field.Store.YES, Field.Index.TOKENIZED));
-        doc4.add(new Field("body", "blueberry chewing gum", Field.Store.YES, Field.Index.TOKENIZED));
-        doc5.add(new Field("body", "bluebird pizza", Field.Store.YES, Field.Index.TOKENIZED));
-        doc6.add(new Field("body", "piccadilly circus", Field.Store.YES, Field.Index.TOKENIZED));
-        writer.addDocument(doc1);
-        writer.addDocument(doc2);
-        writer.addDocument(doc3);
-        writer.addDocument(doc4);
-        writer.addDocument(doc5);
-        writer.addDocument(doc6);
+        add("blueberry pie", writer);
+        add("blueberry strudel", writer);
+        add("blueberry pizza", writer);
+        add("blueberry chewing gum", writer);
+        add("bluebird pizza", writer);
+        add("piccadilly circus", writer);
         writer.optimize();
         writer.close();
 
@@ -134,5 +117,12 @@ public class TestMultiPhraseQuery
           // okay, all terms must belong to the same field
         }
 
+    }
+    
+    private void add(String s, IndexWriter writer) throws IOException
+    {
+      Document doc = new Document();
+      doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
+      writer.addDocument(doc);
     }
 }
