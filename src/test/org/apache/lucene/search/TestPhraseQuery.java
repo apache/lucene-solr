@@ -38,9 +38,21 @@ public class TestPhraseQuery extends TestCase {
   public void setUp() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    
     Document doc = new Document();
     doc.add(Field.Text("field", "one two three four five"));
     writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new Field("source", "marketing info", true, true, true));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new Field("contents", "foobar", true, true, true));
+    doc.add(new Field("source", "marketing info", true, true, true)); 
+    writer.addDocument(doc);
+    
+    writer.optimize();
     writer.close();
 
     searcher = new IndexSearcher(directory);
@@ -171,5 +183,19 @@ public class TestPhraseQuery extends TestCase {
     assertEquals(1, hits.length());
 
     searcher.close();
+  }
+  
+  public void testPhraseQueryInConjunctionScorer() throws Exception {
+    query.add(new Term("source", "marketing"));
+    query.add(new Term("source", "info"));
+    Hits hits = searcher.search(query);
+    assertEquals(2, hits.length());
+    
+    TermQuery termQuery = new TermQuery(new Term("contents","foobar"));
+    BooleanQuery booleanQuery = new BooleanQuery();
+    booleanQuery.add(termQuery, true, false);
+    booleanQuery.add(query, true, false);
+    hits = searcher.search(booleanQuery);
+    assertEquals(1, hits.length());
   }
 }
