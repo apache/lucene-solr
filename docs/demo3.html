@@ -194,10 +194,7 @@ Tomcat.  </p>
 From your Tomcat directory look in the webapps/luceneweb subdirectory.  If its not 
 present, try browsing to "http://localhost:8080/luceneweb" then look again.  
 Edit a file called configuration.jsp.  Ensure that the indexLocation is equal to the 
-location you used for your index.  Note that if you are using a
-Windows OS, you will need to escape backslashes.  For example, the indexLocation may look
-something like "c:\\dev\\lucene-index".  
-You may also customize the appTitle and appFooter 
+location you used for your index.  You may also customize the appTitle and appFooter 
 strings as you see fit.  Once you have finsihed altering the configuration you should 
 restart Tomcat.  You may also wish to update the war file by typing 
 <b>jar -uf luceneweb.war configuration.jsp</b> from the luceneweb subdirectory.  
