@@ -71,6 +71,20 @@ public class BooleanClause implements java.io.Serializable {
     query = q;
     required = r;
     prohibited = p;
+    if (required) {
+      if (prohibited) {
+        // prohibited && required doesn't make sense, but we want the old behaviour:
+        occur = Occur.MUST_NOT;
+      } else {
+         occur = Occur.MUST;
+      }
+    } else {
+      if (prohibited) {
+         occur = Occur.MUST_NOT;
+      } else {
+         occur = Occur.SHOULD;
+      }
+    }
   }
 
   /** Constructs a BooleanClause.
