@@ -91,13 +91,4 @@ public class TestRussianStem extends TestCase
         }
     }
 
-    private String printChars(String output)
-    {
-        StringBuffer s = new StringBuffer();
-        for (int i = 0; i < output.length(); i++)
-            {
-            s.append(output.charAt(i));
-        }
-        return s.toString();
-    }
 }
