@@ -656,8 +656,7 @@ public class IndexWriter {
       throws IOException {
     final String mergedName = newSegmentName();
     if (infoStream != null) infoStream.print("merging segments");
-    SegmentMerger merger =
-        new SegmentMerger(this, mergedName);
+    SegmentMerger merger = new SegmentMerger(this, mergedName);
 
     final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < segmentInfos.size(); i++) {
@@ -725,19 +724,19 @@ public class IndexWriter {
     for (int i = 0; i < segments.size(); i++) {
       SegmentReader reader = (SegmentReader)segments.elementAt(i);
       if (reader.directory() == this.directory)
-	deleteFiles(reader.files(), deletable);	  // try to delete our files
+        deleteFiles(reader.files(), deletable);	  // try to delete our files
       else
-	deleteFiles(reader.files(), reader.directory()); // delete other files
+        deleteFiles(reader.files(), reader.directory()); // delete other files
     }
 
     writeDeleteableFiles(deletable);		  // note files we can't delete
   }
   
   private final void deleteFiles(Vector files) throws IOException {
-      Vector deletable = new Vector();
-      deleteFiles(readDeleteableFiles(), deletable); // try to delete deleteable
-      deleteFiles(files, deletable);     // try to delete our files
-      writeDeleteableFiles(deletable);        // note files we can't delete
+    Vector deletable = new Vector();
+    deleteFiles(readDeleteableFiles(), deletable); // try to delete deleteable
+    deleteFiles(files, deletable);     // try to delete our files
+    writeDeleteableFiles(deletable);        // note files we can't delete
   }
 
   private final void deleteFiles(Vector files, Directory directory)
