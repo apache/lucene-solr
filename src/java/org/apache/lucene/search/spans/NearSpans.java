@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.PriorityQueue;
 
 class NearSpans implements Spans {
   private SpanNearQuery query;
@@ -36,22 +37,48 @@ class NearSpans implements Spans {
 
   private int totalLength;                        // sum of current lengths
 
-  private SpanQueue queue;                        // sorted queue of spans
+  private CellQueue queue;                        // sorted queue of spans
   private SpansCell max;                          // max element in queue
 
   private boolean more = true;                    // true iff not done
   private boolean firstTime = true;               // true before first next()
 
-  private boolean queueStale = false;             // true if queue not sorted
-  private boolean listStale = true;               // true if list not sorted
+  private class CellQueue extends PriorityQueue {
+    public CellQueue(int size) {
+      initialize(size);
+    }
+    
+    protected final boolean lessThan(Object o1, Object o2) {
+      SpansCell spans1 = (SpansCell)o1;
+      SpansCell spans2 = (SpansCell)o2;
+      if (spans1.doc() == spans2.doc()) {
+        if (spans1.start() == spans2.start()) {
+          if (spans1.end() == spans2.end()) {
+            return spans1.index > spans2.index;
+          } else {
+            return spans1.end() < spans2.end();
+          }
+        } else {
+          return spans1.start() < spans2.start();
+        }
+      } else {
+        return spans1.doc() < spans2.doc();
+      }
+    }
+  }
+
 
   /** Wraps a Spans, and can be used to form a linked list. */
   private class SpansCell implements Spans {
     private Spans spans;
     private SpansCell next;
     private int length = -1;
+    private int index;
 
-    public SpansCell(Spans spans) { this.spans = spans; }
+    public SpansCell(Spans spans, int index) {
+      this.spans = spans;
+      this.index = index;
+    }
 
     public boolean next() throws IOException {
       if (length != -1)                           // subtract old length
@@ -93,7 +120,7 @@ class NearSpans implements Spans {
     public int start() { return spans.start(); }
     public int end() { return spans.end(); }
 
-    public String toString() { return spans.toString(); }
+    public String toString() { return spans.toString() + "#" + index; }
   }
 
   public NearSpans(SpanNearQuery query, IndexReader reader)
@@ -103,10 +130,10 @@ class NearSpans implements Spans {
     this.inOrder = query.isInOrder();
 
     SpanQuery[] clauses = query.getClauses();     // initialize spans & list
-    queue = new SpanQueue(clauses.length);
+    queue = new CellQueue(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
       SpansCell cell =                            // construct clause spans
-        new SpansCell(clauses[i].getSpans(reader));
+        new SpansCell(clauses[i].getSpans(reader), i);
       ordered.add(cell);                          // add to ordered
     }
   }
@@ -114,18 +141,21 @@ class NearSpans implements Spans {
   public boolean next() throws IOException {
     if (firstTime) {
       initList(true);
-      listToQueue();                            // initialize queue
+      listToQueue();                              // initialize queue
       firstTime = false;
-    } else {
-      more = last.next();                         // trigger scan
-      queueStale = true;
+    } else if (more) {
+      more = min().next();                        // trigger further scanning
+      if (more)
+        queue.adjustTop();                        // maintain queue
     }
 
     while (more) {
 
-      if (listStale) {                            // maintain list
+      boolean queueStale = false;
+
+      if (min().doc() != max.doc()) {             // maintain list
         queueToList();
-        listStale = false;
+        queueStale = true;
       }
 
       // skip to doc w/ all clauses
@@ -152,13 +182,8 @@ class NearSpans implements Spans {
       }
 
       more = min().next();                        // trigger further scanning
-
-      if (more) {
+      if (more)
         queue.adjustTop();                        // maintain queue
-        if (min().doc() != max.doc()) {
-          listStale = true;                       // maintain list
-        }
-      }
     }
     return false;                                 // no more matches
   }
@@ -175,7 +200,6 @@ class NearSpans implements Spans {
 
     if (more) {
       listToQueue();
-      listStale = true;
 
       if (min().doc() == max.doc()) {             // at a match?
         int matchLength = max.end() - min().start();
@@ -183,6 +207,7 @@ class NearSpans implements Spans {
           return true;
         }
       }
+
       return next();                              // no, scan
     }
 
@@ -195,7 +220,10 @@ class NearSpans implements Spans {
   public int start() { return min().start(); }
   public int end() { return max.end(); }
 
-  public String toString() { return "spans(" + query.toString() + ")"; }
+  public String toString() {
+    return "spans("+query.toString()+")@"+
+      (firstTime?"START":(more?(doc()+":"+start()+"-"+end()):"END"));
+  }
 
   private void initList(boolean next) throws IOException {
     for (int i = 0; more && i < ordered.size(); i++) {

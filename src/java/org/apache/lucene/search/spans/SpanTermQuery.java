@@ -54,15 +54,17 @@ public class SpanTermQuery extends SpanQuery {
     return new Spans() {
         private TermPositions positions = reader.termPositions(term);
 
-        private int doc;
+        private int doc = -1;
         private int freq;
         private int count;
         private int position;
 
         public boolean next() throws IOException {
           if (count == freq) {
-            if (!positions.next())
+            if (!positions.next()) {
+              doc = Integer.MAX_VALUE;
               return false;
+            }
             doc = positions.doc();
             freq = positions.freq();
             count = 0;
@@ -73,8 +75,10 @@ public class SpanTermQuery extends SpanQuery {
         }
 
         public boolean skipTo(int target) throws IOException {
-          if (!positions.skipTo(target))
+          if (!positions.skipTo(target)) {
+            doc = Integer.MAX_VALUE;
             return false;
+          }
 
           doc = positions.doc();
           freq = positions.freq();
@@ -91,7 +95,8 @@ public class SpanTermQuery extends SpanQuery {
         public int end() { return position + 1; }
 
         public String toString() {
-          return "spans(" + SpanTermQuery.this.toString() + ")";
+          return "spans(" + SpanTermQuery.this.toString() + ")@"+
+            (doc==-1?"START":(doc==Integer.MAX_VALUE)?"END":doc+"-"+position);
         }
 
       };

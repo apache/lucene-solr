@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.PriorityQueue;
 
 /** Matches the union of its clauses.*/
 public class SpanOrQuery extends SpanQuery {
@@ -78,6 +79,27 @@ public class SpanOrQuery extends SpanQuery {
     return buffer.toString();
   }
 
+  private class SpanQueue extends PriorityQueue {
+    public SpanQueue(int size) {
+      initialize(size);
+    }
+
+    protected final boolean lessThan(Object o1, Object o2) {
+      Spans spans1 = (Spans)o1;
+      Spans spans2 = (Spans)o2;
+      if (spans1.doc() == spans2.doc()) {
+        if (spans1.start() == spans2.start()) {
+          return spans1.end() < spans2.end();
+        } else {
+          return spans1.start() < spans2.start();
+        }
+      } else {
+        return spans1.doc() < spans2.doc();
+      }
+    }
+  }
+
+
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 1)                      // optimize 1-clause case
       return ((SpanQuery)clauses.get(0)).getSpans(reader);
@@ -101,6 +123,8 @@ public class SpanOrQuery extends SpanQuery {
               Spans spans = (Spans)all.get(i);
               if (spans.next()) {                 // move to first entry
                 queue.put(spans);                 // build queue
+              } else {
+                all.remove(i--);
               }
             }
             firstTime = false;
@@ -111,26 +135,39 @@ public class SpanOrQuery extends SpanQuery {
             return false;
           }
 
-          if (top().next()) {                       // move to next
+          if (top().next()) {                     // move to next
             queue.adjustTop();
             return true;
           }
 
-          queue.pop();                            // exhausted a clause
+          all.remove(queue.pop());                // exhausted a clause
+
           return queue.size() != 0;
         }
 
         private Spans top() { return (Spans)queue.top(); }
 
         public boolean skipTo(int target) throws IOException {
-          queue.clear();                          // clear the queue
-          for (int i = 0; i < all.size(); i++) {
-            Spans spans = (Spans)all.get(i);
-            if (spans.skipTo(target)) {           // skip each spans in all
-              queue.put(spans);                   // rebuild queue
+          if (firstTime) {
+            for (int i = 0; i < all.size(); i++) {
+              Spans spans = (Spans)all.get(i);
+              if (spans.skipTo(target)) {         // skip each spans in all
+                queue.put(spans);                 // build queue
+              } else {
+                all.remove(i--);
+              }
+            }
+            firstTime = false;
+          } else {
+            while (queue.size() != 0 && top().doc() < target) {
+              if (top().skipTo(target)) {
+                queue.adjustTop();
+              } else {
+                all.remove(queue.pop());
+              }
             }
           }
-          firstTime = false;
+
           return queue.size() != 0;
         }
 
@@ -139,7 +176,9 @@ public class SpanOrQuery extends SpanQuery {
         public int end() { return top().end(); }
 
         public String toString() {
-          return "spans(" + SpanOrQuery.this.toString() + ")";
+          return "spans("+SpanOrQuery.this+")@"+
+            (firstTime?"START"
+             :(queue.size()>0?(doc()+":"+start()+"-"+end()):"END"));
         }
 
       };

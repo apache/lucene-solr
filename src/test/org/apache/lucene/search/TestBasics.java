@@ -256,6 +256,30 @@ public class TestBasics extends TestCase {
     //System.out.println(searcher.explain(query, 333));
   }
 
+  public void testSpanNearOr() throws Exception {
+
+    SpanTermQuery t1 = new SpanTermQuery(new Term("field","six"));
+    SpanTermQuery t3 = new SpanTermQuery(new Term("field","seven"));
+    
+    SpanTermQuery t5 = new SpanTermQuery(new Term("field","seven"));
+    SpanTermQuery t6 = new SpanTermQuery(new Term("field","six"));
+
+    SpanOrQuery to1 = new SpanOrQuery(new SpanQuery[] {t1, t3});
+    SpanOrQuery to2 = new SpanOrQuery(new SpanQuery[] {t5, t6});
+    
+    SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {to1, to2},
+                                            10, true);
+
+    checkHits(query, new int[]
+      {606, 607, 626, 627, 636, 637, 646, 647, 
+       656, 657, 666, 667, 676, 677, 686, 687, 696, 697,
+       706, 707, 726, 727, 736, 737, 746, 747, 
+       756, 757, 766, 767, 776, 777, 786, 787, 796, 797});
+  }
+
+
+
+
   private void checkHits(Query query, int[] results) throws IOException {
     Hits hits = searcher.search(query);
 
