@@ -3,8 +3,8 @@ package org.apache.lucene.store;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.  All
+ * rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -57,6 +57,8 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Hashtable;
 
 import org.apache.lucene.util.Constants;
@@ -69,18 +71,21 @@ import org.apache.lucene.util.Constants;
  * @see Directory
  * @author Doug Cutting
  */
-
 public final class FSDirectory extends Directory {
   /** This cache of directories ensures that there is a unique Directory
    * instance per path, so that synchronization on the Directory can be used to
    * synchronize access between readers and writers.
    *
    * This should be a WeakHashMap, so that entries can be GC'd, but that would
-   * require Java 1.2.  Instead we use refcounts...  */
+   * require Java 1.2.  Instead we use refcounts...
+   */
   private static final Hashtable DIRECTORIES = new Hashtable();
 
   private static final boolean DISABLE_LOCKS =
       Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
+
+  /** A buffer optionally used in renameTo method */
+  private byte[] buffer = null;
 
   /** Returns the directory instance for the named location.
    *
@@ -207,8 +212,49 @@ public final class FSDirectory extends Directory {
       if (!nu.delete())
 	throw new IOException("couldn't delete " + to);
 
-    if (!old.renameTo(nu))
-      throw new IOException("couldn't rename " + from + " to " + to);
+    // Rename the old file to the new one. Unfortunately, the renameTo()
+    // method does not work reliably under some JVMs.  Therefore, if the
+    // rename fails, we manually rename by copying the old file to the new one
+    if (!old.renameTo(nu)) {
+      java.io.InputStream in = null;
+      java.io.OutputStream out = null;
+      try {
+        in = new FileInputStream(old);
+        out = new FileOutputStream(nu);
+        // see if the buffer needs to be initialized. Initialization is
+        // only done on-demand since many VM's will never run into the renameTo
+        // bug and hence shouldn't waste 1K of mem for no reason.
+        if (buffer == null) {
+          buffer = new byte[1024];
+        }
+        int len;
+        while ((len = in.read(buffer)) >= 0) {
+           out.write(buffer, 0, len);
+        }
+
+        // delete the old file.
+        old.delete();
+      }
+      catch (IOException ioe) {
+        throw new IOException("couldn't rename " + from + " to " + to);
+      }
+      finally {
+	if (in != null) {
+          try {
+            in.close();
+	  } catch (IOException e) {
+            // what can we do?
+	  }
+	}
+	if (out != null) {
+          try {
+            out.close();
+	  } catch (IOException e) {
+            // what can we do?
+	  }
+        }
+      }
+    }
   }
 
   /** Creates a new, empty file in the directory with the given name.
