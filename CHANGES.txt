@@ -2,6 +2,12 @@ Lucene Change Log
 
 $Id$
 
+1.5 RC1
+
+ 1. Fixed a performance bug in hit sorting code, where values were not
+    correctly cached.  (Aviran via cutting)
+
+
 1.4 final
 
  1. Added "an" to the list of stop words in StopAnalyzer, to complement

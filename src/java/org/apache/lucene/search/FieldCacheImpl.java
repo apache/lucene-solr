@@ -24,6 +24,7 @@ import org.apache.lucene.index.TermEnum;
 import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.HashMap;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -40,35 +41,29 @@ implements FieldCache {
 
   /** Expert: Every key in the internal cache is of this type. */
   static class Entry {
-    final IndexReader reader;  // which Reader
     final String field;        // which Field
     final int type;            // which SortField type
     final Object custom;       // which custom comparator
-    final int hashcode;        // unique for this object
 
     /** Creates one of these objects. */
-    Entry (IndexReader reader, String field, int type) {
-      this.reader = reader;
+    Entry (String field, int type) {
       this.field = field.intern();
       this.type = type;
       this.custom = null;
-      this.hashcode = reader.hashCode() ^ field.hashCode() ^ type;
     }
 
     /** Creates one of these objects for a custom comparator. */
-    Entry (IndexReader reader, String field, Object custom) {
-      this.reader = reader;
+    Entry (String field, Object custom) {
       this.field = field.intern();
       this.type = SortField.CUSTOM;
       this.custom = custom;
-      this.hashcode = reader.hashCode() ^ field.hashCode() ^ type ^ custom.hashCode();
     }
 
-    /** Two of these are equal iff they reference the same reader, field and type. */
+    /** Two of these are equal iff they reference the same field and type. */
     public boolean equals (Object o) {
       if (o instanceof Entry) {
         Entry other = (Entry) o;
-        if (other.reader == reader && other.field == field && other.type == type) {
+        if (other.field == field && other.type == type) {
           if (other.custom == null) {
             if (custom == null) return true;
           } else if (other.custom.equals (custom)) {
@@ -79,9 +74,9 @@ implements FieldCache {
       return false;
     }
 
-    /** Composes a hashcode based on the referenced reader, field and type. */
+    /** Composes a hashcode based on the field and type. */
     public int hashCode() {
-      return hashcode;
+      return field.hashCode() ^ type ^ (custom==null ? 0 : custom.hashCode());
     }
   }
 
@@ -91,33 +86,47 @@ implements FieldCache {
 
   /** See if an object is in the cache. */
   Object lookup (IndexReader reader, String field, int type) {
-    Entry entry = new Entry (reader, field, type);
+    Entry entry = new Entry (field, type);
     synchronized (this) {
-      return cache.get (entry);
+      HashMap readerCache = (HashMap)cache.get(reader);
+      if (readerCache == null) return null;
+      return readerCache.get (entry);
     }
   }
 
   /** See if a custom object is in the cache. */
   Object lookup (IndexReader reader, String field, Object comparer) {
-    Entry entry = new Entry (reader, field, comparer);
+    Entry entry = new Entry (field, comparer);
     synchronized (this) {
-      return cache.get (entry);
+      HashMap readerCache = (HashMap)cache.get(reader);
+      if (readerCache == null) return null;
+      return readerCache.get (entry);
     }
   }
 
   /** Put an object into the cache. */
   Object store (IndexReader reader, String field, int type, Object value) {
-    Entry entry = new Entry (reader, field, type);
+    Entry entry = new Entry (field, type);
     synchronized (this) {
-      return cache.put (entry, value);
+      HashMap readerCache = (HashMap)cache.get(reader);
+      if (readerCache == null) {
+        readerCache = new HashMap();
+        cache.put(reader,readerCache);
+      }
+      return readerCache.put (entry, value);
     }
   }
 
   /** Put a custom object into the cache. */
   Object store (IndexReader reader, String field, Object comparer, Object value) {
-    Entry entry = new Entry (reader, field, comparer);
+    Entry entry = new Entry (field, comparer);
     synchronized (this) {
-      return cache.put (entry, value);
+      HashMap readerCache = (HashMap)cache.get(reader);
+      if (readerCache == null) {
+        readerCache = new HashMap();
+        cache.put(reader, readerCache);
+      }
+      return readerCache.put (entry, value);
     }
   }
 
@@ -383,3 +392,4 @@ implements FieldCache {
   }
 
 }
+

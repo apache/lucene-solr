@@ -21,6 +21,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.WeakHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Locale;
 import java.text.Collator;
@@ -130,19 +131,28 @@ extends PriorityQueue {
 
   /** Returns a comparator if it is in the cache. */
   static ScoreDocComparator lookup (IndexReader reader, String field, int type, Object factory) {
-    FieldCacheImpl.Entry entry = (factory != null) ? new FieldCacheImpl.Entry (reader, field, factory)
-                                                   : new FieldCacheImpl.Entry (reader, field, type);
+    FieldCacheImpl.Entry entry = (factory != null)
+      ? new FieldCacheImpl.Entry (field, factory)
+      : new FieldCacheImpl.Entry (field, type);
     synchronized (Comparators) {
-      return (ScoreDocComparator) Comparators.get (entry);
+      HashMap readerCache = (HashMap)Comparators.get(reader);
+      if (readerCache == null) return null;
+      return (ScoreDocComparator) readerCache.get (entry);
     }
   }
 
   /** Stores a comparator into the cache. */
   static Object store (IndexReader reader, String field, int type, Object factory, Object value) {
-    FieldCacheImpl.Entry entry = (factory != null) ? new FieldCacheImpl.Entry (reader, field, factory)
-                                                   : new FieldCacheImpl.Entry (reader, field, type);
+    FieldCacheImpl.Entry entry = (factory != null)
+      ? new FieldCacheImpl.Entry (field, factory)
+      : new FieldCacheImpl.Entry (field, type);
     synchronized (Comparators) {
-      return Comparators.put (entry, value);
+      HashMap readerCache = (HashMap)Comparators.get(reader);
+      if (readerCache == null) {
+        readerCache = new HashMap();
+        Comparators.put(reader,readerCache);
+      }
+      return readerCache.put (entry, value);
     }
   }
 
