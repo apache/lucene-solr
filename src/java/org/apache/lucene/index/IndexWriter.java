@@ -121,9 +121,10 @@ public class IndexWriter {
   
   private boolean closeDir;
 
-  /** Setting to turn on usage of a compound file. When on, multiple files
-   *  for each segment are merged into a single file once the segment creation
-   *  is finished. This is done regardless of what directory is in use.
+  /** Get the current setting of whether to use the compound file format.
+   *  Note that this just returns the value you set with setUseCompoundFile(boolean)
+   *  or the default. You cannot use this to query the status of an existing index.
+   *  @see #setUseCompoundFile(boolean)
    */
   public boolean getUseCompoundFile() {
     return useCompoundFile;
