@@ -134,7 +134,8 @@ final public class FSDirectory extends Directory {
 
   private synchronized void create() throws IOException {
     if (!directory.exists())
-      directory.mkdir();
+	if (!directory.mkdir())
+	    throw new IOException("Cannot create directory: " + directory);
 
     String[] files = directory.list();            // clear old files
     for (int i = 0; i < files.length; i++) {
