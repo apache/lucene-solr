@@ -32,7 +32,7 @@ public class HTMLDocument {
     // separate the path from the date.
     return f.getPath().replace(dirSep, '\u0000') +
       "\u0000" +
-      DateTools.timeToString(f.lastModified(), DateTools.Resolution.SECOND);
+      DateTools.timeToString(f.lastModified(), DateTools.Resolution.MINUTE);
   }
 
   public static String uid2url(String uid) {
