@@ -240,8 +240,14 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="test" depends="compile-test" if="junit.present"
-    description="Runs unit tests">
+  <target name="test" depends="compile-test" description="Runs unit tests">
+    <fail unless="junit.present">
+      ##################################################################
+      JUnit not found.
+      Please make sure junit.jar is in ANT_HOME/lib, or made available
+      to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+	  </fail>
     <mkdir dir="${junit.output.dir}"/>
     <junit printsummary="off" haltonfailure="no"
       errorProperty="tests.failed" failureProperty="tests.failed">
