@@ -27,7 +27,13 @@ public class BooleanClause implements java.io.Serializable {
       // typesafe enum pattern, no public constructor
       super(name);
     }
-   
+
+    public String toString() {
+      if (this == MUST) return "+";
+      if (this == MUST_NOT) return "-";
+      return "";
+    }
+
     /** Use this operator for terms that <i>must</i> appear in the matching documents. */
     public static final Occur MUST = new Occur("MUST");
     /** Use this operator for terms of which <i>should</i> appear in the 
@@ -150,4 +156,8 @@ public class BooleanClause implements java.io.Serializable {
     return query.hashCode() ^ (this.required?1:0) ^ (this.prohibited?2:0);
   }
 
+
+  public String toString() {
+    return occur.toString() + query.toString();
+  }
 }

@@ -72,7 +72,7 @@ public class BooleanQuery extends Query {
    *
    * {@link Similarity#coord(int,int)} may be disabled in scoring, as
    * appropriate. For example, this score factor does not make sense for most
-   * automatically generated queries, like {@link WildCardQuery} and {@link
+   * automatically generated queries, like {@link WildcardQuery} and {@link
    * FuzzyQuery}.
    *
    * @param disableCoord disables {@link Similarity#coord(int,int)} in scoring.
