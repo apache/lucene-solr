@@ -15,49 +15,37 @@ New features
  3. Added support for position and offset information in term vectors
     (patch #18927). (Grant Ingersoll & Christoph)
 
- 4. FuzzyQuery now takes an additional parameter that specifies the
-    minimum similarity that is required for a term to match the query.
-    The QueryParser syntax for this is term~x, where x is a floating 
-    point number >= 0 and < 1 (a bigger number means that a higher
-    similarity is required). Furthermore, a prefix can be specified
-    for FuzzyQuerys so that only those terms are considered similar that 
-    start with this prefix. This can speed up FuzzyQuery greatly.
-    (Daniel Naber, Christoph Goller)
-
- 5. PhraseQuery and PhrasePrefixQuery now allow the explicit specification
-    of relative positions. (Christoph Goller)
-
- 6. A new class DateTools has been added. It allows you to format dates
+ 4. A new class DateTools has been added. It allows you to format dates
     in a readable format adequate for indexing. Unlike the existing
     DateField class DateTools can cope with dates before 1970 and it
     forces you to specify the desired date resolution (e.g. month, day,
     second, ...) which can make RangeQuerys on those fields more efficient.
     (Daniel Naber)
 
- 7. QueryParser now correctly works with Analyzers that can return more 
+ 5. QueryParser now correctly works with Analyzers that can return more 
     than one token per position. For example, a query "+fast +car"
     would be parsed as "+fast +(car automobile)" if the Analyzer
     returns "car" and "automobile" at the same position whenever it 
     finds "car" (Patch #23307).
     (Pierrick Brihaye, Daniel Naber)
 
- 8. Permit unbuffered Directory implementations (e.g., using mmap).
+ 6. Permit unbuffered Directory implementations (e.g., using mmap).
     InputStream is replaced by the new classes IndexInput and
     BufferedIndexInput.  OutputStream is replaced by the new classes
     IndexOutput and BufferedIndexOutput.  InputStream and OutputStream
     are now deprecated and FSDirectory is now subclassable. (cutting)
 
- 9. Add native Directory and TermDocs implementations that work under
+ 7. Add native Directory and TermDocs implementations that work under
     GCJ.  These require GCC 3.4.0 or later and have only been tested
     on Linux.  Use 'ant gcj' to build demo applications. (cutting)
 
-10. Add MMapDirectory, which uses nio to mmap input files.  This is
+ 8. Add MMapDirectory, which uses nio to mmap input files.  This is
     still somewhat slower than FSDirectory.  However it uses less
     memory per query term, since a new buffer is not allocated per
     term, which may help applications which use, e.g., wildcard
     queries.  It may also someday be faster. (cutting & Paul Elschot)
 
-11. Added javadocs-internal to build.xml - bug #30360
+ 9. Added javadocs-internal to build.xml - bug #30360
     (Paul Elschot via Otis)
 
 API Changes
@@ -82,27 +70,15 @@ API Changes
 
 Bug fixes
 
- 1. Memory leak in Sort code (Bug# 31240) eliminated.
-    (Rafal Krzewski via Christoph and Daniel)
-
- 2. The JSP demo page (src/jsp/results.jsp) now properly escapes error
+ 1. The JSP demo page (src/jsp/results.jsp) now properly escapes error
     messages which might contain user input (e.g. error messages about 
     query parsing). If you used that page as a starting point for your
     own code please make sure your code also properly escapes HTML
     characters from user input in order to avoid so-called cross site
     scripting attacks. (Daniel Naber)
 
- 3. QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions 
-    (patch #9110); some unused method parameters removed; The ability
-    to specify a minimum similarity for FuzzyQuery has been added.
-    (Christoph Goller)
-
- 4. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
+ 2. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
     prevented deletion of obsolete segments. (Christoph Goller)
-
- 5. Fixed bug #31241: Sorting could lead to incorrect results (documents
-    missing, others duplicated) if the sort keys were not unique and there
-    were more than 100 matches. (Daniel Naber)
 
 Optimizations
      
@@ -127,6 +103,37 @@ Optimizations
  5. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
     of 0 now run 20-50% faster (Patch #31882).
     (Jonathan Hager via Daniel Naber)
+
+
+1.4.2
+
+ 1. Fixed bug #31241: Sorting could lead to incorrect results (documents
+    missing, others duplicated) if the sort keys were not unique and there
+    were more than 100 matches. (Daniel Naber)
+
+ 2. Memory leak in Sort code (bug #31240) eliminated.
+    (Rafal Krzewski via Christoph and Daniel)
+    
+ 3. FuzzyQuery now takes an additional parameter that specifies the
+    minimum similarity that is required for a term to match the query.
+    The QueryParser syntax for this is term~x, where x is a floating 
+    point number >= 0 and < 1 (a bigger number means that a higher
+    similarity is required). Furthermore, a prefix can be specified
+    for FuzzyQuerys so that only those terms are considered similar that 
+    start with this prefix. This can speed up FuzzyQuery greatly.
+    (Daniel Naber, Christoph Goller)
+    
+ 4. PhraseQuery and PhrasePrefixQuery now allow the explicit specification
+    of relative positions. (Christoph Goller)
+    
+ 5. QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions 
+    (patch #9110); some unused method parameters removed; The ability
+    to specify a minimum similarity for FuzzyQuery has been added.
+    (Christoph Goller)
+
+ 6. IndexSearcher optimization: a new ScoreDoc is no longer allocated
+    for every non-zero-scoring hit.  This makes 'OR' queries that
+    contain common terms substantially faster.  (cutting)
 
 
 1.4.1
