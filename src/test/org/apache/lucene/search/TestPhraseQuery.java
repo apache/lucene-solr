@@ -34,22 +34,14 @@ import org.apache.lucene.store.RAMDirectory;
 public class TestPhraseQuery extends TestCase {
   private IndexSearcher searcher;
   private PhraseQuery query;
+  private RAMDirectory directory;
 
   public void setUp() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     
     Document doc = new Document();
     doc.add(Field.Text("field", "one two three four five"));
-    writer.addDocument(doc);
-    
-    doc = new Document();
-    doc.add(new Field("source", "marketing info", true, true, true));
-    writer.addDocument(doc);
-    
-    doc = new Document();
-    doc.add(new Field("contents", "foobar", true, true, true));
-    doc.add(new Field("source", "marketing info", true, true, true)); 
     writer.addDocument(doc);
     
     writer.optimize();
@@ -61,6 +53,7 @@ public class TestPhraseQuery extends TestCase {
 
   public void tearDown() throws Exception {
     searcher.close();
+    directory.close();
   }
 
   public void testNotCloseEnough() throws Exception {
@@ -186,16 +179,79 @@ public class TestPhraseQuery extends TestCase {
   }
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
-    query.add(new Term("source", "marketing"));
-    query.add(new Term("source", "info"));
-    Hits hits = searcher.search(query);
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    
+    Document doc = new Document();
+    doc.add(new Field("source", "marketing info", true, true, true));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new Field("contents", "foobar", true, true, true));
+    doc.add(new Field("source", "marketing info", true, true, true)); 
+    writer.addDocument(doc);
+    
+    writer.optimize();
+    writer.close();
+    
+    IndexSearcher searcher = new IndexSearcher(directory);
+    
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term("source", "marketing"));
+    phraseQuery.add(new Term("source", "info"));
+    Hits hits = searcher.search(phraseQuery);
     assertEquals(2, hits.length());
     
     TermQuery termQuery = new TermQuery(new Term("contents","foobar"));
     BooleanQuery booleanQuery = new BooleanQuery();
     booleanQuery.add(termQuery, true, false);
-    booleanQuery.add(query, true, false);
+    booleanQuery.add(phraseQuery, true, false);
     hits = searcher.search(booleanQuery);
     assertEquals(1, hits.length());
+    
+    searcher.close();
+    
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    doc = new Document();
+    doc.add(new Field("contents", "map entry woo", true, true, true));
+    writer.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new Field("contents", "woo map entry", true, true, true));
+    writer.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new Field("contents", "map foobarword entry woo", true, true, true));
+    writer.addDocument(doc);
+
+    writer.optimize();
+    writer.close();
+    
+    searcher = new IndexSearcher(directory);
+    
+    termQuery = new TermQuery(new Term("contents","woo"));
+    phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term("contents","map"));
+    phraseQuery.add(new Term("contents","entry"));
+    
+    hits = searcher.search(termQuery);
+    assertEquals(3, hits.length());
+    hits = searcher.search(phraseQuery);
+    assertEquals(2, hits.length());
+    
+    booleanQuery = new BooleanQuery();
+    booleanQuery.add(termQuery, true, false);
+    booleanQuery.add(phraseQuery, true, false);
+    hits = searcher.search(booleanQuery);
+    assertEquals(2, hits.length());
+    
+    booleanQuery = new BooleanQuery();
+    booleanQuery.add(phraseQuery, true, false);
+    booleanQuery.add(termQuery, true, false);
+    hits = searcher.search(booleanQuery);
+    assertEquals(2, hits.length());
+    
+    searcher.close();
+    directory.close();
   }
 }

@@ -63,7 +63,11 @@ abstract class PhraseScorer extends Scorer {
     } else if (more) {
       more = last.next();                         // trigger further scanning
     }
-
+    return doNext();
+  }
+  
+  // next without initial increment
+  private boolean doNext() throws IOException {
     while (more) {
       while (more && first.doc < last.doc) {      // find doc w/ all the terms
         more = first.skipTo(last.doc);            // skip first upto last
@@ -94,7 +98,7 @@ abstract class PhraseScorer extends Scorer {
     }
     if (more)
       sort();                                     // re-sort
-    return more;
+    return doNext();
   }
 
   protected abstract float phraseFreq() throws IOException;

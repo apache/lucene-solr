@@ -46,12 +46,14 @@ final class ConjunctionScorer extends Scorer {
     } else if (more) {
       more = last().next();                       // trigger further scanning
     }
-
+    return doNext();
+  }
+  
+  private boolean doNext() throws IOException {
     while (more && first().doc() < last().doc()) { // find doc w/ all clauses
       more = first().skipTo(last().doc());      // skip first upto last
       scorers.addLast(scorers.removeFirst());   // move first to last
     }
-    
     return more;                                // found a doc with all clauses
   }
 
@@ -62,7 +64,7 @@ final class ConjunctionScorer extends Scorer {
     }
     if (more)
       sortScorers();                              // re-sort scorers
-    return more;
+    return doNext();
   }
 
   public float score() throws IOException {
@@ -96,6 +98,7 @@ final class ConjunctionScorer extends Scorer {
     Scorer[] array = (Scorer[])scorers.toArray(new Scorer[scorers.size()]);
     scorers.clear();                              // empty the list
 
+    // note that this comparator is not consistent with equals!
     Arrays.sort(array, new Comparator() {         // sort the array
         public int compare(Object o1, Object o2) {
           return ((Scorer)o1).doc() - ((Scorer)o2).doc();
