@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -54,17 +54,16 @@ package search.contenthandler;
  * <http://www.apache.org/>.
  */
 
-import search.util.IOUtils;
 import org.apache.log4j.Category;
-import org.apache.lucene.document.DateField;
-import org.apache.lucene.document.Document;
+import search.DataSource;
+import search.FSDataSource;
+import search.util.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Handles Tar files.
@@ -75,44 +74,58 @@ public class TARHandler extends NestedFileContentHandlerAdapter
 {
     static Category cat = Category.getInstance(TARHandler.class.getName());
 
-    public void parse(Document doc, File f)
+    public TARHandler(File file)
     {
-        if (!f.exists())
-            return;
+        super(file);
+    }
+
+    public Reader getReader()
+    {
+        return null;
+    }
+
+    public boolean fileContentIsReadable()
+    {
+        return false;
+    }
+
+    public List getNestedDataSource()
+    {
+        if (!file.exists())
+            return null;
+        if (nestedDataSource == null)
+        {
+            nestedDataSource = new ArrayList();
+        }
         try
         {
             File tempDir = new File(TEMP_FOLDER);
             tempDir.deleteOnExit();
-            IOUtils.extractTar(f, tempDir);
-            indexTarDirectory(tempDir, dataMapList);
+            IOUtils.extractTar(file, tempDir);
+            indexTarDirectory(tempDir);
         }
         catch (IOException ioe)
         {
             cat.error(ioe.getMessage(), ioe);
         }
+        return nestedDataSource;
     }
 
-    private void indexTarDirectory(File dir, List dataMapList)
+    private void indexTarDirectory(File dir)
     {
         if (dir.isDirectory())
         {
             File[] dirContents = dir.listFiles();
             for (int i = 0; i < dirContents.length; i++)
             {
-                indexTarDirectory(dirContents[i], dataMapList);
+                indexTarDirectory(dirContents[i]);
             }
         }
         else if (dir.isFile())
         {
             // here create new DataMap for the tarred file
-            Map dataMap = new HashMap();
-            dataMap.put("filePath", dir.toString());
-            dataMapList.add(dataMap);
+            DataSource ds = new FSDataSource(dir);
+            nestedDataSource.add(nestedDataSource);
         }
-    }
-
-    public Object clone()
-    {
-        return new TARHandler();
     }
 }

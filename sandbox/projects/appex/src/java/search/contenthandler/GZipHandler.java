@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -55,17 +55,14 @@ package search.contenthandler;
  */
 
 import org.apache.log4j.Category;
-import org.apache.lucene.document.DateField;
-import org.apache.lucene.document.Document;
+import search.DataSource;
+import search.FSDataSource;
+import search.util.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.Reader;
 import java.util.List;
-import java.util.Map;
-
-import search.util.IOUtils;
 
 /**
  * Handles GZip content.
@@ -74,51 +71,60 @@ import search.util.IOUtils;
  */
 public class GZipHandler extends NestedFileContentHandlerAdapter
 {
-    static Category cat = Category.getInstance(GZipHandler.class.getName());
+    private static Category cat = Category.getInstance(GZipHandler.class.getName());
 
-    public void parse(Document doc, File f)
+    public GZipHandler(File file)
     {
-        if (!f.exists())
-            return;
+        super(file);
+    }
+
+    public Reader getReader()
+    {
+        return null;
+    }
+
+    public List getNestedDataSource()
+    {
+        if (!file.exists())
+            return null;
         try
         {
             File tempDir = new File(TEMP_FOLDER);
             tempDir.mkdirs();
             tempDir.deleteOnExit();
-            String filename = f.getName();
+            String filename = file.getName();
             File tempFile = new File(tempDir, filename.substring(0, filename.lastIndexOf(".")));
             tempFile.deleteOnExit();
-            IOUtils.extractGZip(f, tempFile);
-            indexGZipDirectory(tempDir, dataMapList);
+            IOUtils.extractGZip(file, tempFile);
+            indexGZipDirectory(tempDir);
         }
         catch (IOException ioe)
         {
-            cat.error("IOException ungzipping " + f.toString(), ioe);
+            cat.error("IOException ungzipping " + file.toString(), ioe);
         }
+        return nestedDataSource;
+    }
+
+    public boolean fileContentIsReadable()
+    {
+        return false;
     }
 
     // only one file, but let's just treat it like a directory anyway
-    private void indexGZipDirectory(File dir, List dataMapList)
+    private void indexGZipDirectory(File dir)
     {
         if (dir.isDirectory())
         {
             File[] dirContents = dir.listFiles();
             for (int i = 0; i < dirContents.length; i++)
             {
-                indexGZipDirectory(dirContents[i], dataMapList);
+                indexGZipDirectory(dirContents[i]);
             }
         }
         else if (dir.isFile())
         {
-            // here create new DataMap for the gzip entry
-            Map dataMap = new HashMap();
-            dataMap.put("filePath", dir.toString());
-            dataMapList.add(dataMap);
+            DataSource ds = new FSDataSource(dir);
+            nestedDataSource.add(nestedDataSource);
         }
-    }
-
-    public Object clone()
-    {
-        return new GZipHandler();
     }
 }

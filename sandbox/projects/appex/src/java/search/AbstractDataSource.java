@@ -26,12 +26,12 @@ package search;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache POI" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -54,22 +54,35 @@ package search;
  * <http://www.apache.org/>.
  */
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Generic implementation of a datasource.
- *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
  */
 public abstract class AbstractDataSource implements DataSource
 {
-    protected SearchConfiguration config;
-
-    public AbstractDataSource(SearchConfiguration config)
+    protected AbstractDataSource()
     {
-        this.config = config;
     }
 
-    public SearchConfiguration getConfig()
+    protected AbstractDataSource(Map map)
     {
-        return this.config;
+        loadFields(map);
+    }
+
+    /**
+     * Fields to index.
+     */
+    protected String[] fields;
+
+    /**
+     * Convenience method to load fields to index into a Map.
+     */
+    protected void loadFields(Map map)
+    {
+        Set fieldSet = map.keySet();
+        fields = new String[fieldSet.size()];
+        fieldSet.toArray(fields);
     }
 }

@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -54,33 +54,35 @@ package search.contenthandler;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.document.Document;
-
-import java.io.File;
+import java.io.Reader;
 import java.util.List;
 
 /**
  * A content handler determines how to index a file's contents.
- *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
  */
 public interface FileContentHandler
 {
     /**
-     * Perform filetype-specific actions to index the file's contents and
-     * add it to the {@link org.apache.lucene.document.Document} object.
+     * Do the file contents of this file have any meaning? Should
+     * its contents be indexed?
      */
-    public void parse(Document doc, File f);
+    public boolean fileContentIsReadable();
 
     /**
-     * Is this a collection of files?
+     * Returns a reader for this file's contents.
      */
-    public boolean isNested();
+    public Reader getReader();
 
     /**
-     * Return the collection of files contained within the parent file.
+     * Does this file have nested data within?
      */
-    public List getNestedData();
+    public boolean containsNestedData();
 
-    public Object clone();
+    /**
+     * Return the datasources contained within the parent file.
+     * This can be URLs contained within a HTML file, files
+     * within a ZIP file, basically anything represented by a
+     * DataSource.
+     */
+    public List getNestedDataSource();
 }

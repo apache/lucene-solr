@@ -26,12 +26,12 @@ package search;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -55,9 +55,12 @@ package search;
  */
 
 import org.apache.lucene.document.DateField;
-import org.apache.lucene.document.Field;
+import search.contenthandler.FileContentHandler;
+import search.contenthandler.FileContentHandlerFactory;
+import search.util.IOUtils;
 
 import java.io.File;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,23 +73,38 @@ import java.util.Map;
  */
 public class FSDataSource extends AbstractDataSource
 {
-    private File targetDirectory;
+    public static final String FILE_PATH_FIELD = "filePath";
+    public static final String FILE_NAME_FIELD = "fileName";
+    public static final String FILE_SIZE_FIELD = "fileSize";
+    public static final String FILE_FORMAT_FIELD = "fileFormat";
+    public static final String FILE_CONTENTS_FIELD = "fileContents";
+    public static final String FILE_LAST_MODIFIED_DATE_FIELD = "fileLastModifiedDate";
 
-    public FSDataSource(SearchConfiguration config)
+    private File targetFileOrDir;
+
+    public FSDataSource(String targetFileOrDirStr)
     {
-        super(config);
+        this(new File(targetFileOrDirStr));
     }
 
-    public List getData()
+    public FSDataSource(File targetFileOrDir)
     {
-        List returnData = new ArrayList();
-        loadDataFromFiles(targetDirectory, returnData);
+        setTargetDirectory(targetFileOrDir);
+    }
+
+    public Map[] getData()
+    {
+        Map[] returnData = null;
+        List temp = new ArrayList();
+        loadDataFromFiles(targetFileOrDir, temp);
+        returnData = new Map[temp.size()];
+        returnData = (Map[]) temp.toArray(returnData);
         return returnData;
     }
 
-    public void setTargetDirectory(File targetDirectory)
+    public void setTargetDirectory(File targetFileOrDir)
     {
-        this.targetDirectory = targetDirectory;
+        this.targetFileOrDir = targetFileOrDir;
     }
 
     private void loadDataFromFiles(File f, List list)
@@ -102,8 +120,40 @@ public class FSDataSource extends AbstractDataSource
         else
         {
             Map dataMap = new HashMap();
-            dataMap.put("filePath", f.getPath());
+            dataMap.put(FILE_PATH_FIELD, f.getPath());
+            dataMap.put(FILE_NAME_FIELD, f.getName());
+            dataMap.put(FILE_LAST_MODIFIED_DATE_FIELD,
+                        DateField.timeToString(f.lastModified()));
+            dataMap.put(FILE_SIZE_FIELD, String.valueOf(f.length()));
+            dataMap.put(FILE_FORMAT_FIELD,
+                        IOUtils.getFileExtension(f));
+            addFileContents(f, dataMap);
             list.add(dataMap);
+        }
+    }
+
+    private void addFileContents(File targetFile, Map dataMap)
+    {
+        FileContentHandler cHandler =
+                FileContentHandlerFactory.getContentHandler(targetFile);
+        if (cHandler != null)
+        {
+            if (cHandler.fileContentIsReadable())
+            {
+                Reader r = cHandler.getReader();
+                if (r != null)
+                {
+                    dataMap.put(FILE_CONTENTS_FIELD, r);
+                }
+            }
+            if (cHandler.containsNestedData())
+            {
+                dataMap.put(NESTED_DATASOURCE, cHandler.getNestedDataSource());
+            }
+        }
+        else
+        {
+            //cat.warn("ContentHandler not found for " + contentFile.getName());
         }
     }
 }

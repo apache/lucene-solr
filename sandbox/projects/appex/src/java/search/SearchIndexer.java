@@ -26,12 +26,12 @@ package search;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache POI" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -53,80 +53,75 @@ package search;
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  */
-
+import org.apache.log4j.Category;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.log4j.Category;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import search.contenthandler.ContentHandlerFactory;
+import search.contenthandler.FileContentHandlerFactory;
 
 /**
  * Entry point for search engine indexing.
  * <p>
- * SearchIndexer is responsible for creating the IndexWriter {@see org.apache.lucene.index.IndexWriter}
- * and passing it to DocumentHandlers {@link DocumentHandler} to index individual documents.
+ * SearchIndexer is responsible for creating the IndexWriter
+ * {@see org.apache.lucene.index.IndexWriter} and passing it to
+ *  DocumentHandlers {@link DocumentHandler} to index individual documents.
  * </p>
- *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
  */
 public class SearchIndexer
 {
     private static Category cat = Category.getInstance(SearchIndexer.class);
-
-    private IndexWriter writer;
-    private DataSource source;
+    private IndexWriter fsWriter;
+    private SearchConfiguration config;
     private int indexedDocuments = 0;
 
     public SearchIndexer() throws IOException
     {
-        writer = new IndexWriter("/usr/local/lucene/index",
-                                 new StandardAnalyzer(), true);
+        Analyzer a = new StandardAnalyzer();
+        String indexDirectory = "/usr/path/to/index";
+        fsWriter = new IndexWriter(indexDirectory, a, true);
+        fsWriter.maxFieldLength = 1000000;
     }
 
-    public void index() throws IOException, Exception
+    /**
+     * Indexes documents.
+     */
+    public synchronized void index() throws IOException, Exception
     {
-        cat.debug("Initiating indexing...");
-
-        init();
-        List dataMapList = source.getData();
-        for (int i = 0; i < dataMapList.size(); i++)
-        {
-            Map map = (Map) dataMapList.get(i);
-            DocumentHandler docHandler = new DocumentHandler(writer);
-            try
-            {
-                docHandler.process(map);
-                ++indexedDocuments;
-            }
-            catch (IOException ioe)
-            {
-                cat.error("Error encountered indexing:" + ioe.getMessage(),
-                          ioe);
-            }
-        }
-        writer.optimize();
-        writer.close();
-
-        cat.debug(indexedDocuments + " documents were indexed.");
-    }
-
-    public void setSource(DataSource source)
-    {
-        this.source = source;
-    }
-
-    public void init()
-    {
-        ContentHandlerFactory.setContentHandlers(source.getConfig().getContentHandlers());
-        DocumentHandler.setCustomFields(source.getConfig().getCustomFields());
+        cat.debug("Initiating search engine indexing...");
+        long start = System.currentTimeMillis();
+        loadConfig();
+        fsWriter.optimize();
+        fsWriter.close();
+        long stop = System.currentTimeMillis();
+        cat.debug("Indexing took " + (stop - start) + " milliseconds");
     }
 
     public int getIndexedDocuments()
     {
         return this.indexedDocuments;
+    }
+
+    private void loadConfig() throws IllegalConfigurationException
+    {
+        config = new SearchConfiguration("/path/to/config");
+        FileContentHandlerFactory.setHandlerRegistry(config.getContentHandlers());
+    }
+
+    private void indexDataSource(DataSource source, Map customFields)
+            throws Exception
+    {
+        Map[] data = source.getData();
+        // here's a good place to spawn a couple of threads for indexing
+        for (int i = 0; i < data.length; i++)
+        {
+            DocumentHandler docHandler =
+                    new DocumentHandler(data[i], customFields, fsWriter);
+            docHandler.process();
+        }
     }
 }

@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -54,15 +54,17 @@ package search.contenthandler;
  * <http://www.apache.org/>.
  */
 
-import search.util.IOUtils;
 import org.apache.log4j.Category;
-import org.apache.lucene.document.Document;
+import search.DataSource;
+import search.FSDataSource;
+import search.util.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -74,15 +76,34 @@ import java.util.zip.ZipFile;
  */
 public class ZIPHandler extends NestedFileContentHandlerAdapter
 {
-    static Category cat = Category.getInstance(ZIPHandler.class.getName());
+    private static Category cat = Category.getInstance(ZIPHandler.class);
 
-    public void parse(Document doc, File f)
+    public ZIPHandler(File file)
     {
-        if (!f.exists())
-            return;
+        super(file);
+    }
+
+    public boolean fileContentIsReadable()
+    {
+        return false;
+    }
+
+    public Reader getReader()
+    {
+        return null;
+    }
+
+    public List getNestedDataSource()
+    {
+        if (!file.exists())
+            return null;
+        if (nestedDataSource == null)
+        {
+            nestedDataSource = new ArrayList();
+        }
         try
         {
-            ZipFile zFile = new ZipFile(f);
+            ZipFile zFile = new ZipFile(file);
             for (Enumeration e = zFile.entries(); e.hasMoreElements();)
             {
                 ZipEntry entry = (ZipEntry) e.nextElement();
@@ -92,9 +113,8 @@ public class ZIPHandler extends NestedFileContentHandlerAdapter
                 if (!entry.isDirectory())
                 {
                     // create a new DataMap for each zip entry
-                    Map dataMap = new HashMap();
-                    dataMap.put("filePath", TEMP_FOLDER + entryName);
-                    dataMapList.add(dataMap);
+                    DataSource ds = new FSDataSource(TEMP_FOLDER + entryName);
+                    nestedDataSource.add(ds);
                 }
             }
             zFile.close();
@@ -107,10 +127,6 @@ public class ZIPHandler extends NestedFileContentHandlerAdapter
         {
             cat.error("IOException parsing zip:" + ioe.getMessage(), ioe);
         }
-    }
-
-    public Object clone()
-    {
-        return new ZIPHandler();
+        return nestedDataSource;
     }
 }

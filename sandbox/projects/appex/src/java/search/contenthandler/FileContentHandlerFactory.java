@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -57,29 +57,123 @@ package search.contenthandler;
 import org.apache.log4j.Category;
 
 import java.util.Map;
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Constructor;
+
+import search.util.IOUtils;
 
 /**
  * Factory responsible for obtaining ContentHandlers.
  *
  * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
  */
-public abstract class ContentHandlerFactory
+public abstract class FileContentHandlerFactory
 {
     public static final String DEFAULT_HANDLER_KEY = "DEFAULT";
-    static Category cat = Category.getInstance(ContentHandlerFactory.class.getName());
-    private static Map handlerCache = null;
-    public static FileContentHandler getContentHandler(String extension)
+    static Category cat = Category.getInstance(FileContentHandlerFactory.class.getName());
+    private static Map handlerRegistry;
+
+    public static FileContentHandler getContentHandler(File f)
     {
-        if (handlerCache.containsKey(extension))
-            return (FileContentHandler) ((FileContentHandler) handlerCache.get(extension)).clone();
-        else if (handlerCache.containsKey(DEFAULT_HANDLER_KEY))
-            return (FileContentHandler) ((FileContentHandler) handlerCache.get(DEFAULT_HANDLER_KEY)).clone();
+        String extension = IOUtils.getFileExtension(f);
+        if (handlerRegistry.containsKey(extension))
+        {
+            String handlerClassname = (String) handlerRegistry.get(extension);
+            return (FileContentHandler) generateObject(handlerClassname,
+                                                                     new Class[]{File.class},
+                                                                     new Object[]{f});
+        }
+        else if (handlerRegistry.containsKey(DEFAULT_HANDLER_KEY))
+        {
+            String handlerClassname = (String) handlerRegistry.get(DEFAULT_HANDLER_KEY);
+            return (FileContentHandler) generateObject(handlerClassname);
+        }
         else
+        {
             return NullHandler.getInstance();
+        }
     }
 
-    public static void setContentHandlers(Map contentHandlers)
+    public static void setHandlerRegistry(Map handlerRegistry)
     {
-        handlerCache = contentHandlers;
+        FileContentHandlerFactory.handlerRegistry = handlerRegistry;
+    }
+
+        /**
+     * Utility method to return an object based on its class name.
+     * The object needs to have a constructor which accepts no parameters.
+     *
+     * @param className  Class name of object to be generated
+     * @return Object
+     */
+    private static Object generateObject(String className)
+    {
+        Object o = null;
+        try
+        {
+            Class c = Class.forName(className);
+            o = c.newInstance();
+        }
+        catch (ClassNotFoundException cnfe)
+        {
+            cat.error(cnfe.getMessage() + " No class named '" + className + "' was found.", cnfe);
+        }
+        catch (InstantiationException ie)
+        {
+            cat.error(ie.getMessage() + " Class named '" + className + "' could not be  instantiated.", ie);
+        }
+        catch (IllegalAccessException iae)
+        {
+            cat.error(iae.getMessage() + " No access to class named '" + className + "'.", iae);
+        }
+        return o;
+    }
+
+        /**
+     * Utility method to return an object based on its class name.
+     *
+     * @param type  Class name of object to be generated
+     * @param clazz Class array of parameters.
+     * @param args Object array of arguments.
+     * @return Object
+     */
+    private static Object generateObject(String className,
+                                        Class[] clazz,
+                                        Object[] args)
+    {
+        Object o = null;
+        try
+        {
+            Class c = Class.forName(className);
+            Constructor con = c.getConstructor(clazz);
+            if (con != null)
+            {
+                o = con.newInstance(args);
+            }
+            else
+                throw new InstantiationException("Constructor with arguments:" + clazz.toString() + " non-existent.");
+        }
+        catch (ClassNotFoundException cnfe)
+        {
+            cat.error(cnfe.getMessage() + " No class named '" + className + "' was found.", cnfe);
+        }
+        catch (InstantiationException ie)
+        {
+            cat.error(ie.getMessage() + " Class named '" + className + "' could not be  instantiated.", ie);
+        }
+        catch (IllegalAccessException iae)
+        {
+            cat.error(iae.getMessage() + " No access to class named '" + className + "'.", iae);
+        }
+        catch (NoSuchMethodException nsme)
+        {
+            cat.error(nsme.getMessage() + " No method in class named '" + className + "'.", nsme);
+        }
+        catch (InvocationTargetException ite)
+        {
+            cat.error(ite.getMessage() + " in class named '" + className + "'.", ite);
+        }
+        return o;
     }
 }

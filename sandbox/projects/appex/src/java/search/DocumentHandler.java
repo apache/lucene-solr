@@ -26,12 +26,12 @@ package search;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -55,177 +55,263 @@ package search;
  */
 
 import org.apache.log4j.Category;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import search.util.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import search.util.IOUtils;
-import search.contenthandler.FileContentHandler;
-import search.contenthandler.ContentHandlerFactory;
+import java.io.Reader;
+import java.util.*;
 
 /**
  * <p>
  * A document is the atomic unit used for indexing purposes. It consists of
- * metadata as well as its file contents. File contents are handled by {@link FileContentHandler}.
+ * metadata as well as its file contents. File contents are handled by
+ * {@link ContentHandler}.
  * </p>
  * <p>
  * DocumentHandler creates the {@link org.apache.lucene.document.Document},
- * adds the standard fields to it, delegates to {@link FileContentHandler} to handle
- * file contents, then adds to the {@link org.apache.lucene.index.IndexWriter}.
+ * adds fields to it, delegates to {@link ContentHandler} to handle
+ * file contents.
  * </p>
- * <p>
- * The standard fields are:<br>
- * <ul>
- * <li>filePath : Full filesystem path to the document
- * <li>fileName : File name of the document
- * <li>fileLastModifiedDate : Date the file was last modified
- * <li>fileSize : Size of the file in bytes
- * <li>fileFormat : Extension of the file {@see com.marketingbright.core.util.IOUtils#getFileExtension}
- * </ul>
- * </p>
- *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
  */
 public class DocumentHandler
 {
-    public static final String[] STANDARD_SEARCH_FIELDS =
-            {"filePath", "fileName", "fileLastModifiedDate", "fileSize", "fileFormat"};
-    private static Category cat = Category.getInstance(DocumentHandler.class.getName());
-    private static Map customFields;
-    private static final String EMPTY_STRING = "";
+    /**
+     * Field to retrieve all documents.
+     */
+    public static final String ALL_DOCUMENTS_FIELD = "AllDocuments";
 
+    private static Category cat = Category.getInstance(DocumentHandler.class);
+
+    private static boolean isDebugEnabled = cat.isDebugEnabled();
+
+    /**
+     * Should parent documents include data of its children?
+     */
+    private static boolean parentEncapsulation = false;
     /**
      * Document object this DocumentHandler is handling.
      */
     private Document doc;
 
     /**
-     * Parent Document (null if none).
+     * Map of metadata for this document. Contains the field:value pair
+     * to be added to the document.
      */
-    private Document parentDoc;
+    private Map metadata;
 
     /**
-     * IndexWriter to add this document to.
+     * Map of fields. Contains field:type_of_field pair.
+     */
+    private Map customFields;
+
+    /**
+     * IndexWriter.
      */
     private IndexWriter writer;
 
-    public static void setCustomFields(Map aCustomFields)
-    {
-        customFields = aCustomFields;
-    }
+    /**
+     * A collection of documents to be added to the writer.
+     */
+    private List documents = new ArrayList();
 
-    public DocumentHandler(IndexWriter writer)
+    /**
+     * Ctor.
+     *
+     * @param Map of metadata for this document.
+     * @param Map of fields.
+     * @param Writer.
+     */
+    public DocumentHandler(Map metadata,
+                           Map customFields,
+                           IndexWriter writer)
     {
+        this.metadata = metadata;
+        this.customFields = customFields;
         this.writer = writer;
-        doc = new Document();
     }
 
-    public DocumentHandler(IndexWriter writer, Document parentDoc)
+    /**
+     * Handles the actual processing of the document.
+     */
+    public void process() throws IOException, Exception
     {
-        this(writer);
-        this.parentDoc = parentDoc;
-    }
-
-    public void process(Map metadata) throws IOException
-    {
-        File contentFile = new File((String) metadata.get("filePath"));
-
-        // add the standard fields
-        doc.add(Field.Keyword("filePath", contentFile.toString()));
-        doc.add(Field.Text("fileName", contentFile.getName()));
-        doc.add(Field.Keyword("fileLastModifiedDate", DateField.timeToString(contentFile.lastModified())));
-        doc.add(Field.Keyword("fileSize", String.valueOf(contentFile.length())));
-        doc.add(Field.Text("fileFormat", IOUtils.getFileExtension(contentFile)));
-
-        // check if this is a document from datasource where
-        // custom fields need to be added
-        if (parentDoc == null)
+        String objectid = (String) metadata.get(DataSource.OBJECT_IDENTIFIER);
+        if (objectid == null)
+            return;
+        doc = createDocument();
+        addMapToDoc(metadata);
+        addNestedDataSource(metadata);
+        doc.add(Field.Text(ALL_DOCUMENTS_FIELD, ALL_DOCUMENTS_FIELD));
+        //documents.add(doc);
+        if (writer != null)
         {
-            // add the custom fields
-            for (Iterator it = customFields.keySet().iterator(); it.hasNext();)
-            {
-                String field = (String) it.next();
-                String value = (String) metadata.get(field);
-                String type = (String) customFields.get(field);
-                addFieldToDoc(type, field, value);
-            }
-            // Add OBJECT_CLASS_FIELD and OBJECT_IDENTIFIER
-            // to populate the result templates with the proper
-            // objects
-            doc.add(Field.UnIndexed(DataSource.OBJECT_CLASS,
-                                    (String) metadata.get(DataSource.OBJECT_CLASS)));
-            doc.add(Field.Text(DataSource.OBJECT_IDENTIFIER,
-                               (String) metadata.get(DataSource.OBJECT_IDENTIFIER)));
+            addToWriter();
         }
         else
         {
-            for (Iterator it = customFields.keySet().iterator(); it.hasNext();)
-            {
-                String field = (String) it.next();
-                String value = parentDoc.get(field);
-                String type = (String) customFields.get(field);
-                addFieldToDoc(type, field, value);
-            }
-            // Add OBJECT_CLASS_FIELD and OBJECT_IDENTIFIER
-            // to populate the result templates with the proper
-            // objects
-            doc.add(Field.UnIndexed(DataSource.OBJECT_CLASS,
-                                    parentDoc.get(DataSource.OBJECT_CLASS)));
-            doc.add(Field.Text(DataSource.OBJECT_IDENTIFIER,
-                               parentDoc.get(DataSource.OBJECT_IDENTIFIER)));
+            documents.add(doc);
         }
-        if (!metadata.containsKey("fileContents"))
+    }
+
+    private List getDocuments()
+    {
+        return documents;
+    }
+
+    private Document createDocument()
+    {
+        return new Document();
+    }
+
+    /**
+     * Add the contents of a Map to a document.
+     *
+     * @param Map to add.
+     */
+    private void addMapToDoc(Map map)
+    {
+        for (Iterator it = map.keySet().iterator(); it.hasNext();)
         {
-            String extension = IOUtils.getFileExtension(contentFile);
-            FileContentHandler cHandler = ContentHandlerFactory.getContentHandler(extension);
-            if (cHandler != null)
+            String field = (String) it.next();
+            Object value = map.get(field);
+            if (value instanceof String)
             {
-                cHandler.parse(doc, contentFile);
-                if (cHandler.isNested())
+                String type = null;
+                if (customFields != null)
                 {
-                    List nestedData = cHandler.getNestedData();
-                    cat.debug("Nested data list size:" + nestedData.size());
-                    for (int i = 0; i < nestedData.size(); i++)
-                    {
-                        Map dataMap = (Map) nestedData.get(i);
-                        DocumentHandler handler = new DocumentHandler(writer, doc);
-                        handler.process(dataMap);
-                    }
+                    type = (String) customFields.get(field);
                 }
+                addFieldToDoc(type, field, (String) value);
+            }
+            else if (value instanceof Reader)
+            {
+                addFieldToDoc(field, (Reader) value);
+            }
+        }
+    }
+
+    /**
+     * Add nested datasources.
+     *
+     * @param Map which contains the nested datasources.
+     */
+    private void addNestedDataSource(Map map) throws Exception
+    {
+        Object o = map.get(DataSource.NESTED_DATASOURCE);
+        if (o == null)
+            return;
+        if (o instanceof List)
+        {
+            List nestedDataSource = (List) o;
+            for (int i = 0; i < nestedDataSource.size(); i++)
+            {
+                DataSource ds = (DataSource) nestedDataSource.get(i);
+                addDataSource(ds);
+            }
+        }
+        else if (o instanceof DataSource)
+        {
+            DataSource ds = (DataSource) o;
+            addDataSource(ds);
+        }
+    }
+
+    /**
+     * Datasources are basically a collection of data maps to be indexed.
+     * addMapToDoc is invoked for each map.
+     *
+     * @param Datasource to add.
+     */
+    private void addDataSource(DataSource ds) throws Exception
+    {
+        Map[] data = ds.getData();
+        for (int i = 0; i < data.length; i++)
+        {
+            Map map = data[i];
+            if (map.containsKey(DataSource.OBJECT_IDENTIFIER))
+            {
+                /**
+                 * Create a new document because child datasources may need
+                 * to be retrieved independently of parent doc.
+                 */
+                DocumentHandler docHandler = new DocumentHandler(map, null, null);
+                docHandler.process();
+                documents.addAll(docHandler.getDocuments());
             }
             else
             {
-                cat.warn("FileContentHandler not found for " + contentFile.getName());
+                addMapToDoc(map);
+                /**
+                 * Add nested datasources of this datasource's data
+                 */
+                addNestedDataSource(map);
             }
         }
-        else
-            doc.add(Field.Text("fileContents", (String) metadata.get("fileContents")));
-        addToWriter();
     }
 
-    public void addToWriter() throws IOException
-    {
-        writer.addDocument(this.doc);
-    }
-
+    /**
+     * Adds a String-based field to a document.
+     *
+     * @param Type of field.
+     * @param Name of field.
+     * @param Value of field.
+     */
     private void addFieldToDoc(String type, String field, String value)
     {
         if (value == null)
-            value = EMPTY_STRING;
-        if (type.equalsIgnoreCase(SearchConfiguration.TEXT_FIELD_TYPE))
-            doc.add(Field.Text(field, value));
-        else if (type.equalsIgnoreCase(SearchConfiguration.KEYWORD_FIELD_TYPE))
+            value = StringUtils.EMPTY_STRING;
+        if (SearchConfiguration.KEYWORD_FIELD_TYPE.equalsIgnoreCase(type))
             doc.add(Field.Keyword(field, value));
-        else if (type.equalsIgnoreCase(SearchConfiguration.UNINDEXED_FIELD_TYPE))
+        else if (SearchConfiguration.UNINDEXED_FIELD_TYPE.equalsIgnoreCase(type))
             doc.add(Field.UnIndexed(field, value));
-        else if (type.equalsIgnoreCase(SearchConfiguration.UNSTORED_FIELD_TYPE))
+        else if (SearchConfiguration.UNSTORED_FIELD_TYPE.equalsIgnoreCase(type))
             doc.add(Field.UnStored(field, value));
+        else
+            doc.add(Field.Text(field, value));
+    }
+
+    /**
+     * Adds a Reader-based field to a document.
+     *
+     * @param Name of field.
+     * @param Reader.
+     */
+    private void addFieldToDoc(String field, Reader reader)
+    {
+        doc.add(Field.Text(field, reader));
+    }
+
+    /**
+     * Adds documents to the IndexWriter.
+     */
+    private void addToWriter() throws IOException
+    {
+        if (parentEncapsulation)
+        {
+            for (int i = 0; i < documents.size(); i++)
+            {
+                Document d = (Document) documents.get(i);
+                for (Enumeration e = d.fields(); e.hasMoreElements();)
+                {
+                    Field f = (Field) e.nextElement();
+                    String fieldName = f.name();
+                    if (!fieldName.equals(DataSource.CONTAINER_IDENTIFIER)
+                            && !fieldName.equals(DataSource.OBJECT_CLASS)
+                            && !fieldName.equals(DataSource.OBJECT_IDENTIFIER))
+                    {
+                        doc.add(f);
+                    }
+                }
+            }
+        }
+        writer.addDocument(doc);
+        for (int i = 0; i < documents.size(); i++)
+        {
+            writer.addDocument((Document) documents.get(i));
+        }
+        //cat.debug((documents.size() + 1) + " documents added.");
     }
 }

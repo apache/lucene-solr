@@ -1,5 +1,4 @@
 package search;
-
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
@@ -26,12 +25,12 @@ package search;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache POI" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -54,28 +53,49 @@ package search;
  * <http://www.apache.org/>.
  */
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * A datasource is any source of data (filesystem, database, URL, etc)
  * which is indexed by SearchIndexer.
- *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
  */
 public interface DataSource
 {
+    /**
+     * Key in the map (located in the list returned by getData)
+     * to represent the class name of the object being indexed.
+     */
     public static final String OBJECT_CLASS = "objectClass";
-    public static final String OBJECT_IDENTIFIER = "objectid";
 
     /**
-     * Retrieve a list of Maps. Each map represents the
+     * Key in the map (located in the list returned by getData)
+     * to represent the uuid of the object being indexed.
+     */
+    public static final String OBJECT_IDENTIFIER = "objectId";
+
+    /**
+     * The key in the map (located in the list returned by getData)
+     * to represent nested datasources.
+     */
+    public static final String NESTED_DATASOURCE = "nestedDataSource";
+
+    /**
+     * Key in the map (located in the list returned by getData)
+     * to represent the id of the datasource's container. Applies to
+     * nested datasources.
+     */
+    public static final String CONTAINER_IDENTIFIER = "containerId";
+
+    /**
+     * Key in the map to represent the class name of the Search Result
+     * object for this datasource (if any).
+     */
+    public static final String SEARCH_RESULT_CLASSNAME = "resultClassname";
+
+    /**
+     * Retrieve a array of Maps. Each map represents the
      * a document to be indexed. The key:value pair of the map
-     * is the data of the document.
+     * is the metadata of the document.
      */
-    public List getData() throws Exception;
-
-    /**
-     * Obtain the SearchConfiguration object used to configure the datasource.
-     */
-    public SearchConfiguration getConfig();
+    public Map[] getData() throws Exception;
 }

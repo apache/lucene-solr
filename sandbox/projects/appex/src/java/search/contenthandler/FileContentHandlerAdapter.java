@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -54,9 +54,8 @@ package search.contenthandler;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.document.Document;
-
 import java.io.File;
+import java.io.Reader;
 import java.util.List;
 
 /**
@@ -70,12 +69,20 @@ import java.util.List;
  */
 public abstract class FileContentHandlerAdapter implements FileContentHandler
 {
-    public void parse(Document doc, File f)
+    protected File file;
+
+    protected FileContentHandlerAdapter(File file)
     {
+        this.file = file;
     }
-    public List getNestedData()
+
+    public Reader getReader()
     {
         return null;
     }
-    public abstract Object clone();
+
+    public List getNestedDataSource()
+    {
+        return null;
+    }
 }

@@ -26,12 +26,12 @@ package search.contenthandler;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -71,19 +71,29 @@ public class TextHandler extends FileContentHandlerAdapter
 {
     static Category cat = Category.getInstance(TextHandler.class.getName());
 
-    public void parse(Document doc, File f)
+    public TextHandler(File file)
     {
-        if (!f.exists())
-        {
-            cat.error(f.toString() + " doesn't exist! Failing silently...");
-            return;
-        }
-        doc.add(Field.Text("fileContents", getReader(f)));
+        super(file);
     }
 
-    public boolean isNested()
+    public Reader getReader()
+    {
+        if (!file.exists())
+        {
+            cat.error(file.toString() + " doesn't exist! Failing silently...");
+            return null;
+        }
+        return getReader(file);
+    }
+
+    public boolean containsNestedData()
     {
         return false;
+    }
+
+    public boolean fileContentIsReadable()
+    {
+        return true;
     }
 
     private Reader getReader(File f)
@@ -91,17 +101,7 @@ public class TextHandler extends FileContentHandlerAdapter
         Reader reader = null;
         try
         {
-            BufferedReader br = new BufferedReader(new FileReader(f));
-            String s = null;
-            StringBuffer strbf = new StringBuffer();
-            while ((s = br.readLine()) != null)
-            {
-                if (s.trim().length() > 0)
-                {
-                    strbf.append(StringUtils.removeUnreadableCharacters(s));
-                }
-            }
-            reader = new StringReader(strbf.toString());
+            reader = new FileReader(f);
         }
         catch (FileNotFoundException nfe)
         {
@@ -112,10 +112,5 @@ public class TextHandler extends FileContentHandlerAdapter
             cat.error(ioe.getMessage(), ioe);
         }
         return reader;
-    }
-
-    public Object clone()
-    {
-        return new TextHandler();
     }
 }
