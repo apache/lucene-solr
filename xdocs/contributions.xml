@@ -2,10 +2,10 @@
 <document>
     <properties>
         <author email="carlson@apache.org">
-            Peter Carlson 
+            Peter Carlson
         </author>
         <title>
-            Contributions - Jakarta Lucene 
+            Contributions - Jakarta Lucene
         </title>
     </properties>
     <body>
@@ -14,26 +14,26 @@
         </section>
         <section name="Lucene Documents">
             <p>
-                Lucene requires information you want to index to be converted into a Document class. Here are contributions for various Document classes for different formats. 
+                Lucene requires information you want to index to be converted into a Document class. Here are contributions for various Document classes for different formats.
             </p>
             <subsection name="RTF->XML->Lucene">
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.tetrasix.com/">
-                                http://www.tetrasix.com/ 
+                                http://www.tetrasix.com/
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            N/A 
+                            N/A
                         </td>
                     </tr>
                 </table>
@@ -42,20 +42,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2">
-                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2 
+                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Philip Ogren - ogren@mayo.edu 
+                            Philip Ogren - ogren@mayo.edu
                         </td>
                     </tr>
                 </table>
@@ -64,20 +64,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">
-                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html 
+                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Peter Carlson - carlson@bookandhammer.com 
+                            Peter Carlson - carlson@bookandhammer.com
                         </td>
                     </tr>
                 </table>
@@ -86,7 +86,7 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.isogen.com/papers/lucene_xml_indexing.html">
@@ -96,7 +96,7 @@
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
                             W. Eliot Kimber - eliot@isogen.com
@@ -108,20 +108,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.foolabs.com/xpdf">
-                                http://www.foolabs.com/xpdf 
+                                http://www.foolabs.com/xpdf
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            N/A 
+                            N/A
                         </td>
                     </tr>
                 </table>
@@ -130,20 +130,42 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href=" http://www.etymon.com/pj/">
-                                http://www.etymon.com/pj/ 
+                                http://www.etymon.com/pj/
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            N/A 
+                            N/A
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="PDF Parser">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.csh.rit.edu/~ben/projects/pdfparser/">
+                                http://www.csh.rit.edu/~ben/projects/pdfparser/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Ben Litchfield - ben@csh.rit.edu
                         </td>
                     </tr>
                 </table>
@@ -156,20 +178,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2">
-                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2 
+                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Yiyi Sun - yiyisun@yahoo.com 
+                            Yiyi Sun - yiyisun@yahoo.com
                         </td>
                     </tr>
                 </table>
@@ -178,14 +200,14 @@
         <section name="Misc">
             <p>
             </p>
-            
+
             <subsection name="Term Highlighter">
                 <p>
                 </p>
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.iq-computing.de/lucene/highlight.htm">
@@ -195,10 +217,10 @@
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Maik Schreiber - info@iq-computing.de 
+                            Maik Schreiber - info@iq-computing.de
                         </td>
                     </tr>
                 </table>
@@ -209,7 +231,7 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg01168.html">
@@ -219,10 +241,10 @@
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Kelvin Tan - kelvin@relevanz.com 
+                            Kelvin Tan - kelvin@relevanz.com
                         </td>
                     </tr>
                 </table>
@@ -233,7 +255,7 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00775.html">
@@ -243,10 +265,10 @@
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Kelvin Tan - kelvin@relevanz.com 
+                            Kelvin Tan - kelvin@relevanz.com
                         </td>
                     </tr>
                 </table>
@@ -257,20 +279,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.darksleep.com/puff/lucene/lucene.html">
-                                http://www.darksleep.com/puff/lucene/lucene.html 
+                                http://www.darksleep.com/puff/lucene/lucene.html
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            Steven J. Owens - puff@darksleep.com 
+                            Steven J. Owens - puff@darksleep.com
                         </td>
                     </tr>
                 </table>
@@ -281,20 +303,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://lempinen.net/sami/jtidy/">
-                                http://lempinen.net/sami/jtidy/ 
+                                http://lempinen.net/sami/jtidy/
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            N/A 
+                            N/A
                         </td>
                     </tr>
                 </table>
@@ -303,20 +325,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL 
+                            URL
                         </th>
                         <td>
                             <a href="http://www.webgain.com/products/java_cc/">
-                                http://www.webgain.com/products/java_cc/ 
+                                http://www.webgain.com/products/java_cc/
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author 
+                            author
                         </th>
                         <td>
-                            N/A 
+                            N/A
                         </td>
                     </tr>
                 </table>
