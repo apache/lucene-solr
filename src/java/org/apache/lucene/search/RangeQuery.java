@@ -60,7 +60,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
 
-/** A Query that matches documents within an exclusive range. */
+/**
+ * A Query that matches documents within an exclusive range.
+ *
+ * @version $Id$
+ */
 public class RangeQuery extends Query
 {
     private Term lowerTerm;
@@ -69,9 +73,9 @@ public class RangeQuery extends Query
 
     /** Constructs a query selecting all terms greater than
      * <code>lowerTerm</code> but less than <code>upperTerm</code>.
-     * There must be at least one term and either term may be null--
+     * There must be at least one term and either term may be null,
      * in which case there is no bound on that side, but if there are
-     * two term, both terms <b>must</b> be for the same field.
+     * two terms, both terms <b>must</b> be for the same field.
      */
     public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive)
     {
@@ -83,57 +87,66 @@ public class RangeQuery extends Query
         {
             throw new IllegalArgumentException("Both terms must be for the same field");
         }
-        this.lowerTerm = lowerTerm;
+
+        // if we have a lowerTerm, start there. otherwise, start at beginning
+        if (lowerTerm != null) {
+            this.lowerTerm = lowerTerm;
+        }
+        else {
+            this.lowerTerm = new Term(upperTerm.field(), "");
+        }
+
         this.upperTerm = upperTerm;
         this.inclusive = inclusive;
     }
 
+    /**
+     * FIXME: Describe <code>rewrite</code> method here.
+     *
+     * @param reader an <code>IndexReader</code> value
+     * @return a <code>Query</code> value
+     * @exception IOException if an error occurs
+     */
     public Query rewrite(IndexReader reader) throws IOException {
-      BooleanQuery query = new BooleanQuery();
-      // if we have a lowerTerm, start there. otherwise, start at beginning
-      if (lowerTerm == null) lowerTerm = new Term(getField(), "");
-      TermEnum enumerator = reader.terms(lowerTerm);
-      try {
-        String lowerText = null;
-        String field;
-        boolean checkLower = false;
-          if (!inclusive) {             // make adjustments to set to exclusive
-            if (lowerTerm != null) {
-              lowerText = lowerTerm.text();
-              checkLower = true;
-            }
-            if (upperTerm != null) {
-              // set upperTerm to an actual term in the index
-              TermEnum uppEnum = reader.terms(upperTerm);
-              upperTerm = uppEnum.term();
-            }
-          }
-          String testField = getField();
-          do {
-            Term term = enumerator.term();
-            if (term != null && term.field() == testField) {
-              if (!checkLower || term.text().compareTo(lowerText) > 0) {
-                checkLower = false;
-                if (upperTerm != null) {
-                  int compare = upperTerm.compareTo(term);
-                  /* if beyond the upper term, or is exclusive and
-                   * this is equal to the upper term, break out */
-                  if ((compare < 0) || (!inclusive && compare == 0)) break;
+
+        BooleanQuery query = new BooleanQuery();
+        TermEnum enumerator = reader.terms(lowerTerm);
+
+        try {
+
+            boolean checkLower = false;
+            if (!inclusive) // make adjustments to set to exclusive
+                checkLower = true;
+
+            String testField = getField();
+
+            do {
+                Term term = enumerator.term();
+                if (term != null && term.field() == testField) {
+                    if (!checkLower || term.text().compareTo(lowerTerm.text()) > 0) {
+                        checkLower = false;
+                        if (upperTerm != null) {
+                            int compare = upperTerm.text().compareTo(term.text());
+                            /* if beyond the upper term, or is exclusive and
+                             * this is equal to the upper term, break out */
+                            if ((compare < 0) || (!inclusive && compare == 0))
+                                break;
+                        }
+                        TermQuery tq = new TermQuery(term); // found a match
+                        tq.setBoost(getBoost()); // set the boost
+                        query.add(tq, false, false); // add to query
+                    }
                 }
-                TermQuery tq = new TermQuery(term); // found a match
-                tq.setBoost(getBoost());          // set the boost
-                query.add(tq, false, false); // add to query
-              }
+                else {
+                    break;
+                }
             }
-            else {
-              break;
-            }
-          }
-          while (enumerator.next());
-      } finally {
-        enumerator.close();
-      }
-      return query;
+            while (enumerator.next());
+        }
+        finally {
+            enumerator.close();
+        }
+        return query;
     }
 
     public Query combine(Query[] queries) {
