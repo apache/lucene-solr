@@ -18,7 +18,6 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.File;
-import java.util.Vector;
 import java.util.Hashtable;
 import java.util.Enumeration;
 
@@ -115,8 +114,7 @@ public final class RAMDirectory extends Directory {
   /** Set the modified time of an existing file to now. */
   public void touchFile(String name) throws IOException {
 //     final boolean MONITOR = false;
-    int count = 0;
-
+    
     RAMFile file = (RAMFile)files.get(name);
     long ts2, ts1 = System.currentTimeMillis();
     do {

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
 
 import org.apache.lucene.index.IndexWriter;
 
+import java.io.File;
 import java.io.IOException;
 
 /** An interprocess mutex lock.
@@ -35,7 +36,15 @@ import java.io.IOException;
  */
 public abstract class Lock {
   public static long LOCK_POLL_INTERVAL = 1000;
+  private File lockFile = null;
+  
+  Lock(File lockFile) {
+    this.lockFile = lockFile;
+  }
 
+  Lock() {
+  }
+  
   /** Attempts to obtain exclusive access and immediately return
    *  upon success or failure.
    * @return true iff exclusive access is obtained
@@ -55,7 +64,11 @@ public abstract class Lock {
     int sleepCount = 0;
     while (!locked) {
       if (++sleepCount == maxSleepCount) {
-        throw new IOException("Lock obtain timed out");
+        String s = "Lock obtain timed out";
+        if (lockFile != null) {
+            s += ", lock file =" + lockFile.getAbsolutePath();
+        }
+        throw new IOException(s);
       }
       try {
         Thread.sleep(LOCK_POLL_INTERVAL);

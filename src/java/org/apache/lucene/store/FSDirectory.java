@@ -290,7 +290,7 @@ public final class FSDirectory extends Directory {
     // create a lock file
     final File lockFile = new File(lockDir, buf.toString());
 
-    return new Lock() {
+    return new Lock(lockFile) {
       public boolean obtain() throws IOException {
         if (DISABLE_LOCKS)
           return true;
