@@ -4,7 +4,34 @@ $Id$
 
 1.3 RC3
 
- 1. Added minMergeDocs in IndexWriter. (Julien Nioche via Otis)
+ 1. Added minMergeDocs in IndexWriter.  This can be raised to speed
+    indexing without altering the number of files, but only using more
+    memory.  (Julien Nioche via Otis)
+
+ 2. Fix bug #24786, in query rewriting. (bschneeman via Cutting)
+
+ 3. Fix bug #16952, in demo HTML parser, skip comments in
+    javascript. (Christoph Goller)
+
+ 4. Fix bug #19253, in demo HTML parser, add whitespace as needed to
+    output (Daniel Naber via Christoph Goller)
+
+ 5. Fix bug #24301, in demo HTML parser, long titles no longer
+    hang things. (Christoph Goller)
+
+ 6. Fix bug #23534, Replace use of file timestamp of segments file
+    with an index version number stored in the segments file.  This
+    resolves problems when running on file systems with low-resolution
+    timestamps, e.g., HFS under MacOS X.  (Christoph Goller)
+
+ 7. Fix QueryParser so that TokenMgrError is not thrown, only
+    ParseException.  (Erik Hatcher)
+
+ 8. Fix some bugs introduced by change 11 of RC2.  (Christoph Goller)
+
+ 9. Fixed a problem compiling TestRussianStem.  (Christoph Goller)
+
+10. Cleaned up some build stuff.  (Erik Hatcher)
 
 
 1.3 RC2
