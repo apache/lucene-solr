@@ -1,5 +1,20 @@
 package org.apache.lucene.search;
 
+/**
+ * Copyright 2004 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import java.util.Random;
 
@@ -64,7 +79,7 @@ public class BaseTestRangeFilter extends TestCase {
 
             for (int d = minId; d <= maxId; d++) {
                 Document doc = new Document();
-                doc.add(Field.Keyword("id",pad(d)));
+                doc.add(new Field("id",pad(d), Field.Store.YES, Field.Index.UN_TOKENIZED));
                 int r= rand.nextInt();
                 if (maxR < r) {
                     maxR = r;
@@ -72,8 +87,8 @@ public class BaseTestRangeFilter extends TestCase {
                 if (r < minR) {
                     minR = r;
                 }
-                doc.add(Field.Keyword("rand",pad(r)));
-                doc.add(Field.Keyword("body","body"));
+                doc.add(new Field("rand",pad(r), Field.Store.YES, Field.Index.UN_TOKENIZED));
+                doc.add(new Field("body","body", Field.Store.YES, Field.Index.UN_TOKENIZED));
                 writer.addDocument(doc);
             }
             
