@@ -144,24 +144,19 @@ public final class Document implements java.io.Serializable {
    * @param name the name of the field
    * @return a <code>Field[]</code> array
    */
-   public final Field[] getFields(String name)
-   {
+   public final Field[] getFields(String name) {
      List tempFieldList = new ArrayList();
-     for (DocumentFieldList list = fieldList; list != null; list = list.next)
-     {
-       if (list.field.name().equals(name))
-       {
+     for (DocumentFieldList list = fieldList; list != null; list = list.next) {
+       if (list.field.name().equals(name)) {
          tempFieldList.add(list.field);
        }
      }
      int fieldCount = tempFieldList.size();
      if (fieldCount == 0)
        return null;
-     else
-     {
+     else {
        Field[] fields = new Field[fieldCount];
-       for (int i = 0; i < fieldCount; i++)
-       {
+       for (int i = 0; i < fieldCount; i++) {
          fields[i] = (Field) tempFieldList.get(i);
        }
        return fields;
@@ -174,14 +169,12 @@ public final class Document implements java.io.Serializable {
    * @param name the name of the field
    * @return a <code>String[]</code> of field values
    */
-  public final String[] getValues(String name)
-  {
+  public final String[] getValues(String name) {
     Field[] namedFields = getFields(name);
     if (namedFields == null)
       return null;
     String[] values = new String[namedFields.length];
-    for (int i = 0; i < namedFields.length; i++)
-    {
+    for (int i = 0; i < namedFields.length; i++) {
       values[i] = namedFields[i].stringValue();
     }
     return values;
