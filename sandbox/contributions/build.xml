@@ -1,0 +1,8 @@
+<project name="sandbox" default="build-tree">
+
+  <target name="build-tree">
+    <subant target="">
+      <fileset dir="." includes="*/build.xml" excludes="./build.xml"/>
+    </subant>
+  </target>
+</project>

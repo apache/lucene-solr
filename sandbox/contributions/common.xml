@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+
+<project name="common">
+
+  <property name="build.dir" location="build"/>
+  <property name="build.classes.dir" location="${build.dir}/classes"/>
+  <property name="test.dir" location="${build.dir}/test"/>
+  <property name="test.classes.dir" location="${test.dir}/classes"/>
+  <property name="dist.dir" location="dist"/>
+
+  <property name="junit.jar" location="${ant.home}/lib/junit.jar"/>
+  <dirname file="${ant.file.common}" property="common.dir"/>
+  <property name="lucene.dir" location="${common.dir}/../../jakarta-lucene"/>
+
+  <property name="build.debug" value="true"/>
+  <property name="junit.fork" value="true"/>
+
+  <!-- ========================================================== -->
+  <!-- Datatype declarations                                      -->
+  <!-- ========================================================== -->
+  <path id="compile.classpath">
+    <fileset dir="${lucene.dir}" includes="build/lucene*.jar"/>
+    <pathelement path="${project.classpath}"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="compile.classpath"/>
+    <pathelement location="${junit.jar}"/>
+    <pathelement location="${build.classes.dir}"/>
+    <pathelement location="${test.classes.dir}"/>
+  </path>
+
+
+  <target name="init">
+    <echo message="Building ${ant.project.name}"/>
+    <tstamp/>
+
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.classes.dir}"/>
+    <mkdir dir="${dist.dir}"/>
+
+    <mkdir dir="${test.dir}"/>
+    <mkdir dir="${test.classes.dir}"/>
+    <echoproperties/>
+  </target>
+
+  <target name="clean"
+    description="Deletes all previous build artifacts">
+    <delete dir="${build.dir}"/>
+    <delete dir="${build.classes.dir}"/>
+    <delete dir="${dist.dir}"/>
+
+    <delete dir="${test.dir}"/>
+    <delete dir="${test.classes.dir}"/>
+  </target>
+
+  <target name="dist" depends="compile"
+    description="Create JAR">
+    <jar jarfile="${lucene-ant.jar}"
+      basedir="${build.classes.dir}"
+      />
+  </target>
+
+  <target name="compile" depends="init">
+    <javac destdir="${build.classes.dir}"
+      debug="${build.debug}"
+      includeAntRuntime="yes"
+      deprecation="true"
+      srcdir="src/main"
+      classpathref="compile.classpath"
+      />
+  </target>
+
+  <target name="test-compile" depends="compile">
+    <javac destdir="${test.classes.dir}"
+      debug="${build.debug}"
+      includeAntRuntime="yes"
+      srcdir="src/test"
+      classpathref="test.classpath"
+      />
+
+    <copy todir="${test.classes.dir}">
+      <fileset dir="src/test" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <target name="test" depends="test-compile">
+    <junit printsummary="no"
+      errorProperty="test.failed"
+      failureProperty="test.failed"
+      fork="${junit.fork}">
+      <classpath refid="test.classpath"/>
+      <sysproperty key="docs.dir" file="${test.classes.dir}"/>
+      <sysproperty key="index.dir" file="${test.dir}/index"/>
+      <formatter type="brief" usefile="false"/>
+      <test name="${testcase}" if="testcase"/>
+      <batchtest todir="${test.data.dir}" unless="testcase">
+        <fileset dir="${test.classes.dir}"
+          includes="**/*Test.class"
+          />
+      </batchtest>
+    </junit>
+
+    <fail if="test.failed">
+      Unit tests failed.  Check log or reports for details
+    </fail>
+
+  </target>
+
+  <target name="default" depends="test"/>
+
+</project>
