@@ -72,7 +72,7 @@ public class TestMultiPhraseQuery extends TestCase
 
         // this TermEnum gives "piccadilly", "pie" and "pizza".
         String prefix = "pi";
-        TermEnum te = ir.terms(new Term("body", prefix + "*"));
+        TermEnum te = ir.terms(new Term("body", prefix));
         do {
             if (te.term().text().startsWith(prefix))
             {
@@ -95,7 +95,7 @@ public class TestMultiPhraseQuery extends TestCase
         MultiPhraseQuery query3 = new MultiPhraseQuery();
         termsWithPrefix.clear();
         prefix = "blue";
-        te = ir.terms(new Term("body", prefix + "*"));
+        te = ir.terms(new Term("body", prefix));
         do {
             if (te.term().text().startsWith(prefix))
             {
