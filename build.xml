@@ -1,47 +1,353 @@
-<project name="build-site" default="docs" basedir=".">
+<?xml version="1.0"?>
 
-    <!-- Initialization properties -->
-    <property name="project.name"   value="site"/>
-    <property name="docs.src" value="./xdocs"/>
-    <property name="docs.dest" value="./docs"/>
+<project name="Lucene" default="jar" basedir=".">
 
-    <target name="prepare">    
-        <available classname="org.apache.velocity.anakia.AnakiaTask" 
-            property="AnakiaTask.present"/>
-    </target>
+  <property file="${user.home}/build.properties"/>
+  <property file="build.properties"/>
 
-    <target depends="prepare" name="prepare-error" unless="AnakiaTask.present">
-        <echo>
-            AnakiaTask is not present! Please check to make sure that 
-            velocity.jar is in your classpath.
-        </echo>
-    </target>
+  <!-- Build classpath -->
+  <path id="classpath">
+    <pathelement location="${build.demo}"/>
+    <pathelement location="${build.classes}"/>
+    <pathelement location="."/>
+    <fileset dir="lib">
+      <include name="*.jar" />
+    </fileset>
+  </path>
 
-    <target name="docs" depends="prepare-error" if="AnakiaTask.present">
-        <taskdef name="anakia" classname="org.apache.velocity.anakia.AnakiaTask"/>
-        <anakia basedir="${docs.src}" destdir="${docs.dest}/"
-             extension=".html" style="./site.vsl"
-             projectFile="stylesheets/project.xml"
-             excludes="**/stylesheets/** empty.xml"
-             includes="**/*.xml"
-             lastModifiedCheck="true"
-             templatePath="../jakarta-site2/xdocs/stylesheets"
-        >
-        </anakia>
+  <path id="junit.classpath">
+    <pathelement location="${junit.classes}" />
+    <pathelement location="${build.classes}"/>
+    <fileset dir="lib">
+      <include name="*.jar" />
+    </fileset>
+    <pathelement path="${java.class.path}" />
+  </path>
 
-        <copy todir="${docs.dest}/images" filtering="no">
-            <fileset dir="${docs.src}/images">
-                <include name="**/*.gif"/>
-                <include name="**/*.jpeg"/>
-                <include name="**/*.jpg"/>
-            </fileset>
-        </copy>
-        <!-- In case we have CSS someday
-        <copy todir="${docs.dest}" filtering="no">
-            <fileset dir="${docs.src}">
-                <include name="**/*.css"/>
-            </fileset>
-        </copy>
-        -->
-    </target>
+  <!-- ================================================================== -->
+  <!-- Prepares the build directory                                       -->
+  <!-- ================================================================== -->
+  <target name="init">
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.classes}"/>
+    <mkdir dir="${build.src}"/>
+    
+    <available 
+      property="javacc.present" 
+      classname="COM.sun.labs.javacc.Main"
+      classpath="${javacc.zip}"
+    />
+    
+    <available 
+      property="junit.present" 
+      classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"
+    />
+  </target>
+
+  <target name="javacc_check" depends="init" unless="javacc.present">
+    <echo>
+      ##################################################################
+      JavaCC not found.  
+      JavaCC Home: ${javacc.home}
+      JavaCC Zip: ${javacc.zip}
+
+      Please download and install JavaCC 2.0 from:
+
+      &lt;http://www.webgain.com/products/metamata/java_doc.html&gt;
+
+      Then, create a .ant.properties file either in your home
+      directory, or within the Lucene directory and set the javacc.home
+      property to the path where JavaCC.zip is located. For example,
+      if you installed JavaCC in /usr/local/java/javacc2.0, then set the
+      javacc.home property to:
+
+      javacc.home=/usr/local/java/javacc2.0/bin/lib
+
+      If you get an error like the one below, then you have not installed
+      things correctly. Please check all your paths and try again.
+
+      java.lang.NoClassDefFoundError: COM/sun/labs/javacc/Main
+      ##################################################################
+    </echo>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- C O M P I L E                                                      -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="compile" depends="init,javacc_check" if="javacc.present">
+    <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
+    <javacc 
+      target="${src.dir}/org/apache/lucene/analysis/standard/StandardTokenizer.jj" 
+      javacchome="${javacc.zip.dir}"
+      outputdirectory="${build.src}/org/apache/lucene/analysis/standard"
+    />
+    
+    <delete file="${build.src}/org/apache/lucene/analysis/standard/ParseException.java"/>
+    <mkdir dir="${build.src}/org/apache/lucene/queryParser"/>
+    <javacc 
+      target="${src.dir}/org/apache/lucene/queryParser/QueryParser.jj" 
+      javacchome="${javacc.zip.dir}"
+      outputdirectory="${build.src}/org/apache/lucene/queryParser"
+    />
+        
+    <javac 
+      srcdir="${src.dir}:${build.src}" 
+      includes="org/**/*.java" 
+      destdir="${build.classes}" 
+      debug="${debug}">
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- J A R                                                              -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="jar" depends="compile" if="javacc.present">
+    <jar 
+      jarfile="${build.dir}/${final.name}.jar" 
+      basedir="${build.classes}"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- B U I L D  D E M O                                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="demo" depends="compile" if="javacc.present">
+    <mkdir dir="${build.demo}"/>
+    <copy todir="${build.demo}">
+      <fileset dir="${src.dir}">
+        <include name="demo/**/*.java"/>
+        <include name="demo/**/*.jj"/>
+      </fileset>
+    </copy>
+    
+    <javacc 
+      target="${demo.dir}/HTMLParser/HTMLParser.jj" 
+      javacchome="${javacc.zip.dir}"
+      outputdirectory="${build.demo}/demo/HTMLParser"
+    />
+        
+    <javac 
+      srcdir="${build.demo}"
+      includes="demo/**/*.java"
+      destdir="${build.demo}"
+      debug="${debug}">
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- B U I L D  T E S T                                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="test" depends="compile">
+    <mkdir dir="${build.test}"/>
+    <javac 
+      srcdir="${build.src}" 
+      includes="${test.dir}/**" 
+      destdir="${build.test}" 
+      debug="${debug}">
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- R U N  T E S T S                                                   -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="test-unit" depends="compile" if="junit.present">
+    <!-- Import JUnit task -->
+    <taskdef 
+      name="junit" 
+      classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"
+    />
+
+    <mkdir dir="${junit.classes}"/>
+    <mkdir dir="${junit.reports}"/>
+    <javac 
+      srcdir="${junit.src}" 
+      includes="**/*.java" 
+      destdir="${junit.classes}" 
+      debug="${debug}">
+      <classpath refid="classpath"/>
+    </javac>      
+
+    <junit printsummary="yes" haltonfailure="no" >
+      <classpath refid="junit.classpath"/>
+      <formatter type="plain" />
+      <batchtest fork="yes" todir="${junit.reports}">
+        <fileset dir="${junit.src}" includes="**/Test*.java" />
+      </batchtest>
+    </junit>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- D O C U M E N T A T I O N                                          -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="docs-prepare">    
+    <available 
+      classname="org.apache.velocity.anakia.AnakiaTask" 
+      property="AnakiaTask.present"
+    />
+  </target>
+
+  <target depends="docs-prepare" name="prepare-error" unless="AnakiaTask.present">
+    <echo>
+      AnakiaTask is not present! Please check to make sure that 
+      velocity.jar is in your classpath.
+    </echo>
+  </target>
+
+  <target name="docs" depends="prepare-error" if="AnakiaTask.present">
+    <taskdef name="anakia" classname="org.apache.velocity.anakia.AnakiaTask"/>
+    <anakia 
+      basedir="${docs.src}" 
+      destdir="${docs.dest}/"
+      extension=".html" style="./site.vsl"
+      projectFile="stylesheets/project.xml"
+      excludes="**/stylesheets/** empty.xml"
+      includes="**/*.xml"
+      lastModifiedCheck="true"
+      templatePath="../jakarta-site2/xdocs/stylesheets"
+    >
+    </anakia>
+
+    <copy todir="${docs.dest}/images" filtering="no">
+      <fileset dir="${docs.src}/images">
+        <include name="**/*.gif"/>
+        <include name="**/*.jpeg"/>
+        <include name="**/*.jpg"/>
+      </fileset>
+    </copy>
+    
+    <!-- In case we have CSS someday
+    <copy todir="${docs.dest}" filtering="no">
+      <fileset dir="${docs.src}">
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    -->
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- J A V A D O C                                                      -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="javadocs" depends="compile" if="javacc.present">
+    <mkdir dir="${build.javadocs}"/>
+    <javadoc
+      sourcepath="${build.src}" 
+      packagenames="${packages}"
+      destdir="${build.javadocs}"
+      author="true"
+      private="true"
+      version="true"
+      use="true"
+      windowtitle="${Name} ${version} API"
+      doctitle="${Name} ${version} API"
+      bottom="Copyright &amp;copy; ${year} Lucene.com. All Rights Reserved."
+      >
+      <classpath refid="classpath"/>
+    </javadoc>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- D I S T R I B U T I O N                                            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package" depends="jar, javadocs">
+    <mkdir dir="${dist.dir}"/>
+    <mkdir dir="${dist.dir}/docs"/>
+    <mkdir dir="${dist.dir}/docs/api"/>
+
+    <copy file="${basedir}/COPYING.txt" todir="${dist.dir}"/>
+    <copy file="${basedir}/README.txt" todir="${dist.dir}"/>
+    <copy todir="${dist.dir}/docs">
+      <fileset dir="${docs.dir}"/>
+    </copy>
+    <copy todir="${dist.dir}/docs/api">
+      <fileset dir="${build.javadocs}"/>
+    </copy>
+    <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the distribution with ZIP                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-zip" depends="package"
+    description="--> generates the Lucene distribution as .zip">
+    
+    <delete file="${basedir}/${final.name}.zip"/>
+    <zip 
+      zipfile="${basedir}/${final.name}.zip" 
+      basedir="${basedir}/" 
+      includes="**/${final.name}/**"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the distribution with TAR-GZIP                            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-tgz" depends="package"
+    description="--> generates the Lucene distribution as .tar.gz">
+    
+    <delete file="${basedir}/${final.name}.tar"/>
+    <delete file="${basedir}/${final.name}.tar.gz"/>
+    <tar 
+      tarfile="${basedir}/${final.name}.tar" 
+      basedir="${basedir}/" 
+      includes="**/${final.name}/**"
+    />
+    
+    <gzip 
+      zipfile="${basedir}/${final.name}.tar.gz" 
+      src="${basedir}/${final.name}.tar"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the distribution with ZIP and TAG-GZIP                    -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-all" depends="package-zip, package-tgz"
+    description="--> generates the .tar.gz and .zip distributions">
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Same as package-all. It is just here for compatibility.            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="dist" depends="package-all">
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- C L E A N                                                          -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="clean" depends="init">
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+    <delete file="${basedir}/${final.name}.tar"/>
+    <delete file="${basedir}/${final.name}.tar.gz"/>
+    <delete file="${basedir}/${final.name}.zip"/>
+  </target>
 </project>
