@@ -26,16 +26,24 @@ import org.apache.lucene.index.Term;
   the enumeration is greater than all that precede it.  */
 public final class FuzzyTermEnum extends FilteredTermEnum {
     double distance;
-    boolean fieldMatch = false;
     boolean endEnum = false;
 
     Term searchTerm = null;
     String field = "";
     String text = "";
     int textlen;
+    float minimumSimilarity;
+    double scale_factor;
+    
     
     public FuzzyTermEnum(IndexReader reader, Term term) throws IOException {
+      this(reader, term, 0.5f);
+    }
+    
+    public FuzzyTermEnum(IndexReader reader, Term term, float minSimilarity) throws IOException {
         super();
+        minimumSimilarity = minSimilarity;
+        scale_factor = 1.0f / (1.0f - minimumSimilarity);
         searchTerm = term;
         field = searchTerm.field();
         text = searchTerm.text();
@@ -53,14 +61,14 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
             int targetlen = target.length();
             int dist = editDistance(text, target, textlen, targetlen);
             distance = 1 - ((double)dist / (double)Math.min(textlen, targetlen));
-            return (distance > FUZZY_THRESHOLD);
+            return (distance > minimumSimilarity);
         }
         endEnum = true;
         return false;
     }
     
     protected final float difference() {
-        return (float)((distance - FUZZY_THRESHOLD) * SCALE_FACTOR);
+        return (float)((distance - minimumSimilarity) * scale_factor);
     }
     
     public final boolean endEnum() {
@@ -70,9 +78,6 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     /******************************
      * Compute Levenshtein distance
      ******************************/
-    
-    public static final double FUZZY_THRESHOLD = 0.5;
-    public static final double SCALE_FACTOR = 1.0f / (1.0f - FUZZY_THRESHOLD);
     
     /**
      Finds and returns the smallest of three integers 

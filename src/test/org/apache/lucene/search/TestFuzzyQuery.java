@@ -33,7 +33,7 @@ import org.apache.lucene.store.RAMDirectory;
  */
 public class TestFuzzyQuery extends TestCase {
 
-  public void testDefaultFuzziness() throws Exception {
+  public void testFuzziness() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     addDoc("aaaaa", writer);
@@ -90,7 +90,7 @@ public class TestFuzzyQuery extends TestCase {
     directory.close();
   }
 
-  public void testDefaultFuzzinessLong() throws Exception {
+  public void testFuzzinessLong() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     addDoc("aaaaaaa", writer);
@@ -123,6 +123,24 @@ public class TestFuzzyQuery extends TestCase {
     query = new FuzzyQuery(new Term("field", "stellent"));   
     hits = searcher.search(query);
     assertEquals(1, hits.length());
+
+    // "student" doesn't match anymore thanks to increased minimum similarity:
+    query = new FuzzyQuery(new Term("field", "student"), 0.6f);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
+
+    try {
+      query = new FuzzyQuery(new Term("field", "student"), 1.1f);
+      fail("Expected IllegalArgumentException");
+    } catch (IllegalArgumentException e) {
+      // expecting exception
+    }
+    try {
+      query = new FuzzyQuery(new Term("field", "student"), -0.1f);
+      fail("Expected IllegalArgumentException");
+    } catch (IllegalArgumentException e) {
+      // expecting exception
+    }
 
     searcher.close();
     directory.close();
