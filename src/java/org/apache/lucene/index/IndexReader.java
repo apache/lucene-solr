@@ -76,6 +76,9 @@ import org.apache.lucene.document.Field;          // for javadoc
   document in the index.  These document numbers are ephemeral--they may change
   as documents are added to and deleted from an index.  Clients should thus not
   rely on a given document having the same number between sessions.
+
+  @author Doug Cutting
+  @version $Id$
 */
 public abstract class IndexReader {
   protected IndexReader(Directory directory) {
@@ -104,7 +107,9 @@ public abstract class IndexReader {
   /** Returns an IndexReader reading the index in the given Directory. */
   public static IndexReader open(final Directory directory) throws IOException{
     synchronized (directory) {			  // in- & inter-process sync
-      return (IndexReader)new Lock.With(directory.makeLock("commit.lock"), IndexWriter.COMMIT_LOCK_TIMEOUT) {
+      return (IndexReader)new Lock.With(
+          directory.makeLock("IndexWriter.COMMIT_LOCK_NAME"),
+          IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
             IndexReader result = null;
             
@@ -264,7 +269,7 @@ public abstract class IndexReader {
   */
   public final synchronized void delete(int docNum) throws IOException {
     if (writeLock == null) {
-      Lock writeLock = directory.makeLock("write.lock");
+      Lock writeLock = directory.makeLock("IndexWriter.WRITE_LOCK_NAME");
       if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;
@@ -355,8 +360,8 @@ public abstract class IndexReader {
    */
     public static boolean isLocked(Directory directory) throws IOException {
       return
-        directory.makeLock("write.lock").isLocked() ||
-        directory.makeLock("commit.lock").isLocked();
+        directory.makeLock("IndexWriter.WRITE_LOCK_NAME").isLocked() ||
+        directory.makeLock("IndexWriter.COMMIT_LOCK_NAME").isLocked();
 
     }
 
@@ -378,7 +383,7 @@ public abstract class IndexReader {
     * currently accessing this index.
     */
     public static void unlock(Directory directory) throws IOException {
-      directory.makeLock("write.lock").release();
-      directory.makeLock("commit.lock").release();
+      directory.makeLock("IndexWriter.WRITE_LOCK_NAME").release();
+      directory.makeLock("IndexWriter.COMMIT_LOCK_NAME").release();
     }
 }
