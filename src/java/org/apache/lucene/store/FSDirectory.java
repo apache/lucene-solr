@@ -117,8 +117,8 @@ public final class FSDirectory extends Directory {
     synchronized (DIRECTORIES) {
       dir = (FSDirectory)DIRECTORIES.get(file);
       if (dir == null) {
-	dir = new FSDirectory(file, create);
-	DIRECTORIES.put(file, dir);
+        dir = new FSDirectory(file, create);
+        DIRECTORIES.put(file, dir);
       } else if (create) {
         dir.create();
       }
@@ -144,8 +144,8 @@ public final class FSDirectory extends Directory {
 
   private synchronized void create() throws IOException {
     if (!directory.exists())
-	if (!directory.mkdir())
-	    throw new IOException("Cannot create directory: " + directory);
+    if (!directory.mkdir())
+      throw new IOException("Cannot create directory: " + directory);
 
     String[] files = directory.list();            // clear old files
     for (int i = 0; i < files.length; i++) {
@@ -210,7 +210,7 @@ public final class FSDirectory extends Directory {
 
     if (nu.exists())
       if (!nu.delete())
-	throw new IOException("couldn't delete " + to);
+        throw new IOException("couldn't delete " + to);
 
     // Rename the old file to the new one. Unfortunately, the renameTo()
     // method does not work reliably under some JVMs.  Therefore, if the
@@ -229,7 +229,7 @@ public final class FSDirectory extends Directory {
         }
         int len;
         while ((len = in.read(buffer)) >= 0) {
-           out.write(buffer, 0, len);
+          out.write(buffer, 0, len);
         }
 
         // delete the old file.
@@ -239,19 +239,19 @@ public final class FSDirectory extends Directory {
         throw new IOException("couldn't rename " + from + " to " + to);
       }
       finally {
-	if (in != null) {
+        if (in != null) {
           try {
             in.close();
-	  } catch (IOException e) {
-            // what can we do?
-	  }
-	}
-	if (out != null) {
+          } catch (IOException e) {
+            throw new RuntimeException("could not close input stream", e);
+          }
+        }
+        if (out != null) {
           try {
             out.close();
-	  } catch (IOException e) {
+          } catch (IOException e) {
             throw new RuntimeException("could not close output stream", e);
-	  }
+          }
         }
       }
     }
@@ -282,27 +282,27 @@ public final class FSDirectory extends Directory {
   public final Lock makeLock(String name) {
     final File lockFile = new File(directory, name);
     return new Lock() {
-	public boolean obtain() throws IOException {
-	  if (DISABLE_LOCKS)
-	      return true;
-          return lockFile.createNewFile();
-	}
-	public void release() {
-	  if (DISABLE_LOCKS)
-	      return;
-	  lockFile.delete();
-	}
-	public String toString() {
-	  return "Lock@" + lockFile;
-	}
-      };
+      public boolean obtain() throws IOException {
+        if (DISABLE_LOCKS)
+          return true;
+            return lockFile.createNewFile();
+      }
+      public void release() {
+        if (DISABLE_LOCKS)
+          return;
+        lockFile.delete();
+      }
+      public String toString() {
+        return "Lock@" + lockFile;
+      }
+    };
   }
 
   /** Closes the store to future operations. */
   public final synchronized void close() throws IOException {
     if (--refCount <= 0) {
       synchronized (DIRECTORIES) {
-	DIRECTORIES.remove(directory);
+        DIRECTORIES.remove(directory);
       }
     }
   }
@@ -336,16 +336,16 @@ final class FSInputStream extends InputStream {
     synchronized (file) {
       long position = getFilePointer();
       if (position != file.position) {
-	file.seek(position);
-	file.position = position;
+        file.seek(position);
+        file.position = position;
       }
       int total = 0;
       do {
-	int i = file.read(b, offset+total, len-total);
-	if (i == -1)
-	  throw new IOException("read past EOF");
-	file.position += i;
-	total += i;
+        int i = file.read(b, offset+total, len-total);
+        if (i == -1)
+          throw new IOException("read past EOF");
+        file.position += i;
+        total += i;
       } while (total < len);
     }
   }
@@ -360,7 +360,7 @@ final class FSInputStream extends InputStream {
   }
 
   protected final void finalize() throws IOException {
-    close();					  // close the file
+    close();            // close the file
   }
 
   public Object clone() {
@@ -397,7 +397,7 @@ final class FSOutputStream extends OutputStream {
   }
 
   protected final void finalize() throws IOException {
-    file.close();				  // close the file
+    file.close();          // close the file
   }
 
 }
