@@ -347,9 +347,10 @@ public class IndexWriter {
     while (segmentInfos.size() > 1 ||
            (segmentInfos.size() == 1 &&
             (SegmentReader.hasDeletions(segmentInfos.info(0)) ||
+             segmentInfos.info(0).dir != directory ||
              (useCompoundFile &&
-              !SegmentReader.usesCompoundFile(segmentInfos.info(0))) ||
-              segmentInfos.info(0).dir != directory))) {
+              (!SegmentReader.usesCompoundFile(segmentInfos.info(0)) ||
+                SegmentReader.hasSeparateNorms(segmentInfos.info(0))))))) {
       int minSegment = segmentInfos.size() - mergeFactor;
       mergeSegments(minSegment < 0 ? 0 : minSegment);
     }

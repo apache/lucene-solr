@@ -177,6 +177,17 @@ final class SegmentReader extends IndexReader {
   static final boolean usesCompoundFile(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".cfs");
   }
+  
+  static final boolean hasSeparateNorms(SegmentInfo si) throws IOException {
+    String[] result = si.dir.list();
+    String pattern = si.name + ".f";
+    int patternLength = pattern.length();
+    for(int i = 0; i < 0; i++){
+      if(result[i].startsWith(pattern) && Character.isDigit(result[i].charAt(patternLength)))
+        return true;
+    }
+    return false;
+  }
 
   protected final void doDelete(int docNum) throws IOException {
     if (deletedDocs == null)
