@@ -62,6 +62,7 @@ import org.apache.lucene.analysis.de.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Hashtable;
 import java.util.HashSet;
@@ -72,7 +73,7 @@ import java.util.Set;
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
  *
- * @author    João Kramer
+ * @author    Joï¿½o Kramer
  */
 public final class BrazilianAnalyzer extends Analyzer {
 
@@ -134,8 +135,8 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
-	public BrazilianAnalyzer( File stopwords ) {
-		stoptable = new HashSet(WordlistLoader.getWordtable( stopwords ).keySet());
+	public BrazilianAnalyzer( File stopwords ) throws IOException {
+		stoptable = WordlistLoader.getWordSet( stopwords );
 	}
 
 	/**
@@ -153,8 +154,8 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Builds an exclusionlist from the words contained in the given file.
 	 */
-	public void setStemExclusionTable( File exclusionlist ) {
-		excltable = new HashSet(WordlistLoader.getWordtable( exclusionlist ).keySet());
+	public void setStemExclusionTable( File exclusionlist ) throws IOException {
+		excltable = WordlistLoader.getWordSet( exclusionlist );
 	}
 
 	/**

@@ -136,8 +136,8 @@ public final class CzechAnalyzer extends Analyzer {
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
-	public CzechAnalyzer( File stopwords ) {
-		stoptable = new HashSet(WordlistLoader.getWordtable( stopwords ).keySet());
+	public CzechAnalyzer( File stopwords ) throws IOException {
+		stoptable = WordlistLoader.getWordSet( stopwords );
 	}
 
     /**
@@ -182,7 +182,7 @@ public final class CzechAnalyzer extends Analyzer {
 		TokenStream result = new StandardTokenizer( reader );
 		result = new StandardFilter( result );
 		result = new LowerCaseFilter( result );
-        result = new StopFilter( result, stoptable );
+		result = new StopFilter( result, stoptable );
 		return result;
 	}
 }
