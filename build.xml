@@ -166,8 +166,8 @@
           <attribute name="Specification-Version" value="${version}"/>
           <attribute name="Specification-Vendor" value="Lucene"/>
           <attribute name="Implementation-Title" value="org.apache.lucene"/>
-          <attribute name="Implementation-Version" value="build ${DSTAMP} ${TSTAMP}"/>
-          <attribute name="Implementation-Vemdpr" value="Lucene"/>
+          <attribute name="Implementation-Version" value="build ${DSTAMP}"/>
+          <attribute name="Implementation-Vendor" value="Lucene"/>
         </section>
       </manifest>
     </jar>
@@ -218,6 +218,12 @@
       <classpath refid="demo.classpath"/>
     </javac>
   </target>
+
+  <!-- GCJ -->
+  <target name="gcj" depends="jar,jar-demo">
+    <exec executable="make" dir="src/gcj" failonerror="true"/>
+  </target>
+
 
   <!-- ================================================================== -->
   <!-- B U I L D  T E S T                                                 -->
