@@ -29,20 +29,30 @@ public class SearchResults
 
     public SearchResults(Hits hits) throws IOException
     {
-        this(hits, 0, hits.length());
+        this(hits, 0, hits.length() - 1);
     }
 
     public SearchResults(Hits hits, int from, int to) throws IOException
     {
-        hitsDocuments = new Document[hits.length()];
         totalNumberOfResults = hits.length();
         if (to > totalNumberOfResults)
         {
-            to = totalNumberOfResults;
+            to = totalNumberOfResults - 1;
         }
-        for (int i = from; i < to; i++)
+        int numberOfResults = to - from + 1;
+        if (numberOfResults > -1)
         {
-            hitsDocuments[i] = hits.doc(i);
+            hitsDocuments = new Document[numberOfResults];
+            for (int i = to, j = 0; i >= from; i--, j++)
+            {
+                hitsDocuments[j] = hits.doc(i);
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException("Range of results requested " +
+                                               "exceed total number of search " +
+                                               "results returned.");
         }
     }
 
@@ -52,7 +62,8 @@ public class SearchResults
     }
 
     /**
-     * Obtain the results of the search as objects.
+     * Obtain the results of the search as objects. The objects returned are
+     * not guaranteed to be unique.
      */
     public Object[] getResultsAsObjects()
     {
