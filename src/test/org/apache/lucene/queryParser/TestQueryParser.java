@@ -371,6 +371,42 @@ public class TestQueryParser extends TestCase {
 	assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
   }
 
+  public void testTabNewlineCarriageReturn()
+    throws Exception {
+    assertQueryEqualsDOA("+weltbank +worlbank", null,
+      "+weltbank +worlbank");
+
+    assertQueryEqualsDOA("+weltbank\n+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n +worlbank", null,
+      "+weltbank +worlbank");
+
+    assertQueryEqualsDOA("+weltbank\r+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r +worlbank", null,
+      "+weltbank +worlbank");
+
+    assertQueryEqualsDOA("+weltbank\r\n+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n +worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r \n +worlbank", null,
+      "+weltbank +worlbank");
+
+    assertQueryEqualsDOA("+weltbank\t+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t+worlbank", null,
+      "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t +worlbank", null,
+      "+weltbank +worlbank");
+  }
+
   public void testSimpleDAO()
     throws Exception {
     assertQueryEqualsDOA("term term term", null, "+term +term +term");

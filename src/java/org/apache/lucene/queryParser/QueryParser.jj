@@ -443,11 +443,11 @@ PARSER_END(QueryParser)
   <#_NUM_CHAR:   ["0"-"9"] >
 | <#_ESCAPED_CHAR: "\\" [ "\\", "+", "-", "!", "(", ")", ":", "^",
                           "[", "]", "\"", "{", "}", "~", "*", "?" ] >
-| <#_TERM_START_CHAR: ( ~[ " ", "\t", "+", "-", "!", "(", ")", ":", "^",
+| <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "+", "-", "!", "(", ")", ":", "^",
                            "[", "]", "\"", "{", "}", "~", "*", "?" ]
                        | <_ESCAPED_CHAR> ) >
 | <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> ) >
-| <#_WHITESPACE: ( " " | "\t" ) >
+| <#_WHITESPACE: ( " " | "\t" | "\n" | "\r") >
 }
 
 <DEFAULT, RangeIn, RangeEx> SKIP : {

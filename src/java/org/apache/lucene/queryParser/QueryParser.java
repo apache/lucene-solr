@@ -76,8 +76,8 @@ public class QueryParser implements QueryParserConstants {
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query	the query string to be parsed.
-   *  @param field	the default field for query terms.
+   *  @param query  the query string to be parsed.
+   *  @param field  the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
    */
@@ -88,7 +88,7 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /** Constructs a query parser.
-   *  @param f	the default field for query terms.
+   *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
   public QueryParser(String f, Analyzer a) {
@@ -99,7 +99,7 @@ public class QueryParser implements QueryParserConstants {
 
   /** Parses a query string, returning a
    * <a href="lucene.search.Query.html">Query</a>.
-   *  @param query	the query string to be parsed.
+   *  @param query  the query string to be parsed.
    *  @throws ParseException if the parsing fails
    */
   public Query parse(String query) throws ParseException {
@@ -302,7 +302,7 @@ public class QueryParser implements QueryParserConstants {
   {
     BooleanQuery query = new BooleanQuery();
     for (int i = 0; i < clauses.size(); i++) {
-        query.add((BooleanClause)clauses.elementAt(i));
+  query.add((BooleanClause)clauses.elementAt(i));
     }
     return query;
   }
@@ -331,7 +331,7 @@ public class QueryParser implements QueryParserConstants {
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseWildcardTerms) {
-        termStr = termStr.toLowerCase();
+  termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
     return new WildcardQuery(t);
@@ -363,7 +363,7 @@ public class QueryParser implements QueryParserConstants {
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseWildcardTerms) {
-        termStr = termStr.toLowerCase();
+  termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
     return new PrefixQuery(t);
@@ -511,7 +511,7 @@ public class QueryParser implements QueryParserConstants {
       if (clauses.size() == 1 && firstQuery != null)
         {if (true) return firstQuery;}
       else {
-        {if (true) return getBooleanQuery(clauses);}
+  {if (true) return getBooleanQuery(clauses);}
       }
     throw new Error("Missing return statement in function");
   }
@@ -522,7 +522,7 @@ public class QueryParser implements QueryParserConstants {
     if (jj_2_1(2)) {
       fieldToken = jj_consume_token(TERM);
       jj_consume_token(COLON);
-        field=discardEscapeChar(fieldToken.image);
+      field=discardEscapeChar(fieldToken.image);
     } else {
       ;
     }
@@ -557,10 +557,10 @@ public class QueryParser implements QueryParserConstants {
     }
       if (boost != null) {
         float f = (float)1.0;
-        try {
-          f = Float.valueOf(boost.image).floatValue();
+  try {
+    f = Float.valueOf(boost.image).floatValue();
           q.setBoost(f);
-        } catch (Exception ignored) { }
+  } catch (Exception ignored) { }
       }
       {if (true) return q;}
     throw new Error("Missing return statement in function");
@@ -627,11 +627,11 @@ public class QueryParser implements QueryParserConstants {
       }
        String termImage=discardEscapeChar(term.image);
        if (wildcard) {
-             q = getWildcardQuery(field, termImage);
+       q = getWildcardQuery(field, termImage);
        } else if (prefix) {
          q = getPrefixQuery(field,
-                discardEscapeChar(term.image.substring
-                            (0, term.image.length()-1)));
+           discardEscapeChar(term.image.substring
+          (0, term.image.length()-1)));
        } else if (fuzzy) {
          q = getFuzzyQuery(field, termImage);
        } else {
@@ -685,13 +685,13 @@ public class QueryParser implements QueryParserConstants {
           if (goop1.kind == RANGEIN_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
           } else {
-                goop1.image = discardEscapeChar(goop1.image);
+            goop1.image = discardEscapeChar(goop1.image);
           }
           if (goop2.kind == RANGEIN_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-                  } else {
-                        goop2.image = discardEscapeChar(goop2.image);
-                  }
+      } else {
+        goop2.image = discardEscapeChar(goop2.image);
+      }
           q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
       break;
     case RANGEEX_START:
@@ -745,9 +745,9 @@ public class QueryParser implements QueryParserConstants {
           }
           if (goop2.kind == RANGEEX_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-                  } else {
-                        goop2.image = discardEscapeChar(goop2.image);
-                  }
+      } else {
+        goop2.image = discardEscapeChar(goop2.image);
+      }
 
           q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
       break;
@@ -791,9 +791,9 @@ public class QueryParser implements QueryParserConstants {
         f = Float.valueOf(boost.image).floatValue();
       }
       catch (Exception ignored) {
-          /* Should this be handled somehow? (defaults to "no boost", if
-	   * boost number is invalid)
-	   */
+    /* Should this be handled somehow? (defaults to "no boost", if
+     * boost number is invalid)
+     */
       }
 
       // avoid boosting null queries, such as those caused by stop words
