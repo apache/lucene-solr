@@ -17,7 +17,6 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.Reader;
-import java.util.Hashtable;
 import java.util.Set;
 
 /** Filters LetterTokenizer with LowerCaseFilter and StopFilter. */
