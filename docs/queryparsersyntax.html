@@ -19,7 +19,7 @@
                                     
                         
             <title>Jakarta Lucene - 
-            Query Parser Syntax - Jakarta Lucene 
+            Query Parser Syntax - Jakarta Lucene
         </title>
         </head>
 
@@ -126,24 +126,24 @@
                                                 <p>
             Before choosing to use the provided Query Parser, please consider the following:
             <ol>
-            <li>If you are programmatically generating a query string and then 
-            parsing it with the query parser then you should seriously consider building 
+            <li>If you are programmatically generating a query string and then
+            parsing it with the query parser then you should seriously consider building
             your queries directly with the query API.  In other words, the query
-            parser is designed for human-entered text, not for program-generated 
+            parser is designed for human-entered text, not for program-generated
             text.</li>
 
-            <li>Untokenized fields are best added directly to queries, and not 
-            through the query parser.  If a field's values are generated programmatically 
-            by the application, then so should query clauses for this field. 
-            Analyzers, like the query parser, are designed to convert human-entered 
-            text to terms.  Program-generated values, like dates, keywords, etc., 
+            <li>Untokenized fields are best added directly to queries, and not
+            through the query parser.  If a field's values are generated programmatically
+            by the application, then so should query clauses for this field.
+            Analyzers, like the query parser, are designed to convert human-entered
+            text to terms.  Program-generated values, like dates, keywords, etc.,
             should be consistently program-generated.</li>
 
-            <li>In a query form, fields which are general text should use the query 
-            parser.  All others, such as date ranges, keywords, etc. are better added 
-            directly through the query API.  A field with a limit set of values, 
-            that can be specified with a pull-down menu should not be added to a 
-            query string which is subsequently parsed, but rather added as a 
+            <li>In a query form, fields which are general text should use the query
+            parser.  All others, such as date ranges, keywords, etc. are better added
+            directly through the query API.  A field with a limit set of values,
+            that can be specified with a pull-down menu should not be added to a
+            query string which is subsequently parsed, but rather added as a
             TermQuery clause.</li>
             </ol>
             </p>
@@ -181,7 +181,7 @@
         <blockquote>
                                     <p>Lucene supports fielded data. When performing a search you can either specify a field, or use the default field. The field names and default field is implementation specific.</p>
                                                 <p>You can search any field by typing the field name followed by a colon ":" and then the term you are looking for. </p>
-                                                <p>As an example, let's assume a Lucene index contains two fields, title and text and text is the default field. 
+                                                <p>As an example, let's assume a Lucene index contains two fields, title and text and text is the default field.
         If you want to find the document entitled "The Right Way" which contains the text "don't go this way", you can enter: </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
@@ -363,7 +363,6 @@
     </table>
     </div>
                                                 <p>This search will find terms like foam and roams</p>
-                                                <p>Note:Terms found by the fuzzy search will automatically get a boost factor of 0.2</p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
@@ -486,7 +485,7 @@
     </tr>
     </table>
     </div>
-                                                <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. 
+                                                <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term.
         You would type:</p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
@@ -555,7 +554,7 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. 
+                                    <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used.
         The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets.
         The symbol || can be used in place of the word OR.</p>
                                                 <p>To search for documents that contain either "jakarta apache" or just "jakarta" use the query:</p>
@@ -610,7 +609,7 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>The AND operator matches documents where both terms exist anywhere in the text of a single document. 
+                                    <p>The AND operator matches documents where both terms exist anywhere in the text of a single document.
         This is equivalent to an intersection using sets. The symbol &amp;&amp; can be used in place of the word AND.</p>
                                                 <p>To search for documents that contain "jakarta apache" and "jakarta lucene" use the query: </p>
                                                     <div align="left">
