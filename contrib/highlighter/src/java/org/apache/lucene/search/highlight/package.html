@@ -24,7 +24,13 @@ Fragmenter, FragmentScorer, Formatter classes.
 		}
 </pre>
 <h2>New features 06/02/2005</h2>
-This release adds options for encoding (thanks to Nicko Cadell)
+This release adds options for encoding (thanks to Nicko Cadell).
+An "Encoder" implementation such as the new SimpleHTMLEncoder class can be passed to the highlighter to encode
+all those non-xhtml standard characters such as &amp; into legal values. This simple class may not suffice for
+some languages -  Commons Lang has an implementation that could be used: escapeHtml(String) in
+http://svn.apache.org/viewcvs.cgi/jakarta/commons/proper/lang/trunk/src/java/org/apache/commons/lang/StringEscapeUtils.java?rev=137958&view=markup
+
+
 
 <h2>New features 22/12/2004</h2>
 This release adds some new capabilities:

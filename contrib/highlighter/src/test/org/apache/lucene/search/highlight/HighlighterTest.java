@@ -16,12 +16,18 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import junit.framework.TestCase;
 
@@ -42,6 +48,9 @@ import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.RAMDirectory;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * JUnit Test for Highlighter class.
@@ -105,7 +114,7 @@ public class HighlighterTest extends TestCase implements Formatter
 	{
 		doSearching("Kinnedy~");
 		doStandardHighlights();
-		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 5);
 	}
 
 	public void testGetWildCardFragments() throws Exception
@@ -323,6 +332,61 @@ public class HighlighterTest extends TestCase implements Formatter
 			assertNull("The highlight result should be null for text with no query terms", result);
 		}
 	}
+	
+	/**
+	 * Demonstrates creation of an XHTML compliant doc using new encoding facilities.
+	 * @throws Exception
+	 */
+	public void testEncoding() throws Exception
+    {
+        String rawDocContent = "\"Smith & sons' prices < 3 and >4\" claims article";
+        //run the highlighter on the raw content (scorer does not score any tokens for 
+        // highlighting but scores a single fragment for selection
+        Highlighter highlighter = new Highlighter(this,
+                new SimpleHTMLEncoder(), new Scorer()
+                {
+                    public void startFragment(TextFragment newFragment)
+                    {
+                    }
+                    public float getTokenScore(Token token)
+                    {
+                        return 0;
+                    }
+                    public float getFragmentScore()
+                    {
+                        return 1;
+                    }
+                });
+        highlighter.setTextFragmenter(new SimpleFragmenter(2000));
+        TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME,
+                new StringReader(rawDocContent));
+
+        String encodedSnippet = highlighter.getBestFragments(tokenStream, rawDocContent,1,"");
+        //An ugly bit of XML creation:
+        String xhtml="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
+            		"<!DOCTYPE html\n"+
+            		"PUBLIC \"//W3C//DTD XHTML 1.0 Transitional//EN\"\n"+
+            		"\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"+
+            		"<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n"+
+            		"<head>\n"+
+            		"<title>My Test HTML Document</title>\n"+
+            		"</head>\n"+
+            		"<body>\n"+
+            		"<h2>"+encodedSnippet+"</h2>\n"+
+            		"</body>\n"+
+            		"</html>";
+        //now an ugly built of XML parsing to test the snippet is encoded OK 
+  		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+  		DocumentBuilder db = dbf.newDocumentBuilder();
+  		org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes()));
+  		Element root=doc.getDocumentElement();  		
+  		NodeList nodes=root.getElementsByTagName("body");
+  		Element body=(Element) nodes.item(0);
+  		nodes=body.getElementsByTagName("h2");
+        Element h2=(Element) nodes.item(0); 
+        String decodedSnippet=h2.getFirstChild().getNodeValue();
+        assertEquals("XHTML Encoding should have worked:", rawDocContent,decodedSnippet);
+    }
 
 	public void testMultiSearcher() throws Exception
 	{

@@ -1,6 +1,6 @@
 package org.apache.lucene.search.highlight;
 /**
- * Copyright 2002-2004 The Apache Software Foundation
+ * Copyright 2002-2005 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Class used to markup highlighted terms found in the best sections of a 
- * text, using configurable {@link Fragmenter}, {@link Scorer}, {@link Formatter} 
- * and tokenizers.
+ * text, using configurable {@link Fragmenter}, {@link Scorer}, {@link Formatter}, 
+ * {@link Encoder} and tokenizers.
  * @author mark@searcharea.co.uk
  */
 public class Highlighter
@@ -34,6 +34,7 @@ public class Highlighter
 	public static final  int DEFAULT_MAX_DOC_BYTES_TO_ANALYZE=50*1024;
 	private int maxDocBytesToAnalyze=DEFAULT_MAX_DOC_BYTES_TO_ANALYZE;
 	private Formatter formatter;
+	private Encoder encoder;	
 	private Fragmenter textFragmenter=new SimpleFragmenter();
 	private Scorer fragmentScorer=null;
 
@@ -43,12 +44,18 @@ public class Highlighter
 	}
 	
 	
-	public Highlighter(Formatter formatter, Scorer fragmentScorer)
-	{
-		this.formatter = formatter;
-		this.fragmentScorer = fragmentScorer;
+ 	public Highlighter(Formatter formatter, Scorer fragmentScorer)
+ 	{
+		this(formatter,new DefaultEncoder(),fragmentScorer);
 	}
 	
+	
+	public Highlighter(Formatter formatter, Encoder encoder, Scorer fragmentScorer)
+	{
+ 		this.formatter = formatter;
+		this.encoder = encoder;
+ 		this.fragmentScorer = fragmentScorer;
+ 	}
 
 
 
@@ -160,10 +167,10 @@ public class Highlighter
 					startOffset = tokenGroup.startOffset;
 					endOffset = tokenGroup.endOffset;		
 					tokenText = text.substring(startOffset, endOffset);
-					String markedUpText=formatter.highlightTerm(tokenText, tokenGroup);
+					String markedUpText=formatter.highlightTerm(encoder.encodeText(tokenText), tokenGroup);
 					//store any whitespace etc from between this and last group
 					if (startOffset > lastEndOffset)
-						newText.append(text.substring(lastEndOffset, startOffset));
+						newText.append(encoder.encodeText(text.substring(lastEndOffset, startOffset)));
 					newText.append(markedUpText);
 					lastEndOffset=endOffset;
 					tokenGroup.clear();
@@ -195,17 +202,17 @@ public class Highlighter
 				startOffset = tokenGroup.startOffset;
 				endOffset = tokenGroup.endOffset;		
 				tokenText = text.substring(startOffset, endOffset);
-				String markedUpText=formatter.highlightTerm(tokenText, tokenGroup);
+				String markedUpText=formatter.highlightTerm(encoder.encodeText(tokenText), tokenGroup);
 				//store any whitespace etc from between this and last group
 				if (startOffset > lastEndOffset)
-					newText.append(text.substring(lastEndOffset, startOffset));
+					newText.append(encoder.encodeText(text.substring(lastEndOffset, startOffset)));
 				newText.append(markedUpText);
 				lastEndOffset=endOffset;						
 			}
 
 			// append text after end of last token
 			if (lastEndOffset < text.length())
-				newText.append(text.substring(lastEndOffset));
+				newText.append(encoder.encodeText(text.substring(lastEndOffset)));
 
 			currentFrag.textEndPos = newText.length();
 
@@ -438,7 +445,14 @@ public class Highlighter
 		fragmentScorer = scorer;
 	}
 
-
+    public Encoder getEncoder()
+    {
+        return encoder;
+    }
+    public void setEncoder(Encoder encoder)
+    {
+        this.encoder = encoder;
+    }
 }
 class FragmentQueue extends PriorityQueue
 {
