@@ -1,48 +1,59 @@
 <?xml version="1.0"?>
 <document>
     <properties>
-    <author email="cutting@apache.org">Doug Cutting</author>
-    <title>Resources - Jakarta Lucene</title>
+        <author email="cutting@apache.org">Doug Cutting</author>
+        <title>Resources - Jakarta Lucene</title>
     </properties>
     <body>
 
-    <section name="Articles">
-        <ul>
-        <li><a
-               href="http://www.javaworld.com/javaworld/jw-09-2000/jw-0915-lucene.html">The Lucene search engine Powerful flexible and free</a>
-            <br/> - JavaWorld, September 2000
-        </li>
-        <li><a
-               href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Jakarta Lucene</a>
-            <br/> - Onjava.com, January 2003
-        </li>
-        <li><a
-               href="http://www.onjava.com/pub/a/onjava/2003/03/05/lucene.html">Advanced Text Indexing with Lucene</a>
-            <br/> - Onjava.com, March 2003
-        </li>
-        <li><a
-               href="http://www.chedong.com/tech/lucene.html">Lucene introduction in Chinese</a>
-        </li>
-        </ul>
-    </section>
+        <section name="Articles">
+            <ul>
+                <li><a
+                        href="http://www.javaworld.com/javaworld/jw-09-2000/jw-0915-lucene.html">The Lucene search engine Powerful flexible and free</a>
+                    <br/> - JavaWorld, September 2000
+                </li>
+                <li><a
+                        href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Jakarta Lucene</a>
+                    <br/> - Onjava.com, January 2003
+                </li>
+                <li><a
+                        href="http://www.onjava.com/pub/a/onjava/2003/03/05/lucene.html">Advanced Text Indexing with Lucene</a>
+                    <br/> - Onjava.com, March 2003
+                </li>
+                <li><a
+                        href="http://www.chedong.com/tech/lucene.html">Lucene introduction in Chinese</a>
+                </li>
+            </ul>
+        </section>
 
-    <section name="Related Resources">
-        <ul>
-        <li><a
-               href="http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-cooltools.html">Build your own languages with JavaCC</a>
-            <br/> - JavaWorld December 2000
-        </li>
-        <li><a href="http://sourceforge.net/projects/nlucene">NLucene</a>
-            <br/> - .NET implementation of Lucene
-        </li>
-        <li><a href="http://www.divmod.org/Lupy/">Lupy</a>
-            <br/> - Python implementation of Lucene
-        </li>
-        <li><a href="http://search.cpan.org/author/SIMON/Lucene-QueryParser-1.01/">Lucene::QueryParser</a>
-            <br/> - Perl implementation of Lucene QueryParser
-        </li>
-        </ul>
-    </section>
+        <section name="Related Resources">
+            <ul>
+                <li><a
+                        href="http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-cooltools.html">Build your own languages with JavaCC</a>
+                    <br/> - JavaWorld December 2000
+                </li>
+                <li><a href="http://sourceforge.net/projects/nlucene">NLucene</a>
+                    <br/> - .NET implementation of Lucene
+                </li>
+                <li><a href="http://www.divmod.org/Lupy/">Lupy</a>
+                    <br/> - Python implementation of Lucene
+                </li>
+                <li><a href="http://search.cpan.org/author/SIMON/Lucene-QueryParser-1.01/">Lucene::QueryParser</a>
+                    <br/> - Perl implementation of Lucene QueryParser
+                </li>
+            </ul>
+        </section>
+
+        <section name="Related Books">
+            <ul>
+                <li><a href="http://www.amazon.com/exec/obidos/tg/detail/-/1861007817/qid=1047858790/sr=1-1/ref=sr_1_1/103-2490464-6993410?v=glance&amp;s=books">
+                        Professional Struts Applications</a>: Building Web Sites with Struts, Object Relational Bridge, Lucene, and Velocity, by John Carnell,
+                    Jeff Linwood, and Maciej Zawadzki.
+                    <br/> - Contains a chapter on using Lucene with Struts, including incremental indexing, architecture, and creating an index from
+                    a data access layer.
+                </li>
+            </ul>
+        </section>
 
     </body>
 </document>
