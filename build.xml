@@ -28,7 +28,7 @@
   </path>
 
   <path id="junit.classpath">
-    <pathelement location="${junit.classes}" />
+    <pathelement location="${build.test.classes}" />
     <pathelement location="${build.classes}"/>
     <fileset dir="lib">
       <include name="*.jar" />
@@ -268,7 +268,7 @@ Implementation-Vendor: Lucene
       srcdir="${test.src}"
       includes="**/*.java"
       destdir="${build.test.classes}"
-      debug="${debug}">
+      debug="true">
       <classpath refid="test.classpath"/>
     </javac>
   </target>
@@ -279,30 +279,11 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="test-unit" depends="compile,test" if="junit.present">
-    <!-- Import JUnit task -->
-    <taskdef
-      name="junit"
-      classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"
-    />
-
-    <mkdir dir="${junit.classes}"/>
     <mkdir dir="${junit.reports}"/>
-    <javac
-      encoding="${build.encoding}"
-      srcdir="${junit.src}"
-      includes="**/*.java"
-      destdir="${junit.classes}"
-      debug="${debug}">
-      <classpath refid="test.classpath"/>
-    </javac>
-
-    <copy todir="${junit.classes}">
-        <fileset dir="${junit.src}" excludes="**/*.java"/>
-    </copy>
-
-    <junit printsummary="yes" haltonfailure="no" >
+    <junit printsummary="off" haltonfailure="no" >
       <classpath refid="junit.classpath"/>
-      <formatter type="plain" />
+      <formatter type="plain"/>
+      <formatter type="brief" usefile="false"/>
       <batchtest fork="yes" todir="${junit.reports}">
         <fileset dir="${junit.src}" includes="**/Test*.java" />
       </batchtest>
