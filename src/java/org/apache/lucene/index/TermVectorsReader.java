@@ -22,11 +22,9 @@ import org.apache.lucene.store.IndexInput;
 import java.io.IOException;
 
 /**
- * FIXME: relax synchro!
- *
  * @version $Id$
  */
-class TermVectorsReader {
+class TermVectorsReader implements Cloneable {
   private FieldInfos fieldInfos;
 
   private IndexInput tvx;
@@ -86,9 +84,9 @@ class TermVectorsReader {
    * @param docNum The document number to retrieve the vector for
    * @param field The field within the document to retrieve
    * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
-   * @throws IOException
+   * @throws IOException if there is an error reading the term vector files
    */ 
-  synchronized TermFreqVector get(int docNum, String field) throws IOException {
+  TermFreqVector get(int docNum, String field) throws IOException {
     // Check if no term vectors are available for this segment at all
     int fieldNumber = fieldInfos.fieldNumber(field);
     TermFreqVector result = null;
@@ -137,13 +135,14 @@ class TermVectorsReader {
     return result;
   }
 
-
   /**
-   * Return all term vectors stored for this document or null if there are no term vectors
-   * for the document.
-   * @throws IOException
+   * Return all term vectors stored for this document or null if the could not be read in.
+   * 
+   * @param docNum The document number to retrieve the vector for
+   * @return All term frequency vectors
+   * @throws IOException if there is an error reading the term vector files 
    */
-  synchronized TermFreqVector[] get(int docNum) throws IOException {
+  TermFreqVector[] get(int docNum) throws IOException {
     TermFreqVector[] result = null;
     // Check if no term vectors are available for this segment at all
     if (tvx != null) {
@@ -295,4 +294,16 @@ class TermVectorsReader {
     return tv;
   }
 
+  protected Object clone() {
+    TermVectorsReader clone = null;
+    try {
+      clone = (TermVectorsReader) super.clone();
+    } catch (CloneNotSupportedException e) {}
+
+    clone.tvx = (IndexInput) tvx.clone();
+    clone.tvd = (IndexInput) tvd.clone();
+    clone.tvf = (IndexInput) tvf.clone();
+    
+    return clone;
+  }
 }

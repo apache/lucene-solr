@@ -43,7 +43,8 @@ class SegmentReader extends IndexReader {
   private FieldsReader fieldsReader;
 
   TermInfosReader tis;
-  TermVectorsReader termVectorsReader;
+  TermVectorsReader termVectorsReaderOrig = null;
+  ThreadLocal termVectorsLocal = new ThreadLocal();
 
   BitVector deletedDocs = null;
   private boolean deletedDocsDirty = false;
@@ -156,9 +157,15 @@ class SegmentReader extends IndexReader {
     openNorms(cfsDir);
 
     if (fieldInfos.hasVectors()) { // open term vector files only as needed
-      termVectorsReader = new TermVectorsReader(cfsDir, segment, fieldInfos);
+      termVectorsReaderOrig = new TermVectorsReader(cfsDir, segment, fieldInfos);
     }
   }
+   
+   protected void finalize() {
+     // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
+     termVectorsLocal.set(null);
+     super.finalize();
+   }
 
   protected void doCommit() throws IOException {
     if (deletedDocsDirty) {               // re-write deleted 
@@ -193,8 +200,8 @@ class SegmentReader extends IndexReader {
 
     closeNorms();
     
-    if (termVectorsReader != null) 
-      termVectorsReader.close();
+    if (termVectorsReaderOrig != null) 
+      termVectorsReaderOrig.close();
 
     if (cfsReader != null)
       cfsReader.close();
@@ -456,6 +463,19 @@ class SegmentReader extends IndexReader {
     }
   }
   
+  /**
+   * Create a clone from the initial TermVectorsReader and store it in the ThreadLocal.
+   * @return TermVectorsReader
+   */
+  private TermVectorsReader getTermVectorsReader() {
+    TermVectorsReader tvReader = (TermVectorsReader)termVectorsLocal.get();
+    if (tvReader == null) {
+      tvReader = (TermVectorsReader)termVectorsReaderOrig.clone();
+      termVectorsLocal.set(tvReader);
+    }
+    return tvReader;
+  }
+  
   /** Return a term frequency vector for the specified document and field. The
    *  vector returned contains term numbers and frequencies for all terms in
    *  the specified field of this document, if the field had storeTermVector
@@ -465,9 +485,10 @@ class SegmentReader extends IndexReader {
   public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     // Check if this field is invalid or has no stored term vector
     FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.storeTermVector || termVectorsReader == null) 
+    if (fi == null || !fi.storeTermVector || termVectorsReaderOrig == null) 
       return null;
-
+    
+    TermVectorsReader termVectorsReader = getTermVectorsReader();
     return termVectorsReader.get(docNumber, field);
   }
 
@@ -480,9 +501,10 @@ class SegmentReader extends IndexReader {
    * @throws IOException
    */
   public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
-    if (termVectorsReader == null)
+    if (termVectorsReaderOrig == null)
       return null;
-
+    
+    TermVectorsReader termVectorsReader = getTermVectorsReader();
     return termVectorsReader.get(docNumber);
   }
 }
