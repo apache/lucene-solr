@@ -41,6 +41,7 @@ public interface Searchable extends java.rmi.Remote {
    * @param query to match documents
    * @param filter if non-null, a bitset used to eliminate some documents
    * @param results to receive hits
+   * @throws BooleanQuery.TooManyClauses
    */
   void search(Query query, Filter filter, HitCollector results)
     throws IOException;
@@ -70,6 +71,7 @@ public interface Searchable extends java.rmi.Remote {
    *
    * <p>Applications should usually call {@link Searcher#search(Query)} or
    * {@link Searcher#search(Query,Filter)} instead.
+   * @throws BooleanQuery.TooManyClauses
    */
   TopDocs search(Query query, Filter filter, int n) throws IOException;
 
@@ -79,7 +81,9 @@ public interface Searchable extends java.rmi.Remote {
    */
   Document doc(int i) throws IOException;
 
-  /** Expert: called to re-write queries into primitive queries. */
+  /** Expert: called to re-write queries into primitive queries.
+   * @throws BooleanQuery.TooManyClauses
+   */
   Query rewrite(Query query) throws IOException;
 
   /** Returns an Explanation that describes how <code>doc</code> scored against
@@ -89,6 +93,7 @@ public interface Searchable extends java.rmi.Remote {
    * and, for good performance, should not be displayed with every hit.
    * Computing an explanation is as expensive as executing the query over the
    * entire index.
+   * @throws BooleanQuery.TooManyClauses
    */
   Explanation explain(Query query, int doc) throws IOException;
 
@@ -99,6 +104,7 @@ public interface Searchable extends java.rmi.Remote {
    *
    * <p>Applications should usually call {@link
    * Searcher#search(Query,Filter,Sort)} instead.
+   * @throws BooleanQuery.TooManyClauses
    */
   TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
     throws IOException;

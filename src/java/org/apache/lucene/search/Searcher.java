@@ -22,19 +22,25 @@ import java.io.IOException;
  * Implements some common utility methods.
  */
 public abstract class Searcher implements Searchable {
-  /** Returns the documents matching <code>query</code>. */
+
+  /** Returns the documents matching <code>query</code>. 
+   * @throws BooleanQuery.TooManyClauses
+   */
   public final Hits search(Query query) throws IOException {
     return search(query, (Filter)null);
   }
 
   /** Returns the documents matching <code>query</code> and
-    <code>filter</code>. */
+   * <code>filter</code>.
+   * @throws BooleanQuery.TooManyClauses
+   */
   public Hits search(Query query, Filter filter) throws IOException {
     return new Hits(this, query, filter);
   }
 
   /** Returns documents matching <code>query</code> sorted by
    * <code>sort</code>.
+   * @throws BooleanQuery.TooManyClauses
    */
   public Hits search(Query query, Sort sort)
     throws IOException {
@@ -43,6 +49,7 @@ public abstract class Searcher implements Searchable {
 
   /** Returns documents matching <code>query</code> and <code>filter</code>,
    * sorted by <code>sort</code>.
+   * @throws BooleanQuery.TooManyClauses
    */
   public Hits search(Query query, Filter filter, Sort sort)
     throws IOException {
@@ -61,6 +68,7 @@ public abstract class Searcher implements Searchable {
    * <p>Note: The <code>score</code> passed to this method is a raw score.
    * In other words, the score will not necessarily be a float whose value is
    * between 0 and 1.
+   * @throws BooleanQuery.TooManyClauses
    */
   public void search(Query query, HitCollector results)
     throws IOException {
