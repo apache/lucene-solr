@@ -21,6 +21,7 @@ import org.apache.lucene.queryParser.CharStream;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.QueryParserTokenManager;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
@@ -75,7 +76,7 @@ public class MultiFieldQueryParser extends QueryParser
         for (int i = 0; i < fields.length; i++)
         {
             Query q = parse(query, fields[i], analyzer);
-            bQuery.add(q, false, false);
+            bQuery.add(q, BooleanClause.Occur.SHOULD);
         }
         return bQuery;
     }
@@ -106,7 +107,7 @@ public class MultiFieldQueryParser extends QueryParser
         for (int i = 0; i < fields.length; i++)
         {
             Query q = parse(queries[i], fields[i], analyzer);
-            bQuery.add(q, false, false);
+            bQuery.add(q, BooleanClause.Occur.SHOULD);
         }
         return bQuery;
     }
@@ -153,13 +154,13 @@ public class MultiFieldQueryParser extends QueryParser
             switch (flag)
             {
                 case REQUIRED_FIELD:
-                    bQuery.add(q, true, false);
+                    bQuery.add(q, BooleanClause.Occur.MUST);
                     break;
                 case PROHIBITED_FIELD:
-                    bQuery.add(q, false, true);
+                    bQuery.add(q, BooleanClause.Occur.MUST_NOT);
                     break;
                 default:
-                    bQuery.add(q, false, false);
+                    bQuery.add(q, BooleanClause.Occur.SHOULD);
                     break;
             }
         }
@@ -210,13 +211,13 @@ public class MultiFieldQueryParser extends QueryParser
             switch (flag)
             {
                 case REQUIRED_FIELD:
-                    bQuery.add(q, true, false);
+                    bQuery.add(q, BooleanClause.Occur.MUST);
                     break;
                 case PROHIBITED_FIELD:
-                    bQuery.add(q, false, true);
+                    bQuery.add(q, BooleanClause.Occur.MUST_NOT);
                     break;
                 default:
-                    bQuery.add(q, false, false);
+                    bQuery.add(q, BooleanClause.Occur.SHOULD);
                     break;
             }
         }

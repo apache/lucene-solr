@@ -179,8 +179,8 @@ public class QueryParser implements QueryParserConstants {
     // unless it's already prohibited
     if (conj == CONJ_AND) {
       BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
-      if (!c.prohibited)
-        c.required = true;
+      if (!c.isProhibited())
+        c.setOccur(BooleanClause.Occur.MUST);
     }
 
     if (operator == DEFAULT_OPERATOR_AND && conj == CONJ_OR) {
@@ -189,8 +189,8 @@ public class QueryParser implements QueryParserConstants {
       // notice if the input is a OR b, first term is parsed as required; without
       // this modification a OR b would parsed as +a OR b
       BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
-      if (!c.prohibited)
-        c.required = false;
+      if (!c.isProhibited())
+        c.setOccur(BooleanClause.Occur.SHOULD);
     }
 
     // We might have been passed a null query; the term might have been
@@ -212,7 +212,14 @@ public class QueryParser implements QueryParserConstants {
       prohibited = (mods == MOD_NOT);
       required   = (!prohibited && conj != CONJ_OR);
     }
-    clauses.addElement(new BooleanClause(q, required, prohibited));
+    if (required && !prohibited)
+      clauses.addElement(new BooleanClause(q, BooleanClause.Occur.MUST));
+    else if (!required && !prohibited)
+      clauses.addElement(new BooleanClause(q, BooleanClause.Occur.SHOULD));
+    else if (!required && prohibited)
+      clauses.addElement(new BooleanClause(q, BooleanClause.Occur.MUST_NOT));
+    else
+      throw new RuntimeException("Clause cannot be both required and prohibited");
   }
 
   /**
