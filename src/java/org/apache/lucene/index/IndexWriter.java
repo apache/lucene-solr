@@ -87,6 +87,9 @@ import org.apache.lucene.analysis.Analyzer;
   */
 
 public class IndexWriter {
+  public static long WRITE_LOCK_TIMEOUT = 1000;
+  public static long COMMIT_LOCK_TIMEOUT = 10000;
+  
   private Directory directory;			  // where this index resides
   private Analyzer analyzer;			  // how to analyze text
 
@@ -97,7 +100,7 @@ public class IndexWriter {
 
   private Lock writeLock;
 
-  /** Expert: Set the Similarity implementation used by this IndexWriter.
+    /** Expert: Set the Similarity implementation used by this IndexWriter.
    *
    * @see Similarity#setDefault(Similarity)
    */
@@ -141,12 +144,12 @@ public class IndexWriter {
     analyzer = a;
 
     Lock writeLock = directory.makeLock("write.lock");
-    if (!writeLock.obtain())                      // obtain write lock
+    if (!writeLock.obtain(WRITE_LOCK_TIMEOUT)) // obtain write lock
       throw new IOException("Index locked for write: " + writeLock);
     this.writeLock = writeLock;                   // save it
 
     synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock("commit.lock")) {
+      new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
 	  public Object doBody() throws IOException {
 	    if (create)
 	      segmentInfos.write(directory);
@@ -365,7 +368,7 @@ public class IndexWriter {
 					    directory));
 
     synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock("commit.lock")) {
+      new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit before deleting
 	    deleteSegments(segmentsToDelete);	  // delete now-unused segments

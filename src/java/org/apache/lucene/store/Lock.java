@@ -54,6 +54,8 @@ package org.apache.lucene.store;
  * <http://www.apache.org/>.
  */
 
+import org.apache.lucene.index.IndexWriter;
+
 import java.io.IOException;
 
 /** An interprocess mutex lock.
@@ -70,11 +72,38 @@ import java.io.IOException;
 */
 
 public abstract class Lock {
-  /** Attempt to obtain exclusive access.
-   *
+    public static long LOCK_POLL_INTERVAL = 1000;
+
+  /** Attempt to obtain exclusive access and immediately return
+   *  upon success or failure.
    * @return true iff exclusive access is obtained
    */
   public abstract boolean obtain() throws IOException;
+
+  /** Attempt to obtain an exclusive lock within amount
+   *  of time given. Currently polls once per second until
+   *  lockWaitTimeout is passed.
+   * @param lockWaitTimeout length of time to wait in ms
+   * @return true if lock was obtained
+   * @throws IOException if lock wait times out or obtain() throws an IOException
+   */
+  public boolean obtain(long lockWaitTimeout) throws IOException {
+     boolean locked = obtain();
+     int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
+     int sleepCount = 0;
+     while (!locked) {
+         if (++sleepCount == maxSleepCount) {
+             throw new IOException("Lock obtain timed out");
+         }
+         try {
+             Thread.sleep(LOCK_POLL_INTERVAL);
+         } catch (InterruptedException e) {
+             throw new IOException(e.toString());
+         }
+         locked = obtain();
+     }
+     return locked;
+  }
 
   /** Release exclusive access. */
   public abstract void release();
@@ -87,12 +116,21 @@ public abstract class Lock {
   /** Utility class for executing code with exclusive access. */
   public abstract static class With {
     private Lock lock;
-    private int sleepInterval = 1000;
-    private int maxSleeps = 10;
-    
+    private long lockWaitTimeout;
+
+      /** Constructs an executor that will grab the named lock.
+       *  Defaults lockWaitTimeout to Lock.COMMIT_LOCK_TIMEOUT.
+       *  @deprecated Kept only to avoid breaking existing code.
+       */
+      public With(Lock lock)
+      {
+          this(lock, IndexWriter.COMMIT_LOCK_TIMEOUT);
+      }
+
     /** Constructs an executor that will grab the named lock. */
-    public With(Lock lock) {
+    public With(Lock lock, long lockWaitTimeout) {
       this.lock = lock;
+      this.lockWaitTimeout = lockWaitTimeout;
     }
 
     /** Code to execute with exclusive access. */
@@ -100,29 +138,16 @@ public abstract class Lock {
 
     /** Calls {@link #doBody} while <i>lock</i> is obtained.  Blocks if lock
      * cannot be obtained immediately.  Retries to obtain lock once per second
-     * until it is obtained, or until it has tried ten times. */
+     * until it is obtained, or until it has tried ten times. Lock is released when
+     * {@link #doBody} exits. */
     public Object run() throws IOException {
       boolean locked = false;
       try {
-	locked = lock.obtain();
-	int sleepCount = 0;
-	while (!locked) {
-	  if (++sleepCount == maxSleeps) {
-	    throw new IOException("Timed out waiting for: " + lock);
-	  }
-	  try {
-	    Thread.sleep(sleepInterval);
-	  } catch (InterruptedException e) {
-	    throw new IOException(e.toString());
-	  }
-	  locked = lock.obtain();
-	}
-
-	return doBody();
-	
+         locked = lock.obtain(lockWaitTimeout);
+         return doBody();
       } finally {
-	if (locked)
-	  lock.release();
+        if (locked)
+	      lock.release();
       }
     }
   }

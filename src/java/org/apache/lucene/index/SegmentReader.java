@@ -119,7 +119,7 @@ final class SegmentReader extends IndexReader {
   final synchronized void doClose() throws IOException {
     if (deletedDocsDirty) {
       synchronized (directory) {		  // in- & inter-process sync
-	new Lock.With(directory.makeLock("commit.lock")) {
+	new Lock.With(directory.makeLock("commit.lock"), IndexWriter.COMMIT_LOCK_TIMEOUT) {
 	    public Object doBody() throws IOException {
 	      deletedDocs.write(directory, segment + ".tmp");
 	      directory.renameFile(segment + ".tmp", segment + ".del");

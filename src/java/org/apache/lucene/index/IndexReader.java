@@ -100,7 +100,7 @@ public abstract class IndexReader {
   /** Returns an IndexReader reading the index in the given Directory. */
   public static IndexReader open(final Directory directory) throws IOException{
     synchronized (directory) {			  // in- & inter-process sync
-      return (IndexReader)new Lock.With(directory.makeLock("commit.lock")) {
+      return (IndexReader)new Lock.With(directory.makeLock("commit.lock"), IndexWriter.COMMIT_LOCK_TIMEOUT) {
 	  public Object doBody() throws IOException {
 	    SegmentInfos infos = new SegmentInfos();
 	    infos.read(directory);
@@ -255,7 +255,7 @@ public abstract class IndexReader {
   public final synchronized void delete(int docNum) throws IOException {
     if (writeLock == null) {
       Lock writeLock = directory.makeLock("write.lock");
-      if (!writeLock.obtain())			  // obtain write lock
+      if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;
     }
@@ -338,7 +338,7 @@ public abstract class IndexReader {
       return
         directory.makeLock("write.lock").isLocked() ||
         directory.makeLock("commit.lock").isLocked();
-        
+
     }
 
   /**
