@@ -122,5 +122,15 @@ public class TestMultiPhraseQuery
         result = searcher.search(query3);
         assertEquals(2, result.length()); // blueberry pizza, blueberry chewing gum
         assertEquals("body:\"(blueberry bluebird) pizza\"", query3.toString());
+
+        MultiPhraseQuery query4 = new MultiPhraseQuery();
+        try {
+          query4.add(new Term("field1", "foo"));
+          query4.add(new Term("field2", "foobar"));
+          fail();
+        } catch(IllegalArgumentException e) {
+          // okay, all terms must belong to the same field
+        }
+
     }
 }
