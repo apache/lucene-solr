@@ -26,9 +26,14 @@ import java.util.Date;
 
 class IndexFiles {
   public static void main(String[] args) throws IOException {
-    try {
-      Date start = new Date();
+    String usage = "java " + IndexFiles.class + " <root_directory>";
+    if (args.length == 0) {
+      System.err.println("Usage: " + usage);
+      System.exit(1);
+    }
 
+    Date start = new Date();
+    try {
       IndexWriter writer = new IndexWriter("index", new StandardAnalyzer(), true);
       indexDocs(writer, new File(args[0]));
 
@@ -42,7 +47,7 @@ class IndexFiles {
 
     } catch (IOException e) {
       System.out.println(" caught a " + e.getClass() +
-			 "\n with message: " + e.getMessage());
+       "\n with message: " + e.getMessage());
     }
   }
 
