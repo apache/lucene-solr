@@ -146,8 +146,9 @@ implements Serializable {
       default: buffer.append("\"" + field + "\"");
                break;
     }
-    
-    buffer.append(reverse ? " DESC" : " ASC");
+
+    if (reverse)
+      buffer.append('!');
 
     return buffer.toString();
   }
