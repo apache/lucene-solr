@@ -1,5 +1,0 @@
-- Remove Lucene JAR files from all subdirectories
-
-- Devise scheme for JAR naming conventions (same version as Lucene version used perhaps?)
-
-- Integrate with Gump builds and release process
