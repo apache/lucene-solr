@@ -552,8 +552,9 @@ class RussianStemmer
         if (!perfectiveGerund(stemmingZone))
         {
             reflexive(stemmingZone);
-            // variable r is unused, we are just interested in the side effect of
-            // adjectival() or verb(), if adjectival() does nothing etc.:
+            // variable r is unused, we are just interested in the flow that gets
+            // created by logical expression: apply adjectival(); if that fails,
+            // apply verb() etc
             boolean r =
                 adjectival(stemmingZone)
                 || verb(stemmingZone)
