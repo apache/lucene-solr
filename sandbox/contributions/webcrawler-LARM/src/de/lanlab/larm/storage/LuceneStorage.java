@@ -198,9 +198,6 @@ public class LuceneStorage implements DocumentStorage
     public WebDocument store(WebDocument webDoc)
     {
         //System.out.println("storing " + webDoc.getUrl());
-        boolean store = false;
-        boolean index = false;
-        boolean token = false;
 
         Document doc = new Document();
         int flags;
@@ -225,6 +222,7 @@ public class LuceneStorage implements DocumentStorage
                 addField(doc, fieldName, (String)field, STORE | INDEX);
             }
             /* else ? */
+            // ignore byte[] fields
         }
         try
         {
