@@ -1,0 +1,121 @@
+<html>
+
+<head>
+<!-- Change Me -->
+<script language="JavaScript" src="jsUnitCore.js"></script>
+<script language="JavaScript" src="luceneQueryEscaper.js"></script>
+</head>
+<body>
+<script>
+function testGetQueryValue()
+{
+  var str = "The quick brown fox jumped over the lazy dog";
+  document.test.foobar.value = str;
+  assertEquals("Not getting field value correctly", str, getQueryValue(document.test.foobar));
+  assertEquals("Not getting string value correctly", str, getQueryValue(str));
+}
+
+function testNormalString()
+{
+  var str = "The quick brown fox jumped over the lazy dog";
+  assertEquals("Should not be escaping", str, escapeAsterisk(str));
+  assertEquals("Should not be escaping", str, escapeQuotes(str));
+  assertEquals("Should not be escaping", str, escapeColon(str));
+  assertEquals("Should not be escaping", str, escapeQuestionMark(str));
+  assertEquals("Should not be escaping", str, escapeExclamationMark(str));
+}
+
+function testEscapeAsterisk()
+{
+  var str = "foo*";
+  assertEquals("Not escaping " + str, "foo\\*", escapeAsterisk(str));
+  
+  str = " foo bar *";
+  assertEquals("Not escaping " + str, " foo bar \\*", escapeAsterisk(str));
+  
+  str = "foo* bar*";
+  assertEquals("Not escaping " + str, "foo\\* bar\\*", escapeAsterisk(str));  
+}
+
+function testEscapeQuotes()
+{
+  var str = "\"foo\"";
+  assertEquals("Not escaping " + str, "\\\"foo\\\"", escapeQuotes(str));
+}
+
+function testEscapeColon()
+{
+  var str = "foo:bar zoo:zaa";
+  assertEquals("Not escaping " + str, "foo\\:bar zoo\\:zaa", escapeColon(str));
+}
+
+function testEscapeQuestionMark()
+{
+  var str = "foo? bar?";
+  assertEquals("Not escaping " + str, "foo\\? bar\\?", escapeQuestionMark(str));
+}
+
+function testEscapeExclamationMark()
+{
+  var str = "foo! bar!";
+  assertEquals("Not escaping " + str, "foo\\! bar\\!", escapeExclamationMark(str));
+}
+
+function testEscapeParentheses()
+{
+  var str = "foo (bar) (me)";
+  assertEquals("Not escaping " + str, "foo \\(bar\\) \\(me\\)", escapeParentheses(str));
+}
+
+function testEscapeSquareBrackets()
+{
+  var str = "foo [bar] [me]";
+  assertEquals("Not escaping " + str, "foo \\[bar\\] \\[me\\]", escapeSquareBrackets(str));
+}
+
+function testEscapeBraces()
+{
+  var str = "foo {bar} {me}";
+  assertEquals("Not escaping " + str, "foo \\{bar\\} \\{me\\}", escapeBraces(str));
+}
+
+function testEscapeCaret()
+{
+  var str = "f^oo bar^ me";
+  assertEquals("Not escaping " + str, "f\\^oo bar\\^ me", escapeCaret(str));
+}
+
+function testEscapeSquiggle()
+{
+  var str = "f~oo bar~ me";
+  assertEquals("Not escaping " + str, "f\\~oo bar\\~ me", escapeSquiggle(str));
+}
+
+function testEscapeDoubleAmpersands()
+{
+  var str = "foo && bar me";
+  assertEquals("Not escaping " + str, "foo \\&\\& bar me", escapeDoubleAmpersands(str));
+
+  str = "foo && bar& m&e";
+  assertEquals("Not escaping " + str, "foo \\&\\& bar& m&e", escapeDoubleAmpersands(str));
+}
+
+function testEscapeDoubleBars()
+{
+  var str = "foo || bar me";
+  assertEquals("Not escaping " + str, "foo \\|\\| bar me", escapeDoubleBars(str));
+}
+
+function testDoEscapeQuery()
+{
+  var str = "The: quick*} {~brown? ^fox! (jumped:[over] || me) \"the && lazy: dog\"";
+  assertEquals("Not escaping " + str, "The\\: quick\\*\\} \\{\\~brown\\? \\^fox\\! \\(jumped\\:\\[over\\] \\|\\| me\\) \\\"the \\&\\& lazy\\: dog\\\"", doEscapeQuery(str));
+}
+
+
+</script>
+<form name="test">
+<input type="text" name="foobar">
+</form>
+</body>
+</html>
