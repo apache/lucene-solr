@@ -61,6 +61,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.PriorityQueue;
 
 /** Implements search over a single IndexReader.
  *
@@ -148,6 +149,44 @@ public class IndexSearcher extends Searcher {
 
     return new TopDocs(totalHits[0], scoreDocs);
   }
+
+  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null.
+   * Results are ordered as specified by <code>sort</code>.
+   *
+   * <p>Called by {@link Hits}.
+   *
+   * <p>Applications should usually call {@link #search(Query)} or {@link
+   * #search(Query,Filter)} instead.
+   */
+  public TopFieldDocs search(Query query, Filter filter, final int nDocs,
+                             Sort sort)
+    throws IOException {
+    Scorer scorer = query.weight(this).scorer(reader);
+    if (scorer == null)
+      return new TopFieldDocs(0, new ScoreDoc[0], sort.fields);
+
+    final BitSet bits = filter != null ? filter.bits(reader) : null;
+    final MultiFieldSortedHitQueue hq =
+      new MultiFieldSortedHitQueue(reader, sort.fields, nDocs);
+    final int[] totalHits = new int[1];
+    scorer.score(new HitCollector() {
+        public final void collect(int doc, float score) {
+          if (score > 0.0f &&			  // ignore zeroed buckets
+              (bits==null || bits.get(doc))) {	  // skip docs not in bits
+            totalHits[0]++;
+            hq.insert(new FieldDoc(doc, score));
+          }
+        }
+      });
+
+    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
+    for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
+      scoreDocs[i] = hq.fillFields ((FieldDoc) hq.pop());
+
+    return new TopFieldDocs(totalHits[0], scoreDocs, hq.getFields());
+  }
+
 
   /** Lower-level search API.
    *

@@ -156,9 +156,9 @@ public class MultiSearcher extends Searcher {
       ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
 	ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += starts[i];                      // convert doc
+        scoreDoc.doc += starts[i];                // convert doc
         if(!hq.insert(scoreDoc))
-            break;                                                // no more scores > minScore
+            break;                                // no more scores > minScore
       }
     }
 
@@ -167,6 +167,32 @@ public class MultiSearcher extends Searcher {
       scoreDocs[i] = (ScoreDoc)hq.pop();
 
     return new TopDocs(totalHits, scoreDocs);
+  }
+
+
+  public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
+    throws IOException {
+    FieldDocSortedHitQueue hq = null;
+    int totalHits = 0;
+
+    for (int i = 0; i < searchables.length; i++) { // search each searcher
+      TopFieldDocs docs = searchables[i].search (query, filter, n, sort);
+      if (hq == null) hq = new FieldDocSortedHitQueue (docs.fields, n);
+      totalHits += docs.totalHits;		  // update totalHits
+      ScoreDoc[] scoreDocs = docs.scoreDocs;
+      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
+        ScoreDoc scoreDoc = scoreDocs[j];
+        scoreDoc.doc += starts[i];                // convert doc
+        if (!hq.insert (scoreDoc))
+          break;                                  // no more scores > minScore
+      }
+    }
+
+    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
+    for (int i = hq.size() - 1; i >= 0; i--)	  // put docs in array
+      scoreDocs[i] = (ScoreDoc) hq.pop();
+
+    return new TopFieldDocs (totalHits, scoreDocs, hq.getFields());
   }
 
 

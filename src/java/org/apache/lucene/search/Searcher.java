@@ -71,6 +71,22 @@ public abstract class Searcher implements Searchable {
     return new Hits(this, query, filter);
   }
 
+  /** Returns documents matching <code>query</code> sorted by
+   * <code>sort</code>.
+   */
+  public Hits search(Query query, Sort sort)
+    throws IOException {
+    return new Hits(this, query, null, sort);
+  }
+
+  /** Returns documents matching <code>query</code> and <code>filter</code>,
+   * sorted by <code>sort</code>.
+   */
+  public Hits search(Query query, Filter filter, Sort sort)
+    throws IOException {
+    return new Hits(this, query, filter, sort);
+  }
+
   /** Lower-level search API.
    *
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero

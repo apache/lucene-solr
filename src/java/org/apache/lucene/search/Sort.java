@@ -1,0 +1,110 @@
+package org.apache.lucene.search;
+
+/**
+ * Copyright 2004 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.Serializable;
+
+/**
+ * Encapsulates sort criteria for returned hits.  The sort criteria can
+ * be changed between calls to Searcher#search().  This class is thread safe.
+ *
+ * <p>Created: Feb 12, 2004 10:53:57 AM 
+ * 
+ * @author  Tim Jones (Nacimiento Software)
+ * @since   lucene 1.4
+ * @version $Id$
+ */
+public class Sort
+implements Serializable {
+
+  /** Represents sorting by computed relevance. Using this sort criteria
+   * returns the same results with slightly more overhead as calling
+   * Searcher#search() without a sort criteria. */
+  public static final Sort RELEVANCE =
+    new Sort (new SortField[] { SortField.FIELD_SCORE, SortField.FIELD_DOC });
+
+  /** Represents sorting by index order. */
+  public static final Sort INDEXORDER = new Sort (SortField.FIELD_DOC);
+
+
+  // internal representation of the sort criteria
+  SortField[] fields;
+
+
+  /** Sorts by the terms in <code>field</code> then by index order (document
+   * number). */
+  public Sort (String field) {
+    setSort (field, false);
+  }
+
+  /** Sorts possibly in reverse by the terms in <code>field</code> then by
+   * index order (document number). */
+  public Sort (String field, boolean reverse) {
+    setSort (field, reverse);
+  }
+
+  /** Sorts in succession by the terms in each field. */
+  public Sort (String[] fields) {
+    setSort (fields);
+  }
+
+  /** Sorts by the criteria in the given SortField. */
+  public Sort (SortField field) {
+    setSort (field);
+  }
+
+  /** Sorts in succession by the criteria in each SortField. */
+  public Sort (SortField[] fields) {
+    setSort (fields);
+  }
+
+  /** Sets the sort to the terms in <code>field</code> then by index order
+   * (document number). */
+  public final void setSort (String field) {
+    setSort (field, false);
+  }
+
+  /** Sets the sort to the terms in <code>field</code> possibly in reverse,
+   * then by index order (document number). */
+  public void setSort (String field, boolean reverse) {
+    SortField[] nfields = new SortField[] {
+      new SortField (field, SortField.AUTO, reverse),
+      new SortField (field, SortField.DOC)
+    };
+    fields = nfields;
+  }
+
+  /** Sets the sort to the terms in each field in succession. */
+  public void setSort (String[] fieldnames) {
+    final int n = fieldnames.length;
+    SortField[] nfields = new SortField[n];
+    for (int i=0; i<n; ++i) {
+      nfields[i] = new SortField (fieldnames[i], SortField.AUTO);
+    }
+    fields = nfields;
+  }
+
+  /** Sets the sort to the given criteria. */
+  public void setSort (SortField field) {
+    this.fields = new SortField[] { field };
+  }
+
+  /** Sets the sort to the given criteria in succession. */
+  public void setSort (SortField[] fields) {
+    this.fields = fields;
+  }
+}

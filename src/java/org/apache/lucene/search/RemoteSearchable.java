@@ -81,7 +81,7 @@ public class RemoteSearchable
     throws IOException {
     local.search(query, filter, results);
   }
-  
+
   public void close() throws IOException {
     local.close();
   }
@@ -96,6 +96,11 @@ public class RemoteSearchable
 
   public TopDocs search(Query query, Filter filter, int n) throws IOException {
     return local.search(query, filter, n);
+  }
+
+  public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
+    throws IOException {
+    return local.search (query, filter, n, sort);
   }
 
   public Document doc(int i) throws IOException {

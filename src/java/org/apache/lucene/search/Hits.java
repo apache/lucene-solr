@@ -64,6 +64,7 @@ public final class Hits {
   private Query query;
   private Searcher searcher;
   private Filter filter = null;
+  private Sort sort = null;
 
   private int length;				  // the total number of hits
   private Vector hitDocs = new Vector();	  // cache of hits retrieved
@@ -80,6 +81,14 @@ public final class Hits {
     getMoreDocs(50); // retrieve 100 initially
   }
 
+  Hits(Searcher s, Query q, Filter f, Sort o) throws IOException {
+    query = q;
+    searcher = s;
+    filter = f;
+    sort = o;
+    getMoreDocs(50); // retrieve 100 initially
+  }
+
   /**
    * Tries to add new documents to hitDocs.
    * Ensures that the hit numbered <code>min</code> has been retrieved.
@@ -89,8 +98,8 @@ public final class Hits {
       min = hitDocs.size();
     }
 
-    int n = min * 2;				  // double # retrieved
-    TopDocs topDocs = searcher.search(query, filter, n);
+    int n = min * 2;	// double # retrieved
+    TopDocs topDocs = (sort == null) ? searcher.search(query, filter, n) : searcher.search(query, filter, n, sort);
     length = topDocs.totalHits;
     ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 

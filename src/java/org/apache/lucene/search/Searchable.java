@@ -127,5 +127,14 @@ public interface Searchable extends java.rmi.Remote {
    */
   Explanation explain(Query query, int doc) throws IOException;
 
-
+  /** Expert: Low-level search implementation with arbitrary sorting.  Finds
+   * the top <code>n</code> hits for <code>query</code>, applying
+   * <code>filter</code> if non-null, and sorting the hits by the criteria in
+   * <code>sort</code>.
+   *
+   * <p>Applications should usually call {@link
+   * Searcher#search(Query,Filter,Sort)} instead.
+   */
+  TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
+    throws IOException;
 }
