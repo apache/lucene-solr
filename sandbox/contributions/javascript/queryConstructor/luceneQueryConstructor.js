@@ -1,7 +1,5 @@
 // Lucene Search Query Constructor
 // Author:  Kelvin Tan  (kelvin@relevanz.com)
-// Date:    14/02/2002
-// Version: 1.1
 
 // Change this according to what you use to name the field modifiers in your form.
 // e.g. with the field "name", the modifier will be called "nameModifier"
@@ -12,6 +10,18 @@ var debug = true;
 
 // Do you wish the function to submit the form upon query construction?
 var submitOnConstruction = true;
+
+// prefix modifier for boolean AND queries
+var AND_MODIFIER = '+';
+
+// prefix modifier for boolean NOT queries
+var NOT_MODIFIER = '-';
+
+// prefix modifier for boolean OR queries
+var OR_MODIFIER  = '';
+
+// default prefix modifier for boolean queries
+var DEFAULT_MODIFIER = OR_MODIFIER;
 
 // Constructs the query
 // @param query Form field to represent the constructed query to be submitted
@@ -35,15 +45,19 @@ function doMakeQuery( query )
           var subElementValue = subElement.options[subElement.selectedIndex].value;
           if(subElementValue == 'And')
           {
-            addAnd(query, elementName, elementValue);
+            addFieldWithModifier(query, AND_MODIFIER, elementName, elementValue);
           }     
           else if(subElementValue == 'Not')
           {
-            addNot(query, elementName, elementValue);
+            addFieldWithModifier(query, NOT_MODIFIER, elementName, elementValue);
           }
           else if(subElementValue == 'Or')
           {
-            addOr(query, elementName, elementValue);
+            addFieldWithModifier(query, OR_MODIFIER, elementName, elementValue);
+          }
+          else
+          {
+            addFieldWithModifier(query, DEFAULT_MODIFIER, elementName, elementValue);
           }
         }
       }
@@ -61,38 +75,14 @@ function doMakeQuery( query )
   }
 }
 
-function addOr(query, field, fieldValue)
+function addFieldWithModifier(query, modifier, field, fieldValue)
 {
   if(query.value.length == 0)
   {
-    query.value = '(' + field + ':(' + fieldValue + '))';
+    query.value = modifier + '(' + field + ':(' + fieldValue + '))';
   }
   else
   {
-    query.value = query.value + ' (' + field + ':(' + fieldValue + '))';
-  }  
-}
-
-function addAnd(query, field, fieldValue)
-{
-  if(query.value.length == 0)
-  {
-    query.value = '+(' + field + ':(' + fieldValue + '))';
-  }
-  else
-  {
-    query.value = query.value + ' +(' + field + ':(' + fieldValue + '))';
-  }  
-}
-
-function addNot(query, field, fieldValue)
-{
-  if(query.value.length == 0)
-  {
-    query.value = '-(' + field + ':(' + fieldValue + '))';
-  }
-  else
-  {
-    query.value = query.value + ' -(' + field + ':(' + fieldValue + '))';
+    query.value = query.value + ' ' + modifier + '(' + field + ':(' + fieldValue + '))';
   }  
 }
