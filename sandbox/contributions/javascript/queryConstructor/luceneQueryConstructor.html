@@ -1,68 +1,185 @@
 <html>
   <head>
-    <title>Demo Lucene Query Constructor</title>
+    <meta name="Author" content="Kelvin Tan">
+    <title>Lucene Query Constructor Demo and Introduction</title>
     <script type="text/javascript" src="luceneQueryConstructor.js"></script>
-    <script type="text/javascript" src="../queryValidator/luceneQueryValidator.js"></script>
+    <script>
+      function submitForm(frm)
+      {
+        if(frm["noField-phrase-input"].value.length > 0)
+          frm["noField-phrase"].value = quote(frm["noField-phrase-input"].value)
+        else if(frm["noField-phrase"].value.length > 0)
+          frm["noField-phrase"].value = ''
+        doMakeQuery(frm.query,true);
+      }
+    </script>
   </head>
-
+  
   <body>
+  <h2>Lucene Javascript Query Constructor</h2>
+  <p>luceneQueryConstructor.js is a Javascript framework for constructing queries using the "advanced" search features of lucene, 
+  namely field-searching, boolean searching, phrase searching, group searching (via parentheses) and various combinations of the aforementioned.
+  <p>It also provides a convenient way to mimic a Google-like search, where all terms are ANDed, as opposed to Lucene's default OR modifier.
+  <p>
+  This HTML form provides examples on the usage of luceneQueryConstructor.js. 
+  An interface similar to <a href="http://www.google.com/advanced_search">Google's Advanced Search</a> form is shown here.
     <form>
-      <p>
+  <table width="100%" border="0" cellspacing="1" cellpadding="5"> 
+    <tr>
+      <th></th>
+      <td width="25%"></td>    
+      <tr>
+        <th>
+          <input name="noField-andModifier" value="+|0" type="hidden"><b>Find results</b>
+        </th>
+        <td class="bodytext">With <b>all</b> of the words</td>
+        <td class="bodytext">
+          <input type="text" name="noField-and" size="25">
+          <select name="resultsPerPage">
+          <option value="10">10 results<option value="20">20 results
+          <option value="50" selected>50 results</select>    
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <input name="noField-phraseModifier" value="+|+" type="hidden">
+        </th>
+        <td class="bodytext">With the <b>exact phrase</b></td>
+        <td class="bodytext">
+        <input type="text" name="noField-phrase-input" size="25">
+        <input type="hidden" name="noField-phrase">
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <input name="noField-orModifier" value=" |+" type="hidden">
+        </th>
+        <td class="bodytext">With <b>at least</b> one of the words</td>
+        <td class="bodytext">
+          <input type="text" name="noField-or" size="25">
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <input name="noField-notModifier" value="-|0" type="hidden">
+        </th>
+        <td class="bodytext"><b>Without</b> the words</td>
+        <td class="bodytext">
+          <input type="text" name="noField-not" size="25">
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <b>File Format</b>
+        </th>
+        <td class="bodytext">
+        <select name="fileNameModifier"><option value="And" selected>Only</option><option value="Not">Don't</option></select>
+        return results of the file format</td>
+        <td class="bodytext">
+          <select name="fileName"><option value="" selected>any format<option value="pdf">Adobe Acrobat PDF (.pdf)
+          <option value="doc">Microsoft Word (.doc)<option value="xls">Microsoft Excel (.xls)<option value="ppt">Microsoft Powerpoint (.ppt)</select>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <b>Date</b>
+        </th>
+        <td class="bodytext">
+        Return results updated in the </td>
+        <td class="bodytext">
+          <select name="date"><option value="" selected>anytime<option value="3">past 3 months
+          <option value="6">past 6 months<option value="12">past year</select>
+          <input type="hidden" name="fromDate">
+          <input type="hidden" name="toDate">
+          <input type="hidden" name="dateRangeField" value="lastModifiedDate">    
+        </td>
+      </tr>
       <input type="hidden" name="query">
-      Name:
-      <input type="text" name="name">
-      <select name="nameModifier">
-        <option value="And">And</option>
-        <option value="Or" selected="selected">Or</option>
-        <option value="Not">Not</option>
-      </select>
-      </p>
-
-      <p>
-      Description:
-      <input type="text" name="description">
-      <select name="descriptionModifier">
-        <option value="And">And</option>
-        <option value="Or" selected="selected">Or</option>
-        <option value="Not">Not</option>
-      </select>
-      </p>
-
-      <p>
-      Required Select:
-      <select name="choice">
-        <option value="one">One</option>
-        <option value="two">Two</option>
-      </select>
-      <input type="hidden" name="choiceModifier" value="And"/>
-      </p>
-
-      <p>
-      Multi-select:
-      <select name="multi" multiple="true" size="5">
-        <option value="multi1">multi1</option>
-        <option value="multi2">multi2</option>
-        <option value="multi3">multi3</option>
-        <option value="multi4">multi4</option>
-      </select>
-      <input type="hidden" name="multiModifier" value="Or"/>
-      </p>
-
-      <p>
-      Radio:
-      <!-- TODO: something fishy happens if none selected -->
-      <input type="radio" name="radio" value="wnrn" checked="checked" />WNRN
-      <input type="radio" name="radio" value="klpx" />KLPX
-      <input type="hidden" name="radioModifier" value="And"/>
-      </p>
-
-      <p>
-      Current Query:
-      <pre id="curQuery"></pre>
-      </p>
-
-      <input type="button" name="Update" value="Update Query" onClick="doMakeQuery(this.form.query); curQuery.innerText = this.form.query.value" />
-      <input type="button" name="Validate" value="Validate" onClick="doCheckLuceneQuery(this.form.query);" />
+      <tr><th></th><td></td><td><input type="button" value="Search" onClick="submitForm(this.form)"></td>      
+    </table>
     </form>
+    <p>luceneQueryConstructor works by assuming a certain naming convention of form fields to obtain the necessary information to construct the query.<br>
+    <b>NB:</b>Unless otherwise specified, all uses of the word <code>field</code> should be assumed to mean form input fields and not Lucene document fields.
+    <p>The input form field is expected to be the <b>same name as the Lucene Field</b>.  For example, if you have a Document with <i>fileName</i> as a Field, and 
+    you'd like to provide field-searching on this field, then introduce a form field like so:
+    <center>
+    <p><code>&lt;input type="text" name="fileName"&gt;</code>
+    </p>
+    </center>
+    You are also expected to provide another field known as 
+    this field's <b>modifier</b>. This modifier field tells luceneQueryConstructor how to convert the field and value into a Lucene query. The naming convention 
+    of the modifier is <b>&lt;name of input field/Lucene field&gt;&lt;modifier suffix as declared in luceneQueryConstructor.js&gt;</b>. So, for the <i>fileName</i> field 
+    we introduced above, it's modifier field would be:
+    <center>
+    <p><code>&lt;input type="hidden" name="fileNameModifier" value="+|+"&gt;</code>
+    </p>
+    </center>
+    <p>The value of the modifier field is in the form <b>&lt;term modifier&gt;|&lt;group modifier&gt;</b>. Let me explain.
+    <p>Looking at the form above, we see fields that provide
+    <ol>
+    <li>AND search
+    <li>OR search
+    <li>NOT search
+    <li>and others which are unrelated to this discussion
+    </ol>
+    Given a value of <b><i>foo bar</i></b>, the AND search field must be converted to <b><i>+foo +bar</i></b> (luceneQueryConstructor only supports 
+    using +/-, not AND/OR/NOT), the NOT search to <b><i>-foo -bar</i></b> and the OR search not at all.
+    <p>However, also consider the relationship <b>between</b> these groups of fields. Assuming Google's Advanced Search interface, 
+    we're effectively saying that we want all of the terms in the AND search field <b>AND</b> at least one of the 
+    terms in the OR search field <b>AND</b> none of the terms in the NOT search. 
+    <p>So, if the AND, OR and NOT search fields all have the values of <b><i>foo bar</i></b>, then an appropriate search query 
+    which fulfills the requirements would be
+    <center>
+    <p><code>+foo +bar +(foo bar) -foo -bar</code>
+    </p>
+    </center>
+    Well, to be more correct, it should be 
+    <center>
+    <p><code>+(+foo +bar) +(foo bar) -foo -bar</code>
+    </p>
+    </center>
+    Hmmmm...if you're sharp, you would have noticed that the NOT terms aren't grouped. 
+    You'll find that if you group them with an AND modifier, no results will be returned at all (though it's a valid query),
+    because the query constructed wouldn't make any sense at all. Lucene also implicitly ANDs NOT terms, it seems. In any case,
+    both queries as presented are correct, though I prefer the first one because it is less verbose.
+    <p>The following matrix provides modifiers and their effects on queries:<br><br>
+    <table border="1" align="center">
+    <tr>
+    <th>Boolean modifier
+    <th>Form value
+    <th>As term modifier
+    <th>As group modifier
+    </tr>
+    <tr align="center">
+    <td>AND
+    <td>+
+    <td>+term1 + term2 ...
+    <td>+(...)
+    </tr>
+    <tr align="center">
+    <td>OR
+    <td>(single space)
+    <td>term1  term2 ...
+    <td>(...)
+    </tr>
+    <tr align="center">
+    <td>NOT
+    <td>-
+    <td>-term1  -term2 ...
+    <td>-(...)
+    </tr>
+    <tr align="center">
+    <td>no modifier
+    <td>0
+    <td>term1  term2 ...
+    <td>no grouping
+    </tr>
+    </table>
+    <p>With this knowledge, we know that the value of the AND field modifier needs to be <b><i>+|0</i></b> for the first query and 
+    <b><i>+|+</i></b> for the second query, the values of the NOT field modifier and the 
+    OR field modifier are <b><i>-|0</i></b> and <b><i>&nbsp;|+</i></b> (it's an empty space before the |) in both queries respectively.
+    <p>
+    Well, that's all I have to say for now. There are more topics to be covered, such as construction of phrase searches, non-field searches, 
+    multiple list box selections, radio buttons etc, but right now I'm not even sure if anyone will read this much! :-) Anyway, there's always the code. 
   </body>
 </html>

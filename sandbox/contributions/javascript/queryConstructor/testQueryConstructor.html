@@ -1,0 +1,159 @@
+<html>
+
+<head>
+<script language="JavaScript" src="c:/market/jsunit/app/jsUnitCore.js"></script>
+<script language="JavaScript" src="luceneQueryConstructor.js"></script>
+</head>
+<body>
+<script>
+setAlertUser(false);
+
+// additions to jsUnit
+function assertTrue(comment, value)
+{
+  return assertEquals(comment, true, value);
+}
+
+function assertFalse(comment, value)
+{
+  return assertEquals(comment, false, value);
+}
+
+function testTrim()
+{
+  assertEquals("Not trimming", "foo bar", trim("  foo bar"));
+  assertEquals("Not trimming", "foo bar", trim("  foo bar  "));
+  assertEquals("Not trimming", "foo bar", trim("  foo   bar  "));
+  assertEquals("Not trimming", "foo bar", trim("  foo bar\n\t "));
+  assertEquals("Not trimming", "foo:(bar)", trim(" foo:(bar)"));
+}
+
+function testGetFieldValue()
+{
+  var frm = document.testQueryConstructor;
+  // test radio buttons
+  frm.fooRadio[0].checked = true;
+  assertEquals("Wrong value for radio button", frm.fooRadio[0].value, getFieldValue(frm.fooRadio));
+  frm.fooRadio[0].checked = false;
+  frm.fooRadio[1].checked = true;
+  assertEquals("Wrong value for radio button", frm.fooRadio[1].value, getFieldValue(frm.fooRadio));
+  
+  // test checkbox
+  frm.fooCheck[0].checked = true;
+  assertEquals("Wrong value for checkbox", frm.fooCheck[0].value, getFieldValue(frm.fooCheck));
+  frm.fooCheck[0].checked = false;
+  frm.fooCheck[1].checked = true;
+  assertEquals("Wrong value for checkbox", frm.fooCheck[1].value, getFieldValue(frm.fooCheck));
+  
+  // test select
+  frm.fooSelect.options[0].selected = true;
+  assertEquals("Wrong value for select", frm.fooSelect.options[0].value, getFieldValue(frm.fooSelect));
+  frm.fooSelect.options[0].selected = false;
+  frm.fooSelect.options[1].selected = true;
+  assertEquals("Wrong value for checkbox", frm.fooSelect.options[1].value, getFieldValue(frm.fooCheck));
+  
+  // test text field
+  assertEquals("Wrong value for text field", frm.fooText.value, getFieldValue(frm.fooText));
+  
+  // test hidden field
+  assertEquals("Wrong value for hidden field", frm.fooHidden.value, getFieldValue(frm.fooHidden));
+  
+  // test undefined field
+  assertEquals("Wrong value for undefined field", "", getFieldValue(frm.nonexistent)); 
+  assertEquals("Wrong value for undefined field", "", getFieldValue(null)); 
+}
+
+function testAppendTerms()
+{
+  var frm = document.testQueryConstructor;
+  assertEquals("Not appending AND terms correctly", "+fooText:(+1)", appendTerms(frm.query, AND_MODIFIER, frm.fooText.value, frm.fooText.name).value);
+  frm.query.value = ''
+  assertEquals("Not appending NOT terms correctly", "+fooText:(-1)", appendTerms(frm.query, NOT_MODIFIER, frm.fooText.value, frm.fooText.name).value);
+  frm.query.value = ''
+  assertEquals("Not appending OR terms correctly", "+fooText:(1)", appendTerms(frm.query, OR_MODIFIER, frm.fooText.value, frm.fooText.name).value);
+  frm.query.value = ''
+  
+  frm.fooText.value = "\"my foo bar\""
+  assertEquals("Not appending AND terms correctly", "+fooText:(+\"my foo bar\" )", appendTerms(frm.query, AND_MODIFIER, frm.fooText.value, frm.fooText.name).value);
+  frm.fooText.value = "1"
+  frm.query.value = ''
+  
+  assertEquals("Not appending terms correctly", "-fooText:(+1)", appendTerms(frm.query, AND_MODIFIER, frm.fooText.value, frm.fooText.name, NOT_MODIFIER).value);
+  frm.query.value = ''
+  frm.fooText.value = "1 2 3"
+  assertEquals("Not appending terms correctly", "+fooText:(+1 +2 +3)", appendTerms(frm.query, AND_MODIFIER, frm.fooText.value, frm.fooText.name).value);
+  frm.query.value = ''
+  assertEquals("Not appending terms correctly", "-fooText:(1 2 3)", appendTerms(frm.query, OR_MODIFIER, frm.fooText.value, frm.fooText.name, NOT_MODIFIER).value);
+  frm.query.value = ''
+  assertEquals("Not appending terms correctly", "-fooText:(-1 -2 -3)", appendTerms(frm.query, NOT_MODIFIER, frm.fooText.value, frm.fooText.name, NOT_MODIFIER, NO_MODIFIER).value);
+  frm.query.value = ''
+  frm.fooText.value = "1"
+  
+  assertEquals("Not appending terms correctly(without fields)", "+(+1)", appendTerms(frm.query, AND_MODIFIER, frm.fooText.value).value);
+  frm.query.value = ''
+  assertEquals("Not appending terms correctly(without fields)", "+(+1)", appendTerms(frm.query, AND_MODIFIER, frm["noField-fooText"].value, "noField-fooText").value);
+  frm.query.value = ''
+
+  frm.fooText.value = "1 2 3"
+  assertEquals("Not appending terms correctly(without fields)", "-1 -2 -3", appendTerms(frm.query, NOT_MODIFIER, frm.fooText.value,"", NO_MODIFIER).value);
+  frm.query.value = ''
+  assertEquals("Not appending terms correctly(without fields)", "+(+1 +2 +3)", appendTerms(frm.query, AND_MODIFIER, frm.fooText.value).value);
+  frm.fooText.value = "1"
+  frm.query.value = ''
+  
+}
+
+function testDoMakeQuery()
+{
+  var frm = document.testQueryConstructor;
+  frm.or.value = "orValue";
+  assertEquals("Wrong query constructed", "or:(orValue)", doMakeQuery(frm.query).value);
+  frm.orModifier.value = " |+";
+  assertEquals("Wrong query constructed", "+or:(orValue)", doMakeQuery(frm.query).value);
+  frm.orModifier.value = " | ";
+  assertEquals("Wrong query constructed", "or:(orValue)", doMakeQuery(frm.query).value);
+  frm.orModifier.value = "";
+  assertEquals("Wrong query constructed", DEFAULT_GROUP_MODIFIER + "or:(" + DEFAULT_TERM_MODIFIER + "orValue)", doMakeQuery(frm.query).value);
+}
+
+function doANDTerms()
+{
+  
+}
+</script>
+
+<form name="testQueryConstructor">
+<input type="radio" name="fooRadio" value="1">
+<input type="radio" name="fooRadio" value="2">
+
+<input type="checkbox" name="fooCheck" value="1">
+<input type="checkbox" name="fooCheck" value="2">
+
+<select name="fooSelect">
+<option value="1">
+<option value="2">
+</select>
+
+<input type="text" name="fooText" value="1">
+<input type="text" name="noField-fooText" value="1">
+<input type="text" name="foobarText" value="1">
+<input type="hidden" name="fooHidden" value="1">
+<input type="password" name="fooPassword">
+<input type="button" name="fooButton" value="I am a button">
+<input type="submit" name="fooSubmit">
+<input type="reset" name="fooReset">
+<input type="file" name="fooFile">
+
+<input type="hidden" name="andModifier" value="+">
+<input type="hidden" name="and">
+
+<input type="hidden" name="notModifier" value="-">
+<input type="hidden" name="not">
+
+<input type="hidden" name="orModifier" value=" | ">
+<input type="hidden" name="or">
+
+<input type="text" name="query">
+</form>
+</body>
+</html>
