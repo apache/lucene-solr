@@ -42,8 +42,10 @@ $Id$
  13. Applied a patch that ensures that searches that use DateFilter
      don't throw an exception when no matches are found. (David Smiley, via
      otis)
-
-
+ 
+ 14. Fixed bugs in DateFilter and wildcardquery unit tests. (cutting, otis, carlson)
+ 
+ 
 1.2 RC4
 
  1. Updated contributions section of website.
