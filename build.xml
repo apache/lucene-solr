@@ -92,7 +92,22 @@
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
-  <target name="init">
+  <target name="javacc-uptodate-check">
+    <uptodate property="javacc.files.uptodate">
+      <srcfiles dir="src" includes="**/*.jj" />
+      <mapper type="glob" from="*.jj" to="*.java"/>
+    </uptodate>
+    <echo>${javacc.files.uptodate}</echo>
+  </target>
+
+  <target name="javacc-notice" unless="javacc.files.uptodate">
+    <echo>
+      One or more of the JavaCC .jj files is newer than its corresponding
+      .java file.  Run the "javacc" target to regenerate the artifacts.
+    </echo>
+  </target>
+
+  <target name="init" depends="javacc-uptodate-check, javacc-notice">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${dist.dir}"/>
 
