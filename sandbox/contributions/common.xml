@@ -51,7 +51,7 @@
   <!-- ========================================================== -->
   <!-- Datatype declarations                                      -->
   <!-- ========================================================== -->
-  <!-- TODO: define ${lucene.jar} for easeir overriding -->
+  <!-- TODO: define ${lucene.jar} for easier overriding -->
   <path id="compile.classpath">
    <fileset dir="${lucene.dir}" includes="build/lucene*.jar"/>
    <pathelement path="${project.classpath}"/>
