@@ -75,7 +75,7 @@ public class MultiFieldQueryParser extends QueryParser
       for (int i = 0; i < fields.length; i++)
         clauses.add(new BooleanClause(super.getFieldQuery(fields[i], queryText),
             BooleanClause.Occur.SHOULD));
-      return getBooleanQuery(clauses);
+      return getBooleanQuery(clauses, true);
     }
     return super.getFieldQuery(field, queryText);
   }
