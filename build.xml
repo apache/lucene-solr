@@ -7,13 +7,37 @@
   <property file="${user.home}/lucene.build.properties"/>
   <property file="${user.home}/build.properties"/>
   <property file="${basedir}/build.properties"/>
-  <property file="${basedir}/default.properties"/>
 
+  <property name="name" value="lucene"/>
+  <property name="Name" value="Lucene"/>
+  <property name="version" value="1.3-rc2-dev"/>
+  <property name="year" value="2000-2003"/> <!-- todo: make this dynamic -->
+  <property name="final.name" value="${name}-${version}"/>
+  <property name="javac.debug" value="on"/>
+  <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
+  <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
+  <property name="build.compiler.pedantic" value="false"/>
+  <property name="build.encoding" value="ISO-8859-1"/>
+
+  <property name="build.dir" location="build"/>
+  <property name="dist.dir" location="dist"/>
+
+  <property name="demo.name" value="${name}-demos-${version}"/>
+  <property name="demo.war.name" value="luceneweb"/>
+
+  <property name="javacc.home" location="."/>
+  <property name="javacc.jar.dir" location="${javacc.home}/bin/lib"/>
+  <property name="javacc.jar" location="${javacc.jar.dir}/javacc.jar"/>
   <property name="javacc.main.class" value="org.javacc.parser.Main"/>
+
+  <property name="jakarta.site2.home" location="../jakarta-site2"/>
+
+  <property name="junit.output.dir" location="${build.dir}/test"/>
+  <property name="junit.reports" location="${build.dir}/test/reports"/>
 
   <!-- Build classpath -->
   <path id="classpath">
-    <pathelement location="${build.classes}"/>
+    <pathelement location="${build.dir}/classes/java"/>
     <fileset dir="lib">
       <include name="*.jar"/>
     </fileset>
@@ -21,17 +45,17 @@
 
   <path id="demo.classpath">
     <path refid="classpath"/>
-    <pathelement location="${build.demo.classes}"/>
+    <pathelement location="${build.dir}/classes/demo"/>
   </path>
 
   <path id="test.classpath">
     <path refid="demo.classpath"/>
-    <pathelement location="${build.test.classes}"/>
+    <pathelement location="${build.dir}/classes/test"/>
   </path>
 
   <path id="junit.classpath">
-    <pathelement location="${build.test.classes}"/>
-    <pathelement location="${build.classes}"/>
+    <pathelement location="${build.dir}/classes/test"/>
+    <pathelement location="${build.dir}/classes/java"/>
     <fileset dir="lib">
       <include name="*.jar"/>
     </fileset>
@@ -49,8 +73,7 @@
   <!-- ================================================================== -->
   <target name="init">
     <mkdir dir="${build.dir}"/>
-    <mkdir dir="${build.classes}"/>
-    <mkdir dir="${build.src}"/>
+    <mkdir dir="${dist.dir}"/>
 
     <available
       property="javacc.present"
@@ -74,7 +97,7 @@
       ##################################################################
       JavaCC not found.
       JavaCC Home: ${javacc.home}
-      JavaCC Zip: ${javacc.jar}
+      JavaCC JAR: ${javacc.jar}
 
       Please download and install JavaCC from:
 
@@ -82,11 +105,11 @@
 
       Then, create a build.properties file either in your home
       directory, or within the Lucene directory and set the javacc.home
-      property to the path where JavaCC.zip is located. For example,
-      if you installed JavaCC in /usr/local/java/javacc3.2, then set the
+      property to the path where JavaCC is installed. For example,
+      if you installed JavaCC in /usr/local/java/javacc-3.2, then set the
       javacc.home property to:
 
-      javacc.home=/usr/local/java/javacc2.0/bin
+      javacc.home=/usr/local/java/javacc-3.2
 
       If you get an error like the one below, then you have not installed
       things correctly. Please check all your paths and try again.
@@ -103,17 +126,18 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="compile-core" depends="init">
+    <mkdir dir="${build.dir}/classes/java"/>
     <javac
       encoding="${build.encoding}"
-      srcdir="${src.dir}"
+      srcdir="src/java"
       includes="org/**/*.java"
-      destdir="${build.classes}"
-      debug="${debug}">
+      destdir="${build.dir}/classes/java"
+      debug="${javac.debug}">
       <classpath refid="classpath"/>
     </javac>
 
     <rmic classname="org.apache.lucene.search.RemoteSearchable"
-      base="${build.classes}">
+      base="${build.dir}/classes/java">
       <classpath refid="classpath"/>
     </rmic>
   </target>
@@ -126,8 +150,8 @@
   <target name="jar-core" depends="compile-core">
 
     <jar
-      jarfile="${build.dir}/${final.name}.jar"
-      basedir="${build.classes}"
+      destfile="${build.dir}/${final.name}.jar"
+      basedir="${build.dir}/classes/java"
       excludes="**/*.java">
       <manifest>
         <attribute name="Created-By" value="Apache Jakarta"/>
@@ -142,57 +166,22 @@
       </manifest>
     </jar>
   </target>
-  <!--
-Manifest-Version: 1.0
-Ant-Version: Apache Ant 1.6alpha
-Created-By: Apache Jakarta
-
-Name: org/apache/lucene
-Specification-Title: Lucene Search Engine
-Specification-Version: 1.3-rc2-dev
-Specification-Vendor: Lucene
-Implementation-Title: org.apache.lucene
-Implementation-Version: build 2003-09-18 13:08:01
-Implementation-Vendor: Lucene
-  -->
 
   <target name="jar-demo" depends="compile-demo">
     <jar
-      jarfile="${build.demo}/${build.demo.name}.jar"
-      basedir="${build.demo.classes}"
+      destfile="${build.dir}/${demo.name}.jar"
+      basedir="${build.dir}/classes/demo"
       excludes="**/*.java"
       />
   </target>
 
   <target name="war-demo" depends="jar-core,jar-demo">
-    <mkdir dir="${build.demo}/${build.demo.war.name}"/>
-    <mkdir dir="${build.demo}/${build.demo.war.name}/WEB-INF"/>
-    <mkdir dir="${build.demo}/${build.demo.war.name}/WEB-INF/lib"/>
-
-    <copy todir="${build.demo}/${build.demo.war.name}">
-      <fileset dir="${demo.jsp}">
-        <include name="**/*.jsp"/>
-        <include name="**/*.xml"/>
-      </fileset>
-    </copy>
-
-    <copy todir="${build.demo}/${build.demo.war.name}/WEB-INF/lib">
-      <fileset dir="${build.dir}">
-        <include name="*.jar"/>
-      </fileset>
-    </copy>
-
-    <copy todir="${build.demo}/${build.demo.war.name}/WEB-INF/lib">
-      <fileset dir="${build.demo}">
-        <include name="*.jar"/>
-      </fileset>
-    </copy>
-
-    <jar
-      jarfile="${build.demo}/${build.demo.war.name}.war"
-      basedir="${build.demo}/${build.demo.war.name}"
-      excludes="**/*.java"
-      />
+    <!-- todo: convert this to use war task instead -->
+    <jar destfile="${build.dir}/${demo.war.name}.war">
+      <fileset dir="src/jsp"/>
+      <zipfileset prefix="WEB-INF/lib" dir="${build.dir}" includes="${demo.name}.jar"/>
+      <zipfileset prefix="WEB-INF/lib" dir="${build.dir}" includes="${final.name}.jar"/>
+    </jar>
   </target>
 
   <!-- ================================================================== -->
@@ -201,9 +190,8 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="jar-src" depends="init">
-    <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
-    <jar jarfile="${build.dir}/${final.name}-src.jar">
-      <fileset dir="${build.dir}" includes="**/*.java"/>
+    <jar destfile="${build.dir}/${final.name}-src.jar">
+      <fileset dir="." includes="src/"/>
     </jar>
   </target>
 
@@ -213,24 +201,14 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="compile-demo" depends="compile-core">
-    <mkdir dir="${build.demo}"/>
-    <mkdir dir="${build.demo.src}"/>
-
-    <copy todir="${build.demo.src}">
-      <fileset dir="${demo.src}">
-        <include name="**/*.java"/>
-        <include name="**/*.jj"/>
-      </fileset>
-    </copy>
-
-    <mkdir dir="${build.demo.classes}"/>
+    <mkdir dir="${build.dir}/classes/demo"/>
 
     <javac
       encoding="${build.encoding}"
-      srcdir="${build.demo.src}"
+      srcdir="src/demo"
       includes="**/*.java"
-      destdir="${build.demo.classes}"
-      debug="${debug}">
+      destdir="${build.dir}/classes/demo"
+      debug="${javac.debug}">
       <classpath refid="demo.classpath"/>
     </javac>
   </target>
@@ -241,12 +219,12 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="compile-test" depends="compile-core,compile-demo">
-    <mkdir dir="${build.test.classes}"/>
+    <mkdir dir="${build.dir}/classes/test"/>
     <javac
       encoding="${build.encoding}"
-      srcdir="${test.src}"
+      srcdir="src/test"
       includes="**/*.java"
-      destdir="${build.test.classes}"
+      destdir="${build.dir}/classes/test"
       debug="true">
       <classpath refid="test.classpath"/>
     </javac>
@@ -258,18 +236,18 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="test" depends="compile-test" if="junit.present">
-    <mkdir dir="${junit.reports}"/>
+    <mkdir dir="${junit.output.dir}"/>
     <junit printsummary="off" haltonfailure="no"
       errorProperty="tests.failed" failureProperty="tests.failed">
       <classpath refid="junit.classpath"/>
-      <formatter type="plain"/>
+      <!-- <formatter type="plain"/>  todo: does anyone use these text files? -->
       <formatter type="xml"/>
       <formatter type="brief" usefile="false"/>
-      <batchtest fork="yes" todir="${junit.reports}" unless="testcase">
-        <fileset dir="${junit.src}" includes="**/Test*.java"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/test" includes="**/Test*.java"/>
       </batchtest>
-      <batchtest fork="yes" todir="${junit.reports}" if="testcase">
-        <fileset dir="${junit.src}" includes="**/${testcase}.java"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/test" includes="**/${testcase}.java"/>
       </batchtest>
     </junit>
 
@@ -280,12 +258,12 @@ Implementation-Vendor: Lucene
   <target name="test-unit" depends="test"/>
 
   <target name="generate-test-reports" description="Generate test reports">
-    <mkdir dir="${junit.reports}/html"/>
-    <junitreport todir="${junit.reports}">
-      <fileset dir="${junit.reports}">
+    <mkdir dir="${junit.reports}"/>
+    <junitreport todir="${junit.output.dir}">
+      <fileset dir="${junit.output.dir}">
         <include name="TEST-*.xml"/>
       </fileset>
-      <report format="frames" todir="${junit.reports}/html"/>
+      <report format="frames" todir="${junit.reports}"/>
     </junitreport>
   </target>
 
@@ -318,8 +296,8 @@ Implementation-Vendor: Lucene
     </taskdef>
 
     <anakia
-      basedir="${docs.src}"
-      destdir="${docs.dest}/"
+      basedir="xdocs"
+      destdir="docs/"
       extension=".html" style="./site.vsl"
       projectFile="stylesheets/project.xml"
       excludes="**/stylesheets/** empty.xml"
@@ -329,21 +307,14 @@ Implementation-Vendor: Lucene
       >
     </anakia>
 
-    <copy todir="${docs.dest}/images" filtering="no">
-      <fileset dir="${docs.src}/images">
+    <copy todir="docs/images" filtering="no">
+      <fileset dir="xdocs/images">
         <include name="**/*.gif"/>
         <include name="**/*.jpeg"/>
         <include name="**/*.jpg"/>
       </fileset>
     </copy>
 
-    <!-- In case we have CSS someday
-    <copy todir="${docs.dest}" filtering="no">
-      <fileset dir="${docs.src}">
-        <include name="**/*.css"/>
-      </fileset>
-    </copy>
-    -->
   </target>
 
   <!-- ================================================================== -->
@@ -352,12 +323,12 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="javadocs">
-    <mkdir dir="${build.javadocs}"/>
+    <mkdir dir="${build.dir}/docs/api"/>
     <javadoc
-      sourcepath="${src.dir}:${build.src}"
-      overview="${src.dir}/overview.html"
-      packagenames="${packages}"
-      destdir="${build.javadocs}"
+      sourcepath="src/java"
+      overview="src/java/overview.html"
+      packagenames="org.apache.lucene.*"
+      destdir="${build.dir}/docs/api"
       encoding="${build.encoding}"
       author="true"
       version="true"
@@ -376,38 +347,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, war-demo">
-    <mkdir dir="${dist.dir}"/>
-    <mkdir dir="${dist.dir}/docs"/>
-    <mkdir dir="${dist.dir}/docs/api"/>
-    <mkdir dir="${dist.dir}/src/demo"/>
-    <mkdir dir="${dist.dir}/src/jsp"/>
-
-    <copy todir="${dist.dir}/docs">
-      <fileset dir="${docs.dir}"/>
-    </copy>
-    <copy todir="${dist.dir}/docs/api">
-      <fileset dir="${build.javadocs}"/>
-    </copy>
-
-    <copy todir="${dist.dir}/src/demo">
-      <fileset dir="src/demo"/>
-    </copy>
-    <copy todir="${dist.dir}/src/jsp">
-      <fileset dir="src/jsp"/>
-    </copy>
-    <copy todir="${dist.dir}/lib">
-      <fileset dir="lib"/>
-    </copy>
-    <copy todir="${dist.dir}">
-      <fileset dir=".">
-        <include name="*.txt"/>
-      </fileset>
-    </copy>
-    <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
-    <copy file="${build.demo}/${build.demo.name}.jar" todir="${dist.dir}"/>
-    <copy file="${build.demo}/${build.demo.war.name}.war" todir="${dist.dir}"/>
-  </target>
+  <target name="package" depends="jar-core, javadocs, war-demo"/>
 
   <!-- ================================================================== -->
   <!-- Packages the distribution with zip                                 -->
@@ -417,13 +357,13 @@ Implementation-Vendor: Lucene
   <target name="package-zip" depends="package"
     description="--> Generates the Lucene distribution as .zip">
 
-    <delete file="${basedir}/${final.name}.zip"/>
-    <zip
-      zipfile="${basedir}/${final.name}.zip"
-      basedir="${basedir}/"
-      includes="**/${final.name}/**"
-      excludes="**/junit*jar"
-      />
+    <delete file="${dist.dir}/${final.name}.zip"/>
+    <zip destfile="${dist.dir}/${final.name}.zip">
+      <zipfileset prefix="${final.name}" dir="."
+        includes="src/demo/,src/jsp/,build.xml,docs/,*.txt"/>
+      <zipfileset prefix="${final.name}" dir="${build.dir}"
+        includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/"/>
+    </zip>
   </target>
 
   <!-- ================================================================== -->
@@ -434,18 +374,18 @@ Implementation-Vendor: Lucene
   <target name="package-tgz" depends="package"
     description="--> Generates the lucene distribution as .tar.gz">
 
-    <delete file="${basedir}/${final.name}.tar"/>
-    <delete file="${basedir}/${final.name}.tar.gz"/>
-    <tar
-      tarfile="${basedir}/${final.name}.tar"
-      basedir="${basedir}/"
-      includes="**/${final.name}/**"
-      excludes="**/junit*jar"
-      />
+    <!-- todo: make includes patterns below into property to reuse in package-zip -->
+    <delete file="${build.dir}/${final.name}.tar"/>
+    <delete file="${dist.dir}/${final.name}.tar.gz"/>
+    <tar tarfile="${build.dir}/${final.name}.tar">
+      <tarfileset prefix="${final.name}" dir="."
+        includes="src/demo/,src/jsp/,build.xml,docs/,*.txt"/>
+      <tarfileset prefix="${final.name}" dir="${build.dir}"
+        includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/"/>
+    </tar>
 
-    <gzip
-      zipfile="${basedir}/${final.name}.tar.gz"
-      src="${basedir}/${final.name}.tar"
+    <gzip zipfile="${dist.dir}/${final.name}.tar.gz"
+      src="${build.dir}/${final.name}.tar"
       />
   </target>
 
@@ -454,54 +394,31 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package-all" depends="package-zip, package-tgz"
-    description="--> Generates the .tar.gz and .zip distributions">
-  </target>
+  <target name="package-all-binary" depends="package-zip, package-tgz"
+    description="--> Generates the .tar.gz and .zip distributions"/>
 
   <!-- ================================================================== -->
   <!-- same as package-all. it is just here for compatibility.            -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="dist" depends="package-all"/>
+  <target name="dist" depends="package-all-binary"/>
 
   <!-- ================================================================== -->
   <!-- S O U R C E  D I S T R I B U T I O N                               -->
   <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="package-src" depends="jar-src">
-    <mkdir dir="${dist-src.dir}"/>
-    <copy todir="${dist-src.dir}/src">
-      <fileset dir="src"/>
-    </copy>
-    <copy todir="${dist-src.dir}/lib">
-      <fileset dir="lib"/>
-    </copy>
-    <copy todir="${dist-src.dir}/" file="build.xml"/>
-    <copy todir="${dist-src.dir}/" file="default.properties"/>
-    <copy todir="${dist-src.dir}">
-      <fileset dir=".">
-        <include name="*.txt"/>
-      </fileset>
-    </copy>
-    <copy file="${build.dir}/${final.name}-src.jar" todir="${dist-src.dir}"/>
-  </target>
 
   <!-- ================================================================== -->
   <!-- Packages the sources with zip                                      -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package-zip-src" depends="package-src"
+  <target name="package-zip-src" depends="init"
     description="--> Generates the Lucene sources as .zip">
-
-    <delete file="${basedir}/${final.name}-src.zip"/>
-    <zip
-      zipfile="${basedir}/${final.name}-src.zip"
-      basedir="${basedir}/"
-      includes="**/${final.name}-src/**"
-      />
+    <zip destfile="${dist.dir}/${final.name}-src.zip">
+      <zipfileset prefix="${final.name}" dir="."
+        includes="src/,build.xml,lib/,docs/,*.txt"/>
+    </zip>
   </target>
 
   <!-- ================================================================== -->
@@ -509,20 +426,18 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package-tgz-src" depends="package-src"
+  <target name="package-tgz-src" depends="init"
     description="--> Generates the Lucene distribution as .tar.gz">
 
-    <delete file="${basedir}/${final.name}-src.tar"/>
-    <delete file="${basedir}/${final.name}-src.tar.gz"/>
-    <tar
-      tarfile="${basedir}/${final.name}-src.tar"
-      basedir="${basedir}/"
-      includes="**/${final.name}-src/**"
-      />
+    <delete file="${build.dir}/${final.name}-src.tar"/>
+    <delete file="${dist.dir}/${final.name}-src.tar.gz"/>
+    <tar tarfile="${build.dir}/${final.name}-src.tar">
+      <tarfileset prefix="${final.name}" dir="."
+        includes="src/,build.xml,lib/,docs/,*.txt"/>
+    </tar>
 
-    <gzip
-      zipfile="${basedir}/${final.name}-src.tar.gz"
-      src="${basedir}/${final.name}-src.tar"
+    <gzip zipfile="${dist.dir}/${final.name}-src.tar.gz"
+      src="${build.dir}/${final.name}-src.tar"
       />
   </target>
 
@@ -541,6 +456,8 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <target name="dist-src" depends="package-all-src"/>
 
+  <target name="dist-all" depends="dist, dist-src"/>
+
   <!-- ================================================================== -->
   <!-- C L E A N                                                          -->
   <!-- ================================================================== -->
@@ -549,70 +466,7 @@ Implementation-Vendor: Lucene
   <target name="clean">
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
-    <delete file="${basedir}/${final.name}.tar"/>
-    <delete file="${basedir}/${final.name}.tar.gz"/>
-    <delete file="${basedir}/${final.name}.zip"/>
-    <delete dir="${dist.dir}-src"/>
-    <delete file="${basedir}/${final.name}-src.tar"/>
-    <delete file="${basedir}/${final.name}-src.tar.gz"/>
-    <delete file="${basedir}/${final.name}-src.zip"/>
   </target>
-
-  <!-- ================================================================== -->
-  <!-- Build the Ant index task                                           -->
-  <!-- ================================================================== -->
-  <!--
-  <target name="anttask-init">
-    <property name="anttask.classes" location="${build.dir}/anttask/classes"/>
-    <mkdir dir="${anttask.classes}"/>
-  </target>
-
-  <target name="anttask-compile" depends="compile,anttask-init">
-    <javac
-      srcdir="${anttask.src}"
-      destdir="${anttask.classes}"
-      debug="${debug}">
-      <classpath refid="classpath"/>
-    </javac>
-  </target>
-  -->
-
-  <!-- ================================================================== -->
-  <!-- Build the DocWeb app                                               -->
-  <!-- ================================================================== -->
-  <target name="docweb-init">
-    <!--    <mkdir dir="${}"/> -->
-  </target>
-
-  <!--
-  <target name="docweb-index" depends="javadocs,anttask-compile,docweb-init">
-    <taskdef name="index"
-             classname="org.apache.lucene.ant.IndexTask">
-      <classpath>
-        <pathelement location="${anttask.classes}"/>
-        <path refid="classpath"/>
-      </classpath>
-    </taskdef>
-
-    <index index="${build.docweb}/index"
-           overwrite="false">
-      <fileset dir="${docs.dir}"/>
-      <fileset dir="${build.javadocs}"/>
-    </index>
-
-  </target>
-
-  <target name="docweb-war" depends="jar,jardemo,docweb-index">
-    <war warfile="${build.docweb}/${build.docweb.war.name}.war"
-         webxml="${demo.jsp}/WEB-INF/web.xml">
-      <fileset dir="${demo.jsp}" excludes="WEB-INF/"/>
-      <lib dir="${build.demo}" includes="*.jar"/>
-      <lib dir="${build.dir}" includes="*.jar"/>
-      <webinf dir="${build.docweb}" includes="index/"/>
-    </war>
-  </target>
-  -->
-
 
   <!-- ================================================================== -->
   <!-- Build the JavaCC files into the source tree                                              -->
@@ -621,13 +475,13 @@ Implementation-Vendor: Lucene
 
   <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
     <!-- generate this in a build directory so we can exclude ParseException -->
-    <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
+    <mkdir dir="${build.dir}/gen/org/apache/lucene/analysis/standard"/>
     <antcall target="invoke-javacc">
-      <param name="target" location="${src.dir}/org/apache/lucene/analysis/standard/StandardTokenizer.jj"/>
-      <param name="output.dir" location="${build.src}/org/apache/lucene/analysis/standard"/>
+      <param name="target" location="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"/>
+      <param name="output.dir" location="${build.dir}/gen/org/apache/lucene/analysis/standard"/>
     </antcall>
-    <copy todir="${src.dir}/org/apache/lucene/analysis/standard">
-      <fileset dir="${build.src}/org/apache/lucene/analysis/standard">
+    <copy todir="src/java/org/apache/lucene/analysis/standard">
+      <fileset dir="${build.dir}/gen/org/apache/lucene/analysis/standard">
         <include name="*.java"/>
         <exclude name="ParseException.java"/>
       </fileset>
@@ -636,15 +490,15 @@ Implementation-Vendor: Lucene
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <antcall target="invoke-javacc">
-      <param name="target" location="${src.dir}/org/apache/lucene/queryParser/QueryParser.jj"/>
-      <param name="output.dir" location="${src.dir}/org/apache/lucene/queryParser"/>
+      <param name="target" location="src/java/org/apache/lucene/queryParser/QueryParser.jj"/>
+      <param name="output.dir" location="src/java/org/apache/lucene/queryParser"/>
     </antcall>
   </target>
 
   <target name="javacc-HTMLParser" depends="init,javacc-check" if="javacc.present">
     <antcall target="invoke-javacc">
-      <param name="target" location="${demo.src}/org/apache/lucene/demo/html/HTMLParser.jj"/>
-      <param name="output.dir" location="${demo.src}/org/apache/lucene/demo/html"/>
+      <param name="target" location="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"/>
+      <param name="output.dir" location="src/demo/org/apache/lucene/demo/html"/>
     </antcall>
   </target>
 
