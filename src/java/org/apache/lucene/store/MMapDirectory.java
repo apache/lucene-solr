@@ -37,14 +37,16 @@ public class MMapDirectory extends FSDirectory {
   private class MMapIndexInput extends IndexInput {
 
     private ByteBuffer buffer;
-    private RandomAccessFile file;
-    private long length;
-    private boolean isClone;
+    private final long length;
 
-    public MMapIndexInput(String path) throws IOException {
-      this.file = new RandomAccessFile(path, "r");
-      this.length = file.length();
-      this.buffer = file.getChannel().map(MapMode.READ_ONLY, 0, length);
+    public MMapIndexInput(File file) throws IOException {
+      RandomAccessFile raf = new RandomAccessFile(file, "r");
+      try {
+        this.length = raf.length();
+        this.buffer = raf.getChannel().map(MapMode.READ_ONLY, 0, length);
+      } finally {
+        raf.close();
+      }
     }
 
     public byte readByte() throws IOException {
@@ -70,21 +72,16 @@ public class MMapDirectory extends FSDirectory {
 
     public Object clone() {
       MMapIndexInput clone = (MMapIndexInput)super.clone();
-      clone.isClone = true;
       clone.buffer = buffer.duplicate();
       return clone;
     }
 
-    public void close() throws IOException {
-      if (!isClone)
-        file.close();
-    }
+    public void close() throws IOException {}
+
   }
 
-  private MMapDirectory() {}                      // no public ctor
-
   public IndexInput openInput(String name) throws IOException {
-    return new MMapIndexInput(new File(getFile(), name).getPath());
+    return new MMapIndexInput(new File(getFile(), name));
   }
 }
 
