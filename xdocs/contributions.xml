@@ -10,11 +10,20 @@
     </properties>
     <body>
         <section name="Overview">
-            <p>This page lists external resources for Lucene. If you've written something that should be included, please post all relevant information to one of the mailing lists. Nothing listed here is directly supported by the Lucene developers, if you encounter any problems with them, please use the contact information. </p>
+            <p>This page lists external Lucene resources. If you have
+            written something that should be included, please post all
+            relevant information to one of the mailing lists.  Nothing
+            listed here is directly supported by the Lucene
+            developers, so if you encounter any problems with any of
+            this software, please use the author's contact information
+            to get help.</p>
         </section>
         <section name="Lucene Documents">
             <p>
-                Lucene requires information you want to index to be converted into a Document class. Here are contributions for various Document classes for different formats.
+                Lucene requires information you want to index to be
+                converted into a Document class.  Here are
+                contributions for various Document classes for
+                different formats.
             </p>
             <subsection name="RTF->XML->Lucene">
                 <table>
@@ -282,8 +291,8 @@
                             URL
                         </th>
                         <td>
-                            <a href="http://www.darksleep.com/puff/lucene/lucene.html">
-                                http://www.darksleep.com/puff/lucene/lucene.html
+                            <a href="http://www.darksleep.com/lucene">
+                                http://www.darksleep.com/lucene
                             </a>
                         </td>
                     </tr>
@@ -306,8 +315,8 @@
                             URL
                         </th>
                         <td>
-                            <a href="http://lempinen.net/sami/jtidy/">
-                                http://lempinen.net/sami/jtidy/
+                            <a href="http://sourceforge.net/projects/jtidy/">
+                                http://sourceforge.net/projects/jtidy/
                             </a>
                         </td>
                     </tr>
