@@ -86,7 +86,7 @@ public interface ScoreDocComparator {
 	 * sort order in reverse.
 	 * @param i First ScoreDoc
 	 * @param j Second ScoreDoc
-	 * @return <code>-1</code> if <code>i</code> should come before <code>j</code><br><code>1</code> if <code>i</code> should come after <code>j</code><br><code>0</code> if they are equal
+	 * @return <code>-1</code> if <code>j</code> should come before <code>i</code><br><code>1</code> if <code>j</code> should come after <code>i</code><br><code>0</code> if they are equal
 	 * @see java.util.Comparator
 	 */
 	int compareReverse (ScoreDoc i, ScoreDoc j);
@@ -103,7 +103,8 @@ public interface ScoreDocComparator {
 
 
 	/**
-	 * Returns the type of sort.
+	 * Returns the type of sort.  Should return <code>SortField.SCORE</code>, <code>SortField.DOC</code>, <code>SortField.STRING</code>, <code>SortField.INTEGER</code>, 
+	 * <code>SortField.FLOAT</code> or <code>SortField.CUSTOM</code>.  It is not valid to return <code>SortField.AUTO</code>.
 	 * @return One of the constants in SortField.
 	 * @see SortField
 	 */
