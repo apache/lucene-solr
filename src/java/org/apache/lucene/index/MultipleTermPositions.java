@@ -134,13 +134,6 @@ public class MultipleTermPositions
 	_posList = new IntQueue();
     }
 
-    /**
-     * Describe <code>next</code> method here.
-     *
-     * @return a <code>boolean</code> value
-     * @exception IOException if an error occurs
-     * @see TermDocs#next()
-     */
     public final boolean next()
 	throws IOException
     {
@@ -174,25 +167,11 @@ public class MultipleTermPositions
 	return true;
     }
 
-    /**
-     * Describe <code>nextPosition</code> method here.
-     *
-     * @return an <code>int</code> value
-     * @see TermPositions#nextPosition()
-     */
     public final int nextPosition()
     {
 	return _posList.next();
     }
 
-    /**
-     * Describe <code>skipTo</code> method here.
-     *
-     * @param target an <code>int</code> value
-     * @return a <code>boolean</code> value
-     * @exception IOException if an error occurs
-     * @see TermDocs#skipTo(int)
-     */
     public final boolean skipTo(int target)
 	throws IOException
     {
@@ -209,34 +188,16 @@ public class MultipleTermPositions
 	return next();
     }
 
-    /**
-     * Describe <code>doc</code> method here.
-     *
-     * @return an <code>int</code> value
-     * @see TermDocs#doc()
-     */
     public final int doc()
     {
 	return _doc;
     }
 
-    /**
-     * Describe <code>freq</code> method here.
-     *
-     * @return an <code>int</code> value
-     * @see TermDocs#freq()
-     */
     public final int freq()
     {
 	return _freq;
     }
 
-    /**
-     * Describe <code>close</code> method here.
-     *
-     * @exception IOException if an error occurs
-     * @see TermDocs#close()
-     */
     public final void close()
 	throws IOException
     {
@@ -244,12 +205,8 @@ public class MultipleTermPositions
 	    ((TermPositions)_termPositionsQueue.pop()).close();
     }
 
-    /**
-     * Describe <code>seek</code> method here.
-     *
-     * @param arg0 a <code>Term</code> value
-     * @exception IOException if an error occurs
-     * @see TermDocs#seek(Term)
+    /** Not implemented.
+     * @throws UnsupportedOperationException
      */
     public void seek(Term arg0)
 	throws IOException
@@ -257,19 +214,15 @@ public class MultipleTermPositions
 	throw new UnsupportedOperationException();
     }
 
+    /** Not implemented.
+     * @throws UnsupportedOperationException
+     */
     public void seek(TermEnum termEnum) throws IOException {
       throw new UnsupportedOperationException();
     }
 
-
-    /**
-     * Describe <code>read</code> method here.
-     *
-     * @param arg0 an <code>int[]</code> value
-     * @param arg1 an <code>int[]</code> value
-     * @return an <code>int</code> value
-     * @exception IOException if an error occurs
-     * @see TermDocs#read(int[], int[])
+    /** Not implemented.
+     * @throws UnsupportedOperationException
      */
     public int read(int[] arg0, int[] arg1)
 	throws IOException
