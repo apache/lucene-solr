@@ -32,7 +32,13 @@ $Id$
     contains information about the recommended replacements. It is planned
     that the deprecated methods and fields will be removed in Lucene 2.0.
     (Daniel Naber)
-    
+
+ 8. A new class DateTools has been added. It allows you to format dates
+    in a readable format adequate for indexing. Unlike the existing
+    DateField class DateTools can cope with dates before 1970 and it
+    forces you to specify the desired date resolution (e.g. month, day,
+    second, ...) which can make RangeQuerys on those fields more efficient.
+    (Daniel Naber)
 
 1.4.1
 
