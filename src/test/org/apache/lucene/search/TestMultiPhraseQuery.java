@@ -53,6 +53,7 @@ public class TestMultiPhraseQuery extends TestCase
         add("blueberry pizza", writer);
         add("blueberry chewing gum", writer);
         add("bluebird pizza", writer);
+        add("bluebird foobar pizza", writer);
         add("piccadilly circus", writer);
         writer.optimize();
         writer.close();
@@ -108,6 +109,11 @@ public class TestMultiPhraseQuery extends TestCase
         assertEquals(2, result.length()); // blueberry pizza, bluebird pizza
         assertEquals("body:\"(blueberry bluebird) pizza\"", query3.toString());
 
+        // test slop:
+        query3.setSlop(1);
+        result = searcher.search(query3);
+        assertEquals(3, result.length()); // blueberry pizza, bluebird pizza, bluebird foobar pizza
+
         MultiPhraseQuery query4 = new MultiPhraseQuery();
         try {
           query4.add(new Term("field1", "foo"));
@@ -116,6 +122,9 @@ public class TestMultiPhraseQuery extends TestCase
         } catch(IllegalArgumentException e) {
           // okay, all terms must belong to the same field
         }
+        
+        searcher.close();
+        indexStore.close();
 
     }
     
