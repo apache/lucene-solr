@@ -48,6 +48,23 @@ public abstract class Scorer {
     }
   }
 
+  /** Expert: Collects matching documents in a range.  Hook for optimization.
+   * Note that {@link #next()} must be called once before this method is called
+   * for the first time.
+   * @param hc The collector to which all matching documents are passed through
+   * {@link HitCollector#collect(int, float)}.
+   * @param max Do not score documents past this.
+   * @return true if more matching documents may remain.
+   */
+  protected boolean score(HitCollector hc, int max) throws IOException {
+    while (doc() < max) {
+      hc.collect(doc(), score());
+      if (!next())
+        return false;
+    }
+    return true;
+  }
+
   /** Advances to the next document matching the query.
    * @return true iff there is another document matching the query.
    */

@@ -42,7 +42,7 @@ final class BooleanScorer extends Scorer {
     public SubScorer next;
 
     public SubScorer(Scorer scorer, boolean required, boolean prohibited,
-		     HitCollector collector, SubScorer next)
+                     HitCollector collector, SubScorer next)
       throws IOException {
       this.scorer = scorer;
       this.done = !scorer.next();
@@ -58,8 +58,8 @@ final class BooleanScorer extends Scorer {
     int mask = 0;
     if (required || prohibited) {
       if (nextMask == 0)
-	throw new IndexOutOfBoundsException
-	  ("More than 32 required/prohibited clauses in query.");
+        throw new IndexOutOfBoundsException
+          ("More than 32 required/prohibited clauses in query.");
       mask = nextMask;
       nextMask = nextMask << 1;
     } else
@@ -69,12 +69,12 @@ final class BooleanScorer extends Scorer {
       maxCoord++;
 
     if (prohibited)
-      prohibitedMask |= mask;			  // update prohibited mask
+      prohibitedMask |= mask;                     // update prohibited mask
     else if (required)
-      requiredMask |= mask;			  // update required mask
+      requiredMask |= mask;                       // update required mask
 
     scorers = new SubScorer(scorer, required, prohibited,
-			    bucketTable.newCollector(mask), scorers);
+                            bucketTable.newCollector(mask), scorers);
   }
 
   private final void computeCoordFactors() {
@@ -85,6 +85,46 @@ final class BooleanScorer extends Scorer {
 
   private int end;
   private Bucket current;
+
+  public void score(HitCollector hc) throws IOException {
+    score(hc, Integer.MAX_VALUE);
+  }
+
+  protected boolean score(HitCollector hc, int max) throws IOException {
+    if (coordFactors == null)
+      computeCoordFactors();
+
+    boolean more;
+    do {
+      while (bucketTable.first != null) {         // more queued
+        current = bucketTable.first;
+        if (current.doc >= max)
+          return true;
+
+        // check prohibited & required
+        if ((current.bits & prohibitedMask) == 0 && 
+            (current.bits & requiredMask) == requiredMask) {
+          hc.collect(current.doc, current.score * coordFactors[current.coord]);
+        }
+        
+        bucketTable.first = current.next;         // pop the queue
+      }
+
+      // refill the queue
+      more = false;
+      end += BucketTable.SIZE;
+      for (SubScorer sub = scorers; sub != null; sub = sub.next) {
+        if (!sub.done) {
+          sub.done = !sub.scorer.score(sub.collector, end);
+          if (!sub.done)
+            more = true;
+        }
+      }
+    } while (bucketTable.first != null || more);
+
+    return false;
+  }
+
 
   public int doc() { return current.doc; }
 
@@ -127,20 +167,20 @@ final class BooleanScorer extends Scorer {
   }
 
   static final class Bucket {
-    int	doc = -1;				  // tells if bucket is valid
-    float	score;				  // incremental score
-    int	bits;					  // used for bool constraints
-    int	coord;					  // count of terms in score
-    Bucket 	next;				  // next valid bucket
+    int doc = -1;                                 // tells if bucket is valid
+    float       score;                            // incremental score
+    int bits;                                     // used for bool constraints
+    int coord;                                    // count of terms in score
+    Bucket      next;                             // next valid bucket
   }
 
   /** A simple hash table of document scores within a range. */
   static final class BucketTable {
-    public static final int SIZE = 1 << 10;
+    public static final int SIZE = 1 << 8;
     public static final int MASK = SIZE - 1;
 
     final Bucket[] buckets = new Bucket[SIZE];
-    Bucket first = null;			  // head of valid list
+    Bucket first = null;                          // head of valid list
   
     private BooleanScorer scorer;
 
@@ -167,20 +207,20 @@ final class BooleanScorer extends Scorer {
       final int i = doc & BucketTable.MASK;
       Bucket bucket = table.buckets[i];
       if (bucket == null)
-	table.buckets[i] = bucket = new Bucket();
+        table.buckets[i] = bucket = new Bucket();
       
-      if (bucket.doc != doc) {			  // invalid bucket
-	bucket.doc = doc;			  // set doc
-	bucket.score = score;			  // initialize score
-	bucket.bits = mask;			  // initialize mask
-	bucket.coord = 1;			  // initialize coord
+      if (bucket.doc != doc) {                    // invalid bucket
+        bucket.doc = doc;                         // set doc
+        bucket.score = score;                     // initialize score
+        bucket.bits = mask;                       // initialize mask
+        bucket.coord = 1;                         // initialize coord
 
-	bucket.next = table.first;		  // push onto valid list
-	table.first = bucket;
-      } else {					  // valid bucket
-	bucket.score += score;			  // increment score
-	bucket.bits |= mask;			  // add bits in mask
-	bucket.coord++;				  // increment coord
+        bucket.next = table.first;                // push onto valid list
+        table.first = bucket;
+      } else {                                    // valid bucket
+        bucket.score += score;                    // increment score
+        bucket.bits |= mask;                      // add bits in mask
+        bucket.coord++;                           // increment coord
       }
     }
   }

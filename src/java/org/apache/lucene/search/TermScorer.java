@@ -29,8 +29,8 @@ final class TermScorer extends Scorer {
   private float weightValue;
   private int doc;
 
-  private final int[] docs = new int[32];	  // buffered doc numbers
-  private final int[] freqs = new int[32];	  // buffered term freqs
+  private final int[] docs = new int[32];         // buffered doc numbers
+  private final int[] freqs = new int[32];        // buffered term freqs
   private int pointer;
   private int pointerMax;
 
@@ -55,6 +55,39 @@ final class TermScorer extends Scorer {
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
   }
 
+  public void score(HitCollector hc) throws IOException {
+    next();
+    score(hc, Integer.MAX_VALUE);
+  }
+
+  protected boolean score(HitCollector c, int end) throws IOException {
+    Similarity similarity = getSimilarity();      // cache sim in local
+    while (doc < end) {                           // for docs in window
+      int f = freqs[pointer];
+      float score =                               // compute tf(f)*weight
+        f < SCORE_CACHE_SIZE                      // check cache
+         ? scoreCache[f]                          // cache hit
+         : similarity.tf(f)*weightValue;          // cache miss
+
+      score *= Similarity.decodeNorm(norms[doc]); // normalize for field
+
+      c.collect(doc, score);                      // collect score
+
+      if (++pointer >= pointerMax) {
+        pointerMax = termDocs.read(docs, freqs);  // refill buffers
+        if (pointerMax != 0) {
+          pointer = 0;
+        } else {
+          termDocs.close();                       // close stream
+          doc = Integer.MAX_VALUE;                // set to sentinel value
+          return false;
+        }
+      } 
+      doc = docs[pointer];
+    }
+    return true;
+  }
+
   /** Returns the current document number matching the query.
    * Initially invalid, until {@link #next()} is called the first time.
    */
@@ -72,8 +105,8 @@ final class TermScorer extends Scorer {
       if (pointerMax != 0) {
         pointer = 0;
       } else {
-        termDocs.close();			  // close stream
-        doc = Integer.MAX_VALUE;		  // set to sentinel value
+        termDocs.close();                         // close stream
+        doc = Integer.MAX_VALUE;                  // set to sentinel value
         return false;
       }
     } 
@@ -84,7 +117,7 @@ final class TermScorer extends Scorer {
   public float score() {
     int f = freqs[pointer];
     float raw =                                   // compute tf(f)*weight
-      f < SCORE_CACHE_SIZE			  // check cache
+      f < SCORE_CACHE_SIZE                        // check cache
       ? scoreCache[f]                             // cache hit
       : getSimilarity().tf(f)*weightValue;        // cache miss
 
