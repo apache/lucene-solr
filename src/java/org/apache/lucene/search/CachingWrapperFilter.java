@@ -61,7 +61,10 @@ import java.util.Map;
 import java.io.IOException;
 
 /**
- * @todo add documentation after this is fully accepted
+ * Wraps another filters result and caches it.  The caching
+ * behavior is like {@link QueryFilter}.  The purpose is to allow
+ * filters to simply filter, and then wrap with this class to add
+ * caching, keeping the two concerns decoupled yet composable.
  */
 public class CachingWrapperFilter extends Filter {
   private Filter filter;
@@ -74,8 +77,6 @@ public class CachingWrapperFilter extends Filter {
 
   /**
    * @param filter Filter to cache results of
-   * @todo Do we want another constructor to allow user to supply
-   *       a backing caching Map implementation?
    */
   public CachingWrapperFilter(Filter filter) {
     this.filter = filter;
