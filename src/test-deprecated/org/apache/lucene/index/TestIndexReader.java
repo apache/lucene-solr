@@ -83,7 +83,7 @@ public class TestIndexReader extends TestCase
         // verify fields again
         reader = IndexReader.open(d);
         fieldNames = reader.getFieldNames();
-        assertEquals(9, fieldNames.size());    // the following fields + an empty one (bug?!)
+        assertEquals(8, fieldNames.size());    // the following fields
         assertTrue(fieldNames.contains("keyword"));
         assertTrue(fieldNames.contains("text"));
         assertTrue(fieldNames.contains("unindexed"));
@@ -105,7 +105,7 @@ public class TestIndexReader extends TestCase
 
         // verify that only unindexed fields were returned
         Collection unindexedFieldNames = reader.getFieldNames(false);
-        assertEquals(3, unindexedFieldNames.size());    // the following fields + an empty one
+        assertEquals(2, unindexedFieldNames.size());    // the following fields
         assertTrue(unindexedFieldNames.contains("unindexed"));
         assertTrue(unindexedFieldNames.contains("unindexed2"));
     }
