@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="hilighter" default="default">
+
+  <description>
+    Hits hilighter
+  </description>
+
+  <import file="../common.xml"/>
+</project>
