@@ -52,11 +52,18 @@ public class TestDateTools extends TestCase {
 
   }
   
-  public void testStringtotime() throws ParseException {
-    long time = DateTools.stringToTime("197001010100");
-    assertEquals(0, time);
-    time = DateTools.stringToTime("197001010102");
-    assertEquals(120000, time);
+  public void testStringtoTime() throws ParseException {
+    long time = DateTools.stringToTime("197001010000");
+    Calendar cal = Calendar.getInstance();
+    cal.set(1970, 0, 1,    // year=1970, month=january, day=1
+        0, 0, 0);          // hour, minute, second
+    cal.set(Calendar.MILLISECOND, 0);
+    assertEquals(cal.getTime().getTime(), time);
+    cal.set(1980, 1, 2,    // year=1980, month=february, day=2
+        11, 5, 0);          // hour, minute, second
+    cal.set(Calendar.MILLISECOND, 0);
+    time = DateTools.stringToTime("198002021105");
+    assertEquals(cal.getTime().getTime(), time);
   }
   
   public void testDateAndTimetoString() throws ParseException {
