@@ -146,23 +146,25 @@ public final class RAMDirectory extends Directory {
 
   /** Set the modified time of an existing file to now. */
   public void touchFile(String name) throws IOException {
-    final boolean MONITOR = false;
+//     final boolean MONITOR = false;
     int count = 0;
-    
+
     RAMFile file = (RAMFile)files.get(name);
     long ts2, ts1 = System.currentTimeMillis();
     do {
-        try {
-            Thread.sleep(0, 1);
-        } catch (InterruptedException e) {}
-        ts2 = System.currentTimeMillis();
-        if (MONITOR) count ++;
+      try {
+        Thread.sleep(0, 1);
+      } catch (InterruptedException e) {}
+      ts2 = System.currentTimeMillis();
+//       if (MONITOR) {
+//         count++;
+//       }
     } while(ts1 == ts2);
-    
+
     file.lastModified = ts2;
 
-    if (MONITOR)
-        System.out.println("SLEEP COUNT: " + count);        
+//     if (MONITOR)
+//         System.out.println("SLEEP COUNT: " + count);
   }
 
   /** Returns the length in bytes of a file in the directory. */
