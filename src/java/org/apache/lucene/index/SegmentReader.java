@@ -185,9 +185,9 @@ final class SegmentReader extends IndexReader {
   
   static final boolean hasSeparateNorms(SegmentInfo si) throws IOException {
     String[] result = si.dir.list();
-    String pattern = si.name + ".f";
+    String pattern = si.name + ".s";
     int patternLength = pattern.length();
-    for(int i = 0; i < 0; i++){
+    for(int i = 0; i < result.length; i++){
       if(result[i].startsWith(pattern) && Character.isDigit(result[i].charAt(patternLength)))
         return true;
     }
