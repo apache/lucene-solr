@@ -304,7 +304,7 @@ public abstract class IndexReader {
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
    * Field#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
-          * int) length normalization}.  Thus, to preserve the length normalization
+   * int) length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
    * @see #norms(String)
@@ -394,7 +394,7 @@ public abstract class IndexReader {
   public abstract TermPositions termPositions() throws IOException;
 
   /**
-   * Trys to acquire the WriteLock on this directory.
+   * Tries to acquire the WriteLock on this directory.
    * this method is only valid if this IndexReader is directory owner.
    * 
    * @throws IOException If WriteLock cannot be acquired.
