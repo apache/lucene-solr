@@ -67,7 +67,6 @@ public final class RangeQuery extends Query
     private Term upperTerm;
     private boolean inclusive;
     private IndexReader reader;
-    private float boost = 1.0f;
     private BooleanQuery query;
     
     /** Constructs a query selecting all terms greater than 
@@ -89,20 +88,6 @@ public final class RangeQuery extends Query
         this.lowerTerm = lowerTerm;
         this.upperTerm = upperTerm;
         this.inclusive = inclusive;
-    }
-    
-    /** Sets the boost for this term to <code>b</code>.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>boost</code>. */
-    public void setBoost(float boost)
-    {
-        this.boost = boost;
-    }
-    
-    /** Returns the boost for this term. */
-    public float getBoost()
-    {
-        return boost;
     }
     
     final void prepare(IndexReader reader)

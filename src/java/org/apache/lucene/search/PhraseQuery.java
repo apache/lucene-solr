@@ -71,7 +71,6 @@ final public class PhraseQuery extends Query {
   private float idf = 0.0f;
   private float weight = 0.0f;
 
-  private float boost = 1.0f;
   private int slop = 0;
 
 
@@ -79,15 +78,6 @@ final public class PhraseQuery extends Query {
   public PhraseQuery() {
   }
 
-  /** Sets the boost for this term to <code>b</code>.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>b</code>. */
-  public final void setBoost(float b) { boost = b; }
-  /** Gets the boost for this term.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>b</code>.   The boost is 1.0 by default.  */
-  public final float getBoost() { return boost; }
-  
   /** Sets the number of other words permitted between words in query phrase.
     If zero, then this is an exact phrase search.  For larger values this works
     like a <code>WITHIN</code> or <code>NEAR</code> operator.

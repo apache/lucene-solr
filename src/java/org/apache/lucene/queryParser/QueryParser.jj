@@ -320,21 +320,29 @@ int Modifiers() : {
 Query Query(String field) :
 {
   Vector clauses = new Vector();
-  Query q;
+  Query q, firstQuery=null;
   int conj, mods; 
 }
 {
   mods=Modifiers() q=Clause(field) 
-  { addClause(clauses, CONJ_NONE, mods, q); }
+  { 
+    addClause(clauses, CONJ_NONE, mods, q); 
+    if (mods == MOD_NONE) 
+        firstQuery=q; 
+  }
   ( 
     conj=Conjunction() mods=Modifiers() q=Clause(field) 
     { addClause(clauses, conj, mods, q); }
   )*
     {
-      BooleanQuery query = new BooleanQuery();
-      for (int i = 0; i < clauses.size(); i++)
-  	query.add((BooleanClause)clauses.elementAt(i));
-      return query;
+      if (clauses.size() == 1 && firstQuery != null)
+        return firstQuery;
+      else {
+        BooleanQuery query = new BooleanQuery();
+        for (int i = 0; i < clauses.size(); i++)
+  	  query.add((BooleanClause)clauses.elementAt(i));
+        return query;
+      }
     }
 }
 
@@ -375,7 +383,7 @@ Query Term(String field) : {
        | term=<NUMBER>
      )
      [ <FUZZY> { fuzzy=true; } ]
-     [ <CARAT> boost=<NUMBER> ]
+     [ <CARAT> boost=<NUMBER> [ <FUZZY> { fuzzy=true; } ] ]
      { 
        if (wildcard)
          q = new WildcardQuery(new Term(field, term.image));
@@ -409,14 +417,7 @@ Query Term(String field) : {
       }
       catch (Exception ignored) { }
 
-      if (q instanceof TermQuery) 
-        ((TermQuery) q).setBoost(f);
-      else if (q instanceof PhraseQuery) 
-        ((PhraseQuery) q).setBoost(f);
-      else if (q instanceof MultiTermQuery)
-        ((MultiTermQuery) q).setBoost(f);
-      else if (q instanceof RangeQuery)
-        ((RangeQuery) q).setBoost(f);
+      q.setBoost(f);
     }
     return q; 
   }

@@ -114,17 +114,20 @@ public class TestQueryParser extends TestCase {
     }
   }
   
-  public void assertQueryEquals(String query, Analyzer a, String result) 
-  throws Exception {
+  public Query getQuery(String query, Analyzer a) throws Exception {
     if (a == null)
       a = new SimpleAnalyzer();
     QueryParser qp = new QueryParser("field", a);
-    Query q = qp.parse(query);
+    return qp.parse(query);
+  }
+
+  public void assertQueryEquals(String query, Analyzer a, String result) 
+  throws Exception {
+    Query q = getQuery(query, a);
     String s = q.toString("field");
     if (!s.equals(result)) {
-      System.err.println("Query /" + query + "/ yielded /" + s 
-                         + "/, expecting /" + result + "/");
-      assert(false);
+      fail("Query /" + query + "/ yielded /" + s 
+           + "/, expecting /" + result + "/");
     }
   }
 
@@ -136,6 +139,8 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
 
     assertQueryEquals("a AND b", null, "+a +b");
+    assertQueryEquals("(a AND b)", null, "+a +b");
+    assertQueryEquals("c OR (a AND b)", null, "c (+a +b)");
     assertQueryEquals("a AND NOT b", null, "+a -b");
     assertQueryEquals("a AND -b", null, "+a -b");
     assertQueryEquals("a AND !b", null, "+a -b");
@@ -154,6 +159,10 @@ public class TestQueryParser extends TestCase {
                       "+foo:term +anotherterm");
     assertQueryEquals("term AND \"phrase phrase\"", null, 
                       "+term +\"phrase phrase\"");
+    assertQueryEquals("\"hello there\"", null, "\"hello there\"");
+    assert(getQuery("a AND b", null) instanceof BooleanQuery);
+    assert(getQuery("hello", null) instanceof TermQuery);
+    assert(getQuery("\"hello there\"", null) instanceof PhraseQuery);
 
     assertQueryEquals("germ term^2.0", null, "germ term^2.0");
     assertQueryEquals("term^2.0", null, "term^2.0");
@@ -170,6 +179,21 @@ public class TestQueryParser extends TestCase {
                       "+(title:dog title:cat) -author:\"bob dole\"");
   }
 
+  public void testWildcard() throws Exception {
+    assertQueryEquals("term*", null, "term*");
+    assertQueryEquals("term*^2", null, "term*^2.0");
+    assertQueryEquals("term~", null, "term~");
+    assertQueryEquals("term~^2", null, "term^2.0~");
+    assertQueryEquals("term^2~", null, "term^2.0~");
+    assertQueryEquals("term*germ", null, "term*germ");
+    assertQueryEquals("term*germ^3", null, "term*germ^3.0");
+
+    assert(getQuery("term*", null) instanceof PrefixQuery);
+    assert(getQuery("term*^2", null) instanceof PrefixQuery);
+    assert(getQuery("term~", null) instanceof FuzzyQuery);
+    assert(getQuery("term*germ", null) instanceof WildcardQuery);
+  }
+
   public void testQPA() throws Exception {
     assertQueryEquals("term term term", qpAnalyzer, "term term term");
     assertQueryEquals("term +stop term", qpAnalyzer, "term term");
@@ -180,17 +204,21 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer, 
                       "+term -\"phrase1 phrase2\" term");
     assertQueryEquals("stop", qpAnalyzer, "");
+    assert(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
+    assert(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a z]", null, "[a-z]");
+    assert(getQuery("[ a z]", null) instanceof RangeQuery);
     assertQueryEquals("[ a z ]", null, "[a-z]");
     assertQueryEquals("{ a z}", null, "{a-z}");
     assertQueryEquals("{ a z }", null, "{a-z}");
     assertQueryEquals("{ a z }^2.0", null, "{a-z}^2.0");
     assertQueryEquals("[ a z] OR bar", null, "[a-z] bar");
     assertQueryEquals("[ a z] AND bar", null, "+[a-z] +bar");
-    assertQueryEquals("( bar blar { a z}) ", null, "(bar blar {a-z})");
+    assertQueryEquals("( bar blar { a z}) ", null, "bar blar {a-z}");
+    assertQueryEquals("gack ( bar blar { a z}) ", null, "gack (bar blar {a-z})");
   }
 }
 

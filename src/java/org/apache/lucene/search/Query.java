@@ -73,6 +73,9 @@ import org.apache.lucene.index.IndexReader;
   */
 abstract public class Query {
 
+  // query boost factor
+  protected float boost = 1.0f;
+
   // query weighting
   abstract float sumOfSquaredWeights(Searcher searcher) throws IOException;
   abstract void normalize(float norm);
@@ -91,6 +94,16 @@ abstract public class Query {
     return query.scorer(reader);
   }
 
+  /** Sets the boost for this term to <code>b</code>.  Documents containing
+    this term will (in addition to the normal weightings) have their score
+    multiplied by <code>b</code>. */
+  public void setBoost(float b) { boost = b; }
+
+  /** Gets the boost for this term.  Documents containing
+    this term will (in addition to the normal weightings) have their score
+    multiplied by <code>b</code>.   The boost is 1.0 by default.  */
+  public float getBoost() { return boost; }
+  
   /** Prints a query to a string, with <code>field</code> as the default field
     for terms.
     <p>The representation used is one that is readable by

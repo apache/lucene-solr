@@ -64,7 +64,6 @@ import org.apache.lucene.index.IndexReader;
 final public class PrefixQuery extends Query {
   private Term prefix;
   private IndexReader reader;
-  private float boost = 1.0f;
   private BooleanQuery query;
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
@@ -73,18 +72,6 @@ final public class PrefixQuery extends Query {
     this.reader = reader;
   }
 
-  /** Sets the boost for this term to <code>b</code>.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>boost</code>. */
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
-
-  /** Returns the boost for this term. */
-  public float getBoost() {
-    return boost;
-  }
-  
   final void prepare(IndexReader reader) {
     this.query = null;
     this.reader = reader;

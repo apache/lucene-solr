@@ -64,7 +64,6 @@ import org.apache.lucene.index.IndexReader;
   */
 final public class TermQuery extends Query {
   private Term term;
-  private float boost = 1.0f;
   private float idf = 0.0f;
   private float weight = 0.0f;
 
@@ -73,15 +72,6 @@ final public class TermQuery extends Query {
     term = t;
   }
 
-  /** Sets the boost for this term to <code>b</code>.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>b</code>. */
-  public void setBoost(float b) { boost = b; }
-  /** Gets the boost for this term.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>b</code>.   The boost is 1.0 by default.  */
-  public float getBoost() { return boost; }
-  
   final float sumOfSquaredWeights(Searcher searcher) throws IOException {
     idf = Similarity.idf(term, searcher);
     weight = idf * boost;

@@ -70,7 +70,6 @@ public class MultiTermQuery extends Query {
     private Term term;
     private FilteredTermEnum enum;
     private IndexReader reader;
-    private float boost = 1.0f;
     private BooleanQuery query;
     
     /** Enable or disable lucene style toString(field) format */
@@ -85,18 +84,6 @@ public class MultiTermQuery extends Query {
     /** Set the TermEnum to be used */
     protected void setEnum(FilteredTermEnum enum) {
         this.enum = enum;
-    }
-    
-    /** Sets the boost for this term to <code>b</code>.  Documents containing
-     * this term will (in addition to the normal weightings) have their score
-     * multiplied by <code>boost</code>. */
-    final public void setBoost(float boost) {
-        this.boost = boost;
-    }
-    
-    /** Returns the boost for this term. */
-    final public float getBoost() {
-        return boost;
     }
     
     final float sumOfSquaredWeights(Searcher searcher) throws IOException {
