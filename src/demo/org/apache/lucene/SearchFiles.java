@@ -90,8 +90,22 @@ class SearchFiles {
 	final int HITS_PER_PAGE = 10;
 	for (int start = 0; start < hits.length(); start += HITS_PER_PAGE) {
 	  int end = Math.min(hits.length(), start + HITS_PER_PAGE);
-	  for (int i = start; i < end; i++)
-	    System.out.println(i + ". " + hits.doc(i).get("path"));
+	  for (int i = start; i < end; i++) {
+	    Document doc = hits.doc(i);
+	    String path = doc.get("path");
+	    if (path != null) {
+              System.out.println(i + ". " + path);
+	    } else {
+              String url = doc.get("url");
+	      if (url != null) {
+		System.out.println(i + ". " + url);
+		System.out.println("   - " + doc.get("title"));
+	      } else {
+		System.out.println(i + ". " + "No path nor URL for this document");
+	      }
+	    }
+	  }
+
 	  if (hits.length() > end) {
 	    System.out.print("more (y/n) ? ");
 	    line = in.readLine();
