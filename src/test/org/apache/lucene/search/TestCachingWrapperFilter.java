@@ -61,7 +61,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
-public class TestCachingrWrapperFilter extends TestCase {
+public class TestCachingWrapperFilter extends TestCase {
   public void testCachingWorks() throws Exception {
     Directory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true);
