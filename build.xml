@@ -596,7 +596,18 @@
     />
   </target>
 
-  <target name="javacc" depends="javacc-StandardAnalyzer,javacc-QueryParser,javacc-PrecedenceQueryParser,javacc-HTMLParser"/>
+  <target name="clean-javacc">
+    <delete>
+      <fileset dir="src">
+        <include name="java/org/apache/lucene/analysis/standard/StandardTokenizer.java"/>
+        <include name="java/org/apache/lucene/queryParser/QueryParser.java"/>
+        <include name="java/org/apache/lucene/queryParser/precedence/PrecedenceQueryParser.java"/>
+        <include name="demo/org/apache/lucene/demo/html/HTMLParser.java"/>
+      </fileset>
+    </delete>
+  </target>
+
+  <target name="javacc" depends="clean-javacc,javacc-StandardAnalyzer,javacc-QueryParser,javacc-PrecedenceQueryParser,javacc-HTMLParser"/>
 
   <macrodef name="invoke-javacc">
     <attribute name="target"/>
