@@ -1,5 +1,21 @@
 package org.apache.lucene.search.spans;
 
+/**
+ * Copyright 2004 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.IOException;
 
 import java.util.List;
@@ -10,7 +26,7 @@ import org.apache.lucene.index.IndexReader;
 
 class NearSpans implements Spans {
   private SpanNearQuery query;
-                                                  
+
   private List ordered = new ArrayList();         // spans in query order
   private int slop;                               // from query
   private boolean inOrder;                        // from query
@@ -34,9 +50,9 @@ class NearSpans implements Spans {
     private Spans spans;
     private SpansCell next;
     private int length = -1;
-          
+
     public SpansCell(Spans spans) { this.spans = spans; }
-          
+
     public boolean next() throws IOException {
       if (length != -1)                           // subtract old length
         totalLength -= length;
@@ -94,7 +110,7 @@ class NearSpans implements Spans {
       ordered.add(cell);                          // add to ordered
     }
   }
-        
+
   public boolean next() throws IOException {
     if (firstTime) {
       initList(true);
@@ -104,17 +120,17 @@ class NearSpans implements Spans {
       more = last.next();                         // trigger scan
       queueStale = true;
     }
-          
+
     while (more) {
 
       if (listStale) {                            // maintain list
         queueToList();
         listStale = false;
       }
-      
+
       // skip to doc w/ all clauses
 
-      while (more && first.doc() < last.doc()) { 
+      while (more && first.doc() < last.doc()) {
         more = first.skipTo(last.doc());          // skip first upto last
         firstToLast();                            // and move it to the end
         queueStale = true;
@@ -125,7 +141,7 @@ class NearSpans implements Spans {
       // found doc w/ all clauses
 
       if (queueStale) {                           // maintain the queue
-        listToQueue();                    
+        listToQueue();
         queueStale = false;
       }
 
@@ -134,7 +150,7 @@ class NearSpans implements Spans {
           && (!inOrder || matchIsOrdered())) {    // check order
         return true;
       }
-      
+
       more = min().next();                        // trigger further scanning
 
       if (more) {
@@ -169,7 +185,7 @@ class NearSpans implements Spans {
       }
       return next();                              // no, scan
     }
-    
+
     return false;
   }
 
@@ -221,7 +237,7 @@ class NearSpans implements Spans {
       queue.put(cell);                      // build queue from list
     }
   }
-        
+
   private boolean matchIsOrdered() {
     int lastStart = -1;
     for (int i = 0; i < ordered.size(); i++) {
