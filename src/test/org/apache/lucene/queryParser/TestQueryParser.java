@@ -108,7 +108,7 @@ public class TestQueryParser extends TestCase {
     if (a == null)
       a = new SimpleAnalyzer();
     QueryParser qp = new QueryParser("field", a);
-    qp.setOperator(QueryParser.DEFAULT_OPERATOR_OR);
+    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
     return qp;
   }
 
@@ -143,7 +143,7 @@ public class TestQueryParser extends TestCase {
     if (a == null)
       a = new SimpleAnalyzer();
     QueryParser qp = new QueryParser("field", a);
-    qp.setOperator(QueryParser.DEFAULT_OPERATOR_AND);
+    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
     return qp.parse(query);
   }
 
@@ -203,6 +203,14 @@ public class TestQueryParser extends TestCase {
                       "+(apple \"steve jobs\") -(foo bar baz)");
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
+    
+    QueryParser qp = new QueryParser("field", new StandardAnalyzer());
+    // make sure OR is the default:
+    assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
+    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
+    assertEquals(QueryParser.AND_OPERATOR, qp.getDefaultOperator());
+    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
+    assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
   }
 
   public void testPunct() throws Exception {
