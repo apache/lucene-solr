@@ -87,6 +87,15 @@ $Id$
     
 18. Add support for stored compressed fields (Bug#31149).
     (Bernhard Messer via Christoph)
+    
+19. Add support for position and offset information in term vectors
+    (Patch #18927). (Grant Ingersoll & Christoph)
+    
+20. Removed synchronization from reading of term vectors with an
+    IndexReader (Patch #30736). (Bernhard Messer via Christoph)
+    
+21. Add a serializable Parameter Class to standardize parameter enum
+    classes in BooleanClause and Field. (Christoph)
 
 
 1.4.1
