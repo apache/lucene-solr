@@ -62,6 +62,7 @@ final class TermScorer extends Scorer {
 
   protected boolean score(HitCollector c, int end) throws IOException {
     Similarity similarity = getSimilarity();      // cache sim in local
+    float[] normDecoder = similarity.getNormDecoder();
     while (doc < end) {                           // for docs in window
       int f = freqs[pointer];
       float score =                               // compute tf(f)*weight
@@ -69,7 +70,7 @@ final class TermScorer extends Scorer {
          ? scoreCache[f]                          // cache hit
          : similarity.tf(f)*weightValue;          // cache miss
 
-      score *= Similarity.decodeNorm(norms[doc]); // normalize for field
+      score *= normDecoder[norms[doc] & 0xFF];    // normalize for field
 
       c.collect(doc, score);                      // collect score
 

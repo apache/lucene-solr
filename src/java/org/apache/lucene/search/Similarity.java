@@ -102,6 +102,13 @@ public abstract class Similarity {
     return NORM_TABLE[b & 0xFF];
   }
 
+  /** Returns a table for decoding normalization bytes.
+   * @see #encodeNorm(float)
+   */
+  public static float[] getNormDecoder() {
+    return NORM_TABLE;
+  }
+
   /** Computes the normalization value for a field given the total number of
    * terms contained in a field.  These values, together with field boosts, are
    * stored in an index and multipled into scores for hits on each field by the
