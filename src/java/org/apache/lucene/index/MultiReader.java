@@ -52,13 +52,12 @@ public class MultiReader extends IndexReader {
   }
 
   /** Construct reading the named set of readers. */
-  MultiReader(Directory directory, SegmentInfos sis, boolean closeDirectory, IndexReader[] subReaders)
-    throws IOException {
+  MultiReader(Directory directory, SegmentInfos sis, boolean closeDirectory, IndexReader[] subReaders) {
     super(directory, sis, closeDirectory);
     initialize(subReaders);
   }
 
-  private void initialize(IndexReader[] subReaders) throws IOException{
+  private void initialize(IndexReader[] subReaders) {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
     for (int i = 0; i < subReaders.length; i++) {

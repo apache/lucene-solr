@@ -178,11 +178,9 @@ public class MultipleTermPositions
      * Describe <code>nextPosition</code> method here.
      *
      * @return an <code>int</code> value
-     * @exception IOException if an error occurs
      * @see TermPositions#nextPosition()
      */
     public final int nextPosition()
-	throws IOException
     {
 	return _posList.next();
     }

@@ -188,7 +188,7 @@ final class SegmentReader extends IndexReader {
     return false;
   }
 
-  protected final void doDelete(int docNum) throws IOException {
+  protected final void doDelete(int docNum) {
     if (deletedDocs == null)
       deletedDocs = new BitVector(maxDoc());
     deletedDocsDirty = true;
@@ -196,7 +196,7 @@ final class SegmentReader extends IndexReader {
     deletedDocs.set(docNum);
   }
 
-  protected final void doUndeleteAll() throws IOException {
+  protected final void doUndeleteAll() {
       deletedDocs = null;
       deletedDocsDirty = false;
       undeleteAll = true;
@@ -222,7 +222,7 @@ final class SegmentReader extends IndexReader {
     return files;
   }
 
-  public final TermEnum terms() throws IOException {
+  public final TermEnum terms() {
     return tis.terms();
   }
 
@@ -271,7 +271,7 @@ final class SegmentReader extends IndexReader {
   /**
    * @see IndexReader#getFieldNames()
    */
-  public Collection getFieldNames() throws IOException {
+  public Collection getFieldNames() {
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
     for (int i = 0; i < fieldInfos.size(); i++) {
@@ -284,7 +284,7 @@ final class SegmentReader extends IndexReader {
   /**
    * @see IndexReader#getFieldNames(boolean)
    */
-  public Collection getFieldNames(boolean indexed) throws IOException {
+  public Collection getFieldNames(boolean indexed) {
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
     for (int i = 0; i < fieldInfos.size(); i++) {
@@ -386,8 +386,7 @@ final class SegmentReader extends IndexReader {
    *  the specified field of this document, if the field had storeTermVector
    *  flag set.  If the flag was not set, the method returns null.
    */
-  public TermFreqVector getTermFreqVector(int docNumber, String field)
-          throws IOException {
+  public TermFreqVector getTermFreqVector(int docNumber, String field) {
     // Check if this field is invalid or has no stored term vector
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null || !fi.storeTermVector) return null;
@@ -402,8 +401,7 @@ final class SegmentReader extends IndexReader {
    *  in a given vectorized field.
    *  If no such fields existed, the method returns null.
    */
-  public TermFreqVector[] getTermFreqVectors(int docNumber)
-          throws IOException {
+  public TermFreqVector[] getTermFreqVectors(int docNumber) {
     if (termVectorsReader == null)
       return null;
 

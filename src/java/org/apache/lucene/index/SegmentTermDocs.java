@@ -39,8 +39,7 @@ class SegmentTermDocs implements TermDocs {
   private long skipPointer;
   private boolean haveSkipped;
 
-  SegmentTermDocs(SegmentReader parent)
-          throws IOException {
+  SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
     this.freqStream = (InputStream) parent.freqStream.clone();
     this.deletedDocs = parent.deletedDocs;

@@ -94,7 +94,7 @@ final class TermInfosReader {
   }
 
   /** Returns the offset of the greatest index entry which is less than or equal to term.*/
-  private final int getIndexOffset(Term term) throws IOException {
+  private final int getIndexOffset(Term term) {
     int lo = 0;					  // binary search indexTerms[]
     int hi = indexTerms.length - 1;
 
