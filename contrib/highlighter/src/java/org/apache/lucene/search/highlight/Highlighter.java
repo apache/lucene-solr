@@ -16,9 +16,11 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -57,8 +59,24 @@ public class Highlighter
  		this.fragmentScorer = fragmentScorer;
  	}
 
-
-
+	/**
+	 * Highlights chosen terms in a text, extracting the most relevant section.
+	 * This is a convenience method that calls
+	 * {@link #getBestFragment(TokenStream, String)}
+	 *
+	 * @param analyzer   the analyzer that will be used to split <code>text</code>
+	 * into chunks  
+	 * @param text text to highlight terms in
+	 *
+	 * @return highlighted text fragment or null if no terms found
+	 */
+	public final String getBestFragment(Analyzer analyzer, String text)
+		throws IOException
+	{
+		TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
+		return getBestFragment(tokenStream, text);
+	}
+  
 	/**
 	 * Highlights chosen terms in a text, extracting the most relevant section.
 	 * The document text is analysed in chunks to record hit statistics
@@ -84,6 +102,29 @@ public class Highlighter
 		}
 		return null;
 	}
+
+	/**
+	 * Highlights chosen terms in a text, extracting the most relevant sections.
+	 * This is a convenience method that calls
+	 * {@link #getBestFragments(TokenStream, String, int)}
+	 *
+	 * @param analyzer   the analyzer that will be used to split <code>text</code>
+	 * into chunks  
+	 * @param text        	text to highlight terms in
+	 * @param maxNumFragments  the maximum number of fragments.
+	 *
+	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
+	 */
+	public final String[] getBestFragments(
+		Analyzer analyzer,	
+		String text,
+		int maxNumFragments)
+		throws IOException
+	{
+		TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
+		return getBestFragments(tokenStream, text, maxNumFragments);
+	}
+	
 	/**
 	 * Highlights chosen terms in a text, extracting the most relevant sections.
 	 * The document text is analysed in chunks to record hit statistics

@@ -17,7 +17,6 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -27,7 +26,6 @@ import java.util.StringTokenizer;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import junit.framework.TestCase;
 
@@ -50,7 +48,6 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * JUnit Test for Highlighter class.
@@ -157,7 +154,6 @@ public class HighlighterTest extends TestCase implements Formatter
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 5);
 	}
 
-
 	public void testGetBestSingleFragment() throws Exception
 	{
 		doSearching("Kennedy");
@@ -172,6 +168,23 @@ public class HighlighterTest extends TestCase implements Formatter
 			System.out.println("\t" + result);
 		}
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
+
+		numHighlights = 0;
+		for (int i = 0; i < hits.length(); i++)
+		{
+    		String text = hits.doc(i).get(FIELD_NAME);
+    		highlighter.getBestFragment(analyzer, text);
+		}
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
+
+		numHighlights = 0;
+		for (int i = 0; i < hits.length(); i++)
+		{
+    		String text = hits.doc(i).get(FIELD_NAME);
+    		highlighter.getBestFragments(analyzer, text, 10);
+		}
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
+
 	}
 
 	public void testGetBestSingleFragmentWithWeights() throws Exception
@@ -278,7 +291,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(texts[0]));
 		String result = highlighter.getBestFragment(tokenStream,texts[0]);
 		assertTrue("Setting MaxDocBytesToAnalyze should have prevented " +
-			"us from finding matches for this record" + numHighlights +
+			"us from finding matches for this record: " + numHighlights +
 			 " found", numHighlights == 0);
 	}
 
@@ -322,7 +335,6 @@ public class HighlighterTest extends TestCase implements Formatter
 		Highlighter highlighter =
 			new Highlighter(this,new QueryScorer(query));
 
-		int highlightFragmentSizeInBytes = 40;
 		for (int i = 0; i < texts.length; i++)
 		{
 			String text = texts[i];
@@ -568,8 +580,8 @@ public class HighlighterTest extends TestCase implements Formatter
 //========== THESE LOOK LIKE, WITH SOME MORE EFFORT THESE COULD BE
 //========== MADE MORE GENERALLY USEFUL.
 // TODO - make synonyms all interchangeable with each other and produce
-// a version that does antonyms(?) - the "is a specialised type of ...."
-// so that car=audi, bmw and volkswagen but bmw != audi so different
+// a version that does hyponyms - the "is a specialised type of ...."
+// so that car = audi, bmw and volkswagen but bmw != audi so different
 // behaviour to synonyms
 //===================================================================
 
@@ -587,7 +599,6 @@ class SynonymAnalyzer extends Analyzer
 	 */
 	public TokenStream tokenStream(String arg0, Reader arg1)
 	{
-
 		return new SynonymTokenizer(new LowerCaseTokenizer(arg1), synonyms);
 	}
 }
