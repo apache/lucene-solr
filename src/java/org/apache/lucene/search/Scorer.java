@@ -78,7 +78,8 @@ public abstract class Scorer {
   public abstract int doc();
 
   /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #next()} is called the first time.
+   * Initially invalid, until {@link #next()} or {@link #skipTo(int)}
+   * is called the first time.
    */
   public abstract float score() throws IOException;
 
