@@ -108,6 +108,7 @@ public class PhraseQuery extends Query {
   }
 
   final float sumOfSquaredWeights(Searcher searcher) throws IOException {
+    idf = 0.0f;
     for (int i = 0; i < terms.size(); i++)	  // sum term IDFs
       idf += Similarity.idf((Term)terms.elementAt(i), searcher);
 
