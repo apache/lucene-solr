@@ -90,17 +90,21 @@ public class IndexSearcher extends Searcher {
     final HitQueue hq = new HitQueue(nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
-	public final void collect(int doc, float score) {
-	  if (score > 0.0f &&			  // ignore zeroed buckets
-	      (bits==null || bits.get(doc))) {	  // skip docs not in bits
-	    totalHits[0]++;
-            hq.insert(new ScoreDoc(doc, score));
-	  }
-	}
+        private float minScore = 0.0f;
+        public final void collect(int doc, float score) {
+          if (score > 0.0f &&                     // ignore zeroed buckets
+              (bits==null || bits.get(doc))) {    // skip docs not in bits
+            totalHits[0]++;
+            if (hq.size() < nDocs || score >= minScore) {
+              hq.insert(new ScoreDoc(doc, score));
+              minScore = ((ScoreDoc)hq.top()).score; // maintain minScore
+            }
+          }
+        }
       });
 
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-    for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
+    for (int i = hq.size()-1; i >= 0; i--)        // put docs in array
       scoreDocs[i] = (ScoreDoc)hq.pop();
 
     return new TopDocs(totalHits[0], scoreDocs);
@@ -119,17 +123,21 @@ public class IndexSearcher extends Searcher {
       new FieldSortedHitQueue(reader, sort.fields, nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
+        private float minScore = 0.0f;
         public final void collect(int doc, float score) {
-          if (score > 0.0f &&			  // ignore zeroed buckets
-              (bits==null || bits.get(doc))) {	  // skip docs not in bits
+          if (score > 0.0f &&                     // ignore zeroed buckets
+              (bits==null || bits.get(doc))) {    // skip docs not in bits
             totalHits[0]++;
-            hq.insert(new FieldDoc(doc, score));
+            if (hq.size() < nDocs || score >= minScore) {
+              hq.insert(new FieldDoc(doc, score));
+              minScore = ((FieldDoc)hq.top()).score; // maintain minScore
+            }
           }
         }
       });
 
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-    for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
+    for (int i = hq.size()-1; i >= 0; i--)        // put docs in array
       scoreDocs[i] = hq.fillFields ((FieldDoc) hq.pop());
 
     return new TopFieldDocs(totalHits[0], scoreDocs, hq.getFields());
@@ -143,12 +151,12 @@ public class IndexSearcher extends Searcher {
     if (filter != null) {
       final BitSet bits = filter.bits(reader);
       collector = new HitCollector() {
-	  public final void collect(int doc, float score) {
-	    if (bits.get(doc)) {		  // skip docs not in bits
-	      results.collect(doc, score);
-	    }
-	  }
-	};
+          public final void collect(int doc, float score) {
+            if (bits.get(doc)) {                  // skip docs not in bits
+              results.collect(doc, score);
+            }
+          }
+        };
     }
 
     Scorer scorer = query.weight(this).scorer(reader);
