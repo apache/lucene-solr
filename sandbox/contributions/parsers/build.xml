@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<project name="parsers" default="default">
+
+  <description>
+    Document parsers
+  </description>
+
+  <path id="additional.dependencies">
+    <fileset dir="lib"/>
+  </path>
+
+  <pathconvert property="project.classpath"
+    targetos="unix"
+    refid="additional.dependencies"
+    />
+
+  <import file="../common.xml"/>
+</project>
