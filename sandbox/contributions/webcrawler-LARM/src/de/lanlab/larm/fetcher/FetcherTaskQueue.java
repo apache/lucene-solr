@@ -59,6 +59,7 @@ import de.lanlab.larm.util.Queue;
 import de.lanlab.larm.util.CachingQueue;
 import de.lanlab.larm.util.HashedCircularLinkedList;
 import java.net.URL;
+import de.lanlab.larm.net.*;
 
 /**
  * this special kind of task queue reorders the incoming tasks so that every subsequent
@@ -84,7 +85,10 @@ public class FetcherTaskQueue extends TaskQueue
     /**
      * Constructor for the FetcherTaskQueue object. Does nothing
      */
-    public FetcherTaskQueue() { }
+    public FetcherTaskQueue(HostManager manager)
+    {
+        this.manager = manager;
+    }
 
 
     /**
@@ -156,6 +160,7 @@ public class FetcherTaskQueue extends TaskQueue
         return servers.size();
     }
 
+    HostManager manager;
     /**
      * get the next task. warning: not synchronized
      *
@@ -164,17 +169,53 @@ public class FetcherTaskQueue extends TaskQueue
     public Object remove()
     {
         FetcherTask t = null;
+        String start=null;
         if (servers.size() > 0)
         {
-            Queue q = (Queue) servers.next();
-            // assert(q != null && q.size() > 0)
-            t = (FetcherTask)q.remove();
-            if (q.size() == 0)
-            {
-                servers.removeCurrent();
-                q = null;
-            }
-            size--;
+//            while(true)
+//            {
+                Queue q = (Queue) servers.next();
+                String host = (String)servers.getCurrentKey();
+//                if(start == null)
+//                {
+//                    start = host;
+//                }
+//                else if(host.equals(start))
+//                {
+//                    System.out.println("FetcherTaskQueue: all hosts busy. waiting 1sec");
+//                    try
+//                    {
+//                        Thread.sleep(1000);
+//                    }
+//                    catch(InterruptedException e)
+//                    {
+//                        break;
+//                    }
+//                }
+//                HostInfo hInfo = manager.getHostInfo(host);
+//                System.out.println("getting sync on " + hInfo.getHostName());
+//                synchronized(hInfo.getLockMonitor())
+//                {
+//                    if(!hInfo.isBusy())
+//                    {
+//                        System.out.println("FetcherTaskQueue: host " + host + " ok");
+//                        hInfo.obtainLock(); // decreased in FetcherTask
+                        // assert(q != null && q.size() > 0)
+                        t = (FetcherTask)q.remove();
+                        if (q.size() == 0)
+                        {
+                            servers.removeCurrent();
+                            q = null;
+                        }
+                        size--;
+//                        break;
+//                    }
+//                    else
+//                    {
+//                        System.out.println("FetcherTaskQueue: host " + host + " is busy. next...");
+//                    }
+//                }
+//            }
         }
         return t;
     }
@@ -187,68 +228,70 @@ public class FetcherTaskQueue extends TaskQueue
      */
     public static void main(String args[])
     {
-        FetcherTaskQueue q = new FetcherTaskQueue();
-        de.lanlab.larm.net.HostManager hm = new de.lanlab.larm.net.HostManager(10);
-        System.out.println("Test 1. put in 4 yahoos and 3 lmus. pull out LMU/Yahoo/LMU/Yahoo/LMU/Yahoo/Yahoo");
-        try
-        {
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, false, null, hm)));
-        }
-        catch (Throwable t)
-        {
-            t.printStackTrace();
-        }
+// FIXME: put that into a JUnit test case
+//        FetcherTaskQueue q = new FetcherTaskQueue();
+//        de.lanlab.larm.net.HostResolver hm = new de.lanlab.larm.net.HostResolver();
+//        System.out.println("Test 1. put in 4 yahoos and 3 lmus. pull out LMU/Yahoo/LMU/Yahoo/LMU/Yahoo/Yahoo");
+//        try
+//        {
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//        }
+//        catch (Throwable t)
+//        {
+//            t.printStackTrace();
+//        }
+//
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//        System.out.println(((FetcherTask) q.remove()).getInfo());
+//
+//        System.out.println("Test 2. new Queue");
+//        q = new FetcherTaskQueue();
+//        System.out.println("size [0]:");
+//        System.out.println(q.size());
+//        try
+//        {
+//            System.out.println("put 3 lmus.");
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            System.out.print("pull out 1st element [lmu/1]: ");
+//            System.out.println(((FetcherTask) q.remove()).getInfo());
+//            System.out.println("size now [2]: " + q.size());
+//            System.out.print("pull out 2nd element [lmu/2]: ");
+//            System.out.println(((FetcherTask) q.remove()).getInfo());
+//            System.out.println("size now [1]: " + q.size());
+//            System.out.println("put in 3 yahoos");
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
+//            System.out.println("Size now [3]: " + q.size());
+//            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
+//            System.out.println("Size now [2]: " + q.size());
+//            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
+//            System.out.println("Size now [1]: " + q.size());
+//            System.out.println("put in another Yahoo");
+//            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, URLMessage.LINKTYPE_ANCHOR, null, hm)));
+//            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
+//            System.out.println("Size now [1]: " + q.size());
+//            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
+//            System.out.println("Size now [0]: " + q.size());
+//        }
+//        catch (Throwable t)
+//        {
+//            t.printStackTrace();
+//        }
 
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-        System.out.println(((FetcherTask) q.remove()).getInfo());
-
-        System.out.println("Test 2. new Queue");
-        q = new FetcherTaskQueue();
-        System.out.println("size [0]:");
-        System.out.println(q.size());
-        try
-        {
-            System.out.println("put 3 lmus.");
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, false, null, hm)));
-            System.out.print("pull out 1st element [lmu/1]: ");
-            System.out.println(((FetcherTask) q.remove()).getInfo());
-            System.out.println("size now [2]: " + q.size());
-            System.out.print("pull out 2nd element [lmu/2]: ");
-            System.out.println(((FetcherTask) q.remove()).getInfo());
-            System.out.println("size now [1]: " + q.size());
-            System.out.println("put in 3 yahoos");
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, false, null, hm)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, false, null, hm)));
-            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
-            System.out.println("Size now [3]: " + q.size());
-            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
-            System.out.println("Size now [2]: " + q.size());
-            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
-            System.out.println("Size now [1]: " + q.size());
-            System.out.println("put in another Yahoo");
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, false, null, hm)));
-            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
-            System.out.println("Size now [1]: " + q.size());
-            System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
-            System.out.println("Size now [0]: " + q.size());
-        }
-        catch (Throwable t)
-        {
-            t.printStackTrace();
-        }
     }
 }
