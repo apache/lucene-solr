@@ -535,7 +535,10 @@ Query Term(String field) : {
       }
       catch (Exception ignored) { }
 
-      q.setBoost(f);
+      // could happen with boosted stopword
+      if(q != null) {
+        q.setBoost(f);
+      }
     }
     return q;
   }

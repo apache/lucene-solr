@@ -306,4 +306,21 @@ public class TestQueryParser extends TestCase {
 	assertQueryEqualsDOA("term +term +term", null, "+term +term +term");
 	assertQueryEqualsDOA("-term term term", null, "-term +term +term");
     }
+
+    public void testBoost()
+        throws Exception
+    {
+        StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(new String[]{"on"});
+        QueryParser qp = new QueryParser("field", oneStopAnalyzer);
+        Query q = qp.parse("on^1.0");
+        assertNotNull(q);
+        q = qp.parse("\"hello\"^2.0");
+        assertNotNull(q);
+        assertEquals(q.getBoost(), (float)2.0, (float)0.5);
+        q = qp.parse("hello^2.0");
+        assertNotNull(q);
+        assertEquals(q.getBoost(), (float)2.0, (float)0.5);
+        q = qp.parse("\"on\"^1.0");
+        assertNotNull(q);
+    }
 }
