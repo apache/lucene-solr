@@ -82,7 +82,7 @@ public class TestRemoteSearchable extends TestCase {
 
   public void testBooleanQuery() throws Exception {
     BooleanQuery query = new BooleanQuery();
-    query.add(new TermQuery(new Term("test", "test")), true, false);
+    query.add(new TermQuery(new Term("test", "test")), BooleanClause.Occur.MUST);
     search(query);
   }
 

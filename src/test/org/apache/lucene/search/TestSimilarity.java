@@ -80,8 +80,8 @@ public class TestSimilarity extends TestCase {
        });
 
     BooleanQuery bq = new BooleanQuery();
-    bq.add(new TermQuery(a), false, false);
-    bq.add(new TermQuery(b), false, false);
+    bq.add(new TermQuery(a), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(b), BooleanClause.Occur.SHOULD);
     //System.out.println(bq.toString("field"));
     searcher.search
       (bq,

@@ -204,8 +204,8 @@ public class TestPhraseQuery extends TestCase {
     
     TermQuery termQuery = new TermQuery(new Term("contents","foobar"));
     BooleanQuery booleanQuery = new BooleanQuery();
-    booleanQuery.add(termQuery, true, false);
-    booleanQuery.add(phraseQuery, true, false);
+    booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
+    booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery);
     assertEquals(1, hits.length());
     
@@ -240,14 +240,14 @@ public class TestPhraseQuery extends TestCase {
     assertEquals(2, hits.length());
     
     booleanQuery = new BooleanQuery();
-    booleanQuery.add(termQuery, true, false);
-    booleanQuery.add(phraseQuery, true, false);
+    booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
+    booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery);
     assertEquals(2, hits.length());
     
     booleanQuery = new BooleanQuery();
-    booleanQuery.add(phraseQuery, true, false);
-    booleanQuery.add(termQuery, true, false);
+    booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
+    booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery);
     assertEquals(2, hits.length());
     

@@ -64,11 +64,11 @@ public class TestWildcard
         Query query5 = new WildcardQuery(new Term("body", "m*tals"));
 
         BooleanQuery query6 = new BooleanQuery();
-        query6.add(query5, false, false);
+        query6.add(query5, BooleanClause.Occur.SHOULD);
 
         BooleanQuery query7 = new BooleanQuery();
-        query7.add(query3, false, false);
-        query7.add(query5, false, false);
+        query7.add(query3, BooleanClause.Occur.SHOULD);
+        query7.add(query5, BooleanClause.Occur.SHOULD);
 
 	// Queries do not automatically lower-case search terms:
         Query query8 = new WildcardQuery(new Term("body", "M*tal*"));
