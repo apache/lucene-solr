@@ -64,8 +64,6 @@ public class TestSimilarity extends TestCase {
     writer.optimize();
     writer.close();
 
-    final float[] scores = new float[4];
-
     Searcher searcher = new IndexSearcher(store);
     searcher.setSimilarity(new SimpleSimilarity());
 

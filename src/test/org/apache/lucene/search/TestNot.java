@@ -18,9 +18,6 @@ package org.apache.lucene.search;
 
 import junit.framework.TestCase;
 
-import java.util.Vector;
-
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
