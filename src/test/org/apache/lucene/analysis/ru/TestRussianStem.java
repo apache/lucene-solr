@@ -57,6 +57,7 @@ package org.apache.lucene.analysis.ru;
 import junit.framework.TestCase;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -79,12 +80,14 @@ public class TestRussianStem extends TestCase
         super.setUp();
         //System.out.println(new java.util.Date());
         String str;
+        
+        File dataDir = new File(System.getProperty("dataDir"));
 
         // open and read words into an array list
         BufferedReader inWords =
             new BufferedReader(
                 new InputStreamReader(
-                    new FileInputStream("src/test/org/apache/lucene/analysis/ru/wordsUnicode.txt"),
+                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/wordsUnicode.txt")),
                     "Unicode"));
         while ((str = inWords.readLine()) != null)
         {
@@ -96,7 +99,7 @@ public class TestRussianStem extends TestCase
         BufferedReader inStems =
             new BufferedReader(
                 new InputStreamReader(
-                    new FileInputStream("src/test/org/apache/lucene/analysis/ru/stemsUnicode.txt"),
+                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/stemsUnicode.txt")),
                     "Unicode"));
         while ((str = inStems.readLine()) != null)
         {
