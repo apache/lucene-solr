@@ -61,6 +61,7 @@ import org.apache.lucene.*;
 import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.Token;
 
 public class TestQueryParser extends TestCase {
@@ -135,8 +136,6 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", null, "türm term term");
     assertQueryEquals("ümlaut", null, "ümlaut");
-    assertQueryEquals("term term1 term2", null, "term term term");
-    assertQueryEquals("term 1.0 1 2", null, "term");
 
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
@@ -145,7 +144,6 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("a AND -b", null, "+a -b");
     assertQueryEquals("a AND !b", null, "+a -b");
     assertQueryEquals("a && b", null, "+a +b");
-    assertQueryEquals("a&&b", null, "+a +b");
     assertQueryEquals("a && ! b", null, "+a -b");
 
     assertQueryEquals("a OR b", null, "a b");
@@ -177,6 +175,25 @@ public class TestQueryParser extends TestCase {
                       "+(apple \"steve jobs\") -(foo bar baz)");
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null, 
                       "+(title:dog title:cat) -author:\"bob dole\"");
+  }
+
+  public void testPunct() throws Exception {
+    Analyzer a = new NullAnalyzer();
+    assertQueryEquals("a&b", a, "a&b");
+    assertQueryEquals("a&&b", a, "a&&b");
+    assertQueryEquals(".NET", a, ".NET");
+  }
+
+  public void testNumber() throws Exception {
+    // The numbers go away because SimpleAnalzyer ignores them
+    assertQueryEquals("3", null, "");
+    assertQueryEquals("term 1.0 1 2", null, "term");
+    assertQueryEquals("term term1 term2", null, "term term term");
+
+    Analyzer a = new StandardAnalyzer();
+    assertQueryEquals("3", a, "3");
+    assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
+    assertQueryEquals("term term1 term2", a, "term term1 term2");
   }
 
   public void testWildcard() throws Exception {
