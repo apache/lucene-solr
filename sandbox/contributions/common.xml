@@ -76,6 +76,9 @@
            srcdir="${src.dir}"
            classpathref="compile.classpath"
     />
+    <copy todir="${build.classes.dir}">
+      <fileset dir="${src.dir}" excludes="**/*.java"/>
+    </copy>
   </target>
 
   <target name="test-compile" depends="compile" if="has.tests">
