@@ -196,7 +196,6 @@ class CompoundFileReader extends Directory {
         long fileOffset;
 
         CSInputStream(final InputStream base, final long fileOffset, final long length)
-          throws IOException
         {
             this.base = base;
             this.fileOffset = fileOffset;
@@ -207,7 +206,7 @@ class CompoundFileReader extends Directory {
          *  position in the input.
          * @param b the array to read bytes into
          * @param offset the offset in the array to start storing bytes
-         * @param length the number of bytes to read
+         * @param len the number of bytes to read
          */
         protected void readInternal(byte[] b, int offset, int len)
         throws IOException
@@ -225,10 +224,10 @@ class CompoundFileReader extends Directory {
          *  the next {@link #readInternal(byte[],int,int)} will occur.
          * @see #readInternal(byte[],int,int)
          */
-        protected void seekInternal(long pos) throws IOException {}
+        protected void seekInternal(long pos) {}
 
         /** Closes the stream to futher operations. */
-        public void close() throws IOException {}
+        public void close() {}
 
     }
 }
