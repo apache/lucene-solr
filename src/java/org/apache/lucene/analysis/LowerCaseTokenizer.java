@@ -72,7 +72,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
   }
 
   /** Collects only characters which satisfy
-   * {@link Character.isLetter(char)}.*/
+   * {@link Character#isLetter(char)}.*/
   protected char normalize(char c) {
     return Character.toLowerCase(c);
   }

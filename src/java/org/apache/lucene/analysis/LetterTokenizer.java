@@ -70,7 +70,7 @@ public class LetterTokenizer extends CharTokenizer {
   }
 
   /** Collects only characters which satisfy
-   * {@link Character.isLetter(char)}.*/
+   * {@link Character#isLetter(char)}.*/
   protected boolean isTokenChar(char c) {
     return Character.isLetter(c);
   }
