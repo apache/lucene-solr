@@ -62,8 +62,6 @@ import org.apache.lucene.store.OutputStream;
 
 import com.sleepycat.db.Db;
 import com.sleepycat.db.DbTxn;
-import com.sleepycat.db.Dbt;
-import com.sleepycat.db.DbException;
 
 /**
  * @author Andi Vajda
