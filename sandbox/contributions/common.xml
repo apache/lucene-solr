@@ -12,6 +12,8 @@
 
   <property name="dist.dir" location="dist"/>
 
+  <property name="dist.name" value="${ant.project.name}.jar"/>
+
   <property name="junit.jar" location="${ant.home}/lib/junit.jar"/>
   <dirname file="${ant.file.common}" property="common.dir"/>
   <property name="lucene.dir" location="${common.dir}/../../jakarta-lucene"/>
@@ -22,6 +24,7 @@
   <!-- ========================================================== -->
   <!-- Datatype declarations                                      -->
   <!-- ========================================================== -->
+  <!-- TODO: define ${lucene.jar} for easeir overriding -->
   <path id="compile.classpath">
     <fileset dir="${lucene.dir}" includes="build/lucene*.jar"/>
     <pathelement path="${project.classpath}"/>
@@ -59,30 +62,29 @@
     <delete dir="${test.classes.dir}"/>
   </target>
 
-  <target name="dist" depends="compile"
-    description="Create JAR">
-    <jar jarfile="${lucene-ant.jar}"
-      basedir="${build.classes.dir}"
-      />
+  <target name="dist" depends="compile" description="Create JAR">
+    <jar jarfile="${dist.dir}/${dist.name}"
+         basedir="${build.classes.dir}"
+    />
   </target>
 
   <target name="compile" depends="init">
     <javac destdir="${build.classes.dir}"
-      debug="${build.debug}"
-      includeAntRuntime="yes"
-      deprecation="true"
-      srcdir="${src.dir}"
-      classpathref="compile.classpath"
-      />
+           debug="${build.debug}"
+           includeAntRuntime="yes"
+           deprecation="true"
+           srcdir="${src.dir}"
+           classpathref="compile.classpath"
+    />
   </target>
 
   <target name="test-compile" depends="compile" if="has.tests">
     <javac destdir="${test.classes.dir}"
-      debug="${build.debug}"
-      includeAntRuntime="yes"
-      srcdir="src/test"
-      classpathref="test.classpath"
-      />
+           debug="${build.debug}"
+           includeAntRuntime="yes"
+           srcdir="src/test"
+           classpathref="test.classpath"
+    />
 
     <copy todir="${test.classes.dir}">
       <fileset dir="src/test" excludes="**/*.java"/>
@@ -91,9 +93,9 @@
 
   <target name="test" depends="test-compile" if="has.tests">
     <junit printsummary="no"
-      errorProperty="test.failed"
-      failureProperty="test.failed"
-      fork="${junit.fork}">
+           errorProperty="test.failed"
+           failureProperty="test.failed"
+           fork="${junit.fork}">
       <classpath refid="test.classpath"/>
       <sysproperty key="docs.dir" file="${test.classes.dir}"/>
       <sysproperty key="index.dir" file="${test.output.dir}/index"/>
@@ -101,8 +103,8 @@
       <test name="${testcase}" if="testcase"/>
       <batchtest todir="${test.data.dir}" unless="testcase">
         <fileset dir="${test.classes.dir}"
-          includes="**/*Test.class,**/Test*.class"
-          />
+                 includes="**/*Test.class,**/Test*.class"
+        />
       </batchtest>
     </junit>
 
@@ -112,6 +114,6 @@
 
   </target>
 
-  <target name="default" depends="test"/>
+  <target name="default" depends="test,dist"/>
 
 </project>

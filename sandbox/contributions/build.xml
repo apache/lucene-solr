@@ -1,7 +1,11 @@
 <project name="sandbox" default="build-tree">
 
+  <property name="dist.dir" location="dist"/>
+
   <target name="clean">
     <subant target="clean">
+      <property name="dist.dir" location="${dist.dir}"/>
+
       <fileset dir="."
                includes="*/build.xml"
       />
@@ -10,6 +14,8 @@
 
   <target name="build-tree">
     <subant target="">
+      <property name="dist.dir" location="${dist.dir}"/>
+
       <!-- Exclude LARM for now,
            until its build is brought up to speed
       -->
