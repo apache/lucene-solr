@@ -85,18 +85,6 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     static final Operator AND = new Operator("AND");
   }
 
-  /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param expression  the query expression to be parsed.
-   *  @param field  the default field for query terms.
-   *  @param analyzer   used to find terms in the query text.
-   *  @throws ParseException if the parsing fails
-   */
-  static public Query parse(String expression, String field, Analyzer analyzer)
-       throws ParseException {
-    PrecedenceQueryParser parser = new PrecedenceQueryParser(field, analyzer);
-    return parser.parse(expression);
-  }
-
   /** Constructs a query parser.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
