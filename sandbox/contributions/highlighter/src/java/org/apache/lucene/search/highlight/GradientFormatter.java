@@ -143,7 +143,7 @@ public class GradientFormatter implements Formatter
         return sb.toString();
     }
 
-    private String getForegroundColorString(float score)
+    protected String getForegroundColorString(float score)
     {
         int rVal = getColorVal(fgRMin, fgRMax, score);
         int gVal = getColorVal(fgGMin, fgGMax, score);
@@ -156,7 +156,7 @@ public class GradientFormatter implements Formatter
         return sb.toString();
     }
 
-    private String getBackgroundColorString(float score)
+    protected String getBackgroundColorString(float score)
     {
         int rVal = getColorVal(bgRMin, bgRMax, score);
         int gVal = getColorVal(bgGMin, bgGMax, score);
