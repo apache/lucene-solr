@@ -10,6 +10,8 @@
 
   <tstamp>
     <format property="current.year" pattern="yyyy"/>
+    <format property="DSTAMP" pattern="yyyy-MM-dd"/>
+    <format property="TSTAMP" pattern="HH:mm:ss"/>
   </tstamp>
 
   <property name="name" value="lucene"/>
