@@ -38,7 +38,7 @@ public final class BrazilianStemFilter extends TokenFilter {
 	 */
 	public BrazilianStemFilter( TokenStream in, Hashtable exclusiontable ) {
 		this( in );
-		this.exclusions = exclusions;
+		this.exclusions = exclusiontable;
 	}
 
 	/**
