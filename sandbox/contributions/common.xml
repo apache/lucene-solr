@@ -116,4 +116,6 @@
 
   <target name="default" depends="test,dist"/>
 
+  <!-- TODO: Add javadoc and anakia document building here -->
+
 </project>
