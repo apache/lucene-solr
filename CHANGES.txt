@@ -74,9 +74,7 @@ $Id$
     still somewhat slower than FSDirectory.  However it uses less
     memory per query term, since a new buffer is not allocated per
     term, which may help applications which use, e.g., wildcard
-    queries.  It also should, in theory, someday be faster.  A
-    downside is, due to limitations of the nio APIs, this does not
-    work with indexes containing files larger than 2^31 bytes. (cutting)
+    queries.  It may also someday be faster. (cutting & Paul Elschot)
 
 16. Optimize the performance of certain uses of BooleanScorer,
     TermScorer and IndexSearcher.  In particular, a BooleanQuery
