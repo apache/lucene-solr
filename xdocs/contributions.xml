@@ -233,57 +233,6 @@
             </subsection>
         </section>
 
-        <section name="Lucene Analyzers and Filters">
-            <p>
-            </p>
-            <subsection name="Chinese Analyzer, Tokenizer, Filter">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2">
-                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Yiyi Sun - yiyisun@yahoo.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-            <subsection name="Chained Filter">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/misc/src/java/org/apache/lucene/misc/ChainedFilter.java">
-                                http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/misc/src/java/org/apache/lucene/misc/ChainedFilter.java
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Kelvin Tan - kelvint at apache.org
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-        </section>
-
         <section name="Miscellaneous">
             <p>
             </p>
@@ -365,8 +314,8 @@
                             URL
                         </th>
                         <td>
-                            <a href="http://www.webgain.com/products/java_cc/">
-                                http://www.webgain.com/products/java_cc/
+                            <a href="https://javacc.dev.java.net/">
+                                https://javacc.dev.java.net/
                             </a>
                         </td>
                     </tr>
@@ -375,7 +324,7 @@
                             author
                         </th>
                         <td>
-                            N/A
+                            Sun Microsystems (java.net)
                         </td>
                     </tr>
                 </table>

@@ -36,7 +36,17 @@
                     <a href="http://snowball.tartarus.org/">Background information on Snowball</a>,
                     which is a language for stemmers developed by Martin Porter.
                 </p>
+            </subsection>
 
+            <subsection name="Analyzers, Tokenizers, Filters">
+                <p>
+                  Contributed Analyzers, Tokenizers, and Filters for various languages.
+                </p>
+
+                <p>
+                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/analyzers/">The
+                        CVS repository for the Analyzers contribution.</a>
+                </p>
             </subsection>
 
             <subsection name="SearchBean">
@@ -50,7 +60,6 @@
                     <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/searchbean/">The
                         CVS repository for the SearchBean contribution.</a>
                 </p>
-
             </subsection>
 
             <subsection name="Ant">
@@ -96,13 +105,16 @@
                 </p>
             </subsection>
 
-            <subsection name="LARM">
+            <subsection name="Lucli - Lucene Command-line Interface">
                 <p>
-                    LARM is a web crawler optimized for large intranets with up to a couple of hundred hosts.
+                  The Lucli application allows index manipulation from the
+                    command-line.
                 </p>
-                <a href="larm/overview.html">Technical Overview</a>.
-                See also: <a href="http://larm.sourceforge.net/">LARM's home page on SourceForge</a>.
 
+                <p>
+                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/lucli/">The
+                        CVS repository for the Lucli contribution.</a>
+                </p>
             </subsection>
 
             <subsection name="Javascript Query Constructor">
@@ -141,6 +153,14 @@
                     <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/miscellaneous/src/java/org/apache/lucene/misc/">
                         CVS for miscellaneous classes.</a>
                 </p>
+            </subsection>
+
+            <subsection name="LARM">
+                <p>
+                    LARM is a web crawler optimized for large intranets with up to a couple of hundred hosts.
+                </p>
+                <a href="larm/overview.html">Technical Overview</a>.
+                See also: <a href="http://larm.sourceforge.net/">LARM's home page on SourceForge</a>.
             </subsection>
 
         </section>
