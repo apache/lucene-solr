@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="Lucene" default="jar" basedir=".">
+<project name="Lucene" default="default" basedir=".">
 
   <!-- Give user a chance to override without editing this file
       (and without typing -D each time it compiles it -->
@@ -102,7 +102,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="compile" depends="init">
+  <target name="compile-core" depends="init">
     <javac
       encoding="${build.encoding}"
       srcdir="${src.dir}"
@@ -123,7 +123,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="jar" depends="compile">
+  <target name="jar-core" depends="compile-core">
 
     <jar
       jarfile="${build.dir}/${final.name}.jar"
@@ -156,7 +156,7 @@ Implementation-Version: build 2003-09-18 13:08:01
 Implementation-Vendor: Lucene
   -->
 
-  <target name="jardemo" depends="compile,demo">
+  <target name="jar-demo" depends="compile-demo">
     <jar
       jarfile="${build.demo}/${build.demo.name}.jar"
       basedir="${build.demo.classes}"
@@ -164,7 +164,7 @@ Implementation-Vendor: Lucene
       />
   </target>
 
-  <target name="wardemo" depends="compile,demo,jar,jardemo">
+  <target name="war-demo" depends="jar-core,jar-demo">
     <mkdir dir="${build.demo}/${build.demo.war.name}"/>
     <mkdir dir="${build.demo}/${build.demo.war.name}/WEB-INF"/>
     <mkdir dir="${build.demo}/${build.demo.war.name}/WEB-INF/lib"/>
@@ -212,7 +212,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="demo" depends="compile">
+  <target name="compile-demo" depends="compile-core">
     <mkdir dir="${build.demo}"/>
     <mkdir dir="${build.demo.src}"/>
 
@@ -240,7 +240,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="test" depends="compile,demo">
+  <target name="compile-test" depends="compile-core,compile-demo">
     <mkdir dir="${build.test.classes}"/>
     <javac
       encoding="${build.encoding}"
@@ -257,7 +257,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="test-unit" depends="compile,test" if="junit.present">
+  <target name="test" depends="compile-test" if="junit.present">
     <mkdir dir="${junit.reports}"/>
     <junit printsummary="off" haltonfailure="no">
       <classpath refid="junit.classpath"/>
@@ -271,6 +271,9 @@ Implementation-Vendor: Lucene
       </batchtest>
     </junit>
   </target>
+
+  <!-- backwards compatible target - may be removed -->
+  <target name="test-unit" depends="test"/>
 
   <!-- ================================================================== -->
   <!-- D O C U M E N T A T I O N                                          -->
@@ -334,7 +337,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="javadocs" depends="compile">
+  <target name="javadocs">
     <mkdir dir="${build.javadocs}"/>
     <javadoc
       sourcepath="${src.dir}:${build.src}"
@@ -350,7 +353,6 @@ Implementation-Vendor: Lucene
       doctitle="${Name} ${version} API"
       bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
       >
-      <classpath refid="classpath"/>
       <tag name="todo" description="To Do:"/>
     </javadoc>
   </target>
@@ -360,7 +362,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar, javadocs, demo, wardemo">
+  <target name="package" depends="jar-core, javadocs, war-demo">
     <mkdir dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
@@ -447,8 +449,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="dist" depends="package-all">
-  </target>
+  <target name="dist" depends="package-all"/>
 
   <!-- ================================================================== -->
   <!-- S O U R C E  D I S T R I B U T I O N                               -->
@@ -517,16 +518,14 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-all-src" depends="package-zip-src, package-tgz-src"
-    description="--> Generates the .tar.gz and .zip source distributions">
-  </target>
+    description="--> Generates the .tar.gz and .zip source distributions"/>
 
   <!-- ================================================================== -->
   <!-- same as package-all-src. it is just here for compatibility.        -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="dist-src" depends="package-all-src">
-  </target>
+  <target name="dist-src" depends="package-all-src"/>
 
   <!-- ================================================================== -->
   <!-- C L E A N                                                          -->
@@ -645,5 +644,7 @@ Implementation-Vendor: Lucene
       <arg value="${target}"/>
     </java>
   </target>
+
+  <target name="default" depends="jar-core"/>
 
 </project>
