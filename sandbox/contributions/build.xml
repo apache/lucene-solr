@@ -3,7 +3,7 @@
   <property name="dist.dir" location="dist"/>
 
   <macrodef name="crawl">
-    <attribute name="target"/>
+    <attribute name="target" default=""/>
     <sequential>
       <subant target="@{target}" failonerror="false">
         <property name="dist.dir" location="${dist.dir}"/>
@@ -21,6 +21,6 @@
   </target>
 
   <target name="build-tree">
-    <crawl target=""/>
+    <crawl/>
   </target>
 </project>
