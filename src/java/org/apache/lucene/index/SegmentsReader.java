@@ -125,8 +125,12 @@ final class SegmentsReader extends IndexReader
 	hi = mid - 1;
       else if (n > midValue)
 	lo = mid + 1;
-      else
+      else {                                      // found a match
+        while (mid+1 < readers.length && starts[mid+1] == midValue) {
+          mid++;                                  // scan to last match
+        }
 	return mid;
+      }
     }
     return hi;
   }
