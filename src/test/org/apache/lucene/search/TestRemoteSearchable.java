@@ -56,6 +56,7 @@ package org.apache.lucene.search;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 
 import junit.framework.TestCase;
@@ -72,12 +73,25 @@ public class TestRemoteSearchable extends TestCase {
     super(name);
   }
 
-  public static void startServer() throws Exception {
+  private static Searchable getRemote() throws Exception {
+    try {
+      return lookupRemote();
+    } catch (Throwable e) {
+      startServer();
+      return lookupRemote();
+    }
+  }
+  
+  private static Searchable lookupRemote() throws Exception {
+    return (Searchable)Naming.lookup("//localhost/Searchable");
+  }
+
+  private static void startServer() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(),true);
     Document doc = new Document();
-    doc.add(Field.Text("test", "test"));
+    doc.add(Field.Text("test", "test text"));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
@@ -89,26 +103,31 @@ public class TestRemoteSearchable extends TestCase {
     Naming.rebind("//localhost/Searchable", impl);
   }
 
-  public static void search() throws Exception {
+  public static void search(Query query) throws Exception {
     // try to search the published index
-    Searchable remote = (Searchable)Naming.lookup("//localhost/Searchable");
-    Searchable[] searchables = {remote};
+    Searchable[] searchables = { getRemote() };
     Searcher searcher = new MultiSearcher(searchables);
-    Query query = new TermQuery(new Term("test", "test"));
     Hits result = searcher.search(query);
 
     assertEquals(1, result.length());
-    assertEquals("test", result.doc(0).get("test"));
+    assertEquals("test text", result.doc(0).get("test"));
   }
   
-  public void testRemoteSearch() throws Exception { 
-    startServer();
-    search();
+  public void testTermQuery() throws Exception { 
+    search(new TermQuery(new Term("test", "test")));
   }
 
-  public static void main(String[] args) throws Exception {
-    startServer();
-    search();
-    System.exit(0);
+  public void testBooleanQuery() throws Exception { 
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("test", "test")), true, false);
+    search(query);
   }
+
+  public void testPhraseQuery() throws Exception { 
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("test", "test"));
+    query.add(new Term("test", "text"));
+    search(query);
+  }
+
 }

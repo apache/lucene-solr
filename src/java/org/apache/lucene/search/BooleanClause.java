@@ -55,7 +55,7 @@ package org.apache.lucene.search;
  */
 
 /** A clause in a BooleanQuery. */
-public class BooleanClause {
+public class BooleanClause implements java.io.Serializable {
   /** The query whose matching documents are combined by the boolean query. */
   public Query query;
   /** If true, documents documents which <i>do not</i>
