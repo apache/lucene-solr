@@ -470,7 +470,7 @@
       <fileset dir="lib"/>
     </copy>
     <copy todir="${dist-src.dir}/" file="build.xml"/>
-    <copy todir="${dist-src.dir}/" file="build.properties"/>
+    <copy todir="${dist-src.dir}/" file="default.properties"/>
     <copy todir="${dist-src.dir}">
       <fileset dir=".">
         <include name="*.txt" />
