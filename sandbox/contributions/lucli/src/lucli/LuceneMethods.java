@@ -97,7 +97,6 @@ class LuceneMethods {
 
   private int numDocs;
   private String indexName; //directory of this index
-  private long version; //version number of this index
   java.util.Iterator fieldIterator;
   Vector fields; //Fields as a vector
   Vector indexedFields; //Fields as a vector
@@ -203,8 +202,6 @@ class LuceneMethods {
     Analyzer analyzer = new StandardAnalyzer();
     getFieldInfo();
 
-    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-
     MultiFieldQueryParser parser = new MultiFieldQueryParser(queryString, analyzer);
 
     int arraySize = indexedFields.size();
@@ -226,8 +223,6 @@ class LuceneMethods {
     searcher = new IndexSearcher(indexName);
     Analyzer analyzer = new StandardAnalyzer();
     getFieldInfo();
-
-    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
     MultiFieldQueryParser parser = new MultiFieldQueryParser(queryString, analyzer);
 
