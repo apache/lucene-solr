@@ -172,7 +172,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     try {
       return (Query)super.clone();
     } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Clone not supported: " + e.getMessage());
     }
   }
 }
