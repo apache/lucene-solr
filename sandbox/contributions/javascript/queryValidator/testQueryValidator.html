@@ -1,0 +1,453 @@
+<html>
+
+<head>
+<script language="JavaScript" src="f:/jsunit/app/jsUnitCore.js"></script>
+<script language="JavaScript" src="luceneQueryValidator.js"></script>
+</head>
+<body>
+<script>
+setAlertUser(false);
+
+// additions to jsUnit
+function assertTrue(comment, value)
+{
+  return assertEquals(comment, true, value);
+}
+
+function assertFalse(comment, value)
+{
+  return assertEquals(comment, false, value);
+}
+
+function testRemoveEscapes()
+{
+  var query = "\\* foo \\haha";
+  assertEquals(query, " foo aha", removeEscapes(query));
+  query = "\\\\foo";
+  assertEquals(query, "foo", removeEscapes(query));
+  query = "foo\\\"";
+  assertEquals(query, "foo", removeEscapes(query));
+}
+
+function testCheckAllowedCharacters()
+{
+fail("");
+}
+
+function testCheckAsterisk()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkAsterisk(query));
+  
+  query = "foo bar12* is ok*";
+  assertTrue(query, checkAsterisk(query));
+  
+  query = "foo bar12*sdsd";
+  assertTrue(query, checkAsterisk(query));
+
+  query = "foo bar12*sd**sd";
+  assertTrue(query, checkAsterisk(query));
+
+  query = "*bar12";
+  assertFalse(query, checkAsterisk(query));
+
+  query = "*ba12r*";
+  assertFalse(query, checkAsterisk(query));
+
+  query = "bar* *bar";
+  assertFalse(query, checkAsterisk(query));
+
+  // test with a space in front
+  query = " *bar";
+  assertFalse(query, checkAsterisk(query));  
+
+  // test the escaped case
+  query = "bar* \\*bar";
+  assertTrue(query, checkAsterisk(query));  
+
+  // try including other special characters
+  query = "foo:bar*ba?r";
+  assertTrue(query, checkAsterisk(query));
+
+  query = "foo:(ba*ba?r zoo \"zaa zoo\")";
+  assertTrue(query, checkAsterisk(query));
+}
+
+function testCheckAmpersands()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkAmpersands(query));
+  
+  query = "foo & bar";
+  assertTrue(query, checkAmpersands(query));
+
+  query = "foo & bar& metoo &";
+  assertTrue(query, checkAmpersands(query));
+
+  query = "foo && bar12isok";
+  assertTrue(query, checkAmpersands(query));
+
+  query = "bar12 &&";
+  assertFalse(query, checkAmpersands(query));
+  
+  query = "bar12 && bar12 &&";
+  assertFalse(query, checkAmpersands(query));
+  
+  query = "bar12 && ";
+  assertFalse(query, checkAmpersands(query));
+ }
+
+function testCheckCaret()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkCaret(query));
+  
+  var query = "foo bar12isok^1.0";
+  assertTrue(query, checkCaret(query));
+  
+  query = "\"jakarta apache\"^10";
+  assertTrue(query, checkCaret(query));
+
+  query = "bar12^";
+  assertFalse(query, checkCaret(query));
+  
+  query = "bar12^10 bar12^";
+  assertFalse(query, checkCaret(query));
+  
+  query = "bar12^ ";
+  assertFalse(query, checkCaret(query));
+
+  query = "bar12^ me too";
+  assertFalse(query, checkCaret(query));
+  
+  query = "bar12^foo";
+  assertFalse(query, checkCaret(query));
+
+  query = "bar12^1.foo";
+  assertFalse(query, checkCaret(query));
+  
+  // test the escaped case
+  query = "\\^";
+  assertTrue(query, checkCaret(query));  
+
+  query = "bar\\^";
+  assertTrue(query, checkCaret(query));  
+
+  // try including other special characters
+  query = "bar*ba?r^1.0";
+  assertTrue(query, checkCaret(query));
+}
+
+function testCheckSquiggle()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkSquiggle(query));
+  
+  var query = "foo bar12isok~10";
+  assertTrue(query, checkSquiggle(query));
+  
+  query = "\"jakarta apache\"~10";
+  assertTrue(query, checkSquiggle(query));
+
+  query = "bar12~";
+  assertTrue(query, checkSquiggle(query));
+  
+  query = "bar12~10 bar12~";
+  assertTrue(query, checkSquiggle(query));
+  
+  query = "bar12~ ";
+  assertTrue(query, checkSquiggle(query));
+
+  query = "bar12~foo";
+  assertFalse(query, checkSquiggle(query));
+  
+  query = "bar12~1f";
+  assertFalse(query, checkSquiggle(query))  
+
+  // test the escaped case
+  query = "\\~";
+  assertTrue(query, checkSquiggle(query));  
+
+  query = "bar\\~";
+  assertTrue(query, checkSquiggle(query));  
+
+  // try including other special characters
+  query = "bar*ba?r~10";
+  assertTrue(query, checkSquiggle(query));
+
+  // FIXME: how about floating point proximity searches, e.g. foo~2.5
+}
+
+function testCheckExclamationMark()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkExclamationMark(query));
+  
+  query = "foo ! bar";
+  assertTrue(query, checkExclamationMark(query));
+  
+  query = "\"foo\" ! \"bar\"";
+  assertTrue(query, checkExclamationMark(query));
+
+  query = "foo!";
+  assertTrue(query, checkExclamationMark(query));
+
+  query = "! bar";
+  assertFalse(query, checkExclamationMark(query));
+
+  query = "foo !";
+  assertFalse(query, checkExclamationMark(query));
+
+  query = "foo ! ";
+  assertFalse(query, checkExclamationMark(query));
+  
+  // test escaped case
+  query = "foo \\!";
+  assertTrue(query, checkExclamationMark(query));
+
+  query = "foo ! bar \\!";
+  assertTrue(query, checkExclamationMark(query));  
+  
+  query = "foo ! bar ! car";
+  assertTrue(query, checkExclamationMark(query));
+
+  query = "foo ! bar !";
+  assertFalse(query, checkExclamationMark(query));
+  
+  query = "foo ! bar !   ";
+  assertFalse(query, checkExclamationMark(query));
+
+  // try more complex queries
+  query = "(foo bar) ! (car:dog*)";
+  assertTrue(query, checkExclamationMark(query));
+}
+
+function testCheckQuestionMark()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkQuestionMark(query));
+
+  query = "foo bar12? is ok?";
+  assertTrue(query, checkQuestionMark(query));
+  
+  query = "foo bar12?sdsd";
+  assertTrue(query, checkQuestionMark(query));
+
+  query = "foo bar12?sd??sd";
+  assertTrue(query, checkQuestionMark(query));
+
+  query = "?bar12";
+  assertFalse(query, checkQuestionMark(query));
+
+  query = "?ba12r?";
+  assertFalse(query, checkQuestionMark(query));
+
+  query = "bar? ?bar";
+  assertFalse(query, checkQuestionMark(query));
+
+  // test with a space in front
+  query = " ?bar";
+  assertFalse(query, checkQuestionMark(query));  
+
+  // test the escaped case
+  query = "bar? \\?bar";
+  assertTrue(query, checkQuestionMark(query));  
+
+  // try including other special characters
+  query = "foo:bar*ba?r";
+  assertTrue(query, checkQuestionMark(query));
+
+  query = "foo:(ba*ba?r zoo \"zaa zoo\")";
+  assertTrue(query, checkQuestionMark(query));
+}
+
+function testCheckParentheses()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkParentheses(query));
+
+  query = "(foobar12:isok)";
+  assertTrue(query, checkParentheses(query));
+  
+  query = "(foobar12):(sdsd* me too)";
+  assertTrue(query, checkParentheses(query));
+
+  query = "(bar12";
+  assertFalse(query, checkParentheses(query));
+
+  query = "ba12r)";
+  assertFalse(query, checkParentheses(query));
+
+  query = "()";
+  assertFalse(query, checkParentheses(query));
+
+  query = "))";
+  assertFalse(query, checkParentheses(query));
+
+  query = "(foo bar) (bar";
+  assertFalse(query, checkParentheses(query));
+
+  query = "(foo bar) bar) me too";
+  assertFalse(query, checkParentheses(query));
+
+  // test with a space in front
+  query = " (bar";
+  assertFalse(query, checkParentheses(query));  
+
+  // test the escaped case
+  query = "foo\\)";
+  assertTrue(query, doCheckLuceneQueryValue(query));  
+
+  query = "foo\\) (foo bar)";
+  assertTrue(query, doCheckLuceneQueryValue(query));  
+
+  // try including other special characters
+  query = "-(foo bar*ba?r)";
+  assertTrue(query, checkParentheses(query));
+
+  query = "+foo:(ba*ba?r zoo -(zaa zoo))";
+  assertTrue(query, checkParentheses(query));
+  
+  query = "((bar12";
+  assertFalse(query, checkParentheses(query));  
+  
+  query = "((bar12)";
+  assertFalse(query, checkParentheses(query));    
+}
+
+function testCheckPlusMinus()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkPlusMinus(query));
+  
+  query = "+bar -foo";
+  assertTrue(query, checkPlusMinus(query));   
+   
+  // is this allowed?
+  query = "baa+foo +foo-bar";
+  assertTrue(query, checkPlusMinus(query));  
+
+  query = "baa+";
+  assertFalse(query, checkPlusMinus(query));   
+  
+  query = "++baa";
+  assertFalse(query, checkPlusMinus(query));   
+
+  query = "+";
+  assertFalse(query, checkPlusMinus(query));   
+
+  query = "-";
+  assertFalse(query, checkPlusMinus(query));   
+  
+  // test the escaped case
+  query = "foo\\+";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  
+  // try including other special characters
+  query = "-(foo bar*ba?r)";
+  assertTrue(query, checkParentheses(query));
+
+  query = "+foo:(ba*ba?r zoo -(zaa zoo))";
+  assertTrue(query, checkParentheses(query));  
+}
+
+function testCheckANDORNOT()
+{
+fail("");
+}
+
+function testCheckQuotes()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkQuotes(query));
+
+  query = "\"foobar12:isok\"";
+  assertTrue(query, checkQuotes(query));
+  
+  query = "\"(foobar12)\":(sdsd* me too)";
+  assertTrue(query, checkQuotes(query));
+
+  query = "\"bar12";
+  assertFalse(query, checkQuotes(query));
+  
+  query = "\"\"";
+  assertFalse(query, checkQuotes(query));  
+
+  query = "ba12r\"";
+  assertFalse(query, checkQuotes(query));
+  
+  query = "\"foo bar\" \"bar";
+  assertFalse(query, checkQuotes(query));
+
+  query = "\"foo bar\" bar\" me too";
+  assertFalse(query, checkQuotes(query));
+
+  // test with a space in front
+  query = " \"bar";
+  assertFalse(query, checkQuotes(query));  
+
+  // test the escaped case
+  query = "foo\\\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));  
+
+  query = "foo\\\" \"foo bar\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));  
+
+  // try including other special characters
+  query = "\"foo bar*ba?r\"";
+  assertTrue(query, checkQuotes(query));
+
+  query = "foo:(ba*ba?r zoo \"zaa zoo\")";
+  assertTrue(query, checkQuotes(query));
+
+  query = "\\\"\\\"bar12\\\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+
+  query = "\\\"\\\"bar12\\\"\\\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+}
+
+function testCheckColon()
+{
+  var query = "foo bar is ok";
+  assertTrue(query, checkColon(query));
+
+  query = "foobar12:isok";
+  assertTrue(query, checkColon(query));
+  
+  query = "(foobar12):(sdsd* me too)";
+  assertTrue(query, checkColon(query));
+
+  query = "bar12:";
+  assertFalse(query, checkColon(query));
+
+  query = ":ba12r";
+  assertFalse(query, checkColon(query));
+
+  query = "foo:bar :bar";
+  assertFalse(query, checkColon(query));
+
+  query = "foo:bar bar: me too";
+  assertFalse(query, checkColon(query));
+
+  // test with a space in front
+  query = " :bar";
+  assertFalse(query, checkColon(query));  
+
+  // test the escaped case
+  query = "foo\\:";
+  assertTrue(query, checkColon(query));  
+
+  query = "foo\\: foo:bar";
+  assertTrue(query, checkColon(query));  
+
+  // try including other special characters
+  query = "foo:bar*ba?r";
+  assertTrue(query, checkColon(query));
+
+  query = "foo:(ba*ba?r zoo \"zaa zoo\")";
+  assertTrue(query, checkColon(query));
+}
+</script>
+</body>
+</html>
