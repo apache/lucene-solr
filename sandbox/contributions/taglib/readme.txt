@@ -16,18 +16,56 @@ INSTRUCTIONS
 DOCUMENTATION:
 you will find documentation and an over view of the tag library in
 the docs folder of this project and the javadocs in the api folder
-respectivley.
+respectively.
 
 BUGS:
 I tried to create a .war file for this project but I am having trouble
 getting it to deploy properly.
 
-PLANNED:
-I am planning to document the result.jsp file line for line to explain
-how to display a search result when you do not know what the names of 
-the search fields stored in the lucene-index. That is the way the result
-page is currently written.
+More like a heads up than a bug I discovered that if you have tag pooling \
+turned on in Tomcat that values passed to a custom tag will not change in
+the event that an exception is thrown. Catching the exception inside of
+the tag or page does not help, to update the values at this point you
+have to turn off tag pooling. Follow the instructions below to do this
+in Tomcat.
 
-Time permitting I want to write a couple of child tags for telling the search
-tag that there are multiple index to be searched and to let it do the other
-types of searches such as fuzzy and range queries.
+----------------------------------------------------------------------------
+
+  From: Bill Barker
+  Subject: Re: HELP:Tagpool sharing problems
+  Date: Mon, 28 Apr 2003 22:20:20 -0700
+
+----------------------------------------------------------------------------
+
+In $CATALINA_HOME/conf/web.xml, locate the <servlet-name>jsp</servlet-name>
+servlet, and add:
+  <init-param>
+    <param-name>enablePooling</param-name>
+    <param-value>false</param-value>
+  </init-param>
+
+This will turn off tag-pooling.  You'll also need to clear out
+$CATALINA_HOME/work so that the JSP pages get re-compiled.
+
+If you just want it turned off for one context, then you can place the
+definition of the jsp servlet in your own web.xml.
+
+If you are using:
+  <servlet>
+    <servlet-name>myJspPage</servlet-name>
+    <jsp-page>myJspPage.jsp</jsp-page>
+  </servlet>
+then you also need to add the enablePooling init-param to your servlet's
+definition.
+
+
+HISTORY:
+1.	Added more robust error handling and the ability to turn it on and
+	off with a throwOnException attribute. (All tags)
+2.	Added a Column tag for outputting the field names found in a 
+	Lucene index.
+3.	Added a Field tag for retrieving a value for a field in a search
+	result either produced by the Column tag or known in advance.
+4.	Added new example pages to illustrate how to use the new tags
+5.	The Collection tag has been deprecated, use the collection attribute
+	of the Search tag instead.

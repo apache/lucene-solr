@@ -34,7 +34,7 @@
 		</attribute>
 		<attribute>
 			<name>collection</name>
-			<required>false</required>
+			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
@@ -47,16 +47,77 @@
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
+		<attribute>
+			<name>analyzerType</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>fieldList</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>flagList</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>search</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>stopWords</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
 	</tag>
 	<tag>
-		<name>Collection</name>
-		<tagclass>com.netwebapps.taglib.search.CollectionTag</tagclass>
+		<name>Column</name>
+		<tagclass>com.netwebapps.taglib.search.ColumnTag</tagclass>
+		<teiclass>com.netwebapps.taglib.search.ColumnTagTei</teiclass>
+		<bodycontent>JSP</bodycontent>
 		<info>
 			Adds an additional collection to the search tag.
 		</info>
 		<attribute>
-			<name>directory</name>
+			<name>id</name>
 			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>runOnce</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>throwOnException</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+	<tag>
+		<name>Field</name>
+		<tagclass>com.netwebapps.taglib.search.FieldTag</tagclass>
+		<teiclass>com.netwebapps.taglib.search.FieldTagTei</teiclass>
+		<bodycontent>JSP</bodycontent>
+		<info>
+			Output the value for the named field in a search result, empty by default.
+		</info>
+		<attribute>
+			<name>id</name>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>name</name>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>throwOnException</name>
+			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 	</tag>

@@ -1,7 +1,8 @@
 package com.netwebapps.taglib.search;
 
 /**
- * @author Network Web Application
+ * @company Network Web Application
+ * @url http://www.netwebapps.com
  * @author Bryan LaPlante 
  *
  */

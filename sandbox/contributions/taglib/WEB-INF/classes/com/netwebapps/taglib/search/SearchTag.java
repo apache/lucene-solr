@@ -1,21 +1,37 @@
 package com.netwebapps.taglib.search;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
-import javax.servlet.http.*;
-import java.io.*;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.queryParser.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.PageContext;
+import javax.servlet.jsp.tagext.BodyTagSupport;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.de.GermanAnalyzer;
+import org.apache.lucene.analysis.de.WordlistLoader;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryParser.MultiFieldQueryParser;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiSearcher;
+import org.apache.lucene.search.Query;
 
 /*
  * 
- * @author Bryan LaPlante
- * @param 
+ * @company Network Web Application
+ * @url http://www.netwebapps.com
+ * @author Bryan LaPlante 
  *
  */
 public class SearchTag extends BodyTagSupport{
@@ -32,49 +48,52 @@ public class SearchTag extends BodyTagSupport{
 	private Enumeration fields = null;
 	private HashMap aField = new HashMap();
 	private int ROWCOUNT = 0;
-	private int PAGECOUNT = 1;
+	private int PAGECOUNT = 0;
 	private int HITCOUNT = 0;
 	private boolean abort = false;
 	private Analyzer analyzer = null;
+	private Document doc = null;
+	private ArrayList idxArray = new ArrayList();
+	private MultiSearcher msearcher = null;
+	private final int GERMANAN_ALYZER = 0;
+	private final int SIMPLE_ANALYZER = 1;
+	private final int STANDARD_ANALYZER = 2;
+	private final int STOP_ANALYZER = 3;
+	private final int WHITESPACE_ANALYZER = 4;
 
 	public int startRow = 0;
 	public int maxRows = 50;  
-	public String rowCount = "0";
-	public String pageCount = "1";
-	public String hitCount = "0";
+	public int rowCount = 0;
+	public int pageCount = 1;
+	public int hitCount = 0;
+	public int loopCount = 0;
 	public String firstPage = "";
 	public String nextPage = "";
 	public String previousPage = "";
 	public String lastPage = "";
 	public LinkedList pageList = new LinkedList();
 	public boolean throwOnException = false;
+	public String[] stopWords = new String[0];
+	public String[] fieldList = new String[0];
+	public int[] flagList = new int[0];
+	public String search = "contents";
+	public int analyzerType = STANDARD_ANALYZER;
 	
 	
 	public int doStartTag() throws JspException{
-		
-		doSearch();
-		if(abort){
-			rowCount = new Integer(startRow + ROWCOUNT).toString();
-			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
-			return SKIP_BODY;
-		}
-		searchItr = hitArray.iterator();
-		if(searchItr.hasNext()){
-			aField = (HashMap) searchItr.next();
-			rowCount = new Integer(startRow + ROWCOUNT++).toString();
-			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
-			return EVAL_BODY_AGAIN;
-		}
-		return SKIP_BODY; 
+		rowCount = startRow + ROWCOUNT++;
+		loopCount++;
+		pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
+		return EVAL_BODY_AGAIN;
 	}
 	
 	public void doInitBody() throws JspException{
+		doSearch();
 		if(!abort){
-			doSearch();
 			searchItr = hitArray.iterator();
 			if(searchItr.hasNext()){
 				aField = (HashMap) searchItr.next();
-				rowCount = new Integer(startRow + ROWCOUNT).toString();
+				rowCount = startRow + ROWCOUNT++;
 				pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 			}
 		}
@@ -83,7 +102,9 @@ public class SearchTag extends BodyTagSupport{
 	public int doAfterBody() throws JspException{
 		
 		if(abort){
-			rowCount = new Integer(startRow + ROWCOUNT).toString();
+			hitCount = 0;
+			loopCount = 0;
+			rowCount = startRow + ROWCOUNT;
 			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 			return SKIP_BODY;
 		}
@@ -98,7 +119,8 @@ public class SearchTag extends BodyTagSupport{
 		
 		if(searchItr.hasNext()){
 			aField = (HashMap) searchItr.next();
-			rowCount = new Integer(startRow + ROWCOUNT++).toString();
+			rowCount = startRow + ROWCOUNT++;
+			loopCount++;
 			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 			return EVAL_BODY_AGAIN;
 		}
@@ -108,6 +130,8 @@ public class SearchTag extends BodyTagSupport{
 	public int doEndTag() throws JspException{
 
 		if(abort){
+			hitCount = 0;
+			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 			return EVAL_PAGE;
 		}
 		
@@ -135,6 +159,25 @@ public class SearchTag extends BodyTagSupport{
 	}
 	
 	public void release(){
+		hitMap = null;
+		hitArray = null;
+		collection = "";
+		searcher = null;
+		query = null;
+		hits = null;
+		thispage = 0;
+		criteria = ""; 
+		searchItr = null;
+		fields = null;
+		aField = new HashMap();
+		ROWCOUNT = 0;
+		PAGECOUNT = 1;
+		HITCOUNT = 0;
+		abort = false;
+		analyzer = null;
+		doc = null;
+		idxArray = null;
+		msearcher = null;
 	}
 	
 	public String getField(String name){
@@ -150,10 +193,32 @@ public class SearchTag extends BodyTagSupport{
 		return aField.keySet();
 	}
 	
+
+	public void addCollection(String name) throws JspException{
+		try {
+			searcher = new IndexSearcher(IndexReader.open(name));
+			idxArray.add(searcher);
+		} catch (IOException e) {
+			if(throwOnException){
+				throw new JspException("Error occured while opening " + name + " ]: " + e);
+			}
+		}
+	}
+	
 	public void doSearch() throws JspException{
 
 		try {
-			searcher = new IndexSearcher(IndexReader.open(collection));
+			if(idxArray.size() > 0){
+				IndexSearcher[] idxToArray = new IndexSearcher[idxArray.size()];
+				Iterator idxIter = idxArray.iterator();
+				int arrayCount = 0;
+				while(idxIter.hasNext()){
+					idxToArray[arrayCount++] = (IndexSearcher) idxIter.next();
+				}
+				msearcher = new MultiSearcher(idxToArray);
+			}else{
+				throw new JspException("No collection has been specified");
+			}
 		} catch (IOException e) {
 			if(throwOnException){
 				throw new JspException("IndexSearcher(IndexReader.open(collection)): " + e);
@@ -161,31 +226,80 @@ public class SearchTag extends BodyTagSupport{
 			abort = true;
 		}
 		if(!abort){
-			analyzer = new StopAnalyzer();
+			// choosing the type of analyzer to use in this search
+			switch (analyzerType) {
+				case GERMANAN_ALYZER:
+					if(stopWords.length > 0){
+						analyzer = new GermanAnalyzer(stopWords);
+					}else{
+						if(throwOnException){
+							throw new JspException("In order to use a GermanAnalyzer you must provide a list of stop words");
+						}
+						abort = true;
+					}
+					break;
+				case SIMPLE_ANALYZER:
+					analyzer = new SimpleAnalyzer();
+					break;
+				case STANDARD_ANALYZER:
+					if(stopWords.length > 0){
+						analyzer = new StandardAnalyzer(stopWords);
+					}else{
+						analyzer = new StandardAnalyzer();
+					}
+					break;
+				case STOP_ANALYZER:
+					if(stopWords.length > 0){
+						analyzer = new StopAnalyzer(stopWords);
+					}else{
+						analyzer = new StopAnalyzer();
+					}
+					break;
+				case WHITESPACE_ANALYZER:
+					analyzer = new WhitespaceAnalyzer();
+					break;
+
+				default :
+				if(stopWords.length > 0){
+					analyzer = new StandardAnalyzer(stopWords);
+				}else{
+					analyzer = new StandardAnalyzer();
+				}
+					break;
+			}
 
 			try {
-				query = QueryParser.parse(criteria, "contents", analyzer);
+				// choose a query parser
+				if(fieldList.length > 0){
+					if(flagList.length > 0){
+						query = MultiFieldQueryParser.parse(criteria,fieldList,flagList,analyzer);
+					}else{
+						query = MultiFieldQueryParser.parse(criteria,fieldList,analyzer);
+					}
+				}else{
+					query = QueryParser.parse(criteria, search, analyzer);
+				}
 			} catch (ParseException e) {
 				if(throwOnException){
-					throw new JspException("QueryParser.parse(criteria,contents,analyzer): " + e);
+					throw new JspException("If using fieldList and or flagList check to see you have the same number of items in each: " + e);
 				}
 				abort = true;
 			}
 			if(!abort){
 				try {
-					hits = searcher.search(query);
+					hits = msearcher.search(query);
 				} catch (IOException e) {
 					if(throwOnException){
-						throw new JspException("searcher.search(query): " + e);
+						throw new JspException("msearcher.search(query): " + e);
 					}
 					abort = true;
 				}
 		
 				if(!abort){
-					hitCount = new Integer(hits.length()).toString();
+					hitCount = hits.length();
 					HITCOUNT = hits.length();
-					PAGECOUNT = PAGECOUNT = (int) (( (double) startRow) / maxRows );
-					pageCount = new Integer(PAGECOUNT).toString();
+					PAGECOUNT = (int) (( (double) startRow) / maxRows );
+					pageCount = PAGECOUNT;
 					thispage = maxRows;
 					if ((startRow + maxRows) > hits.length()) {
 							thispage = hits.length() - startRow;
@@ -193,7 +307,6 @@ public class SearchTag extends BodyTagSupport{
 					hitArray = new ArrayList();
 					for (int i = startRow; i < (thispage + startRow); i++) {
 						hitMap = new HashMap();
-						Document doc = null;
 						try {
 							doc = hits.doc(i);
 						} catch (IOException e) {
@@ -225,11 +338,16 @@ public class SearchTag extends BodyTagSupport{
 				}
 			}
 		}
-	}
-	
-	/* setters */
-	
-	
+		if(msearcher != null){
+			try {
+				msearcher.close();
+			} catch (IOException e) {
+				if(throwOnException){
+					throw new JspException("A problem occured trying to close the searcher : " + e);
+				}
+			}
+		}
+	}	
 	
 	public void setCriteria(String criteria){
 		this.criteria = criteria;
@@ -261,15 +379,20 @@ public class SearchTag extends BodyTagSupport{
 		this.maxRows = maxRows;
 	}
 	
-	public void setCollection(String collection){
-		this.collection = collection;
+	public void setCollection(String collection) throws JspException{
+		idxArray = new ArrayList();
+		String[] collectionArray = collection.split(",");
+		for(int i=0; i<collectionArray.length; i++){
+			this.addCollection(collectionArray[i]);
+		}
 	}
 	
 	public void setThrowOnException(String bool){
 		this.throwOnException = new Boolean(bool).booleanValue();
 	}
-	
-	/* getters */
+	public void setThrowOnException(boolean b) {
+		throwOnException = b;
+	}
 	
 	public int getStartRow(){
 		return startRow;
@@ -278,4 +401,99 @@ public class SearchTag extends BodyTagSupport{
 	public int getMaxRows(){
 		return maxRows;
 	}
+	/**
+	 * @param string -- a comma seperated list of stop words.
+	 */
+	public void setStopWords(String swords) throws JspException{
+		Hashtable wordTable = new Hashtable();
+		String[] temp = new String[wordTable.size()];
+		if(swords.split(",").length > 0){
+			String[] words = swords.split(",");
+			for (int i = 0; i < words.length; i++) {
+				if(new File(words[i]).isFile()){
+					wordTable.putAll(WordlistLoader.getWordtable(words[i]));
+				}else{
+					wordTable.put(words[i], words[i]);
+				}
+			}
+			temp = new String[wordTable.size()];
+
+			int count = 0;
+			if(wordTable.size() > 0){
+				Iterator wtIter = wordTable.keySet().iterator();
+				while (wtIter.hasNext()){
+					temp[count++] = (String) wtIter.next();
+				}
+			}
+		}
+		stopWords = temp;
+	}
+	
+//	public void setStopWords(String[] swords) throws JspException{
+//		stopWords = swords;
+//	}
+
+	/**
+	 * @param string
+	 */
+	public void setFlagList(String fg) {
+		int[] list = new int[0];
+		if(fg.split(",").length > 0){
+			String[] ssplit = fg.split(",");
+			Integer fsplit = new Integer(fg.split(",").length);
+			list = new int[fsplit.intValue()];
+			for(int i=0; i < fsplit.intValue(); i++){
+				if(ssplit[i].equalsIgnoreCase("NORMAL")){
+					list[i] = MultiFieldQueryParser.NORMAL_FIELD;
+				}else if(ssplit[i].equalsIgnoreCase("PROHIBITED")){
+					list[i] = MultiFieldQueryParser.PROHIBITED_FIELD;
+				}else if(ssplit[i].equalsIgnoreCase("REQUIRED")){
+					list[i] = MultiFieldQueryParser.REQUIRED_FIELD;
+				}
+			}
+		}
+		flagList = list;
+	}
+
+	/**
+	 * @param string
+	 */
+	public void setFieldList(String fl) {
+		if(fl.split(",").length > 0){
+			fieldList = fl.split(",");
+		}
+	}
+	/**
+	 * @param string
+	 */
+	public void setFieldList(String[] fl) {
+		fieldList = fl;
+	}
+
+	/**
+	 * @param string
+	 */
+	public void setSearch(String string) {
+		search = string;
+	}
+
+	/**
+	 * @param string
+	 */
+	public void setAnalyzerType(String atype) {
+		if(atype.equalsIgnoreCase("GERMANAN_ALYZER")){
+			analyzerType = 0;
+		}else if(atype.equalsIgnoreCase("SIMPLE_ANALYZER")){
+			analyzerType = 1;
+		}else if(atype.equalsIgnoreCase("STANDARD_ANALYZER")){
+			analyzerType = 2;
+		}else if(atype.equalsIgnoreCase("STOP_ANALYZER")){
+			analyzerType = 3;
+		}else if(atype.equalsIgnoreCase("WHITESPACE_ANALYZER")){
+			analyzerType = 4;
+		}else{
+			analyzerType = 2;
+		}
+	}
+
 }
