@@ -9,7 +9,7 @@ Basic steps:
   2) Connect to the top-level of your Lucene installation.
   3) Run ant.
 
-Step 0) Set up your development environment (JDK 1.3, Ant 1.4)
+Step 0) Set up your development environment (JDK 1.3/1.4, Ant 1.4)
 
 We'll assume that you know how to get and set up the JDK - if you
 don't, then we suggest starting at http://java.sun.com and learning
@@ -18,7 +18,7 @@ more about Java, before returning to this README.
 Lucene runs with JDK 1.1 and later.  However, if you're going to work
 with the development version of Lucene, we recommend you stick with
 the most current version of Java (at the time of this writing, JDK
-1.3).  Also, note that if you're working with the Lucene source,
+1.4).  Also, note that if you're working with the Lucene source,
 you'll need to use Ant (see below) and Ant requires at least JDK 1.1
 (and in the future will likely move to requiring JDK 1.2, according to
 the Ant install docs).
@@ -41,7 +41,7 @@ You'll need to download both the Ant binary distribution and the
 
   http://jakarta.apache.org/ant/manual/index.html
 
-Step 1) Download lucene from Apache
+Step 1) Download Lucene from Apache
 
 We'll assume you already did this, or you wouldn't be reading this
 file.  However, you might have received this file by some alternate
