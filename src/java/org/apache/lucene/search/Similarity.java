@@ -321,7 +321,7 @@ public abstract class Similarity {
    * @param numDocs the total number of documents in the collection
    * @return a score factor based on the term's document frequency
    */
-  protected abstract float idf(int docFreq, int numDocs);
+  public abstract float idf(int docFreq, int numDocs);
 
   /** Computes a score factor based on the fraction of all query terms that a
    * document contains.  This value is multiplied into scores.
