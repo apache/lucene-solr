@@ -4,6 +4,13 @@ $Id$
 
 1.3 DEV1
 
+ 1. Fixed PriorityQueue's clear() method.
+    Fix for bug 9454, http://nagoya.apache.org/bugzilla/show_bug.cgi?id=9454
+    (Matthijs Bomhoff via otis)
+
+ 2. Changed StandardTokenizer.jj grammar for EMAIL tokens.
+    Fix for bug 9015, http://nagoya.apache.org/bugzilla/show_bug.cgi?id=9015
+    (Dale Anson via otis)
 
 1.2 RC6
 
