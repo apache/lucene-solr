@@ -41,12 +41,5 @@
 
         </section>
 
-        <section name="About Apache Jakarta">
-            <p>
-                The goal of the <a href="http://jakarta.apache.org/">Apache Jakarta Project</a>
-                is to provide commercial-quality server solutions, based on the Java Platform,
-                developed in an open and cooperative fashion.
-            </p>
-        </section>
     </body>
 </document>
