@@ -147,6 +147,7 @@ $Id$
 
  23. Added convenience RAMDirectory constructors taking File and String
      arguments, for easy FSDirectory to RAMDirectory conversion.
+     (otis)
 
 
 1.2 RC6
