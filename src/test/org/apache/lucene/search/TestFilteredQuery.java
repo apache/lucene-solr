@@ -116,11 +116,12 @@ extends TestCase {
     assertEquals (0, hits.length());
   }
 
+  /** 
+   * This tests FilteredQuery's rewrite correctness
+   */
   public void testRangeQuery() throws Exception {
     RangeQuery rq = new RangeQuery(
         new Term("sorter", "b"), new Term("sorter", "d"), true);
-
-    // rq = rq.rewrite(searcher.reader) // makes the test pass
 
     Query filteredquery = new FilteredQuery(rq, filter);
     Hits hits = searcher.search(filteredquery);
