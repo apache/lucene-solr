@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  */
 
 import java.util.Vector;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.io.IOException;
 
