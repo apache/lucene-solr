@@ -61,9 +61,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 
 import java.io.Reader;
-
-import java.util.Hashtable;
-import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -72,57 +70,58 @@ import java.util.HashSet;
  * @author Che, Dong
  */
 public class CJKAnalyzer extends Analyzer {
-    //~ Static fields/initializers ---------------------------------------------
+  //~ Static fields/initializers ---------------------------------------------
 
-    /**
-     * An array containing some common English words that are not usually
-     * useful for searching. and some double-byte interpunctions.....
-     */
-    private static String[] stopWords = {
-                                            "a", "and", "are", "as", "at", "be",
-                                            "but", "by", "for", "if", "in",
-                                            "into", "is", "it", "no", "not",
-                                            "of", "on", "or", "s", "such", "t",
-                                            "that", "the", "their", "then",
-                                            "there", "these", "they", "this",
-                                            "to", "was", "will", "with", "",
-                                            "www"
-                                        };
+  /**
+   * An array containing some common English words that are not usually
+   * useful for searching. and some double-byte interpunctions.....
+   */
+  private static String[] stopWords = {
+    "a", "and", "are", "as", "at", "be",
+    "but", "by", "for", "if", "in",
+    "into", "is", "it", "no", "not",
+    "of", "on", "or", "s", "such", "t",
+    "that", "the", "their", "then",
+    "there", "these", "they", "this",
+    "to", "was", "will", "with", "",
+    "www"
+  };
 
-    //~ Instance fields --------------------------------------------------------
+  //~ Instance fields --------------------------------------------------------
 
-    /** stop word list */
-    private HashSet stopTable;
+  /**
+   * stop word list
+   */
+  private Set stopTable;
 
-    //~ Constructors -----------------------------------------------------------
+  //~ Constructors -----------------------------------------------------------
 
-    /**
-     * Builds an analyzer which removes words in STOP_WORDS.
-     */
-    public CJKAnalyzer() {
-        stopTable = StopFilter.makeStopSet(stopWords);
-    }
+  /**
+   * Builds an analyzer which removes words in STOP_WORDS.
+   */
+  public CJKAnalyzer() {
+    stopTable = StopFilter.makeStopSet(stopWords);
+  }
 
-    /**
-     * Builds an analyzer which removes words in the provided array.
-     *
-     * @param stopWords stop word array
-     */
-    public CJKAnalyzer(String[] stopWords) {
-        stopTable = StopFilter.makeStopSet(stopWords);
-    }
+  /**
+   * Builds an analyzer which removes words in the provided array.
+   *
+   * @param stopWords stop word array
+   */
+  public CJKAnalyzer(String[] stopWords) {
+    stopTable = StopFilter.makeStopSet(stopWords);
+  }
 
-    //~ Methods ----------------------------------------------------------------
+  //~ Methods ----------------------------------------------------------------
 
-    /**
-     * get token stream from input
-     *
-     * @param fieldName lucene field name
-     * @param reader input reader
-     *
-     * @return TokenStream
-     */
-    public final TokenStream tokenStream(String fieldName, Reader reader) {
-        return new StopFilter(new CJKTokenizer(reader), stopTable);
-    }
+  /**
+   * get token stream from input
+   *
+   * @param fieldName lucene field name
+   * @param reader    input reader
+   * @return TokenStream
+   */
+  public final TokenStream tokenStream(String fieldName, Reader reader) {
+    return new StopFilter(new CJKTokenizer(reader), stopTable);
+  }
 }

@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.Map;
 
 /**
  * @author Edwin de Jonge
@@ -61,14 +63,14 @@ public class DutchAnalyzer extends Analyzer {
   /**
    * Contains the stopwords used with the StopFilter.
    */
-  private HashSet stoptable = new HashSet();
+  private Set stoptable = new HashSet();
 
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  private HashSet excltable = new HashSet();
+  private Set excltable = new HashSet();
 
-  private HashMap _stemdict = new HashMap();
+  private Map _stemdict = new HashMap();
 
 
   /**

@@ -65,6 +65,7 @@ import java.io.File;
 import java.io.Reader;
 import java.util.Hashtable;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Analyzer for brazilian language. Supports an external list of stopwords (words that
@@ -103,11 +104,11 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Contains the stopwords used with the StopFilter.
 	 */
-	private HashSet stoptable = new HashSet();
+	private Set stoptable = new HashSet();
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */
-	private HashSet excltable = new HashSet();
+	private Set excltable = new HashSet();
 
 	/**
 	 * Builds an analyzer.

@@ -16,7 +16,7 @@ package org.apache.lucene.analysis.nl;
  * limitations under the License.
  */
 
-import java.util.HashMap;
+import java.util.Map;
 
 /*
  * @author Edwin de Jonge (ejne@cbs.nl)
@@ -32,7 +32,7 @@ public class DutchStemmer {
    */
   private StringBuffer sb = new StringBuffer();
   private boolean _removedE;
-  private HashMap _stemDict;
+  private Map _stemDict;
 
   private int _R1;
   private int _R2;
@@ -399,7 +399,7 @@ public class DutchStemmer {
     return false;
   }
 
-  void setStemDictionary(HashMap dict) {
+  void setStemDictionary(Map dict) {
     _stemDict = dict;
   }
 

@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.TokenStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.Map;
 
 /**
  * @author Edwin de Jonge
@@ -37,7 +39,7 @@ public final class DutchStemFilter extends TokenFilter {
    */
   private Token token = null;
   private DutchStemmer stemmer = null;
-  private HashSet exclusions = null;
+  private Set exclusions = null;
 
   public DutchStemFilter(TokenStream _in) {
     super(_in);
@@ -47,7 +49,7 @@ public final class DutchStemFilter extends TokenFilter {
   /**
    * Builds a DutchStemFilter that uses an exclusiontable.
    */
-  public DutchStemFilter(TokenStream _in, HashSet exclusiontable) {
+  public DutchStemFilter(TokenStream _in, Set exclusiontable) {
     this(_in);
     exclusions = exclusiontable;
   }
@@ -55,7 +57,7 @@ public final class DutchStemFilter extends TokenFilter {
   /**
    * @param stemdictionary Dictionary of word stem pairs, that overrule the algorithm
    */
-  public DutchStemFilter(TokenStream _in, HashSet exclusiontable, HashMap stemdictionary) {
+  public DutchStemFilter(TokenStream _in, Set exclusiontable, Map stemdictionary) {
     this(_in, exclusiontable);
     stemmer.setStemDictionary(stemdictionary);
   }

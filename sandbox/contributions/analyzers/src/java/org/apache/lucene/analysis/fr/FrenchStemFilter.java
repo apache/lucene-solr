@@ -60,6 +60,7 @@ import org.apache.lucene.analysis.TokenStream;
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A filter that stemms french words. It supports a table of words that should
@@ -75,7 +76,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	 */
 	private Token token = null;
 	private FrenchStemmer stemmer = null;
-	private HashSet exclusions = null;
+	private Set exclusions = null;
 
 	public FrenchStemFilter( TokenStream in ) {
     super(in);
@@ -92,7 +93,7 @@ public final class FrenchStemFilter extends TokenFilter {
 		exclusions = new HashSet(exclusiontable.keySet());
 	}
 
-	public FrenchStemFilter( TokenStream in, HashSet exclusiontable ) {
+	public FrenchStemFilter( TokenStream in, Set exclusiontable ) {
 		this( in );
 		exclusions = exclusiontable;
 	}

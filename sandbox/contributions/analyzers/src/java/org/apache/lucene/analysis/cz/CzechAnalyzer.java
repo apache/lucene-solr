@@ -65,6 +65,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.*;
 import java.util.Hashtable;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Analyzer for Czech language. Supports an external list of stopwords (words that
@@ -103,7 +104,7 @@ public final class CzechAnalyzer extends Analyzer {
 	/**
 	 * Contains the stopwords used with the StopFilter.
 	 */
-	private HashSet stoptable;
+	private Set stoptable;
 
 	/**
 	 * Builds an analyzer.
