@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<document>
+    <properties>
+        <title>Apache Lucene - Mailing Lists</title>
+    </properties>
+    <body>
+        <section name="Java User List">
+            <p>
+              This list is for users of Java Lucene to ask questions, share knowledge,
+              and discuss issues. Lucene developers are also expected to be lurking on
+              this list to offer support to users of Lucene.
+            </p>
+            <p>
+              <a href="mailto:java-user-subscribe@lucene.apache.org">Subscribe</a>
+              <a href="mailto:java-user-unsubscribe@lucene.apache.org">Unsubscribe</a>
+            </p>
+        </section>
+
+        <section name="Java Developer List">
+            <p>
+              This is the list where participating developers of the Java Lucene project meet
+              and discuss issues, code changes/additions, etc. Do not send mail to this list
+              with usage questions or configuration problem
+            </p>
+          <p>
+            <a href="mailto:java-dev-subscribe@lucene.apache.org">Subscribe</a>
+            <a href="mailto:java-dev-unsubscribe@lucene.apache.org">Unsubscribe</a>
+          </p>
+        </section>
+    </body>
+</document>
