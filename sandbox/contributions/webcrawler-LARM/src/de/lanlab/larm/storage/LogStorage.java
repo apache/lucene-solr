@@ -73,6 +73,8 @@ public class LogStorage implements DocumentStorage
 
     File pageFile;
     FileOutputStream out;
+    /*OutputStreamWriter outw;*/
+
     int pageFileCount;
     String filePrefix;
     int offset;
@@ -122,6 +124,7 @@ public class LogStorage implements DocumentStorage
         {
             this.offset = 0;
             out = new FileOutputStream(fileName);
+            /*outw = new OutputStreamWriter(out);*/
             isValid = true;
         }
         catch (IOException io)
@@ -178,6 +181,21 @@ public class LogStorage implements DocumentStorage
         return -1;
     }
 
+/*
+    public synchronized int writeToPageFile(char[] chars)
+    {
+        try
+        {
+            getOutputStream();
+            int oldOffset = this.offset;
+            this.offset += outw.write(chars);
+            new java.io.BufferedWriter().
+
+        }
+
+
+    }
+*/
 
     /**
      * Sets the logger attribute of the LogStorage object
@@ -201,9 +219,10 @@ public class LogStorage implements DocumentStorage
     public WebDocument store(WebDocument doc)
     {
         String docInfo = doc.getInfo();
-        if (logContents && isValid && doc.getField("content") != null)
+        byte[] content = (byte[])doc.getField("contentBytes");
+        if (logContents && isValid && content != null && content.length != 0)
         {
-            int offset = writeToPageFile((byte[])doc.getField("content"));
+            int offset = writeToPageFile(content);
             docInfo = docInfo + "\t" + pageFileCount + "\t" + offset;
         }
         log.logThreadSafe(docInfo);
