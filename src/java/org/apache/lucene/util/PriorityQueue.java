@@ -60,6 +60,7 @@ package org.apache.lucene.util;
 public abstract class PriorityQueue {
   private Object[] heap;
   private int size;
+  private int maxSize;
 
   /** Determines the ordering of objects in this priority queue.  Subclasses
     must define this one method. */
@@ -68,16 +69,41 @@ public abstract class PriorityQueue {
   /** Subclass constructors must call this. */
   protected final void initialize(int maxSize) {
     size = 0;
-    int heapSize = (maxSize * 2) + 1;
+    int heapSize = maxSize + 1;
     heap = new Object[heapSize];
+    this.maxSize = maxSize;
   }
 
-  /** Adds an Object to a PriorityQueue in log(size) time. */
+  /**
+   * Adds an Object to a PriorityQueue in log(size) time.
+   * If one tries to add more objects than maxSize from initialize
+   * a RuntimeException (ArrayIndexOutOfBound) is thrown.
+   */
   public final void put(Object element) {
     size++;
     heap[size] = element;
     upHeap();
   }
+  
+  /**
+   * Adds element to the PriorityQueue in log(size) time if either
+   * the PriorityQueue is not full, or !lessThan(element, top()).
+   * @param element
+   * @return true if element is added, false otherwise.
+   */
+  public boolean insert(Object element){
+    if(size < maxSize){
+        put(element);
+        return true;
+    }
+    else if(size > 0 && !lessThan(element, top())){
+        heap[1] = element;
+        adjustTop();
+        return true;
+    }
+    else
+        return false;
+   }
 
   /** Returns the least element of the PriorityQueue in constant time. */
   public final Object top() {

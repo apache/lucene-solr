@@ -135,4 +135,16 @@ public class TestPriorityQueue
 	pq.clear();
 	assertEquals(0, pq.size());
     }
+    
+    public void testFixedSize(){
+        PriorityQueue pq = new IntegerQueue(3);
+        pq.insert(new Integer(2));
+        pq.insert(new Integer(3));
+        pq.insert(new Integer(1));
+        pq.insert(new Integer(5));
+        pq.insert(new Integer(7));
+        pq.insert(new Integer(1));
+        assertEquals(3, pq.size());
+        assertEquals(3, ((Integer) pq.top()).intValue());
+    }
 }

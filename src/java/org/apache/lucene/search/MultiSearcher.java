@@ -144,7 +144,6 @@ public class MultiSearcher extends Searcher implements Searchable {
   public TopDocs search(Query query, Filter filter, int nDocs)
       throws IOException {
     HitQueue hq = new HitQueue(nDocs);
-    float minScore = 0.0f;
     int totalHits = 0;
 
     for (int i = 0; i < searchables.length; i++) { // search each searcher
@@ -153,15 +152,9 @@ public class MultiSearcher extends Searcher implements Searchable {
       ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
 	ScoreDoc scoreDoc = scoreDocs[j];
-	if (scoreDoc.score >= minScore) {
-	  scoreDoc.doc += starts[i];		  // convert doc
-	  hq.put(scoreDoc);			  // update hit queue
-	  if (hq.size() > nDocs) {		  // if hit queue overfull
-	    hq.pop();				  // remove lowest in hit queue
-	    minScore = ((ScoreDoc)hq.top()).score; // reset minScore
-	  }
-	} else
-	  break;				  // no more scores > minScore
+        scoreDoc.doc += starts[i];                      // convert doc
+        if(!hq.insert(scoreDoc))
+            break;                                                // no more scores > minScore
       }
     }
 

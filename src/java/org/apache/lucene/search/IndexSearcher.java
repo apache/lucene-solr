@@ -133,18 +133,11 @@ public class IndexSearcher extends Searcher implements Searchable {
     final HitQueue hq = new HitQueue(nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
-	private float minScore = 0.0f;
 	public final void collect(int doc, float score) {
 	  if (score > 0.0f &&			  // ignore zeroed buckets
 	      (bits==null || bits.get(doc))) {	  // skip docs not in bits
 	    totalHits[0]++;
-	    if (score >= minScore) {
-	      hq.put(new ScoreDoc(doc, score));	  // update hit queue
-	      if (hq.size() > nDocs) {		  // if hit queue overfull
-		hq.pop();			  // remove lowest in hit queue
-		minScore = ((ScoreDoc)hq.top()).score; // reset minScore
-	      }
-	    }
+            hq.insert(new ScoreDoc(doc, score));
 	  }
 	}
       }, reader.maxDoc());
