@@ -677,10 +677,12 @@ public final class MoreLikeThis {
             // field does not store term vector info
             if (vector == null) {
             	Document d=ir.document(docNum);
-            	String text=d.get(fieldName);
+            	String text[]=d.getValues(fieldName);
             	if(text!=null)
             	{
-					addTermFrequencies(new StringReader(text), termFreqMap, fieldName);
+                for (int j = 0; j < text.length; j++) {
+                  addTermFrequencies(new StringReader(text[j]), termFreqMap, fieldName);
+                }
             	}
             }
             else {
@@ -765,7 +767,7 @@ public final class MoreLikeThis {
 		if (minWordLen > 0 && len < minWordLen) {
 			return true;
 		}
-		if (maxWordLen > 0 && len < maxWordLen) {
+		if (maxWordLen > 0 && len > maxWordLen) {
 			return true;
 		}
 		return false;
