@@ -68,19 +68,20 @@ import java.io.IOException;
  * </pre>
  *
  * @author Doug Cutting
+ * @version $Id$
  * @see Directory#makeLock(String)
-*/
-
+ */
 public abstract class Lock {
-    public static long LOCK_POLL_INTERVAL = 1000;
+  public static long LOCK_POLL_INTERVAL = 1000;
+    
 
-  /** Attempt to obtain exclusive access and immediately return
+  /** Attempts to obtain exclusive access and immediately return
    *  upon success or failure.
    * @return true iff exclusive access is obtained
    */
   public abstract boolean obtain() throws IOException;
 
-  /** Attempt to obtain an exclusive lock within amount
+  /** Attempts to obtain an exclusive lock within amount
    *  of time given. Currently polls once per second until
    *  lockWaitTimeout is passed.
    * @param lockWaitTimeout length of time to wait in ms
@@ -88,24 +89,24 @@ public abstract class Lock {
    * @throws IOException if lock wait times out or obtain() throws an IOException
    */
   public boolean obtain(long lockWaitTimeout) throws IOException {
-     boolean locked = obtain();
-     int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
-     int sleepCount = 0;
-     while (!locked) {
-         if (++sleepCount == maxSleepCount) {
-             throw new IOException("Lock obtain timed out");
-         }
-         try {
-             Thread.sleep(LOCK_POLL_INTERVAL);
-         } catch (InterruptedException e) {
-             throw new IOException(e.toString());
-         }
-         locked = obtain();
-     }
-     return locked;
+    boolean locked = obtain();
+    int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
+    int sleepCount = 0;
+    while (!locked) {
+      if (++sleepCount == maxSleepCount) {
+        throw new IOException("Lock obtain timed out");
+      }
+      try {
+        Thread.sleep(LOCK_POLL_INTERVAL);
+      } catch (InterruptedException e) {
+        throw new IOException(e.toString());
+      }
+      locked = obtain();
+    }
+    return locked;
   }
 
-  /** Release exclusive access. */
+  /** Releases exclusive access. */
   public abstract void release();
 
   /** Returns true if the resource is currently locked.  Note that one must
@@ -118,14 +119,14 @@ public abstract class Lock {
     private Lock lock;
     private long lockWaitTimeout;
 
-      /** Constructs an executor that will grab the named lock.
-       *  Defaults lockWaitTimeout to Lock.COMMIT_LOCK_TIMEOUT.
-       *  @deprecated Kept only to avoid breaking existing code.
-       */
-      public With(Lock lock)
-      {
-          this(lock, IndexWriter.COMMIT_LOCK_TIMEOUT);
-      }
+    /** Constructs an executor that will grab the named lock.
+     *  Defaults lockWaitTimeout to Lock.COMMIT_LOCK_TIMEOUT.
+     *  @deprecated Kept only to avoid breaking existing code.
+     */
+    public With(Lock lock)
+    {
+      this(lock, IndexWriter.COMMIT_LOCK_TIMEOUT);
+    }
 
     /** Constructs an executor that will grab the named lock. */
     public With(Lock lock, long lockWaitTimeout) {
