@@ -128,6 +128,7 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
      */
     public void addDocStorage(DocumentStorage storage)
     {
+	// FIXME: use JDK 1.4 asserts instead?
         if (isOpen)
         {
             throw new IllegalStateException("storage can't be added if pipeline is already open");
@@ -142,6 +143,7 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
      */
     public void addLinkStorage(LinkStorage storage)
     {
+	// FIXME: use JDK 1.4 asserts instead?
         if (isOpen)
         {
             throw new IllegalStateException("storage can't be added if pipeline is already open");
