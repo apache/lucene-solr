@@ -153,10 +153,20 @@ public class RangeQuery extends Query
       return Query.mergeBooleanQueries(queries);
     }
 
-    private String getField()
-    {
-        return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
+    /** Returns the field name for this query */
+    public String getField() {
+      return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
     }
+
+    /** Returns the lower term of this range query */
+    public Term getLowerTerm() { return lowerTerm; }
+
+    /** Returns the upper term of this range query */
+    public Term getUpperTerm() { return upperTerm; }
+
+    /** Returns <code>true</code> if the range query is inclusive */
+    public boolean isInclusive() { return inclusive; }
+
 
     /** Prints a user-readable version of this query. */
     public String toString(String field)

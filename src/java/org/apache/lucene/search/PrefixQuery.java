@@ -69,6 +69,9 @@ public class PrefixQuery extends Query {
     this.prefix = prefix;
   }
 
+  /** Returns the prefix of this query. */
+  public Term getPrefix() { return prefix; }
+
   public Query rewrite(IndexReader reader) throws IOException {
     BooleanQuery query = new BooleanQuery();
     TermEnum enumerator = reader.terms(prefix);
@@ -113,4 +116,5 @@ public class PrefixQuery extends Query {
     }
     return buffer.toString();
   }
+
 }
