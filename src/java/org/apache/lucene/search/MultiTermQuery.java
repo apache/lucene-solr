@@ -60,12 +60,19 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 
-/** A Query that matches documents containing a subset of terms provided by a 
- FilteredTermEnum enumeration. MultiTermQuery is not designed to be used by 
- itself. The reason being that it is not intialized with a FilteredTermEnum 
- enumeration. A FilteredTermEnum enumeration needs to be provided. For example,
- WildcardQuery and FuzzyQuery extend MultiTermQuery to provide WildcardTermEnum
- and FuzzyTermEnum respectively. */
+/**
+ * A {@link Query} that matches documents containing a subset of terms provided
+ * by a {@link FilteredTermEnum} enumeration.
+ * <P>
+ * <code>MultiTermQuery</code> is not designed to be used by itself.
+ * <BR>
+ * The reason being that it is not intialized with a {@link FilteredTermEnum}
+ * enumeration. A {@link FilteredTermEnum} enumeration needs to be provided.
+ * <P>
+ * For example, {@link WildcardQuery} and {@link FuzzyQuery} extend
+ * <code>MultiTermQuery</code> to provide {@link WildcardTermEnum} and
+ * {@link FuzzyTermEnum}, respectively.
+ */
 public class MultiTermQuery extends Query {
     private Term term;
     private FilteredTermEnum enum;
