@@ -84,7 +84,7 @@ public class FilterIndexReader extends IndexReader {
       return in.read(docs, freqs);
     }
     public boolean skipTo(int i) throws IOException { return in.skipTo(i); }
-    public void close() throws IOException { in.close(); } 
+    public void close() throws IOException { in.close(); }
   }
 
   /** Base class for filtering {@link TermPositions} implementations. */
@@ -94,7 +94,7 @@ public class FilterIndexReader extends IndexReader {
     public FilterTermPositions(TermPositions in) { super(in); }
 
     public int nextPosition() throws IOException {
-      return ((TermPositions)in).nextPosition();
+      return ((TermPositions) this.in).nextPosition();
     }
   }
 
