@@ -17,10 +17,7 @@ package org.apache.lucene.demo;
  */
 
 import java.io.File;
-import java.io.Reader;
-import java.io.FileInputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.FileReader;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -59,10 +56,9 @@ public class FileDocument {
 
     // Add the contents of the file to a field named "contents".  Specify a Reader,
     // so that the text of the file is tokenized and indexed, but not stored.
-    // ?? why doesn't FileReader work here ??
-    FileInputStream is = new FileInputStream(f);
-    Reader reader = new BufferedReader(new InputStreamReader(is));
-    doc.add(new Field("contents", reader));
+    // Note that FileReader expects the file to be in the system's default encoding.
+    // If that's not the case searching for special characters will fail.
+    doc.add(new Field("contents", new FileReader(f)));
 
     // return the document
     return doc;
