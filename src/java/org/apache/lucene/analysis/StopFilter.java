@@ -57,12 +57,8 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.Hashtable;
 
-/**
- * Removes stop words from a token stream.  Position increments
- * on tokens emitted are adjusted to account for words
- * removed.  Exact phrase queries will not match across holes left
- * by stop word removal, but sloppy phrase queries may match.
- */
+/** Removes stop words from a token stream. */
+
 public final class StopFilter extends TokenFilter {
 
   private Hashtable table;
@@ -93,17 +89,10 @@ public final class StopFilter extends TokenFilter {
 
   /** Returns the next input Token whose termText() is not a stop word. */
   public final Token next() throws IOException {
-    int position = 1;
-
     // return the first non-stop word found
-    for (Token token = input.next(); token != null; token = input.next()) {
-      if (table.get(token.termText) == null) {
-        token.setPositionIncrement(position);
+    for (Token token = input.next(); token != null; token = input.next())
+      if (table.get(token.termText) == null)
         return token;
-      }
-
-      position++;
-    }
     // reached EOS -- return null
     return null;
   }
