@@ -190,6 +190,7 @@ function appendTerms(query, termModifier, value, fieldName, groupModifier)
   }
   else
   {
+  	if(groupModifier == NO_MODIFIER) groupModifier = ''
     if(query.value.length == 0)
     {
       query.value = groupModifier + fieldName + ':(' + value + ')';
