@@ -79,8 +79,6 @@ import java.util.Calendar;
 
 /**
  * Tests QueryParser.
- *
- * @version $Id$
  */
 public class TestQueryParser extends TestCase {
 
@@ -136,6 +134,12 @@ public class TestQueryParser extends TestCase {
     protected Query getWildcardQuery(String field, String termStr) throws ParseException {
       throw new ParseException("Wildcard queries not allowed");
     }
+  }
+
+  private int originalMaxClauses;
+
+  public void setUp() {
+    originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
   public QueryParser getParser(Analyzer a) throws Exception {
@@ -356,6 +360,25 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("\\\\", a, "\\\\");
     assertQueryEquals("\\+blah", a, "\\+blah");
     assertQueryEquals("\\(blah", a, "\\(blah");
+
+    assertQueryEquals("\\-blah", a, "\\-blah");
+    assertQueryEquals("\\!blah", a, "\\!blah");
+    assertQueryEquals("\\{blah", a, "\\{blah");
+    assertQueryEquals("\\}blah", a, "\\}blah");
+    assertQueryEquals("\\:blah", a, "\\:blah");
+    assertQueryEquals("\\^blah", a, "\\^blah");
+    assertQueryEquals("\\[blah", a, "\\[blah");
+    assertQueryEquals("\\]blah", a, "\\]blah");
+    assertQueryEquals("\\\"blah", a, "\\\"blah");
+    assertQueryEquals("\\(blah", a, "\\(blah");
+    assertQueryEquals("\\)blah", a, "\\)blah");
+    assertQueryEquals("\\~blah", a, "\\~blah");
+    assertQueryEquals("\\*blah", a, "\\*blah");
+    assertQueryEquals("\\?blah", a, "\\?blah");
+    assertQueryEquals("foo \\&& bar", a, "foo \\&& bar");
+    assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
+    assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");
+
   }
 
   public void testSimpleDAO()
@@ -381,6 +404,17 @@ public class TestQueryParser extends TestCase {
     assertEquals(q.getBoost(), (float) 2.0, (float) 0.5);
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
+
+    q = QueryParser.parse("the^3", "field", new StandardAnalyzer());
+    assertNotNull(q);
+  }
+
+  public void testException() throws Exception {
+    try {
+      assertQueryEquals("\"some phrase", null, "abc");
+      fail("ParseException expected, not thrown");
+    } catch (ParseException expected) {
+    }
   }
 
   public void testCustomQueryParserWildcard() {
@@ -399,6 +433,20 @@ public class TestQueryParser extends TestCase {
       return;
     }
     fail("Fuzzy queries should not be allowed");
+  }
+
+  public void testBooleanQuery() throws Exception {
+    BooleanQuery.setMaxClauseCount(2);
+    try {
+      QueryParser.parse("one two three", "field", new WhitespaceAnalyzer());
+      fail("ParseException expected due to too many boolean clauses");
+    } catch (ParseException expected) {
+      // too many boolean clauses, so ParseException is expected
+    }
+  }
+
+  public void tearDown() {
+    BooleanQuery.setMaxClauseCount(originalMaxClauses);
   }
 
 }
