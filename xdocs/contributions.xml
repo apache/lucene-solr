@@ -304,6 +304,30 @@
                     </tr>
                 </table>
             </subsection>
+            <subsection name="Lindex">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.macromedia.com/software/drk/productinfo/product_overview/volume3/coldfusionmx.html#lindex">
+                                http://www.macromedia.com/software/drk/productinfo/product_overview/volume3/coldfusionmx.html#lindex
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Macromedia
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="JavaCC">
                 <table>
                     <tr>
