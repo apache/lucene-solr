@@ -87,12 +87,12 @@ public final class RAMDirectory extends Directory {
    * @exception IOException if an error occurs
    */
   public RAMDirectory(Directory dir) throws IOException {
-    final String[] ar = dir.list();
-    for (int i = 0; i < ar.length; i++) {
+    final String[] files = dir.list();
+    for (int i = 0; i < files.length; i++) {
       // make place on ram disk
-      OutputStream os = createFile(ar[i]);
+      OutputStream os = createFile(files[i]);
       // read current file
-      InputStream is = dir.openFile(ar[i]);
+      InputStream is = dir.openFile(files[i]);
       // and copy to ram disk
       int len = (int) is.length();
       byte[] buf = new byte[len];
@@ -204,22 +204,22 @@ public final class RAMDirectory extends Directory {
    */
   public final Lock makeLock(final String name) {
     return new Lock() {
-        public boolean obtain() throws IOException {
-          synchronized (files) {
-            if (!fileExists(name)) {
-              createFile(name).close();
-              return true;
-            }
-            return false;
+      public boolean obtain() throws IOException {
+        synchronized (files) {
+          if (!fileExists(name)) {
+            createFile(name).close();
+            return true;
           }
+          return false;
         }
-        public void release() {
-          deleteFile(name);
-        }
-        public boolean isLocked() {
-          return fileExists(name);
-        }
-      };
+      }
+      public void release() {
+        deleteFile(name);
+      }
+      public boolean isLocked() {
+        return fileExists(name);
+      }
+    };
   }
 
   /** Closes the store to future operations. */
