@@ -116,7 +116,7 @@ extends TestCase {
     assertEquals (0, hits.length());
   }
 
-  /** 
+  /**
    * This tests FilteredQuery's rewrite correctness
    */
   public void testRangeQuery() throws Exception {
