@@ -83,6 +83,9 @@ $Id$
     composed of TermQuery, with not all terms required, that returns a
     TopDocs (e.g., through a Hits with no Sort specified) runs much
     faster.  (cutting)
+    
+17. Memory leak in Sort code (Bug# 31240) eliminated.
+(Rafal Krzewski via Christoph and Daniel)
 
 
 1.4.1
