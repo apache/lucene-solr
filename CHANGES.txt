@@ -5,7 +5,9 @@ $Id$
 1.4 RC3
 
  1. Fixed several search bugs introduced by the skipTo() changes in
-    release 1.4RC1.  (Christoph Goller)
+    release 1.4RC1.  The index file format was changed a bit, so
+    collections must be re-indexed to take advantage of the skipTo()
+    optimizations.  (Christoph Goller)
 
  2. Added new Document methods, removeField() and removeFields().
     (Christoph Goller)
@@ -20,6 +22,11 @@ $Id$
 
  6. Lock obtain timed out message now displays the full path to the lock
     file. (Daniel Naber via Erik)
+
+ 7. Fixed a bug in SpanNearQuery when ordered. (Paul Elschot via cutting)
+
+ 8. Fixed so that FSDirectory's locks still work when the
+    java.io.tmpdir system property is null.  (cutting)
 
 
 1.4 RC2
