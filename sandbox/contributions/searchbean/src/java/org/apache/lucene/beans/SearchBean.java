@@ -33,13 +33,15 @@ import java.io.IOException;
  */
 public class SearchBean extends Object {
     
+    static final String SORT_FIELD_RELEVANCE = "relevance";
     private String queryString = "";
-    private String querySortField = "relevance"; // default
+    private String querySortField = SORT_FIELD_RELEVANCE; // default
     private String queryType = "";
     private Directory directory;
     private HitsIterator hitsIterator = null;
     private String defaultSearchField = "text";
     private long searchTime = 0;
+    private Searcher searcher = null;
     // static Logger logger = Logger.getLogger(SearchBean.class.getName());
     // static Logger searchLogger = Logger.getLogger("searchLog");
     
@@ -116,8 +118,8 @@ public class SearchBean extends Object {
         long startTime = System.currentTimeMillis();
         Hits hits = searchHits(queryString, queryType);
         
-        if (hits == null) {return null;}
-        if (hits.length() == 0) {return null;}
+        //if (hits == null) {return null;}
+        //if (hits.length() == 0) {return null;}
         
         HitsIterator hi = new HitsIterator(hits, querySortField);
         long endTime = System.currentTimeMillis();
@@ -136,13 +138,20 @@ public class SearchBean extends Object {
         
         // Provide for multiple indices in the future
         
-        Searcher searcher = new IndexSearcher(directory);
+        searcher = new IndexSearcher(directory);
         Query query = getQuery(queryString, defaultSearchField);
         //System.out.println("###querystring= "+query.toString(defaultSearchField));
         Hits hits = searcher.search(query);
         //System.out.println("Number hits = "+hits.length());
         //logger.debug("queryString = "+query.toString(searchField)+" hits = "+hits.length()+" queryType = "+queryType+" indexPath = "+indexPath );
         return hits;
+    }
+    
+    /**
+     * frees resources associated with SearchBean search
+     */
+    public void close() throws IOException{
+        searcher.close();
     }
     
     /** <queryString> | <queryType> | <querySortField>
