@@ -56,6 +56,7 @@
   <path id="junit.classpath">
     <pathelement location="${build.dir}/classes/test"/>
     <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/demo"/>
     <fileset dir="lib">
       <include name="*.jar"/>
     </fileset>
