@@ -11,7 +11,12 @@ $Id$
 
  2. FuzzyQuery now takes an additional parameter that specifies the
     minimum similarity that is required for a term to match the query.
-    Note that this isn't supported by QueryParser yet. (Daniel Naber)
+    The QueryParser syntax for this is term~x, where x is a floating 
+    point number between 0 and 1 (a bigger number means that a higher
+    similarity is required). Furthermore, a prefix can be specified
+    for FuzzyQuerys so that only those terms are considered similar that 
+    start with this prefix. This can speed up FuzzyQuery greatly.
+    (Daniel Naber, Christoph Goller)
   
  3. The Russian and the German analyzers have been moved to Sandbox.
     Also, the WordlistLoader class has been moved one level up in the

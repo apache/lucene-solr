@@ -88,7 +88,11 @@
         <p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
 
         <source>roam~</source>
-        <p>This search will find terms like foam and roams</p>
+        <p>This search will find terms like foam and roams.</p>
+
+        <p>Starting with Lucene 1.9 an additional (optional) parameter can specify the required similarity. The value is between 0 and 1, with a value closer to 1 only terms with a higher similarity will be matched. For example:</p>
+        <source>roam~0.8</source>
+        <p>The default that is used if the parameter is not given is 0.5.</p>
         </subsection>
 
 
