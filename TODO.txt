@@ -32,10 +32,8 @@ $Revision$
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114749
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114757
 
-- Add to FSDirectory the ability to specify where lock files live and
-  to disable the use of lock files altogether (for read-only media).
-  c.f.
-  http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-user@jakarta.apache.org&by=thread&from=57011
+- Add to FSDirectory the ability to disable the use of lock files altogether (for read-only media).
+  Status: COMPLETED
 
 - Add some requested methods:
     String[] Document.getValues(String fieldName);

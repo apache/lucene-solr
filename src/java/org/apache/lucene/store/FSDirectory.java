@@ -77,6 +77,8 @@ final public class FSDirectory extends Directory {
    * require Java 1.2.  Instead we use refcounts...  */
   private static final Hashtable DIRECTORIES = new Hashtable();
 
+  private static final boolean DISABLE_LOCKS = Boolean.getBoolean("disableLocks");
+
   /** Returns the directory instance for the named location.
    * 
    * <p>Directories are cached, so that, for a given canonical path, the same
@@ -211,18 +213,31 @@ final public class FSDirectory extends Directory {
     return new FSInputStream(new File(directory, name));
   }
 
-  /** Construct a {@link Lock}.
+  /**
+   * Constructs a {@link Lock} with the specified name.
+   * If JDK 1.1 is used the lock file is not really made.
+   * If system property <I>disableLocks</I> has the value of 'true'
+   * the lock will not be created.  Assigning this property any other value
+   * will <B>not</B> prevent creation of locks.
+   * <BR>
+   * This is useful for using Lucene on read-only medium, such as CD-ROM.
+   *
    * @param name the name of the lock file
+   * @return an instance of <code>Lock</code> holding the lock
    */
   public final Lock makeLock(String name) {
     final File lockFile = new File(directory, name);
     return new Lock() {
 	public boolean obtain() throws IOException {
-          if (Constants.JAVA_1_1) return true;    // locks disabled in jdk 1.1
+          if (Constants.JAVA_1_1)
+	      return true;    // locks disabled in jdk 1.1
+	  if (DISABLE_LOCKS)
+	      return true;
           return lockFile.createNewFile();
 	}
 	public void release() {
-          if (Constants.JAVA_1_1) return;         // locks disabled in jdk 1.1
+          if (Constants.JAVA_1_1)
+	      return;         // locks disabled in jdk 1.1
 	  lockFile.delete();
 	}
 	public String toString() {
