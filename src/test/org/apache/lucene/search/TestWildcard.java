@@ -3,8 +3,8 @@ package org.apache.lucene.search;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.  All
+ * rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -74,28 +74,26 @@ import java.io.IOException;
 public class TestWildcard
     extends TestCase
 {
+    /**
+     * Creates a new <code>TestWildcard</code> instance.
+     *
+     * @param name the name of the test
+     */
     public TestWildcard(String name)
     {
 	super(name);
     }
 
     /**
+     * Tests Wildcard queries with an asterisk.
      *
      */
     public void testAsterisk()
         throws IOException
     {
-        RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
-        Document doc1 = new Document();
-        Document doc2 = new Document();
-	doc1.add(Field.Text("body", "metal"));
-        doc2.add(Field.Text("body", "metals"));
-        writer.addDocument(doc1);
-        writer.addDocument(doc2);
-	writer.optimize();
-	writer.close();
-
+        RAMDirectory indexStore = getIndexStore("body", new String[]
+	    { "metal", "metals" }
+						);
 	IndexSearcher searcher = new IndexSearcher(indexStore);
 	Query query1 = new TermQuery(new Term("body", "metal"));
         Query query2 = new WildcardQuery(new Term("body", "metal*"));
@@ -110,68 +108,64 @@ public class TestWildcard
         query7.add(query3, false, false);
         query7.add(query5, false, false);
 
-	Hits result;
+	// Queries do not automatically lower-case search terms:
+        Query query8 = new WildcardQuery(new Term("body", "M*tal*"));
 
-	result = searcher.search(query1);
-	assertEquals(1, result.length());
-
-	result = searcher.search(query2);
-	assertEquals(2, result.length());
-
-	result = searcher.search(query3);
-	assertEquals(1, result.length());
-
-	result = searcher.search(query4);
-	assertEquals(2, result.length());
-
-        result = searcher.search(query5);
-	assertEquals(1, result.length());
-
-        result = searcher.search(query6);
-	assertEquals(1, result.length());
-
-        result = searcher.search(query7);
-	assertEquals(2, result.length());
+	assertMatches(searcher, query1, 1);
+	assertMatches(searcher, query2, 2);
+	assertMatches(searcher, query3, 1);
+	assertMatches(searcher, query4, 2);
+	assertMatches(searcher, query5, 1);
+	assertMatches(searcher, query6, 1);
+	assertMatches(searcher, query7, 2);
+	assertMatches(searcher, query8, 0);
     }
 
+    /**
+     * Tests Wildcard queries with a question mark.
+     *
+     * @exception IOException if an error occurs
+     */
     public void testQuestionmark()
 	throws IOException
     {
-        RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
-        Document doc1 = new Document();
-        Document doc2 = new Document();
-        Document doc3 = new Document();
-        Document doc4 = new Document();
-	doc1.add(Field.Text("body", "metal"));
-        doc2.add(Field.Text("body", "metals"));
-        doc3.add(Field.Text("body", "mXtals"));
-        doc4.add(Field.Text("body", "mXtXls"));
-        writer.addDocument(doc1);
-        writer.addDocument(doc2);
-        writer.addDocument(doc3);
-        writer.addDocument(doc4);
-	writer.optimize();
-	writer.close();
-
+        RAMDirectory indexStore = getIndexStore("body", new String[]
+	    { "metal", "metals", "mXtals", "mXtXls" }
+						);
 	IndexSearcher searcher = new IndexSearcher(indexStore);
         Query query1 = new WildcardQuery(new Term("body", "m?tal"));
         Query query2 = new WildcardQuery(new Term("body", "metal?"));
         Query query3 = new WildcardQuery(new Term("body", "metals?"));
         Query query4 = new WildcardQuery(new Term("body", "m?t?ls"));
+        Query query5 = new WildcardQuery(new Term("body", "M?t?ls"));
 
-	Hits result;
+	assertMatches(searcher, query1, 1);
+	assertMatches(searcher, query2, 2);
+	assertMatches(searcher, query3, 1);
+	assertMatches(searcher, query4, 3);
+	assertMatches(searcher, query5, 0);
+    }
 
-	result = searcher.search(query1);
-	assertEquals(1, result.length());
+    private RAMDirectory getIndexStore(String field, String[] contents)
+	throws IOException
+    {
+        RAMDirectory indexStore = new RAMDirectory();
+        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
+	for (int i = 0; i < contents.length; ++i) {
+	    Document doc = new Document();
+	    doc.add(Field.Text(field, contents[i]));
+	    writer.addDocument(doc);
+	}
+	writer.optimize();
+	writer.close();
 
-	result = searcher.search(query2);
-	assertEquals(2, result.length());
+	return indexStore;
+    }
 
-	result = searcher.search(query3);
-	assertEquals(1, result.length());
-
-	result = searcher.search(query4);
-	assertEquals(3, result.length());
+    private void assertMatches(IndexSearcher searcher, Query q, int expectedMatches)
+	throws IOException
+    {
+	Hits result = searcher.search(q);
+	assertEquals(expectedMatches, result.length());
     }
 }
