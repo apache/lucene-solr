@@ -1,0 +1,194 @@
+Below is the license for JavaCC that you must agree to when you install
+JavaCC.
+
+We are not distributing JavaCC with the binary distribution of Lucene,
+therefore, we feel that we do not need a separate license with MetaMata.
+We only have a copy of the JavaCC.zip file (which contains the JavaCC
+related .class files) in CVS.
+
+Our goal is not to violate this license and do harm in any way. If you
+find that we are in violation of the license, please let us know and
+tell us the steps to correct our misuse.
+
+Thanks!
+
+The Lucene Team
+
+
+END-USER LICENSE AGREEMENT FOR JAVACC SOFTWARE
+
+THE JAVA(TM) COMPILER COMPILER(TM) SOFTWARE IS AVAILABLE FOR DOWNLOAD FROM
+THE METAMATA WEBSITE. THIS IN NO WAY IMPLIES OWNERSHIP IN, OR OBLIGATION
+FOR THE SOFTWARE ON THE PART OF METAMATA, INC. YOUR DOWNLOAD AND USE OF THE
+SOFTWARE IS SUBJECT TO THE TERMS AND CONDITIONS OF THE LICENSE FROM SUN
+MICROSYSTEMS, INC. BELOW.
+
+THE JAVA(TM) COMPILER COMPILER(TM) SOFTWARE MAY BE REDISTRIBUTED FREE OF
+CHARGE ONLY UNDER A SEPARATE AGREEMENT ENTERED INTO WITH METAMATA (NOT PART
+OF THIS LICENSE). FOR REDISTRIBUTION RIGHTS, PLEASE CONTACT METAMATA AT
+2140 PERALTA BLVD., SUITE 213B, FREMONT CA 94536.
+
+LICENSE AGREEMENT
+
+SUN MICROSYSTEMS, INC. ACTING BY AND THROUGH ITS SUN TEST GROUP("SUN") IS
+WILLING TO LICENSE THE JAVA(TM) COMPILER COMPILER(TM)SOFTWARE, SAMPLE
+GRAMMARS, AND THE ACCOMPANYING DOCUMENTATION("SOFTWARE") TO YOU ONLY ON THE
+CONDITION THAT YOU ACCEPT ALL OF THE TERMS IN THIS AGREEMENT.
+
+PLEASE READ THE TERMS CAREFULLY BEFORE CLICKING ON THE "ACCEPT" BUTTON, AS
+BY CLICKING ON THE "ACCEPT" BUTTON YOU ACKNOWLEDGE THAT YOU HAVE READ THIS
+AGREEMENT, UNDERSTAND IT AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.
+
+IF YOU DO NOT AGREE TO THESE TERMS, SUN IS UNWILLING TO LICENSE THE
+SOFTWARE TO YOU. YOU SHOULD CLICK ON THE "DO NOT ACCEPT" BUTTON TO
+DISCONTINUE THE INSTALLATION PROCESS.
+
+1. LICENSE
+
+You are permitted to download, install, and use the Software on a single
+computer or a network server. You may use the Software as installed on a
+network server on clients of that server. You may copy the Software only
+for backup purposes in support of your use of the Software, provided that
+you reproduce all copyright and other proprietary notices that are on the
+original copy of the Software.
+
+2. SAMPLE GRAMMARS
+
+You may modify the sample grammars included in the Software to develop
+derivatives thereof ("Sample Grammar Derivatives"), and sublicense the
+Sample Grammar Derivatives directly or indirectly to your customers.
+
+3. DEVELOPED PRODUCTS
+
+You may use the Software to generate software program(s)("Developed
+Programs"). Sun claims no rights in or to the Developed Programs.
+
+4. YOUR INDEMNIFICATION OF SAMPLE GRAMMARS DERIVATIVES AND DEVELOPED
+PRODUCTS
+
+You agree to indemnify, hold harmless, and defend Sun from and against any
+claims or suits, including attorneys' fees, which arise or result from any
+use or distribution of Sample Grammar Derivatives and/orDeveloped Programs.
+
+5. RESTRICTIONS
+
+You may not use, copy, modify, or transfer the Software, or any copy
+thereof, in whole or in part, except as expressly provided for in this
+Agreement. You may not reverse engineer, disassemble, decompile or
+translate the Software, or otherwise attempt to derive the source code of
+the Software, except as allowed by law. Any attempt to transfer any of the
+rights, duties, or obligations hereunder is void. You may not rent, lease,
+loan, resell for profit, or distribute the Software, or any part of the
+Software.
+
+The Software is not designed or licensed for use in on-line control
+equipment in hazardous environments, such as operation of nuclear
+facilities, aircraft navigation or control, or direct life support
+machines.
+
+6. OWNERSHIP
+
+The Software is licensed, not sold, to you for use only under the terms of
+this Agreement, and Sun reserves all rights not expressly granted to you.
+You own the media, if any, on which the Software is recorded, but Sun
+retains ownership of all copies of the Software itself.
+
+7. CONFIDENTIALITY
+
+The Software is confidential and proprietary information of Sun and/or its
+licensors. You agree to take adequate steps to protect the Software from
+unauthorized disclosure or use.
+
+8. TERM
+
+This Agreement will immediately and automatically terminate without notice
+if you fail to comply with any material term or condition of this
+Agreement. You agree upon termination to promptly destroy the Software and
+all copies. You may terminate this Agreement at any time by destroying all
+copies of Software.
+
+9. NO WARRANTY
+
+The Software is provided to you "AS IS".
+
+SUN EXPRESSLY DISCLAIMS ALL WARRANTIES, INCLUDING THE IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. NO
+ORAL OR WRITTEN INFORMATION OF ADVICE GIVEN BY SUN, ITS EMPLOYEES,
+DISTRIBUTORS, DEALERS, LICENSORS OR AGENTS SHALL INCREASE THE SCOPE OF THE
+ABOVE WARRANTIES OR CREATE ANY NEW WARRANTIES.
+
+10. LIMITATIONS OR REMEDIES
+
+REGARDLESS OF WHETHER ANY REMEDY SET FORTH HEREIN FAILS OF ITS ESSENTIAL
+PURPOSE OR OTHERWISE, IN NO EVENT WILL SUN BE LIABLE TO YOU OR TO ANY THIRD
+PARTY FOR ANY LOST PROFITS, LOST DATA, INTERRUPTION OF BUSINESS, OR OTHER
+SPECIAL, DIRECT, INDIRECT, INCIDENTAL OR CONSEQUENTIAL DAMAGES OF ANY KIND
+WHETHER IN CONTRACT OR TORT OR OTHERWISE, ARISING OUT OF THE USE OR
+INABILITY TO USE THE SOFTWARE OR ANY DATA SUPPLIED THEREWITH, EVEN IF SUN
+HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH LOSS OR DAMAGE AND WHETHER OR
+NOT SUCH LOSS OR DAMAGES ARE FORESEEABLE.
+
+11. GOVERNMENT USER
+
+The Software is provided with restricted rights.
+
+RESTRICTED RIGHTS LEGEND
+
+With respect to any acquisition of the Software by or for any unit or
+agency of the U.S. Government ("Government"), the Software shall be
+classified as "commercial computer software", as that term is defined in
+the applicable provisions of the Federal Acquisition Regulation("FAR") and
+supplements thereto, including the Department of Defense(DoD) FAR
+Supplement ("DFARS"). If the Software is supplied for use by the DoD, the
+Software is delivered subject to the terms of this Agreement and either:
+(i) in accordance with DFARS 227.7202-1(a) and227.7202-3(a), or (ii) with
+restricted rights in accordance with DFARS252.227-7013(c)(1)(ii)(OCT 1988),
+as applicable. If the Software is supplied for use by a Federal agency
+other than the DoD, the Software is restricted computer software delivered
+subject to the terms of this Agreement and (i) FAR 12.212(a); (ii) FAR
+52.227-19; or(iii) FAR52.227-14(ALT III), as applicable.
+
+Sun Microsystems Inc, 2550 Garcia Avenue, Mountain View, CA 94043.
+
+12. EXPORT LAW
+
+You acknowledge and agree that the Software may be subject to control
+imposed by the United States Export Administration Act and the regulations
+thereunder (the "Act") as well as the applicable laws of other countries.
+
+You agree and certify that neither the Software nor any direct product
+thereof is being or will be acquired, shipped,transferred or reexported,
+directly or indirectly, to a national of Cuba, Iran, Iraq, Libya, North
+Korea, Rwanda, Syria, or Sudan or any other country prohibited by the Act
+and the regulations thereunder or will be used for any purpose prohibited
+by the same, unless specifically authorized by U.S. regulations, including,
+but not limited to, the Export Administration Regulations ("EAR") or by a
+license issued by the U.S. Government. You will not reexport the Software
+you receive under this Agreement to any party involved in sensitive or
+unguarded nuclear activities, or activities related to chemical or
+biological weapons or missiles unless authorized by the EAR or a license
+for the U.S. Department of Commerce.
+
+These obligations survive the termination of this Agreement.
+
+13. GENERAL
+
+Any action related to this Agreement will be governed by California law and
+controlling U.S. federal law, and the United Nations Convention on
+Contracts for the International Sale of Goods and the choice of law rules
+of any jurisdiction shall not apply. If any provision of this Agreement is
+held to be unenforceable, that provision will be removed and the remaining
+provisions will remain in full force. This Agreement is the complete and
+exclusive statement of the agreement between us which supersedes any
+proposal or prior agreement, oral or written, and any other communications
+between us in relation to the subject matter of this Agreement. If you have
+any questions concerning this Agreement, you may contact Sun by email at
+javacc-help@eng.sun.com.
+
+Sun, Sun Microsystems, the Sun Logo, Java, Java Compiler Compiler, and all
+Java-based marks are trademarks or registered trademarks of Sun
+Microsystems, Inc. in the U.S. and other countries.
+
+THE SOFTWARE AND ACCOMPANYING USER DOCUMENTATION ARE PROTECTED BY UNITED
+STATES COPYRIGHT LAW AND INTERNATIONAL TREATY. UNAUTHORIZED REPRODUCTION OR
+DISTRIBUTION IS SUBJECT TO CIVIL AND CRIMINAL PENALTIES.
