@@ -30,7 +30,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.Reader;
-import java.io.IOException;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
@@ -51,7 +50,7 @@ public class TestPositionIncrement extends TestCase {
           private final int[] INCREMENTS = {1, 2, 1, 0, 1};
           private int i = 0;
 
-          public Token next() throws IOException {
+          public Token next() {
             if (i == TOKENS.length)
               return null;
             Token t = new Token(TOKENS[i], i, i);

@@ -25,8 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import java.util.BitSet;
-import java.io.IOException;
-
 
 /**
  * FilteredQuery JUnit tests.
@@ -76,7 +74,7 @@ extends TestCase {
     searcher = new IndexSearcher (directory);
     query = new TermQuery (new Term ("field", "three"));
     filter = new Filter() {
-      public BitSet bits (IndexReader reader) throws IOException {
+      public BitSet bits (IndexReader reader) {
         BitSet bitset = new BitSet(5);
         bitset.set (1);
         bitset.set (3);

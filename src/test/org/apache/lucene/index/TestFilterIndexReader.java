@@ -34,8 +34,7 @@ public class TestFilterIndexReader extends TestCase {
 
      /** Filter that only permits terms containing 'e'.*/
     private static class TestTermEnum extends FilterTermEnum {
-      public TestTermEnum(TermEnum termEnum)
-        throws IOException {
+      public TestTermEnum(TermEnum termEnum) {
         super(termEnum);
       }
 
@@ -51,8 +50,7 @@ public class TestFilterIndexReader extends TestCase {
     
     /** Filter that only returns odd numbered documents. */
     private static class TestTermPositions extends FilterTermPositions {
-      public TestTermPositions(TermPositions in)
-        throws IOException {
+      public TestTermPositions(TermPositions in) {
         super(in);
       }
 

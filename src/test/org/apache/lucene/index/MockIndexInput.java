@@ -18,8 +18,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.BufferedIndexInput;
 
-import java.io.IOException;
-
 public class MockIndexInput extends BufferedIndexInput {
     private byte[] buffer;
     private int pointer = 0;
@@ -30,8 +28,7 @@ public class MockIndexInput extends BufferedIndexInput {
         length = bytes.length;
     }
 
-    protected void readInternal(byte[] dest, int destOffset, int len)
-            throws IOException {
+    protected void readInternal(byte[] dest, int destOffset, int len) {
         int remainder = len;
         int start = pointer;
         while (remainder != 0) {
@@ -47,11 +44,11 @@ public class MockIndexInput extends BufferedIndexInput {
         pointer += len;
     }
 
-    public void close() throws IOException {
+    public void close() {
         // ignore
     }
 
-    protected void seekInternal(long pos) throws IOException {
+    protected void seekInternal(long pos) {
         pointer = (int) pos;
     }
 
