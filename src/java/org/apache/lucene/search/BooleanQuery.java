@@ -18,6 +18,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Vector;
+import java.util.Arrays;
+
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents matching boolean combinations of other
@@ -403,7 +405,7 @@ public class BooleanQuery extends Query {
       return false;
     BooleanQuery other = (BooleanQuery)o;
     return (this.getBoost() == other.getBoost())
-      &&  this.clauses.equals(other.clauses);
+      &&  Arrays.equals(this.getClauses(), other.getClauses());
   }
 
   /** Returns a hash code value for this object.*/
