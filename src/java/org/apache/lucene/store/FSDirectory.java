@@ -60,9 +60,7 @@ import java.io.RandomAccessFile;
 import java.io.FileNotFoundException;
 import java.util.Hashtable;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.util.Constants;
 
 /**
   Straightforward implementation of Directory as a directory of files.
@@ -213,9 +211,11 @@ final public class FSDirectory extends Directory {
     final File lockFile = new File(directory, name);
     return new Lock() {
 	public boolean obtain() throws IOException {
-	  return lockFile.createNewFile();
+          if (Constants.JAVA_1_1) return true;    // locks disabled in jdk 1.1
+          return lockFile.createNewFile();
 	}
 	public void release() {
+          if (Constants.JAVA_1_1) return;         // locks disabled in jdk 1.1
 	  lockFile.delete();
 	}
 	public String toString() {
