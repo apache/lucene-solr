@@ -23,17 +23,11 @@ package org.apache.lucene.search.highlight;
  */
 public interface Formatter
 {
-  /**
-   * Highlights a search term. For example, an HTML Formatter could simply do:
-   *
-   * <p><dl><dt></dt><dd><code>return "&lt;b&gt;" + term + "&lt;/b&gt;";</code></dd></dl>
-   *
-   * @param originalTermText (unstemmed) term text to highlight
-   * @param stemmedTerm the stemmed form of the originalTermText
-   * @param score The score for this term returned by Scorer.getTokenScore - one use for this may be to set font weight in highlighted text 
-   * @param startOffset the position of the originalTermText in the text being highlighted  
-   *
-   * @return highlighted term text
-   */
-  String highlightTerm(String originalTermText, String stemmedTerm, float score, int startOffset);
+	/**
+	 * @param originalText The section of text being considered for markup
+	 * @param tokenGroup contains one or several overlapping Tokens along with
+	 * their scores and positions.
+	 * @return
+	 */
+	String highlightTerm(String originalText, TokenGroup tokenGroup);
 }

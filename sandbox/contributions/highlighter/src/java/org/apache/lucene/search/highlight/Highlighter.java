@@ -149,46 +149,60 @@ public class Highlighter
 			int endOffset;
 			int lastEndOffset = 0;
 			textFragmenter.start(text);
+		
+			TokenGroup tokenGroup=new TokenGroup();
 
 			while ((token = tokenStream.next()) != null)
 			{
-				
-				startOffset = token.startOffset();
-				endOffset = token.endOffset();		
-				//FIXME an issue was reported with CJKTokenizer that I couldnt reproduce
-				// where the analyzer was producing overlapping tokens.
-				// I suspect the fix is to make startOffset=Math.max(startOffset,lastEndOffset+1)
-				// but cant be sure so I'll just leave this comment in for now
-				tokenText = text.substring(startOffset, endOffset);
-
-
-				// append text between end of last token (or beginning of text) and start of current token
-				if (startOffset > lastEndOffset)
-					newText.append(text.substring(lastEndOffset, startOffset));
-
-				// does query contain current token?
-				float score=fragmentScorer.getTokenScore(token);			
-				newText.append(formatter.highlightTerm(tokenText, token.termText(), score, startOffset));
-				
-
-				if(textFragmenter.isNewFragment(token))
+				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(token)))
 				{
-					currentFrag.setScore(fragmentScorer.getFragmentScore());
-					//record stats for a new fragment
-					currentFrag.textEndPos = newText.length();
-					currentFrag =new TextFragment(newText.length(), docFrags.size());
-					fragmentScorer.startFragment(currentFrag);
-					docFrags.add(currentFrag);
-				}
+					//the current token is distinct from previous tokens - 
+					// markup the cached token group info
+					startOffset = tokenGroup.startOffset;
+					endOffset = tokenGroup.endOffset;		
+					tokenText = text.substring(startOffset, endOffset);
+					String markedUpText=formatter.highlightTerm(tokenText, tokenGroup);
+					//store any whitespace etc from between this and last group
+					if (startOffset > lastEndOffset)
+						newText.append(text.substring(lastEndOffset, startOffset));
+					newText.append(markedUpText);
+					lastEndOffset=endOffset;
+					tokenGroup.clear();
 
-				lastEndOffset = endOffset;
+					//check if current token marks the start of a new fragment						
+					if(textFragmenter.isNewFragment(token))
+					{
+						currentFrag.setScore(fragmentScorer.getFragmentScore());
+						//record stats for a new fragment
+						currentFrag.textEndPos = newText.length();
+						currentFrag =new TextFragment(newText.length(), docFrags.size());
+						fragmentScorer.startFragment(currentFrag);
+						docFrags.add(currentFrag);
+					}
+				}
+						
+				tokenGroup.addToken(token,fragmentScorer.getTokenScore(token));
+				
 				if(lastEndOffset>maxDocBytesToAnalyze)
 				{
 					break;
 				}
 			}
 			currentFrag.setScore(fragmentScorer.getFragmentScore());
-			
+	
+			if(tokenGroup.numTokens>0)
+			{
+				//flush the accumulated text (same code as in above loop)
+				startOffset = tokenGroup.startOffset;
+				endOffset = tokenGroup.endOffset;		
+				tokenText = text.substring(startOffset, endOffset);
+				String markedUpText=formatter.highlightTerm(tokenText, tokenGroup);
+				//store any whitespace etc from between this and last group
+				if (startOffset > lastEndOffset)
+					newText.append(text.substring(lastEndOffset, startOffset));
+				newText.append(markedUpText);
+				lastEndOffset=endOffset;						
+			}
 
 			// append text after end of last token
 			if (lastEndOffset < text.length())

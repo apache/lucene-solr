@@ -1,4 +1,5 @@
 package org.apache.lucene.search.highlight;
+
 /**
  * Copyright 2002-2004 The Apache Software Foundation
  *
@@ -16,13 +17,18 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-//import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,6 +41,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.highlight.Formatter;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleFragmenter;
+import org.apache.lucene.search.highlight.TokenGroup;
+import org.apache.lucene.search.highlight.WeightedTerm;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
@@ -60,23 +72,31 @@ public class HighlighterTest extends TestCase implements Formatter
 			"John Kennedy has been shot",
 			"This text has a typo in referring to Keneddy" };
 
+	/**
+	 * Constructor for HighlightExtractorTest.
+	 * @param arg0
+	 */
+	public HighlighterTest(String arg0)
+	{
+		super(arg0);
+	}
 
 	public void testSimpleHighlighter() throws Exception
 	{
 		doSearching("Kennedy");
 		Highlighter highlighter =	new Highlighter(new QueryScorer(query));
-		highlighter.setTextFragmenter(new SimpleFragmenter(40));			
+		highlighter.setTextFragmenter(new SimpleFragmenter(40));
 		int maxNumFragmentsRequired = 2;
 		for (int i = 0; i < hits.length(); i++)
 		{
 			String text = hits.doc(i).get(FIELD_NAME);
 			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			
+
 			String result =
 				highlighter.getBestFragments(tokenStream,text,maxNumFragmentsRequired, "...");
 			System.out.println("\t" + result);
 		}
-		//Not sure we can assert anything here - just running to check we dont throw any exceptions 
+		//Not sure we can assert anything here - just running to check we dont throw any exceptions
 	}
 
 
@@ -151,7 +171,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		}
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
 	}
-	
+
 	public void testGetBestSingleFragmentWithWeights() throws Exception
 	{
 		WeightedTerm[]wTerms=new WeightedTerm[2];
@@ -160,9 +180,9 @@ public class HighlighterTest extends TestCase implements Formatter
 		Highlighter highlighter =new Highlighter(new QueryScorer(wTerms));
 		TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(texts[0]));
 		highlighter.setTextFragmenter(new SimpleFragmenter(2));
-		
+
 		String result = highlighter.getBestFragment(tokenStream,texts[0]).trim();
-		assertTrue("Failed to find best section using weighted terms. Found: "+result
+		assertTrue("Failed to find best section using weighted terms. Found: ["+result+"]"
 			, "<B>Hello</B>".equals(result));
 
 		//readjust weights
@@ -170,14 +190,36 @@ public class HighlighterTest extends TestCase implements Formatter
 		tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(texts[0]));
 		highlighter =new Highlighter(new QueryScorer(wTerms));
 		highlighter.setTextFragmenter(new SimpleFragmenter(2));
-		
+
 		result = highlighter.getBestFragment(tokenStream,texts[0]).trim();
 		assertTrue("Failed to find best section using weighted terms. Found: "+result
 			, "<B>kennedy</B>".equals(result));
 	}
 	
 	
-	
+	// tests a "complex" analyzer that produces multiple 
+	// overlapping tokens 
+	public void testOverlapAnalyzer() throws Exception
+	{
+		HashMap synonyms = new HashMap();
+		synonyms.put("football", "soccer,footie");
+		Analyzer analyzer = new SynonymAnalyzer(synonyms);
+		String srchkey = "football";
+
+		String s = "football-soccer in the euro 2004 footie competition";
+		Query query = QueryParser.parse(srchkey, "bookid", analyzer);
+
+		Highlighter highlighter = new Highlighter(new QueryScorer(query));
+		TokenStream tokenStream =
+			analyzer.tokenStream(null, new StringReader(s));
+		// Get 3 best fragments and seperate with a "..."
+		String result = highlighter.getBestFragments(tokenStream, s, 3, "...");
+		String expectedResult="<B>football</B>-<B>soccer</B> in the euro 2004 <B>footie</B> competition";
+		assertTrue("overlapping analyzer should handle highlights OK",expectedResult.equals(result));
+	}
+
+
+
 	public void testGetSimpleHighlight() throws Exception
 	{
 		doSearching("Kennedy");
@@ -188,7 +230,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		{
 			String text = hits.doc(i).get(FIELD_NAME);
 			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			
+
 			String result = highlighter.getBestFragment(tokenStream,text);
 			System.out.println("\t" + result);
 		}
@@ -209,7 +251,7 @@ public class HighlighterTest extends TestCase implements Formatter
 	}
 
 
-	
+
 	public void testUnRewrittenQuery() throws IOException, ParseException
 	{
 		//test to show how rewritten query can still be used
@@ -226,7 +268,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		Highlighter highlighter =
 			new Highlighter(this,new QueryScorer(query));
 
-		highlighter.setTextFragmenter(new SimpleFragmenter(40));		
+		highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
 		int maxNumFragmentsRequired = 3;
 
@@ -234,14 +276,14 @@ public class HighlighterTest extends TestCase implements Formatter
 		{
 			String text = hits.doc(i).get(FIELD_NAME);
 			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			
+
 			String highlightedText = highlighter.getBestFragments(tokenStream,text,maxNumFragmentsRequired,"...");
 			System.out.println(highlightedText);
 		}
 		//We expect to have zero highlights if the query is multi-terms and is not rewritten!
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 0);
 	}
-	
+
 	public void testNoFragments() throws Exception
 	{
 		doSearching("AnInvalidQueryWhichShouldYieldNoResults");
@@ -253,12 +295,12 @@ public class HighlighterTest extends TestCase implements Formatter
 		{
 			String text = texts[i];
 			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			
+
 			String result = highlighter.getBestFragment(tokenStream,text);
 			assertNull("The highlight result should be null for text with no query terms", result);
 		}
 	}
-	
+
 	public void testMultiSearcher() throws Exception
 	{
 		//setup index 1
@@ -266,7 +308,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(), true);
 		Document d = new Document();
 		Field f = new Field(FIELD_NAME, "multiOne", true, true, true);
-		d.add(f);		
+		d.add(f);
 		writer1.addDocument(d);
 		writer1.optimize();
 		writer1.close();
@@ -277,15 +319,15 @@ public class HighlighterTest extends TestCase implements Formatter
 		IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(), true);
 		d = new Document();
 		f = new Field(FIELD_NAME, "multiTwo", true, true, true);
-		d.add(f);		
+		d.add(f);
 		writer2.addDocument(d);
 		writer2.optimize();
 		writer2.close();
 		IndexReader reader2 = IndexReader.open(ramDir2);
 
-		
 
-		IndexSearcher searchers[]=new IndexSearcher[2]; 
+
+		IndexSearcher searchers[]=new IndexSearcher[2];
 		searchers[0] = new IndexSearcher(ramDir1);
 		searchers[1] = new IndexSearcher(ramDir2);
 		MultiSearcher multiSearcher=new MultiSearcher(searchers);
@@ -299,8 +341,8 @@ public class HighlighterTest extends TestCase implements Formatter
 		expandedQueries[0]=query.rewrite(reader1);
 		expandedQueries[1]=query.rewrite(reader2);
 		query=query.combine(expandedQueries);
-		
-		
+
+
 		//create an instance of the highlighter with the tags used to surround highlighted text
 		Highlighter highlighter =
 			new Highlighter(this,new QueryScorer(query));
@@ -312,13 +354,13 @@ public class HighlighterTest extends TestCase implements Formatter
 			String highlightedText = highlighter.getBestFragment(tokenStream,text);
 			System.out.println(highlightedText);
 		}
-		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);		
-		
-		
-		
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
+
+
+
 	}
-	
-/*	
+
+/*
 
 	public void testBigramAnalyzer() throws IOException, ParseException
 	{
@@ -331,11 +373,11 @@ public class HighlighterTest extends TestCase implements Formatter
 		Document d = new Document();
 		Field f = new Field(FIELD_NAME, "java abc def", true, true, true);
 		d.add(f);
-		writer.addDocument(d);		
+		writer.addDocument(d);
 		writer.close();
 		IndexReader reader = IndexReader.open(ramDir);
 
-		IndexSearcher searcher=new IndexSearcher(reader); 
+		IndexSearcher searcher=new IndexSearcher(reader);
 		query = QueryParser.parse("abc", FIELD_NAME, bigramAnalyzer);
 		System.out.println("Searching for: " + query.toString(FIELD_NAME));
 		hits = searcher.search(query);
@@ -349,15 +391,15 @@ public class HighlighterTest extends TestCase implements Formatter
 			TokenStream tokenStream=bigramAnalyzer.tokenStream(FIELD_NAME,new StringReader(text));
 			String highlightedText = highlighter.getBestFragment(tokenStream,text);
 			System.out.println(highlightedText);
-		}		
-		
+		}
+
 	}
-*/	
+*/
 
 
-	public String highlightTerm(String originalText , String weightedTerm, float score, int startOffset)
+	public String highlightTerm(String originalText , TokenGroup group)
 	{
-		if(score<=0)
+		if(group.getTotalScore()<=0)
 		{
 			return originalText;
 		}
@@ -369,7 +411,7 @@ public class HighlighterTest extends TestCase implements Formatter
 	{
 		searcher = new IndexSearcher(ramDir);
 		query = QueryParser.parse(queryString, FIELD_NAME, new StandardAnalyzer());
-		//for any multi-term queries to work (prefix, wildcard, range,fuzzy etc) you must use a rewritten query! 
+		//for any multi-term queries to work (prefix, wildcard, range,fuzzy etc) you must use a rewritten query!
 		query=query.rewrite(reader);
 		System.out.println("Searching for: " + query.toString(FIELD_NAME));
 		hits = searcher.search(query);
@@ -385,7 +427,7 @@ public class HighlighterTest extends TestCase implements Formatter
 			int maxNumFragmentsRequired = 2;
 			String fragmentSeparator = "...";
 			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			
+
 			String result =
 				highlighter.getBestFragments(
 					tokenStream,
@@ -432,3 +474,91 @@ public class HighlighterTest extends TestCase implements Formatter
 	}
 
 }
+
+
+//===================================================================
+//========== BEGIN TEST SUPPORTING CLASSES
+//========== THESE LOOK LIKE, WITH SOME MORE EFFORT THESE COULD BE
+//========== MADE MORE GENERALLY USEFUL.
+// TODO - make synonyms all interchangeable with each other and produce
+// a version that does antonyms(?) - the "is a specialised type of ...."
+// so that car=audi, bmw and volkswagen but bmw != audi so different
+// behaviour to synonyms
+//===================================================================
+
+class SynonymAnalyzer extends Analyzer
+{
+	private Map synonyms;
+
+	public SynonymAnalyzer(Map synonyms)
+	{
+		this.synonyms = synonyms;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.apache.lucene.analysis.Analyzer#tokenStream(java.lang.String, java.io.Reader)
+	 */
+	public TokenStream tokenStream(String arg0, Reader arg1)
+	{
+
+		return new SynonymTokenizer(new LowerCaseTokenizer(arg1), synonyms);
+	}
+}
+
+/**
+ * Expands a token stream with synonyms (TODO - make the synonyms analyzed by choice of analyzer)
+ * @author MAHarwood
+ */
+class SynonymTokenizer extends TokenStream
+{
+	private TokenStream realStream;
+	private Token currentRealToken = null;
+	private Map synonyms;
+	StringTokenizer st = null;
+	public SynonymTokenizer(TokenStream realStream, Map synonyms)
+	{
+		this.realStream = realStream;
+		this.synonyms = synonyms;
+	}
+	public Token next() throws IOException
+	{
+		if (currentRealToken == null)
+		{
+			Token nextRealToken = realStream.next();
+			if (nextRealToken == null)
+			{
+				return null;
+			}
+			String expansions = (String) synonyms.get(nextRealToken.termText());
+			if (expansions == null)
+			{
+				return nextRealToken;
+			}
+			st = new StringTokenizer(expansions, ",");
+			if (st.hasMoreTokens())
+			{
+				currentRealToken = nextRealToken;
+			}
+			return currentRealToken;
+		}
+		else
+		{
+			String nextExpandedValue = st.nextToken();
+			Token expandedToken =
+				new Token(
+					nextExpandedValue,
+					currentRealToken.startOffset(),
+					currentRealToken.endOffset());
+			expandedToken.setPositionIncrement(0);
+			if (!st.hasMoreTokens())
+			{
+				currentRealToken = null;
+				st = null;
+			}
+			return expandedToken;
+		}
+	}
+
+}
+
+

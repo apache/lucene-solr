@@ -24,6 +24,7 @@ public class SimpleHTMLFormatter implements Formatter
 {
 	String preTag;
 	String postTag;
+	
 
 	public SimpleHTMLFormatter(String preTag, String postTag)
 	{
@@ -41,17 +42,20 @@ public class SimpleHTMLFormatter implements Formatter
 		this.postTag = "</B>";
 	}
 
-	public String highlightTerm(String originalText, String term, float score, int startOffset)
+	/* (non-Javadoc)
+	 * @see org.apache.lucene.search.highlight.Formatter#highlightTerm(java.lang.String, org.apache.lucene.search.highlight.TokenGroup)
+	 */
+	public String highlightTerm(String originalText, TokenGroup tokenGroup)
 	{
-		if(score<=0)
+		StringBuffer returnBuffer;
+		if(tokenGroup.getTotalScore()>0)
 		{
-			return originalText;
+			returnBuffer=new StringBuffer();
+			returnBuffer.append(preTag);
+			returnBuffer.append(originalText);
+			returnBuffer.append(postTag);
+			return returnBuffer.toString();
 		}
-		StringBuffer sb = new StringBuffer();
-		sb.append(preTag);
-		sb.append(originalText);
-		sb.append(postTag);
-		return sb.toString();
+		return originalText;
 	}
-
 }
