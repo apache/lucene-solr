@@ -103,7 +103,7 @@ extends PriorityQueue {
 	 * @throws IOException  If an error occurs reading the index.
 	 * @see #determineComparator
 	 */
-	static ScoreDocComparator getCachedComparator (final IndexReader reader, final String field, final int type)
+	static ScoreDocComparator getCachedComparator (final IndexReader reader, final String field, final int type, final SortComparatorSource factory)
 	throws IOException {
 
 		if (type == SortField.DOC) return ScoreDocComparator.INDEXORDER;
@@ -124,10 +124,11 @@ extends PriorityQueue {
 		switch (type) {
 			case SortField.SCORE:  comparer = ScoreDocComparator.RELEVANCE; break;
 			case SortField.DOC:    comparer = ScoreDocComparator.INDEXORDER; break;
+			case SortField.AUTO:   comparer = determineComparator (reader, field); break;
+			case SortField.STRING: comparer = StringSortedHitQueue.comparator (reader, field); break;
 			case SortField.INT:    comparer = IntegerSortedHitQueue.comparator (reader, field); break;
 			case SortField.FLOAT:  comparer = FloatSortedHitQueue.comparator (reader, field); break;
-			case SortField.STRING: comparer = StringSortedHitQueue.comparator (reader, field); break;
-			case SortField.AUTO:   comparer = determineComparator (reader, field); break;
+			case SortField.CUSTOM: comparer = factory.newComparator (reader, field); break;
 			default:
 				throw new RuntimeException ("invalid sort field type: "+type);
 		}

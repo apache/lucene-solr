@@ -51,7 +51,7 @@ extends PriorityQueue {
 		this.fields = new SortField[n];
 		for (int i=0; i<n; ++i) {
 			String fieldname = fields[i].getField();
-			comparators[i] = FieldSortedHitQueue.getCachedComparator (reader, fieldname, fields[i].getType());
+			comparators[i] = FieldSortedHitQueue.getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getFactory());
 			this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
 		}
 		initialize (size);
@@ -107,7 +107,7 @@ extends PriorityQueue {
 	 */
 	FieldDoc fillFields (final FieldDoc doc) {
 		final int n = comparators.length;
-		final Object[] fields = new Object[n];
+		final Comparable[] fields = new Comparable[n];
 		for (int i=0; i<n; ++i)
 			fields[i] = comparators[i].sortValue(doc);
 		doc.fields = fields;

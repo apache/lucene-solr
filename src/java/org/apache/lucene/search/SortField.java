@@ -58,6 +58,10 @@ implements Serializable {
    * lower values are at the front. */
   public static final int FLOAT = 5;
 
+  /** Sort using a custom Comparator.  Sort values are any Comparable and
+   * sorting is done according to natural order. */
+  public static final int CUSTOM = 9;
+
   /** Represents sorting by document score (relevancy). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
 
@@ -68,7 +72,7 @@ implements Serializable {
   private String field;
   private int type = AUTO;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-
+  private SortComparatorSource factory;
 
   /** Creates a sort by terms in the given field where the type of term value
    * is determined dynamically ({@link #AUTO AUTO}).
@@ -112,6 +116,28 @@ implements Serializable {
     this.reverse = reverse;
   }
 
+  /** Creates a sort with a custom comparison function.
+   * @param field Name of field to sort by; cannot be <code>null</code>.
+   * @param comparator Returns a comparator for sorting hits.
+   */
+  public SortField (String field, SortComparatorSource comparator) {
+    this.field = (field != null) ? field.intern() : field;
+    this.type = CUSTOM;
+    this.factory = comparator;
+  }
+
+  /** Creates a sort, possibly in reverse, with a custom comparison function.
+   * @param field Name of field to sort by; cannot be <code>null</code>.
+   * @param comparator Returns a comparator for sorting hits.
+   * @param reverse True if natural order should be reversed.
+   */
+  public SortField (String field, SortComparatorSource comparator, boolean reverse) {
+    this.field = (field != null) ? field.intern() : field;
+    this.type = CUSTOM;
+    this.reverse = reverse;
+    this.factory = comparator;
+  }
+
   /** Returns the name of the field.  Could return <code>null</code>
    * if the sort is by SCORE or DOC.
    * @return Name of field, possibly <code>null</code>.
@@ -134,6 +160,10 @@ implements Serializable {
     return reverse;
   }
 
+  public SortComparatorSource getFactory() {
+    return factory;
+  }
+
   public String toString() {
     StringBuffer buffer = new StringBuffer();
     switch (type) {
@@ -141,6 +171,9 @@ implements Serializable {
                   break;
 
       case DOC: buffer.append("<doc>");
+                break;
+
+      case CUSTOM: buffer.append ("<custom:\""+"\">");
                 break;
 
       default: buffer.append("\"" + field + "\"");

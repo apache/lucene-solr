@@ -17,8 +17,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -27,6 +26,7 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.regex.Pattern;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,7 +47,8 @@ import junit.textui.TestRunner;
  */
 
 public class TestSort
-extends TestCase {
+extends TestCase
+implements Serializable {
 
 	private Searcher full;
 	private Searcher searchX;
@@ -89,17 +90,17 @@ extends TestCase {
 	// the float field to sort by float
 	// the string field to sort by string
 	private String[][] data = new String[][] {
-	// tracer  contents         int            float           string
-	{   "A",   "x a",           "5",           "4f",           "c" },
-	{   "B",   "y a",           "5",           "3.4028235E38", "i" },
-	{   "C",   "x a b c",       "2147483647",  "1.0",          "j" },
-	{   "D",   "y a b c",       "-1",          "0.0f",         "a" },
-	{   "E",   "x a b c d",     "5",           "2f",           "h" },
-	{   "F",   "y a b c d",     "2",           "3.14159f",     "g" },
-	{   "G",   "x a b c d",     "3",           "-1.0",         "f" },
-	{   "H",   "y a b c d",     "0",           "1.4E-45",      "e" },
-	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d" },
-	{   "J",   "y a b c d e f", "4",           ".5",           "b" },
+	// tracer  contents         int            float           string   custom
+	{   "A",   "x a",           "5",           "4f",           "c",     "A-3"   },
+	{   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10"  },
+	{   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2"   },
+	{   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0"   },
+	{   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8"   },
+	{   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1"   },
+	{   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100" },
+	{   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88"  },
+	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10"  },
+	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7"   },
 	};
 
 	// create an index of all the documents, or just the x, or just the y documents
@@ -115,6 +116,7 @@ extends TestCase {
 				doc.add (new Field ("int",      data[i][2], false, true, false));
 				doc.add (new Field ("float",    data[i][3], false, true, false));
 				doc.add (new Field ("string",   data[i][4], false, true, false));
+				doc.add (new Field ("custom",   data[i][5], false, true, false));
 				writer.addDocument (doc);
 			}
 		}
@@ -249,6 +251,14 @@ extends TestCase {
 		assertMatches (full, queryX, sort, "GICEA");
 	}
 
+
+	public void testCustomSorts() throws Exception {
+		sort.setSort (new SortField ("custom", SampleComparable.getComparator()));
+		assertMatches (full, queryX, sort, "CAIEG");
+		sort.setSort (new SortField ("custom", SampleComparable.getComparator(), true));
+		assertMatches (full, queryY, sort, "HJDBF");
+	}
+
 	// test a variety of sorts using more than one searcher
 	public void testMultiSort() throws Exception {
 		MultiSearcher searcher = new MultiSearcher (new Searchable[] { searchX, searchY });
@@ -266,6 +276,15 @@ extends TestCase {
 		Searchable searcher = getRemote();
 		MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
 		runMultiSorts (multi);
+	}
+
+	public void testRemoteCustomSort() throws Exception {
+		Searchable searcher = getRemote();
+		MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
+		sort.setSort (new SortField ("custom", SampleComparable.getComparator()));
+		assertMatches (multi, queryX, sort, "CAIEG");
+		sort.setSort (new SortField ("custom", SampleComparable.getComparator(), true));
+		assertMatches (multi, queryY, sort, "HJDBF");
 	}
 
 	// test that the relevancy scores are the same even if

@@ -26,7 +26,7 @@ package org.apache.lucene.search;
  * @since   lucene 1.4
  * @version $Id$
  */
-interface ScoreDocLookupComparator
+public interface ScoreDocLookupComparator
 extends ScoreDocComparator {
 
 	/**

@@ -26,7 +26,7 @@ package org.apache.lucene.search;
  * @since   lucene 1.4
  * @version $Id$
  */
-interface ScoreDocComparator {
+public interface ScoreDocComparator {
 
 	/** Special comparator for sorting hits according to computed relevance (document score). */
 	static final ScoreDocComparator RELEVANCE = new ScoreDocComparator() {
@@ -40,7 +40,7 @@ interface ScoreDocComparator {
 			if (i.score > j.score) return 1;
 			return 0;
 		}
-		public Object sortValue (ScoreDoc i) {
+		public Comparable sortValue (ScoreDoc i) {
 			return new Float (i.score);
 		}
 		public int sortType() {
@@ -61,7 +61,7 @@ interface ScoreDocComparator {
 			if (i.doc < j.doc) return 1;
 			return 0;
 		}
-		public Object sortValue (ScoreDoc i) {
+		public Comparable sortValue (ScoreDoc i) {
 			return new Integer (i.doc);
 		}
 		public int sortType() {
@@ -93,13 +93,13 @@ interface ScoreDocComparator {
 
 
 	/**
-	 * Returns the value used to sort the given document.  This is
-	 * currently always either an Integer or Float, but could be extended
-	 * to return any object used to sort by. 
+	 * Returns the value used to sort the given document.  The
+	 * object returned must implement the java.io.Serializable
+	 * interface.
 	 * @param i Document
-	 * @return Integer or Float
+	 * @return Serializable object
 	 */
-	Object sortValue (ScoreDoc i);
+	Comparable sortValue (ScoreDoc i);
 
 
 	/**

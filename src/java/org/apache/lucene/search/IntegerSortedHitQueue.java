@@ -139,7 +139,7 @@ extends FieldSortedHitQueue {
 				return fieldOrder.length == n;
 			}
 
-			public Object sortValue (final ScoreDoc i) {
+			public Comparable sortValue (final ScoreDoc i) {
 				return new Integer (fieldOrder[i.doc]);
 			}
 

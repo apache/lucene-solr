@@ -109,6 +109,9 @@ extends PriorityQueue {
 						if (f1 > f2) c = -1;
 						if (f1 < f2) c = 1;
 						break;
+					case SortField.CUSTOM:
+						c = docB.fields[i].compareTo (docA.fields[i]);
+						break;
 					case SortField.AUTO:
 						// we cannot handle this - even if we determine the type of object (Float or
 						// Integer), we don't necessarily know how to compare them (both SCORE and
@@ -143,6 +146,9 @@ extends PriorityQueue {
 						float f2 = ((Float)docB.fields[i]).floatValue();
 						if (f1 < f2) c = -1;
 						if (f1 > f2) c = 1;
+						break;
+					case SortField.CUSTOM:
+						c = docA.fields[i].compareTo (docB.fields[i]);
 						break;
 					case SortField.AUTO:
 						// we cannot handle this - even if we determine the type of object (Float or
