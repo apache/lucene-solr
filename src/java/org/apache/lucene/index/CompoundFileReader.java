@@ -143,21 +143,22 @@ class CompoundFileReader extends Directory {
         directory.touchFile(fileName);
     }
 
-    /** Removes an existing file in the directory. */
+    /** Not implemented
+     * @throws UnsupportedOperationException */
     public void deleteFile(String name)
     {
         throw new UnsupportedOperationException();
     }
 
-    /** Renames an existing file in the directory.
-    If a file already exists with the new name, then it is replaced.
-    This replacement should be atomic. */
+    /** Not implemented
+     * @throws UnsupportedOperationException */
     public void renameFile(String from, String to)
     {
         throw new UnsupportedOperationException();
     }
 
-    /** Returns the length of a file in the directory. */
+    /** Returns the length of a file in the directory.
+     * @throws IOException if the file does not exist */
     public long fileLength(String name)
     throws IOException
     {
@@ -167,16 +168,15 @@ class CompoundFileReader extends Directory {
         return e.length;
     }
 
-    /** Creates a new, empty file in the directory with the given name.
-      Returns a stream writing this file. */
+    /** Not implemented
+     * @throws UnsupportedOperationException */
     public OutputStream createFile(String name)
     {
         throw new UnsupportedOperationException();
     }
 
-    /** Construct a {@link Lock}.
-     * @param name the name of the lock file
-     */
+    /** Not implemented
+     * @throws UnsupportedOperationException */
     public Lock makeLock(String name)
     {
         throw new UnsupportedOperationException();
