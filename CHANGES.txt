@@ -4,12 +4,18 @@ $Id$
 
 1.9 RC1
 
- 1. The API contained methods that declared to throw an IOException
-    but that never did this. These declarations have been removed. If 
-    your code tries to catch these exceptions you might need to remove
-    those catch clauses to avoid compile errors. (Daniel Naber)
+New features
 
- 2. FuzzyQuery now takes an additional parameter that specifies the
+ 1. Added support for stored compressed fields (patch #31149)
+    (Bernhard Messer via Christoph)
+    
+ 2. Added support for binary stored fields (patch #29370)
+    (Drew Farris and Bernhard Messer via Christoph)
+
+ 3. Added support for position and offset information in term vectors
+    (patch #18927). (Grant Ingersoll & Christoph)
+
+ 4. FuzzyQuery now takes an additional parameter that specifies the
     minimum similarity that is required for a term to match the query.
     The QueryParser syntax for this is term~x, where x is a floating 
     point number >= 0 and < 1 (a bigger number means that a higher
@@ -17,108 +23,110 @@ $Id$
     for FuzzyQuerys so that only those terms are considered similar that 
     start with this prefix. This can speed up FuzzyQuery greatly.
     (Daniel Naber, Christoph Goller)
-  
- 3. The Russian and the German analyzers have been moved to Sandbox.
-    Also, the WordlistLoader class has been moved one level up in the
-    hierarchy and is now org.apache.lucene.analysis.WordlistLoader
-    (Daniel Naber)
-    
- 4. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
-    prevented deletion of obsolete segments. (Christoph Goller)
-     
- 5. Disk usage (peak requirements during indexing and optimization)
-    in case of compound file format has been improved. 
-    (Bernhard, Dmitry, and Christoph)
 
- 6. Added javadocs-internal to build.xml - bug #30360
-    (Paul Elschot via Otis)
+ 5. PhraseQuery and PhrasePrefixQuery now allow the explicit specification
+    of relative positions. (Christoph Goller)
 
- 7. Several methods and fields have been deprecated. The API documentation 
-    contains information about the recommended replacements. It is planned
-    that the deprecated methods and fields will be removed in Lucene 2.0.
-    (Daniel Naber)
-
- 8. A new class DateTools has been added. It allows you to format dates
+ 6. A new class DateTools has been added. It allows you to format dates
     in a readable format adequate for indexing. Unlike the existing
     DateField class DateTools can cope with dates before 1970 and it
     forces you to specify the desired date resolution (e.g. month, day,
     second, ...) which can make RangeQuerys on those fields more efficient.
     (Daniel Naber)
-    
- 9. PhraseQuery and PhrasePrefixQuery now allow the explicit specification
-    of relative positions. (Christoph Goller)
-    
-10. QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions 
-    (patch #9110); some unused method parameters removed; The ability
-    to specify a minimum similarity for FuzzyQuery has been added.
-    (Christoph Goller)
-   
-11. Added support for binary stored fields (patch #29370)
-    (Drew Farris and Bernhard Messer via Christoph)
-       
-12. Permit unbuffered Directory implementations (e.g., using mmap).
+
+ 7. QueryParser now correctly works with Analyzers that can return more 
+    than one token per position. For example, a query "+fast +car"
+    would be parsed as "+fast +(car automobile)" if the Analyzer
+    returns "car" and "automobile" at the same position whenever it 
+    finds "car" (Patch #23307).
+    (Pierrick Brihaye, Daniel Naber)
+
+ 8. Permit unbuffered Directory implementations (e.g., using mmap).
     InputStream is replaced by the new classes IndexInput and
     BufferedIndexInput.  OutputStream is replaced by the new classes
     IndexOutput and BufferedIndexOutput.  InputStream and OutputStream
     are now deprecated and FSDirectory is now subclassable. (cutting)
 
-13. Fixed bug #31241: Sorting could lead to incorrect results (documents
-    missing, others duplicated) if the sort keys were not unique and there
-    were more than 100 matches. (Daniel Naber)
-
-14. Add native Directory and TermDocs implementations that work under
+ 9. Add native Directory and TermDocs implementations that work under
     GCJ.  These require GCC 3.4.0 or later and have only been tested
     on Linux.  Use 'ant gcj' to build demo applications. (cutting)
 
-15. Add MMapDirectory, which uses nio to mmap input files.  This is
+10. Add MMapDirectory, which uses nio to mmap input files.  This is
     still somewhat slower than FSDirectory.  However it uses less
     memory per query term, since a new buffer is not allocated per
     term, which may help applications which use, e.g., wildcard
     queries.  It may also someday be faster. (cutting & Paul Elschot)
 
-16. Optimize the performance of certain uses of BooleanScorer,
-    TermScorer and IndexSearcher.  In particular, a BooleanQuery
-    composed of TermQuery, with not all terms required, that returns a
-    TopDocs (e.g., through a Hits with no Sort specified) runs much
-    faster.  (cutting)
+11. Added javadocs-internal to build.xml - bug #30360
+    (Paul Elschot via Otis)
+
+API Changes
+
+ 1. Several methods and fields have been deprecated. The API documentation 
+    contains information about the recommended replacements. It is planned
+    that the deprecated methods and fields will be removed in Lucene 2.0.
+    (Daniel Naber)
+
+ 2. The Russian and the German analyzers have been moved to Sandbox.
+    Also, the WordlistLoader class has been moved one level up in the
+    hierarchy and is now org.apache.lucene.analysis.WordlistLoader
+    (Daniel Naber)
+
+ 3. The API contained methods that declared to throw an IOException
+    but that never did this. These declarations have been removed. If 
+    your code tries to catch these exceptions you might need to remove
+    those catch clauses to avoid compile errors. (Daniel Naber)
     
-17. Memory leak in Sort code (Bug# 31240) eliminated.
-    (Rafal Krzewski via Christoph and Daniel)
-    
-18. Add support for stored compressed fields (Bug#31149).
-    (Bernhard Messer via Christoph)
-    
-19. Add support for position and offset information in term vectors
-    (Patch #18927). (Grant Ingersoll & Christoph)
-    
-20. Removed synchronization from reading of term vectors with an
-    IndexReader (Patch #30736). (Bernhard Messer via Christoph)
-    
-21. Add a serializable Parameter Class to standardize parameter enum
+ 4. Add a serializable Parameter Class to standardize parameter enum
     classes in BooleanClause and Field. (Christoph)
 
-22. Optimize term-dictionary lookup to allocate far fewer terms when
-    scanning for the matching term.  This speeds searches involving
-    low-frequency terms, where the cost of dictionary lookup can be
-    significant. (cutting)
+Bug fixes
 
-23. The JSP demo page (src/jsp/results.jsp) now properly escapes error
+ 1. Memory leak in Sort code (Bug# 31240) eliminated.
+    (Rafal Krzewski via Christoph and Daniel)
+
+ 2. The JSP demo page (src/jsp/results.jsp) now properly escapes error
     messages which might contain user input (e.g. error messages about 
     query parsing). If you used that page as a starting point for your
     own code please make sure your code also properly escapes HTML
     characters from user input in order to avoid so-called cross site
     scripting attacks. (Daniel Naber)
 
-24. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
+ 3. QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions 
+    (patch #9110); some unused method parameters removed; The ability
+    to specify a minimum similarity for FuzzyQuery has been added.
+    (Christoph Goller)
+
+ 4. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
+    prevented deletion of obsolete segments. (Christoph Goller)
+
+ 5. Fixed bug #31241: Sorting could lead to incorrect results (documents
+    missing, others duplicated) if the sort keys were not unique and there
+    were more than 100 matches. (Daniel Naber)
+
+Optimizations
+     
+ 1. Disk usage (peak requirements during indexing and optimization)
+    in case of compound file format has been improved. 
+    (Bernhard, Dmitry, and Christoph)
+
+ 2. Optimize the performance of certain uses of BooleanScorer,
+    TermScorer and IndexSearcher.  In particular, a BooleanQuery
+    composed of TermQuery, with not all terms required, that returns a
+    TopDocs (e.g., through a Hits with no Sort specified) runs much
+    faster.  (cutting)
+    
+ 3. Removed synchronization from reading of term vectors with an
+    IndexReader (Patch #30736). (Bernhard Messer via Christoph)
+
+ 4. Optimize term-dictionary lookup to allocate far fewer terms when
+    scanning for the matching term.  This speeds searches involving
+    low-frequency terms, where the cost of dictionary lookup can be
+    significant. (cutting)
+
+ 5. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
     of 0 now run 20-50% faster (Patch #31882).
     (Jonathan Hager via Daniel Naber)
-
-25. QueryParser now correctly works with Analyzers that can return more 
-    than one token per position. For example, a query "+fast +car"
-    would be parsed as "+fast +(car automobile)" if the Analyzer
-    returns "car" and "automobile" at the same position whenever it 
-    finds "car" (Patch #23307).
-    (Pierrick Brihaye, Daniel Naber)
 
 
 1.4.1
