@@ -105,7 +105,7 @@ public class TokenGroup
 	}
 
 	/**
-	 * @return
+	 * @return all tokens' scores summed up
 	 */
 	public float getTotalScore()
 	{

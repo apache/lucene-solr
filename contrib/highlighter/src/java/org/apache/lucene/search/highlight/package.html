@@ -1,51 +1,57 @@
 <html>
 <body>
+
 The highlight package contains classes to provide "keyword in context" features
-typically used to highlight search terms in the text of results pages. <br>
+typically used to highlight search terms in the text of results pages.
 The Highlighter class is the central component and can be used to extract the
 most interesting sections of a piece of text and highlight them, with the help of
 Fragmenter, FragmentScorer, Formatter classes.
+
 <h2>Example Usage</h2>
 
 <pre>
-		IndexSearcher searcher = new IndexSearcher(ramDir);
-		Query query = QueryParser.parse("Kenne*", FIELD_NAME, analyzer);
-		query=query.rewrite(reader); //required to expand search terms
-		Hits hits = searcher.search(query);
+	IndexSearcher searcher = new IndexSearcher(ramDir);
+	Query query = QueryParser.parse("Kenne*", FIELD_NAME, analyzer);
+	query = query.rewrite(reader); //required to expand search terms
+	Hits hits = searcher.search(query);
 
-		Highlighter highlighter =new Highlighter(this,new QueryScorer(query));
-		for (int i = 0; i < hits.length(); i++)
-		{
-			String text = hits.doc(i).get(FIELD_NAME);
-			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			// Get 3 best fragments and seperate with a "..."
-			String result = highlighter.getBestFragments(tokenStream,text,3,"...");
-			System.out.println(result);
-		}
+	Highlighter highlighter = new Highlighter(this, new QueryScorer(query));
+	for (int i = 0; i < hits.length(); i++)
+	{
+		String text = hits.doc(i).get(FIELD_NAME);
+		TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+		// Get 3 best fragments and seperate with a "..."
+		String result = highlighter.getBestFragments(tokenStream, text, 3, "...");
+		System.out.println(result);
+	}
 </pre>
+
 <h2>New features 06/02/2005</h2>
+
 This release adds options for encoding (thanks to Nicko Cadell).
 An "Encoder" implementation such as the new SimpleHTMLEncoder class can be passed to the highlighter to encode
 all those non-xhtml standard characters such as &amp; into legal values. This simple class may not suffice for
 some languages -  Commons Lang has an implementation that could be used: escapeHtml(String) in
 http://svn.apache.org/viewcvs.cgi/jakarta/commons/proper/lang/trunk/src/java/org/apache/commons/lang/StringEscapeUtils.java?rev=137958&view=markup
 
-
-
 <h2>New features 22/12/2004</h2>
+
 This release adds some new capabilities:
 <ol>
 	<li>Faster highlighting using Term vector support</li>
 	<li>New formatting options to use color intensity to show informational value</li>
 	<li>Options for better summarization by using term IDF scores to influence fragment selection</li>
 </ol>
+
 <p>
 The highlighter takes a TokenStream as input. Until now these streams have typically been produced
 using an Analyzer but the new class TokenSources provides helper methods for obtaining TokenStreams from
 the new TermVector position support (see latest CVS version).</p>
+
 <p>The new class GradientFormatter can use a scale of colors to highlight terms according to their score.
 A subtle use of color can help emphasise the reasons for matching (useful when doing "MoreLikeThis" queries and
-you want to see what the basis of the similarities are)</p>
+you want to see what the basis of the similarities are).</p>
+
 <p>The QueryScorer class has a new constructor which can use an IndexReader to derive the IDF (inverse document frequency)
 for each term in order to influcence the score. This is useful for helping to extracting the most significant sections
 of a document and in supplying scores used by the new GradientFormatter to color significant words more strongly.

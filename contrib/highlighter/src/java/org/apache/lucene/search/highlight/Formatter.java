@@ -27,7 +27,6 @@ public interface Formatter
 	 * @param originalText The section of text being considered for markup
 	 * @param tokenGroup contains one or several overlapping Tokens along with
 	 * their scores and positions.
-	 * @return
 	 */
 	String highlightTerm(String originalText, TokenGroup tokenGroup);
 }

@@ -25,7 +25,6 @@ public interface Encoder
 {
 	/**
 	 * @param originalText The section of text being output
-	 * @return
 	 */
 	String encodeText(String originalText);
 }

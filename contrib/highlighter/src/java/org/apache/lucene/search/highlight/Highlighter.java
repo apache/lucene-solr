@@ -127,7 +127,6 @@ public class Highlighter
 	 * @param text
 	 * @param maxNumFragments
 	 * @param mergeContiguousFragments
-	 * @return 
 	 * @throws IOException
 	 */
 	public final TextFragment[] getBestTextFragments(
@@ -411,7 +410,6 @@ public class Highlighter
 	}
 
 	/**
-	 * @return
 	 */
 	public Fragmenter getTextFragmenter()
 	{
