@@ -205,7 +205,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     final int m = target.length();
     final int n = text.length();
     if (n == 0)  {
-      //we don't have antyhing to compare.  That means if we just add
+      //we don't have anything to compare.  That means if we just add
       //the letters for m we get the new word
       return prefix.length() == 0 ? 0.0f : 1.0f - ((float) m / prefix.length());
     }
@@ -221,7 +221,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
       //for example "pre" length is 3 and "prefixes" length is 8.  We can see that
       //given this optimal circumstance, the edit distance cannot be less than 5.
       //which is 8-3 or more precisesly Math.abs(3-8).
-      //if our maximum edit distance is 4, than we can discard this word
+      //if our maximum edit distance is 4, then we can discard this word
       //without looking at it.
       return 0.0f;
     }
