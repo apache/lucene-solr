@@ -172,7 +172,7 @@ public class SQLServerStorage implements DocumentStorage
             conn = getConnection();
             Statement delDoc = conn.createStatement();
 
-            // bisherige Daten löschen, indem die Tabelle neu angelegt wird (geht schneller)
+            // recreate table (faster than delete from table)
 
             delDoc.executeUpdate("if exists (select * from sysobjects where id = object_id(N'[dbo].[Document]') and OBJECTPROPERTY(id, N'IsUserTable') = 1)drop table [dbo].[Document]");
             delDoc.executeUpdate("CREATE TABLE [dbo].[Document] ([DO_ID] [int] IDENTITY (1, 1) NOT NULL ,	[DA_CrawlPass] [int] NULL ,	[DO_URL] [varchar] (255) NULL ,	[DO_ContentType] [varchar] (50) NULL ,	[DO_Data] [text] NULL ,	[DO_Hashcode] [int] NULL ,	[DO_ContentLength] [int] NULL ,	[DO_ContentEncoding] [varchar] (20) NULL ,	[DO_Data2] [image] NULL, [DO_MimeType] [varchar] (255) NULL) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]");       // löschen
@@ -206,7 +206,7 @@ public class SQLServerStorage implements DocumentStorage
             addDoc = getStatement();
             addDoc.setString(1, document.getURLString());
             addDoc.setString(2, document.getMimeType());
-            addDoc.setBytes(3,  document.getDocumentBytes());
+            addDoc.setBytes(3,  (byte[])document.getField("content"));
             addDoc.execute();
         }
         catch(SQLException e)

@@ -95,6 +95,7 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
     {
         for (Iterator it = docStorages.iterator(); it.hasNext(); )
         {
+            System.out.println("opening...");
             ((DocumentStorage) it.next()).open();
         }
         isOpen = true;

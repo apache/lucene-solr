@@ -201,9 +201,9 @@ public class LogStorage implements DocumentStorage
     public WebDocument store(WebDocument doc)
     {
         String docInfo = doc.getInfo();
-        if (logContents && isValid && doc.getDocumentBytes() != null)
+        if (logContents && isValid && doc.getField("content") != null)
         {
-            int offset = writeToPageFile(doc.getDocumentBytes());
+            int offset = writeToPageFile((byte[])doc.getField("content"));
             docInfo = docInfo + "\t" + pageFileCount + "\t" + offset;
         }
         log.logThreadSafe(docInfo);
