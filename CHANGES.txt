@@ -158,6 +158,11 @@ $Id$
      fails on Windows JVMs.
      (Matt Tucker via otis)
 
+ 25. Refactored QueryParser to make it easier for people to extend it.
+     Added the ability to automatically lower-case Wildcard terms in
+     the QueryParser.
+     (Tatu Saloranta via otis)
+
 
 1.2 RC6
 
