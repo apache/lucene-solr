@@ -169,10 +169,21 @@ public class IndexWriter {
   /** Expert: Set the interval between indexed terms.  Large values cause less
    * memory to be used by IndexReader, but slow random-access to terms.  Small
    * values cause more memory to be used by an IndexReader, and speed
-   * random-access to terms.  In particular,
-   * <code>numUniqueTerms/interval</code> terms are read into memory by an
-   * IndexReader, and, on average, <code>interval/2</code> terms must be
-   * scanned for each random term access.
+   * random-access to terms.
+   *
+   * This parameter determines the amount of computation required per query
+   * term, regardless of the number of documents that contain that term.  In
+   * particular, it is the maximum number of other terms that must be
+   * scanned before a term is located and its frequency and position information
+   * may be processed.  In a large index with user-entered query terms, query
+   * processing time is likely to be dominated not by term lookup but rather
+   * by the processing of frequency and positional data.  In a small index
+   * or when many uncommon query terms are generated (e.g., by wildcard
+   * queries) term lookup may become a dominant cost.
+   *
+   * In particular, <code>numUniqueTerms/interval</code> terms are read into
+   * memory by an IndexReader, and, on average, <code>interval/2</code> terms
+   * must be scanned for each random term access.
    *
    * @see #DEFAULT_TERM_INDEX_INTERVAL
    */
