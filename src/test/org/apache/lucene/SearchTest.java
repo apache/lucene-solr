@@ -71,18 +71,18 @@ class SearchTest {
       IndexWriter writer = new IndexWriter(directory, analyzer, true);
 
       String[] docs = {
-	"a b c d e",
-	"a b c d e a b c d e",
-	"a b c d e f g h i j",
-	"a c e",
-	"e c a",
-	"a c e a c e",
-	"a c e a b c"
+        "a b c d e",
+        "a b c d e a b c d e",
+        "a b c d e f g h i j",
+        "a c e",
+        "e c a",
+        "a c e a c e",
+        "a c e a b c"
       };
       for (int j = 0; j < docs.length; j++) {
-	Document d = new Document();
-	d.add(Field.Text("contents", docs[j]));
-	writer.addDocument(d);
+        Document d = new Document();
+        d.add(Field.Text("contents", docs[j]));
+        writer.addDocument(d);
       }
       writer.close();
 
@@ -94,30 +94,30 @@ class SearchTest {
 // 	"\"a b c\"",
 // 	"a c",
 // 	"\"a c\"",
-	"\"a c e\"",
+	    "\"a c e\"",
       };
       Hits hits = null;
 
       QueryParser parser = new QueryParser("contents", analyzer);
       parser.setPhraseSlop(4);
       for (int j = 0; j < queries.length; j++) {
-	Query query = parser.parse(queries[j]);
-	System.out.println("Query: " + query.toString("contents"));
+        Query query = parser.parse(queries[j]);
+        System.out.println("Query: " + query.toString("contents"));
 
       //DateFilter filter =
       //  new DateFilter("modified", Time(1997,0,1), Time(1998,0,1));
       //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
       //System.out.println(filter);
 
-	hits = searcher.search(query);
+        hits = searcher.search(query);
 
-	System.out.println(hits.length() + " total results");
-	for (int i = 0 ; i < hits.length() && i < 10; i++) {
-	  Document d = hits.doc(i);
-	  System.out.println(i + " " + hits.score(i)
+        System.out.println(hits.length() + " total results");
+        for (int i = 0 ; i < hits.length() && i < 10; i++) {
+          Document d = hits.doc(i);
+          System.out.println(i + " " + hits.score(i)
 // 			   + " " + DateField.stringToDate(d.get("modified"))
-			     + " " + d.get("contents"));
-	}
+            + " " + d.get("contents"));
+        }
       }
       searcher.close();
       

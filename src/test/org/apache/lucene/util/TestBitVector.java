@@ -196,7 +196,8 @@ public class TestBitVector extends TestCase
     }
 
     /**
-     * Compare two BitVectors (really, this should be an equals method on the BitVector itself...
+     * Compare two BitVectors.
+     * This should really be an equals method on the BitVector itself.
      * @param bv One bit vector
      * @param compare The second to compare
      */

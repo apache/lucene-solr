@@ -37,30 +37,33 @@ public class TestIndexWriter extends TestCase
             assertEquals(100, writer.docCount());
             writer.close();
 
-            // delete 50 documents
+            // delete 40 documents
             reader = IndexReader.open(dir);
-            for (i = 0; i < 50; i++) {
+            for (i = 0; i < 40; i++) {
                 reader.delete(i);
             }
             reader.close();
 
-            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            // test doc count before segments are merged/index is optimized
+            writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
             assertEquals(100, writer.docCount());
             writer.close();
 
             reader = IndexReader.open(dir);
             assertEquals(100, reader.maxDoc());
-            assertEquals(50, reader.numDocs());
+            assertEquals(60, reader.numDocs());
             reader.close();
 
-            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            // optimize the index and check that the new doc count is correct
+            writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
             writer.optimize();
-            assertEquals(50, writer.docCount());
+            assertEquals(60, writer.docCount());
             writer.close();
 
+            // check that the index reader gives the same numbers.
             reader = IndexReader.open(dir);
-            assertEquals(50, reader.maxDoc());
-            assertEquals(50, reader.numDocs());
+            assertEquals(60, reader.maxDoc());
+            assertEquals(60, reader.numDocs());
             reader.close();
         }
         catch (IOException e) {

@@ -5,7 +5,6 @@ import java.io.IOException;
 /** This class provides access to package-level features defined in the
  *  store package. It is used for testing only.
  */
-
 public class _TestHelper {
 
     /** Returns true if the instance of the provided input stream is actually
@@ -14,8 +13,8 @@ public class _TestHelper {
     public static boolean isFSInputStream(InputStream is) {
         return is instanceof FSInputStream;
     }
-    
-    /** Returns true if the provided input stream is an FSInputStream and 
+
+    /** Returns true if the provided input stream is an FSInputStream and
      *  is a clone, that is it does not own its underlying file descriptor.
      */
     public static boolean isFSInputStreamClone(InputStream is) {
@@ -29,7 +28,7 @@ public class _TestHelper {
     /** Given an instance of FSDirectory.FSInputStream, this method returns
      *  true if the underlying file descriptor is valid, and false otherwise.
      *  This can be used to determine if the OS file has been closed.
-     *  The descriptor becomes invalid when the non-clone instance of the 
+     *  The descriptor becomes invalid when the non-clone instance of the
      *  FSInputStream that owns this descriptor is closed. However, the
      *  descriptor may possibly become invalid in other ways as well.
      */
