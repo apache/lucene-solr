@@ -1,52 +1,33 @@
 <?xml version="1.0"?>
 
-<project name="Snowball" default="compile" basedir=".">
+<project name="snowball" default="default">
 
-  <!-- Load all the default properties, and any the user wants    -->
-  <!-- to contribute (without having to type -D or edit this file -->
-  <property file="${user.home}/build.properties" />
-  <property file="${basedir}/build.properties" />
-  <property file="${basedir}/default.properties" />
- 
-  <!-- the normal classpath -->
-  <path id="classpath">
-    <pathelement location="${build.classes}"/>
-    <fileset dir="${lib.dir}">
-      <include name="*.jar" />
-    </fileset>
-  </path>
+  <description>
+    Snowball Analyzers
+  </description>
 
-  <!-- the unit test classpath -->
-  <path id="test.classpath">
-    <pathelement location="${test.build.classes}" />
-    <path refid="classpath"/>
-  </path>
+  <import file="../common.xml"/>
 
-  <path id="anakia.classpath">
-    <fileset dir="${jakarta.site2.home}/lib">
-      <include name="*.jar" />
-    </fileset>
-  </path>
+  <property name="snowball.cvsroot" value=":pserver:cvsuser@cvs.tartarus.org:/home/cvs"/>
+  <property name="snowball.cvs.password" value="anonymous"/>
+  <property name="snowball.root" value="snowball/website"/>
+  <property name="bin.dir" location="bin"/>
 
-  <!-- ====================================================== -->
-  <!-- Stuff needed by all targets                            -->
-  <!-- ====================================================== -->
-  <target name="init">
-    <mkdir dir="${build.dir}"/>
-    <mkdir dir="${build.classes}"/>
-
-    <mkdir dir="${test.build.dir}"/>
-    <mkdir dir="${test.build.classes}"/>
-
-  </target>
 
   <!-- ====================================================== -->
   <!-- Download Snowball code                                 -->
   <!-- ====================================================== -->
   <target name="download" depends="init">
     <cvs cvsRoot="${snowball.cvsroot}"
-         package="${snowball.root}"
-         passfile="snowball.cvspass"/>
+      package="${snowball.root}"
+      passfile="snowball.cvspass"/>
+  </target>
+
+  <target name="create-passfile">
+    <cvspass cvsroot="${snowball.cvsroot}"
+      password="${snowball.cvs.password}"
+      passfile="snowball.cvspass"
+      />
   </target>
 
   <!-- ====================================================== -->
@@ -73,196 +54,10 @@
 
     <copy todir="${src.dir}/net">
       <fileset dir="${snowball.root}/net">
-	<include name="**/*.java"/>
+        <include name="**/*.java"/>
       </fileset>
     </copy>
 
-  </target>
-
-  <!-- ====================================================== -->
-  <!-- Compile Java source code                               -->
-  <!-- ====================================================== -->
-  <target name="compile" depends="init">
-    <javac 
-     encoding="${build.encoding}" 
-     srcdir="${src.dir}"
-     includes="**/*.java"
-     destdir="${build.classes}"
-     debug="${debug}"
-     optimize="${optimize}"
-     deprecation="${deprecation}">
-      <classpath refid="classpath"/>
-    </javac>    
-  </target>
-
-  <!-- ================================================================== -->
-  <!-- Make Snowball jar                                                  -->
-  <!-- ================================================================== -->
-  <target name="jar" depends="compile">
-    <jar
-      jarfile="${build.dir}/${final.name}.jar"
-      basedir="${build.classes}"
-    />
-  </target>
-
-  <!-- ================================================================== -->
-  <!-- Test files                                                         --> 
-  <!-- ================================================================== -->
-  <target name="test" depends="compile">
-
-    <javac 
-     encoding="${build.encoding}" 
-     srcdir="${test.src.dir}"
-     includes="**/*.java"
-     destdir="${test.build.classes}"
-     debug="${debug}">
-      <classpath refid="test.classpath"/>
-    </javac>    
-
-    <junit printsummary="yes" haltonfailure="no">
-      <classpath refid="test.classpath"/>
-      <formatter type="plain" />
-      <batchtest todir="${test.build.dir}">
-        <fileset dir="${test.src.dir}" includes="**/Test*.java"/>
-      </batchtest>
-    </junit>
-
-  </target>   
-
-  <!-- ================================================================== -->
-  <!-- Documentation                                                      -->
-  <!-- ================================================================== -->
-  <target name="javadoc" depends="compile">
-    <mkdir dir="${build.javadoc}"/>
-    <javadoc
-      sourcepath="${src.dir}" 
-      overview="${src.dir}/overview.html"
-      packagenames="*"
-      destdir="${build.javadoc}"
-      author="true"
-      version="true"
-      use="true"
-      windowtitle="${Name} ${version} API"
-      doctitle="${Name} ${version} API"
-      >
-        <link href="${javadoc.link.java}"/>
-        <link href="${javadoc.link.lucene}"/>
-        <classpath refid="classpath"/>
-    </javadoc>
-  </target>
-
-  <target name="docs">
-    <taskdef
-      name="anakia"
-      classname="org.apache.velocity.anakia.AnakiaTask"
-      >
-      <classpath refid="anakia.classpath"/>
-    </taskdef>
-
-    <anakia
-      basedir="${docs.src}"
-      destdir="${docs.dest}/"
-      extension=".html" style="./site.vsl"
-      projectFile="stylesheets/project.xml"
-      excludes="**/stylesheets/** empty.xml"
-      includes="**/*.xml"
-      lastModifiedCheck="true"
-      templatePath="${jakarta.site2.home}/xdocs/stylesheets"
-    >
-    </anakia>
-
-  </target>
-
-  <!-- ================================================================== -->
-  <!-- D I S T R I B U T I O N                                            -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="package" depends="jar, javadoc">
-    <mkdir dir="${dist.dir}"/>
-    <mkdir dir="${dist.dir}/lib"/>
-    <mkdir dir="${dist.dir}/docs"/>
-    <mkdir dir="${dist.dir}/docs/api"/>
-
-    <copy todir="${dist.dir}/docs/api">
-      <fileset dir="${build.javadoc}"/>
-    </copy>
-
-    <copy todir="${dist.dir}/docs">
-      <fileset dir="${docs.dest}/"/>
-    </copy>
-
-    <copy todir="${dist.dir}/lib">
-      <fileset dir="lib"/>
-    </copy>
-
-    <copy todir="${dist.dir}">
-      <fileset dir=".">
-        <include name="*.txt" />
-      </fileset>
-    </copy>
-
-    <copy todir="${dist.dir}/src">
-      <fileset dir="src"/>
-    </copy>
-    <copy todir="${dist.dir}/" file="build.xml"/>
-    <copy todir="${dist.dir}/" file="default.properties"/>
-
-
-    <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
-
-  </target>
-
-
-  <!-- ================================================================== -->
-  <!-- Make release tarball                                               -->
-  <!-- ================================================================== -->
-  <target name="tar" depends="package">
-    <tar
-      tarfile="${build.dir}/${final.name}.tar"
-      basedir="${build.dir}/"
-      includes="${final.name}/**"
-    />
-    <gzip
-      zipfile="${build.dir}/${final.name}.tar.gz"
-      src="${build.dir}/${final.name}.tar"
-    />
-  </target>
-
-
-  <!-- ================================================================== -->
-  <!-- Copy release to server                                             -->
-  <!-- ================================================================== -->
-  <target name="release" depends="tar">
-    <exec executable="ssh">
-      <arg value="${release.host}"/>
-      <arg value="mkdir"/>
-      <arg value="${release.path}/${final.name}"/>
-    </exec>
-    <exec executable="scp">
-      <arg value="${build.dir}/${final.name}.jar"/>
-      <arg value="${build.dir}/${final.name}.tar.gz"/>
-      <arg value="${release.host}:${release.path}/${final.name}"/>
-    </exec>
-    <exec executable="ssh">
-      <arg value="${web.host}"/>
-      <arg value="rm"/>
-      <arg value="-rf"/>
-      <arg value="${web.path}/api"/>
-    </exec>
-    <exec executable="scp">
-      <arg value="-r"/>
-      <arg value="${build.javadoc}"/>
-      <arg value="${web.host}:${web.path}/api"/>
-    </exec>
-  </target>
-
-
-  <!-- ================================================================== -->
-  <!-- Clean.  Delete the build files, and their directories              -->
-  <!-- ================================================================== -->
-  <target name="clean" depends="init">
-    <delete dir="${build.dir}"/>
   </target>
 
 
