@@ -65,7 +65,7 @@ import org.apache.lucene.index.IndexReader;
 /** A Query that matches documents containing a particular sequence of terms.
   This may be combined with other terms with a {@link BooleanQuery}.
   */
-final public class PhraseQuery extends Query {
+public class PhraseQuery extends Query {
   private String field;
   private Vector terms = new Vector();
   private float idf = 0.0f;
@@ -92,12 +92,12 @@ final public class PhraseQuery extends Query {
     results are sorted by exactness.
 
     <p>The slop is zero by default, requiring exact matches.*/
-  public final void setSlop(int s) { slop = s; }
+  public void setSlop(int s) { slop = s; }
   /** Returns the slop.  See setSlop(). */
-  public final int getSlop() { return slop; }
+  public int getSlop() { return slop; }
 
   /** Adds a term to the end of the query phrase. */
-  public final void add(Term term) {
+  public void add(Term term) {
     if (terms.size() == 0)
       field = term.field();
     else if (term.field() != field)
@@ -148,7 +148,7 @@ final public class PhraseQuery extends Query {
   }
 
   /** Prints a user-readable version of this query. */
-  public final String toString(String f) {
+  public String toString(String f) {
     StringBuffer buffer = new StringBuffer();
     if (!field.equals(f)) {
       buffer.append(field);

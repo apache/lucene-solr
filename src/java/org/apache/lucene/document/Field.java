@@ -111,7 +111,7 @@ public final class Field {
     return new Field(name, value);
   }
 
-  /** The name of the field (e.g., "date", "subject", "title", "body", etc.)
+  /** The name of the field (e.g., "date", "subject", "title", or "body")
     as an interned string. */
   public String name() 		{ return name; }
 

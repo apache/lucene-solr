@@ -63,8 +63,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.PriorityQueue;
 
-/** Implements search over a single IndexReader. */
-public final class IndexSearcher extends Searcher {
+/** Implements search over a single IndexReader.
+ *
+ * <p>Applications usually need only call the inherited {@link #search(Query)}
+ * or {@link #search(Query,Filter)} methods.
+ */
+public class IndexSearcher extends Searcher implements Searchable {
   IndexReader reader;
 
   /** Creates a searcher searching the index in the named directory. */
@@ -83,24 +87,40 @@ public final class IndexSearcher extends Searcher {
   }
     
   /** Frees resources associated with this Searcher. */
-  public final void close() throws IOException {
+  public void close() throws IOException {
     reader.close();
   }
 
-  final int docFreq(Term term) throws IOException {
+  /** Expert: Returns the number of documents containing <code>term</code>.
+   * Called by search code to compute term weights.
+   * @see IndexReader#docFreq(Term).
+   */
+  public int docFreq(Term term) throws IOException {
     return reader.docFreq(term);
   }
 
   /** For use by {@link HitCollector} implementations. */
-  public final Document doc(int i) throws IOException {
+  public Document doc(int i) throws IOException {
     return reader.document(i);
   }
 
-  final int maxDoc() throws IOException {
+  /** Expert: Returns one greater than the largest possible document number.
+   * Called by search code to compute term weights.
+   * @see IndexReader#maxDoc().
+   */
+  public int maxDoc() throws IOException {
     return reader.maxDoc();
   }
 
-  final TopDocs search(Query query, Filter filter, final int nDocs)
+  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null.
+   *
+   * <p>Called by {@link Hits}.
+   *
+   * <p>Applications should usually call {@link #search(Query)} or {@link
+   * #search(Query,Filter)} instead.
+   */
+  public TopDocs search(Query query, Filter filter, final int nDocs)
        throws IOException {
     Scorer scorer = Query.scorer(query, this, reader);
     if (scorer == null)
@@ -147,8 +167,8 @@ public final class IndexSearcher extends Searcher {
    * @param filter if non-null, a bitset used to eliminate some documents
    * @param results to receive hits
    */
-  public final void search(Query query, Filter filter,
-			   final HitCollector results) throws IOException {
+  public void search(Query query, Filter filter,
+                     final HitCollector results) throws IOException {
     HitCollector collector = results;
     if (filter != null) {
       final BitSet bits = filter.bits(reader);

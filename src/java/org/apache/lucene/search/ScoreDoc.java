@@ -54,12 +54,20 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-final class ScoreDoc {
-  float score;
-  int doc;
+/** Expert: Returned by low-level search implementations.
+ * @see TopDocs */
+public class ScoreDoc {
+  /** Expert: The score of this document for the query. */
+  public float score;
 
-  ScoreDoc(int d, float s) {
-    doc = d;
-    score = s;
+  /** Expert: A hit document's number.
+   * @see Searcher#doc(int)
+   */
+  public int doc;
+
+  /** Expert: Constructs a ScoreDoc. */
+  public ScoreDoc(int doc, float score) {
+    this.doc = doc;
+    this.score = score;
   }
 }

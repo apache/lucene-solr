@@ -61,7 +61,7 @@ import org.apache.lucene.index.IndexReader;
 /** A Query that matches documents matching boolean combinations of other
   queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
   */
-final public class BooleanQuery extends Query {
+public class BooleanQuery extends Query {
   private Vector clauses = new Vector();
 
   /** Constructs an empty boolean query. */
@@ -79,12 +79,12 @@ final public class BooleanQuery extends Query {
     It is an error to specify a clause as both <code>required</code> and
     <code>prohibited</code>.
     */
-  public final void add(Query query, boolean required, boolean prohibited) {
+  public void add(Query query, boolean required, boolean prohibited) {
     clauses.addElement(new BooleanClause(query, required, prohibited));
   }
 
   /** Adds a clause to a boolean query. */
-  public final void add(BooleanClause clause) {
+  public void add(BooleanClause clause) {
     clauses.addElement(clause);
   }
 
@@ -95,7 +95,7 @@ final public class BooleanQuery extends Query {
     }
   }
 
-  final float sumOfSquaredWeights(Searcher searcher)
+  float sumOfSquaredWeights(Searcher searcher)
        throws IOException {
     float sum = 0.0f;
 
@@ -108,7 +108,7 @@ final public class BooleanQuery extends Query {
     return sum;
   }
 
-  final void normalize(float norm) {
+  void normalize(float norm) {
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
       if (!c.prohibited)
@@ -116,7 +116,7 @@ final public class BooleanQuery extends Query {
     }
   }
 
-  final Scorer scorer(IndexReader reader)
+  Scorer scorer(IndexReader reader)
        throws IOException {
 
     if (clauses.size() == 1) {			  // optimize 1-term queries

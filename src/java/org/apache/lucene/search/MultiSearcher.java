@@ -61,49 +61,53 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.PriorityQueue;
 
-/** Implements search over a set of <code>Searchers</code>. */
-public final class MultiSearcher extends Searcher {
-  private Searcher[] searchers;
+/** Implements search over a set of <code>Searchables</code>.
+ *
+ * <p>Applications usually need only call the inherited {@link #search(Query)}
+ * or {@link #search(Query,Filter)} methods.
+ */
+public class MultiSearcher extends Searcher implements Searchable {
+  private Searchable[] searchables;
   private int[] starts;
   private int maxDoc = 0;
 
-  /** Creates a searcher which searches <i>searchers</i>. */
-  public MultiSearcher(Searcher[] searchers) throws IOException {
-    this.searchers = searchers;
+  /** Creates a searcher which searches <i>searchables</i>. */
+  public MultiSearcher(Searchable[] searchables) throws IOException {
+    this.searchables = searchables;
 
-    starts = new int[searchers.length + 1];	  // build starts array
-    for (int i = 0; i < searchers.length; i++) {
+    starts = new int[searchables.length + 1];	  // build starts array
+    for (int i = 0; i < searchables.length; i++) {
       starts[i] = maxDoc;
-      maxDoc += searchers[i].maxDoc();		  // compute maxDocs
+      maxDoc += searchables[i].maxDoc();          // compute maxDocs
     }
-    starts[searchers.length] = maxDoc;
+    starts[searchables.length] = maxDoc;
   }
 
   /** Frees resources associated with this <code>Searcher</code>. */
-  public final void close() throws IOException {
-    for (int i = 0; i < searchers.length; i++)
-      searchers[i].close();
+  public void close() throws IOException {
+    for (int i = 0; i < searchables.length; i++)
+      searchables[i].close();
   }
 
-  final int docFreq(Term term) throws IOException {
+  public int docFreq(Term term) throws IOException {
     int docFreq = 0;
-    for (int i = 0; i < searchers.length; i++)
-      docFreq += searchers[i].docFreq(term);
+    for (int i = 0; i < searchables.length; i++)
+      docFreq += searchables[i].docFreq(term);
     return docFreq;
   }
 
   /** For use by {@link HitCollector} implementations. */
-  public final Document doc(int n) throws IOException {
+  public Document doc(int n) throws IOException {
     int i = searcherIndex(n);			  // find searcher index
-    return searchers[i].doc(n - starts[i]);	  // dispatch to searcher
+    return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
   }
 
   /** For use by {@link HitCollector} implementations to identify the
    * index of the sub-searcher that a particular hit came from. */
-  public final int searcherIndex(int n) {	  // find searcher for doc n:
+  public int searcherIndex(int n) {               // find searcher for doc n:
     // replace w/ call to Arrays.binarySearch in Java 1.2
     int lo = 0;					  // search starts array
-    int hi = searchers.length - 1;		  // for first element less
+    int hi = searchables.length - 1;		  // for first element less
 						  // than n, return its index
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
@@ -118,18 +122,18 @@ public final class MultiSearcher extends Searcher {
     return hi;
   }
 
-  final int maxDoc() throws IOException {
+  public int maxDoc() throws IOException {
     return maxDoc;
   }
 
-  final TopDocs search(Query query, Filter filter, int nDocs)
-       throws IOException {
+  public TopDocs search(Query query, Filter filter, int nDocs)
+      throws IOException {
     HitQueue hq = new HitQueue(nDocs);
     float minScore = 0.0f;
     int totalHits = 0;
 
-    for (int i = 0; i < searchers.length; i++) {  // search each searcher
-      TopDocs docs = searchers[i].search(query, filter, nDocs);
+    for (int i = 0; i < searchables.length; i++) { // search each searcher
+      TopDocs docs = searchables[i].search(query, filter, nDocs);
       totalHits += docs.totalHits;		  // update totalHits
       ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
@@ -168,14 +172,13 @@ public final class MultiSearcher extends Searcher {
    * @param filter if non-null, a bitset used to eliminate some documents
    * @param results to receive hits
    */
-  public final void search(Query query, Filter filter,
-			   final HitCollector results)
+  public void search(Query query, Filter filter, final HitCollector results)
     throws IOException {
-    for (int i = 0; i < searchers.length; i++) {
+    for (int i = 0; i < searchables.length; i++) {
 
       final int start = starts[i];
 
-      searchers[i].search(query, filter, new HitCollector() {
+      searchables[i].search(query, filter, new HitCollector() {
 	  public void collect(int doc, float score) {
 	    results.collect(doc + start, score);
 	  }

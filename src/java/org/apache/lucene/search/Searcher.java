@@ -57,12 +57,14 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;
 
 /** The abstract base class for search implementations.
-  <p>Subclasses implement search over a single index, over multiple indices,
-  and over indices on remote servers.
+ *
+ * <p>Subclasses implement search over a single index, over multiple indices,
+ * and over indices on remote servers.
  */
-public abstract class Searcher {
+public abstract class Searcher implements Searchable {
 
   /** Returns the documents matching <code>query</code>. */
   public final Hits search(Query query) throws IOException {
@@ -88,32 +90,4 @@ public abstract class Searcher {
     throws IOException {
     search(query, (Filter)null, results);
   }    
-
-  /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
-   * scoring document.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   *
-   * @param query to match documents
-   * @param filter if non-null, a bitset used to eliminate some documents
-   * @param results to receive hits
-   */
-  public abstract void search(Query query, Filter filter, HitCollector results)
-    throws IOException;
-
-  /** Frees resources associated with this Searcher. */
-  abstract public void close() throws IOException;
-
-  abstract int docFreq(Term term) throws IOException;
-  abstract int maxDoc() throws IOException;
-  abstract TopDocs search(Query query, Filter filter, int n)
-       throws IOException;
-
-  /** For use by {@link HitCollector} implementations. */
-  public abstract Document doc(int i) throws IOException;
 }

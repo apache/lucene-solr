@@ -84,7 +84,7 @@ import org.apache.lucene.analysis.Analyzer;
   method should be called before the index is closed.
   */
 
-public final class IndexWriter {
+public class IndexWriter {
   private Directory directory;			  // where this index resides
   private Analyzer analyzer;			  // how to analyze text
 
@@ -140,7 +140,7 @@ public final class IndexWriter {
 
   /** Flushes all changes to an index, closes all associated files, and closes
     the directory that the index is stored in. */
-  public final synchronized void close() throws IOException {
+  public synchronized void close() throws IOException {
     flushRamSegments();
     ramDirectory.close();
     writeLock.release();                          // release write lock
@@ -149,7 +149,7 @@ public final class IndexWriter {
   }
 
   /** Release the write lock, if needed. */
-  protected final void finalize() throws IOException {
+  protected void finalize() throws IOException {
     if (writeLock != null) {
       writeLock.release();                        // release write lock
       writeLock = null;
@@ -157,7 +157,7 @@ public final class IndexWriter {
   }
 
   /** Returns the number of documents currently in this index. */
-  public final synchronized int docCount() {
+  public synchronized int docCount() {
     int count = 0;
     for (int i = 0; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
@@ -175,7 +175,7 @@ public final class IndexWriter {
   public int maxFieldLength = 10000;
 
   /** Adds a document to this index.*/
-  public final void addDocument(Document doc) throws IOException {
+  public void addDocument(Document doc) throws IOException {
     DocumentWriter dw =
       new DocumentWriter(ramDirectory, analyzer, maxFieldLength);
     String segmentName = newSegmentName();
@@ -214,7 +214,7 @@ public final class IndexWriter {
 
   /** Merges all segments together into a single segment, optimizing an index
       for search. */
-  public final synchronized void optimize() throws IOException {
+  public synchronized void optimize() throws IOException {
     flushRamSegments();
     while (segmentInfos.size() > 1 ||
 	   (segmentInfos.size() == 1 &&
@@ -234,7 +234,7 @@ public final class IndexWriter {
    * with this method.
    *
    * <p>After this completes, the index is optimized. */
-  public final synchronized void addIndexes(Directory[] dirs)
+  public synchronized void addIndexes(Directory[] dirs)
       throws IOException {
     optimize();					  // start with zero or 1 seg
     for (int i = 0; i < dirs.length; i++) {

@@ -69,7 +69,7 @@ import org.apache.lucene.index.IndexReader;
    <p>For this to work, documents must have been indexed with a {@link
    DateField}.  */
 
-public final class DateFilter extends Filter {
+public class DateFilter extends Filter {
   String field;
 
   String start = DateField.MIN_DATE_STRING();
@@ -126,7 +126,7 @@ public final class DateFilter extends Filter {
 
   /** Returns a BitSet with true for documents which should be permitted in
     search results, and false for those that should not. */
-  final public BitSet bits(IndexReader reader) throws IOException {
+  public BitSet bits(IndexReader reader) throws IOException {
     BitSet bits = new BitSet(reader.maxDoc());
     TermEnum enum = reader.terms(new Term(field, start));
     TermDocs termDocs = reader.termDocs();
@@ -153,7 +153,7 @@ public final class DateFilter extends Filter {
     return bits;
   }
 
-  public final String toString() {
+  public String toString() {
     StringBuffer buffer = new StringBuffer();
     buffer.append(field);
     buffer.append(":");

@@ -61,7 +61,7 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents within an exclusive range. */
-public final class RangeQuery extends Query
+public class RangeQuery extends Query
 {
     private Term lowerTerm;
     private Term upperTerm;

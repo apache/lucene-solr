@@ -61,7 +61,7 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents containing terms with a specified prefix. */
-final public class PrefixQuery extends Query {
+public class PrefixQuery extends Query {
   private Term prefix;
   private IndexReader reader;
   private BooleanQuery query;
