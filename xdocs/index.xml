@@ -23,6 +23,14 @@
 
         <section name="Lucene News">
 
+            <h3>2 August 2004 - Lucene 1.4.1 Released</h3>
+
+               <p>This fixes a few bugs in 1.4-final.  See <a
+               href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96">CHANGES.txt</a>
+               for details.  Binary and source distributions are
+               available <a
+               href="http://cvs.apache.org/dist/jakarta/lucene/v1.4.1/">here</a>.
+            </p>
             <h3>1 July 2004 - Lucene 1.4 Final Released</h3>
 
                <p>A new release of Lucene is available with many new
