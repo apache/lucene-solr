@@ -147,10 +147,77 @@
   </target>
 
   <!-- ================================================================== -->
+  <!-- D I S T R I B U T I O N                                            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package" depends="jar, javadoc">
+    <mkdir dir="${dist.dir}"/>
+    <mkdir dir="${dist.dir}/lib"/>
+    <mkdir dir="${dist.dir}/docs"/>
+    <mkdir dir="${dist.dir}/docs/api"/>
+
+    <copy todir="${dist.dir}/docs/api">
+      <fileset dir="${build.javadoc}"/>
+    </copy>
+
+    <copy todir="${dist.dir}">
+      <fileset dir=".">
+        <include name="*.txt" />
+      </fileset>
+    </copy>
+
+    <copy todir="${dist.dir}/src">
+      <fileset dir="src"/>
+    </copy>
+    <copy todir="${dist.dir}/" file="build.xml"/>
+    <copy todir="${dist.dir}/" file="default.properties"/>
+
+
+    <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
+
+  </target>
+
+
+  <!-- ================================================================== -->
+  <!-- Make release tarball                                               -->
+  <!-- ================================================================== -->
+  <target name="tar" depends="package">
+    <tar
+      tarfile="${build.dir}/${final.name}.tar"
+      basedir="${build.dir}/"
+      includes="${final.name}/**"
+    />
+    <gzip
+      zipfile="${build.dir}/${final.name}.tar.gz"
+      src="${build.dir}/${final.name}.tar"
+    />
+  </target>
+
+
+  <!-- ================================================================== -->
+  <!-- Copy release to server                                             -->
+  <!-- ================================================================== -->
+  <target name="release" depends="tar">
+    <exec executable="ssh">
+      <arg value="${release.host}"/>
+      <arg value="mkdir"/>
+      <arg value="${release.path}/${final.name}"/>
+    </exec>
+    <exec executable="scp">
+      <arg value="${build.dir}/${final.name}.jar"/>
+      <arg value="${build.dir}/${final.name}.tar.gz"/>
+      <arg value="${release.host}:${release.path}/${final.name}"/>
+    </exec>
+  </target>
+
+
+  <!-- ================================================================== -->
   <!-- Clean.  Delete the build files, and their directories              -->
   <!-- ================================================================== -->
   <target name="clean" depends="init">
     <delete dir="${build.dir}"/>
   </target>
+
 
 </project>
