@@ -16,6 +16,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
@@ -23,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
@@ -254,4 +257,41 @@ public class TestPhraseQuery extends TestCase {
     searcher.close();
     directory.close();
   }
+  
+  public void testSlopScoring() throws IOException {
+    Directory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+
+    Document doc = new Document();
+    doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    
+    Document doc2 = new Document();
+    doc2.add(new Field("field", "foo firstname xxx lastname foo", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc2);
+    
+    Document doc3 = new Document();
+    doc3.add(new Field("field", "foo firstname xxx yyy lastname foo", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc3);
+    
+    writer.optimize();
+    writer.close();
+
+    Searcher searcher = new IndexSearcher(directory);
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "firstname"));
+    query.add(new Term("field", "lastname"));
+    query.setSlop(Integer.MAX_VALUE);
+    Hits hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    // Make sure that those matches where the terms appear closer to
+    // each other get a higher score:
+    assertEquals(0.71, hits.score(0), 0.01);
+    assertEquals(0, hits.id(0));
+    assertEquals(0.44, hits.score(1), 0.01);
+    assertEquals(1, hits.id(1));
+    assertEquals(0.31, hits.score(2), 0.01);
+    assertEquals(2, hits.id(2));
+  }
+
 }
