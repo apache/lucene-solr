@@ -65,7 +65,6 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
-import javax.swing.UIManager;
 
 
 /**
@@ -206,7 +205,7 @@ public class FetcherMain
         // file number, the offset within that file, and the document's length
 
         // FIXME: default constructor for all storages + bean access methods
-        storage.addDocStorage(new LogStorage(storeLog, /* save in page files? */ false,
+        storage.addDocStorage(new LogStorage(storeLog, /* save in page files? */ true,
                                              /* page file prefix */ "logs/pagefile"));
         storage.addLinkStorage(new LinkLogStorage(linksLog));
         storage.addLinkStorage(messageHandler);
@@ -234,7 +233,10 @@ public class FetcherMain
         // dnsResolver = new DNSResolver();
         hostManager = new HostManager(1000);
         hostResolver = new HostResolver();
-        hostResolver.initFromFile(hostResolverFile);
+        if(hostResolverFile != null && !"".equals(hostResolverFile))
+        {
+            hostResolver.initFromFile(hostResolverFile);
+        }
         hostManager.setHostResolver(hostResolver);
 
 //        hostManager.addSynonym("www.fachsprachen.uni-muenchen.de", "www.fremdsprachen.uni-muenchen.de");
@@ -248,6 +250,10 @@ public class FetcherMain
 
         fetcher = new Fetcher(nrThreads, storage, storage, hostManager);
 
+        urlLengthFilter = new URLLengthFilter(500, lengthLog);
+        
+        //knownPathsFilter = new KnownPathsFilter()
+        
         // prevent message box popups
         HTTPConnection.setDefaultAllowUserInteraction(false);
 
@@ -278,7 +284,7 @@ public class FetcherMain
         messageHandler.addListener(urlScopeFilter);
         messageHandler.addListener(reFilter);
         messageHandler.addListener(urlVisitedFilter);
-        messageHandler.addListener(knownPathsFilter);
+        //messageHandler.addListener(knownPathsFilter);
 
         messageHandler.addListener(fetcher);
 
@@ -484,7 +490,7 @@ public class FetcherMain
         // replaced by HTTPClient
 
         FetcherMain f = new FetcherMain(nrThreads, hostResolverFile);
-        if (showInfo || "".equals(hostResolverFile) || (startURLs.isEmpty() && gui == false))
+        if (showInfo || (startURLs.isEmpty() && gui == false))
         {
             System.out.println("The LARM crawler\n" +
                                "\n" +
