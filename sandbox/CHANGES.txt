@@ -11,3 +11,7 @@ $Id$
 - Added Lucene Indexing Demo contributed by Aruna Raghavan. 
 
 - Added LARM Webcrawler contributed by Clemens Marschner.
+
+2002-05-08
+
+- Added javascript query validator and query constructor.
