@@ -1,7 +1,7 @@
 package org.apache.lucene.search;
 
 /**
- * Copyright 2004 The Apache Software Foundation
+ * Copyright 2004-2005 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.Vector;
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents matching boolean combinations of other
-  queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
+  * queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
   */
 public class BooleanQuery extends Query {
   
@@ -117,8 +117,8 @@ public class BooleanQuery extends Query {
   }
 
   private class BooleanWeight implements Weight {
-    private Searcher searcher;
-    private Vector weights = new Vector();
+    protected Searcher searcher;
+    protected Vector weights = new Vector();
 
     public BooleanWeight(Searcher searcher) {
       this.searcher = searcher;
@@ -126,6 +126,7 @@ public class BooleanQuery extends Query {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         weights.add(c.getQuery().createWeight(searcher));
       }
+  //System.out.println("Creating " + getClass().getName());
     }
 
     public Query getQuery() { return BooleanQuery.this; }
@@ -156,6 +157,7 @@ public class BooleanQuery extends Query {
       }
     }
 
+    /** @return A good old 1.4 Scorer */
     public Scorer scorer(IndexReader reader) throws IOException {
       // First see if the (faster) ConjunctionScorer will work.  This can be
       // used when all clauses are required.  Also, at this point a
@@ -246,8 +248,44 @@ public class BooleanQuery extends Query {
     }
   }
 
+  private class BooleanWeight2 extends BooleanWeight {
+    /* Merge into BooleanWeight in case the 1.4 BooleanScorer is dropped */
+    public BooleanWeight2(Searcher searcher) {  super(searcher); }
+
+    /** @return An alternative Scorer that uses and provides skipTo(),
+     *          and scores documents in document number order.
+     */
+    public Scorer scorer(IndexReader reader) throws IOException {
+      BooleanScorer2 result = new BooleanScorer2(getSimilarity(searcher));
+
+      for (int i = 0 ; i < weights.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        Weight w = (Weight)weights.elementAt(i);
+        Scorer subScorer = w.scorer(reader);
+        if (subScorer != null)
+          result.add(subScorer, c.isRequired(), c.isProhibited());
+        else if (c.isRequired())
+          return null;
+      }
+
+      return result;
+    }
+  }
+
+  /** Indicates whether to use good old 1.4 BooleanScorer. */
+  private static boolean useScorer14 = false;
+  
+  public static void setUseScorer14(boolean use14) {
+    useScorer14 = use14;
+  }
+  
+  public static boolean getUseScorer14() {
+    return useScorer14;
+  }
+  
   protected Weight createWeight(Searcher searcher) {
-    return new BooleanWeight(searcher);
+    return getUseScorer14() ? (Weight) new BooleanWeight(searcher)
+                            : (Weight) new BooleanWeight2(searcher);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

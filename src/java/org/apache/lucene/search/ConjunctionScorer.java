@@ -17,10 +17,13 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
-final class ConjunctionScorer extends Scorer {
+class ConjunctionScorer extends Scorer {
   private LinkedList scorers = new LinkedList();
   private boolean firstTime = true;
   private boolean more = true;
@@ -41,7 +44,7 @@ final class ConjunctionScorer extends Scorer {
 
   public boolean next() throws IOException {
     if (firstTime) {
-      init();
+      init(true);
     } else if (more) {
       more = last().next();                       // trigger further scanning
     }
@@ -57,12 +60,18 @@ final class ConjunctionScorer extends Scorer {
   }
 
   public boolean skipTo(int target) throws IOException {
+    if(firstTime) {
+      init(false);
+    }
+    
     Iterator i = scorers.iterator();
     while (more && i.hasNext()) {
       more = ((Scorer)i.next()).skipTo(target);
     }
+    
     if (more)
       sortScorers();                              // re-sort scorers
+    
     return doNext();
   }
 
@@ -74,20 +83,22 @@ final class ConjunctionScorer extends Scorer {
     score *= coord;
     return score;
   }
-
-  private void init() throws IOException {
+  
+  private void init(boolean initScorers) throws IOException {
+    //  compute coord factor
+    coord = getSimilarity().coord(scorers.size(), scorers.size());
+   
     more = scorers.size() > 0;
 
-    // compute coord factor
-    coord = getSimilarity().coord(scorers.size(), scorers.size());
-
-    // move each scorer to its first entry
-    Iterator i = scorers.iterator();
-    while (more && i.hasNext()) {
-      more = ((Scorer)i.next()).next();
+    if(initScorers){
+      // move each scorer to its first entry
+      Iterator i = scorers.iterator();
+      while (more && i.hasNext()) {
+        more = ((Scorer)i.next()).next();
+      }
+      if (more)
+        sortScorers(); // initial sort of list
     }
-    if (more)
-      sortScorers();                              // initial sort of list
 
     firstTime = false;
   }
