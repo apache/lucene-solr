@@ -56,7 +56,7 @@ public abstract class BufferedIndexInput extends IndexInput {
     if (end > length())				  // don't read past EOF
       end = length();
     bufferLength = (int)(end - start);
-    if (bufferLength == 0)
+    if (bufferLength <= 0)
       throw new IOException("read past EOF");
 
     if (buffer == null)
