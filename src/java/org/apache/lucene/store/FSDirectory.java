@@ -250,7 +250,7 @@ public final class FSDirectory extends Directory {
           try {
             out.close();
 	  } catch (IOException e) {
-            // what can we do?
+            throw new RuntimeException("could not close output stream", e);
 	  }
         }
       }
