@@ -53,19 +53,20 @@ public class BooleanQuery extends Query {
   public BooleanQuery() {}
 
   /** Adds a clause to a boolean query.  Clauses may be:
-    <ul>
-    <li><code>required</code> which means that documents which <i>do not</i>
-    match this sub-query will <i>not</i> match the boolean query;
-    <li><code>prohibited</code> which means that documents which <i>do</i>
-    match this sub-query will <i>not</i> match the boolean query; or
-    <li>neither, in which case matched documents are neither prohibited from
-    nor required to match the sub-query.
-    </ul>
-    It is an error to specify a clause as both <code>required</code> and
-    <code>prohibited</code>.
-    *
-    * @see #getMaxClauseCount()
-    */
+   * <ul>
+   * <li><code>required</code> which means that documents which <i>do not</i>
+   * match this sub-query will <i>not</i> match the boolean query;
+   * <li><code>prohibited</code> which means that documents which <i>do</i>
+   * match this sub-query will <i>not</i> match the boolean query; or
+   * <li>neither, in which case matched documents are neither prohibited from
+   * nor required to match the sub-query. However, a document must match at
+   * least 1 sub-query to match the boolean query.
+   * </ul>
+   * It is an error to specify a clause as both <code>required</code> and
+   * <code>prohibited</code>.
+   *
+   * @see #getMaxClauseCount()
+   */
   public void add(Query query, boolean required, boolean prohibited) {
     add(new BooleanClause(query, required, prohibited));
   }
