@@ -271,7 +271,7 @@
                     bytes, high-order bytes first.
                 </p>
                 <p>
-                    UInt32	--&gt; &lt;Byte&gt;<sup>4</sup>
+                    UInt32    --&gt; &lt;Byte&gt;<sup>4</sup>
                 </p>
 
             </subsection>
@@ -283,7 +283,7 @@
                     bytes, high-order bytes first.
                 </p>
 
-                <p>UInt32	--&gt; &lt;Byte&gt;<sup>8</sup>
+                <p>UInt32    --&gt; &lt;Byte&gt;<sup>8</sup>
                 </p>
 
             </subsection>
@@ -690,15 +690,15 @@
                 </p>
 
                 <p>
-                    Segments	--&gt; SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
+                    Segments    --&gt; SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
                 </p>
 
                 <p>
-                    SegCount, SegSize	--&gt; UInt32
+                    SegCount, SegSize    --&gt; UInt32
                 </p>
 
                 <p>
-                    SegName	--&gt; String
+                    SegName    --&gt; String
                 </p>
 
                 <p>
@@ -758,13 +758,13 @@
                 </p>
 
                 <p>
-                    Deleteable	--&gt; DelableCount,
+                    Deleteable    --&gt; DelableCount,
                     &lt;DelableName&gt;<sup>DelableCount</sup>
                 </p>
 
-                <p>DelableCount	--&gt; UInt32
+                <p>DelableCount    --&gt; UInt32
                 </p>
-                <p>DelableName	--&gt;
+                <p>DelableName    --&gt;
                     String
                 </p>
             </subsection>
@@ -785,20 +785,20 @@
                 </p>
                 <p>
                     FieldInfos
-                    (.fnm)	--&gt; FieldsCount, &lt;FieldName,
+                    (.fnm)    --&gt; FieldsCount, &lt;FieldName,
                     FieldBits&gt;<sup>FieldsCount</sup>
                 </p>
 
                 <p>
-                    FieldsCount	--&gt; VInt
+                    FieldsCount    --&gt; VInt
                 </p>
 
                 <p>
-                    FieldName	--&gt; String
+                    FieldName    --&gt; String
                 </p>
 
                 <p>
-                    FieldBits	--&gt; Byte
+                    FieldBits    --&gt; Byte
                 </p>
 
                 <p>
@@ -833,7 +833,7 @@
 
                         <p>
                             FieldIndex
-                            (.fdx)	--&gt;
+                            (.fdx)    --&gt;
                             &lt;FieldValuesPosition&gt;<sup>SegSize</sup>
                         </p>
                         <p>FieldValuesPosition
@@ -859,22 +859,22 @@
                         </p>
 
                         <p>
-                            FieldData (.fdt)	--&gt;
+                            FieldData (.fdt)    --&gt;
                             &lt;DocFieldData&gt;<sup>SegSize</sup>
                         </p>
-                        <p>DocFieldData	--&gt;
+                        <p>DocFieldData    --&gt;
                             FieldCount, &lt;FieldNum, Bits, Value&gt;<sup>FieldCount</sup>
                         </p>
-                        <p>Count		--&gt;
+                        <p>Count        --&gt;
                             VInt
                         </p>
-                        <p>FieldNum	--&gt;
+                        <p>FieldNum    --&gt;
                             VInt
                         </p>
-                        <p>Bits		--&gt;
+                        <p>Bits        --&gt;
                             Byte
                         </p>
-                        <p>Value		--&gt;
+                        <p>Value        --&gt;
                             String
                         </p>
                         <p>Currently
@@ -900,23 +900,23 @@
                             TermInfoFile (.tis)--&gt;
                             TermCount, TermInfos
                         </p>
-                        <p>TermCount	--&gt;
+                        <p>TermCount    --&gt;
                             UInt32
                         </p>
-                        <p>TermInfos	--&gt;
+                        <p>TermInfos    --&gt;
                             &lt;TermInfo&gt;<sup>TermCount</sup>
                         </p>
-                        <p>TermInfo	--&gt;
+                        <p>TermInfo    --&gt;
                             &lt;Term, DocFreq, FreqDelta, ProxDelta&gt;
                         </p>
-                        <p>Term		--&gt;
+                        <p>Term        --&gt;
                             &lt;PrefixLength, Suffix, FieldNum&gt;
                         </p>
-                        <p>Suffix		--&gt;
+                        <p>Suffix        --&gt;
                             String
                         </p>
                         <p>PrefixLength,
-                            DocFreq, FreqDelta, ProxDelta<br/>		--&gt; VInt
+                            DocFreq, FreqDelta, ProxDelta<br/>        --&gt; VInt
                         </p>
                         <p>This
                             file is sorted by Term.  Terms are ordered first lexicographically
@@ -970,13 +970,13 @@
                             TermInfoIndex (.tii)--&gt;
                             IndexTermCount, TermIndices
                         </p>
-                        <p>IndexTermCount	--&gt;
+                        <p>IndexTermCount    --&gt;
                             UInt32
                         </p>
-                        <p>TermIndices	--&gt;
+                        <p>TermIndices    --&gt;
                             &lt;TermInfo, IndexDelta&gt;<sup>IndexTermCount</sup>
                         </p>
-                        <p>IndexDelta	--&gt;
+                        <p>IndexDelta    --&gt;
                             VInt
                         </p>
                         <p>IndexDelta
@@ -996,16 +996,16 @@
                     which contain each term, along with the frequency of the term in that
                     document.
                 </p>
-                <p>FreqFile (.frq)	--&gt;
+                <p>FreqFile (.frq)    --&gt;
                     &lt;TermFreqs&gt;<sup>TermCount</sup>
                 </p>
-                <p>TermFreqs	--&gt;
+                <p>TermFreqs    --&gt;
                     &lt;TermFreq&gt;<sup>DocFreq</sup>
                 </p>
-                <p>TermFreq		--&gt;
+                <p>TermFreq        --&gt;
                     DocDelta, Freq?
                 </p>
-                <p>DocDelta,Freq	--&gt;
+                <p>DocDelta,Freq    --&gt;
                     VInt
                 </p>
                 <p>TermFreqs
@@ -1026,7 +1026,7 @@
                     and three times in document eleven would be the following sequence of
                     VInts:
                 </p>
-                <p>	15,
+                <p>    15,
                     22, 3
                 </p>
             </subsection>
@@ -1036,16 +1036,16 @@
                     The .prx file contains the lists of positions that
                     each term occurs at within documents.
                 </p>
-                <p>ProxFile (.prx)	--&gt;
+                <p>ProxFile (.prx)    --&gt;
                     &lt;TermPositions&gt;<sup>TermCount</sup>
                 </p>
-                <p>TermPositions	--&gt;
+                <p>TermPositions    --&gt;
                     &lt;Positions&gt;<sup>DocFreq</sup>
                 </p>
-                <p>Positions		--&gt;
+                <p>Positions        --&gt;
                     &lt;PositionDelta&gt;<sup>Freq</sup>
                 </p>
-                <p>PositionDelta	--&gt;
+                <p>PositionDelta    --&gt;
                     VInt
                 </p>
                 <p>TermPositions
@@ -1066,7 +1066,7 @@
                     fifth and ninth term in a subsequent document, would be the following
                     sequence of VInts:
                 </p>
-                <p>	4,
+                <p>    4,
                     5, 4
                 </p>
             </subsection>
@@ -1076,7 +1076,7 @@
                     into the score for hits on that field:
                 </p>
                 <p>Norms
-                    (.nrm)	--&gt; &lt;Byte&gt;<sup>SegSize</sup>
+                    (.nrm)    --&gt; &lt;Byte&gt;<sup>SegSize</sup>
                 </p>
                 <p>Each
                     byte encodes a floating point value.  Bits 0-2 contain the 3-bit
@@ -1118,14 +1118,14 @@
                 </p>
 
                 <p>Deletions
-                    (.del)	--&gt; ByteCount,BitCount,Bits
+                    (.del)    --&gt; ByteCount,BitCount,Bits
                 </p>
 
-                <p>ByteSize,BitCount	--&gt;
+                <p>ByteSize,BitCount    --&gt;
                     Uint32
                 </p>
 
-                <p>Bits		--&gt;
+                <p>Bits        --&gt;
                     &lt;Byte&gt;<sup>ByteCount</sup>
                 </p>
 
