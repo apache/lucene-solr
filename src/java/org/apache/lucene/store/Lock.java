@@ -38,11 +38,11 @@ public abstract class Lock {
   public static long LOCK_POLL_INTERVAL = 1000;
   private File lockFile = null;
   
-  Lock(File lockFile) {
+  public Lock(File lockFile) {
     this.lockFile = lockFile;
   }
 
-  Lock() {
+  public Lock() {
   }
   
   /** Attempts to obtain exclusive access and immediately return
