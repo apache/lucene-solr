@@ -84,10 +84,10 @@ public abstract class PriorityQueue {
     heap[size] = element;
     upHeap();
   }
-  
+
   /**
    * Adds element to the PriorityQueue in log(size) time if either
-   * the PriorityQueue is not full, or !lessThan(element, top()).
+   * the PriorityQueue is not full, or not lessThan(element, top()).
    * @param element
    * @return true if element is added, false otherwise.
    */
