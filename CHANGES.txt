@@ -28,6 +28,11 @@ $Id$
  6. Added javadocs-internal to build.xml - bug #30360
     (Paul Elschot via Otis)
 
+ 7. Several methods and fields have been deprecated. The API documentation 
+    contains information about the recommended replacements. It is planned
+    that the deprecated methods and fields will be removed in Lucene 2.0.
+    (Daniel Naber)
+    
 
 1.4.1
 
