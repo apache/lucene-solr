@@ -1,0 +1,92 @@
+Lucene Change Log
+
+$Id$
+
+1.2 RC3
+
+ 1. IndexWriter: fixed a bug where adding an optimized index to an
+    empty index failed.  This was encountered using addIndexes to copy
+    a RAMDirectory index to an FSDirectory.
+
+ 2. RAMDirectory: fixed a bug where RAMInputStream could not read
+    across more than across a single buffer boundary.
+
+ 3. Fix query parser so it accepts queries with unicode characters.
+ 
+ 4. Fix query parser so that PrefixQuery is used in preference to
+    WildcardQuery when there's only an asterisk at the end of the
+    term.  Previously PrefixQuery would never be used.
+
+ 5. Fix tests so they compile; fix ant file so it compiles tests
+    properly.  Added test cases for Analyzers and PriorityQueue.
+
+
+1.2 RC2, 19 October 2001:
+ - added sources to distribution
+ - removed broken build scripts and libraries from distribution
+ - SegmentsReader: fixed potential race condition
+ - FSDirectory: fixed so that getDirectory(xxx,true) correctly
+   erases the directory contents, even when the directory
+   has already been accessed in this JVM.
+ - RangeQuery: Fix issue where an inclusive range query would
+   include the nearest term in the index above a non-existant
+   specified upper term.
+ - SegmentTermEnum: Fix NullPointerException in clone() method
+   when the Term is null.
+ - JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
+   since they rely on a feature added in JDK 1.2.
+
+1.2 RC1 (first Apache release), 2 October 2001:
+  - packages renamed from com.lucene to org.apache.lucene
+  - license switched from LGPL to Apache
+  - ant-only build -- no more makefiles
+  - addition of lock files--now fully thread & process safe
+  - addition of German stemmer
+  - MultiSearcher now supports low-level search API
+  - added RangeQuery, for term-range searching
+  - Analyzers can choose tokenizer based on field name
+  - misc bug fixes.
+
+1.01b (last Sourceforge release), 2 July 2001
+ . a few bug fixes
+ . new Query Parser
+ . new prefix query (search for "foo*" matches "food")
+
+1.0, 2000-10-04
+
+This release fixes a few serious bugs and also includes some
+performance optimizations, a stemmer, and a few other minor
+enhancements.
+
+0.04 2000-04-19
+
+Lucene now includes a grammar-based tokenizer, StandardTokenizer.
+
+The only tokenizer included in the previous release (LetterTokenizer)
+identified terms consisting entirely of alphabetic characters.  The
+new tokenizer uses a regular-expression grammar to identify more
+complex classes of terms, including numbers, acronyms, email
+addresses, etc.
+
+StandardTokenizer serves two purposes:
+
+ 1. It is a much better, general purpose tokenizer for use by
+    applications as is.
+
+    The easiest way for applications to start using
+    StandardTokenizer is to use StandardAnalyzer.
+
+ 2. It provides a good example of grammar-based tokenization.
+
+    If an application has special tokenization requirements, it can
+    implement a custom tokenizer by copying the directory containing
+    the new tokenizer into the application and modifying it
+    accordingly.
+
+0.01, 2000-03-30
+
+First open source release.
+
+The code has been re-organized into a new package and directory
+structure for this release.  It builds OK, but has not been tested
+beyond that since the re-organization.

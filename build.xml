@@ -320,7 +320,11 @@
     </copy>
     <copy todir="${dist.dir}/" file="build.xml"/>
     <copy todir="${dist.dir}/" file="build.properties"/>
-
+    <copy todir="${dist.dir}">
+      <fileset dir=".">
+        <include name="*.txt" />
+      </fileset>
+    </copy>
     <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
   </target>
 
