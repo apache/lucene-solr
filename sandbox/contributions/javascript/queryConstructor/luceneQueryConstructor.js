@@ -109,7 +109,9 @@ function doMakeQuery( query, dbg )
 // @return Submits the form if submitOnConstruction=true, else returns the query param
 function doANDTerms(query)
 {
-  appendTerms(query, AND_MODIFIER, query.value);
+  var value = query.value;
+  query.value = "";
+  appendTerms(query, AND_MODIFIER,  value);
   if(submitForm)
   {
     frm.submit();
