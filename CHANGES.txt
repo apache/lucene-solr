@@ -140,16 +140,21 @@ Optimizations
     of 0 now run 20-50% faster (Patch #31882).
     (Jonathan Hager via Daniel Naber)
     
- 6. A Version of BooleanScorer (BooleanScorer2) added that delivers documents 
-    in  increasing order and implements skipTo. For queries with required or forbidden 
-    clauses it may be faster than the old BooleanScorer, for BooleanQueries consisting 
-    only of optional clauses it is probably slower. The new BooleanScorer is now the 
+ 6. A Version of BooleanScorer (BooleanScorer2) added that delivers
+    documents in increasing order and implements skipTo. For queries
+    with required or forbidden clauses it may be faster than the old
+    BooleanScorer, for BooleanQueries consisting only of optional
+    clauses it is probably slower. The new BooleanScorer is now the
     default. (Patch 31785 by Paul Elschot via Christoph)
+
+ 7. Use uncached access to norms when merging to reduce RAM usage.
+    (Bug #32847).  (Doug Cutting)
 
  Infrastructure
 
- 1. Lucene's source code repository has converted from CVS to Subversion.  The new
-    repository is at http://svn.apache.org/repos/asf/lucene/java/trunk
+ 1. Lucene's source code repository has converted from CVS to
+    Subversion.  The new repository is at
+    http://svn.apache.org/repos/asf/lucene/java/trunk
 
 1.4.3
 

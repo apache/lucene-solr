@@ -392,12 +392,12 @@ final class SegmentMerger {
         try {
           for (int j = 0; j < readers.size(); j++) {
             IndexReader reader = (IndexReader) readers.elementAt(j);
-            byte[] input = reader.norms(fi.name);
             int maxDoc = reader.maxDoc();
+            byte[] input = new byte[maxDoc];
+            reader.norms(fi.name, input, 0);
             for (int k = 0; k < maxDoc; k++) {
-              byte norm = input != null ? input[k] : (byte) 0;
               if (!reader.isDeleted(k)) {
-                output.writeByte(norm);
+                output.writeByte(input[k]);
               }
             }
           }
