@@ -49,11 +49,11 @@ public class FSDirectory extends Directory {
       Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
 
   /**
-   * Directory specified by <code>org.apache.lucene.lockdir</code>
+   * Directory specified by <code>org.apache.lucene.lockDir</code>
    * or <code>java.io.tmpdir</code> system property
    */
   public static final String LOCK_DIR =
-    System.getProperty("org.apache.lucene.lockdir",
+    System.getProperty("org.apache.lucene.lockDir",
       System.getProperty("java.io.tmpdir"));
 
   /** The default class which implements filesystem-based directories. */
