@@ -18,7 +18,7 @@ package org.apache.lucene.demo.html;
 
 import java.io.*;
 
-class ParserThread extends Thread {		  
+class ParserThread extends Thread {
   HTMLParser parser;
 
   ParserThread(HTMLParser p) {
@@ -28,21 +28,21 @@ class ParserThread extends Thread {
   public void run() {				  // convert pipeOut to pipeIn
     try {
       try {					  // parse document to pipeOut
-	parser.HTMLDocument(); 
+        parser.HTMLDocument();
       } catch (ParseException e) {
-	System.out.println("Parse Aborted: " + e.getMessage());
+        System.out.println("Parse Aborted: " + e.getMessage());
       } catch (TokenMgrError e) {
-	System.out.println("Parse Aborted: " + e.getMessage());
+        System.out.println("Parse Aborted: " + e.getMessage());
       } finally {
-	parser.pipeOut.close();
-	synchronized (parser) {
-	  parser.summary.setLength(parser.SUMMARY_LENGTH);
-	  parser.titleComplete = true;
-	  parser.notifyAll();
-	}
+        parser.pipeOut.close();
+        synchronized (parser) {
+	      parser.summary.setLength(HTMLParser.SUMMARY_LENGTH);
+	      parser.titleComplete = true;
+	      parser.notifyAll();
+	    }
       }
     } catch (IOException e) {
-	e.printStackTrace();
+	  e.printStackTrace();
     }
   }
 }
