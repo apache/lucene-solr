@@ -91,7 +91,7 @@ public class SnowballFilter extends TokenFilter {
       stemmer = (SnowballProgram) stemClass.newInstance();
       stemMethod = stemClass.getMethod("stem", new Class[0]);
     } catch (Exception e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e.toString());
     }
   }
 
@@ -104,7 +104,7 @@ public class SnowballFilter extends TokenFilter {
     try {
       stemMethod.invoke(stemmer, EMPTY_ARGS);
     } catch (Exception e) {
-      throw new RuntimeException();
+      throw new RuntimeException(e.toString());
     }
     return new Token(stemmer.getCurrent(),
                      token.startOffset(), token.endOffset(), token.type());
