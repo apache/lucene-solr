@@ -297,9 +297,9 @@ public class DutchStemmer {
     }
   }
 
-  private boolean isValidSEnding(StringBuffer sb) {
+  /*private boolean isValidSEnding(StringBuffer sb) {
     return isValidSEnding(sb, sb.length() - 1);
-  }
+  }*/
 
   private boolean isValidSEnding(StringBuffer sb, int index) {
     char c = sb.charAt(index);
@@ -308,9 +308,9 @@ public class DutchStemmer {
     return true;
   }
 
-  private boolean isValidEnEnding(StringBuffer sb) {
+  /*private boolean isValidEnEnding(StringBuffer sb) {
     return isValidEnEnding(sb, sb.length() - 1);
-  }
+  }*/
 
   private boolean isValidEnEnding(StringBuffer sb, int index) {
     char c = sb.charAt(index);
@@ -352,7 +352,6 @@ public class DutchStemmer {
     if (sb.charAt(0) == 'y')
       sb.setCharAt(0, 'Y');
 
-    char c;
     int last = sb.length() - 1;
 
     for (int i = 1; i < last; i++) {
