@@ -43,6 +43,11 @@ public class MultiSearcher extends Searcher {
     starts[searchables.length] = maxDoc;
   }
   
+  /** Return the array of {@link Searchable}s this searches. */
+  public Searchable[] getSearchables() {
+    return searchables;
+  }
+
   protected int[] getStarts() {
   	return starts;
   }

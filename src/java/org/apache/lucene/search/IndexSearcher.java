@@ -54,6 +54,11 @@ public class IndexSearcher extends Searcher {
     this.closeReader = closeReader;
   }
 
+  /** Return the {@link IndexReader} this searches. */
+  public IndexReader getIndexReader() {
+    return reader;
+  }
+
   /**
    * Note that the underlying IndexReader is not closed, if
    * IndexSearcher was constructed with IndexSearcher(IndexReader r).
