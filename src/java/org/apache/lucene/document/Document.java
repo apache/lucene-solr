@@ -57,6 +57,7 @@ package org.apache.lucene.document;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Vector;
 import org.apache.lucene.index.IndexReader;       // for javadoc
 import org.apache.lucene.search.Hits;             // for javadoc
 
@@ -69,7 +70,7 @@ import org.apache.lucene.search.Hits;             // for javadoc
  * */
 
 public final class Document implements java.io.Serializable {
-  DocumentFieldList fieldList = null;
+  List fields = new Vector();
   private float boost = 1.0f;
 
   /** Constructs a new document with no fields. */
@@ -108,16 +109,18 @@ public final class Document implements java.io.Serializable {
    * the same name.  In this case, if the fields are indexed, their text is
    * treated as though appended for the purposes of search. */
   public final void add(Field field) {
-    fieldList = new DocumentFieldList(field, fieldList);
+    fields.add(field);
   }
 
   /** Returns a field with the given name if any exist in this document, or
     null.  If multiple fields exists with this name, this method returns the
     last field value added. */
   public final Field getField(String name) {
-    for (DocumentFieldList list = fieldList; list != null; list = list.next)
-      if (list.field.name().equals(name))
-	return list.field;
+    for (int i = 0; i < fields.size(); i++) {
+      Field field = (Field)fields.get(i);
+      if (field.name().equals(name))
+	return field;
+    }
     return null;
   }
 
@@ -134,7 +137,7 @@ public final class Document implements java.io.Serializable {
 
   /** Returns an Enumeration of all the fields in a document. */
   public final Enumeration fields() {
-    return new DocumentFieldEnumeration(this);
+    return ((Vector)fields).elements();
   }
 
   /**
@@ -145,19 +148,18 @@ public final class Document implements java.io.Serializable {
    * @return a <code>Field[]</code> array
    */
    public final Field[] getFields(String name) {
-     List tempFieldList = new ArrayList();
-     for (DocumentFieldList list = fieldList; list != null; list = list.next) {
-       if (list.field.name().equals(name)) {
-         tempFieldList.add(list.field);
+     List result = new ArrayList();
+     for (int i = 0; i < fields.size(); i++) {
+       Field field = (Field)fields.get(i);
+       if (field.name().equals(name)) {
+         result.add(field);
        }
      }
-     int fieldCount = tempFieldList.size();
-     if (fieldCount == 0) {
+
+     if (result.size() == 0)
        return null;
-     }
-     else {
-       return (Field[])tempFieldList.toArray(new Field[] {});
-     }
+
+     return (Field[])result.toArray(new Field[result.size()]);
    }
 
   /**
@@ -183,38 +185,13 @@ public final class Document implements java.io.Serializable {
   public final String toString() {
     StringBuffer buffer = new StringBuffer();
     buffer.append("Document<");
-    for (DocumentFieldList list = fieldList; list != null; list = list.next) {
-      buffer.append(list.field.toString());
-      if (list.next != null)
+    for (int i = 0; i < fields.size(); i++) {
+      Field field = (Field)fields.get(i);
+      buffer.append(field.toString());
+      if (i != fields.size()-1)
         buffer.append(" ");
     }
     buffer.append(">");
     return buffer.toString();
-  }
-}
-
-final class DocumentFieldList implements java.io.Serializable {
-  DocumentFieldList(Field f, DocumentFieldList n) {
-    field = f;
-    next = n;
-  }
-  Field field;
-  DocumentFieldList next;
-}
-
-final class DocumentFieldEnumeration implements Enumeration {
-  DocumentFieldList fields;
-  DocumentFieldEnumeration(Document d) {
-    fields = d.fieldList;
-  }
-
-  public final boolean hasMoreElements() {
-    return fields == null ? false : true;
-  }
-
-  public final Object nextElement() {
-    Field result = fields.field;
-    fields = fields.next;
-    return result;
   }
 }

@@ -157,18 +157,18 @@ public class TestDocument extends TestCase
             assertTrue(unstoredFieldValues.length  == 2);
         }
 
-        assertTrue(keywordFieldValues[0].equals("test2"));
-        assertTrue(keywordFieldValues[1].equals("test1"));
-        assertTrue(textFieldValues[0].equals("test2"));
-        assertTrue(textFieldValues[1].equals("test1"));
-        assertTrue(unindexedFieldValues[0].equals("test2"));
-        assertTrue(unindexedFieldValues[1].equals("test1"));
+        assertTrue(keywordFieldValues[0].equals("test1"));
+        assertTrue(keywordFieldValues[1].equals("test2"));
+        assertTrue(textFieldValues[0].equals("test1"));
+        assertTrue(textFieldValues[1].equals("test2"));
+        assertTrue(unindexedFieldValues[0].equals("test1"));
+        assertTrue(unindexedFieldValues[1].equals("test2"));
         // this test cannot work for documents retrieved from the index
         // since unstored fields will obviously not be returned
         if (! fromIndex)
         {
-            assertTrue(unstoredFieldValues[0].equals("test2"));
-            assertTrue(unstoredFieldValues[1].equals("test1"));
+            assertTrue(unstoredFieldValues[0].equals("test1"));
+            assertTrue(unstoredFieldValues[1].equals("test2"));
         }
     }
 }
