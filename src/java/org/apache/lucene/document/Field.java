@@ -219,22 +219,34 @@ public final class Field implements java.io.Serializable {
 
   /** Prints a Field for human consumption. */
   public final String toString() {
-    if (isStored && isIndexed && !isTokenized)
-      return "Keyword<" + name + ":" + stringValue + ">";
-    else if (isStored && !isIndexed && !isTokenized)
-      return "Unindexed<" + name + ":" + stringValue + ">";
-    else if (isStored && isIndexed && isTokenized && stringValue!=null)
-      return "Text<" + name + ":" + stringValue + ">";
-    else if (!isStored && isIndexed && isTokenized && readerValue!=null)
-      return "Text<" + name + ":" + readerValue + ">";
-    else if (!isStored && isIndexed && isTokenized)
-    {
-      return "UnStored<" + name + ">";
-    }
-    else
-    {
-      return super.toString();
-    }
+	StringBuffer result = new StringBuffer();
+	if (isStored)
+	  result.append("stored");
+	if (isIndexed) {
+	  if (result.length() > 0)
+		result.append(",");
+	  result.append("indexed");
+	}
+	if (isTokenized) {
+	  if (result.length() > 0)
+		result.append(",");
+	  result.append("tokenized");
+	}
+	if (storeTermVector) {
+	  if (result.length() > 0)
+		result.append(",");
+	  result.append("termVector");
+	}
+	result.append('<');
+	result.append(name);
+	result.append(':');
+	if (readerValue != null) {
+	  result.append(readerValue.toString());
+	} else {
+	  result.append(stringValue);
+	}
+	result.append('>');
+	return result.toString();
   }
 
 }
