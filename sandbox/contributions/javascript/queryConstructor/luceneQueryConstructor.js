@@ -1,5 +1,6 @@
 // Lucene Search Query Constructor
 // Author:  Kelvin Tan  (kelvint at apache.org)
+// Version: $Id$
 
 // Change this according to what you use to name the field modifiers in your form.
 // e.g. with the field "name", the modifier will be called "nameModifier"
@@ -29,6 +30,7 @@ var VALUE_DELIMITER = ' ';
 // Constructs the query
 // @param query Form field to represent the constructed query to be submitted
 // @param debug Turn on debugging?
+// @return Submits the form if submitOnConstruction=true, else returns the query param
 function doMakeQuery( query, dbg )
 {
   if(typeof(dbg) != "undefined")
@@ -45,7 +47,7 @@ function doMakeQuery( query, dbg )
   {
     var element = formElements[i];
     var elementName = element.name;
-    if(!contains(dict, elementName))
+    if(elementName != "" && !contains(dict, elementName))
     {
       dict[dict.length] = elementName;
 
@@ -89,6 +91,32 @@ function doMakeQuery( query, dbg )
   if(submitOnConstruction)
   {
     frm.submit();
+  }
+  else
+  {
+    return query;
+  }
+}
+
+// Constructs a Google-like query (all terms are ANDed)
+// @param query Form field to represent the constructed query to be submitted
+// @return Submits the form if submitOnConstruction=true, else returns the query param
+function doANDTerms(query)
+{
+  var temp = '';
+  splitStr = query.value.split(" ");
+  query.value = '';
+  for(var i=0;i<splitStr.length;i++)
+  {
+    if(splitStr[i].length > 0) addModifier(query, AND_MODIFIER, splitStr[i]);
+  }
+  if(submitOnConstruction)
+  {
+    frm.submit();
+  }
+  else
+  {
+    return query;
   }
 }
 
@@ -142,6 +170,20 @@ function getSelectedValues (select) {
       r[r.length] = select.options[i].value;
     }
   return r.join(VALUE_DELIMITER);
+}
+
+function addModifier(query, modifier, value)
+{
+  value = trim(value);
+  
+  if(query.value.length == 0)
+  {
+    query.value = modifier + '(' + value + ')';
+  }
+  else
+  {
+    query.value = query.value + ' ' + modifier + '(' + value + ')';
+  }  
 }
 
 function addFieldWithModifier(query, modifier, field, fieldValue)
