@@ -429,10 +429,30 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    */
   protected Query getBooleanQuery(Vector clauses) throws ParseException
   {
+    return getBooleanQuery(clauses, false);
+  }
+
+  /**
+   * Factory method for generating query, given a set of clauses.
+   * By default creates a boolean query composed of clauses passed in.
+   *
+   * Can be overridden by extending classes, to modify query being
+   * returned.
+   *
+   * @param clauses Vector that contains {@link BooleanClause} instances
+   *    to join.
+   * @param disableCoord true if coord scoring should be disabled.
+   *
+   * @return Resulting {@link Query} object.
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
+    throws ParseException
+  {
     if (clauses == null || clauses.size() == 0)
       return null;
 
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery query = new BooleanQuery(disableCoord);
     for (int i = 0; i < clauses.size(); i++) {
       query.add((BooleanClause)clauses.elementAt(i));
     }

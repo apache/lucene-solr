@@ -8,6 +8,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.Parameter;
 
 public class QueryParserTokenManager implements QueryParserConstants
 {
