@@ -103,7 +103,8 @@ final class DocumentWriter {
 
     // invert doc into postingTable
     postingTable.clear();			  // clear postingTable
-    fieldLengths = new int[fieldInfos.size()];	  // init fieldLengths
+    fieldLengths = new int[fieldInfos.size()];    // init fieldLengths
+    fieldPositions = new int[fieldInfos.size()];  // init fieldPositions
 
     fieldBoosts = new float[fieldInfos.size()];	  // init fieldBoosts
     Arrays.fill(fieldBoosts, doc.getBoost());
@@ -138,6 +139,7 @@ final class DocumentWriter {
   // Used to buffer a document before it is written to the index.
   private final Hashtable postingTable = new Hashtable();
   private int[] fieldLengths;
+  private int[] fieldPositions;
   private float[] fieldBoosts;
 
   // Tokenizes the fields of a document into Postings.
@@ -149,11 +151,13 @@ final class DocumentWriter {
       String fieldName = field.name();
       int fieldNumber = fieldInfos.fieldNumber(fieldName);
 
-      int position = fieldLengths[fieldNumber];	  // position in field
+      int length = fieldLengths[fieldNumber];     // length of field
+      int position = fieldPositions[fieldNumber]; // position in field
 
       if (field.isIndexed()) {
         if (!field.isTokenized()) {		  // un-tokenized field
           addPosition(fieldName, field.stringValue(), position++);
+          length++;
         } else {
           Reader reader;			  // find or make Reader
           if (field.readerValue() != null)
@@ -170,14 +174,15 @@ final class DocumentWriter {
             for (Token t = stream.next(); t != null; t = stream.next()) {
               position += (t.getPositionIncrement() - 1);
               addPosition(fieldName, t.termText(), position++);
-              if (position > maxFieldLength) break;
+              if (++length > maxFieldLength) break;
             }
           } finally {
             stream.close();
           }
         }
 
-        fieldLengths[fieldNumber] = position;	  // save field length
+        fieldLengths[fieldNumber] = length;	  // save field length
+        fieldPositions[fieldNumber] = position;	  // save field position
         fieldBoosts[fieldNumber] *= field.getBoost();
       }
     }
@@ -321,7 +326,7 @@ final class DocumentWriter {
       if (field.isIndexed()) {
         int n = fieldInfos.fieldNumber(field.name());
         float norm =
-          fieldBoosts[n] * similarity.lengthNorm(field.name(), fieldLengths[n]);
+          fieldBoosts[n] * similarity.lengthNorm(field.name(),fieldLengths[n]);
         OutputStream norms = directory.createFile(segment + ".f" + n);
         try {
           norms.writeByte(similarity.encodeNorm(norm));
