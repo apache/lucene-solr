@@ -22,6 +22,10 @@
         <item name="Javadoc"           href="/api/index.html"/>
         <item name="Contributions"     href="/contributions.html"/>
     </menu>
+    
+    <menu name="Plans">
+        <item name="Application Extensions"           href="/luceneplan.html"/>
+    </menu>
 
     <menu name="Download">
         <item name="Binaries"           href="/site/binindex.html"/>
