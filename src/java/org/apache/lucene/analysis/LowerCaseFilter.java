@@ -54,14 +54,19 @@ package org.apache.lucene.analysis;
  * <http://www.apache.org/>.
  */
 
-/** Normalizes token text to lower case. */
+import java.io.IOException;
 
+/**
+ * Normalizes token text to lower case.
+ *
+ * @version $Id$
+ */
 public final class LowerCaseFilter extends TokenFilter {
   public LowerCaseFilter(TokenStream in) {
     super(in);
   }
 
-  public final Token next() throws java.io.IOException {
+  public final Token next() throws IOException {
     Token t = input.next();
 
     if (t == null)
