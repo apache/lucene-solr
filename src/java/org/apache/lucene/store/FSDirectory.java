@@ -63,9 +63,9 @@ import java.util.Hashtable;
 import org.apache.lucene.util.Constants;
 
 /**
- * Straightforward implementation of Directory as a directory of files.
- * If the system property 'disableLuceneLocks' has the String value of "true",
- * lock creation will be disabled.
+ * Straightforward implementation of {@link Directory} as a directory of files.
+ * <p>If the system property 'disableLuceneLocks' has the String value of
+ * "true", lock creation will be disabled.
  *
  * @see Directory
  * @author Doug Cutting
@@ -217,14 +217,13 @@ final public class FSDirectory extends Directory {
     return new FSInputStream(new File(directory, name));
   }
 
-  /**
-   * Constructs a {@link Lock} with the specified name.
-   * If JDK 1.1 is used the lock file is not really made.
-   * If system property <I>disableLuceneLocks</I> has the value of 'true'
-   * the lock will not be created.  Assigning this property any other value
-   * will <B>not</B> prevent creation of locks.
-   * <BR>
-   * This is useful for using Lucene on read-only medium, such as CD-ROM.
+  /** Constructs a {@link Lock} with the specified name.  Locks are implemented
+   * with {@link File#createNewFile() }.
+   *
+   * <p>In JDK 1.1 or if system property <I>disableLuceneLocks</I> is the
+   * string "true", locks are disabled.  Assigning this property any other
+   * string will <B>not</B> prevent creation of lock files.  This is useful for
+   * using Lucene on read-only medium, such as CD-ROM.
    *
    * @param name the name of the lock file
    * @return an instance of <code>Lock</code> holding the lock

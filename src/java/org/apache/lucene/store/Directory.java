@@ -56,22 +56,19 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-/*
-  Java's filesystem API is not used directly, but rather through these
-  classes.  This permits:
-    . implementation of RAM-based indices, useful for summarization, etc.;
-    . implementation of an index as a single file.
-
-*/
-
-/**
-  A Directory is a flat list of files.  Files may be written once,
-  when they are created.  Once a file is created it may only be opened for
-  read, or deleted.  Random access is permitted when reading and writing.
-
-    @author Doug Cutting
-*/
-
+/** A Directory is a flat list of files.  Files may be written once, when they
+ * are created.  Once a file is created it may only be opened for read, or
+ * deleted.  Random access is permitted both when reading and writing.
+ *
+ * <p> Java's i/o APIs not used directly, but rather all i/o is
+ * through this API.  This permits things such as: <ul> 
+ * <li> implementation of RAM-based indices;
+ * <li> implementation indices stored in a database, via JDBC;
+ * <li> implementation of an index as a single file;
+ * </ul>
+ *
+ * @author Doug Cutting
+ */
 abstract public class Directory {
   /** Returns an array of strings, one for each file in the directory. */
   abstract public String[] list()

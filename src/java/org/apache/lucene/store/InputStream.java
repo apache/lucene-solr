@@ -56,12 +56,11 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-/**
-  Abstract class for input from a file in a Directory.
-  @author Doug Cutting
-*/
-
-/** A random-access input stream */
+/** Abstract base class for input from a file in a {@link Directory}.  A
+ * random-access input stream.  Used for all Lucene index input operations.
+ * @see Directory
+ * @see OutputStream
+ */
 abstract public class InputStream implements Cloneable {
   final static int BUFFER_SIZE = OutputStream.BUFFER_SIZE;
 
@@ -74,13 +73,21 @@ abstract public class InputStream implements Cloneable {
 
   protected long length;			  // set by subclasses
 
-  /** InputStream-like methods @see java.io.InputStream */
+  /** Reads and returns a single byte.
+   * @see OutputStream#writeByte(byte)
+   */
   public final byte readByte() throws IOException {
     if (bufferPosition >= bufferLength)
       refill();
     return buffer[bufferPosition++];
   }
 
+  /** Reads a specified number of bytes into an array at the specified offset.
+   * @param b the array to read bytes into
+   * @param offset the offset in the array to start storing bytes
+   * @param len the number of bytes to read
+   * @see OutputStream#writeBytes(byte[],int)
+   */
   public final void readBytes(byte[] b, int offset, int len)
        throws IOException {
     if (len < BUFFER_SIZE) {
@@ -97,11 +104,19 @@ abstract public class InputStream implements Cloneable {
     }
   }
 
+  /** Reads four bytes and returns an int.
+   * @see OutputStream#writeInt(int)
+   */
   public final int readInt() throws IOException {
     return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
          | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
   }
 
+  /** Reads an int stored in variable-length format.  Reads between one and
+   * five bytes.  Smaller values take fewer bytes.  Negative numbers are not
+   * supported.
+   * @see OutputStream#writeVInt(int)
+   */
   public final int readVInt() throws IOException {
     byte b = readByte();
     int i = b & 0x7F;
@@ -112,10 +127,16 @@ abstract public class InputStream implements Cloneable {
     return i;
   }
 
+  /** Reads eight bytes and returns a long.
+   * @see OutputStream#writeLong(long)
+   */
   public final long readLong() throws IOException {
     return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
   }
 
+  /** Reads a long stored in variable-length format.  Reads between one and
+   * nine bytes.  Smaller values take fewer bytes.  Negative numbers are not
+   * supported. */
   public final long readVLong() throws IOException {
     byte b = readByte();
     long i = b & 0x7F;
@@ -126,6 +147,9 @@ abstract public class InputStream implements Cloneable {
     return i;
   }
 
+  /** Reads a string.
+   * @see OutputStream#writeString(String)
+   */
   public final String readString() throws IOException {
     int length = readVInt();
     if (chars == null || length > chars.length)
@@ -134,6 +158,12 @@ abstract public class InputStream implements Cloneable {
     return new String(chars, 0, length);
   }
 
+  /** Reads UTF-8 encoded characters into an array.
+   * @param buffer the array to read characters into
+   * @param start the offset in the array to start storing characters
+   * @param length the number of characters to read
+   * @see OutputStream#writeChars(String,int,int)
+   */
   public final void readChars(char[] buffer, int start, int length)
        throws IOException {
     final int end = start + length;
@@ -152,7 +182,7 @@ abstract public class InputStream implements Cloneable {
   }
 
 
-  protected final void refill() throws IOException {
+  private void refill() throws IOException {
     long start = bufferStart + bufferPosition;
     long end = start + BUFFER_SIZE;
     if (end > length)				  // don't read past EOF
@@ -169,16 +199,29 @@ abstract public class InputStream implements Cloneable {
     bufferPosition = 0;
   }
 
+  /** Expert: implements buffer refill.  Reads bytes from the current position
+   * in the input.
+   * @param b the array to read bytes into
+   * @param offset the offset in the array to start storing bytes
+   * @param length the number of bytes to read
+   */
   abstract protected void readInternal(byte[] b, int offset, int length)
        throws IOException;
 
+  /** Closes the stream to futher operations. */
   abstract public void close() throws IOException;
 
-  /** RandomAccessFile-like methods @see java.io.RandomAccessFile */
+  /** Returns the current position in this file, where the next read will
+   * occur.
+   * @see #seek(long)
+   */
   public final long getFilePointer() {
     return bufferStart + bufferPosition;
   }
 
+  /** Sets current position in this file, where the next read will occur.
+   * @see #getFilePointer()
+   */
   public final void seek(long pos) throws IOException {
     if (pos >= bufferStart && pos < (bufferStart + bufferLength))
       bufferPosition = (int)(pos - bufferStart);  // seek within buffer
@@ -189,12 +232,27 @@ abstract public class InputStream implements Cloneable {
       seekInternal(pos);
     }
   }
+
+  /** Expert: implements seek.  Sets current position in this file, where the
+   * next {@link #readInternal(byte[],int,int)} will occur.
+   * @see #readInternal(byte[],int,int)
+   */
   abstract protected void seekInternal(long pos) throws IOException;
 
+  /** The number of bytes in the file. */
   public final long length() {
     return length;
   }
 
+  /** Returns a clone of this stream.
+   *
+   * <p>Clones of a stream access the same data, and are positioned at the same
+   * point as the stream they were cloned from.
+   *
+   * <p>Expert: Subclasses must ensure that clones may be positioned at
+   * different points in the input from each other and from the stream they
+   * were cloned from.
+   */
   public Object clone() {
     InputStream clone = null;
     try {

@@ -63,9 +63,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
 
+/** A memory-resident {@link Directory} implementation. */
 final public class RAMDirectory extends Directory {
   Hashtable files = new Hashtable();
 
+  /** Constructs an empty {@link Directory}. */
   public RAMDirectory() {
   }
 
