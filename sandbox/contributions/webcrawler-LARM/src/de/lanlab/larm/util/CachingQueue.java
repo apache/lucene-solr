@@ -319,8 +319,6 @@ class QueueBlock
 
 public class CachingQueue implements Queue
 {
-
-
     /**
      * the Blocks
      */
@@ -373,6 +371,7 @@ public class CachingQueue implements Queue
         queueBlocks = new LinkedList();
         this.name = name;
         this.blockSize = blockSize;
+        // FIXME: the name of the caching queue directory needs to be in properties
         File cq = new File("cachingqueue");
         cq.mkdir();
     }

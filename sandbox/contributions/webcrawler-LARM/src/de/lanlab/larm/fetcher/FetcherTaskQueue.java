@@ -127,6 +127,7 @@ public class FetcherTaskQueue extends TaskQueue
             // add a new host to the queue
             //String host2 = host.replace(':', '_').replace('/', '_').replace('\\', '_');
             // make it file system ready
+            // FIXME: put '100' in properties.  This is block size (the number of objects/block)
             q = new CachingQueue(host, 100);
             servers.put(host, q);
         }
