@@ -1,3 +1,6 @@
+WARNING: THE CURRENT STATE OF THIS CODEBASE IS BROKEN!  RESULTS.JSP
+NEEDS A BIT OF WORK TO FUNCTION PROPERLY.
+
 INTRODUCTION
 The lucene-taglib project provides a tag library for searching
 a lucene-index.
@@ -6,13 +9,13 @@ INSTRUCTIONS
 1. download this project and create a context in your favorite
 	servelt container called lucene-taglib.
 2.	copy the file under the taglib directory into your new context.
-3.	open result.jsp and locate the collection attribute of the 
+3.	open result.jsp and locate the collection attribute of the
 	<LUCENE:Search> tag.
 4.	change the collection attribute to point to a lucene-index
 	that you created using the system appropriate path.
-5.	open index.jsp in your browser and enter search criteria 
+5.	open index.jsp in your browser and enter search criteria
 	and click the submit button.
-	
+
 DOCUMENTATION:
 you will find documentation and an over view of the tag library in
 the docs folder of this project and the javadocs in the api folder
@@ -62,7 +65,7 @@ definition.
 HISTORY:
 1.	Added more robust error handling and the ability to turn it on and
 	off with a throwOnException attribute. (All tags)
-2.	Added a Column tag for outputting the field names found in a 
+2.	Added a Column tag for outputting the field names found in a
 	Lucene index.
 3.	Added a Field tag for retrieving a value for a field in a search
 	result either produced by the Column tag or known in advance.

@@ -22,23 +22,23 @@
 <h2 align="center">Test page for Lucene-taglib</h2>
 <table border=0 width="100%">
 <tr>
-	<td colspan=3><b>Ledgend</b></td>
+	<td colspan=3><b>Legend</b></td>
 </tr>
 <tr>
 	<td style="width:100px;">Required field</td>
 	<td style="background-color:red; width:5px;">&nbsp;</td>
     <td rowspan="4" valign="top" style="padding-left:10px;" align="justify">
 	<span class="explained">
-	This page has been set up so that you can dynamically change the 
+	This page has been set up so that you can dynamically change the
 	parameters used by the taglib to produce different results. Hopefully
 	this tag library is abstract enough to address the majority of situations.
-	
+
 	The ledgend on the left shows which parameters are required and there
 	default values. If you set throwOnException to false the errors caused by
 	bad input parameter should not crash the page rather no results will be returned.
 	On the other hand setting it to true will show any errors encountered by the tag.
 	Some knowledge of the Lucene search engine is required to take advantage of the
-	the search tags advanced features such as changing the analyzer and using 
+	the search tags advanced features such as changing the analyzer and using
 	fieldList's and flagList's. more documentation on each tag can be found in
 	the docs directory in the index.html file.
 	</span>
@@ -70,7 +70,7 @@
 	<tr><td>analyzerType</td>
 	<td>
 	<select class="data" name="analyzerType">
-		<option value="GERMANAN_ALYZER">GERMANAN_ALYZER</option>
+		<option value="GERMAN_ANALYZER">GERMAN_ANALYZER</option>
 		<option value="SIMPLE_ANALYZER">SIMPLE_ANALYZER</option>
 		<option class="default" value="STANDARD_ANALYZER" selected>STANDARD_ANALYZER</option>
 		<option value="STOP_ANALYZER">STOP_ANALYZER</option>
@@ -89,13 +89,13 @@
 	<tr><td colspan=4>&lt;%= rs.nextPage %&gt;<br><span class="explained">variable containing the query string needed by a navigation element to move to the next page of the result</span></td></tr>
 	<tr><td colspan=4>&lt;%= rs.previousPage %&gt;<br><span class="explained">variable containing the query string needed by a navigation element to return to the previous page of the result</span></td></tr>
 	<tr><td colspan=4>&lt;%= rs.lastPage %&gt;<br> <span class="explained">variable containing the query string needed by a navigation element to move to the last page of the result</span></td></tr>
-	<tr><td colspan=4>&lt;%= rs.score %&gt;<br> <span class="explained">returns a string representation of the float value stored in every lucene index as the value score. <br>if you want to translate it into something useful to a user you will need to create 
+	<tr><td colspan=4>&lt;%= rs.score %&gt;<br> <span class="explained">returns a string representation of the float value stored in every lucene index as the value score. <br>if you want to translate it into something useful to a user you will need to create
 	<br>new Float(tagid.getField("score")).floatValue() and then you can use your own conversion method <br>
 	as this will return you the original float value that was stored in the index. </span></td></tr>
 	<tr><td colspan=4 style="color:black"><span class="object">&lt;%= rs.pageList %&gt;</span><br> <span style="font-size:10pt;">returns a LinkedList of query strings needed to produce links to the number of page represented <br>by the offset of the current page and the maxrows being displayed on each page. </span></td></tr>
 	<tr><td colspan=4>&lt;%= rs.getField(String name) %&gt; used by the Field tag<br> <span class="explained">used to retreive the named field from the index for that iteration of the loop. <br>If no such name exists in the index such as author the method will return an empty string.</span></td></tr>
 	<tr><td colspan=4>&lt;%= rs.getFields() %&gt; used by the Column tag<br> <span class="explained">used to retrieve a Set view of all of the fields contained in the index for each iteration of the loop, <br>most generally would be used to write your table headers when the field names are not known until runtime</span></td></tr>
-	
+
 	<tr><td>&nbsp;</td><th>&lt;LUCENE:Column </th><td><span class="required">id="col"</span></td><td>&nbsp;</td></tr>
 	<tr><td>&nbsp;</td><td>runOnce</td><td><select class="data" name="runOnce"><option value="true">true</option><option class="default" value="false" SELECTED>false</option></select></td><td>&nbsp;</td></tr>
 	<tr><td>&nbsp;</td><td>throwOnException</td><td><select class="data" name="columnthrowOnException"><option value="true">true</option><option class="default" value="false" SELECTED>false</option></select>&gt;</td><td>&nbsp;</td></tr>

@@ -28,22 +28,21 @@ import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
 
 /*
- * 
+ *
  * @company Network Web Application
  * @url http://www.netwebapps.com
- * @author Bryan LaPlante 
+ * @author Bryan LaPlante
  *
  */
 public class SearchTag extends BodyTagSupport{
-	
+
 	private HashMap hitMap = null;
 	private ArrayList hitArray = null;
-	private String collection = "";
 	private IndexSearcher searcher = null;
 	private Query query = null;
 	private Hits hits = null;
 	private int thispage = 0;
-	private String criteria = ""; 
+	private String criteria = "";
 	private Iterator searchItr = null;
 	private Enumeration fields = null;
 	private HashMap aField = new HashMap();
@@ -55,14 +54,14 @@ public class SearchTag extends BodyTagSupport{
 	private Document doc = null;
 	private ArrayList idxArray = new ArrayList();
 	private MultiSearcher msearcher = null;
-	private final int GERMANAN_ALYZER = 0;
+	private final int GERMAN_ANALYZER = 0;
 	private final int SIMPLE_ANALYZER = 1;
 	private final int STANDARD_ANALYZER = 2;
 	private final int STOP_ANALYZER = 3;
 	private final int WHITESPACE_ANALYZER = 4;
 
 	public int startRow = 0;
-	public int maxRows = 50;  
+	public int maxRows = 50;
 	public int rowCount = 0;
 	public int pageCount = 1;
 	public int hitCount = 0;
@@ -78,15 +77,15 @@ public class SearchTag extends BodyTagSupport{
 	public int[] flagList = new int[0];
 	public String search = "contents";
 	public int analyzerType = STANDARD_ANALYZER;
-	
-	
+
+
 	public int doStartTag() throws JspException{
 		rowCount = startRow + ROWCOUNT++;
 		loopCount++;
 		pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 		return EVAL_BODY_AGAIN;
 	}
-	
+
 	public void doInitBody() throws JspException{
 		doSearch();
 		if(!abort){
@@ -98,9 +97,9 @@ public class SearchTag extends BodyTagSupport{
 			}
 		}
 	}
-	
+
 	public int doAfterBody() throws JspException{
-		
+
 		if(abort){
 			hitCount = 0;
 			loopCount = 0;
@@ -108,7 +107,7 @@ public class SearchTag extends BodyTagSupport{
 			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 			return SKIP_BODY;
 		}
-		
+
 		try{
 			getBodyContent().writeOut(getPreviousOut());
 			getBodyContent().clearBody();
@@ -116,7 +115,7 @@ public class SearchTag extends BodyTagSupport{
 		catch(IOException e){
 			throw new JspException(e.toString());
 		}
-		
+
 		if(searchItr.hasNext()){
 			aField = (HashMap) searchItr.next();
 			rowCount = startRow + ROWCOUNT++;
@@ -126,7 +125,7 @@ public class SearchTag extends BodyTagSupport{
 		}
 		return SKIP_BODY;
 	}
-	
+
 	public int doEndTag() throws JspException{
 
 		if(abort){
@@ -134,11 +133,11 @@ public class SearchTag extends BodyTagSupport{
 			pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 			return EVAL_PAGE;
 		}
-		
+
 		try{
 			HttpServletRequest req = (HttpServletRequest) pageContext.getRequest();
 			String relativePath = req.getRequestURI();
-			firstPage = relativePath + "?startRow=0&maxRows=" + maxRows; 
+			firstPage = relativePath + "?startRow=0&maxRows=" + maxRows;
 			nextPage = relativePath + "?startRow=" + ((startRow + maxRows <= HITCOUNT)? startRow + maxRows : startRow) + "&maxRows=" + maxRows;
 			previousPage = relativePath + "?startRow=" + ((startRow - maxRows >=0)? startRow - maxRows : 0 ) + "&maxRows=" + maxRows;
 			lastPage = relativePath + "?startRow=" + (((HITCOUNT - maxRows) >= 0)? HITCOUNT - maxRows : 0) + "&maxRows=" + maxRows;
@@ -157,16 +156,15 @@ public class SearchTag extends BodyTagSupport{
 		pageContext.setAttribute(getId(),this,PageContext.PAGE_SCOPE);
 		return EVAL_PAGE;
 	}
-	
+
 	public void release(){
 		hitMap = null;
 		hitArray = null;
-		collection = "";
 		searcher = null;
 		query = null;
 		hits = null;
 		thispage = 0;
-		criteria = ""; 
+		criteria = "";
 		searchItr = null;
 		fields = null;
 		aField = new HashMap();
@@ -179,20 +177,20 @@ public class SearchTag extends BodyTagSupport{
 		idxArray = null;
 		msearcher = null;
 	}
-	
+
 	public String getField(String name){
 		if(aField != null){
 			if(aField.containsKey(name)){
-				return aField.get((String) name).toString();
+				return aField.get(name).toString();
 			}
 		}
 		return "";
 	}
-	
+
 	public Set getFields(){
 		return aField.keySet();
 	}
-	
+
 
 	public void addCollection(String name) throws JspException{
 		try {
@@ -204,7 +202,7 @@ public class SearchTag extends BodyTagSupport{
 			}
 		}
 	}
-	
+
 	public void doSearch() throws JspException{
 
 		try {
@@ -228,7 +226,7 @@ public class SearchTag extends BodyTagSupport{
 		if(!abort){
 			// choosing the type of analyzer to use in this search
 			switch (analyzerType) {
-				case GERMANAN_ALYZER:
+				case GERMAN_ANALYZER:
 					if(stopWords.length > 0){
 						analyzer = new GermanAnalyzer(stopWords);
 					}else{
@@ -294,7 +292,7 @@ public class SearchTag extends BodyTagSupport{
 					}
 					abort = true;
 				}
-		
+
 				if(!abort){
 					hitCount = hits.length();
 					HITCOUNT = hits.length();
@@ -347,12 +345,12 @@ public class SearchTag extends BodyTagSupport{
 				}
 			}
 		}
-	}	
-	
+	}
+
 	public void setCriteria(String criteria){
 		this.criteria = criteria;
 	}
-	
+
 	public void setStartRow(String startRow){
 		try{
 			this.startRow = Integer.parseInt(startRow);
@@ -361,11 +359,11 @@ public class SearchTag extends BodyTagSupport{
 			this.startRow = 0;
 		}
 	}
-	
+
 	public void setStartRow(int startRow){
 		this.startRow = startRow;
 	}
-	
+
 	public void setMaxRows(String maxRows){
 		try{
 			this.maxRows = Integer.parseInt(maxRows);
@@ -374,11 +372,11 @@ public class SearchTag extends BodyTagSupport{
 			this.maxRows = 10;
 		}
 	}
-	
+
 	public void setMaxRows(int maxRows){
 		this.maxRows = maxRows;
 	}
-	
+
 	public void setCollection(String collection) throws JspException{
 		idxArray = new ArrayList();
 		String[] collectionArray = collection.split(",");
@@ -386,24 +384,22 @@ public class SearchTag extends BodyTagSupport{
 			this.addCollection(collectionArray[i]);
 		}
 	}
-	
+
 	public void setThrowOnException(String bool){
 		this.throwOnException = new Boolean(bool).booleanValue();
 	}
 	public void setThrowOnException(boolean b) {
 		throwOnException = b;
 	}
-	
+
 	public int getStartRow(){
 		return startRow;
 	}
-	
+
 	public int getMaxRows(){
 		return maxRows;
 	}
-	/**
-	 * @param string -- a comma seperated list of stop words.
-	 */
+
 	public void setStopWords(String swords) throws JspException{
 		Hashtable wordTable = new Hashtable();
 		String[] temp = new String[wordTable.size()];
@@ -428,14 +424,11 @@ public class SearchTag extends BodyTagSupport{
 		}
 		stopWords = temp;
 	}
-	
+
 //	public void setStopWords(String[] swords) throws JspException{
 //		stopWords = swords;
 //	}
 
-	/**
-	 * @param string
-	 */
 	public void setFlagList(String fg) {
 		int[] list = new int[0];
 		if(fg.split(",").length > 0){
@@ -455,33 +448,26 @@ public class SearchTag extends BodyTagSupport{
 		flagList = list;
 	}
 
-	/**
-	 * @param string
-	 */
 	public void setFieldList(String fl) {
 		if(fl.split(",").length > 0){
 			fieldList = fl.split(",");
 		}
 	}
-	/**
-	 * @param string
-	 */
+
 	public void setFieldList(String[] fl) {
 		fieldList = fl;
 	}
 
-	/**
-	 * @param string
-	 */
 	public void setSearch(String string) {
 		search = string;
 	}
 
 	/**
-	 * @param string
+	 * @param atype
+   * @todo this is crying for constants, not string comparisons
 	 */
 	public void setAnalyzerType(String atype) {
-		if(atype.equalsIgnoreCase("GERMANAN_ALYZER")){
+		if(atype.equalsIgnoreCase("GERMAN_ALYZER")){
 			analyzerType = 0;
 		}else if(atype.equalsIgnoreCase("SIMPLE_ANALYZER")){
 			analyzerType = 1;

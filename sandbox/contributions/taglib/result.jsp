@@ -9,7 +9,7 @@
 	</style>
 </head>
 <body>
-<% 
+<%
 	String startRow = "";
 	String maxRows = "";
 	String criteria = "";
@@ -25,8 +25,7 @@
 	String columnthrowOnException = "false";
 	String runOnce = "false";
 	String query = "";
-	
-	try{
+
 		query = request.getQueryString();
 		criteria = request.getParameter("criteria");
 		startRow = request.getParameter("startRow");
@@ -40,18 +39,15 @@
 		fieldthrowOnException = request.getParameter("fieldthrowOnException");
 		columnthrowOnException = request.getParameter("columnthrowOnException");
 		runOnce = request.getParameter("runOnce");
-	}
-	catch(Exception e){
-	}
 %>
 <h3> Search results for "<%= criteria %>"</h3>
 <table border=3>
 
-	<LUCENE:Search id="rs" 
-				throwOnException="<%= throwOnException %>" 
-				collection="<%= collection %>" 
-				criteria="<%= criteria %>" 
-				startRow="<%= startRow %>" 
+	<LUCENE:Search id="rs"
+				throwOnException="<%= throwOnException %>"
+				collection="<%= collection %>"
+				criteria="<%= criteria %>"
+				startRow="<%= startRow %>"
 				maxRows="<%= maxRows %>"
 				analyzerType="<%= analyzerType %>"
 				search="<%= search %>"
@@ -61,7 +57,7 @@
 		<tr>
 		<LUCENE:Column id="header" runOnce="true" throwOnException="false">
 			<% colCount = header.columnCount; %>
-			
+
 			<th><b><%= header.columnName %></b></th>
 		</LUCENE:Column>
 		</tr>
@@ -69,17 +65,17 @@
 		<tr>
 			<td colspan="<%= col.columnCount %>"><b>[<%= rs.loopCount %>][<%= rs.rowCount %>]</b>&nbsp;
 				<LUCENE:Field id="fld" name="<%= col.columnName %>" throwOnException="<%= fieldthrowOnException %>">
-				
+
 					<% if(col.columnName.equalsIgnoreCase("url")){ %>
 						<a href="<%= fld.value %>">
 					<% } %>
-					
+
 					<%= fld.value %>
-					
+
 					<% if(col.columnName.equalsIgnoreCase("url")){ %>
 						</a>
 					<% } %>
-					
+
 				</LUCENE:Field>
 			</td>
 		</tr>
@@ -133,7 +129,7 @@
 		</select>
 		</td>
 	</tr>
-	
+
 </table>
 </body>
 </html>
