@@ -573,7 +573,10 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean isLocked(String directory) throws IOException {
-    return isLocked(FSDirectory.getDirectory(directory, false));
+    Directory dir = FSDirectory.getDirectory(directory, false);
+    boolean result = isLocked(dir);
+    dir.close();
+    return result;
   }
 
   /**
