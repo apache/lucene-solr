@@ -195,15 +195,41 @@ public class BooleanQuery extends Query {
   }
 
   protected Weight createWeight(Searcher searcher) {
+    return new BooleanWeight(searcher);
+  }
+
+  public Query rewrite(IndexReader reader) throws IOException {
     if (clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.elementAt(0);
-      if (!c.prohibited) {			  // just return clause weight
-        Query clone = (Query)c.query.clone();
+      if (!c.prohibited) {			  // just return clause
+        Query clone = (Query)c.query.clone();     // have to clone to boost
         clone.setBoost(getBoost() * clone.getBoost());
-        return clone.createWeight(searcher);
+        return clone;
       }
     }
-    return new BooleanWeight(searcher);
+
+    BooleanQuery clone = (BooleanQuery)this.clone(); // recursively clone
+    boolean changed = false;
+    for (int i = 0 ; i < clauses.size(); i++) {
+      BooleanClause c = (BooleanClause)clauses.elementAt(i);
+      Query q = c.query.rewrite(reader);
+      if (q != c.query) {                         // rewrote
+        changed = true;                           // replace in clone
+        clone.clauses.setElementAt
+          (new BooleanClause(q, c.required, c.prohibited), i);
+      }
+    }
+    if (changed)
+      return clone;                               // clauses rewrote
+    else
+      return this;                                // no clauses rewrote
+  }
+
+
+  public Object clone() {
+    BooleanQuery clone = (BooleanQuery)super.clone();
+    clone.clauses = (Vector)this.clauses.clone();
+    return clone;
   }
 
   /** Prints a user-readable version of this query. */

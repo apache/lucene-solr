@@ -125,11 +125,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     return weight;
   }
 
-  /** Expert: called to re-write queries into primitive queries.
-   *
-   * <p>Only implemented by derived queries, with no {@link
-   * #createWeight(Searcher)} implementatation..
-   */
+  /** Expert: called to re-write queries into primitive queries. */
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }

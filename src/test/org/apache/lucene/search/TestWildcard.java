@@ -101,6 +101,14 @@ public class TestWildcard
         Query query2 = new WildcardQuery(new Term("body", "metal*"));
         Query query3 = new WildcardQuery(new Term("body", "m*tal"));
         Query query4 = new WildcardQuery(new Term("body", "m*tal*"));
+        Query query5 = new WildcardQuery(new Term("body", "m*tals"));
+
+        BooleanQuery query6 = new BooleanQuery();
+        query6.add(query5, false, false);
+
+        BooleanQuery query7 = new BooleanQuery();
+        query7.add(query3, false, false);
+        query7.add(query5, false, false);
 
 	Hits result;
 
@@ -114,6 +122,15 @@ public class TestWildcard
 	assertEquals(1, result.length());
 
 	result = searcher.search(query4);
+	assertEquals(2, result.length());
+
+        result = searcher.search(query5);
+	assertEquals(1, result.length());
+
+        result = searcher.search(query6);
+	assertEquals(1, result.length());
+
+        result = searcher.search(query7);
 	assertEquals(2, result.length());
     }
 
