@@ -95,7 +95,7 @@ public class Explanation implements java.io.Serializable {
     details.add(detail);
   }
 
-  /** Render an explanation as HTML. */
+  /** Render an explanation as text. */
   public String toString() {
     return toString(0);
   }
