@@ -1,57 +1,18 @@
-/* ====================================================================
- * The Apache Software License, Version 1.1
+/**
+ * Copyright 2004 The Apache Software Foundation
  *
- * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.  All
- * rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. The end-user documentation included with the redistribution,
- *    if any, must include the following acknowledgment:
- *       "This product includes software developed by the
- *        Apache Software Foundation (http://www.apache.org/)."
- *    Alternately, this acknowledgment may appear in the software itself,
- *    if and wherever such third-party acknowledgments normally appear.
- *
- * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Lucene" must not be used to endorse or promote products
- *    derived from this software without prior written permission. For
- *    written permission, please contact apache@apache.org.
- *
- * 5. Products derived from this software may not be called "Apache",
- *    "Apache Lucene", nor may "Apache" appear in their name, without
- *    prior written permission of the Apache Software Foundation.
- *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- * ====================================================================
- *
- * This software consists of voluntary contributions made by many
- * individuals on behalf of the Apache Software Foundation.  For more
- * information on the Apache Software Foundation, please see
- * <http://www.apache.org/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 
 options {
   STATIC=false;
@@ -138,8 +99,8 @@ public class QueryParser {
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query	the query string to be parsed.
-   *  @param field	the default field for query terms.
+   *  @param query  the query string to be parsed.
+   *  @param field  the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
    */
@@ -150,7 +111,7 @@ public class QueryParser {
   }
 
   /** Constructs a query parser.
-   *  @param f	the default field for query terms.
+   *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
   public QueryParser(String f, Analyzer a) {
@@ -161,7 +122,7 @@ public class QueryParser {
 
   /** Parses a query string, returning a
    * <a href="lucene.search.Query.html">Query</a>.
-   *  @param query	the query string to be parsed.
+   *  @param query  the query string to be parsed.
    *  @throws ParseException if the parsing fails
    */
   public Query parse(String query) throws ParseException {
@@ -364,7 +325,7 @@ public class QueryParser {
   {
     BooleanQuery query = new BooleanQuery();
     for (int i = 0; i < clauses.size(); i++) {
-	query.add((BooleanClause)clauses.elementAt(i));
+  query.add((BooleanClause)clauses.elementAt(i));
     }
     return query;
   }
@@ -393,7 +354,7 @@ public class QueryParser {
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseWildcardTerms) {
-	termStr = termStr.toLowerCase();
+  termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
     return new WildcardQuery(t);
@@ -425,7 +386,7 @@ public class QueryParser {
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseWildcardTerms) {
-	termStr = termStr.toLowerCase();
+  termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
     return new PrefixQuery(t);
@@ -446,6 +407,22 @@ public class QueryParser {
   {
     Term t = new Term(field, termStr);
     return new FuzzyQuery(t);
+  }
+
+  /**
+   * Returns a String where the escape char has been
+   * removed, or kept only once if there was a double escape.
+   */
+  private String discardEscapeChar(String input) {
+    char[] caSource = input.toCharArray();
+    char[] caDest = new char[caSource.length];
+    int j = 0;
+    for (int i = 0; i < caSource.length; i++) {
+      if ((caSource[i] != '\\') || (i > 0 && caSource[i-1] == '\\')) {
+        caDest[j++]=caSource[i];
+      }
+    }
+    return new String(caDest, 0, j);
   }
 
   public static void main(String[] args) throws Exception {
@@ -572,7 +549,7 @@ Query Query(String field) :
       if (clauses.size() == 1 && firstQuery != null)
         return firstQuery;
       else {
-	return getBooleanQuery(clauses);
+  return getBooleanQuery(clauses);
       }
     }
 }
@@ -584,7 +561,9 @@ Query Clause(String field) : {
 {
   [
     LOOKAHEAD(2)
-    fieldToken=<TERM> <COLON> { field = fieldToken.image; }
+    fieldToken=<TERM> <COLON> {
+      field=discardEscapeChar(fieldToken.image);
+    }
   ]
 
   (
@@ -594,11 +573,11 @@ Query Clause(String field) : {
   )
     {
       if (boost != null) {
-      	float f = (float)1.0;
-	try {
-	  f = Float.valueOf(boost.image).floatValue();
+        float f = (float)1.0;
+  try {
+    f = Float.valueOf(boost.image).floatValue();
           q.setBoost(f);
-	} catch (Exception ignored) { }
+  } catch (Exception ignored) { }
       }
       return q;
     }
@@ -624,15 +603,17 @@ Query Term(String field) : {
      [ <FUZZY> { fuzzy=true; } ]
      [ <CARAT> boost=<NUMBER> [ <FUZZY> { fuzzy=true; } ] ]
      {
+       String termImage=discardEscapeChar(term.image);
        if (wildcard) {
-	 q = getWildcardQuery(field, term.image);
+       q = getWildcardQuery(field, termImage);
        } else if (prefix) {
-         q = getPrefixQuery(field, term.image.substring
-			    (0, term.image.length()-1));
+         q = getPrefixQuery(field,
+           discardEscapeChar(term.image.substring
+          (0, term.image.length()-1)));
        } else if (fuzzy) {
-         q = getFuzzyQuery(field, term.image);
+         q = getFuzzyQuery(field, termImage);
        } else {
-         q = getFieldQuery(field, analyzer, term.image);
+         q = getFieldQuery(field, analyzer, termImage);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
@@ -640,11 +621,16 @@ Query Term(String field) : {
          <RANGEIN_END> )
        [ <CARAT> boost=<NUMBER> ]
         {
-          if (goop1.kind == RANGEIN_QUOTED)
+          if (goop1.kind == RANGEIN_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          if (goop2.kind == RANGEIN_QUOTED)
+          } else {
+            goop1.image = discardEscapeChar(goop1.image);
+          }
+          if (goop2.kind == RANGEIN_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-
+      } else {
+        goop2.image = discardEscapeChar(goop2.image);
+      }
           q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
         }
      | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
@@ -652,10 +638,16 @@ Query Term(String field) : {
          <RANGEEX_END> )
        [ <CARAT> boost=<NUMBER> ]
         {
-          if (goop1.kind == RANGEEX_QUOTED)
+          if (goop1.kind == RANGEEX_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          if (goop2.kind == RANGEEX_QUOTED)
+          } else {
+            goop1.image = discardEscapeChar(goop1.image);
+          }
+          if (goop2.kind == RANGEEX_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+      } else {
+        goop2.image = discardEscapeChar(goop2.image);
+      }
 
           q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
         }
@@ -681,9 +673,9 @@ Query Term(String field) : {
         f = Float.valueOf(boost.image).floatValue();
       }
       catch (Exception ignored) {
-	  /* Should this be handled somehow? (defaults to "no boost", if
-	   * boost number is invalid)
-	   */
+    /* Should this be handled somehow? (defaults to "no boost", if
+     * boost number is invalid)
+     */
       }
 
       // avoid boosting null queries, such as those caused by stop words

@@ -132,7 +132,7 @@ public class QueryParser implements QueryParserConstants {
 
   /**
    * Sets the boolean operator of the QueryParser.
-   * In classic mode (<code>DEFAULT_OPERATOR_OR</mode>) terms without any modifiers
+   * In classic mode (<code>DEFAULT_OPERATOR_OR</code>) terms without any modifiers
    * are considered optional: for example <code>capital of Hungary</code> is equal to
    * <code>capital OR of OR Hungary</code>.<br/>
    * In <code>DEFAULT_OPERATOR_AND</code> terms are considered to be in conjuction: the
@@ -386,6 +386,22 @@ public class QueryParser implements QueryParserConstants {
     return new FuzzyQuery(t);
   }
 
+  /**
+   * Returns a String where the escape char has been
+   * removed, or kept only once if there was a double escape.
+   */
+  private String discardEscapeChar(String input) {
+    char[] caSource = input.toCharArray();
+    char[] caDest = new char[caSource.length];
+    int j = 0;
+    for (int i = 0; i < caSource.length; i++) {
+      if ((caSource[i] != '\\') || (i > 0 && caSource[i-1] == '\\')) {
+        caDest[j++]=caSource[i];
+      }
+    }
+    return new String(caDest, 0, j);
+  }
+
   public static void main(String[] args) throws Exception {
     QueryParser qp = new QueryParser("field",
                            new org.apache.lucene.analysis.SimpleAnalyzer());
@@ -506,7 +522,7 @@ public class QueryParser implements QueryParserConstants {
     if (jj_2_1(2)) {
       fieldToken = jj_consume_token(TERM);
       jj_consume_token(COLON);
-                                field = fieldToken.image;
+        field=discardEscapeChar(fieldToken.image);
     } else {
       ;
     }
@@ -609,15 +625,17 @@ public class QueryParser implements QueryParserConstants {
         jj_la1[10] = jj_gen;
         ;
       }
+       String termImage=discardEscapeChar(term.image);
        if (wildcard) {
-         q = getWildcardQuery(field, term.image);
+             q = getWildcardQuery(field, termImage);
        } else if (prefix) {
-         q = getPrefixQuery(field, term.image.substring
-                            (0, term.image.length()-1));
+         q = getPrefixQuery(field,
+                discardEscapeChar(term.image.substring
+                            (0, term.image.length()-1)));
        } else if (fuzzy) {
-         q = getFuzzyQuery(field, term.image);
+         q = getFuzzyQuery(field, termImage);
        } else {
-         q = getFieldQuery(field, analyzer, term.image);
+         q = getFieldQuery(field, analyzer, termImage);
        }
       break;
     case RANGEIN_START:
@@ -664,11 +682,16 @@ public class QueryParser implements QueryParserConstants {
         jj_la1[14] = jj_gen;
         ;
       }
-          if (goop1.kind == RANGEIN_QUOTED)
+          if (goop1.kind == RANGEIN_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          if (goop2.kind == RANGEIN_QUOTED)
+          } else {
+                goop1.image = discardEscapeChar(goop1.image);
+          }
+          if (goop2.kind == RANGEIN_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-
+                  } else {
+                        goop2.image = discardEscapeChar(goop2.image);
+                  }
           q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
       break;
     case RANGEEX_START:
@@ -715,10 +738,16 @@ public class QueryParser implements QueryParserConstants {
         jj_la1[18] = jj_gen;
         ;
       }
-          if (goop1.kind == RANGEEX_QUOTED)
+          if (goop1.kind == RANGEEX_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          if (goop2.kind == RANGEEX_QUOTED)
+          } else {
+            goop1.image = discardEscapeChar(goop1.image);
+          }
+          if (goop2.kind == RANGEEX_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+                  } else {
+                        goop2.image = discardEscapeChar(goop2.image);
+                  }
 
           q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
       break;
