@@ -1,7 +1,5 @@
 package org.apache.lucene.search;
 
-
-
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -32,8 +30,8 @@ import org.apache.lucene.index.IndexReader;
  * field.
  * 
  * <p>
- * This code borrows heavily from {@link RangeQuery}, but implemented as a Filter
- * (much like {@link DateFilter})
+ * This code borrows heavily from {@link RangeQuery}, but is implemented as a Filter
+ * (much like {@link DateFilter}).
  * </p>
  */
 public class RangeFilter extends Filter {
@@ -50,6 +48,9 @@ public class RangeFilter extends Filter {
      * @param upperTerm The upper bound on this range
      * @param includeLower Does this range include the lower bound?
      * @param includeUpper Does this range include the upper bound?
+     * @throws IllegalArgumentException if both terms are null or if
+     *  lowerTerm is null and includeLower is true (similar for upperTerm
+     *  and includeUpper)
      */
     public RangeFilter(String fieldName, String lowerTerm, String upperTerm,
                        boolean includeLower, boolean includeUpper) {
@@ -74,16 +75,16 @@ public class RangeFilter extends Filter {
     }
     
     /**
-     * Constructs a filter for field <code>field</code> matching
-     * less than or equal to <code>value</code>
+     * Constructs a filter for field <code>fieldName</code> matching
+     * less than or equal to <code>upperTerm</code>.
      */
     public static RangeFilter Less(String fieldName, String upperTerm) {
         return new RangeFilter(fieldName, null, upperTerm, false, true);
     }
 
     /**
-     * Constructs a filter for field <code>field</code> matching
-     * greater than or equal to <code>lower</code>
+     * Constructs a filter for field <code>fieldName</code> matching
+     * greater than or equal to <code>lowerTerm</code>.
      */
     public static RangeFilter More(String fieldName, String lowerTerm) {
         return new RangeFilter(fieldName, lowerTerm, null, true, false);
