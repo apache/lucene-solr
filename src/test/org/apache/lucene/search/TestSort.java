@@ -113,13 +113,13 @@ implements Serializable {
 		IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true);
 		for (int i=0; i<data.length; ++i) {
 			if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
-				Document doc = new Document();          // store, index, token
-				doc.add (new Field ("tracer",   data[i][0], true, false, false));
-				doc.add (new Field ("contents", data[i][1], false, true, true));
-				if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], false, true, false));
-				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], false, true, false));
-				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], false, true, false));
-				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], false, true, false));
+				Document doc = new Document();
+				doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
+				doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.TOKENIZED));
+				if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], Field.Store.NO, Field.Index.UN_TOKENIZED));
+				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.UN_TOKENIZED));
+				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.UN_TOKENIZED));
+				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.UN_TOKENIZED));
 				writer.addDocument (doc);
 			}
 		}

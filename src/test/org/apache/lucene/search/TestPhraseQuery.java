@@ -183,12 +183,12 @@ public class TestPhraseQuery extends TestCase {
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     
     Document doc = new Document();
-    doc.add(new Field("source", "marketing info", true, true, true));
+    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("contents", "foobar", true, true, true));
-    doc.add(new Field("source", "marketing info", true, true, true)); 
+    doc.add(new Field("contents", "foobar", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.TOKENIZED)); 
     writer.addDocument(doc);
     
     writer.optimize();
@@ -213,15 +213,15 @@ public class TestPhraseQuery extends TestCase {
     
     writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     doc = new Document();
-    doc.add(new Field("contents", "map entry woo", true, true, true));
+    doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "woo map entry", true, true, true));
+    doc.add(new Field("contents", "woo map entry", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "map foobarword entry woo", true, true, true));
+    doc.add(new Field("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
 
     writer.optimize();
