@@ -3,7 +3,7 @@ package org.apache.lucene.search;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2001, 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,57 +54,82 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
+import junit.framework.TestCase;
+import org.apache.lucene.util.English;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.RAMDirectory;
 
-/** Expert: Implements scoring for a class of queries. */
-public abstract class Scorer {
-  private Similarity similarity;
+/**
+ * Tests basic search capabilities.
+ *
+ * @author Doug Cutting
+ */
+public class TestBasics extends TestCase {
+  private IndexSearcher searcher;
 
-  /** Constructs a Scorer. */
-  protected Scorer(Similarity similarity) {
-    this.similarity = similarity;
-  }
-
-  /** Returns the Similarity implementation used by this scorer. */
-  public Similarity getSimilarity() {
-    return this.similarity;
-  }
-
-  /** Scores all documents and passes them to a collector. */
-  public void score(HitCollector hc) throws IOException {
-    while (next()) {
-      hc.collect(doc(), score());
+  public void setUp() throws Exception {
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer
+      = new IndexWriter(directory, new SimpleAnalyzer(), true);
+    //writer.infoStream = System.out;
+    StringBuffer buffer = new StringBuffer();
+    for (int i = 0; i < 1000; i++) {
+      Document doc = new Document();
+      doc.add(Field.Text("field", English.intToEnglish(i)));
+      writer.addDocument(doc);
     }
+
+    writer.close();
+
+    searcher = new IndexSearcher(directory);
   }
 
-  /** Advance to the next document matching the query.  Returns true iff there
-   * is another match. */
-  public abstract boolean next() throws IOException;
+  public void testTerm() throws Exception {
+    Query query = new TermQuery(new Term("field", "seventy"));
+    Hits hits = searcher.search(query);
+    assertEquals(100, hits.length());
+  }
 
-  /** Returns the current document number.  Initially invalid, until {@link
-   * #next()} is called the first time. */
-  public abstract int doc();
+  public void testTerm2() throws Exception {
+    Query query = new TermQuery(new Term("field", "seventish"));
+    Hits hits = searcher.search(query);
+    assertEquals(0, hits.length());
+  }
 
-  /** Returns the score of the current document.  Initially invalid, until
-   * {@link #next()} is called the first time. */
-  public abstract float score() throws IOException;
+  public void testPhrase() throws Exception {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "seventy"));
+    query.add(new Term("field", "seven"));
+    Hits hits = searcher.search(query);
+    assertEquals(10, hits.length());
+  }
 
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
-   *   boolean skipTo(int target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > doc());
-   *     return true;
-   *   }
-   * </pre>
-   * Most implementations are considerably more efficient than that.
-   */
-  public abstract boolean skipTo(int target) throws IOException;
+  public void testPhrase2() throws Exception {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "seventish"));
+    query.add(new Term("field", "sevenon"));
+    Hits hits = searcher.search(query);
+    assertEquals(0, hits.length());
+  }
 
-  /** Returns an explanation of the score for <code>doc</code>. */
-  public abstract Explanation explain(int doc) throws IOException;
+  public void testBoolean() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("field", "seventy")), true, false);
+    query.add(new TermQuery(new Term("field", "seven")), true, false);
+    Hits hits = searcher.search(query);
+    assertEquals(19, hits.length());
+  }
+
+  public void testBoolean2() throws Exception {
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("field", "sevento")), true, false);
+    query.add(new TermQuery(new Term("field", "sevenly")), true, false);
+    Hits hits = searcher.search(query);
+    assertEquals(0, hits.length());
+  }
 
 }

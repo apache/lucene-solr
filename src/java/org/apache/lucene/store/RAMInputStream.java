@@ -1,9 +1,9 @@
-package org.apache.lucene.search;
+package org.apache.lucene.store;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2001, 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,57 +54,42 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
+/**
+ * A memory-resident {@link InputStream} implementation.
+ *
+ * @version $Id$
+ */
 
-/** Expert: Implements scoring for a class of queries. */
-public abstract class Scorer {
-  private Similarity similarity;
+class RAMInputStream extends InputStream implements Cloneable {
+  private RAMFile file;
+  private int pointer = 0;
 
-  /** Constructs a Scorer. */
-  protected Scorer(Similarity similarity) {
-    this.similarity = similarity;
+  public RAMInputStream(RAMFile f) {
+    file = f;
+    length = file.length;
   }
 
-  /** Returns the Similarity implementation used by this scorer. */
-  public Similarity getSimilarity() {
-    return this.similarity;
-  }
-
-  /** Scores all documents and passes them to a collector. */
-  public void score(HitCollector hc) throws IOException {
-    while (next()) {
-      hc.collect(doc(), score());
+  public void readInternal(byte[] dest, int destOffset, int len) {
+    int remainder = len;
+    int start = pointer;
+    while (remainder != 0) {
+      int bufferNumber = start/BUFFER_SIZE;
+      int bufferOffset = start%BUFFER_SIZE;
+      int bytesInBuffer = BUFFER_SIZE - bufferOffset;
+      int bytesToCopy = bytesInBuffer >= remainder ? remainder : bytesInBuffer;
+      byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
+      System.arraycopy(buffer, bufferOffset, dest, destOffset, bytesToCopy);
+      destOffset += bytesToCopy;
+      start += bytesToCopy;
+      remainder -= bytesToCopy;
     }
+    pointer += len;
   }
 
-  /** Advance to the next document matching the query.  Returns true iff there
-   * is another match. */
-  public abstract boolean next() throws IOException;
+  public void close() {
+  }
 
-  /** Returns the current document number.  Initially invalid, until {@link
-   * #next()} is called the first time. */
-  public abstract int doc();
-
-  /** Returns the score of the current document.  Initially invalid, until
-   * {@link #next()} is called the first time. */
-  public abstract float score() throws IOException;
-
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
-   *   boolean skipTo(int target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > doc());
-   *     return true;
-   *   }
-   * </pre>
-   * Most implementations are considerably more efficient than that.
-   */
-  public abstract boolean skipTo(int target) throws IOException;
-
-  /** Returns an explanation of the score for <code>doc</code>. */
-  public abstract Explanation explain(int doc) throws IOException;
-
+  public void seekInternal(long pos) {
+    pointer = (int)pos;
+  }
 }

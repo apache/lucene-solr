@@ -109,4 +109,11 @@ extends SegmentTermDocs implements TermPositions {
     throw new UnsupportedOperationException();
   }
 
+
+  /** Called by super.skipTo(). */
+  protected void skipProx(long proxPointer) throws IOException {
+    proxStream.seek(proxPointer);
+    proxCount = 0;
+  }
+
 }

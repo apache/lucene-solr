@@ -76,14 +76,17 @@ final class BooleanScorer extends Scorer {
 
   static final class SubScorer {
     public Scorer scorer;
+    public boolean done;
     public boolean required = false;
     public boolean prohibited = false;
     public HitCollector collector;
     public SubScorer next;
 
     public SubScorer(Scorer scorer, boolean required, boolean prohibited,
-		     HitCollector collector, SubScorer next) {
+		     HitCollector collector, SubScorer next)
+      throws IOException {
       this.scorer = scorer;
+      this.done = !scorer.next();
       this.required = required;
       this.prohibited = prohibited;
       this.collector = collector;
@@ -91,7 +94,8 @@ final class BooleanScorer extends Scorer {
     }
   }
 
-  final void add(Scorer scorer, boolean required, boolean prohibited) {
+  final void add(Scorer scorer, boolean required, boolean prohibited)
+    throws IOException {
     int mask = 0;
     if (required || prohibited) {
       if (nextMask == 0)
@@ -120,17 +124,45 @@ final class BooleanScorer extends Scorer {
       coordFactors[i] = getSimilarity().coord(i, maxCoord-1);
   }
 
-  public final void score(HitCollector results, int maxDoc)
-    throws IOException {
+  private int end;
+  private Bucket current;
+
+  public int doc() { return current.doc; }
+
+  public boolean next() throws IOException {
+    boolean more = false;
+    do {
+      while (bucketTable.first != null) {         // more queued
+        current = bucketTable.first;
+        bucketTable.first = current.next;         // pop the queue
+
+        // check prohibited & required
+        if ((current.bits & prohibitedMask) == 0 && 
+            (current.bits & requiredMask) == requiredMask) {
+          return true;
+        }
+      }
+
+      // refill the queue
+      end += BucketTable.SIZE;
+      for (SubScorer sub = scorers; sub != null; sub = sub.next) {
+        Scorer scorer = sub.scorer;
+        while (!sub.done && scorer.doc() < end) {
+          sub.collector.collect(scorer.doc(), scorer.score());
+          sub.done = !scorer.next();
+        }
+        if (!sub.done) {
+          more  = true;
+        }
+      }
+    } while (bucketTable.first != null | more);
+    return false;
+  }
+
+  public float score() throws IOException {
     if (coordFactors == null)
       computeCoordFactors();
-
-    while (currentDoc < maxDoc) {
-      currentDoc = Math.min(currentDoc+BucketTable.SIZE, maxDoc);
-      for (SubScorer t = scorers; t != null; t = t.next)
-	t.scorer.score(t.collector, currentDoc);
-      bucketTable.collectHits(results);
-    }
+    return current.score * coordFactors[current.coord];
   }
 
   static final class Bucket {
@@ -196,7 +228,7 @@ final class BooleanScorer extends Scorer {
 	bucket.score = score;			  // initialize score
 	bucket.bits = mask;			  // initialize mask
 	bucket.coord = 1;			  // initialize coord
-	
+
 	bucket.next = table.first;		  // push onto valid list
 	table.first = bucket;
       } else {					  // valid bucket
@@ -205,6 +237,10 @@ final class BooleanScorer extends Scorer {
 	bucket.coord++;				  // increment coord
       }
     }
+  }
+
+  public boolean skipTo(int target) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   public Explanation explain(int doc) throws IOException {

@@ -1,9 +1,9 @@
-package org.apache.lucene.search;
+package org.apache.lucene.store;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2001, 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,55 +56,90 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-/** Expert: Implements scoring for a class of queries. */
-public abstract class Scorer {
-  private Similarity similarity;
+/**
+ * A memory-resident {@link OutputStream} implementation.
+ *
+ * @version $Id$
+ */
 
-  /** Constructs a Scorer. */
-  protected Scorer(Similarity similarity) {
-    this.similarity = similarity;
+public class RAMOutputStream extends OutputStream {
+  private RAMFile file;
+  private int pointer = 0;
+
+  /** Construct an empty output buffer. */
+  public RAMOutputStream() {
+    this(new RAMFile());
   }
 
-  /** Returns the Similarity implementation used by this scorer. */
-  public Similarity getSimilarity() {
-    return this.similarity;
+  RAMOutputStream(RAMFile f) {
+    file = f;
   }
 
-  /** Scores all documents and passes them to a collector. */
-  public void score(HitCollector hc) throws IOException {
-    while (next()) {
-      hc.collect(doc(), score());
+  /** Copy the current contents of this buffer to the named output. */
+  public void writeTo(OutputStream out) throws IOException {
+    flush();
+    final long end = file.length;
+    long pos = 0;
+    int buffer = 0;
+    while (pos < end) {
+      int length = BUFFER_SIZE;
+      long nextPos = pos + length;
+      if (nextPos > end) {                        // at the last buffer
+        length = (int)(end - pos);
+      }
+      out.writeBytes((byte[])file.buffers.elementAt(buffer++), length);
+      pos = nextPos;
     }
   }
 
-  /** Advance to the next document matching the query.  Returns true iff there
-   * is another match. */
-  public abstract boolean next() throws IOException;
+  /** Resets this to an empty buffer. */
+  public void reset() {
+    try {
+      seek(0);
+    } catch (IOException e) {                     // should never happen
+      throw new RuntimeException(e.toString());
+    }
 
-  /** Returns the current document number.  Initially invalid, until {@link
-   * #next()} is called the first time. */
-  public abstract int doc();
+    file.length = 0;
+  }
 
-  /** Returns the score of the current document.  Initially invalid, until
-   * {@link #next()} is called the first time. */
-  public abstract float score() throws IOException;
+  public void flushBuffer(byte[] src, int len) {
+    int bufferNumber = pointer/BUFFER_SIZE;
+    int bufferOffset = pointer%BUFFER_SIZE;
+    int bytesInBuffer = BUFFER_SIZE - bufferOffset;
+    int bytesToCopy = bytesInBuffer >= len ? len : bytesInBuffer;
 
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
-   *   boolean skipTo(int target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > doc());
-   *     return true;
-   *   }
-   * </pre>
-   * Most implementations are considerably more efficient than that.
-   */
-  public abstract boolean skipTo(int target) throws IOException;
+    if (bufferNumber == file.buffers.size())
+      file.buffers.addElement(new byte[BUFFER_SIZE]);
 
-  /** Returns an explanation of the score for <code>doc</code>. */
-  public abstract Explanation explain(int doc) throws IOException;
+    byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
+    System.arraycopy(src, 0, buffer, bufferOffset, bytesToCopy);
 
+    if (bytesToCopy < len) {			  // not all in one buffer
+      int srcOffset = bytesToCopy;
+      bytesToCopy = len - bytesToCopy;		  // remaining bytes
+      bufferNumber++;
+      if (bufferNumber == file.buffers.size())
+        file.buffers.addElement(new byte[BUFFER_SIZE]);
+      buffer = (byte[])file.buffers.elementAt(bufferNumber);
+      System.arraycopy(src, srcOffset, buffer, 0, bytesToCopy);
+    }
+    pointer += len;
+    if (pointer > file.length)
+      file.length = pointer;
+
+    file.lastModified = System.currentTimeMillis();
+  }
+
+  public void close() throws IOException {
+    super.close();
+  }
+
+  public void seek(long pos) throws IOException {
+    super.seek(pos);
+    pointer = (int)pos;
+  }
+  public long length() {
+    return file.length;
+  }
 }

@@ -68,18 +68,30 @@ final class PhrasePositions {
   PhrasePositions(TermPositions t, int o) throws IOException {
     tp = t;
     offset = o;
-    next();
   }
 
-  final void next() throws IOException {	  // increments to next doc
+  final boolean next() throws IOException {	  // increments to next doc
     if (!tp.next()) {
       tp.close();				  // close stream
       doc = Integer.MAX_VALUE;			  // sentinel value
-      return;
+      return false;
     }
     doc = tp.doc();
     position = 0;
+    return true;
   }
+
+  final boolean skipTo(int target) throws IOException {
+    if (!tp.skipTo(target)) {
+      tp.close();				  // close stream
+      doc = Integer.MAX_VALUE;			  // sentinel value
+      return false;
+    }
+    doc = tp.doc();
+    position = 0;
+    return true;
+  }
+
 
   final void firstPosition() throws IOException {
     count = tp.freq();				  // read first pos

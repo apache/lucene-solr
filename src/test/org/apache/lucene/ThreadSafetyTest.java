@@ -54,6 +54,7 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
+import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
@@ -93,7 +94,7 @@ class ThreadSafetyTest {
           Document d = new Document();
           int n = RANDOM.nextInt();
           d.add(Field.Keyword("id", Integer.toString(n)));
-          d.add(Field.UnStored("contents", intToEnglish(n)));
+          d.add(Field.UnStored("contents", English.intToEnglish(n)));
           System.out.println("Adding " + n);
           
           // Switch between single and multiple file segments
@@ -151,7 +152,7 @@ class ThreadSafetyTest {
       throws Exception {
       System.out.println("Searching for " + n);
       Hits hits =
-        searcher.search(QueryParser.parse(intToEnglish(n), "contents",
+        searcher.search(QueryParser.parse(English.intToEnglish(n), "contents",
                                           ANALYZER));
       System.out.println("Search for " + n + ": total=" + hits.length());
       for (int j = 0; j < Math.min(3, hits.length()); j++) {
@@ -196,77 +197,5 @@ class ThreadSafetyTest {
 
     SearcherThread searcherThread3 = new SearcherThread(true);
     searcherThread3.start();
-  }
-
-  private static String intToEnglish(int i) {
-    StringBuffer result = new StringBuffer();
-    intToEnglish(i, result);
-    return result.toString();
-  }
-
-  private static void intToEnglish(int i, StringBuffer result) {
-    if (i < 0) {
-      result.append("minus ");
-      i = -i;
-    }
-    if (i >= 1000000000) {			  // billions
-      intToEnglish(i/1000000000, result);
-      result.append("billion, ");
-      i = i%1000000000;
-    }
-    if (i >= 1000000) {				  // millions
-      intToEnglish(i/1000000, result);
-      result.append("million, ");
-      i = i%1000000;
-    }
-    if (i >= 1000) {				  // thousands
-      intToEnglish(i/1000, result);
-      result.append("thousand, ");
-      i = i%1000;
-    }
-    if (i >= 100) {				  // hundreds
-      intToEnglish(i/100, result);
-      result.append("hundred ");
-      i = i%100;
-    }
-    if (i >= 20) {
-      switch (i/10) {
-      case 9 : result.append("ninety"); break;
-      case 8 : result.append("eighty"); break;
-      case 7 : result.append("seventy"); break;
-      case 6 : result.append("sixty"); break;
-      case 5 : result.append("fifty"); break;
-      case 4 : result.append("forty"); break;
-      case 3 : result.append("thirty"); break;
-      case 2 : result.append("twenty"); break;
-      }
-      i = i%10;
-      if (i == 0)
-        result.append(" ");
-      else 
-        result.append("-");
-    }
-    switch (i) {
-    case 19 : result.append("nineteen "); break;
-    case 18 : result.append("eighteen "); break;
-    case 17 : result.append("seventeen "); break;
-    case 16 : result.append("sixteen "); break;
-    case 15 : result.append("fifteen "); break;
-    case 14 : result.append("fourteen "); break;
-    case 13 : result.append("thirteen "); break;
-    case 12 : result.append("twelve "); break;
-    case 11 : result.append("eleven "); break;
-    case 10 : result.append("ten "); break;
-    case 9 : result.append("nine "); break;
-    case 8 : result.append("eight "); break;
-    case 7 : result.append("seven "); break;
-    case 6 : result.append("six "); break;
-    case 5 : result.append("five "); break;
-    case 4 : result.append("four "); break;
-    case 3 : result.append("three "); break;
-    case 2 : result.append("two "); break;
-    case 1 : result.append("one "); break;
-    case 0 : result.append(""); break;
-    }
   }
 }

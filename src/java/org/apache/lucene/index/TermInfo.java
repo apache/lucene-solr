@@ -62,6 +62,7 @@ final class TermInfo {
 
   long freqPointer = 0;
   long proxPointer = 0;
+  int skipOffset;
 
   TermInfo() {}
 
@@ -75,17 +76,21 @@ final class TermInfo {
     docFreq = ti.docFreq;
     freqPointer = ti.freqPointer;
     proxPointer = ti.proxPointer;
+    skipOffset = ti.skipOffset;
   }
 
-  final void set(int df, long fp, long pp) {
-    docFreq = df;
-    freqPointer = fp;
-    proxPointer = pp;
+  final void set(int docFreq,
+                 long freqPointer, long proxPointer, int skipOffset) {
+    this.docFreq = docFreq;
+    this.freqPointer = freqPointer;
+    this.proxPointer = proxPointer;
+    this.skipOffset = skipOffset;
   }
 
   final void set(TermInfo ti) {
     docFreq = ti.docFreq;
     freqPointer = ti.freqPointer;
     proxPointer = ti.proxPointer;
+    skipOffset = ti.skipOffset;
   }
 }

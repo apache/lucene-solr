@@ -140,7 +140,7 @@ public class IndexSearcher extends Searcher {
             hq.insert(new ScoreDoc(doc, score));
 	  }
 	}
-      }, reader.maxDoc());
+      });
 
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
@@ -180,7 +180,7 @@ public class IndexSearcher extends Searcher {
     Scorer scorer = query.weight(this).scorer(reader);
     if (scorer == null)
       return;
-    scorer.score(collector, reader.maxDoc());
+    scorer.score(collector);
   }
 
   public Query rewrite(Query original) throws IOException {

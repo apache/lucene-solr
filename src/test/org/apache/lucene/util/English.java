@@ -1,9 +1,9 @@
-package org.apache.lucene.search;
+package org.apache.lucene.util;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2001, 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,57 +54,87 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
 
-/** Expert: Implements scoring for a class of queries. */
-public abstract class Scorer {
-  private Similarity similarity;
+public class English {
 
-  /** Constructs a Scorer. */
-  protected Scorer(Similarity similarity) {
-    this.similarity = similarity;
+  public static String intToEnglish(int i) {
+    StringBuffer result = new StringBuffer();
+    intToEnglish(i, result);
+    return result.toString();
   }
 
-  /** Returns the Similarity implementation used by this scorer. */
-  public Similarity getSimilarity() {
-    return this.similarity;
-  }
-
-  /** Scores all documents and passes them to a collector. */
-  public void score(HitCollector hc) throws IOException {
-    while (next()) {
-      hc.collect(doc(), score());
+  public static void intToEnglish(int i, StringBuffer result) {
+    if (i == 0) {
+      result.append("zero");
+      return;
+    }
+    if (i < 0) {
+      result.append("minus ");
+      i = -i;
+    }
+    if (i >= 1000000000) {			  // billions
+      intToEnglish(i/1000000000, result);
+      result.append("billion, ");
+      i = i%1000000000;
+    }
+    if (i >= 1000000) {				  // millions
+      intToEnglish(i/1000000, result);
+      result.append("million, ");
+      i = i%1000000;
+    }
+    if (i >= 1000) {				  // thousands
+      intToEnglish(i/1000, result);
+      result.append("thousand, ");
+      i = i%1000;
+    }
+    if (i >= 100) {				  // hundreds
+      intToEnglish(i/100, result);
+      result.append("hundred ");
+      i = i%100;
+    }
+    if (i >= 20) {
+      switch (i/10) {
+      case 9 : result.append("ninety"); break;
+      case 8 : result.append("eighty"); break;
+      case 7 : result.append("seventy"); break;
+      case 6 : result.append("sixty"); break;
+      case 5 : result.append("fifty"); break;
+      case 4 : result.append("forty"); break;
+      case 3 : result.append("thirty"); break;
+      case 2 : result.append("twenty"); break;
+      }
+      i = i%10;
+      if (i == 0)
+        result.append(" ");
+      else 
+        result.append("-");
+    }
+    switch (i) {
+    case 19 : result.append("nineteen "); break;
+    case 18 : result.append("eighteen "); break;
+    case 17 : result.append("seventeen "); break;
+    case 16 : result.append("sixteen "); break;
+    case 15 : result.append("fifteen "); break;
+    case 14 : result.append("fourteen "); break;
+    case 13 : result.append("thirteen "); break;
+    case 12 : result.append("twelve "); break;
+    case 11 : result.append("eleven "); break;
+    case 10 : result.append("ten "); break;
+    case 9 : result.append("nine "); break;
+    case 8 : result.append("eight "); break;
+    case 7 : result.append("seven "); break;
+    case 6 : result.append("six "); break;
+    case 5 : result.append("five "); break;
+    case 4 : result.append("four "); break;
+    case 3 : result.append("three "); break;
+    case 2 : result.append("two "); break;
+    case 1 : result.append("one "); break;
+    case 0 : result.append(""); break;
     }
   }
 
-  /** Advance to the next document matching the query.  Returns true iff there
-   * is another match. */
-  public abstract boolean next() throws IOException;
-
-  /** Returns the current document number.  Initially invalid, until {@link
-   * #next()} is called the first time. */
-  public abstract int doc();
-
-  /** Returns the score of the current document.  Initially invalid, until
-   * {@link #next()} is called the first time. */
-  public abstract float score() throws IOException;
-
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
-   *   boolean skipTo(int target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > doc());
-   *     return true;
-   *   }
-   * </pre>
-   * Most implementations are considerably more efficient than that.
-   */
-  public abstract boolean skipTo(int target) throws IOException;
-
-  /** Returns an explanation of the score for <code>doc</code>. */
-  public abstract Explanation explain(int doc) throws IOException;
+  public static void main(String[] args) {
+    System.out.println(intToEnglish(Integer.parseInt(args[0])));
+  }
 
 }

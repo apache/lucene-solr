@@ -291,7 +291,7 @@ final class DocumentWriter {
         Posting posting = postings[i];
 
         // add an entry to the dictionary with pointers to prox and freq files
-        ti.set(1, freq.getFilePointer(), prox.getFilePointer());
+        ti.set(1, freq.getFilePointer(), prox.getFilePointer(), -1);
         tis.add(posting.term, ti);
 
         // add an entry to the freq file

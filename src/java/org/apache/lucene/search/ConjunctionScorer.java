@@ -3,7 +3,7 @@ package org.apache.lucene.search;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,106 +55,101 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.*;
+import org.apache.lucene.index.*;
 
-import org.apache.lucene.index.TermDocs;
+/** Scorer for conjunctions, sets of queries, all of which are required. */
+final class ConjunctionScorer extends Scorer {
+  private LinkedList scorers = new LinkedList();
+  private boolean firstTime = true;
+  private boolean more = true;
+  private float coord;
 
-final class TermScorer extends Scorer {
-  private Weight weight;
-  private TermDocs termDocs;
-  private byte[] norms;
-  private float weightValue;
-  private int doc;
-
-  private final int[] docs = new int[32];	  // buffered doc numbers
-  private final int[] freqs = new int[32];	  // buffered term freqs
-  private int pointer;
-  private int pointerMax;
-
-  private static final int SCORE_CACHE_SIZE = 32;
-  private float[] scoreCache = new float[SCORE_CACHE_SIZE];
-
-  TermScorer(Weight weight, TermDocs td, Similarity similarity,
-             byte[] norms) throws IOException {
+  public ConjunctionScorer(Similarity similarity) {
     super(similarity);
-    this.weight = weight;
-    this.termDocs = td;
-    this.norms = norms;
-    this.weightValue = weight.getValue();
-
-    for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-      scoreCache[i] = getSimilarity().tf(i) * weightValue;
   }
 
-  public int doc() { return doc; }
+  final void add(Scorer scorer) throws IOException {
+    scorers.addLast(scorer);
+  }
+
+  private Scorer first() { return (Scorer)scorers.getFirst(); }
+  private Scorer last() { return (Scorer)scorers.getLast(); }
+
+  public int doc() { return first().doc(); }
 
   public boolean next() throws IOException {
-    pointer++;
-    if (pointer >= pointerMax) {
-      pointerMax = termDocs.read(docs, freqs);    // refill buffer
-      if (pointerMax != 0) {
-        pointer = 0;
-      } else {
-        termDocs.close();			  // close stream
-        doc = Integer.MAX_VALUE;		  // set to sentinel value
-        return false;
-      }
-    } 
-    doc = docs[pointer];
-    return true;
-  }
+    if (firstTime) {
+      init();
+    } else if (more) {
+      more = last().next();                       // trigger further scanning
+    }
 
-  public float score() throws IOException {
-    int f = freqs[pointer];
-    float raw =                                   // compute tf(f)*weight
-      f < SCORE_CACHE_SIZE			  // check cache
-      ? scoreCache[f]                             // cache hit
-      : getSimilarity().tf(f)*weightValue;        // cache miss
-
-    return raw * Similarity.decodeNorm(norms[doc]); // normalize for field
+    while (more && first().doc() < last().doc()) { // find doc w/ all clauses
+      more = first().skipTo(last().doc());      // skip first upto last
+      scorers.addLast(scorers.removeFirst());   // move first to last
+    }
+    
+    return more;                                // found a doc with all clauses
   }
 
   public boolean skipTo(int target) throws IOException {
-    // first scan in cache
-    for (pointer++; pointer < pointerMax; pointer++) {
-      if (!(target > docs[pointer])) {
-        doc = docs[pointer];
-        return true;
-      }
+    Iterator i = scorers.iterator();
+    while (more && i.hasNext()) {
+      more = ((Scorer)i.next()).skipTo(target);
     }
+    if (more)
+      sortScorers();                              // re-sort scorers
+    return more;
+  }
 
-    // not found in cache, seek underlying stream
-    boolean result = termDocs.skipTo(target);
-    if (result) {
-      pointerMax = 1;
-      pointer = 0;
-      docs[pointer] = doc = termDocs.doc();
-      freqs[pointer] = termDocs.freq();
-    } else {
-      doc = Integer.MAX_VALUE;
+  public float score() throws IOException {
+    float score = 0.0f;                           // sum scores
+    Iterator i = scorers.iterator();
+    while (i.hasNext())
+      score += ((Scorer)i.next()).score();
+    score *= coord;
+    return score;
+  }
+
+  private void init() throws IOException {
+    more = scorers.size() > 0;
+
+    // compute coord factor
+    coord = getSimilarity().coord(scorers.size(), scorers.size());
+
+    // move each scorer to its first entry
+    Iterator i = scorers.iterator();
+    while (more && i.hasNext()) {
+      more = ((Scorer)i.next()).next();
     }
-    return result;
+    if (more)
+      sortScorers();                              // initial sort of list
+
+    firstTime = false;
+  }
+
+  private void sortScorers() throws IOException {
+    // move scorers to an array
+    Scorer[] array = (Scorer[])scorers.toArray(new Scorer[scorers.size()]);
+    scorers.clear();                              // empty the list
+
+    Arrays.sort(array, new Comparator() {         // sort the array
+        public int compare(Object o1, Object o2) {
+          return ((Scorer)o1).doc() - ((Scorer)o2).doc();
+        }
+        public boolean equals(Object o1, Object o2) {
+          return ((Scorer)o1).doc() == ((Scorer)o2).doc();
+        }
+      });
+    
+    for (int i = 0; i < array.length; i++) {
+      scorers.addLast(array[i]);                  // re-build list, now sorted
+    }
   }
 
   public Explanation explain(int doc) throws IOException {
-    TermQuery query = (TermQuery)weight.getQuery();
-    Explanation tfExplanation = new Explanation();
-    int tf = 0;
-    while (pointer < pointerMax) {
-      if (docs[pointer] == doc)
-        tf = freqs[pointer];
-      pointer++;
-    }
-    if (tf == 0) {
-      while (termDocs.next()) {
-        if (termDocs.doc() == doc) {
-          tf = termDocs.freq();
-        }
-      }
-    }
-    termDocs.close();
-    tfExplanation.setValue(getSimilarity().tf(tf));
-    tfExplanation.setDescription("tf(termFreq("+query.getTerm()+")="+tf+")");
-    
-    return tfExplanation;
+    throw new UnsupportedOperationException();
   }
+
 }

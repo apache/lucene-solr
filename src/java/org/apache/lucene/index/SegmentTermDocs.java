@@ -61,16 +61,27 @@ import org.apache.lucene.store.InputStream;
 class SegmentTermDocs implements TermDocs {
   protected SegmentReader parent;
   private InputStream freqStream;
-  private int freqCount;
+  private int count;
+  private int df;
   private BitVector deletedDocs;
   int doc = 0;
   int freq;
+
+  private int skipInterval;
+  private int skipCount;
+  private InputStream skipStream;
+  private int skipDoc;
+  private long freqPointer;
+  private long proxPointer;
+  private long skipPointer;
+  private boolean haveSkipped;
 
   SegmentTermDocs(SegmentReader parent)
     throws IOException {
     this.parent = parent;
     this.freqStream = (InputStream)parent.freqStream.clone();
     this.deletedDocs = parent.deletedDocs;
+    this.skipInterval = parent.tis.getSkipInterval();
   }
   
   public void seek(Term term) throws IOException {
@@ -88,12 +99,19 @@ class SegmentTermDocs implements TermDocs {
   }
   
   void seek(TermInfo ti) throws IOException {
+    count = 0;
     if (ti == null) {
-      freqCount = 0;
+      df = 0;
     } else {
-      freqCount = ti.docFreq;
+      df = ti.docFreq;
       doc = 0;
-      freqStream.seek(ti.freqPointer);
+      skipDoc = 0;
+      skipCount = 0;
+      freqPointer = ti.freqPointer;
+      proxPointer = ti.proxPointer;
+      skipPointer = freqPointer + ti.skipOffset;
+      freqStream.seek(freqPointer);
+      haveSkipped = false;
     }
   }
   
@@ -109,7 +127,7 @@ class SegmentTermDocs implements TermDocs {
 
   public boolean next() throws IOException {
     while (true) {
-      if (freqCount == 0)
+      if (count == df)
 	return false;
 
       int docCode = freqStream.readVInt();
@@ -119,7 +137,7 @@ class SegmentTermDocs implements TermDocs {
       else
 	freq = freqStream.readVInt();		  // else read freq
  
-      freqCount--;
+      count++;
     
       if (deletedDocs == null || !deletedDocs.get(doc))
 	break;
@@ -131,9 +149,9 @@ class SegmentTermDocs implements TermDocs {
   /** Optimized implementation. */
   public int read(final int[] docs, final int[] freqs)
       throws IOException {
-    final int end = docs.length;
+    final int length = docs.length;
     int i = 0;
-    while (i < end && freqCount > 0) {
+    while (i < length && count < df) {
 
       // manually inlined call to next() for speed
       final int docCode = freqStream.readVInt();
@@ -142,7 +160,7 @@ class SegmentTermDocs implements TermDocs {
 	freq = 1;				  // freq is one
       else
 	freq = freqStream.readVInt();		  // else read freq
-      freqCount--;
+      count++;
    
       if (deletedDocs == null || !deletedDocs.get(doc)) {
 	docs[i] = doc;
@@ -153,12 +171,61 @@ class SegmentTermDocs implements TermDocs {
     return i;
   }
 
-  /** As yet unoptimized implementation. */
+  /** Overridden by SegmentTermPositions to skip in prox stream. */
+  protected void skipProx(long proxPointer) throws IOException {}
+
+  /** Optimized implementation. */
   public boolean skipTo(int target) throws IOException {
+    if (df > skipInterval) {                      // optimized case
+
+      if (skipStream == null)
+        skipStream = (InputStream)freqStream.clone(); // lazily clone
+
+      if (!haveSkipped) {                          // lazily seek skip stream
+        skipStream.seek(skipPointer);
+        haveSkipped = true;
+      }
+
+      // scan skip data
+      int lastSkipDoc = skipDoc;
+      long lastFreqPointer = freqStream.getFilePointer();
+      long lastProxPointer = -1;
+      int numSkipped = -1 -(count % skipInterval);
+      
+      while (target > skipDoc) {
+        lastSkipDoc = skipDoc;
+        lastFreqPointer = freqPointer;
+        lastProxPointer = proxPointer;
+        if (skipDoc >= doc)
+          numSkipped += skipInterval;
+        
+        if ((count + numSkipped + skipInterval) > df)
+          break;                                  // no more skips
+
+        skipDoc += skipStream.readVInt();
+        freqPointer += skipStream.readVInt();
+        proxPointer += skipStream.readVInt();
+        
+        skipCount++;
+      }
+      
+      // if we found something to skip, then skip it
+      if (lastFreqPointer > freqStream.getFilePointer()) {
+        freqStream.seek(lastFreqPointer);
+        skipProx(lastProxPointer);
+        
+        doc = lastSkipDoc;
+        count += numSkipped;
+      }
+
+    }
+
+    // done skipping, now just scan
     do {
       if (!next())
 	return false;
     } while (target > doc);
     return true;
   }
+
 }

@@ -60,14 +60,17 @@ import org.apache.lucene.store.InputStream;
 final class SegmentTermEnum extends TermEnum implements Cloneable {
   private InputStream input;
   private FieldInfos fieldInfos;
-  int size;
-  int position = -1;
+  long size;
+  long position = -1;
 
   private Term term = new Term("", "");
   private TermInfo termInfo = new TermInfo();
 
-  boolean isIndex = false;
+  private int format;
+  private boolean isIndex = false;
   long indexPointer = 0;
+  int indexInterval;
+  int skipInterval;
   Term prev;
 
   private char[] buffer = {};
@@ -76,8 +79,34 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
        throws IOException {
     input = i;
     fieldInfos = fis; 
-    size = input.readInt();
     isIndex = isi;
+
+    int firstInt = input.readInt();
+    if (firstInt >= 0) {
+      // original-format file, without explicit format version number
+      format = 0;
+      size = firstInt;
+
+      // back-compatible settings
+      indexInterval = 128;
+      skipInterval = Integer.MAX_VALUE;
+
+    } else {
+      // we have a format version number
+      format = firstInt;
+
+      // check that it is a format we can understand
+      if (format < TermInfosWriter.FORMAT)
+        throw new IOException("Unknown format version:" + format);
+      
+      size = input.readLong();                    // read the size
+      
+      if (!isIndex) {
+        indexInterval = input.readInt();
+        skipInterval = input.readInt();
+      }
+    }
+    
   }
   
   protected Object clone() {
@@ -117,6 +146,12 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     termInfo.freqPointer += input.readVLong();	  // read freq pointer
     termInfo.proxPointer += input.readVLong();	  // read prox pointer
     
+    if (!isIndex) {
+      if (termInfo.docFreq > skipInterval) {
+        termInfo.skipOffset = input.readVInt();
+      }
+    }
+
     if (isIndex)
       indexPointer += input.readVLong();	  // read index pointer
 

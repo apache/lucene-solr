@@ -158,6 +158,37 @@ public class BooleanQuery extends Query {
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
+      // First see if the (faster) ConjunctionScorer will work.  This can be
+      // used when all clauses are required.  Also, at this point a
+      // BooleanScorer cannot be embedded in a ConjunctionScorer, as the hits
+      // from a BooleanScorer are not always sorted by document number (sigh)
+      // and hence BooleanScorer cannot implement skipTo() correctly, which is
+      // required by ConjunctionScorer.
+      boolean allRequired = true;      
+      boolean noneBoolean = true;
+      for (int i = 0 ; i < weights.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        if (!c.required)
+          allRequired = false;
+        if (c.query instanceof BooleanQuery)
+          noneBoolean = false;
+      }
+
+      if (allRequired && noneBoolean) {           // ConjunctionScorer is okay
+        ConjunctionScorer result =
+          new ConjunctionScorer(searcher.getSimilarity());
+        for (int i = 0 ; i < weights.size(); i++) {
+          BooleanClause c = (BooleanClause)clauses.elementAt(i);
+          Weight w = (Weight)weights.elementAt(i);
+          Scorer subScorer = w.scorer(reader);
+          if (subScorer == null)
+            return null;
+          result.add(subScorer);
+        }
+        return result;
+      }
+
+      // Use good-old BooleanScorer instead.
       BooleanScorer result = new BooleanScorer(searcher.getSimilarity());
 
       for (int i = 0 ; i < weights.size(); i++) {

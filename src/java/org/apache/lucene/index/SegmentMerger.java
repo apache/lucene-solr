@@ -62,6 +62,7 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BitVector;
 
 final class SegmentMerger {
@@ -246,17 +247,21 @@ final class SegmentMerger {
 
     int df = appendPostings(smis, n);		  // append posting data
 
+    long skipPointer = writeSkip();
+
     if (df > 0) {
       // add an entry to the dictionary with pointers to prox and freq files
-      termInfo.set(df, freqPointer, proxPointer);
+      termInfo.set(df, freqPointer, proxPointer, (int)(skipPointer-freqPointer));
       termInfosWriter.add(smis[0].term, termInfo);
     }
   }
 
   private final int appendPostings(SegmentMergeInfo[] smis, int n)
        throws IOException {
+    final int skipInterval = termInfosWriter.skipInterval;
     int lastDoc = 0;
     int df = 0;					  // number of docs w/ term
+    resetSkip();
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
       TermPositions postings = smi.postings;
@@ -271,6 +276,12 @@ final class SegmentMerger {
 
         if (doc < lastDoc)
           throw new IllegalStateException("docs out of order");
+
+        df++;
+
+        if ((df % skipInterval) == 0) {
+          bufferSkip(lastDoc);
+        }
 
         int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
         lastDoc = doc;
@@ -289,13 +300,43 @@ final class SegmentMerger {
           proxOutput.writeVInt(position - lastPosition);
           lastPosition = position;
         }
-
-        df++;
       }
     }
     return df;
   }
-  private final void mergeNorms() throws IOException {
+
+  private RAMOutputStream skipBuffer = new RAMOutputStream();
+  private int lastSkipDoc;
+  private long lastSkipFreqPointer;
+  private long lastSkipProxPointer;
+
+  private void resetSkip() throws IOException {
+    skipBuffer.reset();
+    lastSkipDoc = 0;
+    lastSkipFreqPointer = freqOutput.getFilePointer();
+    lastSkipProxPointer = proxOutput.getFilePointer();
+  }
+
+  private void bufferSkip(int doc) throws IOException {
+    long freqPointer = freqOutput.getFilePointer();
+    long proxPointer = proxOutput.getFilePointer();
+
+    skipBuffer.writeVInt(doc - lastSkipDoc); 
+    skipBuffer.writeVInt((int)(freqPointer - lastSkipFreqPointer));
+    skipBuffer.writeVInt((int)(proxPointer - lastSkipProxPointer));
+
+    lastSkipDoc = doc;
+    lastSkipFreqPointer = freqPointer;
+    lastSkipProxPointer = proxPointer;
+  }
+
+  private long writeSkip() throws IOException {
+    long skipPointer = freqOutput.getFilePointer();
+    skipBuffer.writeTo(freqOutput);
+    return skipPointer;
+  }
+
+  private void mergeNorms() throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {

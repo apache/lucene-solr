@@ -62,13 +62,36 @@ import org.apache.lucene.store.Directory;
   Directory.  A TermInfos can be written once, in order.  */
 
 final class TermInfosWriter {
+  /** The file format version, a negative number. */
+  public static final int FORMAT = -1;
+
   private FieldInfos fieldInfos;
   private OutputStream output;
   private Term lastTerm = new Term("", "");
   private TermInfo lastTi = new TermInfo();
   private int size = 0;
 
-  static final int INDEX_INTERVAL = 128;
+  // TODO: the default values for these two parameters should be settable from
+  // IndexWriter.  However, once that's done, folks will start setting them to
+  // ridiculous values and complaining that things don't work well, as with
+  // mergeFactor.  So, let's wait until a number of folks find that alternate
+  // values work better.  Note that both of these values are stored in the
+  // segment, so that it's safe to change these w/o rebuilding all indexes.
+
+  /** Expert: The fraction of terms in the "dictionary" which should be stored
+   * in RAM.  Smaller values use more memory, but make searching slightly
+   * faster, while larger values use less memory and make searching slightly
+   * slower.  Searching is typically not dominated by dictionary lookup, so
+   * tweaking this is rarely useful.*/
+  int indexInterval = 128;
+
+  /** Expert: The fraction of {@link TermDocs} entries stored in skip tables,
+   * used to accellerate {@link TermDocs#skipTo(int)}.  Larger values result in
+   * smaller indexes, greater acceleration, but fewer accelerable cases, while
+   * smaller values result in bigger indexes, less acceleration and more
+   * accelerable cases. More detailed experiments would be useful here. */
+  int skipInterval = 16;
+
   private long lastIndexPointer = 0;
   private boolean isIndex = false;
 
@@ -91,7 +114,12 @@ final class TermInfosWriter {
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createFile(segment + (isIndex ? ".tii" : ".tis"));
-    output.writeInt(0);				  // leave space for size
+    output.writeInt(FORMAT);                      // write format
+    output.writeLong(0);                          // leave space for size
+    if (!isIndex) {
+      output.writeInt(indexInterval);             // write indexInterval
+      output.writeInt(skipInterval);              // write skipInterval
+    }
   }
 
   /** Adds a new <Term, TermInfo> pair to the set.
@@ -106,13 +134,19 @@ final class TermInfosWriter {
     if (ti.proxPointer < lastTi.proxPointer)
       throw new IOException("proxPointer out of order");
 
-    if (!isIndex && size % INDEX_INTERVAL == 0)
+    if (!isIndex && size % indexInterval == 0)
       other.add(lastTerm, lastTi);		  // add an index term
 
     writeTerm(term);				  // write term
     output.writeVInt(ti.docFreq);		  // write doc freq
     output.writeVLong(ti.freqPointer - lastTi.freqPointer); // write pointers
     output.writeVLong(ti.proxPointer - lastTi.proxPointer);
+
+    if (!isIndex) {
+      if (ti.docFreq > skipInterval) {
+        output.writeVInt(ti.skipOffset);
+      }
+    }
 
     if (isIndex) {
       output.writeVLong(other.output.getFilePointer() - lastIndexPointer);
@@ -149,8 +183,8 @@ final class TermInfosWriter {
 
   /** Called to complete TermInfos creation. */
   final void close() throws IOException {
-    output.seek(0);				  // write size at start
-    output.writeInt(size);
+    output.seek(4);				  // write size after format
+    output.writeLong(size);
     output.close();
 
     if (!isIndex)
