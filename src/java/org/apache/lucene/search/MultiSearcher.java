@@ -80,6 +80,10 @@ public class MultiSearcher extends Searcher {
     }
     starts[searchables.length] = maxDoc;
   }
+  
+  protected int[] getStarts() {
+  	return starts;
+  }
 
   /** Frees resources associated with this <code>Searcher</code>. */
   public void close() throws IOException {

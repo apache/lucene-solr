@@ -31,6 +31,10 @@ $Id$
     others.  (A conjunctive BooleanQuery is a BooleanQuery where all
     clauses are required.)  (cutting)
 
+ 4. Added new class ParallelMultiSearcher.  Combined with
+    RemoteSearchable this makes it easy to implement distributed
+    search systems.  (Jean-Francois Halleux via cutting)
+
 
 1.3 final
 

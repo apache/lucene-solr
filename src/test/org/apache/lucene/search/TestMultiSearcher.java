@@ -81,6 +81,14 @@ public class TestMultiSearcher extends TestCase
         super(name);
     }
 
+	/**
+	 * Return a new instance of the concrete MultiSearcher class
+	 * used in this test
+	 */
+	protected MultiSearcher getMultiSearcherInstance(Searcher[] searchers) throws IOException {
+		return new MultiSearcher(searchers);
+	}
+	
     public void testEmptyIndex()
         throws Exception
     {
@@ -134,7 +142,7 @@ public class TestMultiSearcher extends TestCase
         searchers[0] = new IndexSearcher(indexStoreB);
         searchers[1] = new IndexSearcher(indexStoreA);
         // creating the multiSearcher
-        Searcher mSearcher = new MultiSearcher(searchers);
+        Searcher mSearcher = getMultiSearcherInstance(searchers);
         // performing the search
         Hits hits = mSearcher.search(query);
 
@@ -171,7 +179,7 @@ public class TestMultiSearcher extends TestCase
         searchers2[0] = new IndexSearcher(indexStoreB);
         searchers2[1] = new IndexSearcher(indexStoreA);
         // creating the mulitSearcher
-        Searcher mSearcher2 = new MultiSearcher(searchers2);
+        Searcher mSearcher2 = getMultiSearcherInstance(searchers2);
         // performing the same search
         Hits hits2 = mSearcher2.search(query);
 
@@ -213,7 +221,7 @@ public class TestMultiSearcher extends TestCase
         searchers3[0] = new IndexSearcher(indexStoreB);
         searchers3[1] = new IndexSearcher(indexStoreA);
         // creating the mulitSearcher
-        Searcher mSearcher3 = new MultiSearcher(searchers3);
+        Searcher mSearcher3 = getMultiSearcherInstance(searchers3);
         // performing the same search
         Hits hits3 = mSearcher3.search(query);
 
