@@ -3,7 +3,7 @@ package org.apache.lucene.misc;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2001,2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,10 +54,10 @@ package org.apache.lucene.misc;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * <code>HighFreqTerms</code> class extracts terms and their frequencies out
@@ -65,77 +65,59 @@ import org.apache.lucene.index.TermEnum;
  *
  * @version $Id$
  */
-public class HighFreqTerms
-{
-    public static int numTerms = 100;
+public class HighFreqTerms {
+	
+	// The top numTerms will be displayed
+	public static final int numTerms = 100;
 
-    public static void main(String[] args) throws Exception
-    {
-        IndexReader reader = null;
-        if (args.length == 1)
-        {
-            reader = IndexReader.open(args[0]);
-        }
-        else
-        {
-            usage();
-            System.exit(1);
-        }
+	public static void main(String[] args) throws Exception {
+		IndexReader reader = null;
+		if (args.length == 1) {
+			reader = IndexReader.open(args[0]);
+		} else {
+			usage();
+			System.exit(1);
+		}
 
-        TermInfoQueue tiq = new TermInfoQueue(numTerms);
-        TermEnum terms = reader.terms();
+		TermInfoQueue tiq = new TermInfoQueue(numTerms);
+		TermEnum terms = reader.terms();
 
-        int minFreq = 0;
-        while (terms.next())
-        {
-            if (terms.docFreq() > minFreq)
-            {
-                tiq.put(new TermInfo(terms.term(), terms.docFreq()));
-                if (tiq.size() > numTerms) 		     // if tiq overfull
-                {
-                    tiq.pop();				     // remove lowest in tiq
-                    minFreq = ((TermInfo)tiq.top()).docFreq; // reset minFreq
-                }
-            }
-        }
+		while (terms.next()) {
+			tiq.insert(new TermInfo(terms.term(), terms.docFreq()));
+		}
 
-        while (tiq.size() != 0)
-        {
-            TermInfo termInfo = (TermInfo)tiq.pop();
-            System.out.println(termInfo.term + " " + termInfo.docFreq);
-        }
+		while (tiq.size() != 0) {
+			TermInfo termInfo = (TermInfo) tiq.pop();
+			System.out.println(termInfo.term + " " + termInfo.docFreq);
+		}
 
-        reader.close();
-    }
+		reader.close();
+	}
 
-    private static void usage()
-    {
-        System.out.println("\n\n" +
-            "java org.apache.lucene.misc.HighFreqTerms <index dir>\n\n");
-    }
+	private static void usage() {
+		System.out.println(
+			"\n\n"
+				+ "java org.apache.lucene.misc.HighFreqTerms <index dir>\n\n");
+	}
 }
 
-final class TermInfo
-{
-    TermInfo(Term t, int df)
-    {
-        term = t;
-        docFreq = df;
-    }
-    int docFreq;
-    Term term;
+final class TermInfo {
+	TermInfo(Term t, int df) {
+		term = t;
+		docFreq = df;
+	}
+	int docFreq;
+	Term term;
 }
 
-final class TermInfoQueue extends PriorityQueue
-{
-    TermInfoQueue(int size)
-    {
-        initialize(size);
-    }
-    protected final boolean lessThan(Object a, Object b)
-    {
-        TermInfo termInfoA = (TermInfo)a;
-        TermInfo termInfoB = (TermInfo)b;
-        return termInfoA.docFreq < termInfoB.docFreq;
-    }
+final class TermInfoQueue extends PriorityQueue {
+	TermInfoQueue(int size) {
+		initialize(size);
+	}
+
+	protected final boolean lessThan(Object a, Object b) {
+		TermInfo termInfoA = (TermInfo) a;
+		TermInfo termInfoB = (TermInfo) b;
+		return termInfoA.docFreq < termInfoB.docFreq;
+	}
 }
