@@ -197,6 +197,7 @@ public class ThreadMonitor extends Observable implements Runnable
 
         try
         {
+            // FIXME: at least take SimpleLogger, if not something else
             File logDir = new File("logs");
             logDir.mkdir();
             logWriter = new PrintWriter(new BufferedWriter(new FileWriter("logs/ThreadMonitor.log")));
@@ -264,6 +265,7 @@ public class ThreadMonitor extends Observable implements Runnable
                     State state = thread.getTaskState();
                     //StringBuffer sb = new StringBuffer(200);
                     sb.setLength(0);
+
                     System.out.println(sb + "[" + thread.getThreadNumber() + "] " + state.getState() + " for " +
                                        (now - state.getStateSince() ) + " ms " +
                                        (state.getInfo() != null ? "(" + state.getInfo() +")" : "")
@@ -325,10 +327,12 @@ public class ThreadMonitor extends Observable implements Runnable
                 double bytesPerSecond = getAverageBytesRead();
                 double docsPerSecond = getAverageDocsRead();
                 sb.setLength(0);
-                System.out.println(sb + "\nBytes total:          " + formatBytes(overallBytesRead) + "  (" + formatBytes((long)(((double)overallBytesRead)*1000/(System.currentTimeMillis()-startTime))) + " per second since start)" +
-                                   "\nBytes per Second:     " + formatBytes((int)bytesPerSecond) + " (50 secs)" +
-                                   "\nDocs per Second:      " + docsPerSecond +
-                                   "\nBytes per Thread:     " + bytesReadString);
+                System.out.print(sb + "\nBytes total:          ");
+                System.out.print(formatBytes(overallBytesRead) + "  (" + formatBytes((long)(((double)overallBytesRead)*1000/(System.currentTimeMillis()-startTime))) + " per second since start)");
+                System.out.print("\nBytes per Second:     " + formatBytes((int)bytesPerSecond) + " (50 secs)");
+                System.out.print(                   "\nDocs per Second:      " + docsPerSecond);
+                String bs = bytesReadString.toString();
+                System.out.print(                   "\nBytes per Thread:     " + bs + "\n");
                 double docsPerSecondTotal = ((double)overallTasksRun)*1000/(System.currentTimeMillis()-startTime);
                 sb.setLength(0);
                 System.out.println(sb + "Docs read total:      " + overallTasksRun + "    Docs/s: " + fractionFormat.format(docsPerSecondTotal) +
@@ -361,7 +365,7 @@ public class ThreadMonitor extends Observable implements Runnable
                 if(!isWorkingOnMessage && (urlsQueued == 0) && (urlsWaiting == 0) && allThreadsIdle)
                 {
                     nothingReadCount++;
-                    if(nothingReadCount > 3)
+                    if(nothingReadCount > 20)
                     {
                         SimpleLoggerManager.getInstance().flush();
                         System.exit(0);
@@ -389,6 +393,13 @@ public class ThreadMonitor extends Observable implements Runnable
                     System.gc();
                     SimpleLoggerManager.getInstance().flush();
                 }
+
+            }
+            catch(NoSuchMethodError e)
+            {
+                e.printStackTrace();
+                //System.out.println("cause: " + e.getCause());
+                System.out.println("msg: " + e.getMessage());
 
             }
             catch(Exception e)
