@@ -79,10 +79,10 @@
         <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. 
         You would type:</p>
         <source>jakarta^4 apache</source>
-        <p>This will make documents with the term IBM appear more relevant. You can also boost Phrase Terms as in the example: </p>
+        <p>This will make documents with the term jakarta appear more relevant. You can also boost Phrase Terms as in the example: </p>
 
         <source>"jakarta apache"^4 "jakarta lucene"</source>
-        <p>By default, the boost factor is 1.</p>
+        <p>By default, the boost factor is 1. Although, the boost factor must be positive, it can be less than 1 (i.e. .2)</p>
         </subsection>
         </section>
 
