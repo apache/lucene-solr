@@ -28,21 +28,18 @@ public class ISOLatin1AccentFilter extends TokenFilter {
 		super(input);
 	}
 
-	/**
-	 * To replace accented characters by unaccented equivalents.
-	 */
 	public final Token next() throws java.io.IOException {
 		final Token t = input.next();
 		if (t == null)
 			return null;
 		// Return a token with filtered characters.
-		return new Token(RemoveAccents(t.termText()), t.startOffset(), t.endOffset(), t.type());
+		return new Token(removeAccents(t.termText()), t.startOffset(), t.endOffset(), t.type());
 	}
 
 	/**
 	 * To replace accented characters in a String by unaccented equivalents.
 	 */
-	public final static String RemoveAccents(String input) {
+	public final static String removeAccents(String input) {
 		final StringBuffer output = new StringBuffer();
 		for (int i = 0; i < input.length(); i++) {
 			switch (input.charAt(i)) {
