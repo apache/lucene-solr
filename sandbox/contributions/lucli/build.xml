@@ -1,0 +1,36 @@
+<project name="lucli" default="build" basedir=".">
+
+	<!-- set global properties for this build -->
+	<property name="src" value="./src"/>
+	<property name="build"  value="./classes"/>
+	<property name="lucliLib"  value="${build}/lucli.jar"/>
+
+	<!-- Include all elements that Tomcat exposes to applications -->
+	<path id="compile.classpath">
+		<fileset dir="lib">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+
+	<target name="init">
+		<!-- Create the time stamp -->
+		<tstamp/>
+		<!-- Create the dist directory structure used by compile -->
+		<mkdir dir="${build}"/>
+		<mkdir dir="${build}/docs"/>
+		<mkdir dir="${build}/docs/javadocs"/>
+	</target>
+
+	<target name="compile" depends="init">
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac debug="on" deprecation="on" srcdir="${src}" destdir="${build}">
+			<classpath refid="compile.classpath"/>
+		</javac>
+	</target>
+
+	<target name="build" depends="compile">
+		<jar basedir="${build}" includes="**/*.class" jarfile="${lucliLib}"/>
+	</target>
+
+
+</project>

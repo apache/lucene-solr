@@ -1,0 +1,372 @@
+package lucli;
+
+/* ====================================================================
+ * The Apache Software License, Version 1.1
+ *
+ * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. The end-user documentation included with the redistribution,
+ *    if any, must include the following acknowledgment:
+ *       "This product includes software developed by the
+ *        Apache Software Foundation (http://www.apache.org/)."
+ *    Alternately, this acknowledgment may appear in the software itself,
+ *    if and wherever such third-party acknowledgments normally appear.
+ *
+ * 4. The names "Apache" and "Apache Software Foundation" and
+ *    "Apache Lucene" must not be used to endorse or promote products
+ *    derived from this software without prior written permission. For
+ *    written permission, please contact apache@apache.org.
+ *
+ * 5. Products derived from this software may not be called "Apache",
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
+ *    prior written permission of the Apache Software Foundation.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
+ * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This software consists of voluntary contributions made by many
+ * individuals on behalf of the Apache Software Foundation.  For more
+ * information on the Apache Software Foundation, please see
+ * <http://www.apache.org/>.
+ */
+
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
+
+import java.util.Hashtable;
+import java.util.Vector;
+import java.util.TreeMap;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Enumeration;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.queryParser.MultiFieldQueryParser;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
+
+/*
+ * Parts addapted from Lucene demo. Various methods that interact with
+ * Lucene and provide info about the index, search, etc.
+ */
+class LuceneMethods {
+
+	private int numDocs;
+	private String indexName; //directory of this index
+	private long version; //version number of this index
+	java.util.Iterator fieldIterator;
+	Vector fields; //Fields as a vector
+	Vector indexedFields; //Fields as a vector
+	String fieldsArray[]; //Fields as an array
+	Searcher searcher;
+	Query query; //current query string
+
+	public LuceneMethods(String index) {
+		indexName = index;
+		message("Lucene CLI. Using directory:" + indexName);
+	}
+
+
+	public void info() throws java.io.IOException {
+		IndexReader indexReader = IndexReader.open(indexName);
+
+
+		getFieldInfo();
+		numDocs= indexReader.numDocs();
+		message("Index has " + numDocs + " documents ");
+		message ("All Fields:" + fields.toString());
+		message ("Indexed Fields:" + indexedFields.toString());
+
+		if (IndexReader.isLocked(indexName)) {
+			message("Index is locked");
+		}
+		//IndexReader.getCurrentVersion(indexName);
+		//System.out.println("Version:" + version);
+
+		indexReader.close();
+	}
+
+
+	public void search(String queryString, boolean explain, boolean showTokens) throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		Hits hits = initSearch(queryString);
+		System.out.println(hits.length() + " total matching documents");
+		Query explainQuery;
+		if (explain) {
+			query = explainQuery(queryString);
+		}
+
+
+		final int HITS_PER_PAGE = 10;
+		message ("--------------------------------------");
+		for (int start = 0; start < hits.length(); start += HITS_PER_PAGE) {
+			int end = Math.min(hits.length(), start + HITS_PER_PAGE);
+			for (int ii = start; ii < end; ii++) {
+				Document doc = hits.doc(ii);
+				message ("---------------- " + ii + " score:" + hits.score(ii) + "---------------------");
+				printHit(doc);
+				if (showTokens) {
+					invertDocument(doc);
+				}
+				if (explain) {
+					Explanation exp = searcher.explain(query, hits.id(ii));
+					message("Explanation:" + exp.toString());
+				}
+			}
+			message ("#################################################");
+
+			if (hits.length() > end) {
+				System.out.print("more (y/n) ? ");
+				queryString = in.readLine();
+				if (queryString.length() == 0 || queryString.charAt(0) == 'n')
+					break;
+			}
+		}
+		searcher.close();
+	}
+
+	private void printHit(Document doc) {
+		for (int ii= 0; ii < fieldsArray.length; ii++) {
+			String currField = fieldsArray[ii];
+			String result = doc.get(currField);
+			message(currField + ":" + result);
+		}
+		//another option is to just do message(doc);
+	}
+
+	public void optimize () throws IOException{
+		//open the index writer. False: don't create a new one
+		IndexWriter indexWriter = new IndexWriter(indexName,  new StandardAnalyzer(), false);
+		message("Starting to optimize index.");
+		long start = System.currentTimeMillis();
+		indexWriter.optimize();
+		message("Done optimizing index. Took " + (System.currentTimeMillis() - start) + " msecs");
+		indexWriter.close();
+	}
+
+
+	private Query explainQuery(String queryString) throws IOException, ParseException {
+
+		searcher = new IndexSearcher(indexName);
+		Analyzer analyzer = new StandardAnalyzer();
+		getFieldInfo();
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+		MultiFieldQueryParser parser = new  MultiFieldQueryParser(queryString, analyzer);
+
+		int arraySize = indexedFields.size();
+		String indexedArray[] = new String[arraySize];
+		for (int ii = 0; ii < arraySize; ii++) {
+			indexedArray[ii] = (String) indexedFields.get(ii);
+		}
+		query = parser.parse(queryString, indexedArray, analyzer);
+		System.out.println("Searching for: " + query.toString());
+		return (query);
+
+	}
+	private Hits initSearch(String queryString) throws IOException, ParseException {
+
+		searcher = new IndexSearcher(indexName);
+		Analyzer analyzer = new StandardAnalyzer();
+		getFieldInfo();
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+		MultiFieldQueryParser parser = new  MultiFieldQueryParser(queryString, analyzer);
+
+		int arraySize = fields.size();
+		fieldsArray = new String[arraySize];
+		for (int ii = 0; ii < arraySize; ii++) {
+			fieldsArray[ii] = (String) fields.get(ii);
+		}
+		query = parser.parse(queryString, fieldsArray, analyzer);
+		System.out.println("Searching for: " + query.toString());
+		Hits hits = searcher.search(query);
+		return (hits);
+
+	}
+
+	public void count(String queryString) throws java.io.IOException, ParseException {
+		Hits hits = initSearch(queryString);
+		System.out.println(hits.length() + " total documents");
+		searcher.close();
+	}
+
+	static public void message (String s) {
+		System.out.println(s);
+	}
+
+	private void getFieldInfo() throws IOException {
+		IndexReader indexReader = IndexReader.open(indexName);
+		fields = new Vector();
+		indexedFields = new Vector();
+
+		//get the list of all field names
+		fieldIterator = indexReader.getFieldNames().iterator();
+		while (fieldIterator.hasNext()) {
+			Object field = fieldIterator.next();
+			if (field != null && !field.equals(""))
+				fields.add(field.toString());
+		}
+		//
+		//get the list of indexed field names
+		fieldIterator = indexReader.getFieldNames(true).iterator();
+		while (fieldIterator.hasNext()) {
+			Object field = fieldIterator.next();
+			if (field != null && !field.equals(""))
+				indexedFields.add(field.toString());
+		}
+		indexReader.close();
+	}
+
+
+	// Copied from DocumentWriter
+	// Tokenizes the fields of a document into Postings.
+	private void invertDocument(Document doc)
+		throws IOException {
+
+		Hashtable tokenHash = new Hashtable();
+		final int maxFieldLength = 10000;
+
+		Analyzer analyzer = new StandardAnalyzer();
+		Enumeration fields = doc.fields();
+		while (fields.hasMoreElements()) {
+			Field field = (Field) fields.nextElement();
+			String fieldName = field.name();
+
+
+			if (field.isIndexed()) {
+				if (field.isTokenized()) {     // un-tokenized field
+					Reader reader;        // find or make Reader
+					if (field.readerValue() != null)
+						reader = field.readerValue();
+					else if (field.stringValue() != null)
+						reader = new StringReader(field.stringValue());
+					else
+						throw new IllegalArgumentException
+							("field must have either String or Reader value");
+
+					int position = 0;
+					// Tokenize field and add to postingTable
+					TokenStream stream = analyzer.tokenStream(fieldName, reader);
+					try {
+						for (Token t = stream.next(); t != null; t = stream.next()) {
+							position += (t.getPositionIncrement() - 1);
+							position++;
+							String name = t.termText();
+							Integer Count = (Integer)tokenHash.get(name);
+							if (Count == null) { // not in there yet
+								tokenHash.put(name, new Integer(1)); //first one
+							} else {
+								int count = Count.intValue();
+								tokenHash.put(name, new Integer (count+1));
+							}
+							if (position > maxFieldLength) break;
+						}
+					} finally {
+						stream.close();
+					}
+				}
+
+			}
+		}
+		Entry[] sortedHash = getSortedHashtableEntries(tokenHash);
+		for (int ii = 0; ii < sortedHash.length && ii < 10; ii ++) {
+			Entry currentEntry = sortedHash[ii];
+			message((ii + 1) + ":" + currentEntry.getKey() + " " + currentEntry.getValue());
+		}
+	}
+
+
+	/** Provides a list of the top terms of the index.
+	 *
+	 * @param field  - the name of the command or null for all of them.
+	 */
+	public void terms(String field) throws IOException {
+		TreeMap termMap = new TreeMap();
+		IndexReader indexReader = IndexReader.open(indexName);
+		TermEnum terms = indexReader.terms();
+		while (terms.next()) {
+			Term term = terms.term();
+			//message(term.field() + ":" + term.text() + " freq:" + terms.docFreq());
+			//if we're either not looking by field or we're matching the specific field
+			if ((field == null) || field.equals(term.field()))
+				termMap.put(new Integer((0 - terms.docFreq())), term.field() + ":" + term.text());
+		}
+
+		Iterator termIterator = termMap.keySet().iterator();
+		for (int ii=0; termIterator.hasNext() && ii < 100; ii++) {
+			Integer termFreq = (Integer) termIterator.next();
+			String termDetails = (String) termMap.get(termFreq);
+			message(termDetails + ": " + termFreq);
+		}
+		indexReader.close();
+	}
+
+	/** Sort Hashtable values
+	 * @param h the hashtable we're sorting
+	 * from http://developer.java.sun.com/developer/qow/archive/170/index.jsp
+	 */
+
+	public static Entry[]
+		getSortedHashtableEntries(Hashtable h) {
+			Set set = h.entrySet();
+			Entry [] entries =
+				(Entry[])set.toArray(
+																 new Entry[set.size()]);
+			Arrays.sort(entries, new Comparator() {
+				public int compare(Object o1, Object o2) {
+					Object v1 = ((Entry)o1).getValue();
+					Object v2 = ((Entry)o2).getValue();
+					return ((Comparable)v2).compareTo(v1); //descending order
+				}
+			});
+			return entries;
+		}
+
+}
+
