@@ -11,7 +11,7 @@
   <property name="build.dir" location="build"/>
   <property name="build.classes.dir" location="${build.dir}/classes"/>
   <property name="build.javadoc" value="${build.dir}/docs/api"/>
-  <property name="build.encoding" value="ISO-8859-1"/>
+  <property name="build.encoding" value="utf-8"/>
 
   <property name="release.host" value="www.apache.org"/>
   <property name="release.path" value="/www/cvs.apache.org/dist/jakarta/lucene/sandbox/${ant.project.name}"/>
@@ -53,8 +53,8 @@
   <!-- ========================================================== -->
   <!-- TODO: define ${lucene.jar} for easeir overriding -->
   <path id="compile.classpath">
-    <fileset dir="${lucene.dir}" includes="build/lucene*.jar"/>
-    <pathelement path="${project.classpath}"/>
+   <fileset dir="${lucene.dir}" includes="build/lucene*.jar"/>
+   <pathelement path="${project.classpath}"/>
   </path>
 
   <path id="test.classpath">
@@ -103,6 +103,7 @@
            deprecation="true"
            srcdir="${src.dir}"
            classpathref="compile.classpath"
+           encoding="${build.encoding}"
     />
     <copy todir="${build.classes.dir}">
       <fileset dir="${src.dir}" excludes="**/*.java"/>
@@ -115,6 +116,7 @@
            includeAntRuntime="yes"
            srcdir="src/test"
            classpathref="test.classpath"
+           encoding="${build.encoding}"
     />
 
     <copy todir="${test.classes.dir}">
@@ -130,6 +132,7 @@
       <classpath refid="test.classpath"/>
       <sysproperty key="docs.dir" file="${test.classes.dir}"/>
       <sysproperty key="index.dir" file="${test.output.dir}/index"/>
+      <sysproperty key="dataDir" file="${test.src.dir}"/>
       <formatter type="brief" usefile="false"/>
       <test name="${testcase}" if="testcase"/>
       <batchtest todir="${test.data.dir}" unless="testcase">
