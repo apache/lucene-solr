@@ -65,7 +65,7 @@ public class TestPositionIncrement extends TestCase {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, analyzer, true);
     Document d = new Document();
-    d.add(Field.Text("field", "bogus"));
+    d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(d);
     writer.optimize();
     writer.close();

@@ -115,7 +115,7 @@ public class TestWildcard
         IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
 	for (int i = 0; i < contents.length; ++i) {
 	    Document doc = new Document();
-	    doc.add(Field.Text(field, contents[i]));
+	    doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.TOKENIZED));
 	    writer.addDocument(doc);
 	}
 	writer.optimize();

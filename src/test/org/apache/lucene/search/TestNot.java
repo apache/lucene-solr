@@ -40,7 +40,7 @@ public class TestNot extends TestCase {
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
 
     Document d1 = new Document();
-    d1.add(Field.Text("field", "a b"));
+    d1.add(new Field("field", "a b", Field.Store.YES, Field.Index.TOKENIZED));
 
     writer.addDocument(d1);
     writer.optimize();

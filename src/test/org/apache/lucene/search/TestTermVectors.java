@@ -43,7 +43,8 @@ public class TestTermVectors extends TestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(Field.Text("field", English.intToEnglish(i), true));
+      doc.add(new Field("field", English.intToEnglish(i),
+          Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
       writer.addDocument(doc);
     }
     writer.close();
@@ -212,7 +213,8 @@ public class TestTermVectors extends TestCase {
   
   private void setupDoc(Document doc, String text)
   {
-    doc.add(Field.Text("field", text, true));
+    doc.add(new Field("field", text, Field.Store.YES,
+        Field.Index.TOKENIZED, Field.TermVector.YES));
     //System.out.println("Document: " + doc);
   }
   

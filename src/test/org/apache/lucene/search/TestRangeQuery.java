@@ -86,8 +86,8 @@ public class TestRangeQuery extends TestCase {
   private void insertDoc(IndexWriter writer, String content) throws IOException {
     Document doc = new Document();
 
-    doc.add(Field.Keyword("id", "id" + docCount));
-    doc.add(Field.UnStored("content", content));
+    doc.add(new Field("id", "id" + docCount, Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("content", content, Field.Store.NO, Field.Index.TOKENIZED));
 
     writer.addDocument(doc);
     docCount++;

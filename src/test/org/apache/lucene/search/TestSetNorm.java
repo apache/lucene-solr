@@ -42,7 +42,7 @@ public class TestSetNorm extends TestCase {
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
     
     // add the same document four times
-    Field f1 = Field.Text("field", "word");
+    Field f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
     Document d1 = new Document();
     d1.add(f1);
     writer.addDocument(d1);

@@ -54,10 +54,10 @@ public class TestSimilarity extends TestCase {
     writer.setSimilarity(new SimpleSimilarity());
     
     Document d1 = new Document();
-    d1.add(Field.Text("field", "a c"));
+    d1.add(new Field("field", "a c", Field.Store.YES, Field.Index.TOKENIZED));
 
     Document d2 = new Document();
-    d2.add(Field.Text("field", "a b c"));
+    d2.add(new Field("field", "a b c", Field.Store.YES, Field.Index.TOKENIZED));
     
     writer.addDocument(d1);
     writer.addDocument(d2);

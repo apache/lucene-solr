@@ -39,7 +39,7 @@ public class TestPrefixQuery extends TestCase {
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
-      doc.add(Field.Keyword("category", categories[i]));
+      doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.UN_TOKENIZED));
       writer.addDocument(doc);
     }
     writer.close();

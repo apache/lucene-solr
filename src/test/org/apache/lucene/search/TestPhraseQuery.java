@@ -41,7 +41,7 @@ public class TestPhraseQuery extends TestCase {
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     
     Document doc = new Document();
-    doc.add(Field.Text("field", "one two three four five"));
+    doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
     
     writer.optimize();
@@ -155,7 +155,7 @@ public class TestPhraseQuery extends TestCase {
     StopAnalyzer stopAnalyzer = new StopAnalyzer();
     IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true);
     Document doc = new Document();
-    doc.add(Field.Text("field", "the stop words are here"));
+    doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
     writer.close();
 

@@ -54,7 +54,7 @@ public class TestRemoteSearchable extends TestCase {
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(),true);
     Document doc = new Document();
-    doc.add(Field.Text("test", "test text"));
+    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
