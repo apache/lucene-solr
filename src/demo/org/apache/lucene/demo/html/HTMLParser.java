@@ -453,15 +453,15 @@ null)
     finally { jj_save(1, xla); }
   }
 
-  final private boolean jj_3_2() {
-    if (jj_scan_token(ArgQuote2)) return true;
-    if (jj_scan_token(CloseQuote2)) return true;
-    return false;
-  }
-
   final private boolean jj_3_1() {
     if (jj_scan_token(ArgQuote1)) return true;
     if (jj_scan_token(CloseQuote1)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_2() {
+    if (jj_scan_token(ArgQuote2)) return true;
+    if (jj_scan_token(CloseQuote2)) return true;
     return false;
   }
 
