@@ -160,8 +160,8 @@ public class TestBasics extends TestCase {
     checkHits(query, new int[]
       {77, 177, 277, 377, 477, 577, 677, 777, 877, 977});
 
-    //System.out.println(searcher.explain(query, 77));
-    //System.out.println(searcher.explain(query, 977));
+    assertTrue(searcher.explain(query, 77).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 977).getValue() > 0.0f);
   }
 
   public void testSpanNearUnordered() throws Exception {
@@ -195,8 +195,8 @@ public class TestBasics extends TestCase {
     checkHits(query, new int[]
       {801, 821, 831, 851, 861, 871, 881, 891});
 
-    //System.out.println(searcher.explain(query, 801));
-    //System.out.println(searcher.explain(query, 891));
+    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
 
   public void testSpanFirst() throws Exception {
@@ -213,8 +213,8 @@ public class TestBasics extends TestCase {
        584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597,
        598, 599});
 
-    //System.out.println(searcher.explain(query, 5));
-    //System.out.println(searcher.explain(query, 599));
+    assertTrue(searcher.explain(query, 5).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 599).getValue() > 0.0f);
 
   }
 
@@ -234,8 +234,8 @@ public class TestBasics extends TestCase {
       {33, 47, 133, 147, 233, 247, 333, 347, 433, 447, 533, 547, 633, 647, 733,
        747, 833, 847, 933, 947});
 
-    //System.out.println(searcher.explain(query, 33));
-    //System.out.println(searcher.explain(query, 947));
+    assertTrue(searcher.explain(query, 33).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 947).getValue() > 0.0f);
   }
 
   public void testSpanExactNested() throws Exception {
@@ -253,7 +253,7 @@ public class TestBasics extends TestCase {
 
     checkHits(query, new int[] {333});
 
-    //System.out.println(searcher.explain(query, 333));
+    assertTrue(searcher.explain(query, 333).getValue() > 0.0f);
   }
 
   public void testSpanNearOr() throws Exception {
@@ -277,7 +277,31 @@ public class TestBasics extends TestCase {
        756, 757, 766, 767, 776, 777, 786, 787, 796, 797});
   }
 
+  public void testSpanComplex1() throws Exception {
+      
+    SpanTermQuery t1 = new SpanTermQuery(new Term("field","six"));
+    SpanTermQuery t2 = new SpanTermQuery(new Term("field","hundred"));
+    SpanNearQuery tt1 = new SpanNearQuery(new SpanQuery[] {t1, t2}, 0,true);
 
+    SpanTermQuery t3 = new SpanTermQuery(new Term("field","seven"));
+    SpanTermQuery t4 = new SpanTermQuery(new Term("field","hundred"));
+    SpanNearQuery tt2 = new SpanNearQuery(new SpanQuery[] {t3, t4}, 0,true);
+    
+    SpanTermQuery t5 = new SpanTermQuery(new Term("field","seven"));
+    SpanTermQuery t6 = new SpanTermQuery(new Term("field","six"));
+
+    SpanOrQuery to1 = new SpanOrQuery(new SpanQuery[] {tt1, tt2});
+    SpanOrQuery to2 = new SpanOrQuery(new SpanQuery[] {t5, t6});
+    
+    SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {to1, to2},
+                                            100, true);
+    
+    checkHits(query, new int[]
+      {606, 607, 626, 627, 636, 637, 646, 647, 
+       656, 657, 666, 667, 676, 677, 686, 687, 696, 697,
+       706, 707, 726, 727, 736, 737, 746, 747, 
+       756, 757, 766, 767, 776, 777, 786, 787, 796, 797});
+  }
 
 
   private void checkHits(Query query, int[] results) throws IOException {

@@ -175,11 +175,8 @@ class NearSpans implements Spans {
         queueStale = false;
       }
 
-      int matchLength = max.end() - min().start();
-      if (((matchLength - totalLength) <= slop)   // check slop
-          && (!inOrder || matchIsOrdered())) {    // check order
+      if (atMatch())
         return true;
-      }
 
       more = min().next();                        // trigger further scanning
       if (more)
@@ -189,24 +186,26 @@ class NearSpans implements Spans {
   }
 
   public boolean skipTo(int target) throws IOException {
-    if (firstTime) {
+    if (firstTime) {                              // initialize
       initList(false);
-      firstTime = false;
-    }
-
-    for (SpansCell cell = first; more && cell!=null; cell=cell.next) {
-      more = cell.skipTo(target);
-    }
-
-    if (more) {
-      listToQueue();
-
-      if (min().doc() == max.doc()) {             // at a match?
-        int matchLength = max.end() - min().start();
-        if ((matchLength - totalLength) <= slop) {
-          return true;
-        }
+      for (SpansCell cell = first; more && cell!=null; cell=cell.next) {
+        more = cell.skipTo(target);               // skip all
       }
+      if (more) {
+        listToQueue();
+      }
+      firstTime = false;
+    } else {                                      // normal case
+      while (more && min().doc() < target) {      // skip as needed
+        more = min().skipTo(target);
+        if (more)
+          queue.adjustTop();
+      }
+    }
+    if (more) {
+
+      if (atMatch())                              // at a match?
+        return true;
 
       return next();                              // no, scan
     }
@@ -219,6 +218,7 @@ class NearSpans implements Spans {
   public int doc() { return min().doc(); }
   public int start() { return min().start(); }
   public int end() { return max.end(); }
+
 
   public String toString() {
     return "spans("+query.toString()+")@"+
@@ -264,6 +264,17 @@ class NearSpans implements Spans {
     for (SpansCell cell = first; cell != null; cell = cell.next) {
       queue.put(cell);                      // build queue from list
     }
+  }
+
+  private boolean atMatch() {
+    if (min().doc() == max.doc()) {               // at a match?
+      int matchLength = max.end() - min().start();
+      if (((matchLength - totalLength) <= slop)   // check slop
+          && (!inOrder || matchIsOrdered())) {    // check order
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean matchIsOrdered() {
