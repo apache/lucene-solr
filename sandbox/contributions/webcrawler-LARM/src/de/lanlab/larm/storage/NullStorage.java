@@ -65,7 +65,13 @@ public class NullStorage implements DocumentStorage
     {
     }
 
-    public void open() {}
-    public void store(WebDocument doc) {}
+    public void open()
+    {
+    }
+
+    public WebDocument store(WebDocument doc)
+    {
+        return doc;
+    }
 
 }

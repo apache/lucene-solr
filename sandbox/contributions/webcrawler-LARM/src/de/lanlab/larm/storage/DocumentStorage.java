@@ -72,6 +72,9 @@ public interface DocumentStorage
      * called to store a web document
      *
      * @param doc  the document
+     * @return the document itself or a changed version. Only makes sense if
+     * storage pipeline is used; usually the storage would return the document
+     * as is.
      */
-    public void store(WebDocument doc);
+    public WebDocument store(WebDocument doc);
 }

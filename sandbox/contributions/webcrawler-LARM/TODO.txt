@@ -1,0 +1,69 @@
+
+Todos for 1.0 (not yet ordered in decreasing priority)
+
+$id: $
+
+* Bugs
+	- on very fast LAN connections (100MBit), sockets are not freed as fast as allocated
+	- some relative URLs are not appended appropriately, leading to wrong and growing URLs
+
+* Build
+	- added build.xml, but build.bat and build.sh are still working without ANT. Change that.
+
+* LuceneStorage
+	- define a configurable interface that saves fetched pages into a Lucene index
+
+* Configuration
+	- move all configuration stuff into a meaningful properties file
+
+* URLs: 
+	- include a URLNormalizer
+	  * lowercase host names
+	  * avoid ambiguities like '%20' / '+'
+	  * make sure http://host URLs end with "/"
+	  * avoid host name aliases
+	    - two host names / one ip adress can point to the same web site: www.lmu.de / www.uni-muenchen.de
+	    - two host names / one ip adress can point to different web sites (then other URLs / pages must differ)
+	      suche.lmu.de / interesse.lmu.de
+	  * cater 301/302 result codes
+
+* Repository
+	- optionally use a database as repository (caches, queues, logs)
+	- if done so, use URL reordering to speed things up
+
+* Tests
+	  - Put all tests into a JUnit test suite
+
+* distribution
+	- optionally send messages through a JMS topic. 
+	- create an executable that installs a source (like JMS, page files) and a storage pipeline
+	- partition the URL space for distributed Fetchers
+
+* Speed
+	- avoid synchronization delays by putting several URLMessages into one FetcherTask
+
+* Services
+	- clean up ThreadMonitor
+	- incorporate a CRON-like service that enables timed GC'ing, batched data transfer, and
+	  monitoring
+
+* Politeness
+	- add the option to restrict the number of host accesses per hour/minute
+
+* Anchor text extraction
+	  * read until a meaningful end tag, not just the first encountered
+	  * remove entities
+	  * optionally remove Tags, leave ALT attribute
+	  * remove redundant spaces
+
+
+
+Nice-to-have:
+
+* Stop and Continue (probably with database repository)
+* "Hot Configure" from outside
+* Web Interface
+
+Next topic:
+* Incremental crawling
+

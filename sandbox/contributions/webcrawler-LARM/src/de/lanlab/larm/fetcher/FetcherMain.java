@@ -179,7 +179,14 @@ public class FetcherMain
         // existing message pipeline
         SimpleLogger storeLog = new SimpleLogger("store", false);
         SimpleLogger linksLog = new SimpleLogger("links", false);
-        this.storage = new LogStorage(storeLog, true, "logs/pagefile");
+
+
+        StoragePipeline storage = new StoragePipeline();
+        storage.addDocStorage(new LogStorage(storeLog, /* save in page files? */ false, /* logfile prefix */ "logs/pagefile"));
+        storage.addLinkStorage(new LinkLogStorage(linksLog));
+        storage.addLinkStorage(messageHandler);
+        //storage.addStorage(new LuceneStorage(...));
+        //storage.addStorage(new JMSStorage(...));
 
         // a third example would be the NullStorage, which converts the documents into
         // heat, which evaporates above the processor
@@ -188,14 +195,14 @@ public class FetcherMain
         // create the filters and add them to the message queue
         urlScopeFilter = new URLScopeFilter();
 
-        urlVisitedFilter = new URLVisitedFilter(100000, linksLog);
+        urlVisitedFilter = new URLVisitedFilter(100000);
 
         // dnsResolver = new DNSResolver();
         hostManager = new HostManager(1000);
 
         reFilter = new RobotExclusionFilter(hostManager);
 
-        fetcher = new Fetcher(nrThreads, storage, hostManager);
+        fetcher = new Fetcher(nrThreads, storage, storage, hostManager);
 
         knownPathsFilter = new KnownPathsFilter();
 
@@ -206,6 +213,8 @@ public class FetcherMain
 
         // prevent GZipped files from being decoded
         HTTPConnection.removeDefaultModule(HTTPClient.ContentEncodingModule.class);
+
+
 
         // initialize the threads
         fetcher.init();

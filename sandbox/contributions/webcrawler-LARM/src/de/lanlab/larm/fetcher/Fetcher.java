@@ -106,10 +106,11 @@ public class Fetcher implements MessageListener
      * @param storage      the storage where all documents are stored
      * @param hostManager  the host manager
      */
-    public Fetcher(int maxThreads, DocumentStorage storage, HostManager hostManager)
+    public Fetcher(int maxThreads, DocumentStorage docStorage, LinkStorage linkStorage, HostManager hostManager)
     {
         this.storage = storage;
-        FetcherTask.setStorage(storage);
+        FetcherTask.setDocStorage(docStorage);
+        FetcherTask.setLinkStorage(linkStorage);
         fetcherPool = new ThreadPool(maxThreads, new FetcherThreadFactory(hostManager));
         fetcherPool.setQueue(new FetcherTaskQueue());
         docsRead = 0;

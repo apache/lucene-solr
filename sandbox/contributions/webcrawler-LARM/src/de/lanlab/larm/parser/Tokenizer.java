@@ -54,14 +54,9 @@
 
 package de.lanlab.larm.parser;
 
-import hplb.org.xml.sax.*;
-import hplb.xml.*;
-import hplb.xml.util.*;
-
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.io.*;
-import hplb.misc.ByteArray;
 import java.net.URL;
 
 /**
@@ -71,42 +66,37 @@ import java.net.URL;
  * some bugs. And it's FAST, about 10 x faster than the original HEX parser.
  * Being some sort of SAX parser it calls the callback functions of the LinkHandler
  * when links are found.
- * @todo add handling of anchor texts
+ * Attention: This parser is not thread safe, as a lot of locks were removed
  *
  * @author    Clemens Marschner
  * $Id$
  */
 
-public class Tokenizer implements hplb.org.xml.sax.Parser
+public class Tokenizer
 {
     /**
      * Sets the entityHandler attribute of the Tokenizer object
      *
      * @param e  The new entityHandler value
-     */
-    public void setEntityHandler(hplb.org.xml.sax.EntityHandler e) { }
-
+     *
+    public void setEntityHandler(EntityHandler e) { }
+    */
 
     /**
      * Sets the errorHandler attribute of the Tokenizer object
      *
      * @param e  The new errorHandler value
-     */
+     *
     public void setErrorHandler(hplb.org.xml.sax.ErrorHandler e) { }
-
+    */
 
     /**
      * Sets the documentHandler attribute of the Tokenizer object
      *
      * @param e  The new documentHandler value
-     */
+     *
     public void setDocumentHandler(hplb.org.xml.sax.DocumentHandler e) { }
-
-
-    /**
-     * The value of boolean attributes is this string.
-     */
-    public final static String BOOLATTR = Atom.getAtom("BOOLATTR");
+    */
 
     // FSM states:
     final static int ST_START = 1;
@@ -173,17 +163,17 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
     private boolean keepPCData;
     private boolean isInTitleTag;
     private boolean isInAnchorTag;
-    CharBuffer buf = new CharBuffer();
+    SimpleCharArrayWriter buf = new SimpleCharArrayWriter();
     boolean isStartTag = true;
     /**
      * Signals whether a non-empty element has any children. If not we must
      * generate an artificial empty-string child [characters(buf, 0, 0)].
      */
     boolean noChildren;
-    CharBuffer tagname = new CharBuffer();
-    CharBuffer attrName = new CharBuffer();
-    CharBuffer attrValue = new CharBuffer(1000);
-    CharBuffer pcData = new CharBuffer(8000);
+    SimpleCharArrayWriter tagname = new SimpleCharArrayWriter();
+    SimpleCharArrayWriter attrName = new SimpleCharArrayWriter();
+    SimpleCharArrayWriter attrValue = new SimpleCharArrayWriter(1000);
+    SimpleCharArrayWriter pcData = new SimpleCharArrayWriter(8000);
     int pcDataLength;
 
     /**
@@ -722,7 +712,7 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
                      // the next end tag, at most 200 characters.
                      // (end tags are often ommited, i.e. <a ...>text</td>)
                      // regards other tags as text
-                     // todo: read until next </a> or a couple other tags
+                     // @todo: read until next </a> or a couple of other tags
                     try
                     {
                         short count = 0;
@@ -991,7 +981,7 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
      * Description of the Method
      *
      * @param attrs  Description of the Parameter
-     */
+     *
     public final void keysToLowerCase(SAXAttributeMap attrs)
     {
         for (int i = 0; i < attrs.n; i++)
@@ -1003,7 +993,7 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
             }
         }
     }
-
+    */
 
     // toomuch true iff we read a '<' of the next token
     /**
@@ -1036,7 +1026,7 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
      *  if (toomuch) {
      *  buf.setLength(buf.size() - 1);
      *  }
-     *  CharBuffer buf1 = rcgnzEntities ? entMngr.entityDecode(buf) : buf;
+     *  SimpleCharArrayWriter buf1 = rcgnzEntities ? entMngr.entityDecode(buf) : buf;
      *  docHandler.characters(buf1.getCharArray(), 0, buf1.size());
      *  /handler.gotText(getBuffer());
      *  toStart();

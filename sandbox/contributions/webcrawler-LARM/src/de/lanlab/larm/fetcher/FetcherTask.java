@@ -61,6 +61,8 @@ import de.lanlab.larm.util.ObservableInputStream;
 import de.lanlab.larm.util.WebDocument;
 import de.lanlab.larm.util.SimpleCharArrayReader;
 import de.lanlab.larm.storage.DocumentStorage;
+import de.lanlab.larm.storage.LinkStorage;
+
 import de.lanlab.larm.util.State;
 import de.lanlab.larm.util.SimpleLogger;
 import de.lanlab.larm.net.HttpTimeoutFactory;
@@ -122,9 +124,16 @@ public class FetcherTask
     private volatile long bytesRead = 0;
 
     /**
-     * the storage this task will put the document to
+     * the docStorage this task will put the document to
      */
-    private static volatile DocumentStorage storage;
+    private static volatile DocumentStorage docStorage;
+
+    /**
+     * the docStorage this task will put the links to
+     */
+    private static volatile LinkStorage linkStorage;
+
+
 
     /**
      * task state IDs. comparisons will be done by their references, so always
@@ -207,13 +216,23 @@ public class FetcherTask
 
 
     /**
-     * Sets the document storage
+     * Sets the document docStorage
      *
-     * @param storage  The new storage
+     * @param docStorage  The new docStorage
      */
-    public static void setStorage(DocumentStorage storage)
+    public static void setDocStorage(DocumentStorage docStorage)
     {
-        FetcherTask.storage = storage;
+        FetcherTask.docStorage = docStorage;
+    }
+
+    /**
+     * Sets the document linkStorage
+     *
+     * @param linkStorage  The new linkStorage
+     */
+    public static void setLinkStorage(LinkStorage linkStorage)
+    {
+        FetcherTask.linkStorage = linkStorage;
     }
 
 
@@ -382,8 +401,9 @@ public class FetcherTask
                     log.log("scanned");
                 }
                 taskState.setState(FT_STORING, ipURL);
-                messageHandler.putMessages(foundUrls);
-                storage.store(new WebDocument(contextUrl, contentType, fullBuffer, statusCode, actURLMessage.getReferer(), contentLength, title));
+                linkStorage.storeLinks(foundUrls);
+                //messageHandler.putMessages(foundUrls);
+                docStorage.store(new WebDocument(contextUrl, contentType, fullBuffer, statusCode, actURLMessage.getReferer(), contentLength, title));
                 log.log("stored");
             }
         }
@@ -519,8 +539,8 @@ public class FetcherTask
 
 
     /**
-     * this is called whenever a links was found in the current document,
-     * Don't create too many objects here, this will be called
+     * this is called whenever a link was found in the current document,
+     * Don't create too many objects here, as this will be called
      * millions of times
      *
      * @param link  Description of the Parameter

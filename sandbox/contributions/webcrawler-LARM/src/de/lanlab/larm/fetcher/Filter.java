@@ -52,7 +52,7 @@
  * <http://www.apache.org/>.
  */
 
- package de.lanlab.larm.fetcher;
+package de.lanlab.larm.fetcher;
 
 
 /**

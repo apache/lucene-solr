@@ -191,11 +191,14 @@ public class LogStorage implements DocumentStorage
 
 
     /**
-     * stores the document if storing is enabled
+     * writes file info to log file;
+     * stores the document if storing is enabled. in that case the log line contains
+     * the page file number and the index within that file
      *
      * @param doc  Description of the Parameter
+     * @return the unchanged document
      */
-    public void store(WebDocument doc)
+    public WebDocument store(WebDocument doc)
     {
         String docInfo = doc.getInfo();
         if (logContents && isValid && doc.getDocumentBytes() != null)
@@ -204,5 +207,6 @@ public class LogStorage implements DocumentStorage
             docInfo = docInfo + "\t" + pageFileCount + "\t" + offset;
         }
         log.logThreadSafe(docInfo);
+        return doc;
     }
 }

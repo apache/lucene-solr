@@ -192,7 +192,12 @@ public class SQLServerStorage implements DocumentStorage
         }
     }
 
-    public void store(WebDocument document)
+    /**
+     *
+     * @param document
+     * @return the unchanged document
+     */
+    public WebDocument store(WebDocument document)
     {
 
         PreparedStatement addDoc = null;
@@ -217,5 +222,6 @@ public class SQLServerStorage implements DocumentStorage
                 releaseStatement(addDoc);
             }
         }
+        return document;
     }
 }

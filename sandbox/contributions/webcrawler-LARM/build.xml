@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+
+<project name="webcrawler-LARM" default="build" basedir=".">
+
+  <property name="name"           value="webcrawler_LARM"/>
+  <property name="version"        value="0.5"/>
+  <property name="final.name"     value="${name}-${version}"/>
+  <property name="debug"          value="on"/>
+
+  <property name="src.dir"        value="./src"/>
+  <property name="lib.dir"        value="./libs"/>
+  <property name="logs.dir"       value="./logs"/>
+  <property name="cache.dir"      value="./cachingqueue"/>
+  <property name="build.dir"      value="./build"/>
+
+  <property name="src.httpclient" value="${lib.dir}/HTTPClient.zip"/>
+  <property name="build.classes"  value="${build.dir}/src"/>
+  <property name="build.src"      value="${build.dir}/src"/>
+  <property name="build.encoding" value="ISO-8859-1"/>
+
+  <property name="threads"        value="15"/>
+
+<!-- Build classpath -->
+  <path id="classpath">
+    <pathelement location="${build.classes}"/>
+    <fileset dir="${lib.dir}">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
+  <path id="run.classpath">
+    <pathelement location="${build.dir}/${final.name}.jar"/>
+    <fileset dir="${lib.dir}">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
+  <!-- ================================================================== -->
+  <!-- B U I L D                                                          -->
+  <!-- ================================================================== -->
+  <target name="build"
+    description="-> builds jar file">
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.classes}"/>
+    <mkdir dir="${build.src}"/>
+    <unzip src="${src.httpclient}" dest="${build.src}" overwrite="false"/>
+    <javac
+      encoding="${build.encoding}"
+      srcdir="${src.dir}:${build.src}"
+      excludes="**/CVS/*"
+      destdir="${build.classes}"
+      debug="${debug}">
+      <classpath refid="classpath"/>
+    </javac>
+    <jar
+      jarfile="${build.dir}/${final.name}.jar"
+      basedir="${build.classes}"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Check Syntax for Run Task                                          -->
+  <!-- ================================================================== -->
+  <target name="checksyntax" unless="start">
+    <echo>
+    use run with the following syntax
+    
+    ant run -Dstart=&lt;URL&gt; -Drestrictto=&lt;Pattern&gt; [-threads=&lt;Thread Count&gt;]
+    
+    default value for threads is 15
+    </echo>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- R U N                                                              -->
+  <!-- ================================================================== -->
+  <target name="run" depends="build, checksyntax" if="start"
+    description="-> runs command-line version of the crawler">
+    <delete dir="${logs.dir}"/>
+    <mkdir dir="${logs.dir}"/>
+    <java 
+      classname="de.lanlab.larm.fetcher.FetcherMain"
+      fork="yes">
+      <jvmarg value="-server"/>
+      <jvmarg value="-Xmx400mb"/>
+      <arg value="-start"/>
+      <arg value="${start}"/>
+      <arg value="-restrictto"/>
+      <arg value="${restrictto}"/>
+      <arg value="-threads"/>
+      <arg value="${threads}"/>
+      <classpath refid="run.classpath"/>
+    </java>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- C L E A N   L A S T   R U N                                        -->
+  <!-- ================================================================== -->
+  <target name="cleanlastrun"
+    description="-> cleans files created by each run of the crawler">
+    <delete dir="${logs.dir}"/>
+    <delete dir="${cache.dir}"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- C L E A N   A L L                                                  -->
+  <!-- ================================================================== -->
+  <target name="cleanall" depends="cleanlastrun"
+    description="-> cleans all build and run files">
+    <delete dir="${build.dir}"/>
+  </target>
+</project>

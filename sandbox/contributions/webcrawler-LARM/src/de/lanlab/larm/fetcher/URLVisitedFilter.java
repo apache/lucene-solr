@@ -69,7 +69,7 @@ import de.lanlab.larm.util.SimpleLogger;
  * @created   3. Januar 2002
  * @version $Id$
  */
-class URLVisitedFilter extends Filter implements MessageListener
+public class URLVisitedFilter extends Filter implements MessageListener
 {
 
     /**
@@ -79,13 +79,10 @@ class URLVisitedFilter extends Filter implements MessageListener
      */
     public void notifyAddedToMessageHandler(MessageHandler handler)
     {
-        this.messageHandler = handler;
     }
 
 
-    MessageHandler messageHandler;
-
-    SimpleLogger log;
+    //SimpleLogger log;
 
     HashSet urlHash;
 
@@ -98,10 +95,9 @@ class URLVisitedFilter extends Filter implements MessageListener
      *
      * @param initialHashCapacity  Description of the Parameter
      */
-    public URLVisitedFilter(int initialHashCapacity, SimpleLogger log)
+    public URLVisitedFilter(int initialHashCapacity)
     {
         urlHash = new HashSet(initialHashCapacity);
-        this.log = log;
         //urlVector = new Vector(initialHashCapacity);
     }
 
@@ -132,10 +128,6 @@ class URLVisitedFilter extends Filter implements MessageListener
             {
                 //System.out.println("URLVisitedFilter: " + urlString + " already present.");
                 filtered++;
-                if(log != null)
-                {
-                    log.log(urlMessage.getInfo());
-                }
                 return null;
             }
             else

@@ -1,5 +1,12 @@
 $id: $
 
+2002-06-01 (cmarschner)
+	* divided Storage into LinkStorage and DocumentStorage
+	* introduced StoragePipeline, made MessageHandler a LinkStorage. Fetcher now stores everything in storages
+	* removed a couple of unused classes
+	now everything's prepared for a LuceneStorage
+	* added build.xml by Mehran Mehr
+
 2002-05-23 (cmarschner)
 	* removed 0x0d0d from the source files (Otis?)
 	* included Apache License into all of the source files in de.lanlab.larm.* directories

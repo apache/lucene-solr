@@ -58,6 +58,7 @@ import java.util.*;
 import de.lanlab.larm.util.SimpleObservable;
 import de.lanlab.larm.util.CachingQueue;
 import de.lanlab.larm.util.UnderflowException;
+import de.lanlab.larm.storage.LinkStorage;
 
 /**
  *  this is a message handler that runs in its own thread.
@@ -71,7 +72,7 @@ import de.lanlab.larm.util.UnderflowException;
  *  This implements a chain of responsibility-style message handling
  * @version $Id$
  */
-public class MessageHandler implements Runnable
+public class MessageHandler implements Runnable, LinkStorage
 {
 
     /**
@@ -118,7 +119,7 @@ public class MessageHandler implements Runnable
     /**
      *  messageHandler-Thread erzeugen und starten
      */
-    MessageHandler()
+    public MessageHandler()
     {
         t = new Thread(this,"MessageHandler Thread");
         t.setPriority(5);   // higher priority to prevent starving when a lot of fetcher threads are used
@@ -175,7 +176,7 @@ public class MessageHandler implements Runnable
 
 
     /**
-     *  einen Event in die Schlange schreiben
+     *  insert one message into the queue
      */
     public void putMessage(Message msg)
     {
@@ -207,6 +208,13 @@ public class MessageHandler implements Runnable
             queueMonitor.notify();
         }
     }
+
+    public Collection storeLinks(Collection links)
+    {
+        putMessages(links);
+        return links;
+    }
+
 
     /**
      *  the main messageHandler-Thread.
@@ -251,22 +259,22 @@ public class MessageHandler implements Runnable
                     messageQueueObservable.setChanged();
                     messageQueueObservable.notifyObservers(new Integer(-1));      // Message processed
 
-                    // und verteilen. Die Listener erhalten die Message in ihrer
-                    // Eintragungsreihenfolge und können die Message auch verändern
+                    // now distribute them. The handlers get the messages in the order
+                    // of insertion and have the right to change them
 
                     Iterator i = listeners.iterator();
                     while(i.hasNext())
                     {
-                        //System.out.println("Verteile...");
                         try
                         {
                             MessageListener listener = (MessageListener)i.next();
                             m = (Message)listener.handleRequest(m);
                             if (m == null)
                             {
+                                // handler has consumed the message
                                 messageProcessorObservable.setChanged();
                                 messageProcessorObservable.notifyObservers(listener);
-                                break;     // Handler hat die Message konsumiert
+                                break;
                             }
                         }
                         catch(ClassCastException e)
@@ -285,7 +293,7 @@ public class MessageHandler implements Runnable
                 messagesWaiting = false;
                 // System.out.println("MessageHandler: messagesWaiting = true although nothing queued!");
                 // @FIXME: here is still a multi threading issue. I don't get it why this happens.
-                //         does someone want to draw a petri net of this?
+                //         does someone want to draw a petri net of this? ;-)
             }
             catch (Exception e)
             {
@@ -299,5 +307,9 @@ public class MessageHandler implements Runnable
     public int getQueued()
     {
         return messageQueue.size();
+    }
+
+    public void openLinkStorage()
+    {
     }
 }
