@@ -4,15 +4,16 @@ Lucene-Sandbox README file
 
 INTRODUCTION
 
-Lucene is a Java full-text search engine.  Lucene is not a complete
-application, but rather a code library and API that can easily be used
-to add search capabilities to applications.
+Lucene is a full-text search engine written in Java.  Lucene is not a
+complete application, but rather a code library and an API that can
+easily be used to add text indexing and search capabilities to
+applications.
 
 The Lucene Sanbox is a place for contributions that are not part of
 the core Lucene distribution. These contributions will not be part of
-distribution.
-The Sandbox is also for creating new sub-projects in Lucene that may
-require restructuring of Lucene code.
+Lucene distribution.
+The Lucene Sandbox is also for creating new sub-projects in Lucene that 
+may require restructuring of Lucene code.
 
 NOTE: All contributions must be under the APL license to be part of this
 repository.
@@ -40,8 +41,8 @@ jakarta-lucene-sandbox/projects/[project]/README.txt
 jakarta-lucene-sandbox/projects/[project]/CHANGES.txt
 jakarta-lucene-sandbox/projects/[project]/LICENSE.txt
 
-Where [contribution] is the name of the contribution
-[project] is the name of the subproject in the sandbox area.
+Where [contribution] is the name of the contribution and
+[project] is the name of the sub-project in the sandbox area.
 
 
 The Lucene web site is at:
