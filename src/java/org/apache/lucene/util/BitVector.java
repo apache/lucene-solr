@@ -55,6 +55,7 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
@@ -68,8 +69,8 @@ import org.apache.lucene.store.OutputStream;
   </UL>
   */
 public final class BitVector {
-  /** This is public just so that methods will inline.  Please don't touch.*/
-  public byte[] bits;
+
+  private byte[] bits;
   private int size;
   private int count = -1;
 
