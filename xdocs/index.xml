@@ -24,13 +24,13 @@
 
         <section name="Lucene News">
 
-            <h3>1 October 2004 - Lucene 1.4.2 Released</h3>
+            <h3>29 November 2004 - Lucene 1.4.3 Released</h3>
 
-               <p>This fixes a few bugs in 1.4.1.  See <a
-               href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96.2.4">CHANGES.txt</a>
+               <p>This fixes a few bugs in 1.4.2.  See <a
+               href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96.2.6">CHANGES.txt</a>
                for details.  Binary and source distributions are
                available <a
-               href="http://cvs.apache.org/dist/jakarta/lucene/v1.4.2/">here</a>.
+               href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">here</a>.
             </p>
 
         </section>
