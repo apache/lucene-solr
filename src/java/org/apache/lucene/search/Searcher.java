@@ -79,7 +79,11 @@ public abstract class Searcher implements Searchable {
    * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
    * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.  */
+   * non-high-scoring hits.
+   * <p>Note: The <code>score</code> passed to this method is a raw score.
+   * In other words, the score will not necessarily be a float whose value is
+   * between 0 and 1.
+   */
   public void search(Query query, HitCollector results)
     throws IOException {
     search(query, (Filter)null, results);

@@ -56,6 +56,7 @@ package org.apache.lucene.search;
 
 /** Lower-level search API.
  * @see Searcher#search(Query,HitCollector)
+ * @version $Id$
  */
 public abstract class HitCollector {
   /** Called once for every non-zero scoring document, with the document number
@@ -77,6 +78,10 @@ public abstract class HitCollector {
    * Searcher#doc(int)} or {@link
    * org.apache.lucene.index.IndexReader#document(int)} on every document
    * number encountered.  Doing so can slow searches by an order of magnitude
-   * or more. */
+   * or more.
+   * <p>Note: The <code>score</code> passed to this method is a raw score.
+   * In other words, the score will not necessarily be a float whose value is
+   * between 0 and 1.
+   */
   public abstract void collect(int doc, float score);
 }
