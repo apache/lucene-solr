@@ -212,6 +212,16 @@ public class IndexWriter {
    * discarded.
    */
   public void addDocument(Document doc) throws IOException {
+    addDocument(doc, analyzer);
+  }
+
+  /**
+   * Adds a document to this index, using the provided analyzer instead of the
+   * value of {@link #getAnalyzer()}.  If the document contains more than
+   * {@link #maxFieldLength} terms for a given field, the remainder are
+   * discarded.
+   */
+  public void addDocument(Document doc, Analyzer analyzer) throws IOException {
     DocumentWriter dw =
       new DocumentWriter(ramDirectory, analyzer, similarity, maxFieldLength);
     String segmentName = newSegmentName();
