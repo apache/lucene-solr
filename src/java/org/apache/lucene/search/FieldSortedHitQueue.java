@@ -122,8 +122,6 @@ extends PriorityQueue {
 
 		ScoreDocComparator comparer = null;
 		switch (type) {
-			case SortField.SCORE:  comparer = ScoreDocComparator.RELEVANCE; break;
-			case SortField.DOC:    comparer = ScoreDocComparator.INDEXORDER; break;
 			case SortField.AUTO:   comparer = determineComparator (reader, field); break;
 			case SortField.STRING: comparer = StringSortedHitQueue.comparator (reader, field); break;
 			case SortField.INT:    comparer = IntegerSortedHitQueue.comparator (reader, field); break;
