@@ -177,7 +177,7 @@ public final class CJKTokenizer extends Tokenizer {
                 }
             } else {
                 //get current character
-                c = (char) ioBuffer[bufferIndex++];
+                c = ioBuffer[bufferIndex++];
 
                 //get the UnicodeBlock of the current character
                 ub = Character.UnicodeBlock.of(c);

@@ -68,7 +68,7 @@ public final class ChineseTokenizer extends Tokenizer {
 
             if (dataLen == -1) return flush();
             else
-                c = (char) ioBuffer[bufferIndex++];
+                c = ioBuffer[bufferIndex++];
 
 
             switch(Character.getType(c)) {
