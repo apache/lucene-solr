@@ -256,7 +256,7 @@ public class ChainedFilter extends Filter
                 break;
             default:
                 doChain(result, reader, DEFAULT, filter);
-                break;          
+                break;
         }
     }
 }
