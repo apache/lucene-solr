@@ -142,8 +142,10 @@ limitations under the License.
             </p>
                                                 <p>
                 Jakarta Lucene is written in Java, but several
-                efforts are underway to write versions of Lucene in other programming
-                languages.  If these versions are to remain compatible with Jakarta
+                efforts are underway to write
+                <a href="http://wiki.apache.org/jakarta-lucene/LuceneImplementations">versions
+                of Lucene in other programming
+                languages</a>.  If these versions are to remain compatible with Jakarta
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
                 complete and independent definition of the Jakarta Lucene 1.4 file
@@ -1307,16 +1309,32 @@ limitations under the License.
                         <p>FieldNum    --&gt;
                             VInt
                         </p>
+                        
+                        <p><b>Lucene &lt;= 1.4:</b></p>
                         <p>Bits        --&gt;
                             Byte
                         </p>
                         <p>Value        --&gt;
                             String
                         </p>
-                        <p>Currently
-                            only the low-order bit is used of Bits is used.  It is one for
+                        <p>Only the low-order bit of Bits is used.  It is one for
                             tokenized fields, and zero for non-tokenized fields.
                         </p>
+                        <p><b>Lucene &gt;= 1.9:</b></p>
+                        <p>Bits        --&gt;
+                            Byte
+                        </p>
+                        <p>
+                        <ul>
+                        	<li>low order bit is one for tokenized fields</li>
+                        	<li>second bit is one for fields containing binary data</li>
+                        	<li>third bit is one for fields with compression option enabled</li>
+                        </ul>
+                        </p>
+                        <p>Value        --&gt;
+                            String (default) or byte[] when the field value is a binary field
+                        </p>
+
                     </li>
                 </ol>
                             </blockquote>
