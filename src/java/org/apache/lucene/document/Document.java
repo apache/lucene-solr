@@ -186,7 +186,7 @@ public final class Document implements java.io.Serializable {
     for (DocumentFieldList list = fieldList; list != null; list = list.next) {
       buffer.append(list.field.toString());
       if (list.next != null)
-	buffer.append(" ");
+        buffer.append(" ");
     }
     buffer.append(">");
     return buffer.toString();
