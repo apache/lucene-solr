@@ -79,7 +79,62 @@ public class HostInfo
 
     private int id;
 
-    private int healthyCount = 5;
+    int healthyCount = 8;
+
+    int locks = 2;   // max. concurrent requests
+    int lockObtained = 0;   // for debugging
+
+    Object lockMonitor = new Object();
+    public Object getLockMonitor()
+    {
+        return lockMonitor;
+    }
+    public  void releaseLock()
+    {
+        synchronized(lockMonitor)
+        {
+            if(lockObtained>=0)
+            {
+                locks++;
+                lockObtained--;
+//                try
+//                {
+//                    throw new Exception();
+//
+//                }
+//                catch(Exception e)
+//                {
+//                    System.out.println("HostInfo: release called at: " + e.getStackTrace()[1]);
+//                }
+//                System.out.println("HostInfo " + hostName + ": releaseing Lock. now " + lockObtained + " locks obtained, " + locks + " available");
+            }
+//            else
+//            {
+//                System.out.println("HostInfo: lock released although no lock acquired!?");
+//            }
+        }
+    }
+    // must be synchronized
+    public void obtainLock()
+    {
+        locks--;
+        lockObtained++;
+//        try
+//        {
+//            throw new Exception();
+//
+//        }
+//        catch(Exception e)
+//        {
+//            System.out.println("obtain called at: " + e.getStackTrace()[1]);
+//        }
+//        System.out.println("HostInfo " + hostName + ": obtaining Lock. now " + lockObtained + " locks obtained, " + locks + " available");
+    }
+    // must be synchronized
+    public boolean isBusy()
+    {
+        return locks<=0;
+    }
 
     // five strikes, and you're out
     private boolean isReachable = true;
@@ -194,6 +249,7 @@ public class HostInfo
     public void badRequest()
     {
         healthyCount--;
+        System.out.println("HostInfo: " + this.hostName + ": badRequest. " + healthyCount + " left");
     }
 
 
@@ -205,6 +261,7 @@ public class HostInfo
     public void setReachable(boolean reachable)
     {
         isReachable = reachable;
+        System.out.println("HostInfo: " + this.hostName + ": setting to " + (reachable ? "reachable" : "unreachable"));
     }
 
 
