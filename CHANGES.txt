@@ -12,6 +12,15 @@ $Id$
  3. Added a new method IndexReader.setNorm(), that permits one to
     alter the boosting of fields after an index is created.
 
+ 4. Distinguish between the final position and length when indexing a
+    field.  The length is now defined as the total number of tokens,
+    instead of the final position, as it was previously.  Length is
+    used for score normalization (Similarity.lengthNorm()) and for
+    controlling memory usage (IndexWriter.maxFieldLength).  In both of
+    these cases, the total number of tokens is a better value to use
+    than the final token position.  Position is used in phrase
+    searching (see PhraseQuery and Token.setPositionIncrement()).
+
 
 1.3 RC3
 
