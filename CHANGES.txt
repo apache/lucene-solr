@@ -39,6 +39,9 @@ $Id$
     searching via RMI.  The test class RemoteSearchableTest.java
     provides an example of how this can be used.  (cutting)
 
+ 10. Added PhrasePrefixQuery (and supporting MultipleTermPositions).  The
+     test class TestPhrasePrefixQuery provides the usage example.
+     (Anders Nielsen via otis)
 
 1.2 RC6
 

@@ -53,13 +53,13 @@ $Revision$
   "Microsoft suc*" to match "Microsoft success" and "Microsoft sucks".
   c.f.
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=333275
-  Status: Asked Anders Nielsen to send some usage/test code, so that I can
-	  test his contribution and also add tests to the repository.
+  Status: COMPLETED
 
 - Make package protected abstract methods of org.apache.lucene.search.Searcher
   public (I'd like to be able to make subclasses of Searcher, IndexWriter, InderReader).
   c.f.
   http://www.mail-archive.com/cgi-bin/htsearch?method=and&format=short&config=lucene-dev_jakarta_apache_org&restrict=&exclude=&words=IndexAccessControl
+  Status: COMPLETED
 
 - Add lastModified() method to Directory, FSDirectory and RamDirectory, so
   it could be cached in IndexWriter/Searcher manager.
