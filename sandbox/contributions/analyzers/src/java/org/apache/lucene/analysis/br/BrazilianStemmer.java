@@ -56,7 +56,7 @@ package org.apache.lucene.analysis.br;
 
 /**
  * A stemmer for brazilian words. The algorithm is based on the report
- * "A Fast and Simple Stemming Algorithm for German Words" by Jörg
+ * "A Fast and Simple Stemming Algorithm for German Words" by JÃ¶rg
  * Caumanns (joerg.caumanns@isst.fhg.de).
  *
  * @author    Gerhard Schwarz
@@ -282,8 +282,8 @@ public class BrazilianStemmer {
 	/**
    * 1) Turn to lowercase
    * 2) Remove accents
-   * 3) ã -> a ; õ -> o
-   * 4) ç -> c
+   * 3) Ã£ -> a ; Ãµ -> o
+   * 4) Ã§ -> c
    *
    * @return null or a string transformed
 	 */
@@ -299,31 +299,31 @@ public class BrazilianStemmer {
 
     value = value.toLowerCase() ;
     for (j=0 ; j < value.length() ; j++) {
-      if ((value.charAt(j) == 'á') ||
-          (value.charAt(j) == 'â') ||
-          (value.charAt(j) == 'ã')) {
+      if ((value.charAt(j) == 'Ã¡') ||
+          (value.charAt(j) == 'Ã¢') ||
+          (value.charAt(j) == 'Ã£')) {
         r= r + "a" ; continue ;
       }
-      if ((value.charAt(j) == 'é') ||
-          (value.charAt(j) == 'ê')) {
+      if ((value.charAt(j) == 'Ã©') ||
+          (value.charAt(j) == 'Ãª')) {
         r= r + "e" ; continue ;
       }
-      if (value.charAt(j) == 'í') {
+      if (value.charAt(j) == 'Ã­') {
         r= r + "i" ; continue ;
       }
-      if ((value.charAt(j) == 'ó') ||
-          (value.charAt(j) == 'ô') ||
-          (value.charAt(j) == 'õ')) {
+      if ((value.charAt(j) == 'Ã³') ||
+          (value.charAt(j) == 'Ã´') ||
+          (value.charAt(j) == 'Ãµ')) {
         r= r + "o" ; continue ;
       }
-      if ((value.charAt(j) == 'ú') ||
-          (value.charAt(j) == 'ü')) {
+      if ((value.charAt(j) == 'Ãº') ||
+          (value.charAt(j) == 'Ã¼')) {
         r= r + "u" ; continue ;
       }
-      if (value.charAt(j) == 'ç') {
+      if (value.charAt(j) == 'Ã§') {
         r= r + "c" ; continue ;
       }
-      if (value.charAt(j) == 'ñ') {
+      if (value.charAt(j) == 'Ã±') {
         r= r + "n" ; continue ;
       }
 
@@ -410,7 +410,7 @@ public class BrazilianStemmer {
   }
 
 	/**
-	 * Creates CT (changed term) , substituting * 'ã' and 'õ' for 'a~' and 'o~'.
+	 * Creates CT (changed term) , substituting * 'Ã£' and 'Ãµ' for 'a~' and 'o~'.
 	 */
 	private void createCT( String term ) {
     CT = changeTerm(term) ;
@@ -1008,7 +1008,7 @@ public class BrazilianStemmer {
 	/**
 	 * Residual suffix
    *
-   * If the word ends with one of the suffixes (os a i o á í ó)
+   * If the word ends with one of the suffixes (os a i o Ã¡ Ã­ Ã³)
    * in RV, delete it
    *
 	*/
@@ -1031,11 +1031,11 @@ public class BrazilianStemmer {
   }
 
 	/**
-	 * If the word ends with one of ( e é ê) in RV,delete it,
+	 * If the word ends with one of ( e Ã© Ãª) in RV,delete it,
    * and if preceded by 'gu' (or 'ci') with the 'u' (or 'i') in RV,
    * delete the 'u' (or 'i')
    *
-   * Or if the word ends ç remove the cedilha
+   * Or if the word ends Ã§ remove the cedilha
    *
 	*/
 	private void step5() {

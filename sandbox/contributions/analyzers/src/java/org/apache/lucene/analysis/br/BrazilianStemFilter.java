@@ -66,7 +66,7 @@ import java.util.Set;
 /**
  * Based on (copied) the GermanStemFilter
  *
- * @author Jo„o Kramer
+ * @author Jo√£o Kramer
  *         <p/>
  *         <p/>
  *         A filter that stemms german words. It supports a table of words that should
