@@ -2,7 +2,7 @@ Lucene Change Log
 
 $Id$
 
-1.4 RC4
+1.4 final
 
  1. Added "an" to the list of stop words in StopAnalyzer, to complement
     the existing "a" there.  Fix for bug 28960
