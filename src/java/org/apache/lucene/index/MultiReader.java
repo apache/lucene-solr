@@ -267,12 +267,12 @@ class MultiTermEnum extends TermEnum {
     queue = new SegmentMergeQueue(readers.length);
     for (int i = 0; i < readers.length; i++) {
       IndexReader reader = readers[i];
-      SegmentTermEnum termEnum;
+      TermEnum termEnum;
 
       if (t != null) {
-        termEnum = (SegmentTermEnum)reader.terms(t);
+        termEnum = reader.terms(t);
       } else
-        termEnum = (SegmentTermEnum)reader.terms();
+        termEnum = reader.terms();
 
       SegmentMergeInfo smi = new SegmentMergeInfo(starts[i], termEnum, reader);
       if (t == null ? smi.next() : termEnum.term() != null)
@@ -329,21 +329,21 @@ class MultiTermDocs implements TermDocs {
   protected int base = 0;
   protected int pointer = 0;
 
-  private SegmentTermDocs[] segTermDocs;
-  protected SegmentTermDocs current;              // == segTermDocs[pointer]
+  private TermDocs[] readerTermDocs;
+  protected TermDocs current;              // == readerTermDocs[pointer]
 
   public MultiTermDocs(IndexReader[] r, int[] s) {
     readers = r;
     starts = s;
 
-    segTermDocs = new SegmentTermDocs[r.length];
+    readerTermDocs = new TermDocs[r.length];
   }
 
   public int doc() {
-    return base + current.doc;
+    return base + current.doc();
   }
   public int freq() {
-    return current.freq;
+    return current.freq();
   }
 
   public void seek(Term term) {
@@ -400,25 +400,25 @@ class MultiTermDocs implements TermDocs {
       return true;
   }
 
-  private SegmentTermDocs termDocs(int i) throws IOException {
+  private TermDocs termDocs(int i) throws IOException {
     if (term == null)
       return null;
-    SegmentTermDocs result = segTermDocs[i];
+    TermDocs result = readerTermDocs[i];
     if (result == null)
-      result = segTermDocs[i] = termDocs(readers[i]);
+      result = readerTermDocs[i] = termDocs(readers[i]);
     result.seek(term);
     return result;
   }
 
-  protected SegmentTermDocs termDocs(IndexReader reader)
+  protected TermDocs termDocs(IndexReader reader)
     throws IOException {
-    return (SegmentTermDocs)reader.termDocs();
+    return reader.termDocs();
   }
 
   public void close() throws IOException {
-    for (int i = 0; i < segTermDocs.length; i++) {
-      if (segTermDocs[i] != null)
-        segTermDocs[i].close();
+    for (int i = 0; i < readerTermDocs.length; i++) {
+      if (readerTermDocs[i] != null)
+        readerTermDocs[i].close();
     }
   }
 }
@@ -428,12 +428,12 @@ class MultiTermPositions extends MultiTermDocs implements TermPositions {
     super(r,s);
   }
 
-  protected SegmentTermDocs termDocs(IndexReader reader) throws IOException {
-    return (SegmentTermDocs)reader.termPositions();
+  protected TermDocs termDocs(IndexReader reader) throws IOException {
+    return (TermDocs)reader.termPositions();
   }
 
   public int nextPosition() throws IOException {
-    return ((SegmentTermPositions)current).nextPosition();
+    return ((TermPositions)current).nextPosition();
   }
 
 }
