@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
 
 import java.io.IOException;

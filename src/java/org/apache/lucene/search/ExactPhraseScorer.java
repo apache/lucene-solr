@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import org.apache.lucene.util.*;
 import org.apache.lucene.index.*;
 
 final class ExactPhraseScorer extends PhraseScorer {

@@ -17,11 +17,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import org.apache.lucene.index.*;
 
 final class BooleanScorer extends Scorer {
-  private int currentDoc;
-
   private SubScorer scorers = null;
   private BucketTable bucketTable = new BucketTable(this);
 

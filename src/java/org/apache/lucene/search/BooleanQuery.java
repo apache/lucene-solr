@@ -87,7 +87,6 @@ public class BooleanQuery extends Query {
 
   private class BooleanWeight implements Weight {
     private Searcher searcher;
-    private float norm;
     private Vector weights = new Vector();
 
     public BooleanWeight(Searcher searcher) {
@@ -147,7 +146,6 @@ public class BooleanQuery extends Query {
         ConjunctionScorer result =
           new ConjunctionScorer(getSimilarity(searcher));
         for (int i = 0 ; i < weights.size(); i++) {
-          BooleanClause c = (BooleanClause)clauses.elementAt(i);
           Weight w = (Weight)weights.elementAt(i);
           Scorer subScorer = w.scorer(reader);
           if (subScorer == null)

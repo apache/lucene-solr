@@ -199,7 +199,6 @@ class MultiSearcherThread extends Thread {
   private Query query;
   private Filter filter;
   private int nDocs;
-  private int hits;
   private TopDocs docs;
   private int i;
   private PriorityQueue hq;

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.*;
-import org.apache.lucene.index.*;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 final class ConjunctionScorer extends Scorer {
