@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.search.Similarity;
 
 final class DocumentWriter {
@@ -247,13 +247,13 @@ final class DocumentWriter {
 
   private final void writePostings(Posting[] postings, String segment)
           throws IOException {
-    OutputStream freq = null, prox = null;
+    IndexOutput freq = null, prox = null;
     TermInfosWriter tis = null;
     TermVectorsWriter termVectorWriter = null;
     try {
       //open files for inverse index storage
-      freq = directory.createFile(segment + ".frq");
-      prox = directory.createFile(segment + ".prx");
+      freq = directory.createOutput(segment + ".frq");
+      prox = directory.createOutput(segment + ".prx");
       tis = new TermInfosWriter(directory, segment, fieldInfos);
       TermInfo ti = new TermInfo();
       String currentField = null;
@@ -321,7 +321,7 @@ final class DocumentWriter {
       FieldInfo fi = fieldInfos.fieldInfo(n);
       if(fi.isIndexed){
         float norm = fieldBoosts[n] * similarity.lengthNorm(fi.name, fieldLengths[n]);
-        OutputStream norms = directory.createFile(segment + ".f" + n);
+        IndexOutput norms = directory.createOutput(segment + ".f" + n);
         try {
           norms.writeByte(Similarity.encodeNorm(norm));
         } finally {

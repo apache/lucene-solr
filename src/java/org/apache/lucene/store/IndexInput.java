@@ -26,7 +26,7 @@ public abstract class IndexInput implements Cloneable {
   private char[] chars;                           // used by readString()
 
   /** Reads and returns a single byte.
-   * @see OutputStream#writeByte(byte)
+   * @see IndexOutput#writeByte(byte)
    */
   public abstract byte readByte() throws IOException;
 
@@ -34,13 +34,13 @@ public abstract class IndexInput implements Cloneable {
    * @param b the array to read bytes into
    * @param offset the offset in the array to start storing bytes
    * @param len the number of bytes to read
-   * @see OutputStream#writeBytes(byte[],int)
+   * @see IndexOutput#writeBytes(byte[],int)
    */
   public abstract void readBytes(byte[] b, int offset, int len)
     throws IOException;
 
   /** Reads four bytes and returns an int.
-   * @see OutputStream#writeInt(int)
+   * @see IndexOutput#writeInt(int)
    */
   public int readInt() throws IOException {
     return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
@@ -50,7 +50,7 @@ public abstract class IndexInput implements Cloneable {
   /** Reads an int stored in variable-length format.  Reads between one and
    * five bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported.
-   * @see OutputStream#writeVInt(int)
+   * @see IndexOutput#writeVInt(int)
    */
   public int readVInt() throws IOException {
     byte b = readByte();
@@ -63,7 +63,7 @@ public abstract class IndexInput implements Cloneable {
   }
 
   /** Reads eight bytes and returns a long.
-   * @see OutputStream#writeLong(long)
+   * @see IndexOutput#writeLong(long)
    */
   public long readLong() throws IOException {
     return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
@@ -83,7 +83,7 @@ public abstract class IndexInput implements Cloneable {
   }
 
   /** Reads a string.
-   * @see OutputStream#writeString(String)
+   * @see IndexOutput#writeString(String)
    */
   public String readString() throws IOException {
     int length = readVInt();
@@ -97,7 +97,7 @@ public abstract class IndexInput implements Cloneable {
    * @param buffer the array to read characters into
    * @param start the offset in the array to start storing characters
    * @param length the number of characters to read
-   * @see OutputStream#writeChars(String,int,int)
+   * @see IndexOutput#writeChars(String,int,int)
    */
   public void readChars(char[] buffer, int start, int length)
        throws IOException {

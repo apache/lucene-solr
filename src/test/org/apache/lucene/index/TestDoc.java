@@ -63,16 +63,16 @@ public class TestDoc extends TestCase {
         directory.close();
 
         files = new LinkedList();
-        files.add(createFile("test.txt",
+        files.add(createOutput("test.txt",
             "This is the first test file"
         ));
 
-        files.add(createFile("test2.txt",
+        files.add(createOutput("test2.txt",
             "This is the second test file"
         ));
     }
 
-    private File createFile(String name, String text) throws IOException {
+    private File createOutput(String name, String text) throws IOException {
         FileWriter fw = null;
         PrintWriter pw = null;
 

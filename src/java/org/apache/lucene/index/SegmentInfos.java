@@ -20,7 +20,7 @@ import java.util.Vector;
 import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 
 final class SegmentInfos extends Vector {
   
@@ -70,7 +70,7 @@ final class SegmentInfos extends Vector {
   }
 
   public final void write(Directory directory) throws IOException {
-    OutputStream output = directory.createFile("segments.new");
+    IndexOutput output = directory.createOutput("segments.new");
     try {
       output.writeInt(FORMAT); // write FORMAT
       output.writeLong(++version); // every write changes the index

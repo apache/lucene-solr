@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
   java.util.BitSet, but also includes the following:
@@ -108,7 +108,7 @@ public final class BitVector {
     <code>d</code>, in a format that can be read by the constructor {@link
     #BitVector(Directory, String)}.  */
   public final void write(Directory d, String name) throws IOException {
-    OutputStream output = d.createFile(name);
+    IndexOutput output = d.createOutput(name);
     try {
       output.writeInt(size());			  // write size
       output.writeInt(count());			  // write count

@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 
 /** Access to the Field Info file that describes document fields and whether or
@@ -167,7 +167,7 @@ final class FieldInfos {
   }
 
   public void write(Directory d, String name) throws IOException {
-    OutputStream output = d.createFile(name);
+    IndexOutput output = d.createOutput(name);
     try {
       write(output);
     } finally {
@@ -175,7 +175,7 @@ final class FieldInfos {
     }
   }
 
-  public void write(OutputStream output) throws IOException {
+  public void write(IndexOutput output) throws IOException {
     output.writeVInt(size());
     for (int i = 0; i < size(); i++) {
       FieldInfo fi = fieldInfo(i);

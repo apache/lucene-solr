@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.BufferedIndexInput;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import java.util.HashMap;
 import java.io.IOException;
@@ -171,7 +171,7 @@ class CompoundFileReader extends Directory {
 
     /** Not implemented
      * @throws UnsupportedOperationException */
-    public OutputStream createFile(String name)
+    public IndexOutput createOutput(String name)
     {
         throw new UnsupportedOperationException();
     }

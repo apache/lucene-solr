@@ -19,7 +19,7 @@ package org.apache.lucene.store;
 import java.io.IOException;
 
 /**
- * A memory-resident {@link OutputStream} implementation.
+ * A memory-resident {@link IndexOutput} implementation.
  *
  * @version $Id$
  */
@@ -38,7 +38,7 @@ public class RAMOutputStream extends OutputStream {
   }
 
   /** Copy the current contents of this buffer to the named output. */
-  public void writeTo(OutputStream out) throws IOException {
+  public void writeTo(IndexOutput out) throws IOException {
     flush();
     final long end = file.length;
     long pos = 0;

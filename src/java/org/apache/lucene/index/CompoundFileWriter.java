@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import java.util.LinkedList;
 import java.util.HashSet;
@@ -140,9 +140,9 @@ final class CompoundFileWriter {
         merged = true;
 
         // open the compound stream
-        OutputStream os = null;
+        IndexOutput os = null;
         try {
-            os = directory.createFile(fileName);
+            os = directory.createOutput(fileName);
 
             // Write the number of entries
             os.writeVInt(entries.size());
@@ -180,7 +180,7 @@ final class CompoundFileWriter {
             // close so that if an exception occurs during the close, the
             // finally clause below will not attempt to close the stream
             // the second time.
-            OutputStream tmp = os;
+            IndexOutput tmp = os;
             os = null;
             tmp.close();
 
@@ -193,7 +193,7 @@ final class CompoundFileWriter {
      *  provided output stream. Use the provided buffer for moving data
      *  to reduce memory allocation.
      */
-    private void copyFile(FileEntry source, OutputStream os, byte buffer[])
+    private void copyFile(FileEntry source, IndexOutput os, byte buffer[])
     throws IOException
     {
         IndexInput is = null;

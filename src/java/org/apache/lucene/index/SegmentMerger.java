@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 
 /**
@@ -225,16 +225,16 @@ final class SegmentMerger {
     }
   }
 
-  private OutputStream freqOutput = null;
-  private OutputStream proxOutput = null;
+  private IndexOutput freqOutput = null;
+  private IndexOutput proxOutput = null;
   private TermInfosWriter termInfosWriter = null;
   private int skipInterval;
   private SegmentMergeQueue queue = null;
 
   private final void mergeTerms() throws IOException {
     try {
-      freqOutput = directory.createFile(segment + ".frq");
-      proxOutput = directory.createFile(segment + ".prx");
+      freqOutput = directory.createOutput(segment + ".frq");
+      proxOutput = directory.createOutput(segment + ".prx");
       termInfosWriter =
               new TermInfosWriter(directory, segment, fieldInfos);
       skipInterval = termInfosWriter.skipInterval;
@@ -404,7 +404,7 @@ final class SegmentMerger {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
-        OutputStream output = directory.createFile(segment + ".f" + i);
+        IndexOutput output = directory.createOutput(segment + ".f" + i);
         try {
           for (int j = 0; j < readers.size(); j++) {
             IndexReader reader = (IndexReader) readers.elementAt(j);

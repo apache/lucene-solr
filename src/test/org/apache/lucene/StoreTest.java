@@ -18,7 +18,7 @@ package org.apache.lucene;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -57,7 +57,7 @@ class StoreTest {
       byte b = (byte)(gen.nextInt() & 0x7F);
       //System.out.println("filling " + name + " with " + length + " of " + b);
 
-      OutputStream file = store.createFile(name);
+      IndexOutput file = store.createOutput(name);
 
       for (int j = 0; j < length; j++)
 	file.writeByte(b);

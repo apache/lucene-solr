@@ -4,7 +4,7 @@ package org.apache.lucene.index;
 import junit.framework.TestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ public class TestFieldInfos extends TestCase {
   protected void tearDown() {
   }
 
-  public void test() {
+  public void test() throws IOException {
     //Positive test of FieldInfos
     assertTrue(testDoc != null);
     FieldInfos fieldInfos = new FieldInfos();
@@ -34,7 +34,7 @@ public class TestFieldInfos extends TestCase {
     assertTrue(fieldInfos.size() == 7); //this is 7 b/c we are using the no-arg constructor
     RAMDirectory dir = new RAMDirectory();
     String name = "testFile";
-    OutputStream output = dir.createFile(name);
+    IndexOutput output = dir.createOutput(name);
     assertTrue(output != null);
     //Use a RAMOutputStream
     

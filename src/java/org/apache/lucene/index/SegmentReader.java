@@ -26,7 +26,7 @@ import java.util.Vector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 
@@ -69,7 +69,7 @@ class SegmentReader extends IndexReader {
 
     private void reWrite() throws IOException {
       // NOTE: norms are re-written in regular directory, not cfs
-      OutputStream out = directory().createFile(segment + ".tmp");
+      IndexOutput out = directory().createOutput(segment + ".tmp");
       try {
         out.writeBytes(bytes, maxDoc());
       } finally {

@@ -22,7 +22,7 @@ import java.io.File;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.FSDirectory;
@@ -66,7 +66,7 @@ public class TestCompoundFile extends TestCase
     private void createRandomFile(Directory dir, String name, int size)
     throws IOException
     {
-        OutputStream os = dir.createFile(name);
+        IndexOutput os = dir.createOutput(name);
         for (int i=0; i<size; i++) {
             byte b = (byte) (Math.random() * 256);
             os.writeByte(b);
@@ -84,7 +84,7 @@ public class TestCompoundFile extends TestCase
                                     int size)
     throws IOException
     {
-        OutputStream os = dir.createFile(name);
+        IndexOutput os = dir.createOutput(name);
         for (int i=0; i < size; i++) {
             os.writeByte(start);
             start ++;
@@ -313,7 +313,7 @@ public class TestCompoundFile extends TestCase
     throws IOException
     {
         // Setup the test file - we need more than 1024 bytes
-        OutputStream os = fsdir.createFile(file);
+        IndexOutput os = fsdir.createOutput(file);
         for(int i=0; i<2000; i++) {
             os.writeByte((byte) i);
         }

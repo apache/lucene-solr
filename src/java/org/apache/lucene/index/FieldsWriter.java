@@ -22,20 +22,20 @@ import java.util.Enumeration;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 
 final class FieldsWriter
 {
     private FieldInfos fieldInfos;
 
-    private OutputStream fieldsStream;
+    private IndexOutput fieldsStream;
 
-    private OutputStream indexStream;
+    private IndexOutput indexStream;
 
     FieldsWriter(Directory d, String segment, FieldInfos fn) throws IOException {
         fieldInfos = fn;
-        fieldsStream = d.createFile(segment + ".fdt");
-        indexStream = d.createFile(segment + ".fdx");
+        fieldsStream = d.createOutput(segment + ".fdt");
+        indexStream = d.createOutput(segment + ".fdx");
     }
 
     final void close() throws IOException {

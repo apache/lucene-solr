@@ -26,7 +26,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
@@ -617,7 +617,7 @@ public class IndexWriter {
   }
 
   private final void writeDeleteableFiles(Vector files) throws IOException {
-    OutputStream output = directory.createFile("deleteable.new");
+    IndexOutput output = directory.createOutput("deleteable.new");
     try {
       output.writeInt(files.size());
       for (int i = 0; i < files.size(); i++)

@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.StringHelper;
 
@@ -30,7 +30,7 @@ final class TermInfosWriter {
   public static final int FORMAT = -2;
 
   private FieldInfos fieldInfos;
-  private OutputStream output;
+  private IndexOutput output;
   private Term lastTerm = new Term("", "");
   private TermInfo lastTi = new TermInfo();
   private long size = 0;
@@ -77,7 +77,7 @@ final class TermInfosWriter {
          boolean isi) throws IOException {
     fieldInfos = fis;
     isIndex = isi;
-    output = directory.createFile(segment + (isIndex ? ".tii" : ".tis"));
+    output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));
     output.writeInt(FORMAT);                      // write format
     output.writeLong(0);                          // leave space for size
     output.writeInt(indexInterval);             // write indexInterval

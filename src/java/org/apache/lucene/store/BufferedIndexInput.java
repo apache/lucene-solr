@@ -20,7 +20,7 @@ import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput {
-  static final int BUFFER_SIZE = OutputStream.BUFFER_SIZE;
+  static final int BUFFER_SIZE = BufferedIndexOutput.BUFFER_SIZE;
 
   private byte[] buffer;
 

@@ -62,10 +62,18 @@ public abstract class Directory {
   public abstract long fileLength(String name)
        throws IOException;
 
+  /** @deprecated use {@link #createOutput(String)} */
+  public OutputStream createFile(String name) throws IOException {
+    return (OutputStream)createOutput(name);
+  }
+
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public abstract OutputStream createFile(String name)
-       throws IOException;
+  public IndexOutput createOutput(String name) throws IOException {
+    // default implementation for back compatibility
+    // this method should be abstract
+    return (IndexOutput)createFile(name);
+  }
 
   /** @deprecated use {@link #openInput(String)} */
   public InputStream openFile(String name) throws IOException {

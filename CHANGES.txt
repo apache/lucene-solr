@@ -58,8 +58,9 @@ $Id$
        
 12. Permit unbuffered Directory implementations (e.g., using mmap).
     InputStream is replaced by the new classes IndexInput and
-    BufferedIndexInput.  InputStream is now deprecated and FSDirectory
-    is now subclassable. (cutting)
+    BufferedIndexInput.  OutputStream is replaced by the new classes
+    IndexOutput and BufferedIndexOutput.  InputStream and OutputStream
+    are now deprecated and FSDirectory is now subclassable. (cutting)
 
 13. Fixed bug #31241: Sorting could lead to incorrect results (documents
     missing, others duplicated) if the sort keys were not unique and there

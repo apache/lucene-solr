@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
@@ -58,7 +58,7 @@ final class TermVectorsWriter {
   public static final String TVX_EXTENSION = ".tvx";
   public static final String TVD_EXTENSION = ".tvd";
   public static final String TVF_EXTENSION = ".tvf";
-  private OutputStream tvx = null, tvd = null, tvf = null;
+  private IndexOutput tvx = null, tvd = null, tvf = null;
   private Vector fields = null;
   private Vector terms = null;
   private FieldInfos fieldInfos;
@@ -77,11 +77,11 @@ final class TermVectorsWriter {
                            FieldInfos fieldInfos)
     throws IOException {
     // Open files for TermVector storage
-    tvx = directory.createFile(segment + TVX_EXTENSION);
+    tvx = directory.createOutput(segment + TVX_EXTENSION);
     tvx.writeInt(FORMAT_VERSION);
-    tvd = directory.createFile(segment + TVD_EXTENSION);
+    tvd = directory.createOutput(segment + TVD_EXTENSION);
     tvd.writeInt(FORMAT_VERSION);
-    tvf = directory.createFile(segment + TVF_EXTENSION);
+    tvf = directory.createOutput(segment + TVF_EXTENSION);
     tvf.writeInt(FORMAT_VERSION);
 
     this.fieldInfos = fieldInfos;
