@@ -29,13 +29,13 @@ public class GradientFormatter implements Formatter
 
     int fgRMax, fgGMax, fgBMax;
 
-    boolean highlightForeground;
+    protected boolean highlightForeground;
 
     int bgRMin, bgGMin, bgBMin;
 
     int bgRMax, bgGMax, bgBMax;
 
-    boolean highlightBackground;
+    protected boolean highlightBackground;
 
     /**
      * Sets the color range for the IDF scores
