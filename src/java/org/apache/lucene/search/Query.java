@@ -58,10 +58,17 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   public float getBoost() { return boost; }
 
   /** Prints a query to a string, with <code>field</code> as the default field
-   * for terms.  <p>The representation used is one that is readable by
-   * {@link org.apache.lucene.queryParser.QueryParser QueryParser}
-   * (although, if the query was created by the parser, the printed
-   * representation may not be exactly what was parsed).
+   * for terms.  <p>The representation used is one that is supposed to be readable
+   * by {@link org.apache.lucene.queryParser.QueryParser QueryParser}. However,
+   * there are the following limitations:
+   * <ul>
+   *  <li>If the query was created by the parser, the printed
+   *  representation may not be exactly what was parsed. For example,
+   *  characters that need to be escaped will be represented without
+   *  the required backslash.</li>
+   * <li>Some of the more complicated queries (e.g. span queries)
+   *  don't have a representation that can be parsed by QueryParser.</li>
+   * </ul>
    */
   public abstract String toString(String field);
 

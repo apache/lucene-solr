@@ -20,7 +20,6 @@ import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryParser.QueryParser;
 
 /** A Query that matches documents containing a term.
   This may be combined with other terms with a {@link BooleanQuery}.
@@ -143,10 +142,10 @@ public class TermQuery extends Query {
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
     if (!term.field().equals(field)) {
-      buffer.append(QueryParser.escape(term.field()));
+      buffer.append(term.field());
       buffer.append(":");
     }
-    buffer.append(QueryParser.escape(term.text()));
+    buffer.append(term.text());
     if (getBoost() != 1.0f) {
       buffer.append("^");
       buffer.append(Float.toString(getBoost()));
