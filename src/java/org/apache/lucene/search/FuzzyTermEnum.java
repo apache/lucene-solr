@@ -124,7 +124,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      * This static array saves us from the time required to create a new array
      * everytime editDistance is called.
      */
-    private int e[][] = new int[0][0];
+    private int e[][] = new int[1][1];
     
     /**
      Levenshtein distance also known as edit distance is a measure of similiarity
@@ -137,7 +137,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      */ 
     private final int editDistance(String s, String t, int n, int m) {
         if (e.length <= n || e[0].length <= m) {
-            e = new int[Math.max(e.length, n+1)][Math.max(e.length, m+1)];
+            e = new int[Math.max(e.length, n+1)][Math.max(e[0].length, m+1)];
         }
         int d[][] = e; // matrix
         int i; // iterates through s
