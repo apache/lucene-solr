@@ -42,9 +42,7 @@ final class FieldInfos {
   private ArrayList byNumber = new ArrayList();
   private HashMap byName = new HashMap();
 
-  FieldInfos() {
-    add("", false);
-  }
+  FieldInfos() { }
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
@@ -168,23 +166,49 @@ final class FieldInfos {
   }
 
   public int fieldNumber(String fieldName) {
-    FieldInfo fi = fieldInfo(fieldName);
-    if (fi != null)
-      return fi.number;
-    else
+    try {
+      FieldInfo fi = fieldInfo(fieldName);
+      if (fi != null)
+        return fi.number;
+    }
+    catch (IndexOutOfBoundsException ioobe) {
       return -1;
+    }
+    return -1;
   }
 
   public FieldInfo fieldInfo(String fieldName) {
     return (FieldInfo) byName.get(fieldName);
   }
 
+  /**
+   * Return the fieldName identified by it's number.
+   * @param fieldNumber
+   * @return the fieldName or an empty string when the field
+   * with the given number doesn't exist.
+   */  
   public String fieldName(int fieldNumber) {
-    return fieldInfo(fieldNumber).name;
+    try {
+      return fieldInfo(fieldNumber).name;
+    }
+    catch (NullPointerException npe) {
+      return "";
+    }
   }
 
+  /**
+   * Return the fieldinfo object referenced by the fieldNumber.
+   * @param fieldNumber
+   * @return the FieldInfo object or null when the given fieldNumber
+   * doesn't exist.
+   */  
   public FieldInfo fieldInfo(int fieldNumber) {
-    return (FieldInfo) byNumber.get(fieldNumber);
+    try {
+      return (FieldInfo) byNumber.get(fieldNumber);
+    }
+    catch (IndexOutOfBoundsException ioobe) {
+      return null;
+    }
   }
 
   public int size() {
