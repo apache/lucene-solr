@@ -56,6 +56,7 @@ package org.apache.lucene.search;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -180,5 +181,33 @@ public class TestPhraseQuery extends TestCase {
     query.setSlop(6);
     hits = searcher.search(query);
     assertEquals("slop of 6 just right", 1, hits.length());
+  }
+  
+  public void testPhraseQueryWithStopAnalyzer() throws Exception {
+    RAMDirectory directory = new RAMDirectory();
+    StopAnalyzer stopAnalyzer = new StopAnalyzer();
+    IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true);
+    Document doc = new Document();
+    doc.add(Field.Text("field", "the stop words are here"));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(directory);
+
+    // valid exact phrase query
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field","stop"));
+    query.add(new Term("field","words"));
+    Hits hits = searcher.search(query);
+    assertEquals(1, hits.length());
+
+    // currently StopAnalyzer does not leave "holes", so this matches.
+    query = new PhraseQuery();
+    query.add(new Term("field", "words"));
+    query.add(new Term("field", "here"));
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+
+    searcher.close();
   }
 }
