@@ -66,15 +66,20 @@ PARSER_BEGIN(HTMLParser)
 package org.apache.lucene.demo.html;
 
 import java.io.*;
+import java.util.Properties;
 
 public class HTMLParser {
   public static int SUMMARY_LENGTH = 200;
-  
+
   StringBuffer title = new StringBuffer(SUMMARY_LENGTH);
   StringBuffer summary = new StringBuffer(SUMMARY_LENGTH * 2);
+  Properties metaTags=new Properties();
+  String currentMetaTag="";
   int length = 0;
   boolean titleComplete = false;
   boolean inTitle = false;
+  boolean inMetaTag = false;
+  boolean inStyle = false;
   boolean inScript = false;
   boolean afterTag = false;
   boolean afterSpace = false;
@@ -98,6 +103,21 @@ public class HTMLParser {
     }
     return title.toString().trim();
   }
+
+  public Properties getMetaTags() throws IOException,
+InterruptedException {
+    if (pipeIn == null)
+      getReader();				  // spawn parsing thread
+    while (true) {
+      synchronized(this) {
+	if (titleComplete || (length > SUMMARY_LENGTH))
+	  break;
+	wait(10);
+      }
+    }
+    return metaTags;
+  }
+
 
   public String getSummary() throws IOException, InterruptedException {
     if (pipeIn == null)
@@ -124,7 +144,7 @@ public class HTMLParser {
     if (pipeIn == null) {
       pipeIn = new PipedReader();
       pipeOut = new PipedWriter(pipeIn);
-      
+
       Thread thread = new ParserThread(this);
       thread.start();				  // start parsing
     }
@@ -146,6 +166,13 @@ public class HTMLParser {
   void addText(String text) throws IOException {
     if (inScript)
       return;
+    if (inStyle)
+      return;
+    if (inMetaTag)
+    {
+	metaTags.setProperty(currentMetaTag, text);
+      	return;
+    }
     if (inTitle)
       title.append(text);
     else {
@@ -163,7 +190,7 @@ public class HTMLParser {
 
     afterSpace = false;
   }
-  
+
   void addSpace() throws IOException {
     if (inScript)
       return;
@@ -172,7 +199,7 @@ public class HTMLParser {
 	title.append(" ");
       else
 	addToSummary(" ");
-      
+
       String space = afterTag ? eol : " ";
       length += space.length();
       pipeOut.write(space);
@@ -220,6 +247,8 @@ void Tag() throws IOException :
 {
   t1=<TagName> {
     inTitle = t1.image.equalsIgnoreCase("<title"); // keep track if in <TITLE>
+    inMetaTag = t1.image.equalsIgnoreCase("<META"); // keep track if in <META>
+    inStyle = t1.image.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
     inImg = t1.image.equalsIgnoreCase("<img");	  // keep track if in <IMG>
     if (inScript) {				  // keep track if in <SCRIPT>
       inScript = !t1.image.equalsIgnoreCase("</script");
@@ -233,6 +262,20 @@ void Tag() throws IOException :
      {
        if (inImg && t1.image.equalsIgnoreCase("alt") && t2 != null)
          addText("[" + t2.image + "]");
+
+    	if(inMetaTag &&
+			(  t1.image.equalsIgnoreCase("name") ||
+			   t1.image.equalsIgnoreCase("HTTP-EQUIV")
+			)
+	   && t2 != null)
+	{
+		currentMetaTag=t2.image.toLowerCase();
+	}
+    	if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
+null)
+	{
+		addText(t2.image);
+	}
      }
     )?
    )?
@@ -272,7 +315,7 @@ void CommentTag() :
  |
   (<Comment2> ( <CommentText2> )* <CommentEnd2>)
 }
-  
+
 
 TOKEN :
 {
