@@ -76,7 +76,7 @@ class DocTest {
     SegmentReader r1 = new SegmentReader(new SegmentInfo(seg1, 1, directory));
     SegmentReader r2 = new SegmentReader(new SegmentInfo(seg2, 1, directory));
 
-    SegmentMerger merger = new SegmentMerger(directory, merged, false);
+    SegmentMerger merger = new SegmentMerger(directory, merged);
     merger.add(r1);
     merger.add(r2);
     merger.merge();

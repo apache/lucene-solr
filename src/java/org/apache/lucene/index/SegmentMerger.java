@@ -37,7 +37,6 @@ import org.apache.lucene.store.RAMOutputStream;
  * @see #add
  */
 final class SegmentMerger {
-  private boolean useCompoundFile;
   private Directory directory;
   private String segment;
 
@@ -56,12 +55,10 @@ final class SegmentMerger {
    * 
    * @param dir The Directory to merge the other segments into
    * @param name The name of the new segment
-   * @param compoundFile true if the new segment should use a compoundFile
    */
-  SegmentMerger(Directory dir, String name, boolean compoundFile) {
+  SegmentMerger(Directory dir, String name) {
     directory = dir;
     segment = name;
-    useCompoundFile = compoundFile;
   }
 
   /**
@@ -96,9 +93,6 @@ final class SegmentMerger {
     if (fieldInfos.hasVectors())
       mergeVectors();
 
-    if (useCompoundFile)
-      createCompoundFile();
-
     return value;
   }
   
@@ -114,7 +108,7 @@ final class SegmentMerger {
     }
   }
 
-  private final void createCompoundFile()
+  final void createCompoundFile()
           throws IOException {
     CompoundFileWriter cfsWriter =
             new CompoundFileWriter(directory, segment + ".cfs");

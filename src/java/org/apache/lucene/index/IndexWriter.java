@@ -400,7 +400,7 @@ public class IndexWriter {
     optimize();					  // start with zero or 1 seg
 
     String mergedName = newSegmentName();
-    SegmentMerger merger = new SegmentMerger(directory, mergedName, useCompoundFile);
+    final SegmentMerger merger = new SegmentMerger(directory, mergedName);
 
     final Vector segmentsToDelete = new Vector();
     IndexReader sReader = null;
@@ -426,6 +426,8 @@ public class IndexWriter {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit changes
 	    deleteSegments(segmentsToDelete);  // delete now-unused segments
+	    if(useCompoundFile)
+	        merger.createCompoundFile();
 	    return null;
 	  }
 	}.run();
@@ -479,8 +481,8 @@ public class IndexWriter {
       throws IOException {
     String mergedName = newSegmentName();
     if (infoStream != null) infoStream.print("merging segments");
-    SegmentMerger merger =
-        new SegmentMerger(directory, mergedName, useCompoundFile);
+    final SegmentMerger merger =
+        new SegmentMerger(directory, mergedName);
 
     final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < segmentInfos.size(); i++) {
@@ -512,6 +514,8 @@ public class IndexWriter {
           public Object doBody() throws IOException {
             segmentInfos.write(directory);     // commit before deleting
             deleteSegments(segmentsToDelete);  // delete now-unused segments
+            if(useCompoundFile)
+                merger.createCompoundFile();
             return null;
           }
         }.run();

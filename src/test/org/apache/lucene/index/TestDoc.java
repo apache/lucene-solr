@@ -181,12 +181,15 @@ public class TestDoc extends TestCase {
       SegmentReader r2 = new SegmentReader(new SegmentInfo(seg2, 1, directory));
 
       SegmentMerger merger =
-        new SegmentMerger(directory, merged, useCompoundFile);
+        new SegmentMerger(directory, merged);
 
       merger.add(r1);
       merger.add(r2);
       merger.merge();
       merger.closeReaders();
+      
+      if(useCompoundFile)
+          merger.createCompoundFile();
 
       directory.close();
    }

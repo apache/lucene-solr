@@ -72,7 +72,7 @@ public class TestSegmentMerger extends TestCase {
   
   public void testMerge() {                             
     //System.out.println("----------------TestMerge------------------");
-    SegmentMerger merger = new SegmentMerger(mergedDir, mergedSegment, false);
+    SegmentMerger merger = new SegmentMerger(mergedDir, mergedSegment);
     merger.add(reader1);
     merger.add(reader2);
     try {
