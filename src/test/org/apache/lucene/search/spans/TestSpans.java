@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
@@ -29,8 +28,6 @@ import org.apache.lucene.document.Field;
 import junit.framework.TestCase;
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.TreeSet;
 
 public class TestSpans extends TestCase {
   private IndexSearcher searcher;
@@ -40,7 +37,6 @@ public class TestSpans extends TestCase {
   public void setUp() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true);
-    StringBuffer buffer = new StringBuffer();
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(Field.Text(field, docFields[i]));

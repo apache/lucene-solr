@@ -16,7 +16,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Date;
 import java.util.Random;
 import junit.framework.TestCase;
 
@@ -54,8 +53,6 @@ public class TestPriorityQueue
 	PriorityQueue pq = new IntegerQueue(count);
 	Random gen = new Random();
 	int sum = 0, sum2 = 0;
-
-	Date start = new Date();
 
 	for (int i = 0; i < count; i++)
 	{
