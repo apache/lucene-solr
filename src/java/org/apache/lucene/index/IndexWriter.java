@@ -356,7 +356,7 @@ public class IndexWriter {
     segmentInfos.addElement(new SegmentInfo(mergedName, docCount, directory));
 
     synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock("commit.lock")) {
+      new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit changes
 	    return null;
