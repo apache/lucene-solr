@@ -29,8 +29,8 @@ import java.io.Serializable;
  * and does not need to be stored (unless you happen to want it back with the
  * rest of your document data).  In other words:
  *
- * <dl><dd><code>document.add (new Field ("byNumber", Integer.toString(x), false, true, false));</code>
- * </dd></dl>
+ * <p><code>document.add (new Field ("byNumber", Integer.toString(x), Field.Store.NO, Field.Index.UN_TOKENIZED));</code></p>
+ * 
  *
  * <p><h3>Valid Types of Values</h3>
  *
