@@ -83,6 +83,7 @@ public class TestIndexReader extends TestCase
         // verify fields again
         reader = IndexReader.open(d);
         fieldNames = reader.getFieldNames();
+        assertEquals(9, fieldNames.size());    // the following fields + an empty one (bug?!)
         assertTrue(fieldNames.contains("keyword"));
         assertTrue(fieldNames.contains("text"));
         assertTrue(fieldNames.contains("unindexed"));
@@ -94,17 +95,19 @@ public class TestIndexReader extends TestCase
 
         // verify that only indexed fields were returned
         Collection indexedFieldNames = reader.getFieldNames(true);
-        assertTrue(fieldNames.contains("keyword"));
-        assertTrue(fieldNames.contains("text"));
-        assertTrue(fieldNames.contains("unstored"));
-        assertTrue(fieldNames.contains("keyword2"));
-        assertTrue(fieldNames.contains("text2"));
-        assertTrue(fieldNames.contains("unindexed2"));
-        assertTrue(fieldNames.contains("unstored2"));
+        assertEquals(6, indexedFieldNames.size());
+        assertTrue(indexedFieldNames.contains("keyword"));
+        assertTrue(indexedFieldNames.contains("text"));
+        assertTrue(indexedFieldNames.contains("unstored"));
+        assertTrue(indexedFieldNames.contains("keyword2"));
+        assertTrue(indexedFieldNames.contains("text2"));
+        assertTrue(indexedFieldNames.contains("unstored2"));
 
         // verify that only unindexed fields were returned
         Collection unindexedFieldNames = reader.getFieldNames(false);
-        assertTrue(fieldNames.contains("unindexed"));
+        assertEquals(3, unindexedFieldNames.size());    // the following fields + an empty one
+        assertTrue(unindexedFieldNames.contains("unindexed"));
+        assertTrue(unindexedFieldNames.contains("unindexed2"));
     }
 
 
