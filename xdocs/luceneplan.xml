@@ -91,21 +91,21 @@
                         </li>
                 </ul>
         </section>
-        <section name="Indexers">
+        <section name="Crawlers">
                 <p>
-                        Indexers are standard crawlers.  They go crawl a file
+                        Crawlers are data source executable code.  They crawl a file
                         system, ftp site, web site, etc. to create the index.
-                        These standard indexers may not make ALL of Lucene's
+                        These standard crawlers may not make ALL of Lucene's
                         functionality available, though they should be able to
                         make most of it available through configuration.
                 </p>
                 <!--<section name="AbstractIndexer">-->
                 <p>
-                        <b> Abstract Indexer </b>
+                        <b> Abstract Crawler </b>
                 </p>
                         <p>
-                                The Abstract indexer is basically the parent for all
-                                Indexer classes.  It provides implementation for the
+                                The AbstractCrawler is basically the parent for all
+                                Crawler classes.  It provides implementation for the
                                 following functions/properties:
                         </p>
                         <ul>
@@ -153,6 +153,35 @@
                                         0 - Long.MAX_VALUE.
                                 </li>
                                 <li>
+                                        SleeptimeBetweenCalls - can be used to 
+                                        avoid flooding a machine with too many 
+                                        requests
+                                </li>
+                                <li>
+                                        RequestTimeout - kill the crawler
+                                        request after the specified period of
+                                        inactivity.
+                                </li>
+                                <li>
+                                        IncludeFilter - include only items 
+                                        matching filter.  (can occur mulitple
+                                        times)
+                                </li>
+                                <li>
+                                        ExcludeFilter - exclude only items 
+                                        matching filter.  (can occur multiple
+                                        times)
+                                </li>
+                                <li>
+                                        MaxItems - stops indexing after x
+                                        documents have been indexed.
+                                </li>
+                                <li>
+                                        MaxMegs - stops indexing after x megs
+                                        have been indexed..  (should this be in
+                                        specific crawlers?)
+                                </li>
+                                <li>
                                         properties - in addition to the settings
                                         (probably from the command line) read
                                         this properties file and get them from
@@ -166,20 +195,20 @@
                 <!--</section>-->
                 <!--<s2 title="FileSystemIndexer">-->
                         <p>
-                              <b>FileSystemIndexer</b>
+                              <b>FileSystemCrawler</b>
                         </p>
                         <p>
-                                This should extend the AbstractIndexer and
+                                This should extend the AbstractCrawler and
                                 support any addtional options required for a
                                 filesystem index.
                         </p>
                 <!--</s2>-->
                 <!--<s2 title="HTTPIndexer">-->
                         <p>
-			      <b>HTTP Indexer </b>
+			      <b>HTTP Crawler </b>
                         </p>
                         <p>
-                                Supports the AbstractIndexer options as well as:                                
+                                Supports the AbstractCrawler options as well as:                                
                         </p>
                         <ul>
                                 <li>
