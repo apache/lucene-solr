@@ -23,7 +23,7 @@
                 languages.  If these versions are to remain compatible with Jakarta
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
-                complete and independent definition of the Jakarta Lucene 1.3 file
+                complete and independent definition of the Jakarta Lucene 1.4 file
                 formats.
             </p>
 
@@ -226,7 +226,7 @@
                 </li>
                 <li><p>Term Vectors.  For each field in each document, the term vector
                        (sometimes called document vector) is stored.  A term vector consists
-                       of the term text, term frequency and term position.
+                       of term text and term frequency.
                     </p>
                 </li>              
                 <li><p>Deleted documents.
@@ -771,8 +771,9 @@
                 <p>
                     A file named "deletable"
                     contains the names of files that are no longer used by the index, but
-                    which could not be deleted.  This is only generated on Win32, where a
-                    file may not be deleted while it is still open.
+                    which could not be deleted.  This is only used on Win32, where a
+                    file may not be deleted while it is still open. On other platforms
+                    the file contains only null bytes.
                 </p>
 
                 <p>
