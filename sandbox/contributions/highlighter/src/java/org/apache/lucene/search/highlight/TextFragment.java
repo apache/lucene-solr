@@ -25,13 +25,15 @@ package org.apache.lucene.search.highlight;
  */
 public class TextFragment
 {
+	StringBuffer markedUpText;
 	int fragNum;
 	int textStartPos;
 	int textEndPos;
 	float score;
 
-	public TextFragment(int textStartPos, int fragNum)
+	public TextFragment(StringBuffer markedUpText,int textStartPos, int fragNum)
 	{
+		this.markedUpText=markedUpText;
 		this.textStartPos = textStartPos;
 		this.fragNum = fragNum;
 	}
@@ -66,6 +68,12 @@ public class TextFragment
 	public int getFragNum()
 	{
 		return fragNum;
+	}
+
+	/* Returns the marked-up text for this text fragment 
+	 */
+	public String toString() {
+		return markedUpText.substring(textStartPos, textEndPos);
 	}
 
 }

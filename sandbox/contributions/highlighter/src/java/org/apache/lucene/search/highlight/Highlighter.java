@@ -96,11 +96,8 @@ public class Highlighter
 		throws IOException
 	{
 		maxNumFragments = Math.max(1, maxNumFragments); //sanity check
-		StringBuffer newText = new StringBuffer();
-		
-		TextFragment[] frag =getBestDocFragments(tokenStream,text, newText, maxNumFragments);
-
-		mergeContiguousFragments(frag);
+	
+		TextFragment[] frag =getBestTextFragments(tokenStream,text, true,maxNumFragments);
 
 		//Get text
 		ArrayList fragTexts = new ArrayList();
@@ -109,33 +106,35 @@ public class Highlighter
 		{
 			if ((frag[i] != null) && (frag[i].getScore() > 0))
 			{
-				fragTexts.add(
-					newText.substring(
-						frag[i].textStartPos,
-						frag[i].textEndPos));
+				fragTexts.add(frag[i].toString());
 			}
 		}
 		return (String[]) fragTexts.toArray(new String[0]);
 	}
+	
 
 	/**
-	 * Low level api to get the most relevant sections of the document
+	 * Low level api to get the most relevant (formatted) sections of the document.
+	 * This method has been made public to allow visibility of score information held in TextFragment objects.
+	 * Thanks to Jason Calabrese for help in redefining the interface.  
 	 * @param tokenStream
 	 * @param text
 	 * @param maxNumFragments
+	 * @param mergeContiguousFragments
 	 * @return 
 	 * @throws IOException
 	 */
-	private final TextFragment[] getBestDocFragments(
+	public final TextFragment[] getBestTextFragments(
 		TokenStream tokenStream,	
 		String text,
-		StringBuffer newText,
+		boolean mergeContiguousFragments,
 		int maxNumFragments)
 		throws IOException
 	{
 		ArrayList docFrags = new ArrayList();
+		StringBuffer newText=new StringBuffer();
 
-		TextFragment currentFrag =	new TextFragment(newText.length(), docFrags.size());
+		TextFragment currentFrag =	new TextFragment(newText,newText.length(), docFrags.size());
 		fragmentScorer.startFragment(currentFrag);
 		docFrags.add(currentFrag);
 	
@@ -175,7 +174,7 @@ public class Highlighter
 						currentFrag.setScore(fragmentScorer.getFragmentScore());
 						//record stats for a new fragment
 						currentFrag.textEndPos = newText.length();
-						currentFrag =new TextFragment(newText.length(), docFrags.size());
+						currentFrag =new TextFragment(newText, newText.length(), docFrags.size());
 						fragmentScorer.startFragment(currentFrag);
 						docFrags.add(currentFrag);
 					}
@@ -243,6 +242,22 @@ public class Highlighter
 			{
 				frag[i] = (TextFragment) fragQueue.pop();
 			}
+			
+			//merge any contiguous fragments to improve readability
+			if(mergeContiguousFragments)
+			{
+				mergeContiguousFragments(frag);
+				ArrayList fragTexts = new ArrayList();
+				for (int i = 0; i < frag.length; i++)
+				{
+					if ((frag[i] != null) && (frag[i].getScore() > 0))
+					{
+						fragTexts.add(frag[i]);
+					}
+				}
+				frag= (TextFragment[]) fragTexts.toArray(new TextFragment[0]);				
+			}
+			
 			return frag;
 
 		}

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -41,12 +42,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.highlight.Formatter;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleFragmenter;
-import org.apache.lucene.search.highlight.TokenGroup;
-import org.apache.lucene.search.highlight.WeightedTerm;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
@@ -219,7 +214,6 @@ public class HighlighterTest extends TestCase implements Formatter
 	}
 
 
-
 	public void testGetSimpleHighlight() throws Exception
 	{
 		doSearching("Kennedy");
@@ -235,6 +229,37 @@ public class HighlighterTest extends TestCase implements Formatter
 			System.out.println("\t" + result);
 		}
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
+	}
+
+
+	public void testGetTextFragments() throws Exception
+	{
+		doSearching("Kennedy");
+		Highlighter highlighter =
+			new Highlighter(this,new QueryScorer(query));
+		highlighter.setTextFragmenter(new SimpleFragmenter(20));
+
+		for (int i = 0; i < hits.length(); i++)
+		{
+			String text = hits.doc(i).get(FIELD_NAME);
+			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
+
+			String stringResults[] = highlighter.getBestFragments(tokenStream,text,10);
+
+			tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
+			TextFragment fragmentResults[] = highlighter.getBestTextFragments(tokenStream,text,true,10);
+
+			assertTrue("Failed to find correct number of text Fragments: " + 
+				fragmentResults.length + " vs "+ stringResults.length, fragmentResults.length==stringResults.length);
+			for (int j = 0; j < stringResults.length; j++) 
+			{
+				System.out.println(fragmentResults[j]);
+				assertTrue("Failed to find same text Fragments: " + 
+					fragmentResults[j] + " found", fragmentResults[j].toString().equals(stringResults[j]));
+				
+			}
+			
+		}
 	}
 
 	public void testMaxSizeHighlight() throws Exception
