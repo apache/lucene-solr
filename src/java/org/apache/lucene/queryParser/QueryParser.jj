@@ -288,6 +288,7 @@ PARSER_END(QueryParser)
 | <QUOTED:     "\"" (~["\""])+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY:     "~" >
+| <SLOP:      "~" (<_NUM_CHAR>)+ >
 | <PREFIXTERM:  <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" >
 | <WILDTERM:  <_TERM_START_CHAR> 
               (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
@@ -375,7 +376,7 @@ Query Clause(String field) : {
     
 
 Query Term(String field) : { 
-  Token term, boost=null;
+  Token term, boost=null, slop=null;
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
@@ -411,10 +412,18 @@ Query Term(String field) : {
                             rangein);
         }
      | term=<QUOTED> 
+       [ slop=<SLOP> ]
        [ <CARAT> boost=<NUMBER> ]
        { 
          q = getFieldQuery(field, analyzer, 
                            term.image.substring(1, term.image.length()-1)); 
+         if (slop != null && q instanceof PhraseQuery) {
+           try { 
+             int s = Float.valueOf(slop.image.substring(1)).intValue();
+             ((PhraseQuery) q).setSlop(s);
+           }
+           catch (Exception ignored) { }
+         }
        }
   )
   { 

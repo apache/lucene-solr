@@ -163,6 +163,11 @@ final public class PhraseQuery extends Query {
     }
     buffer.append("\"");
 
+    if (slop != 0) {
+      buffer.append("~");
+      buffer.append(slop);
+    }
+
     if (boost != 1.0f) {
       buffer.append("^");
       buffer.append(Float.toString(boost));

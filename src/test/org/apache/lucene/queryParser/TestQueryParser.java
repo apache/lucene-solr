@@ -166,6 +166,7 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term^2.0", null, "term^2.0");
     assertQueryEquals("term^2", null, "term^2.0");
     assertQueryEquals("\"germ term\"^2.0", null, "\"germ term\"^2.0");
+    assertQueryEquals("\"term germ\"^2", null, "\"term germ\"^2.0");
 
     assertQueryEquals("(foo OR bar) AND (baz OR boo)", null, 
                       "+(foo bar) +(baz boo)");
@@ -182,6 +183,14 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
+  }
+
+  public void testSlop() throws Exception {
+    assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
+    assertQueryEquals("\"term germ\"~2 flork", null, "\"term germ\"~2 flork");
+    assertQueryEquals("\"term\"~2", null, "term");
+    assertQueryEquals("\" \"~2 germ", null, "germ");
+    assertQueryEquals("\"term germ\"~2^2", null, "\"term germ\"~2^2.0");
   }
 
   public void testNumber() throws Exception {
