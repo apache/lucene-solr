@@ -5,7 +5,7 @@ $Id$
 1.3 RC2
 
  1. Added getFieldNames(boolean) to IndexReader, SegmentReader, and
-    SegmentsReader. (Julien Nioche via otis)  
+    SegmentsReader. (Julien Nioche via otis)
 
  2. Changed file locking to place lock files in
     System.getProperty("java.io.tmpdir"), where all users are
@@ -32,6 +32,8 @@ $Id$
     This patch also fixes incorrect term document frequences when the same term
     is present in multiple segments.
     (Christoph Goller via Otis)
+
+ 8. Added CachingWrapperFilter.
 
 
 1.3 RC1
