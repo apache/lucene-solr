@@ -20,11 +20,22 @@ import java.util.Date;
 
 /**
  * Provides support for converting dates to strings and vice-versa.
- * The strings are structured so that lexicographic sorting orders by date.
- * This makes them suitable for use as field values and search terms.
+ * The strings are structured so that lexicographic sorting orders by date,
+ * which makes them suitable for use as field values and search terms.
+ * 
  * <P>
- * Note: currenly dates before 1970 cannot be used, and therefore cannot be
- * indexed.
+ * Note that you do not have to use this class, you can just save your
+ * dates as strings if lexicographic sorting orders them by date. This is
+ * the case for example for dates like <code>yyyy-mm-dd hh:mm:ss</code>
+ * (of course you can leave out the delimiter characters to save some space).
+ * The advantage with using such a format is that you can easily save dates
+ * with the required granularity, e.g. leaving out seconds. This saves memory
+ * when searching with a RangeQuery or PrefixQuery, as Lucene
+ * expands these queries to a BooleanQuery with potentially very many terms. 
+ * 
+ * <P>
+ * Note: dates before 1970 cannot be used, and therefore cannot be
+ * indexed when using this class.
  */
 public class DateField {
   private DateField() {}
@@ -47,16 +58,16 @@ public class DateField {
 
   /**
    * Converts a Date to a string suitable for indexing.
-   * This method will throw a RuntimeException if the date specified in the
-   * method argument is before 1970.
+   * @throws RuntimeException if the date specified in the
+   * method argument is before 1970
    */
   public static String dateToString(Date date) {
     return timeToString(date.getTime());
   }
   /**
    * Converts a millisecond time to a string suitable for indexing.
-   * This method will throw a RuntimeException if the time specified in the
-   * method argument is negative, that is, before 1970.
+   * @throws RuntimeException if the time specified in the
+   * method argument is negative, that is, before 1970
    */
   public static String timeToString(long time) {
     if (time < 0)
