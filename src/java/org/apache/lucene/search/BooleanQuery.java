@@ -151,7 +151,6 @@ public class BooleanQuery extends Query {
 
       Query subQuery = c.query;
       if (subQuery instanceof BooleanQuery) {	  // wrap sub-bools in parens
-	BooleanQuery bq = (BooleanQuery)subQuery;
 	buffer.append("(");
 	buffer.append(c.query.toString(field));
 	buffer.append(")");

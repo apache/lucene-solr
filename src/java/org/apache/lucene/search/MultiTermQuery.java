@@ -76,7 +76,6 @@ import org.apache.lucene.index.TermEnum;
 public class MultiTermQuery extends Query {
     private Term term;
     private FilteredTermEnum enum;
-    private IndexReader reader;
     private BooleanQuery query;
     
     /** Enable or disable lucene style toString(field) format */
