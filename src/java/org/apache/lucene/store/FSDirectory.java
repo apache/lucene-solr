@@ -122,6 +122,11 @@ public final class FSDirectory extends Directory {
    if (!lockDir.isAbsolute()) {
      lockDir = new File(directory, LOCK_DIR);
    }
+   if (lockDir.exists() == false) {
+     if (lockDir.mkdirs() == false) {
+       throw new IOException("Cannot create lock directory: " + lockDir);
+     }
+   }
     if (create)
       create();
 
@@ -132,13 +137,13 @@ public final class FSDirectory extends Directory {
   private synchronized void create() throws IOException {
     if (!directory.exists())
       if (!directory.mkdirs())
-        throw new IOException("Cannot create directory: " + directory);
+        throw new IOException("Cannot create lock directory: " + directory);
 
     String[] files = directory.list();            // clear old files
     for (int i = 0; i < files.length; i++) {
       File file = new File(directory, files[i]);
       if (!file.delete())
-        throw new IOException("couldn't delete " + files[i]);
+        throw new IOException("Cannot delete " + files[i]);
     }
 
     String lockPrefix = getLockPrefix().toString(); // clear old locks
@@ -148,7 +153,7 @@ public final class FSDirectory extends Directory {
         continue;
       File lockFile = new File(lockDir, files[i]);
       if (!lockFile.delete())
-        throw new IOException("couldn't delete " + files[i]);
+        throw new IOException("Cannot delete " + files[i]);
     }
   }
 
@@ -192,7 +197,7 @@ public final class FSDirectory extends Directory {
   public final void deleteFile(String name) throws IOException {
     File file = new File(directory, name);
     if (!file.delete())
-      throw new IOException("couldn't delete " + name);
+      throw new IOException("Cannot delete " + name);
   }
 
   /** Renames an existing file in the directory. */
@@ -207,7 +212,7 @@ public final class FSDirectory extends Directory {
 
     if (nu.exists())
       if (!nu.delete())
-        throw new IOException("couldn't delete " + to);
+        throw new IOException("Cannot delete " + to);
 
     // Rename the old file to the new one. Unfortunately, the renameTo()
     // method does not work reliably under some JVMs.  Therefore, if the
@@ -233,21 +238,21 @@ public final class FSDirectory extends Directory {
         old.delete();
       }
       catch (IOException ioe) {
-        throw new IOException("couldn't rename " + from + " to " + to);
+        throw new IOException("Cannot rename " + from + " to " + to);
       }
       finally {
         if (in != null) {
           try {
             in.close();
           } catch (IOException e) {
-            throw new RuntimeException("could not close input stream: " + e.getMessage());
+            throw new RuntimeException("Cannot close input stream: " + e.getMessage());
           }
         }
         if (out != null) {
           try {
             out.close();
           } catch (IOException e) {
-            throw new RuntimeException("could not close output stream: " + e.getMessage());
+            throw new RuntimeException("Cannot close output stream: " + e.getMessage());
           }
         }
       }
