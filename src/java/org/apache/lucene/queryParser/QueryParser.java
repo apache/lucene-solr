@@ -93,8 +93,8 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /** Constructs a query parser.
-   *  @param field	the default field for query terms.
-   *  @param analyzer   used to find terms in the query text.
+   *  @param f	the default field for query terms.
+   *  @param a   used to find terms in the query text.
    */
   public QueryParser(String f, Analyzer a) {
     this(new FastCharStream(new StringReader("")));
@@ -195,9 +195,12 @@ public class QueryParser implements QueryParserConstants {
     clauses.addElement(new BooleanClause(q, required, prohibited));
   }
 
+  /**
+   * @exception ParseException throw in overridden method to disallow
+   */
   protected Query getFieldQuery(String field,
                                 Analyzer analyzer,
-                                String queryText) {
+                                String queryText)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -231,13 +234,16 @@ public class QueryParser implements QueryParserConstants {
     }
   }
 
+  /**
+   * @exception ParseException throw in overridden method to disallow
+   */
   protected Query getRangeQuery(String field,
                                 Analyzer analyzer,
                                 String part1,
                                 String part2,
-                                boolean inclusive)
+                                boolean inclusive) throws ParseException
   {
-    boolean isDate = false, isNumber = false;
+    boolean isDate = false;
 
     try {
       DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
@@ -270,8 +276,9 @@ public class QueryParser implements QueryParserConstants {
    *    to join.
    *
    * @return Resulting {@link Query} object.
+   * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getBooleanQuery(Vector clauses)
+  protected Query getBooleanQuery(Vector clauses) throws ParseException
   {
     BooleanQuery query = new BooleanQuery();
     for (int i = 0; i < clauses.size(); i++) {
@@ -299,8 +306,9 @@ public class QueryParser implements QueryParserConstants {
    *   characters (? or *), but is not simple prefix term
    *
    * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getWildcardQuery(String field, String termStr)
+  protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseWildcardTerms) {
         termStr = termStr.toLowerCase();
@@ -330,8 +338,9 @@ public class QueryParser implements QueryParserConstants {
    *    (<b>without</b> trailing '*' character!)
    *
    * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getPrefixQuery(String field, String termStr)
+  protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
     if (lowercaseWildcardTerms) {
         termStr = termStr.toLowerCase();
@@ -349,8 +358,9 @@ public class QueryParser implements QueryParserConstants {
    * @param termStr Term token to use for building term for the query
    *
    * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFuzzyQuery(String field, String termStr)
+  protected Query getFuzzyQuery(String field, String termStr) throws ParseException
   {
     Term t = new Term(field, termStr);
     return new FuzzyQuery(t);
