@@ -82,26 +82,11 @@ public class TestRussianAnalyzer extends TestCase
 
     private Reader sample1251;
 
-    public TestRussianAnalyzer(String name)
-    {
-        super(name);
-    }
+    private File dataDir;
 
-    /**
-     * @see TestCase#setUp()
-     */
     protected void setUp() throws Exception
     {
-        super.setUp();
-
-    }
-
-    /**
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
+      dataDir = new File(System.getProperty("dataDir"));
     }
 
     public void testUnicode() throws IOException
@@ -109,12 +94,12 @@ public class TestRussianAnalyzer extends TestCase
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.UnicodeRussian);
         inWords =
             new InputStreamReader(
-                new FileInputStream("src/test/org/apache/lucene/analysis/ru/testUnicode.txt"),
+                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUnicode.txt")),
                 "Unicode");
 
         sampleUnicode =
             new InputStreamReader(
-                new FileInputStream("src/test/org/apache/lucene/analysis/ru/resUnicode.htm"),
+                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/resUnicode.htm")),
                 "Unicode");
 
         TokenStream in = ra.tokenStream("all", inWords);
@@ -151,9 +136,9 @@ public class TestRussianAnalyzer extends TestCase
         //System.out.println(new java.util.Date());
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.KOI8);
         // KOI8
-        inWordsKOI8 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/testKOI8.txt"), "iso-8859-1");
+        inWordsKOI8 = new InputStreamReader(new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testKOI8.txt")), "iso-8859-1");
 
-        sampleKOI8 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/resKOI8.htm"), "iso-8859-1");
+        sampleKOI8 = new InputStreamReader(new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/resKOI8.htm")), "iso-8859-1");
 
         TokenStream in = ra.tokenStream("all", inWordsKOI8);
         RussianLetterTokenizer sample =
@@ -187,9 +172,9 @@ public class TestRussianAnalyzer extends TestCase
     public void test1251() throws IOException
     {
         // 1251
-        inWords1251 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/test1251.txt"), "iso-8859-1");
+        inWords1251 = new InputStreamReader(new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/test1251.txt")), "iso-8859-1");
 
-        sample1251 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/res1251.htm"), "iso-8859-1");
+        sample1251 = new InputStreamReader(new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/res1251.htm")), "iso-8859-1");
 
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.CP1251);
         TokenStream in = ra.tokenStream("", inWords1251);
