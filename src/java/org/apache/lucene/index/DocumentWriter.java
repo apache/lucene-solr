@@ -165,6 +165,7 @@ final class DocumentWriter {
 	  TokenStream stream = analyzer.tokenStream(fieldName, reader);
 	  try {
 	    for (Token t = stream.next(); t != null; t = stream.next()) {
+              position += (t.getPositionIncrement() - 1);
 	      addPosition(fieldName, t.termText(), position++);
 	      if (position > maxFieldLength) break;
 	    }
