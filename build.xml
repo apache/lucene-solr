@@ -288,16 +288,25 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar, javadocs">
+  <target name="package" depends="jar, javadocs, demo">
     <mkdir dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
+    <mkdir dir="${dist.dir}/demo"/>
+    <mkdir dir="${dist.dir}/demo/src"/>
+    <mkdir dir="${dist.dir}/demo/classes"/>
 
     <copy todir="${dist.dir}/docs">
       <fileset dir="${docs.dir}"/>
     </copy>
     <copy todir="${dist.dir}/docs/api">
       <fileset dir="${build.javadocs}"/>
+    </copy>
+    <copy todir="${dist.dir}/demo/classes">
+      <fileset dir="${build.demo.classes}"/>
+    </copy>
+    <copy todir="${dist.dir}/demo/src">
+      <fileset dir="${build.demo.src}"/>
     </copy>
     <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
   </target>
