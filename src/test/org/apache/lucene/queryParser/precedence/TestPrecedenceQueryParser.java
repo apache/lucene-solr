@@ -1,4 +1,4 @@
-package org.apache.lucene.queryParser;
+package org.apache.lucene.queryParser.precedence;
 
 /**
  * Copyright 2002-2004 The Apache Software Foundation
@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.DateField;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -34,15 +34,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
 import java.util.Calendar;
 
-/**
- * Tests QueryParser.
- */
-public class TestQueryParser extends TestCase {
+public class TestPrecedenceQueryParser extends TestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -84,7 +82,7 @@ public class TestQueryParser extends TestCase {
     }
   }
 
-  public static class QPTestParser extends QueryParser {
+  public static class QPTestParser extends PrecedenceQueryParser {
     public QPTestParser(String f, Analyzer a) {
       super(f, a);
     }
@@ -104,11 +102,11 @@ public class TestQueryParser extends TestCase {
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
-  public QueryParser getParser(Analyzer a) throws Exception {
+  public PrecedenceQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
       a = new SimpleAnalyzer();
-    QueryParser qp = new QueryParser("field", a);
-    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
+    qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
     return qp;
   }
 
@@ -128,7 +126,7 @@ public class TestQueryParser extends TestCase {
 
   public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
     throws Exception {
-    QueryParser qp = getParser(null);
+    PrecedenceQueryParser qp = getParser(null);
     qp.setLowercaseExpandedTerms(lowercase);
     Query q = qp.parse(query);
     String s = q.toString("field");
@@ -139,7 +137,7 @@ public class TestQueryParser extends TestCase {
   }
 
   public void assertWildcardQueryEquals(String query, String result) throws Exception {
-    QueryParser qp = getParser(null);
+    PrecedenceQueryParser qp = getParser(null);
     Query q = qp.parse(query);
     String s = q.toString("field");
     if (!s.equals(result)) {
@@ -152,8 +150,8 @@ public class TestQueryParser extends TestCase {
     throws Exception {
     if (a == null)
       a = new SimpleAnalyzer();
-    QueryParser qp = new QueryParser("field", a);
-    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
+    qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
     return qp.parse(query);
   }
 
@@ -214,13 +212,13 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
     
-    QueryParser qp = new QueryParser("field", new StandardAnalyzer());
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new StandardAnalyzer());
     // make sure OR is the default:
-    assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
-    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
-    assertEquals(QueryParser.AND_OPERATOR, qp.getDefaultOperator());
-    qp.setDefaultOperator(QueryParser.OR_OPERATOR);
-    assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
+    assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
+    qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
+    assertEquals(PrecedenceQueryParser.AND_OPERATOR, qp.getDefaultOperator());
+    qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
+    assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
   }
 
   public void testPunct() throws Exception {
@@ -322,8 +320,10 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
                       "term \"phrase1 phrase2\" term");
+    // note the parens in this next assertion differ from the original
+    // QueryParser behavior
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
-                      "+term -\"phrase1 phrase2\" term");
+                      "(+term -\"phrase1 phrase2\") term");
     assertQueryEquals("stop", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
@@ -344,7 +344,7 @@ public class TestQueryParser extends TestCase {
 
   public String getDate(String s) throws Exception {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    return DateField.dateToString(df.parse(s));
+    return DateTools.dateToString(df.parse(s), DateTools.Resolution.DAY);
   }
 
   public String getLocalizedDate(int year, int month, int day) {
@@ -470,7 +470,7 @@ public class TestQueryParser extends TestCase {
   public void testBoost()
     throws Exception {
     StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(new String[]{"on"});
-    QueryParser qp = new QueryParser("field", oneStopAnalyzer);
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
     q = qp.parse("\"hello\"^2.0");
@@ -482,7 +482,7 @@ public class TestQueryParser extends TestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    q = QueryParser.parse("the^3", "field", new StandardAnalyzer());
+    q = PrecedenceQueryParser.parse("the^3", "field", new StandardAnalyzer());
     assertNotNull(q);
   }
 
@@ -515,7 +515,7 @@ public class TestQueryParser extends TestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      QueryParser.parse("one two three", "field", new WhitespaceAnalyzer());
+      PrecedenceQueryParser.parse("one two three", "field", new WhitespaceAnalyzer());
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
       // too many boolean clauses, so ParseException is expected
@@ -523,11 +523,12 @@ public class TestQueryParser extends TestCase {
   }
 
   /**
-   * This test differs from TestPrecedenceQueryParser
+   * This test differs from the original QueryParser, showing how the
+   * precedence issue has been corrected.
    */
   public void testPrecedence() throws Exception {
-    Query query1 = QueryParser.parse("A AND B OR C AND D", "field", new WhitespaceAnalyzer());
-    Query query2 = QueryParser.parse("+A +B +C +D", "field", new WhitespaceAnalyzer());
+    Query query1 = PrecedenceQueryParser.parse("A AND B OR C AND D", "field", new WhitespaceAnalyzer());
+    Query query2 = PrecedenceQueryParser.parse("(A AND B) OR (C AND D)", "field", new WhitespaceAnalyzer());
     assertEquals(query1, query2);
   }
 

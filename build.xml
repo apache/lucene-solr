@@ -32,9 +32,6 @@
   <property name="demo.war.name" value="luceneweb"/>
 
   <property name="javacc.home" location="."/>
-  <property name="javacc.jar.dir" location="${javacc.home}/bin/lib"/>
-  <property name="javacc.jar" location="${javacc.jar.dir}/javacc.jar"/>
-  <property name="javacc.main.class" value="org.javacc.parser.Main"/>
 
   <property name="jakarta.site2.home" location="../jakarta-site2"/>
 
@@ -101,8 +98,8 @@
 
     <available
       property="javacc.present"
-      classname="${javacc.main.class}"
-      classpath="${javacc.jar}"
+      classname="org.javacc.parser.Main"
+      classpath="${javacc.home}/bin/lib/javacc.jar"
       />
 
     <available
@@ -579,15 +576,50 @@
   <!-- ================================================================== -->
   <!-- Build the JavaCC files into the source tree                        -->
   <!-- ================================================================== -->
-  <target name="javacc" depends="javacc-StandardAnalyzer,javacc-QueryParser,javacc-HTMLParser"/>
+  <target name="jjdoc">
+    <mkdir dir="${build.dir}/docs/grammars"/>
+    <jjdoc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
+           outputfile="${build.dir}/docs/grammars/QueryParser.html"
+           javacchome="${javacc.home}"
+    />
+    <jjdoc target="src/java/org/apache/lucene/queryParser/PrecedenceQueryParser.jj"
+           outputfile="${build.dir}/docs/grammars/PrecedenceQueryParser.html"
+           javacchome="${javacc.home}"
+    />
+    <jjdoc target="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
+           outputfile="${build.dir}/docs/grammars/StandardTokenizer.html"
+           javacchome="${javacc.home}"
+    />
+    <jjdoc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
+           outputfile="${build.dir}/docs/grammars/HTMLParser.html"
+           javacchome="${javacc.home}"
+    />
+  </target>
+
+  <target name="javacc" depends="javacc-StandardAnalyzer,javacc-QueryParser,javacc-PrecedenceQueryParser,javacc-HTMLParser"/>
+
+  <macrodef name="invoke-javacc">
+    <attribute name="target"/>
+    <attribute name="outputDir"/>
+    <sequential>
+      <javacc
+          target="@{target}"
+          outputDirectory="@{outputDir}"
+          debugTokenManager="${javacc.debug.tokenmgr}"
+          debugParser="${javacc.debug.parser}"
+          debuglookahead="${javacc.debug.lookahead}"
+          javacchome="${javacc.home}"
+      />
+    </sequential>
+  </macrodef>
 
   <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
     <!-- generate this in a build directory so we can exclude ParseException -->
     <mkdir dir="${build.dir}/gen/org/apache/lucene/analysis/standard"/>
-    <antcall target="invoke-javacc">
-      <param name="target" location="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"/>
-      <param name="output.dir" location="${build.dir}/gen/org/apache/lucene/analysis/standard"/>
-    </antcall>
+
+    <invoke-javacc target="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
+                   outputDir="${build.dir}/gen/org/apache/lucene/analysis/standard"
+    />
     <copy todir="src/java/org/apache/lucene/analysis/standard">
       <fileset dir="${build.dir}/gen/org/apache/lucene/analysis/standard">
         <include name="*.java"/>
@@ -597,28 +629,21 @@
   </target>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
-    <antcall target="invoke-javacc">
-      <param name="target" location="src/java/org/apache/lucene/queryParser/QueryParser.jj"/>
-      <param name="output.dir" location="src/java/org/apache/lucene/queryParser"/>
-    </antcall>
+    <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
+                   outputDir="src/java/org/apache/lucene/queryParser"
+    />
+  </target>
+  
+  <target name="javacc-PrecedenceQueryParser" depends="init,javacc-check" if="javacc.present">
+    <invoke-javacc target="src/java/org/apache/lucene/queryParser/precedence/PrecedenceQueryParser.jj"
+                   outputDir="src/java/org/apache/lucene/queryParser/precedence"
+    />
   </target>
 
   <target name="javacc-HTMLParser" depends="init,javacc-check" if="javacc.present">
-    <antcall target="invoke-javacc">
-      <param name="target" location="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"/>
-      <param name="output.dir" location="src/demo/org/apache/lucene/demo/html"/>
-    </antcall>
-  </target>
-
-  <target name="invoke-javacc">
-    <java classname="${javacc.main.class}" fork="true">
-      <classpath path="${javacc.jar}"/>
-
-      <sysproperty key="install.root" file="${javacc.home}"/>
-
-      <arg value="-OUTPUT_DIRECTORY:${output.dir}"/>
-      <arg value="${target}"/>
-    </java>
+    <invoke-javacc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
+                   outputDir="src/demo/org/apache/lucene/demo/html"
+    />
   </target>
 
   <target name="default" depends="jar-core"/>
