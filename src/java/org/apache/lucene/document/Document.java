@@ -90,8 +90,8 @@ public final class Document implements java.io.Serializable {
   }
   
   /**
-   * <p>Removes field with the given name from the document.
-   * If multiple fields exist with this name, this method returns the first value added.
+   * <p>Removes field with the specified name from the document.
+   * If multiple fields exist with this name, this method removes the first field that has been added.
    * If there is no field with the specified name, the document remains unchanged.</p>
    * <p> Note that the removeField(s) methods like the add method only make sense 
    * prior to adding a document to an index. These methods cannot
