@@ -64,7 +64,7 @@ public abstract class HitCollector {
    *
    * <P>If, for example, an application wished to collect all of the hits for a
    * query in a BitSet, then it might:<pre>
-   *   Searcher = new IndexSearcher(indexReader);
+   *   Searcher searcher = new IndexSearcher(indexReader);
    *   final BitSet bits = new BitSet(indexReader.maxDoc());
    *   searcher.search(query, new HitCollector() {
    *       public void collect(int doc, float score) {
