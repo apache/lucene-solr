@@ -115,7 +115,7 @@ final class BooleanScorer extends Scorer {
           more = true;
         }
       }
-    } while (bucketTable.first != null | more);
+    } while (bucketTable.first != null || more);
 
     return false;
   }
