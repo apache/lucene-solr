@@ -17,14 +17,15 @@ package org.apache.lucene.store;
  */
 
 /**
- * A memory-resident {@link InputStream} implementation.
+ * A memory-resident {@link IndexInput} implementation.
  *
  * @version $Id$
  */
 
-class RAMInputStream extends InputStream implements Cloneable {
+class RAMInputStream extends BufferedIndexInput implements Cloneable {
   private RAMFile file;
   private int pointer = 0;
+  private long length;
 
   public RAMInputStream(RAMFile f) {
     file = f;
@@ -54,4 +55,9 @@ class RAMInputStream extends InputStream implements Cloneable {
   public void seekInternal(long pos) {
     pointer = (int)pos;
   }
+
+  public long length() {
+    return length;
+  }
+
 }

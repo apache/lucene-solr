@@ -27,7 +27,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
   private int bufferPosition = 0;		  // position in buffer
 
   /** Writes a single byte.
-   * @see InputStream#readByte()
+   * @see IndexInput#readByte()
    */
   public void writeByte(byte b) throws IOException {
     if (bufferPosition >= BUFFER_SIZE)
@@ -38,7 +38,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
   /** Writes an array of bytes.
    * @param b the bytes to write
    * @param length the number of bytes to write
-   * @see InputStream#readBytes(byte[],int,int)
+   * @see IndexInput#readBytes(byte[],int,int)
    */
   public void writeBytes(byte[] b, int length) throws IOException {
     for (int i = 0; i < length; i++)

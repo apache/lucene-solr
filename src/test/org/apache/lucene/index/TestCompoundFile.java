@@ -306,10 +306,10 @@ public class TestCompoundFile extends TestCase
 
 
     public void testReadAfterClose() throws IOException {
-        demo_FSInputStreamBug((FSDirectory) dir, "test");
+        demo_FSIndexInputBug((FSDirectory) dir, "test");
     }
 
-    private void demo_FSInputStreamBug(FSDirectory fsdir, String file)
+    private void demo_FSIndexInputBug(FSDirectory fsdir, String file)
     throws IOException
     {
         // Setup the test file - we need more than 1024 bytes
@@ -352,7 +352,7 @@ public class TestCompoundFile extends TestCase
             CompoundFileReader.CSIndexInput cis =
             (CompoundFileReader.CSIndexInput) is;
 
-            return _TestHelper.isFSInputStreamOpen(cis.base);
+            return _TestHelper.isFSIndexInputOpen(cis.base);
         } else {
             return false;
         }
@@ -365,7 +365,7 @@ public class TestCompoundFile extends TestCase
 
         // basic clone
         IndexInput expected = dir.openInput("f11");
-        assertTrue(_TestHelper.isFSInputStreamOpen(expected));
+        assertTrue(_TestHelper.isFSIndexInputOpen(expected));
 
         IndexInput one = cr.openInput("f11");
         assertTrue(isCSIndexInputOpen(one));

@@ -21,24 +21,24 @@ import java.io.IOException;
 /** Abstract base class for output to a file in a Directory.  A random-access
  * output stream.  Used for all Lucene index output operations.
  * @see Directory
- * @see InputStream
+ * @see IndexInput
  */
 public abstract class IndexOutput {
 
   /** Writes a single byte.
-   * @see InputStream#readByte()
+   * @see IndexInput#readByte()
    */
   public abstract void writeByte(byte b) throws IOException;
 
   /** Writes an array of bytes.
    * @param b the bytes to write
    * @param length the number of bytes to write
-   * @see InputStream#readBytes(byte[],int,int)
+   * @see IndexInput#readBytes(byte[],int,int)
    */
   public abstract void writeBytes(byte[] b, int length) throws IOException;
 
   /** Writes an int as four bytes.
-   * @see InputStream#readInt()
+   * @see IndexInput#readInt()
    */
   public void writeInt(int i) throws IOException {
     writeByte((byte)(i >> 24));
@@ -50,7 +50,7 @@ public abstract class IndexOutput {
   /** Writes an int in a variable-length format.  Writes between one and
    * five bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported.
-   * @see InputStream#readVInt()
+   * @see IndexInput#readVInt()
    */
   public void writeVInt(int i) throws IOException {
     while ((i & ~0x7F) != 0) {
@@ -61,7 +61,7 @@ public abstract class IndexOutput {
   }
 
   /** Writes a long as eight bytes.
-   * @see InputStream#readLong()
+   * @see IndexInput#readLong()
    */
   public void writeLong(long i) throws IOException {
     writeInt((int) (i >> 32));
@@ -71,7 +71,7 @@ public abstract class IndexOutput {
   /** Writes an long in a variable-length format.  Writes between one and five
    * bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported.
-   * @see InputStream#readVLong()
+   * @see IndexInput#readVLong()
    */
   public void writeVLong(long i) throws IOException {
     while ((i & ~0x7F) != 0) {
@@ -82,7 +82,7 @@ public abstract class IndexOutput {
   }
 
   /** Writes a string.
-   * @see InputStream#readString()
+   * @see IndexInput#readString()
    */
   public void writeString(String s) throws IOException {
     int length = s.length();
@@ -94,7 +94,7 @@ public abstract class IndexOutput {
    * @param s the source of the characters
    * @param start the first character in the sequence
    * @param length the number of characters in the sequence
-   * @see InputStream#readChars(char[],int,int)
+   * @see IndexInput#readChars(char[],int,int)
    */
   public void writeChars(String s, int start, int length)
        throws IOException {

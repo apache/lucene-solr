@@ -278,13 +278,13 @@ public class FSDirectory extends Directory {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public OutputStream createFile(String name) throws IOException {
-    return new FSOutputStream(new File(directory, name));
+  public IndexOutput createOutput(String name) throws IOException {
+    return new FSIndexOutput(new File(directory, name));
   }
 
   /** Returns a stream reading an existing file. */
-  public InputStream openFile(String name) throws IOException {
-    return new FSInputStream(new File(directory, name));
+  public IndexInput openInput(String name) throws IOException {
+    return new FSIndexInput(new File(directory, name));
   }
 
   /**
@@ -385,47 +385,25 @@ public class FSDirectory extends Directory {
 }
 
 
-class FSInputStream extends InputStream {
+class FSIndexInput extends BufferedIndexInput {
+
   private class Descriptor extends RandomAccessFile {
-    /* DEBUG */
-    //private String name;
-    /* DEBUG */
     public long position;
     public Descriptor(File file, String mode) throws IOException {
       super(file, mode);
-      /* DEBUG */
-      //name = file.toString();
-      //debug_printInfo("OPEN");
-      /* DEBUG */
     }
-
-    /* DEBUG */
-    //public void close() throws IOException {
-    //  debug_printInfo("CLOSE");
-    //    super.close();
-    //}
-    //
-    //private void debug_printInfo(String op) {
-    //  try { throw new Exception(op + " <" + name + ">");
-    //  } catch (Exception e) {
-    //    java.io.StringWriter sw = new java.io.StringWriter();
-    //    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-    //    e.printStackTrace(pw);
-    //    System.out.println(sw.getBuffer().toString());
-    //  }
-    //}
-    /* DEBUG */
   }
 
-  Descriptor file = null;
+  private Descriptor file = null;
   boolean isClone;
+  private long length;
 
-  public FSInputStream(File path) throws IOException {
+  public FSIndexInput(File path) throws IOException {
     file = new Descriptor(path, "r");
     length = file.length();
   }
 
-  /** InputStream methods */
+  /** IndexInput methods */
   protected void readInternal(byte[] b, int offset, int len)
        throws IOException {
     synchronized (file) {
@@ -450,8 +428,11 @@ class FSInputStream extends InputStream {
       file.close();
   }
 
-  /** Random-access methods */
   protected void seekInternal(long position) {
+  }
+
+  public long length() {
+    return length;
   }
 
   protected void finalize() throws IOException {
@@ -459,7 +440,7 @@ class FSInputStream extends InputStream {
   }
 
   public Object clone() {
-    FSInputStream clone = (FSInputStream)super.clone();
+    FSIndexInput clone = (FSIndexInput)super.clone();
     clone.isClone = true;
     return clone;
   }
@@ -473,10 +454,10 @@ class FSInputStream extends InputStream {
 }
 
 
-class FSOutputStream extends OutputStream {
+class FSIndexOutput extends BufferedIndexOutput {
   RandomAccessFile file = null;
 
-  public FSOutputStream(File path) throws IOException {
+  public FSIndexOutput(File path) throws IOException {
     file = new RandomAccessFile(path, "rw");
   }
 

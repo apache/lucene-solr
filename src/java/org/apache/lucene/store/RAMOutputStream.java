@@ -24,7 +24,7 @@ import java.io.IOException;
  * @version $Id$
  */
 
-public class RAMOutputStream extends OutputStream {
+public class RAMOutputStream extends BufferedIndexOutput {
   private RAMFile file;
   private int pointer = 0;
 

@@ -22,8 +22,8 @@ import java.util.Hashtable;
 import java.util.Enumeration;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 
 /**
  * A memory-resident {@link Directory} implementation.
@@ -55,9 +55,9 @@ public final class RAMDirectory extends Directory {
     final String[] files = dir.list();
     for (int i = 0; i < files.length; i++) {
       // make place on ram disk
-      OutputStream os = createFile(files[i]);
+      IndexOutput os = createOutput(files[i]);
       // read current file
-      InputStream is = dir.openFile(files[i]);
+      IndexInput is = dir.openInput(files[i]);
       // and copy to ram disk
       int len = (int) is.length();
       byte[] buf = new byte[len];
@@ -153,14 +153,14 @@ public final class RAMDirectory extends Directory {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public final OutputStream createFile(String name) {
+  public final IndexOutput createOutput(String name) {
     RAMFile file = new RAMFile();
     files.put(name, file);
     return new RAMOutputStream(file);
   }
 
   /** Returns a stream reading an existing file. */
-  public final InputStream openFile(String name) {
+  public final IndexInput openInput(String name) {
     RAMFile file = (RAMFile)files.get(name);
     return new RAMInputStream(file);
   }
@@ -173,7 +173,7 @@ public final class RAMDirectory extends Directory {
       public boolean obtain() throws IOException {
         synchronized (files) {
           if (!fileExists(name)) {
-            createFile(name).close();
+            createOutput(name).close();
             return true;
           }
           return false;
