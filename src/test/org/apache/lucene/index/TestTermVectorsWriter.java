@@ -204,6 +204,12 @@ public class TestTermVectorsWriter extends TestCase {
     }
   }
   
+  /**
+   * Test that no NullPointerException will be raised,
+   * when adding one document with a single, empty field
+   * and term vectors enabled.
+   *
+   */
   public void testBadSegment() {
     try {
       dir = new RAMDirectory();
@@ -211,10 +217,10 @@ public class TestTermVectorsWriter extends TestCase {
       
       Document document = new Document();
       document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.TOKENIZED,
-          Field.TermVector.YES));    // throws exception, works with Field.TermVector.NO
+          Field.TermVector.YES));
       ir.addDocument(document);
-      
       ir.close();
+      dir.close();
     } catch (Exception e) {
       e.printStackTrace();
       assertTrue(false);
