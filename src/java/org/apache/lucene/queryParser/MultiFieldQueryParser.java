@@ -96,7 +96,7 @@ public class MultiFieldQueryParser extends QueryParser
      * If x fields are specified, this effectively constructs:
      * <pre>
      * <code>
-     * ({field1}:{query}) ({field2}:{query}) ({field3}:{query})...({fieldx}:{query})
+     * (field1:query) (field2:query) (field3:query)...(fieldx:query)
      * </code>
      * </pre>
      *
@@ -137,7 +137,7 @@ public class MultiFieldQueryParser extends QueryParser
      * The code above would construct a query:
      * <pre>
      * <code>
-     * (filename:{query}) +(contents:{query}) -(description:{query})
+     * (filename:query) +(contents:query) -(description:query)
      * </code>
      * </pre>
      *
