@@ -124,6 +124,7 @@ public class FilterIndexReader extends IndexReader {
 
   public boolean isDeleted(int n) { return in.isDeleted(n); }
   public boolean hasDeletions() { return in.hasDeletions(); }
+  public void undeleteAll() throws IOException { in.undeleteAll(); }
 
   public byte[] norms(String f) throws IOException { return in.norms(f); }
 

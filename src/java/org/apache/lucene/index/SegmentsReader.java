@@ -125,6 +125,11 @@ final class SegmentsReader extends IndexReader
     hasDeletions = true;
   }
 
+  public void undeleteAll() throws IOException {
+    for (int i = 0; i < readers.length; i++)
+      readers[i].undeleteAll();
+  }
+
   private final int readerIndex(int n) {	  // find reader for doc n:
     int lo = 0;					  // search starts array
     int hi = readers.length - 1;                  // for first element less

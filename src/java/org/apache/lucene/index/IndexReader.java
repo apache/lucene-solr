@@ -318,6 +318,9 @@ public abstract class IndexReader {
     return n;
   }
 
+  /** Undeletes all documents currently marked as deleted in this index.*/
+  public abstract void undeleteAll() throws IOException;
+
   /**
    * Closes files associated with this index.
    * Also saves any new deletions to disk.

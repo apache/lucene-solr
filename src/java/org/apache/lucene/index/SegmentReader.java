@@ -185,6 +185,23 @@ final class SegmentReader extends IndexReader {
     deletedDocs.set(docNum);
   }
 
+  public void undeleteAll() throws IOException {
+    synchronized (directory()) {		  // in- & inter-process sync
+      new Lock.With(directory().makeLock(IndexWriter.COMMIT_LOCK_NAME),
+                    IndexWriter.COMMIT_LOCK_TIMEOUT) {
+        public Object doBody() throws IOException {
+          if (directory().fileExists(segment + ".del")) {
+            directory().deleteFile(segment + ".del");
+          }
+          return null;
+        }
+      };
+      deletedDocs = null;
+      deletedDocsDirty = false;
+    }
+  }
+
+
   final Vector files() throws IOException {
     Vector files = new Vector(16);
     final String ext[] = new String[] {
