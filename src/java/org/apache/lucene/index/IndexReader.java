@@ -56,6 +56,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.File;
+import java.util.Collection;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
@@ -301,6 +303,14 @@ public abstract class IndexReader {
       writeLock = null;
     }
   }
+
+    /**
+     * Return a list of all unique field names which exist in the index pointed to by
+     * this IndexReader.
+     * @return Collection of Strings indicating the names of the fields
+     * @throws IOException if there is a problem with accessing the index
+     */
+    public abstract Collection getFieldNames() throws IOException;
 
   /**
    * Returns <code>true</code> iff the index in the named directory is

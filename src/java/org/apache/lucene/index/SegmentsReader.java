@@ -55,10 +55,14 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Set;
 
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.store.Directory;
 
 /**
  * FIXME: Describe class <code>SegmentsReader</code> here.
@@ -174,6 +178,22 @@ final class SegmentsReader extends IndexReader
     for (int i = 0; i < readers.length; i++)
       readers[i].close();
   }
+
+    // javadoc inherited
+    public Collection getFieldNames() throws IOException {
+        // maintain a unique set of field names
+        Set fieldSet = new HashSet();
+        for (int i = 0; i < readers.length; i++) {
+            SegmentReader reader = readers[i];
+            Collection names = reader.getFieldNames();
+            // iterate through the field names and add them to the set
+            for (Iterator iterator = names.iterator(); iterator.hasNext();) {
+                String s = (String) iterator.next();
+                fieldSet.add(s);
+            }
+        }
+        return fieldSet;
+    }
 }
 
 class SegmentsTermEnum extends TermEnum {

@@ -55,15 +55,17 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Hashtable;
+import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
-import org.apache.lucene.util.BitVector;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.InputStream;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.util.BitVector;
 
 final class SegmentReader extends IndexReader {
   private boolean closeDirectory = false;
@@ -73,7 +75,7 @@ final class SegmentReader extends IndexReader {
   private FieldsReader fieldsReader;
 
   TermInfosReader tis;
-  
+
   BitVector deletedDocs = null;
   private boolean deletedDocsDirty = false;
 
@@ -113,7 +115,7 @@ final class SegmentReader extends IndexReader {
     proxStream = directory.openFile(segment + ".prx");
     openNorms();
   }
-  
+
   final synchronized void doClose() throws IOException {
     if (deletedDocsDirty) {
       synchronized (directory) {		  // in- & inter-process sync
@@ -271,4 +273,15 @@ final class SegmentReader extends IndexReader {
       }
     }
   }
+
+    // javadoc inherited
+    public Collection getFieldNames() throws IOException {
+        // maintain a unique set of field names
+        Set fieldSet = new HashSet();
+        for (int i = 0; i < fieldInfos.size(); i++) {
+            FieldInfo fi = fieldInfos.fieldInfo(i);
+            fieldSet.add(fi.name);
+        }
+        return fieldSet;
+    }
 }
