@@ -18,17 +18,17 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 
 final class SegmentTermPositions
 extends SegmentTermDocs implements TermPositions {
-  private InputStream proxStream;
+  private IndexInput proxStream;
   private int proxCount;
   private int position;
   
   SegmentTermPositions(SegmentReader p) throws IOException {
     super(p);
-    this.proxStream = (InputStream)parent.proxStream.clone();
+    this.proxStream = (IndexInput)parent.proxStream.clone();
   }
 
   final void seek(TermInfo ti) throws IOException {

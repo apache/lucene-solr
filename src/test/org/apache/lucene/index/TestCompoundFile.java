@@ -24,7 +24,7 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store._TestHelper;
 
@@ -94,8 +94,8 @@ public class TestCompoundFile extends TestCase
 
 
     private void assertSameStreams(String msg,
-                                   InputStream expected,
-                                   InputStream test)
+                                   IndexInput expected,
+                                   IndexInput test)
     throws IOException
     {
         assertNotNull(msg + " null expected", expected);
@@ -120,8 +120,8 @@ public class TestCompoundFile extends TestCase
 
 
     private void assertSameStreams(String msg,
-                                   InputStream expected,
-                                   InputStream actual,
+                                   IndexInput expected,
+                                   IndexInput actual,
                                    long seekTo)
     throws IOException
     {
@@ -136,8 +136,8 @@ public class TestCompoundFile extends TestCase
 
 
     private void assertSameSeekBehavior(String msg,
-                                        InputStream expected,
-                                        InputStream actual)
+                                        IndexInput expected,
+                                        IndexInput actual)
     throws IOException
     {
         // seek to 0
@@ -199,8 +199,8 @@ public class TestCompoundFile extends TestCase
             csw.close();
 
             CompoundFileReader csr = new CompoundFileReader(dir, name + ".cfs");
-            InputStream expected = dir.openFile(name);
-            InputStream actual = csr.openFile(name);
+            IndexInput expected = dir.openInput(name);
+            IndexInput actual = csr.openInput(name);
             assertSameStreams(name, expected, actual);
             assertSameSeekBehavior(name, expected, actual);
             expected.close();
@@ -223,15 +223,15 @@ public class TestCompoundFile extends TestCase
         csw.close();
 
         CompoundFileReader csr = new CompoundFileReader(dir, "d.csf");
-        InputStream expected = dir.openFile("d1");
-        InputStream actual = csr.openFile("d1");
+        IndexInput expected = dir.openInput("d1");
+        IndexInput actual = csr.openInput("d1");
         assertSameStreams("d1", expected, actual);
         assertSameSeekBehavior("d1", expected, actual);
         expected.close();
         actual.close();
 
-        expected = dir.openFile("d2");
-        actual = csr.openFile("d2");
+        expected = dir.openInput("d2");
+        actual = csr.openInput("d2");
         assertSameStreams("d2", expected, actual);
         assertSameSeekBehavior("d2", expected, actual);
         expected.close();
@@ -279,8 +279,8 @@ public class TestCompoundFile extends TestCase
 
         CompoundFileReader csr = new CompoundFileReader(dir, "test.cfs");
         for (int i=0; i<data.length; i++) {
-            InputStream check = dir.openFile(segment + data[i]);
-            InputStream test = csr.openFile(segment + data[i]);
+            IndexInput check = dir.openInput(segment + data[i]);
+            IndexInput test = csr.openInput(segment + data[i]);
             assertSameStreams(data[i], check, test);
             assertSameSeekBehavior(data[i], check, test);
             test.close();
@@ -319,9 +319,9 @@ public class TestCompoundFile extends TestCase
         }
         os.close();
 
-        InputStream in = fsdir.openFile(file);
+        IndexInput in = fsdir.openInput(file);
 
-        // This read primes the buffer in InputStream
+        // This read primes the buffer in IndexInput
         byte b = in.readByte();
 
         // Close the file
@@ -343,14 +343,14 @@ public class TestCompoundFile extends TestCase
     }
 
 
-    static boolean isCSInputStream(InputStream is) {
-        return is instanceof CompoundFileReader.CSInputStream;
+    static boolean isCSIndexInput(IndexInput is) {
+        return is instanceof CompoundFileReader.CSIndexInput;
     }
 
-    static boolean isCSInputStreamOpen(InputStream is) throws IOException {
-        if (isCSInputStream(is)) {
-            CompoundFileReader.CSInputStream cis =
-            (CompoundFileReader.CSInputStream) is;
+    static boolean isCSIndexInputOpen(IndexInput is) throws IOException {
+        if (isCSIndexInput(is)) {
+            CompoundFileReader.CSIndexInput cis =
+            (CompoundFileReader.CSIndexInput) is;
 
             return _TestHelper.isFSInputStreamOpen(cis.base);
         } else {
@@ -364,14 +364,14 @@ public class TestCompoundFile extends TestCase
         CompoundFileReader cr = new CompoundFileReader(dir, "f.comp");
 
         // basic clone
-        InputStream expected = dir.openFile("f11");
+        IndexInput expected = dir.openInput("f11");
         assertTrue(_TestHelper.isFSInputStreamOpen(expected));
 
-        InputStream one = cr.openFile("f11");
-        assertTrue(isCSInputStreamOpen(one));
+        IndexInput one = cr.openInput("f11");
+        assertTrue(isCSIndexInputOpen(one));
 
-        InputStream two = (InputStream) one.clone();
-        assertTrue(isCSInputStreamOpen(two));
+        IndexInput two = (IndexInput) one.clone();
+        assertTrue(isCSIndexInputOpen(two));
 
         assertSameStreams("basic clone one", expected, one);
         expected.seek(0);
@@ -379,7 +379,7 @@ public class TestCompoundFile extends TestCase
 
         // Now close the first stream
         one.close();
-        assertTrue("Only close when cr is closed", isCSInputStreamOpen(one));
+        assertTrue("Only close when cr is closed", isCSIndexInputOpen(one));
 
         // The following should really fail since we couldn't expect to
         // access a file once close has been called on it (regardless of
@@ -391,8 +391,8 @@ public class TestCompoundFile extends TestCase
 
         // Now close the compound reader
         cr.close();
-        assertFalse("Now closed one", isCSInputStreamOpen(one));
-        assertFalse("Now closed two", isCSInputStreamOpen(two));
+        assertFalse("Now closed one", isCSIndexInputOpen(one));
+        assertFalse("Now closed two", isCSIndexInputOpen(two));
 
         // The following may also fail since the compound stream is closed
         expected.seek(0);
@@ -418,11 +418,11 @@ public class TestCompoundFile extends TestCase
         CompoundFileReader cr = new CompoundFileReader(dir, "f.comp");
 
         // Open two files
-        InputStream e1 = dir.openFile("f11");
-        InputStream e2 = dir.openFile("f3");
+        IndexInput e1 = dir.openInput("f11");
+        IndexInput e2 = dir.openInput("f3");
 
-        InputStream a1 = cr.openFile("f11");
-        InputStream a2 = dir.openFile("f3");
+        IndexInput a1 = cr.openInput("f11");
+        IndexInput a2 = dir.openInput("f3");
 
         // Seek the first pair
         e1.seek(100);
@@ -497,11 +497,11 @@ public class TestCompoundFile extends TestCase
         CompoundFileReader cr = new CompoundFileReader(dir, "f.comp");
 
         // Open two files
-        InputStream e1 = cr.openFile("f11");
-        InputStream e2 = cr.openFile("f3");
+        IndexInput e1 = cr.openInput("f11");
+        IndexInput e2 = cr.openInput("f3");
 
-        InputStream a1 = (InputStream) e1.clone();
-        InputStream a2 = (InputStream) e2.clone();
+        IndexInput a1 = (IndexInput) e1.clone();
+        IndexInput a2 = (IndexInput) e2.clone();
 
         // Seek the first pair
         e1.seek(100);
@@ -575,7 +575,7 @@ public class TestCompoundFile extends TestCase
 
         // Open two files
         try {
-            InputStream e1 = cr.openFile("bogus");
+            IndexInput e1 = cr.openInput("bogus");
             fail("File not found");
 
         } catch (IOException e) {
@@ -590,7 +590,7 @@ public class TestCompoundFile extends TestCase
     public void testReadPastEOF() throws IOException {
         setUp_2();
         CompoundFileReader cr = new CompoundFileReader(dir, "f.comp");
-        InputStream is = cr.openFile("f2");
+        IndexInput is = cr.openInput("f2");
         is.seek(is.length() - 10);
         byte b[] = new byte[100];
         is.readBytes(b, 0, 10);

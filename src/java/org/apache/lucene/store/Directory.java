@@ -67,9 +67,18 @@ public abstract class Directory {
   public abstract OutputStream createFile(String name)
        throws IOException;
 
+  /** @deprecated use {@link openInput(String)}. */
+  public InputStream openFile(String name) throws IOException {
+    return (InputStream)openInput(name);
+  }
+
   /** Returns a stream reading an existing file. */
-  public abstract InputStream openFile(String name)
-       throws IOException;
+  public IndexInput openInput(String name)
+    throws IOException {
+    // default implementation for back compatibility
+    // this method should be abstract
+    return (IndexInput)openFile(name);
+  }
 
   /** Construct a {@link Lock}.
    * @param name the name of the lock file

@@ -17,10 +17,10 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 
 final class SegmentTermEnum extends TermEnum implements Cloneable {
-  private InputStream input;
+  private IndexInput input;
   FieldInfos fieldInfos;
   long size;
   long position = -1;
@@ -38,7 +38,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
   private char[] buffer = {};
 
-  SegmentTermEnum(InputStream i, FieldInfos fis, boolean isi)
+  SegmentTermEnum(IndexInput i, FieldInfos fis, boolean isi)
           throws IOException {
     input = i;
     fieldInfos = fis;
@@ -87,7 +87,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
       clone = (SegmentTermEnum) super.clone();
     } catch (CloneNotSupportedException e) {}
 
-    clone.input = (InputStream) input.clone();
+    clone.input = (IndexInput) input.clone();
     clone.termInfo = new TermInfo(termInfo);
     if (term != null) clone.growBuffer(term.text.length());
 

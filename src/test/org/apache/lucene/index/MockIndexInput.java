@@ -16,15 +16,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.BufferedIndexInput;
 
 import java.io.IOException;
 
-public class MockInputStream extends InputStream {
+public class MockIndexInput extends BufferedIndexInput {
     private byte[] buffer;
     private int pointer = 0;
+    private long length;
 
-    public MockInputStream(byte[] bytes) {
+    public MockIndexInput(byte[] bytes) {
         buffer = bytes;
         length = bytes.length;
     }
@@ -53,4 +54,9 @@ public class MockInputStream extends InputStream {
     protected void seekInternal(long pos) throws IOException {
         pointer = (int) pos;
     }
+
+    public long length() {
+      return length;
+    }
+
 }

@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
@@ -49,20 +49,20 @@ final class SegmentReader extends IndexReader {
   private boolean normsDirty = false;
   private boolean undeleteAll = false;
 
-  InputStream freqStream;
-  InputStream proxStream;
+  IndexInput freqStream;
+  IndexInput proxStream;
 
   // Compound File Reader when based on a compound file segment
   CompoundFileReader cfsReader = null;
 
   private class Norm {
-    public Norm(InputStream in, int number) 
+    public Norm(IndexInput in, int number) 
     { 
       this.in = in; 
       this.number = number;
     }
 
-    private InputStream in;
+    private IndexInput in;
     private byte[] bytes;
     private boolean dirty;
     private int number;
@@ -123,8 +123,8 @@ final class SegmentReader extends IndexReader {
 
     // make sure that all index files have been read or are kept open
     // so that if an index update removes them we'll still have them
-    freqStream = cfsDir.openFile(segment + ".frq");
-    proxStream = cfsDir.openFile(segment + ".prx");
+    freqStream = cfsDir.openInput(segment + ".frq");
+    proxStream = cfsDir.openInput(segment + ".prx");
     openNorms(cfsDir);
 
     if (fieldInfos.hasVectors()) { // open term vector files only as needed
@@ -363,7 +363,7 @@ final class SegmentReader extends IndexReader {
       return;
     }
 
-    InputStream normStream = (InputStream) norm.in.clone();
+    IndexInput normStream = (IndexInput) norm.in.clone();
     try {                                         // read from disk
       normStream.seek(0);
       normStream.readBytes(bytes, offset, maxDoc());
@@ -383,7 +383,7 @@ final class SegmentReader extends IndexReader {
             fileName = segment + ".f" + fi.number;
             d = cfsDir;
         }
-        norms.put(fi.name, new Norm(d.openFile(fileName), fi.number));
+        norms.put(fi.name, new Norm(d.openInput(fileName), fi.number));
       }
     }
   }

@@ -17,7 +17,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.Lock;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ class CompoundFileReader extends Directory {
     private Directory directory;
     private String fileName;
 
-    private InputStream stream;
+    private IndexInput stream;
     private HashMap entries = new HashMap();
 
 
@@ -57,7 +58,7 @@ class CompoundFileReader extends Directory {
         boolean success = false;
 
         try {
-            stream = dir.openFile(name);
+            stream = dir.openInput(name);
 
             // read the directory and init files
             int count = stream.readVInt();
@@ -109,7 +110,7 @@ class CompoundFileReader extends Directory {
         stream = null;
     }
 
-    public synchronized InputStream openFile(String id)
+    public synchronized IndexInput openInput(String id)
     throws IOException
     {
         if (stream == null)
@@ -119,7 +120,7 @@ class CompoundFileReader extends Directory {
         if (entry == null)
             throw new IOException("No sub-file with id " + id + " found");
 
-        return new CSInputStream(stream, entry.offset, entry.length);
+        return new CSIndexInput(stream, entry.offset, entry.length);
     }
 
     /** Returns an array of strings, one for each file in the directory. */
@@ -182,21 +183,22 @@ class CompoundFileReader extends Directory {
         throw new UnsupportedOperationException();
     }
 
-    /** Implementation of an InputStream that reads from a portion of the
+    /** Implementation of an IndexInput that reads from a portion of the
      *  compound file. The visibility is left as "package" *only* because
      *  this helps with testing since JUnit test cases in a different class
      *  can then access package fields of this class.
      */
-    static final class CSInputStream extends InputStream {
+    static final class CSIndexInput extends BufferedIndexInput {
 
-        InputStream base;
+        IndexInput base;
         long fileOffset;
+        long length;
 
-        CSInputStream(final InputStream base, final long fileOffset, final long length)
+        CSIndexInput(final IndexInput base, final long fileOffset, final long length)
         {
             this.base = base;
             this.fileOffset = fileOffset;
-            this.length = length;   // variable in the superclass
+            this.length = length;
         }
 
         /** Expert: implements buffer refill.  Reads bytes from the current
@@ -225,6 +227,11 @@ class CompoundFileReader extends Directory {
 
         /** Closes the stream to further operations. */
         public void close() {}
+
+        public long length() {
+          return length;
+        }
+
 
     }
 }

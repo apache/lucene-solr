@@ -18,11 +18,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import org.apache.lucene.util.BitVector;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 
 class SegmentTermDocs implements TermDocs {
   protected SegmentReader parent;
-  private InputStream freqStream;
+  private IndexInput freqStream;
   private int count;
   private int df;
   private BitVector deletedDocs;
@@ -32,7 +32,7 @@ class SegmentTermDocs implements TermDocs {
   private int skipInterval;
   private int numSkips;
   private int skipCount;
-  private InputStream skipStream;
+  private IndexInput skipStream;
   private int skipDoc;
   private long freqPointer;
   private long proxPointer;
@@ -41,7 +41,7 @@ class SegmentTermDocs implements TermDocs {
 
   SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
-    this.freqStream = (InputStream) parent.freqStream.clone();
+    this.freqStream = (IndexInput) parent.freqStream.clone();
     this.deletedDocs = parent.deletedDocs;
     this.skipInterval = parent.tis.getSkipInterval();
   }
@@ -147,7 +147,7 @@ class SegmentTermDocs implements TermDocs {
     if (df >= skipInterval) {                      // optimized case
 
       if (skipStream == null)
-        skipStream = (InputStream) freqStream.clone(); // lazily clone
+        skipStream = (IndexInput) freqStream.clone(); // lazily clone
 
       if (!haveSkipped) {                          // lazily seek skip stream
         skipStream.seek(skipPointer);

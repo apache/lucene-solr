@@ -10,14 +10,14 @@ public class _TestHelper {
     /** Returns true if the instance of the provided input stream is actually
      *  an FSInputStream.
      */
-    public static boolean isFSInputStream(InputStream is) {
+    public static boolean isFSInputStream(IndexInput is) {
         return is instanceof FSInputStream;
     }
 
     /** Returns true if the provided input stream is an FSInputStream and
      *  is a clone, that is it does not own its underlying file descriptor.
      */
-    public static boolean isFSInputStreamClone(InputStream is) {
+    public static boolean isFSInputStreamClone(IndexInput is) {
         if (isFSInputStream(is)) {
             return ((FSInputStream) is).isClone;
         } else {
@@ -32,7 +32,7 @@ public class _TestHelper {
      *  FSInputStream that owns this descriptor is closed. However, the
      *  descriptor may possibly become invalid in other ways as well.
      */
-    public static boolean isFSInputStreamOpen(InputStream is)
+    public static boolean isFSInputStreamOpen(IndexInput is)
     throws IOException
     {
         if (isFSInputStream(is)) {

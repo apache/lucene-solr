@@ -56,6 +56,19 @@ public class FSDirectory extends Directory {
     System.getProperty("org.apache.lucene.lockdir",
       System.getProperty("java.io.tmpdir"));
 
+  /** The default class which implements filesystem-based directories. */
+  private static final Class IMPL;
+  static {
+    try {
+      String name =
+        System.getProperty("org.apache.lucene.FSDirectory.class",
+                           FSDirectory.class.getName());
+      IMPL = Class.forName(name);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private static MessageDigest DIGESTER;
 
   static {
@@ -99,7 +112,12 @@ public class FSDirectory extends Directory {
     synchronized (DIRECTORIES) {
       dir = (FSDirectory)DIRECTORIES.get(file);
       if (dir == null) {
-        dir = new FSDirectory(file, create);
+        try {
+          dir = (FSDirectory)IMPL.newInstance();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        dir.init(file, create);
         DIRECTORIES.put(file, dir);
       } else if (create) {
         dir.create();
@@ -115,7 +133,9 @@ public class FSDirectory extends Directory {
   private int refCount;
   private File lockDir;
 
-  private FSDirectory(File path, boolean create) throws IOException {
+  protected FSDirectory() {};                     // permit subclassing
+
+  private void init(File path, boolean create) throws IOException {
     directory = path;
 
     if (LOCK_DIR == null) {
@@ -360,7 +380,7 @@ public class FSDirectory extends Directory {
 
   /** For debug output. */
   public String toString() {
-    return "FSDirectory@" + directory;
+    return this.getClass().getName() + "@" + directory;
   }
 }
 

@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
 
@@ -29,19 +29,19 @@ import java.io.IOException;
 class TermVectorsReader {
   private FieldInfos fieldInfos;
 
-  private InputStream tvx;
-  private InputStream tvd;
-  private InputStream tvf;
+  private IndexInput tvx;
+  private IndexInput tvd;
+  private IndexInput tvf;
   private int size;
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos)
     throws IOException {
     if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
-      tvx = d.openFile(segment + TermVectorsWriter.TVX_EXTENSION);
+      tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION);
       checkValidFormat(tvx);
-      tvd = d.openFile(segment + TermVectorsWriter.TVD_EXTENSION);
+      tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION);
       checkValidFormat(tvd);
-      tvf = d.openFile(segment + TermVectorsWriter.TVF_EXTENSION);
+      tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION);
       checkValidFormat(tvf);
       size = (int) tvx.length() / 8;
     }
@@ -49,7 +49,7 @@ class TermVectorsReader {
     this.fieldInfos = fieldInfos;
   }
   
-  private void checkValidFormat(InputStream in) throws IOException
+  private void checkValidFormat(IndexInput in) throws IOException
   {
     int format = in.readInt();
     if (format > TermVectorsWriter.FORMAT_VERSION)

@@ -17,7 +17,7 @@ package org.apache.lucene;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -84,7 +84,7 @@ class StoreTest {
       byte b = (byte)(gen.nextInt() & 0x7F);
       //System.out.println("reading " + name + " with " + length + " of " + b);
 
-      InputStream file = store.openFile(name);
+      IndexInput file = store.openInput(name);
 
       if (file.length() != length)
 	throw new Exception("length incorrect");

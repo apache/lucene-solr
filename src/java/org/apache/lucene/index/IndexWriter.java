@@ -25,7 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.document.Document;
@@ -606,7 +606,7 @@ public class IndexWriter {
     if (!directory.fileExists("deletable"))
       return result;
 
-    InputStream input = directory.openFile("deletable");
+    IndexInput input = directory.openInput("deletable");
     try {
       for (int i = input.readInt(); i > 0; i--)	  // read file names
         result.addElement(input.readString());

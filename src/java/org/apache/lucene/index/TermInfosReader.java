@@ -39,10 +39,15 @@ final class TermInfosReader {
     segment = seg;
     fieldInfos = fis;
 
-    origEnum = new SegmentTermEnum(directory.openFile(segment + ".tis"),
+    origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis"),
                                    fieldInfos, false);
     size = origEnum.size;
     readIndex();
+  }
+
+  protected void finalize() {
+    // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
+    enumerators.set(null);
   }
 
   public int getSkipInterval() {
@@ -74,7 +79,7 @@ final class TermInfosReader {
 
   private final void readIndex() throws IOException {
     SegmentTermEnum indexEnum =
-      new SegmentTermEnum(directory.openFile(segment + ".tii"),
+      new SegmentTermEnum(directory.openInput(segment + ".tii"),
 			  fieldInfos, true);
     try {
       int indexSize = (int)indexEnum.size;

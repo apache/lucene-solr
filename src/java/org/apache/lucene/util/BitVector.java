@@ -19,7 +19,7 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.OutputStream;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
@@ -122,7 +122,7 @@ public final class BitVector {
     <code>d</code>, as written by the {@link #write} method.
     */
   public BitVector(Directory d, String name) throws IOException {
-    InputStream input = d.openFile(name);
+    IndexInput input = d.openInput(name);
     try {
       size = input.readInt();			  // read size
       count = input.readInt();			  // read count

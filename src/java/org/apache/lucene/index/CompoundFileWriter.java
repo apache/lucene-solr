@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.OutputStream;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -196,11 +196,11 @@ final class CompoundFileWriter {
     private void copyFile(FileEntry source, OutputStream os, byte buffer[])
     throws IOException
     {
-        InputStream is = null;
+        IndexInput is = null;
         try {
             long startPtr = os.getFilePointer();
 
-            is = directory.openFile(source.file);
+            is = directory.openInput(source.file);
             long length = is.length();
             long remainder = length;
             int chunk = buffer.length;

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 import java.util.Vector;
 import java.io.IOException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.OutputStream;
 
 final class SegmentInfos extends Vector {
@@ -37,7 +37,7 @@ final class SegmentInfos extends Vector {
 
   public final void read(Directory directory) throws IOException {
     
-    InputStream input = directory.openFile("segments");
+    IndexInput input = directory.openInput("segments");
     try {
       int format = input.readInt();
       if(format < 0){     // file contains explicit format info
@@ -103,7 +103,7 @@ final class SegmentInfos extends Vector {
   public static long readCurrentVersion(Directory directory)
     throws IOException {
       
-    InputStream input = directory.openFile("segments");
+    IndexInput input = directory.openInput("segments");
     int format = 0;
     long version = 0;
     try {

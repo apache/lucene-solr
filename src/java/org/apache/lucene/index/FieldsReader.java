@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 
 /**
  * Class responsible for access to stored document fields.
@@ -32,15 +32,15 @@ import org.apache.lucene.store.InputStream;
  */
 final class FieldsReader {
   private FieldInfos fieldInfos;
-  private InputStream fieldsStream;
-  private InputStream indexStream;
+  private IndexInput fieldsStream;
+  private IndexInput indexStream;
   private int size;
 
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
     fieldInfos = fn;
 
-    fieldsStream = d.openFile(segment + ".fdt");
-    indexStream = d.openFile(segment + ".fdx");
+    fieldsStream = d.openInput(segment + ".fdt");
+    indexStream = d.openInput(segment + ".fdx");
 
     size = (int)(indexStream.length() / 8);
   }

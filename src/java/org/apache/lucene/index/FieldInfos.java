@@ -24,7 +24,7 @@ import org.apache.lucene.document.Field;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.OutputStream;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexInput;
 
 /** Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -42,13 +42,13 @@ final class FieldInfos {
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
-   * InputStream
-   * @param d The directory to open the InputStream from
-   * @param name The name of the file to open the InputStream from in the Directory
+   * IndexInput
+   * @param d The directory to open the IndexInput from
+   * @param name The name of the file to open the IndexInput from in the Directory
    * @throws IOException
    */
   FieldInfos(Directory d, String name) throws IOException {
-    InputStream input = d.openFile(name);
+    IndexInput input = d.openInput(name);
     try {
       read(input);
     } finally {
@@ -189,7 +189,7 @@ final class FieldInfos {
     }
   }
 
-  private void read(InputStream input) throws IOException {
+  private void read(IndexInput input) throws IOException {
     int size = input.readVInt();//read in the size
     for (int i = 0; i < size; i++) {
       String name = input.readString().intern();
