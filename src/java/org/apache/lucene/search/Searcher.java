@@ -59,10 +59,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 
-/** The abstract base class for search implementations.
- *
- * <p>Subclasses implement search over a single index, over multiple indices,
- * and over indices on remote servers.
+/** An abstract base class for search implementations.
+ * Implements some common utility methods.
  */
 public abstract class Searcher implements Searchable {
 

@@ -65,14 +65,14 @@ import java.rmi.RMISecurityManager;
 import java.rmi.server.UnicastRemoteObject;
 
 /** A remote searchable implementation. */
-public class RemoteSearchableImpl
+public class RemoteSearchable
   extends UnicastRemoteObject
   implements Searchable {
   
   private Searchable local;
   
   /** Constructs and exports a remote searcher. */
-  public RemoteSearchableImpl(Searchable local) throws RemoteException {
+  public RemoteSearchable(Searchable local) throws RemoteException {
     super();
     this.local = local;
   }
@@ -111,7 +111,7 @@ public class RemoteSearchableImpl
     }
     
     Searchable local = new IndexSearcher(args[0]);
-    RemoteSearchableImpl impl = new RemoteSearchableImpl(local);
+    RemoteSearchable impl = new RemoteSearchable(local);
       
     // bind the implementation to "Searchable"
     Naming.rebind("//localhost/Searchable", impl);

@@ -112,7 +112,7 @@
       <classpath refid="classpath"/>
     </javac>
 
-    <rmic classname="org.apache.lucene.search.RemoteSearchableImpl"
+    <rmic classname="org.apache.lucene.search.RemoteSearchable"
           base="${build.classes}">
       <classpath refid="classpath"/>
     </rmic>

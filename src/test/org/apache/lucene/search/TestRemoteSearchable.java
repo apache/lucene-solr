@@ -60,8 +60,6 @@ import java.rmi.registry.LocateRegistry;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
@@ -87,7 +85,7 @@ public class TestRemoteSearchable extends TestCase {
     // publish it
     LocateRegistry.createRegistry(1099);
     Searchable local = new IndexSearcher(indexStore);
-    RemoteSearchableImpl impl = new RemoteSearchableImpl(local);
+    RemoteSearchable impl = new RemoteSearchable(local);
     Naming.rebind("//localhost/Searchable", impl);
   }
 

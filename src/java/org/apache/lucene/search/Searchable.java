@@ -59,7 +59,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 
-/** The interface for search implementations. */
+/** The interface for search implementations.
+ *
+ * <p>Implementations provide search over a single index, over multiple
+ * indices, and over indices on remote servers.
+ */
 public interface Searchable extends java.rmi.Remote {
   /** Lower-level search API.
    *
