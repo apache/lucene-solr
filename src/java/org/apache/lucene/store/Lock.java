@@ -79,6 +79,11 @@ public abstract class Lock {
   /** Release exclusive access. */
   public abstract void release();
 
+  /** Returns true if the resource is currently locked.  Note that one must
+   * still call {@link #obtain()} before using the resource. */
+  public abstract boolean isLocked();
+
+
   /** Utility class for executing code with exclusive access. */
   public abstract static class With {
     private Lock lock;

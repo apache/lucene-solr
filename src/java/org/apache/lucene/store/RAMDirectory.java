@@ -199,6 +199,9 @@ public final class RAMDirectory extends Directory {
 	public void release() {
 	  deleteFile(name);
 	}
+	public boolean isLocked() {
+	  return fileExists(name);
+	}
       };
   }
 

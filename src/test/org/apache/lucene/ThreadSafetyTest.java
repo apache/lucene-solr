@@ -164,6 +164,8 @@ class ThreadSafetyTest {
 	add = true;
     }
 
+    IndexReader.unlock(FSDirectory.getDirectory("index", false));
+
     if (!readOnly) {
       IndexWriter writer = new IndexWriter("index", ANALYZER, !add);
       

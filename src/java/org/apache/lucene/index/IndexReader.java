@@ -335,7 +335,10 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
     public static boolean isLocked(Directory directory) throws IOException {
-      return directory.fileExists("write.lock");
+      return
+        directory.makeLock("write.lock").isLocked() ||
+        directory.makeLock("commit.lock").isLocked();
+        
     }
 
   /**
@@ -345,7 +348,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
     public static boolean isLocked(String directory) throws IOException {
-      return (new File(directory, "write.lock")).exists();
+      return isLocked(FSDirectory.getDirectory(directory, false));
     }
 
    /**
@@ -356,7 +359,7 @@ public abstract class IndexReader {
     * currently accessing this index.
     */
     public static void unlock(Directory directory) throws IOException {
-      directory.deleteFile("write.lock");
-      directory.deleteFile("commit.lock");
+      directory.makeLock("write.lock").release();
+      directory.makeLock("commit.lock").release();
     }
 }

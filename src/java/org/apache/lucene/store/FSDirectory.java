@@ -60,6 +60,8 @@ import java.io.RandomAccessFile;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Hashtable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.apache.lucene.util.Constants;
 
@@ -83,6 +85,16 @@ public final class FSDirectory extends Directory {
 
   private static final boolean DISABLE_LOCKS =
       Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
+
+  private static MessageDigest DIGESTER;
+ 
+  static {
+    try {
+      DIGESTER = MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+    }
+  }
 
   /** A buffer optionally used in renameTo method */
   private byte[] buffer = null;
@@ -268,6 +280,12 @@ public final class FSDirectory extends Directory {
     return new FSInputStream(new File(directory, name));
   }
 
+  /**
+   * So we can do some byte-to-hexchar conversion below
+   */
+  private static final char[] HEX_DIGITS =
+  {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+
   /** Constructs a {@link Lock} with the specified name.  Locks are implemented
    * with {@link File#createNewFile() }.
    *
@@ -280,18 +298,49 @@ public final class FSDirectory extends Directory {
    * @return an instance of <code>Lock</code> holding the lock
    */
   public final Lock makeLock(String name) {
-    final File lockFile = new File(directory, name);
+    // the fully-qualified file name which uniquely identifies this lock 
+    String fullName;
+    try {
+      fullName = new File(directory, name).getCanonicalPath();
+    } catch (IOException e) {
+      throw new RuntimeException(e.toString());
+    }
+
+    // hash full name to create the tmp file name
+    byte digest[];
+    synchronized (DIGESTER) {
+      digest = DIGESTER.digest(fullName.getBytes());
+    }
+    StringBuffer buf = new StringBuffer();
+    buf.append("lucene-");
+    for (int i = 0; i < digest.length; i++) {
+      int b = digest[i];
+      buf.append(HEX_DIGITS[(b >> 4) & 0xf]);
+      buf.append(HEX_DIGITS[b & 0xf]);
+    }
+    buf.append(".lock");
+
+    // make the lock file in tmp, where anyone can create files.
+    final File lockFile = new File(System.getProperty("java.io.tmpdir"),
+                                   buf.toString());
+
     return new Lock() {
       public boolean obtain() throws IOException {
         if (DISABLE_LOCKS)
           return true;
-            return lockFile.createNewFile();
+        return lockFile.createNewFile();
       }
       public void release() {
         if (DISABLE_LOCKS)
           return;
         lockFile.delete();
       }
+      public boolean isLocked() {
+        if (DISABLE_LOCKS)
+          return false;
+        return lockFile.exists();
+      }
+
       public String toString() {
         return "Lock@" + lockFile;
       }
