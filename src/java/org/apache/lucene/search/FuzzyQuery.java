@@ -167,4 +167,24 @@ public final class FuzzyQuery extends MultiTermQuery {
     }
     
   }
+
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof FuzzyQuery)) return false;
+    if (!super.equals(o)) return false;
+
+    final FuzzyQuery fuzzyQuery = (FuzzyQuery) o;
+
+    if (minimumSimilarity != fuzzyQuery.minimumSimilarity) return false;
+    if (prefixLength != fuzzyQuery.prefixLength) return false;
+
+    return true;
+  }
+
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 29 * result + minimumSimilarity != +0.0f ? Float.floatToIntBits(minimumSimilarity) : 0;
+    result = 29 * result + prefixLength;
+    return result;
+  }
 }

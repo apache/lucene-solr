@@ -86,4 +86,19 @@ public abstract class MultiTermQuery extends Query {
         }
         return buffer.toString();
     }
+
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof MultiTermQuery)) return false;
+
+      final MultiTermQuery multiTermQuery = (MultiTermQuery) o;
+
+      if (!term.equals(multiTermQuery.term)) return false;
+
+      return true;
+    }
+
+    public int hashCode() {
+      return term.hashCode();
+    }
 }

@@ -37,5 +37,11 @@ public class WildcardQuery extends MultiTermQuery {
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new WildcardTermEnum(reader, getTerm());
   }
-    
+
+  public boolean equals(Object o) {
+    if (o instanceof WildcardQuery)
+      return super.equals(o);
+
+    return false;
+  }
 }
