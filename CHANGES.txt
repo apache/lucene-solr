@@ -16,6 +16,12 @@ Changes in runtime behavior
     "org.apache.lucene.lockDir", so that its casing follows the existing
     pattern used in other Lucene system properties. (Bernhard)		
 
+ 3. The terms of RangeQueries and FuzzyQueries are now converted to
+    lowercase by default (as it has been the case for PrefixQueries
+    and WildcardQueries before). Use setLowercaseExpandedTerms(false)
+    to disable that behavior but note that this also affects
+    PrefixQueries and WildcardQueries. (Daniel Naber)
+ 
 New features
 
  1. Added support for stored compressed fields (patch #31149)
