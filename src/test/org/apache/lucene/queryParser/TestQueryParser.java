@@ -69,206 +69,207 @@ import org.apache.lucene.analysis.Token;
 
 public class TestQueryParser extends TestCase {
 
-   public TestQueryParser(String name) {
-      super(name);
-   }
-
-  public static Analyzer qpAnalyzer = new QPTestAnalyzer();
-
-  public static class QPTestFilter extends TokenFilter {
-
-    /**
-     * Filter which discards the token 'stop' and which expands the
-     * token 'phrase' into 'phrase1 phrase2'
-     */
-    public QPTestFilter(TokenStream in) {
-      input = in;
-    }
-    
-    boolean inPhrase = false;
-    int savedStart=0, savedEnd=0;
-
-    public Token next() throws IOException {
-      if (inPhrase) {
-        inPhrase = false;
-        return new Token("phrase2", savedStart, savedEnd);
-      }
-      else
-        for (Token token = input.next(); token != null; token = input.next())
-          if (token.termText().equals("phrase")) {
-            inPhrase = true;
-            savedStart = token.startOffset();
-            savedEnd = token.endOffset();
-            return new Token("phrase1", savedStart, savedEnd);
-          }
-          else if (!token.termText().equals("stop"))
-            return token;
-      return null;
-    }
-  }
-  
-  public static class QPTestAnalyzer extends Analyzer {
-
-    public QPTestAnalyzer() {
+    public TestQueryParser(String name) {
+	super(name);
     }
 
-    /** Filters LowerCaseTokenizer with StopFilter. */
-    public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(reader));
+    public static Analyzer qpAnalyzer = new QPTestAnalyzer();
+
+    public static class QPTestFilter extends TokenFilter {
+
+	/**
+	 * Filter which discards the token 'stop' and which expands the
+	 * token 'phrase' into 'phrase1 phrase2'
+	 */
+	public QPTestFilter(TokenStream in) {
+	    input = in;
+	}
+
+	boolean inPhrase = false;
+	int savedStart=0, savedEnd=0;
+
+	public Token next() throws IOException {
+	    if (inPhrase) {
+		inPhrase = false;
+		return new Token("phrase2", savedStart, savedEnd);
+	    }
+	    else
+		for (Token token = input.next(); token != null; token = input.next()) {
+		    if (token.termText().equals("phrase")) {
+			inPhrase = true;
+			savedStart = token.startOffset();
+			savedEnd = token.endOffset();
+			return new Token("phrase1", savedStart, savedEnd);
+		    }
+		    else if (!token.termText().equals("stop"))
+			return token;
+		}
+	    return null;
+	}
     }
-  }
-  
-  public Query getQuery(String query, Analyzer a) throws Exception {
-    if (a == null)
-      a = new SimpleAnalyzer();
-    QueryParser qp = new QueryParser("field", a);
-    qp.setOperator(QueryParser.DEFAULT_OPERATOR_OR);
-    return qp.parse(query);
-  }
 
-  public void assertQueryEquals(String query, Analyzer a, String result) 
-  throws Exception {
-    Query q = getQuery(query, a);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s 
-           + "/, expecting /" + result + "/");
+    public static class QPTestAnalyzer extends Analyzer {
+
+	public QPTestAnalyzer() {
+	}
+
+	/** Filters LowerCaseTokenizer with StopFilter. */
+	public final TokenStream tokenStream(String fieldName, Reader reader) {
+	    return new QPTestFilter(new LowerCaseTokenizer(reader));
+	}
     }
-  }
 
-  public void testSimple() throws Exception {
-    assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("türm term term", null, "türm term term");
-    assertQueryEquals("ümlaut", null, "ümlaut");
+    public Query getQuery(String query, Analyzer a) throws Exception {
+	if (a == null)
+	    a = new SimpleAnalyzer();
+	QueryParser qp = new QueryParser("field", a);
+	qp.setOperator(QueryParser.DEFAULT_OPERATOR_OR);
+	return qp.parse(query);
+    }
 
-    assertQueryEquals("a AND b", null, "+a +b");
-    assertQueryEquals("(a AND b)", null, "+a +b");
-    assertQueryEquals("c OR (a AND b)", null, "c (+a +b)");
-    assertQueryEquals("a AND NOT b", null, "+a -b");
-    assertQueryEquals("a AND -b", null, "+a -b");
-    assertQueryEquals("a AND !b", null, "+a -b");
-    assertQueryEquals("a && b", null, "+a +b");
-    assertQueryEquals("a && ! b", null, "+a -b");
+    public void assertQueryEquals(String query, Analyzer a, String result)
+	throws Exception {
+	Query q = getQuery(query, a);
+	String s = q.toString("field");
+	if (!s.equals(result)) {
+	    fail("Query /" + query + "/ yielded /" + s
+		+ "/, expecting /" + result + "/");
+	}
+    }
 
-    assertQueryEquals("a OR b", null, "a b");
-    assertQueryEquals("a || b", null, "a b");
-    assertQueryEquals("a OR !b", null, "a -b");
-    assertQueryEquals("a OR ! b", null, "a -b");
-    assertQueryEquals("a OR -b", null, "a -b");
+    public void testSimple() throws Exception {
+	assertQueryEquals("term term term", null, "term term term");
+	assertQueryEquals("türm term term", null, "türm term term");
+	assertQueryEquals("ümlaut", null, "ümlaut");
 
-    assertQueryEquals("+term -term term", null, "+term -term term");
-    assertQueryEquals("foo:term AND field:anotherTerm", null, 
-                      "+foo:term +anotherterm");
-    assertQueryEquals("term AND \"phrase phrase\"", null, 
-                      "+term +\"phrase phrase\"");
-    assertQueryEquals("\"hello there\"", null, "\"hello there\"");
-    assertTrue(getQuery("a AND b", null) instanceof BooleanQuery);
-    assertTrue(getQuery("hello", null) instanceof TermQuery);
-    assertTrue(getQuery("\"hello there\"", null) instanceof PhraseQuery);
+	assertQueryEquals("a AND b", null, "+a +b");
+	assertQueryEquals("(a AND b)", null, "+a +b");
+	assertQueryEquals("c OR (a AND b)", null, "c (+a +b)");
+	assertQueryEquals("a AND NOT b", null, "+a -b");
+	assertQueryEquals("a AND -b", null, "+a -b");
+	assertQueryEquals("a AND !b", null, "+a -b");
+	assertQueryEquals("a && b", null, "+a +b");
+	assertQueryEquals("a && ! b", null, "+a -b");
 
-    assertQueryEquals("germ term^2.0", null, "germ term^2.0");
-    assertQueryEquals("term^2.0", null, "term^2.0");
-    assertQueryEquals("term^2", null, "term^2.0");
-    assertQueryEquals("\"germ term\"^2.0", null, "\"germ term\"^2.0");
-    assertQueryEquals("\"term germ\"^2", null, "\"term germ\"^2.0");
+	assertQueryEquals("a OR b", null, "a b");
+	assertQueryEquals("a || b", null, "a b");
+	assertQueryEquals("a OR !b", null, "a -b");
+	assertQueryEquals("a OR ! b", null, "a -b");
+	assertQueryEquals("a OR -b", null, "a -b");
 
-    assertQueryEquals("(foo OR bar) AND (baz OR boo)", null, 
-                      "+(foo bar) +(baz boo)");
-    assertQueryEquals("((a OR b) AND NOT c) OR d", null, 
-                      "(+(a b) -c) d");
-    assertQueryEquals("+(apple \"steve jobs\") -(foo bar baz)", null, 
-                      "+(apple \"steve jobs\") -(foo bar baz)");
-    assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null, 
-                      "+(title:dog title:cat) -author:\"bob dole\"");
-  }
+	assertQueryEquals("+term -term term", null, "+term -term term");
+	assertQueryEquals("foo:term AND field:anotherTerm", null,
+	    "+foo:term +anotherterm");
+	assertQueryEquals("term AND \"phrase phrase\"", null,
+	    "+term +\"phrase phrase\"");
+	assertQueryEquals("\"hello there\"", null, "\"hello there\"");
+	assertTrue(getQuery("a AND b", null) instanceof BooleanQuery);
+	assertTrue(getQuery("hello", null) instanceof TermQuery);
+	assertTrue(getQuery("\"hello there\"", null) instanceof PhraseQuery);
 
-  public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer();
-    assertQueryEquals("a&b", a, "a&b");
-    assertQueryEquals("a&&b", a, "a&&b");
-    assertQueryEquals(".NET", a, ".NET");
-  }
+	assertQueryEquals("germ term^2.0", null, "germ term^2.0");
+	assertQueryEquals("term^2.0", null, "term^2.0");
+	assertQueryEquals("term^2", null, "term^2.0");
+	assertQueryEquals("\"germ term\"^2.0", null, "\"germ term\"^2.0");
+	assertQueryEquals("\"term germ\"^2", null, "\"term germ\"^2.0");
 
-  public void testSlop() throws Exception {
-    assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
-    assertQueryEquals("\"term germ\"~2 flork", null, "\"term germ\"~2 flork");
-    assertQueryEquals("\"term\"~2", null, "term");
-    assertQueryEquals("\" \"~2 germ", null, "germ");
-    assertQueryEquals("\"term germ\"~2^2", null, "\"term germ\"~2^2.0");
-  }
+	assertQueryEquals("(foo OR bar) AND (baz OR boo)", null,
+	    "+(foo bar) +(baz boo)");
+	assertQueryEquals("((a OR b) AND NOT c) OR d", null,
+	    "(+(a b) -c) d");
+	assertQueryEquals("+(apple \"steve jobs\") -(foo bar baz)", null,
+	    "+(apple \"steve jobs\") -(foo bar baz)");
+	assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
+	    "+(title:dog title:cat) -author:\"bob dole\"");
+    }
 
-  public void testNumber() throws Exception {
-    // The numbers go away because SimpleAnalzyer ignores them
-    assertQueryEquals("3", null, "");
-    assertQueryEquals("term 1.0 1 2", null, "term");
-    assertQueryEquals("term term1 term2", null, "term term term");
+    public void testPunct() throws Exception {
+	Analyzer a = new WhitespaceAnalyzer();
+	assertQueryEquals("a&b", a, "a&b");
+	assertQueryEquals("a&&b", a, "a&&b");
+	assertQueryEquals(".NET", a, ".NET");
+    }
 
-    Analyzer a = new StandardAnalyzer();
-    assertQueryEquals("3", a, "3");
-    assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
-    assertQueryEquals("term term1 term2", a, "term term1 term2");
-  }
+    public void testSlop() throws Exception {
+	assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
+	assertQueryEquals("\"term germ\"~2 flork", null, "\"term germ\"~2 flork");
+	assertQueryEquals("\"term\"~2", null, "term");
+	assertQueryEquals("\" \"~2 germ", null, "germ");
+	assertQueryEquals("\"term germ\"~2^2", null, "\"term germ\"~2^2.0");
+    }
 
-  public void testWildcard() throws Exception {
-    assertQueryEquals("term*", null, "term*");
-    assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~");
-    assertQueryEquals("term~^2", null, "term^2.0~");
-    assertQueryEquals("term^2~", null, "term^2.0~");
-    assertQueryEquals("term*germ", null, "term*germ");
-    assertQueryEquals("term*germ^3", null, "term*germ^3.0");
+    public void testNumber() throws Exception {
+	// The numbers go away because SimpleAnalzyer ignores them
+	assertQueryEquals("3", null, "");
+	assertQueryEquals("term 1.0 1 2", null, "term");
+	assertQueryEquals("term term1 term2", null, "term term term");
 
-    assertTrue(getQuery("term*", null) instanceof PrefixQuery);
-    assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
-    assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
-    assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
-  }
+	Analyzer a = new StandardAnalyzer();
+	assertQueryEquals("3", a, "3");
+	assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
+	assertQueryEquals("term term1 term2", a, "term term1 term2");
+    }
 
-  public void testQPA() throws Exception {
-    assertQueryEquals("term term term", qpAnalyzer, "term term term");
-    assertQueryEquals("term +stop term", qpAnalyzer, "term term");
-    assertQueryEquals("term -stop term", qpAnalyzer, "term term");
-    assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
-    assertQueryEquals("term phrase term", qpAnalyzer, 
-                      "term \"phrase1 phrase2\" term");
-    assertQueryEquals("term AND NOT phrase term", qpAnalyzer, 
-                      "+term -\"phrase1 phrase2\" term");
-    assertQueryEquals("stop", qpAnalyzer, "");
-    assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
-    assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
-  }
+    public void testWildcard() throws Exception {
+	assertQueryEquals("term*", null, "term*");
+	assertQueryEquals("term*^2", null, "term*^2.0");
+	assertQueryEquals("term~", null, "term~");
+	assertQueryEquals("term~^2", null, "term^2.0~");
+	assertQueryEquals("term^2~", null, "term^2.0~");
+	assertQueryEquals("term*germ", null, "term*germ");
+	assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
-  public void testRange() throws Exception {
-    assertQueryEquals("[ a TO z]", null, "[a-z]");
-    assertTrue(getQuery("[ a TO z]", null) instanceof RangeQuery);
-    assertQueryEquals("[ a TO z ]", null, "[a-z]");
-    assertQueryEquals("{ a TO z}", null, "{a-z}");
-    assertQueryEquals("{ a TO z }", null, "{a-z}");
-    assertQueryEquals("{ a TO z }^2.0", null, "{a-z}^2.0");
-    assertQueryEquals("[ a TO z] OR bar", null, "[a-z] bar");
-    assertQueryEquals("[ a TO z] AND bar", null, "+[a-z] +bar");
-    assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a-z}");
-    assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a-z})");
-  }
+	assertTrue(getQuery("term*", null) instanceof PrefixQuery);
+	assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
+	assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
+	assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
+    }
 
-  public String getDate(String s) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    return DateField.dateToString(df.parse(s));
-  }
+    public void testQPA() throws Exception {
+	assertQueryEquals("term term term", qpAnalyzer, "term term term");
+	assertQueryEquals("term +stop term", qpAnalyzer, "term term");
+	assertQueryEquals("term -stop term", qpAnalyzer, "term term");
+	assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
+	assertQueryEquals("term phrase term", qpAnalyzer,
+	    "term \"phrase1 phrase2\" term");
+	assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
+	    "+term -\"phrase1 phrase2\" term");
+	assertQueryEquals("stop", qpAnalyzer, "");
+	assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
+	assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
+    }
 
-  public void testDateRange() throws Exception {
-    assertQueryEquals("[ 1/1/02 TO 1/4/02]", null, 
-                      "[" + getDate("1/1/02") + "-" + getDate("1/4/02") + "]");
-    assertQueryEquals("{  1/1/02    1/4/02   }", null, 
-                      "{" + getDate("1/1/02") + "-" + getDate("1/4/02") + "}");
-  }
+    public void testRange() throws Exception {
+	assertQueryEquals("[ a TO z]", null, "[a-z]");
+	assertTrue(getQuery("[ a TO z]", null) instanceof RangeQuery);
+	assertQueryEquals("[ a TO z ]", null, "[a-z]");
+	assertQueryEquals("{ a TO z}", null, "{a-z}");
+	assertQueryEquals("{ a TO z }", null, "{a-z}");
+	assertQueryEquals("{ a TO z }^2.0", null, "{a-z}^2.0");
+	assertQueryEquals("[ a TO z] OR bar", null, "[a-z] bar");
+	assertQueryEquals("[ a TO z] AND bar", null, "+[a-z] +bar");
+	assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a-z}");
+	assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a-z})");
+    }
 
-  public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer();
-    assertQueryEquals("\\[brackets", a, "\\[brackets");
-    assertQueryEquals("\\[brackets", null, "brackets");
-    assertQueryEquals("\\\\", a, "\\\\");
-    assertQueryEquals("\\+blah", a, "\\+blah");
-    assertQueryEquals("\\(blah", a, "\\(blah");
-  }
+    public String getDate(String s) throws Exception {
+	DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+	return DateField.dateToString(df.parse(s));
+    }
+
+    public void testDateRange() throws Exception {
+	assertQueryEquals("[ 1/1/02 TO 1/4/02]", null,
+	    "[" + getDate("1/1/02") + "-" + getDate("1/4/02") + "]");
+	assertQueryEquals("{  1/1/02    1/4/02   }", null,
+	    "{" + getDate("1/1/02") + "-" + getDate("1/4/02") + "}");
+    }
+
+    public void testEscaped() throws Exception {
+	Analyzer a = new WhitespaceAnalyzer();
+	assertQueryEquals("\\[brackets", a, "\\[brackets");
+	assertQueryEquals("\\[brackets", null, "brackets");
+	assertQueryEquals("\\\\", a, "\\\\");
+	assertQueryEquals("\\+blah", a, "\\+blah");
+	assertQueryEquals("\\(blah", a, "\\(blah");
+    }
 }
