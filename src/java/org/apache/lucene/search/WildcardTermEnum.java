@@ -45,7 +45,7 @@ public class WildcardTermEnum extends FilteredTermEnum {
    * <code>WILDCARD_CHAR</code> will cause an exception to be thrown.
    */
   public WildcardTermEnum(IndexReader reader, Term term) throws IOException {
-    super(reader, term);
+    super();
     searchTerm = term;
     field = searchTerm.field();
     text = searchTerm.text();

@@ -35,7 +35,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     int textlen;
     
     public FuzzyTermEnum(IndexReader reader, Term term) throws IOException {
-        super(reader, term);
+        super();
         searchTerm = term;
         field = searchTerm.field();
         text = searchTerm.text();

@@ -29,7 +29,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     private Term currentTerm = null;
     private TermEnum actualEnum = null;
     
-    public FilteredTermEnum(IndexReader reader, Term term) throws IOException {}
+    public FilteredTermEnum() throws IOException {}
 
     /** Equality compare on the term */
     protected abstract boolean termCompare(Term term);
