@@ -1350,7 +1350,7 @@ limitations under the License.
                             &lt;TermInfo&gt;<sup>TermCount</sup>
                         </p>
                         <p>TermInfo    --&gt;
-                            &lt;Term, DocFreq, FreqDelta, ProxDelta&gt;
+                            &lt;Term, DocFreq, FreqDelta, ProxDelta, SkipDelta&gt;
                         </p>
                         <p>Term        --&gt;
                             &lt;PrefixLength, Suffix, FieldNum&gt;
@@ -1359,7 +1359,7 @@ limitations under the License.
                             String
                         </p>
                         <p>PrefixLength,
-                            DocFreq, FreqDelta, ProxDelta<br />        --&gt; VInt
+                            DocFreq, FreqDelta, ProxDelta, SkipDelta<br />        --&gt; VInt
                         </p>
                         <p>This
                             file is sorted by Term.  Terms are ordered first lexicographically
@@ -1393,6 +1393,13 @@ limitations under the License.
                             file.  In particular, it is the difference between the position of
                             this term's data in that file and the position of the previous
                             term's data (or zero, for the first term in the file.
+                        </p>
+                        <p>SkipDelta determines the position of this
+                            term's SkipData within the .frq file.  In
+                            particular, it is the number of bytes
+                            after TermFreqs that the SkipData starts.
+                            In other words, it is the length of the
+                            TermFreq data.
                         </p>
                     </li>
                     <li>
@@ -1451,8 +1458,7 @@ limitations under the License.
                     document.
                 </p>
                                                 <p>FreqFile (.frq)    --&gt;
-                    &lt;TermFreqs&gt;<sup>TermCount</sup>
-                    &lt;SkipDatum&gt;<sup>TermCount/SkipInterval</sup>
+                    &lt;TermFreqs, SkipData&gt;<sup>TermCount</sup>
                 </p>
                                                 <p>TermFreqs    --&gt;
                     &lt;TermFreq&gt;<sup>DocFreq</sup>
@@ -1460,7 +1466,10 @@ limitations under the License.
                                                 <p>TermFreq        --&gt;
                     DocDelta, Freq?
                 </p>
-                                                <p>SkipDatum        --&gt;
+                                                <p>SkipData        --&gt;
+                    &lt;SkipDatum&gt;<sup>DocFreq/SkipInterval</sup>
+                </p>
+                                                <p>SkipDatum    --&gt;
                     DocSkip,FreqSkip,ProxSkip
                 </p>
                                                 <p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip    --&gt;
@@ -1497,7 +1506,7 @@ limitations under the License.
                     relative to the start of TermFreqs and Positions,
                     to the previous SkipDatum in the sequence.
                 </p>
-                                                <p>For example, if TermCount=35 and SkipInterval=16,
+                                                <p>For example, if DocFreq=35 and SkipInterval=16,
                     then there are two SkipData entries, containing
                     the 15<sup>th</sup> and 31<sup>st</sup> document
                     numbers in TermFreqs.  The first FreqSkip names
@@ -1725,32 +1734,6 @@ limitations under the License.
                 billion.  This is not today a problem, but, in the long term,
                 probably will be.  These should therefore be replaced with either
                 UInt64 values, or better yet, with VInt values which have no limit.
-            </p>
-                                                <p>There
-                are only two places where the code requires that a value be fixed
-                size.  These are:
-            </p>
-                                                <ol>
-                <li><p>
-                        The FieldValuesPosition (in the stored field index file, .fdx).
-                        This already uses a UInt64, and so is not a problem.
-                    </p></li>
-                <li><p>The
-                        TermCount (in the term info file, .tis).  This is written last but
-                        is read when the file is first opened, and so is stored at the
-                        front.  The indexing code first writes an zero here, then overwrites
-                        it after the rest of the file has been written.  So unless this is
-                        stored elsewhere, it must be fixed size and should be changed to a
-                        UInt64.
-                    </p>
-                </li>
-            </ol>
-                                                <p>Other
-                than these, all UInt values could be converted to VInt to remove
-                limitations.
-            </p>
-                                                <p><br /><br />
-
             </p>
                             </blockquote>
         </p>

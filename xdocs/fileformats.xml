@@ -923,7 +923,7 @@
                             &lt;TermInfo&gt;<sup>TermCount</sup>
                         </p>
                         <p>TermInfo    --&gt;
-                            &lt;Term, DocFreq, FreqDelta, ProxDelta&gt;
+                            &lt;Term, DocFreq, FreqDelta, ProxDelta, SkipDelta&gt;
                         </p>
                         <p>Term        --&gt;
                             &lt;PrefixLength, Suffix, FieldNum&gt;
@@ -932,7 +932,7 @@
                             String
                         </p>
                         <p>PrefixLength,
-                            DocFreq, FreqDelta, ProxDelta<br/>        --&gt; VInt
+                            DocFreq, FreqDelta, ProxDelta, SkipDelta<br/>        --&gt; VInt
                         </p>
                         <p>This
                             file is sorted by Term.  Terms are ordered first lexicographically
@@ -966,6 +966,13 @@
                             file.  In particular, it is the difference between the position of
                             this term's data in that file and the position of the previous
                             term's data (or zero, for the first term in the file.
+                        </p>
+                        <p>SkipDelta determines the position of this
+                            term's SkipData within the .frq file.  In
+                            particular, it is the number of bytes
+                            after TermFreqs that the SkipData starts.
+                            In other words, it is the length of the
+                            TermFreq data.
                         </p>
                     </li>
                     <li>
@@ -1016,8 +1023,7 @@
                     document.
                 </p>
                 <p>FreqFile (.frq)    --&gt;
-                    &lt;TermFreqs&gt;<sup>TermCount</sup>
-                    &lt;SkipDatum&gt;<sup>TermCount/SkipInterval</sup>
+                    &lt;TermFreqs, SkipData&gt;<sup>TermCount</sup>
                 </p>
                 <p>TermFreqs    --&gt;
                     &lt;TermFreq&gt;<sup>DocFreq</sup>
@@ -1025,7 +1031,10 @@
                 <p>TermFreq        --&gt;
                     DocDelta, Freq?
                 </p>
-                <p>SkipDatum        --&gt;
+                <p>SkipData        --&gt;
+                    &lt;SkipDatum&gt;<sup>DocFreq/SkipInterval</sup>
+                </p>
+                <p>SkipDatum    --&gt;
                     DocSkip,FreqSkip,ProxSkip
                 </p>
                 <p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip    --&gt;
@@ -1062,7 +1071,7 @@
                     relative to the start of TermFreqs and Positions,
                     to the previous SkipDatum in the sequence.
                 </p>
-                <p>For example, if TermCount=35 and SkipInterval=16,
+                <p>For example, if DocFreq=35 and SkipInterval=16,
                     then there are two SkipData entries, containing
                     the 15<sup>th</sup> and 31<sup>st</sup> document
                     numbers in TermFreqs.  The first FreqSkip names
