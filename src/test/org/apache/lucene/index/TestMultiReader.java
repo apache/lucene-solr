@@ -87,12 +87,7 @@ public class TestMultiReader extends TestCase {
   }
   
   public void testTermVectors() {
-    try {
-      MultiReader reader = new MultiReader(dir, sis, false, readers);
-      assertTrue(reader != null);
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }
+    MultiReader reader = new MultiReader(dir, sis, false, readers);
+    assertTrue(reader != null);
   }    
 }

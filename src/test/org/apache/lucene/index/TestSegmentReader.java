@@ -104,40 +104,33 @@ public class TestSegmentReader extends TestCase {
   }    
   
   public void testGetFieldNameVariations() {
-    try {
-      Collection result = reader.getFieldNames();
-      assertTrue(result != null);
-      assertTrue(result.size() == 7);
-      for (Iterator iter = result.iterator(); iter.hasNext();) {
-        String s = (String) iter.next();
-        //System.out.println("Name: " + s);
-        assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
-      }                                                                               
-      result = reader.getFieldNames(true);
-      assertTrue(result != null);
-//      System.out.println("Size: " + result.size());
-      assertTrue(result.size() == 5);
-      for (Iterator iter = result.iterator(); iter.hasNext();) {
-        String s = (String) iter.next();
-        assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
-      }
-      
-      result = reader.getFieldNames(false);
-      assertTrue(result != null);
-      assertTrue(result.size() == 2);
-      //Get all indexed fields that are storing term vectors
-      result = reader.getIndexedFieldNames(true);
-      assertTrue(result != null);
-      assertTrue(result.size() == 2);
-      
-      result = reader.getIndexedFieldNames(false);
-      assertTrue(result != null);
-      assertTrue(result.size() == 3);
-      
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+    Collection result = reader.getFieldNames();
+    assertTrue(result != null);
+    assertTrue(result.size() == 7);
+    for (Iterator iter = result.iterator(); iter.hasNext();) {
+      String s = (String) iter.next();
+      //System.out.println("Name: " + s);
+      assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
+    }                                                                               
+    result = reader.getFieldNames(true);
+    assertTrue(result != null);
+    assertTrue(result.size() == 5);
+    for (Iterator iter = result.iterator(); iter.hasNext();) {
+      String s = (String) iter.next();
+      assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
     }
+    
+    result = reader.getFieldNames(false);
+    assertTrue(result != null);
+    assertTrue(result.size() == 2);
+    //Get all indexed fields that are storing term vectors
+    result = reader.getIndexedFieldNames(true);
+    assertTrue(result != null);
+    assertTrue(result.size() == 2);
+    
+    result = reader.getIndexedFieldNames(false);
+    assertTrue(result != null);
+    assertTrue(result.size() == 3);
   } 
   
   public void testTerms() {
@@ -186,27 +179,21 @@ public class TestSegmentReader extends TestCase {
   }    
   
   public void testTermVectors() {
-    try {
-      TermFreqVector result = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
-      assertTrue(result != null);
-      String [] terms = result.getTerms();
-      int [] freqs = result.getTermFrequencies();
-      assertTrue(terms != null && terms.length == 3 && freqs != null && freqs.length == 3);
-      for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
-        int freq = freqs[i];
-        assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);
-        assertTrue(freq > 0);
-      }
-  
-      TermFreqVector [] results = reader.getTermFreqVectors(0);
-      assertTrue(results != null);
-      assertTrue(results.length == 2);      
-      
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+    TermFreqVector result = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
+    assertTrue(result != null);
+    String [] terms = result.getTerms();
+    int [] freqs = result.getTermFrequencies();
+    assertTrue(terms != null && terms.length == 3 && freqs != null && freqs.length == 3);
+    for (int i = 0; i < terms.length; i++) {
+      String term = terms[i];
+      int freq = freqs[i];
+      assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);
+      assertTrue(freq > 0);
     }
+
+    TermFreqVector [] results = reader.getTermFreqVectors(0);
+    assertTrue(results != null);
+    assertTrue(results.length == 2);      
   }    
   
 }
