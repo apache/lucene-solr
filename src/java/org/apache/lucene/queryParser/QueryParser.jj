@@ -194,7 +194,7 @@ public class QueryParser {
 
   /**
    * Sets the boolean operator of the QueryParser.
-   * In classic mode (<code>DEFAULT_OPERATOR_OR</mode>) terms without any modifiers
+   * In classic mode (<code>DEFAULT_OPERATOR_OR</code>) terms without any modifiers
    * are considered optional: for example <code>capital of Hungary</code> is equal to
    * <code>capital OR of OR Hungary</code>.<br/>
    * In <code>DEFAULT_OPERATOR_AND</code> terms are considered to be in conjuction: the
