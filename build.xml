@@ -16,7 +16,7 @@
 
   <property name="name" value="lucene"/>
   <property name="Name" value="Lucene"/>
-  <property name="version" value="1.4-rc2-dev"/>
+  <property name="version" value="1.4-rc3-dev"/>
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="${name}-${version}"/>
   <property name="javac.deprecation" value="on"/>
