@@ -7,11 +7,13 @@ $Id$
 solved:
 -----------------------------------------------------------------------------------------------
 
+
 Bugs:
 	- some relative URLs are not appended appropriately, leading to wrong and growing URLs
 	  - 301/302 URLs were not updated: the docs were saved under the old URL, which lead to
 	    wrong relative URLs (cmarschner, 2002-06-17)
-
+    - fixed build.xml
+    
 URLs: 
 	- include a URLNormalizer
 	  * lowercase host names
@@ -35,8 +37,6 @@ remaining:
 	  probably this will be solved by changing from HTTPClient.* to Jakarta HTTP client and reuse sockets
 
 
-* Build
-	- added build.xml, but build.bat and build.sh are still working without ANT. Change that.
 
 * LuceneStorage
 	- define a configurable interface that saves fetched pages into a Lucene index
