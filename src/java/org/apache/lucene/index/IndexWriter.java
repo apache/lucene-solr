@@ -138,8 +138,7 @@ public class IndexWriter {
     useCompoundFile = value;
   }
 
-
-    /** Expert: Set the Similarity implementation used by this IndexWriter.
+  /** Expert: Set the Similarity implementation used by this IndexWriter.
    *
    * @see Similarity#setDefault(Similarity)
    */
@@ -239,6 +238,102 @@ public class IndexWriter {
       }
   }
 
+  /** Determines the largest number of documents ever merged by addDocument().
+   * Small values (e.g., less than 10,000) are best for interactive indexing,
+   * as this limits the length of pauses while indexing to a few seconds.
+   * Larger values are best for batched indexing and speedier searches.
+   *
+   * <p>The default value is {@link Integer#MAX_VALUE}.
+   */
+  public void setMaxMergeDocs(int maxMergeDocs) {
+    this.maxMergeDocs = maxMergeDocs;
+  }
+
+  /**
+   * @see #setMaxMergeDocs
+   */
+  public int getMaxMergeDocs() {
+    return maxMergeDocs;
+  }
+
+  /**
+   * The maximum number of terms that will be indexed for a single field in a
+   * document.  This limits the amount of memory required for indexing, so that
+   * collections with very large files will not crash the indexing process by
+   * running out of memory.<p/>
+   * Note that this effectively truncates large documents, excluding from the
+   * index terms that occur further in the document.  If you know your source
+   * documents are large, be sure to set this value high enough to accomodate
+   * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
+   * is your memory, but you should anticipate an OutOfMemoryError.<p/>
+   * By default, no more than 10,000 terms will be indexed for a field.
+   */
+  public void setMaxFieldLength(int maxFieldLength) {
+    this.maxFieldLength = maxFieldLength;
+  }
+  
+  /**
+   * @see #setMaxFieldLength
+   */
+  public int getMaxFieldLength() {
+    return maxFieldLength;
+  }
+
+  /** Determines the minimal number of documents required before the buffered
+   * in-memory documents are merging and a new Segment is created.
+   * Since Documents are merged in a {@link org.apache.lucene.store.RAMDirectory},
+   * large value gives faster indexing.  At the same time, mergeFactor limits
+   * the number of files open in a FSDirectory.
+   *
+   * <p> The default value is 10.
+   */
+  public void setMaxBufferedDocs(int maxBufferedDocs) {
+    this.minMergeDocs = maxBufferedDocs;
+  }
+
+  /**
+   * @see #setMaxBufferedDocs
+   */
+  public int getMaxBufferedDocs() {
+    return minMergeDocs;
+  }
+
+  /** Determines how often segment indices are merged by addDocument().  With
+   * smaller values, less RAM is used while indexing, and searches on
+   * unoptimized indices are faster, but indexing speed is slower.  With larger
+   * values, more RAM is used during indexing, and while searches on unoptimized
+   * indices are slower, indexing is faster.  Thus larger values (> 10) are best
+   * for batch index creation, and smaller values (< 10) for indices that are
+   * interactively maintained.
+   *
+   * <p>This must never be less than 2.  The default value is 10.
+   */
+  public void setMergeFactor(int mergeFactor) {
+    if (mergeFactor < 2)
+      throw new IllegalArgumentException("mergeFactor cannot be less than 2");
+    this.mergeFactor = mergeFactor;
+  }
+
+  /**
+   * @see #setMergeFactor
+   */
+  public int getMergeFactor() {
+    return mergeFactor;
+  }
+
+  /** If non-null, information about merges will be printed to this.
+   */
+  public void setInfoStream(PrintStream infoStream) {
+    this.infoStream = infoStream;
+  }
+
+  /**
+   * @see #setInfoStream
+   */
+  public PrintStream getInfoStream() {
+    return infoStream;
+  }
+
   /** Flushes all changes to an index and closes all associated files. */
   public synchronized void close() throws IOException {
     flushRamSegments();
@@ -284,7 +379,9 @@ public class IndexWriter {
    * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
    * By default, no more than 10,000 terms will be indexed for a field.
-  */
+   * 
+   * @deprecated use {@link #setMaxFieldLength} instead
+   */
   public int maxFieldLength = DEFAULT_MAX_FIELD_LENGTH;
 
   /**
@@ -329,7 +426,9 @@ public class IndexWriter {
    * for batch index creation, and smaller values (< 10) for indices that are
    * interactively maintained.
    *
-   * <p>This must never be less than 2.  The default value is 10.*/
+   * <p>This must never be less than 2.  The default value is 10.
+   * @deprecated use {@link #setMergeFactor} instead
+   */
   public int mergeFactor = DEFAULT_MERGE_FACTOR;
 
   /** Determines the minimal number of documents required before the buffered
@@ -338,7 +437,9 @@ public class IndexWriter {
    * large value gives faster indexing.  At the same time, mergeFactor limits
    * the number of files open in a FSDirectory.
    *
-   * <p> The default value is 10.*/
+   * <p> The default value is 10.
+   * @deprecated use {@link #setMaxBufferedDocs} instead
+   */
   public int minMergeDocs = DEFAULT_MIN_MERGE_DOCS;
 
 
@@ -347,10 +448,14 @@ public class IndexWriter {
    * as this limits the length of pauses while indexing to a few seconds.
    * Larger values are best for batched indexing and speedier searches.
    *
-   * <p>The default value is {@link Integer#MAX_VALUE}. */
+   * <p>The default value is {@link Integer#MAX_VALUE}.
+   * @deprecated use {@link #setMaxMergeDocs} instead
+   */
   public int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
-  /** If non-null, information about merges will be printed to this. */
+  /** If non-null, information about merges will be printed to this.
+   * @deprecated use {@link #setInfoStream} instead 
+   */
   public PrintStream infoStream = null;
 
   /** Merges all segments together into a single segment, optimizing an index
