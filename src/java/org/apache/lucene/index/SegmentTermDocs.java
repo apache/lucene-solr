@@ -159,13 +159,16 @@ class SegmentTermDocs implements TermDocs {
       long lastProxPointer = -1;
       int numSkipped = -1 - (count % skipInterval);
 
-      while (target > skipDoc && skipCount < numSkips) {
+      while (target > skipDoc) {
         lastSkipDoc = skipDoc;
         lastFreqPointer = freqPointer;
         lastProxPointer = proxPointer;
-
+        
         if (skipDoc != 0 && skipDoc >= doc)
           numSkipped += skipInterval;
+        
+        if(skipCount >= numSkips)
+          break;
 
         skipDoc += skipStream.readVInt();
         freqPointer += skipStream.readVInt();
