@@ -112,6 +112,9 @@ Bug fixes
  4. Some combinations of BooleanQuery and MultiPhraseQuery (formerly
     PhrasePrefixQuery) could provoke UnsupportedOperationException
     (bug #33161). (Rhett Sutphin via Daniel Naber)
+    
+ 5. Small bug in skipTo of ConjunctionScorer that caused NullPointerException 
+    if skipTo() was called without prior call to next() fixed. (Christoph)
  
 Optimizations
      
@@ -136,6 +139,12 @@ Optimizations
  5. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
     of 0 now run 20-50% faster (Patch #31882).
     (Jonathan Hager via Daniel Naber)
+    
+ 6. A Version of BooleanScorer (BooleanScorer2) added that delivers documents 
+    in  increasing order and implements skipTo. For queries with required or forbidden 
+    clauses it may be faster than the old BooleanScorer, for BooleanQueries consisting 
+    only of optional clauses it is probably slower. The new BooleanScorer is now the 
+    default. (Patch 31785 by Paul Elschot via Christoph)
 
 
 1.4.3
