@@ -31,30 +31,6 @@ public class TestStopAnalyzer extends TestCase {
   }
 
 
-  public void testNoHoles() throws Exception {
-    Token[] tokens = tokensFromAnalyzer(stopAnalyzer,
-                                        "non-stop words");
-
-    assertEquals(3, tokens.length);
-
-    // ensure all words are in successive positions
-    assertEquals("non", 1, tokens[0].getPositionIncrement());
-    assertEquals("stop", 1, tokens[1].getPositionIncrement());
-    assertEquals("words", 1, tokens[2].getPositionIncrement());
-  }
-
-  public void testHoles() throws Exception {
-    Token[] tokens = tokensFromAnalyzer(stopAnalyzer,
-                                        "the stop words are here");
-
-    assertEquals(3, tokens.length);
-
-    // check for the holes noted by position gaps
-    assertEquals("stop", 2, tokens[0].getPositionIncrement());
-    assertEquals("words", 1, tokens[1].getPositionIncrement());
-    assertEquals("here", 2, tokens[2].getPositionIncrement());
-  }
-
   public void testPhraseQuery() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true);
@@ -72,15 +48,10 @@ public class TestStopAnalyzer extends TestCase {
     Hits hits = searcher.search(query);
     assertEquals(1, hits.length());
 
-    // incorrect attempt at exact phrase query over stop word hole
+    // currently StopAnalyzer does not leave "holes", so this matches.
     query = new PhraseQuery();
     query.add(new Term("field", "words"));
     query.add(new Term("field", "here"));
-    hits = searcher.search(query);
-    assertEquals(0, hits.length());
-
-    // add some slop, and match over the hole
-    query.setSlop(1);
     hits = searcher.search(query);
     assertEquals(1, hits.length());
 
