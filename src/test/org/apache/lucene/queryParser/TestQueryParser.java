@@ -343,36 +343,36 @@ public class TestQueryParser extends TestCase {
     //assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
     //assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");
 
-	assertQueryEquals("a\\-b:c",a,"a\\-b:c");
-	assertQueryEquals("a\\+b:c",a,"a\\+b:c");
-	assertQueryEquals("a\\:b:c",a,"a\\:b:c");
-	assertQueryEquals("a\\\\b:c",a,"a\\\\b:c");
+    assertQueryEquals("a\\-b:c", a, "a\\-b:c");
+    assertQueryEquals("a\\+b:c", a, "a\\+b:c");
+    assertQueryEquals("a\\:b:c", a, "a\\:b:c");
+    assertQueryEquals("a\\\\b:c", a, "a\\\\b:c");
 
-	assertQueryEquals("a:b\\-c",a,"a:b\\-c");
-	assertQueryEquals("a:b\\+c",a,"a:b\\+c");
-	assertQueryEquals("a:b\\:c",a,"a:b\\:c");
-	assertQueryEquals("a:b\\\\c",a,"a:b\\\\c");
+    assertQueryEquals("a:b\\-c", a, "a:b\\-c");
+    assertQueryEquals("a:b\\+c", a, "a:b\\+c");
+    assertQueryEquals("a:b\\:c", a, "a:b\\:c");
+    assertQueryEquals("a:b\\\\c", a, "a:b\\\\c");
 
-	assertQueryEquals("a:b\\-c*",a,"a:b-c*");
-	assertQueryEquals("a:b\\+c*",a,"a:b+c*");
-	assertQueryEquals("a:b\\:c*",a,"a:b:c*");
-  
-	assertQueryEquals("a:b\\\\c*",a,"a:b\\c*");
+    assertQueryEquals("a:b\\-c*", a, "a:b-c*");
+    assertQueryEquals("a:b\\+c*", a, "a:b+c*");
+    assertQueryEquals("a:b\\:c*", a, "a:b:c*");
 
-	assertQueryEquals("a:b\\-?c",a,"a:b-?c");
-	assertQueryEquals("a:b\\+?c",a,"a:b+?c");
-	assertQueryEquals("a:b\\:?c",a,"a:b:?c");
-  
-	assertQueryEquals("a:b\\\\?c",a,"a:b\\\\\\?c");
+    assertQueryEquals("a:b\\\\c*", a, "a:b\\c*");
 
-	assertQueryEquals("a:b\\-c~",a,"a:b-c~");
-	assertQueryEquals("a:b\\+c~",a,"a:b+c~");
-	assertQueryEquals("a:b\\:c~",a,"a:b:c~");
-	assertQueryEquals("a:b\\\\c~",a,"a:b\\c~");
+    assertQueryEquals("a:b\\-?c", a, "a:b-?c");
+    assertQueryEquals("a:b\\+?c", a, "a:b+?c");
+    assertQueryEquals("a:b\\:?c", a, "a:b:?c");
 
-	assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
-	assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
-	assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
+    assertQueryEquals("a:b\\\\?c", a, "a:b\\\\\\?c");
+
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~");
+
+    assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
+    assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
+    assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
   }
 
   public void testTabNewlineCarriageReturn()
