@@ -55,6 +55,7 @@ package de.lanlab.larm.net;
  */
 import java.io.*;
 import java.net.*;
+import org.apache.oro.text.perl.*;
 
 
 /**
@@ -75,7 +76,7 @@ public class URLNormalizer
      * contains hex codes for characters in lowercase uses char arrays instead
      * of strings for faster processing
      */
-    protected static char[][] charMap = {
+    protected final static char[][] charMap = {
             {'%', '0', '0'}, {'%', '0', '1'}, {'%', '0', '2'}, {'%', '0', '3'}, {'%', '0', '4'}, {'%', '0', '5'}, {'%', '0', '6'}, {'%', '0', '7'}, {'%', '0', '8'}, {'%', '0', '9'}, {'%', '0', 'A'}, {'%', '0', 'B'}, {'%', '0', 'C'}, {'%', '0', 'D'}, {'%', '0', 'E'}, {'%', '0', 'F'},
             {'%', '1', '0'}, {'%', '1', '1'}, {'%', '1', '2'}, {'%', '1', '3'}, {'%', '1', '4'}, {'%', '1', '5'}, {'%', '1', '6'}, {'%', '1', '7'}, {'%', '1', '8'}, {'%', '1', '9'}, {'%', '1', 'A'}, {'%', '1', 'B'}, {'%', '1', 'C'}, {'%', '1', 'D'}, {'%', '1', 'E'}, {'%', '1', 'F'},
             {'%', '2', '0'}, {'%', '2', '1'}, {'%', '2', '2'}, {'%', '2', '3'}, {'$'}, {'%', '2', '5'}, {'%', '2', '6'}, {'%', '2', '7'}, {'%', '2', '8'}, {'%', '2', '9'}, {'%', '2', 'A'}, {'%', '2', 'B'}, {'%', '2', 'C'}, {'-'}, {'.'}, {'%', '2', 'F'},
@@ -337,25 +338,31 @@ public class URLNormalizer
      * @param host  Description of the Parameter
      * @return      Description of the Return Value
      */
-    protected static String normalizeHost(HostManager hostManager, String host)
+    protected static String normalizeHost(HostResolver hostResolver, String host)
     {
-        return hostManager.getHostInfo(host.toLowerCase()).getHostName();
+        return hostResolver.resolveHost(host.toLowerCase());
     }
 
-/*
-    HostManager hostManager;
-*/
+
+
+
+    HostResolver hostResolver;
+
 
     /**
      * Constructor for the URLNormalizer object
      *
      * @param hostManager  Description of the Parameter
      */
-   /* public URLNormalizer(HostManager hostManager)
+    public URLNormalizer(HostResolver hostResolver)
     {
-        this.hostManager = hostManager;
-    }*/
+        this.hostResolver = hostResolver;
+    }
 
+    public void setHostResolver(HostResolver hostResolver)
+    {
+        this.hostResolver = hostResolver;
+    }
 
     /**
      * Description of the Method
@@ -365,15 +372,19 @@ public class URLNormalizer
      * @exception IOException            Description of the Exception
      * @exception MalformedURLException  Description of the Exception
      */
-    public static URL normalize(URL u, HostManager hostManager)
+    public static URL normalize(URL u, HostResolver hostResolver)
     {
+        if(u == null)
+        {
+            return null;
+        }
         if (u.getProtocol().equals("http"))
         {
             try
             {
                 int port = u.getPort();
                 /*URL url =*/
-                return  new URL(u.getProtocol(), normalizeHost(hostManager, u.getHost()), port == 80 ? -1 : port, normalizePath(u.getFile()));
+                return  new URL(u.getProtocol(), normalizeHost(hostResolver, u.getHost()), port == 80 ? -1 : port, normalizePath(u.getFile()));
                 /*if(!u.equals(url))
                 {
                     System.out.println(u.toExternalForm() + " -> " + url.toExternalForm());
@@ -399,27 +410,10 @@ public class URLNormalizer
         }
     }
 
-    public static void main(String[] args) throws Exception
+
+    public URL normalize(URL u)
     {
-        HostManager hm = new HostManager(10);
-        hm.addSynonym("webinfo.campus.lmu.de", "webinfo.uni-muenchen.de");
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de/conman/index.jsp?path=709"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://webinfo.uni-muenchen.de/view-i.cfm?url=http://abc/resp?a=c"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://webinfo.campus.lmu.de/view-i.cfm?url=http://abc/resp?a=c"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.bwl.uni-muenchen.de/default.asp?id=123"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de/index.html"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de/"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de/?"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de?"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de?id=abc"), hm));
-        System.out.println(URLNormalizer.normalize(new URL("http://www.lmu.de/abcde$1?id=abc"), hm));
-        URL u = new URL("http://www.lmu.de/abcde$1?id=abc");
-        System.out.println("host: " + u.getHost());
-        System.out.println("port: " + u.getPort());
-        System.out.println(URLNormalizer.normalize(u, hm));
-
-
-
+        return this.normalize(u, hostResolver);
     }
+
 }
