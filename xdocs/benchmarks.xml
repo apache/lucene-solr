@@ -141,7 +141,6 @@
                     </p>
                     <p>
                         <b>Notes</b><br/>
-                        <li><i>Notes</i>:
                             <p>
                                 A windows client ran a random document generator which
                                 created
@@ -199,7 +198,7 @@
                                 difference in performance. With 4 threads the avg time
                                 dropped to 900ms!
                             </p>
-                            <p>Other query optimizations made little difference.</p></li>
+                            <p>Other query optimizations made little difference.</p>
                     </p>
                 </ul>
                 <p>
@@ -255,7 +254,6 @@
                     </p>
                     <p>
                         <b>Notes</b><br/>
-                        <li><i>Notes</i>:
                             <p>
                                 We have 10 threads reading files from the filesystem and
                                 parsing and
@@ -268,7 +266,7 @@
                                 message contains attachment and we do not have a filter for
                                 the attachment
                                 (ie. we do not do PDFs yet), we discard the data.
-                            </p></li>
+                            </p>
                     </p>
                 </ul>
                 <p>
@@ -326,7 +324,6 @@
                     </p>
                     <p>
                         <b>Notes</b><br/>
-                        <li><i>Notes</i>:
                             <p>
                                 The source documents were XML.  The "indexer" opened each document one at a time, ran an
                                 XSL transformation on them, and then proceeded to index the stream.  The indexer optimized
@@ -335,14 +332,184 @@
                                 tuning (RAM Directories, separate process to pretransform the source material, etc)
                                 to make it index faster.  When all of these individual indexes were built, they were
                                 merged together into the main index.  That process usually took ~ a day.
-                            </p></li>
+                            </p>
                     </p>
                 </ul>
                 <p>
                     Daniel can be contacted at Armbrust.Daniel at mayo.edu.
                 </p>
             </subsection>
-
+            <subsection name="Geoffrey Peddle's benchmarks">
+                <p>
+                  I'm doing a technical evaluation of search engines 
+                  for Ariba, an enterprise application software company.
+                   I compared Lucene to a commercial C language based
+                  search engine which I'll refer to as vendor A.  
+                  Overall Lucene's performance was similar to vendor A
+                  and met our application's requirements.  I've
+                  summarized our results below.
+                </p>
+                <p>
+                  Search scalability:<br/>
+                  We ran a set of 16 queries in a single thread for 20
+                  iterations.  We report below the times for the last 15
+                  iterations (ie after the system was warmed up).   The
+                  4 sets of results below are for indexes with between
+                  50,000 documents to 600,000 documents.  Although the
+                  times for Lucene grew faster with document count than
+                  vendor A they were comparable.
+                </p>
+<pre>
+50K  documents
+Lucene   5.2   seconds
+A        7.2
+200K
+Lucene   15.3
+A        15.2
+400K
+Lucene    28.2
+A         25.5
+600K
+Lucene    41
+A         33
+</pre>
+                <p>
+                  Individual Query times:<br/>
+                  Total query times are very similar between the 2
+                  systems but there were larger differences when you
+                  looked at individual queries.
+                </p>
+                <p>
+                  For simple queries with small result sets Vendor A was
+                  consistently faster than Lucene.   For example a
+                  single query might take vendor A 32 thousands of a
+                  second and Lucene 64 thousands of a second.    Both
+                  times are however well within acceptable response
+                  times for our application.
+                </p>
+                <p>
+                  For simple queries with large result sets Vendor A was
+                  consistently slower than Lucene.   For example a
+                  single query might take vendor A 300 thousands of a
+                  second and Lucene 200 thousands of a second.
+                  For more complex queries of the form   (term1 or term2
+                  or term3)  AND (term4 or term5 or term6) AND (term7 or
+                  term8)    the results were more divergent.  For
+                  queries with small result sets Vendor A generally had
+                  very short response times and sometimes Lucene had
+                  significantly larger response times.  For example
+                  Vendor A might take 16 thousands of a second and
+                  Lucene might take 156.   I do not consider it to be
+                  the case that Lucene's response time grew unexpectedly
+                  but rather that Vendor A appeared to be taking
+                  advantage of an optimization which Lucene didn't have.
+                    (I believe there's been discussions on the dev
+                  mailing list on complex queries of this sort.)
+                </p>
+                <p>
+                  Index Size:<br/>
+                  For our test data the size of both indexes grew
+                  linearly with the number of documents.   Note that
+                  these sizes are compact sizes, not maximum size during
+                  index loading.   The numbers below are from running du
+                  -k in the directory containing the index data.   The
+                  larger number's below for Vendor A may be because it
+                  supports additional functionality not available in
+                  Lucene.   I think it's the constant rate of growth
+                  rather than the absolute amount which is more
+                  important.
+                </p>
+<pre>
+50K  documents
+Lucene      45516 K
+A           63921
+200K
+Lucene      171565
+A           228370
+400K
+Lucene      345717
+A           457843
+600K
+Lucene      511338
+A           684913
+</pre>
+                <p>
+                  Indexing Times:<br/>
+                  These times are for reading the documents from our
+                  database, processing them, inserting them into the
+                  document search product and index compacting.   Our
+                  data has a large number of fields/attributes.   For
+                  this test I restricted Lucene to 24 attributes to
+                  reduce the number of files created.  Doing this I was
+                  able to specify a merge width for Lucene of 60.   I
+                  found in general that Lucene indexing performance to
+                  be very sensitive to changes in the merge width.  
+                  Note also that our application does a full compaction
+                  after inserting every 20,000 documents.   These times
+                  are just within our acceptable limits but we are
+                  interested in alternatives to increase Lucene's
+                  performance in this area.
+                </p>
+<p>
+<pre>
+600K documents
+Lucene       81 minutes
+A            34 minutes
+</pre>
+</p>
+                <p>
+                  (I don't have accurate results for all sizes on this
+                  measure but believe that the indexing time for both
+                  solutions grew essentially linearly with size.   The
+                  time to compact the index generally grew with index
+                  size but it's a small percent of overall time at these
+                  sizes.)
+                </p>
+                <ul>
+                    <p>
+                        <b>Hardware Environment</b><br/>
+                        <li><i>Dedicated machine for indexing</i>: yes</li>
+                        <li><i>CPU</i>: Dell Pentium 4 CPU 2.00Ghz, 1cpu</li>
+                        <li><i>RAM</i>: 1 GB Memory</li>
+                        <li><i>Drive configuration</i>: Fujitsu MAM3367MP SCSI </li>
+                    </p>
+                    <p>
+                        <b>Software environment</b><br/>
+                        <li><i>Java Version</i>: 1.4.2_02</li>
+                        <li><i>Java VM</i>: JDK</li>
+                        <li><i>OS Version</i>: Windows XP </li>
+                        <li><i>Location of index</i>: local</li>
+                    </p>
+                    <p>
+                        <b>Lucene indexing variables</b><br/>
+                        <li><i>Number of source documents</i>: 600,000</li>
+                        <li><i>Total filesize of source documents</i>: from database</li>
+                        <li><i>Average filesize of source documents</i>: from database</li>
+                        <li><i>Source documents storage location</i>: from database</li>
+                        <li><i>File type of source documents</i>: XML</li>
+                        <li><i>Parser(s) used, if any</i>: </li>
+                        <li><i>Analyzer(s) used</i>: small variation on WhitespaceAnalyzer</li>
+                        <li><i>Number of fields per document</i>: 24</li>
+                        <li><i>Type of fields</i>: A1 keyword, 1 big unindexed, rest are unstored and a mix of tokenized/untokenized</li>
+                        <li><i>Index persistence</i>: FSDirectory</li>
+                        <li><i>Index size</i>: 12.5 GB</li>
+                    </p>
+                    <p>
+                        <b>Figures</b><br/>
+                        <li><i>Time taken (in ms/s as an average of at least 3
+                                indexing runs)</i>: 600,000 documents in 81 minutes   (du -k = 511338)</li>
+                        <li><i>Time taken / 1000 docs indexed</i>: 123 documents/second</li>
+                        <li><i>Memory consumption</i>: -ms256m -mx512m -Xss4m -XX:MaxPermSize=512M</li>
+                    </p>
+                    <p>
+                        <b>Notes</b><br/>
+                          <p>
+                            <li>merge width of 60</li>
+                            <li>did a compact every 20,000 documents</li>
+                          </p>
+                    </p>
+                </ul>
+            </subsection>
         </section>
 
     </body>
