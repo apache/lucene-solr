@@ -37,8 +37,8 @@ public class TestKeywordAnalyzer extends TestCase {
                                          true);
 
     Document doc = new Document();
-    doc.add(Field.Keyword("partnum", "Q36"));
-    doc.add(Field.Text("description", "Illidium Space Modulator"));
+    doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field("description", "Illidium Space Modulator", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
 
     writer.close();

@@ -113,6 +113,7 @@
   <target name="test-compile" depends="compile" if="has.tests">
     <javac destdir="${test.classes.dir}"
            debug="${build.debug}"
+           deprecation="true"
            includeAntRuntime="yes"
            srcdir="src/test"
            classpathref="test.classpath"
