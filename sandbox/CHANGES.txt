@@ -2,6 +2,12 @@ Jakarta-Lucene-Sandbox Change Log
 
 $Id$
 
-2002/04/19
+2002-04-19
 
-Sandbox repository created.
+- Sandbox repository created.
+
+2002-05-04
+
+- Added Lucene Indexing Demo contributed by Aruna Raghavan. 
+
+- Added LARM Webcrawler contributed by Clemens Marschner.
