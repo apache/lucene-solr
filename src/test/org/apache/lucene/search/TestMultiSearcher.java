@@ -84,70 +84,69 @@ public class TestMultiSearcher extends TestCase
     public void testEmptyIndex()
         throws Exception
     {
-        //creating file's for the FSDirectories
+        // creating file's for the FSDirectories
         File a = new File(System.getProperty("user.home"), "indexStoreA");
         File b = new File(System.getProperty("user.home"), "indexStoreB");
 
-        //creating two directories for indices
+        // creating two directories for indices
         FSDirectory indexStoreA = FSDirectory.getDirectory(a, true);
         FSDirectory indexStoreB = FSDirectory.getDirectory(b, true);
 
-        //creating a document to store
+        // creating a document to store
         Document lDoc = new Document();
         lDoc.add(Field.Text("fulltext", "Once upon a time....."));
         lDoc.add(Field.Keyword("id", "doc1"));
         lDoc.add(Field.Keyword("handle", "1"));
 
-        //creating a document to store
+        // creating a document to store
         Document lDoc2 = new Document();
         lDoc2.add(Field.Text("fulltext", "in a galaxy far far away....."));
         lDoc2.add(Field.Keyword("id", "doc2"));
         lDoc2.add(Field.Keyword("handle", "1"));
 
-        //creating a document to store
+        // creating a document to store
         Document lDoc3 = new Document();
         lDoc3.add(Field.Text("fulltext", "a bizarre bug manifested itself...."));
         lDoc3.add(Field.Keyword("id", "doc3"));
         lDoc3.add(Field.Keyword("handle", "1"));
 
-        //creating an index writer for the first index
+        // creating an index writer for the first index
         IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(), true);
-        //creating an index writer for the second index, but writing nothing
+        // creating an index writer for the second index, but writing nothing
         IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(), true);
 
         //--------------------------------------------------------------------
         // scenario 1
         //--------------------------------------------------------------------
 
-        //writing the documents to the first index
+        // writing the documents to the first index
         writerA.addDocument(lDoc);
         writerA.addDocument(lDoc2);
         writerA.addDocument(lDoc3);
         writerA.close();
         writerA.optimize();
 
-        //closing the second index
+        // closing the second index
         writerB.close();
 
-        //creating the query
+        // creating the query
         Query query = QueryParser.parse("handle:1", "fulltext", new StandardAnalyzer());
 
-        //bulding the searchables
+        // building the searchables
         Searcher[] searchers = new Searcher[2];
-        //VITAL STEP:adding the searcher for the empty index first, before the searcher for the populated index
+        // VITAL STEP:adding the searcher for the empty index first, before the searcher for the populated index
         searchers[0] = new IndexSearcher(indexStoreB);
         searchers[1] = new IndexSearcher(indexStoreA);
-        //creating the mulitSearcher
+        // creating the multiSearcher
         Searcher mSearcher = new MultiSearcher(searchers);
-        //performing the search
+        // performing the search
         Hits hits = mSearcher.search(query);
 
         assertEquals(3, hits.length());
 
         try {
-            //iterating over the hit documents
+            // iterating over the hit documents
             for (int i = 0; i < hits.length(); i++) {
-                //false ArrayIndexOutOfBounds should happen at this point
                 Document d = hits.doc(i);
             }
         }
@@ -164,28 +163,28 @@ public class TestMultiSearcher extends TestCase
         // scenario 2
         //--------------------------------------------------------------------
 
-        //adding one document to the empty index
+        // adding one document to the empty index
         writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(), false);
         writerB.addDocument(lDoc);
         writerB.optimize();
         writerB.close();
 
-        //building the searchables
+        // building the searchables
         Searcher[] searchers2 = new Searcher[2];
-        //VITAL STEP:adding the searcher for the empty index first, before the searcher for the populated index
+        // VITAL STEP:adding the searcher for the empty index first, before the searcher for the populated index
         searchers2[0] = new IndexSearcher(indexStoreB);
         searchers2[1] = new IndexSearcher(indexStoreA);
-        //creating the mulitSearcher
+        // creating the mulitSearcher
         Searcher mSearcher2 = new MultiSearcher(searchers2);
-        //performing same the search
+        // performing the same search
         Hits hits2 = mSearcher2.search(query);
 
         assertEquals(4, hits.length());
 
         try {
-            //iterating over the hit documents
+            // iterating over the hit documents
             for (int i = 0; i < hits2.length(); i++) {
-                //no exception should happen at this point
+                // no exception should happen at this point
                 Document d = hits2.doc(i);
             }
         }
@@ -201,33 +200,32 @@ public class TestMultiSearcher extends TestCase
         // scenario 3
         //--------------------------------------------------------------------
 
-        //deleting the document just added, this will cause a different exception to take place
+        // deleting the document just added, this will cause a different exception to take place
         Term term = new Term("id", "doc1");
         IndexReader readerB = IndexReader.open(indexStoreB);
         readerB.delete(term);
         readerB.close();
 
-        //optimizing the index with the writer
+        // optimizing the index with the writer
         writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(), false);
         writerB.optimize();
         writerB.close();
 
-        //bulding the searchables
+        // building the searchables
         Searcher[] searchers3 = new Searcher[2];
 
         searchers3[0] = new IndexSearcher(indexStoreB);
         searchers3[1] = new IndexSearcher(indexStoreA);
-        //creating the mulitSearcher
+        // creating the mulitSearcher
         Searcher mSearcher3 = new MultiSearcher(searchers3);
-        //performing same the search
+        // performing the same search
         Hits hits3 = mSearcher3.search(query);
 
         assertEquals(3, hits.length());
 
         try {
-            //iterating over the hit documents
+            // iterating over the hit documents
             for (int i = 0; i < hits3.length(); i++) {
-                //false IOException should happen at this point
                 Document d = hits3.doc(i);
             }
         }
