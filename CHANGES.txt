@@ -71,7 +71,18 @@ $Id$
      have been removed.
 
      Finally, repeating a token with an increment of zero can also be
-     used to boost scores of matches on that token.
+     used to boost scores of matches on that token.  (cutting)
+
+ 14. Added new Filter class, QueryFilter.  This constrains search
+     results to only match those which also match a provided query.
+     Results are cached, so that searches after the first on the same
+     index using this filter are very fast.
+
+     This could be used, for example, with a RangeQuery on a formatted
+     date field to implement date filtering.  One could re-use a
+     single QueryFilter that matches, e.g., only documents modified
+     within the last week.  The QueryFilter and RangeQuery would only
+     need to be reconstructed once per day. (cutting)
 
 
 1.2 RC6
