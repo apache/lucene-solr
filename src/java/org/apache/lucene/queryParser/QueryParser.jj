@@ -173,7 +173,7 @@ public class QueryParser {
      * In <code>DEFAULT_OPERATOR_AND</code> terms are considered to be in conjuction: the
      * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
      */
-    public void setOperator(int operaror) {
+    public void setOperator(int operator) {
 	this.operator = operator;
     }
 
