@@ -61,12 +61,12 @@
     <target name="compile" depends="init,lucene_check"
 	    description="-> compiles sources">
 	<!-- unzip HTTPClient in the build source tree -->
-	<unzip src="${src.httpclient}" dest="${build.src}" overwrite="false"/>
+	<!-- unzip src="${src.httpclient}" dest="${build.src}" overwrite="false"/-->
 
 	<!-- compile -->
 	<javac
 	       encoding="${build.encoding}"
-	       srcdir="${src.dir}:${build.src}"
+	       srcdir="${src.dir}"
 	       excludes="**/CVS/*"
 	       destdir="${build.classes}"
 	       debug="${debug}"
