@@ -63,7 +63,7 @@ public class BooleanClause implements java.io.Serializable {
     @deprecated use {@link #setOccur(BooleanClause.Occur)} instead */
   public boolean prohibited = false;  // TODO: decrease visibility for Lucene 2.0
 
-  private Occur occur;
+  private Occur occur = Occur.SHOULD;
 
   /** Constructs a BooleanClause with query <code>q</code>, required
    * <code>r</code> and prohibited <code>p</code>.
