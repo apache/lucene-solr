@@ -63,7 +63,11 @@ public class DateTools {
    */
   public static String timeToString(long time, Resolution resolution) {
     Calendar cal = Calendar.getInstance();
-    cal.setTimeInMillis(round(time, resolution));
+
+    //protected in JDK's prior to 1.4
+    //cal.setTimeInMillis(round(time, resolution));
+    
+    cal.setTime(new Date(round(time, resolution)));
 
     SimpleDateFormat sdf = new SimpleDateFormat();
     String pattern = null;
@@ -160,7 +164,12 @@ public class DateTools {
    */
   public static long round(long time, Resolution resolution) {
     Calendar cal = Calendar.getInstance();
-    cal.setTimeInMillis(time);
+
+    // protected in JDK's prior to 1.4
+    //cal.setTimeInMillis(time);
+    
+    cal.setTime(new Date(time));
+    
     if (resolution == Resolution.YEAR) {
       cal.set(Calendar.MONTH, 0);
       cal.set(Calendar.DAY_OF_MONTH, 1);
