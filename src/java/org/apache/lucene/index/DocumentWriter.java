@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Hashtable;
@@ -38,6 +39,7 @@ final class DocumentWriter {
   private Similarity similarity;
   private FieldInfos fieldInfos;
   private int maxFieldLength;
+  private PrintStream infoStream;
 
   /**
    * 
@@ -159,8 +161,11 @@ final class DocumentWriter {
                 addPosition(fieldName, t.termText(), position++, null);
               
               lastToken = t;
-              if (++length > maxFieldLength) 
+              if (++length > maxFieldLength) {
+                if (infoStream != null)
+                  infoStream.println("maxFieldLength " +maxFieldLength+ " reached, ignoring following tokens");
                 break;
+              }
             }
             
             if(lastToken != null)
@@ -367,6 +372,13 @@ final class DocumentWriter {
       }
     }
   }
+  
+  /** If non-null, a message will be printed to this if maxFieldLength is reached.
+   */
+  void setInfoStream(PrintStream infoStream) {
+    this.infoStream = infoStream;
+  }
+
 }
 
 final class Posting {				  // info about a Term in a doc

@@ -321,7 +321,8 @@ public class IndexWriter {
     return mergeFactor;
   }
 
-  /** If non-null, information about merges will be printed to this.
+  /** If non-null, information about merges and a message when
+   * maxFieldLength is reached will be printed to this.
    */
   public void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
@@ -404,6 +405,7 @@ public class IndexWriter {
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
     DocumentWriter dw =
       new DocumentWriter(ramDirectory, analyzer, similarity, maxFieldLength);
+    dw.setInfoStream(infoStream);
     String segmentName = newSegmentName();
     dw.addDocument(segmentName, doc);
     synchronized (this) {
