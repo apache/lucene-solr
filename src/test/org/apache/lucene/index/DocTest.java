@@ -87,7 +87,8 @@ class DocTest {
 
     } catch (Exception e) {
       System.out.println(" caught a " + e.getClass() +
-			 "\n with message: " + e.getMessage());
+                         "\n with message: " + e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -113,7 +114,7 @@ class DocTest {
     SegmentReader r1 = new SegmentReader(new SegmentInfo(seg1, 1, directory));
     SegmentReader r2 = new SegmentReader(new SegmentInfo(seg2, 1, directory));
 
-    SegmentMerger merger = new SegmentMerger(directory, merged);
+    SegmentMerger merger = new SegmentMerger(directory, merged, false);
     merger.add(r1);
     merger.add(r2);
     merger.merge();
@@ -137,17 +138,17 @@ class DocTest {
 
       TermPositions positions = reader.termPositions(tis.term());
       try {
-	while (positions.next()) {
-	  System.out.print(" doc=" + positions.doc());
-	  System.out.print(" TF=" + positions.freq());
-	  System.out.print(" pos=");
-	  System.out.print(positions.nextPosition());
-	  for (int j = 1; j < positions.freq(); j++)
-	    System.out.print("," + positions.nextPosition());
-	  System.out.println("");
-	}
+        while (positions.next()) {
+          System.out.print(" doc=" + positions.doc());
+          System.out.print(" TF=" + positions.freq());
+          System.out.print(" pos=");
+          System.out.print(positions.nextPosition());
+          for (int j = 1; j < positions.freq(); j++)
+            System.out.print("," + positions.nextPosition());
+          System.out.println("");
+        }
       } finally {
-	positions.close();
+        positions.close();
       }
     }
     tis.close();

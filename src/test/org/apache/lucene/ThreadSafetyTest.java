@@ -62,6 +62,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
 
 import java.util.Random;
+import java.io.File;
 
 class ThreadSafetyTest {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
@@ -86,26 +87,33 @@ class ThreadSafetyTest {
 
     public void run() {
       try {
-	for (int i = 0; i < 1024*ITERATIONS; i++) {
-	  Document d = new Document();
-	  int n = RANDOM.nextInt();
-	  d.add(Field.Keyword("id", Integer.toString(n)));
-	  d.add(Field.UnStored("contents", intToEnglish(n)));
-	  System.out.println("Adding " + n);
-	  writer.addDocument(d);
+        boolean useCompoundFiles = false;
+        
+        for (int i = 0; i < 1024*ITERATIONS; i++) {
+          Document d = new Document();
+          int n = RANDOM.nextInt();
+          d.add(Field.Keyword("id", Integer.toString(n)));
+          d.add(Field.UnStored("contents", intToEnglish(n)));
+          System.out.println("Adding " + n);
+          
+          // Switch between single and multiple file segments
+          useCompoundFiles = Math.random() < 0.5;
+          writer.setUseCompoundFile(useCompoundFiles);
+          
+          writer.addDocument(d);
 
-	  if (i%reopenInterval == 0) {
-	    writer.close();
-	    writer = new IndexWriter("index", ANALYZER, false);
-	  }
-	}
-	
-	writer.close();
+          if (i%reopenInterval == 0) {
+            writer.close();
+            writer = new IndexWriter("index", ANALYZER, false);
+          }
+        }
+        
+        writer.close();
 
       } catch (Exception e) {
-	System.out.println(e.toString());
-	e.printStackTrace();
-	System.exit(0);
+        System.out.println(e.toString());
+        e.printStackTrace();
+        System.exit(0);
       }
     }
   }
@@ -116,26 +124,26 @@ class ThreadSafetyTest {
 
     public SearcherThread(boolean useGlobal) throws java.io.IOException {
       if (!useGlobal)
-	this.searcher = new IndexSearcher("index");
+        this.searcher = new IndexSearcher("index");
     }
 
     public void run() {
       try {
-	for (int i = 0; i < 512*ITERATIONS; i++) {
-	  searchFor(RANDOM.nextInt(), (searcher==null)?SEARCHER:searcher);
-	  if (i%reopenInterval == 0) {
-	    if (searcher == null) {
-	      SEARCHER = new IndexSearcher("index");
-	    } else {
-	      searcher.close();
-	      searcher = new IndexSearcher("index");
-	    }
-	  }
-	}
+        for (int i = 0; i < 512*ITERATIONS; i++) {
+          searchFor(RANDOM.nextInt(), (searcher==null)?SEARCHER:searcher);
+          if (i%reopenInterval == 0) {
+            if (searcher == null) {
+              SEARCHER = new IndexSearcher("index");
+            } else {
+              searcher.close();
+              searcher = new IndexSearcher("index");
+            }
+          }
+        }
       } catch (Exception e) {
-	System.out.println(e.toString());
-	e.printStackTrace();
-	System.exit(0);
+        System.out.println(e.toString());
+        e.printStackTrace();
+        System.exit(0);
       }
     }
 
@@ -143,11 +151,11 @@ class ThreadSafetyTest {
       throws Exception {
       System.out.println("Searching for " + n);
       Hits hits =
-	searcher.search(QueryParser.parse(intToEnglish(n), "contents",
-					  ANALYZER));
+        searcher.search(QueryParser.parse(intToEnglish(n), "contents",
+                                          ANALYZER));
       System.out.println("Search for " + n + ": total=" + hits.length());
       for (int j = 0; j < Math.min(3, hits.length()); j++) {
-	System.out.println("Hit for " + n + ": " + hits.doc(j).get("id"));
+        System.out.println("Hit for " + n + ": " + hits.doc(j).get("id"));
       }
     }
   }
@@ -159,15 +167,18 @@ class ThreadSafetyTest {
 
     for (int i = 0; i < args.length; i++) {
       if ("-ro".equals(args[i]))
-	readOnly = true;
+        readOnly = true;
       if ("-add".equals(args[i]))
-	add = true;
+        add = true;
     }
 
-    IndexReader.unlock(FSDirectory.getDirectory("index", false));
+    File indexDir = new File("index");
+    if (! indexDir.exists()) indexDir.mkdirs();
+    
+    IndexReader.unlock(FSDirectory.getDirectory(indexDir, false));
 
     if (!readOnly) {
-      IndexWriter writer = new IndexWriter("index", ANALYZER, !add);
+      IndexWriter writer = new IndexWriter(indexDir, ANALYZER, !add);
       
       Thread indexerThread = new IndexerThread(writer);
       indexerThread.start();
@@ -178,7 +189,7 @@ class ThreadSafetyTest {
     SearcherThread searcherThread1 = new SearcherThread(false);
     searcherThread1.start();
 
-    SEARCHER = new IndexSearcher("index");
+    SEARCHER = new IndexSearcher(indexDir.toString());
 
     SearcherThread searcherThread2 = new SearcherThread(true);
     searcherThread2.start();
@@ -231,9 +242,9 @@ class ThreadSafetyTest {
       }
       i = i%10;
       if (i == 0)
-	result.append(" ");
+        result.append(" ");
       else 
-	result.append("-");
+        result.append("-");
     }
     switch (i) {
     case 19 : result.append("nineteen "); break;

@@ -55,6 +55,8 @@ package org.apache.lucene.index;
  */
 
 import java.util.Vector;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -63,15 +65,17 @@ import org.apache.lucene.store.InputStream;
 import org.apache.lucene.util.BitVector;
 
 final class SegmentMerger {
+  private boolean useCompoundFile;
   private Directory directory;
   private String segment;
 
   private Vector readers = new Vector();
   private FieldInfos fieldInfos;
   
-  SegmentMerger(Directory dir, String name) {
+  SegmentMerger(Directory dir, String name, boolean compoundFile) {
     directory = dir;
     segment = name;
+    useCompoundFile = compoundFile;
   }
 
   final void add(SegmentReader reader) {
@@ -90,12 +94,62 @@ final class SegmentMerger {
       
     } finally {
       for (int i = 0; i < readers.size(); i++) {  // close readers
-	SegmentReader reader = (SegmentReader)readers.elementAt(i);
-	reader.close();
+        SegmentReader reader = (SegmentReader)readers.elementAt(i);
+        reader.close();
       }
     }
+    
+    if (useCompoundFile)
+        createCompoundFile();
   }
 
+
+  // Add the fixed files
+  private final String COMPOUND_EXTENSIONS[] = new String[] {
+    "fnm", "frq", "prx", "fdx", "fdt", "tii", "tis"
+  };
+
+
+  private final void createCompoundFile() 
+  throws IOException
+  {
+    CompoundFileWriter oneWriter = 
+        new CompoundFileWriter(directory, segment + ".cfs");
+    
+    ArrayList files = 
+        new ArrayList(COMPOUND_EXTENSIONS.length + fieldInfos.size());    
+    
+    // Basic files
+    for (int i=0; i<COMPOUND_EXTENSIONS.length; i++) {
+        files.add(segment + "." + COMPOUND_EXTENSIONS[i]);
+    }
+
+    // Field norm files
+    for (int i = 0; i < fieldInfos.size(); i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      if (fi.isIndexed) {
+        files.add(segment + ".f" + i);
+      }
+    }
+
+    // Now merge all added files
+    Iterator it = files.iterator();
+    while(it.hasNext()) {
+        oneWriter.addFile((String) it.next());
+    }
+    
+    // Perform the merge
+    oneWriter.close();
+    
+    
+    // Now delete the source files
+    it = files.iterator();
+    while(it.hasNext()) {
+        directory.deleteFile((String) it.next());
+    }
+  }
+  
+  
   private final void mergeFields() throws IOException {
     fieldInfos = new FieldInfos();		  // merge field names
     for (int i = 0; i < readers.size(); i++) {
@@ -108,12 +162,12 @@ final class SegmentMerger {
       new FieldsWriter(directory, segment, fieldInfos);
     try {
       for (int i = 0; i < readers.size(); i++) {
-	SegmentReader reader = (SegmentReader)readers.elementAt(i);
-	BitVector deletedDocs = reader.deletedDocs;
-	int maxDoc = reader.maxDoc();
-	for (int j = 0; j < maxDoc; j++)
-	  if (deletedDocs == null || !deletedDocs.get(j)) // skip deleted docs
-	    fieldsWriter.addDocument(reader.document(j));
+        SegmentReader reader = (SegmentReader)readers.elementAt(i);
+        BitVector deletedDocs = reader.deletedDocs;
+        int maxDoc = reader.maxDoc();
+        for (int j = 0; j < maxDoc; j++)
+          if (deletedDocs == null || !deletedDocs.get(j)) // skip deleted docs
+            fieldsWriter.addDocument(reader.document(j));
       }
     } finally {
       fieldsWriter.close();
@@ -130,7 +184,7 @@ final class SegmentMerger {
       freqOutput = directory.createFile(segment + ".frq");
       proxOutput = directory.createFile(segment + ".prx");
       termInfosWriter =
-	new TermInfosWriter(directory, segment, fieldInfos);
+        new TermInfosWriter(directory, segment, fieldInfos);
       
       mergeTermInfos();
       
@@ -151,9 +205,9 @@ final class SegmentMerger {
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
       base += reader.numDocs();
       if (smi.next())
-	queue.put(smi);				  // initialize queue
+        queue.put(smi);				  // initialize queue
       else
-	smi.close();
+        smi.close();
     }
 
     SegmentMergeInfo[] match = new SegmentMergeInfo[readers.size()];
@@ -165,18 +219,18 @@ final class SegmentMerger {
       SegmentMergeInfo top = (SegmentMergeInfo)queue.top();
       
       while (top != null && term.compareTo(top.term) == 0) {
-	match[matchSize++] = (SegmentMergeInfo)queue.pop();
-	top = (SegmentMergeInfo)queue.top();
+        match[matchSize++] = (SegmentMergeInfo)queue.pop();
+        top = (SegmentMergeInfo)queue.top();
       }
 
       mergeTermInfo(match, matchSize);		  // add new TermInfo
       
       while (matchSize > 0) {
-	SegmentMergeInfo smi = match[--matchSize];
-	if (smi.next())
-	  queue.put(smi);			  // restore queue
-	else
-	  smi.close();				  // done with a segment
+        SegmentMergeInfo smi = match[--matchSize];
+        if (smi.next())
+          queue.put(smi);			  // restore queue
+        else
+          smi.close();				  // done with a segment
       }
     }
   }
@@ -209,34 +263,34 @@ final class SegmentMerger {
       smi.termEnum.termInfo(termInfo);
       postings.seek(termInfo);
       while (postings.next()) {
-	int doc;
-	if (docMap == null)
-	  doc = base + postings.doc;		  // no deletions
-	else
-	  doc = base + docMap[postings.doc];	  // re-map around deletions
+        int doc;
+        if (docMap == null)
+          doc = base + postings.doc;		  // no deletions
+        else
+          doc = base + docMap[postings.doc];	  // re-map around deletions
 
-	if (doc < lastDoc)
-	  throw new IllegalStateException("docs out of order");
+        if (doc < lastDoc)
+          throw new IllegalStateException("docs out of order");
 
-	int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
-	lastDoc = doc;
+        int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
+        lastDoc = doc;
 
-	int freq = postings.freq;
-	if (freq == 1) {
-	  freqOutput.writeVInt(docCode | 1);	  // write doc & freq=1
-	} else {
-	  freqOutput.writeVInt(docCode);	  // write doc
-	  freqOutput.writeVInt(freq);		  // write frequency in doc
-	}
-	  
-	int lastPosition = 0;			  // write position deltas
-	for (int j = 0; j < freq; j++) {
-	  int position = postings.nextPosition();
-	  proxOutput.writeVInt(position - lastPosition);
-	  lastPosition = position;
-	}
+        int freq = postings.freq;
+        if (freq == 1) {
+          freqOutput.writeVInt(docCode | 1);	  // write doc & freq=1
+        } else {
+          freqOutput.writeVInt(docCode);	  // write doc
+          freqOutput.writeVInt(freq);		  // write frequency in doc
+        }
+          
+        int lastPosition = 0;			  // write position deltas
+        for (int j = 0; j < freq; j++) {
+          int position = postings.nextPosition();
+          proxOutput.writeVInt(position - lastPosition);
+          lastPosition = position;
+        }
 
-	df++;
+        df++;
       }
     }
     return df;
@@ -246,27 +300,27 @@ final class SegmentMerger {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
-	OutputStream output = directory.createFile(segment + ".f" + i);
-	try {
-	  for (int j = 0; j < readers.size(); j++) {
-	    SegmentReader reader = (SegmentReader)readers.elementAt(j);
-	    BitVector deletedDocs = reader.deletedDocs;
-	    InputStream input = reader.normStream(fi.name);
+        OutputStream output = directory.createFile(segment + ".f" + i);
+        try {
+          for (int j = 0; j < readers.size(); j++) {
+            SegmentReader reader = (SegmentReader)readers.elementAt(j);
+            BitVector deletedDocs = reader.deletedDocs;
+            InputStream input = reader.normStream(fi.name);
             int maxDoc = reader.maxDoc();
-	    try {
-	      for (int k = 0; k < maxDoc; k++) {
-		byte norm = input != null ? input.readByte() : (byte)0;
-		if (deletedDocs == null || !deletedDocs.get(k))
-		  output.writeByte(norm);
-	      }
-	    } finally {
-	      if (input != null)
-		input.close();
-	    }
-	  }
-	} finally {
-	  output.close();
-	}
+            try {
+              for (int k = 0; k < maxDoc; k++) {
+                byte norm = input != null ? input.readByte() : (byte)0;
+                if (deletedDocs == null || !deletedDocs.get(k))
+                  output.writeByte(norm);
+              }
+            } finally {
+              if (input != null)
+                input.close();
+            }
+          }
+        } finally {
+          output.close();
+        }
       }
     }
   }

@@ -100,6 +100,29 @@ public class IndexWriter {
 
   private Lock writeLock;
 
+  /** Use compound file setting. Defaults to false to maintain multiple files 
+   *  per segment behavior.
+   */  
+  private boolean useCompoundFile = false;
+  
+  
+  /** Setting to turn on usage of a compound file. When on, multiple files
+   *  for each segment are merged into a single file once the segment creation
+   *  is finished. This is done regardless of what directory is in use.
+   */
+  public boolean getUseCompoundFile() {
+    return useCompoundFile;
+  }
+  
+  /** Setting to turn on usage of a compound file. When on, multiple files
+   *  for each segment are merged into a single file once the segment creation
+   *  is finished. This is done regardless of what directory is in use.
+   */
+  public void setUseCompoundFile(boolean value) {
+    useCompoundFile = value;
+  }
+
+  
     /** Expert: Set the Similarity implementation used by this IndexWriter.
    *
    * @see Similarity#setDefault(Similarity)
@@ -150,14 +173,14 @@ public class IndexWriter {
 
     synchronized (directory) {			  // in- & inter-process sync
       new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
-	  public Object doBody() throws IOException {
-	    if (create)
-	      segmentInfos.write(directory);
-	    else
-	      segmentInfos.read(directory);
-	    return null;
-	  }
-	}.run();
+          public Object doBody() throws IOException {
+            if (create)
+              segmentInfos.write(directory);
+            else
+              segmentInfos.read(directory);
+            return null;
+          }
+        }.run();
     }
   }
 
@@ -266,12 +289,14 @@ public class IndexWriter {
   public synchronized void optimize() throws IOException {
     flushRamSegments();
     while (segmentInfos.size() > 1 ||
-	   (segmentInfos.size() == 1 &&
-	    (SegmentReader.hasDeletions(segmentInfos.info(0)) ||
-             segmentInfos.info(0).dir != directory))) {
+           (segmentInfos.size() == 1 &&
+            (SegmentReader.hasDeletions(segmentInfos.info(0)) ||
+             (useCompoundFile && 
+              !SegmentReader.usesCompoundFile(segmentInfos.info(0))) ||
+              segmentInfos.info(0).dir != directory))) {
       int minSegment = segmentInfos.size() - mergeFactor;
       mergeSegments(minSegment < 0 ? 0 : minSegment);
-    }
+    }    
   }
 
   /** Merges all segments from an array of indexes into this index.
@@ -290,7 +315,7 @@ public class IndexWriter {
       SegmentInfos sis = new SegmentInfos();	  // read infos from dir
       sis.read(dirs[i]);
       for (int j = 0; j < sis.size(); j++) {
-	segmentInfos.addElement(sis.info(j));	  // add each info
+        segmentInfos.addElement(sis.info(j));	  // add each info
       }
     }
     optimize();					  // final cleanup
@@ -301,13 +326,13 @@ public class IndexWriter {
     int minSegment = segmentInfos.size()-1;
     int docCount = 0;
     while (minSegment >= 0 &&
-	   (segmentInfos.info(minSegment)).dir == ramDirectory) {
+           (segmentInfos.info(minSegment)).dir == ramDirectory) {
       docCount += segmentInfos.info(minSegment).docCount;
       minSegment--;
     }
     if (minSegment < 0 ||			  // add one FS segment?
-	(docCount + segmentInfos.info(minSegment).docCount) > mergeFactor ||
-	!(segmentInfos.info(segmentInfos.size()-1).dir == ramDirectory))
+        (docCount + segmentInfos.info(minSegment).docCount) > mergeFactor ||
+        !(segmentInfos.info(segmentInfos.size()-1).dir == ramDirectory))
       minSegment++;
     if (minSegment >= segmentInfos.size())
       return;					  // none to merge
@@ -322,16 +347,16 @@ public class IndexWriter {
       int minSegment = segmentInfos.size();
       int mergeDocs = 0;
       while (--minSegment >= 0) {
-	SegmentInfo si = segmentInfos.info(minSegment);
-	if (si.docCount >= targetMergeDocs)
-	  break;
-	mergeDocs += si.docCount;
+        SegmentInfo si = segmentInfos.info(minSegment);
+        if (si.docCount >= targetMergeDocs)
+          break;
+        mergeDocs += si.docCount;
       }
 
       if (mergeDocs >= targetMergeDocs)		  // found a merge to do
-	mergeSegments(minSegment+1);
+        mergeSegments(minSegment+1);
       else
-	break;
+        break;
 
       targetMergeDocs *= mergeFactor;		  // increase target size
     }
@@ -344,17 +369,19 @@ public class IndexWriter {
     String mergedName = newSegmentName();
     int mergedDocCount = 0;
     if (infoStream != null) infoStream.print("merging segments");
-    SegmentMerger merger = new SegmentMerger(directory, mergedName);
+    SegmentMerger merger = 
+        new SegmentMerger(directory, mergedName, useCompoundFile);
+        
     final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
       if (infoStream != null)
-	infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
+        infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
       SegmentReader reader = new SegmentReader(si);
       merger.add(reader);
       if ((reader.directory == this.directory) || // if we own the directory
           (reader.directory == this.ramDirectory))
-	segmentsToDelete.addElement(reader);	  // queue segment for deletion
+        segmentsToDelete.addElement(reader);	  // queue segment for deletion
       mergedDocCount += reader.numDocs();
     }
     if (infoStream != null) {
@@ -362,19 +389,19 @@ public class IndexWriter {
       infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
     }
     merger.merge();
-
+    
     segmentInfos.setSize(minSegment);		  // pop old infos & add new
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
-					    directory));
+                                            directory));
 
     synchronized (directory) {			  // in- & inter-process sync
       new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
-	  public Object doBody() throws IOException {
-	    segmentInfos.write(directory);	  // commit before deleting
-	    deleteSegments(segmentsToDelete);	  // delete now-unused segments
-	    return null;
-	  }
-	}.run();
+          public Object doBody() throws IOException {
+            segmentInfos.write(directory);	  // commit before deleting
+            deleteSegments(segmentsToDelete);	  // delete now-unused segments
+            return null;
+          }
+        }.run();
     }
   }
 
@@ -391,9 +418,9 @@ public class IndexWriter {
     for (int i = 0; i < segments.size(); i++) {
       SegmentReader reader = (SegmentReader)segments.elementAt(i);
       if (reader.directory == this.directory)
-	deleteFiles(reader.files(), deletable);	  // try to delete our files
+        deleteFiles(reader.files(), deletable);	  // try to delete our files
       else
-	deleteFiles(reader.files(), reader.directory); // delete, eg, RAM files
+        deleteFiles(reader.files(), reader.directory); // delete, eg, RAM files
     }
 
     writeDeleteableFiles(deletable);		  // note files we can't delete
@@ -410,13 +437,13 @@ public class IndexWriter {
     for (int i = 0; i < files.size(); i++) {
       String file = (String)files.elementAt(i);
       try {
-	directory.deleteFile(file);		  // try to delete each file
+        directory.deleteFile(file);		  // try to delete each file
       } catch (IOException e) {			  // if delete fails
-	if (directory.fileExists(file)) {
-	  if (infoStream != null)
-	    infoStream.println(e.getMessage() + "; Will re-try later.");
-	  deletable.addElement(file);		  // add to deletable
-	}
+        if (directory.fileExists(file)) {
+          if (infoStream != null)
+            infoStream.println(e.getMessage() + "; Will re-try later.");
+          deletable.addElement(file);		  // add to deletable
+        }
       }
     }
   }
@@ -429,7 +456,7 @@ public class IndexWriter {
     InputStream input = directory.openFile("deletable");
     try {
       for (int i = input.readInt(); i > 0; i--)	  // read file names
-	result.addElement(input.readString());
+        result.addElement(input.readString());
     } finally {
       input.close();
     }
@@ -441,7 +468,7 @@ public class IndexWriter {
     try {
       output.writeInt(files.size());
       for (int i = 0; i < files.size(); i++)
-	output.writeString((String)files.elementAt(i));
+        output.writeString((String)files.elementAt(i));
     } finally {
       output.close();
     }
