@@ -130,6 +130,9 @@ public final class DateFilter extends Filter {
     BitSet bits = new BitSet(reader.maxDoc());
     TermEnum enum = reader.terms(new Term(field, start));
     TermDocs termDocs = reader.termDocs();
+    if (enum.term() == null)
+	return bits;
+
     try {
       Term stop = new Term(field, end);
       while (enum.term().compareTo(stop) <= 0) {
