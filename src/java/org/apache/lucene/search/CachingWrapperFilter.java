@@ -64,4 +64,8 @@ public class CachingWrapperFilter extends Filter {
 
     return bits;
   }
+
+  public String toString() {
+    return "CachingWrapperFilter("+filter+")";
+  }
 }

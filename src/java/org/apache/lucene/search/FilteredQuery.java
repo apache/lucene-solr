@@ -102,7 +102,7 @@ extends Query {
 
   /** Prints a user-readable version of this query. */
   public String toString (String s) {
-    return "filtered("+query.toString(s)+")";
+    return "filtered("+query.toString(s)+")->"+filter;
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

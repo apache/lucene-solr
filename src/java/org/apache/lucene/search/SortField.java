@@ -173,7 +173,8 @@ implements Serializable {
       case DOC: buffer.append("<doc>");
                 break;
 
-      case CUSTOM: buffer.append ("<custom:\""+"\">");
+      case CUSTOM: buffer.append ("<custom:\"" + field + "\": "
+                                               + factory + ">");
                 break;
 
       default: buffer.append("\"" + field + "\"");

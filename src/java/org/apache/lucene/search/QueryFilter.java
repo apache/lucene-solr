@@ -71,4 +71,8 @@ public class QueryFilter extends Filter {
 
     return bits;
   }
+
+  public String toString() {
+    return "QueryFilter("+query+")";
+  }
 }
