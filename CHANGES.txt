@@ -43,9 +43,9 @@ $Id$
      test class TestPhrasePrefixQuery provides the usage example.
      (Anders Nielsen via otis)
 
- 11. Changed the stemming algorithm to ignore case while stripping. The
-     algorithm is faster and produces more equal stems from nouns and verbs
-     derived from the same word.
+ 11. Changed the German stemming algorithm to ignore case while
+     stripping. The new algorithm is faster and produces more equal
+     stems from nouns and verbs derived from the same word.
      (gschwarz)
 
 1.2 RC6
