@@ -113,10 +113,17 @@ public interface Searchable extends java.rmi.Remote {
    */
   Document doc(int i) throws IOException;
 
-  /** */
+  /** Expert: called to re-write queries into primitive queries. */
   Query rewrite(Query query) throws IOException;
 
-  /** */
+  /** Returns an Explanation that describes how <code>doc</code> scored against
+   * <code>query</code>.
+   *
+   * <p>This is intended to be used in developing Similarity implementations,
+   * and, for good performance, should not be displayed with every hit.
+   * Computing an explanation is as expensive as executing the query over the
+   * entire index.
+   */
   Explanation explain(Query query, int doc) throws IOException;
 
 

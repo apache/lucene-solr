@@ -173,7 +173,7 @@ public class BooleanQuery extends Query {
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
-    if (getBoost() > 1.0) {
+    if (getBoost() != 1.0) {
       buffer.append("(");
     }
 
@@ -196,7 +196,7 @@ public class BooleanQuery extends Query {
 	buffer.append(" ");
     }
 
-    if (getBoost() > 1.0) {
+    if (getBoost() != 1.0) {
       buffer.append(")^");
       buffer.append(getBoost());
     }

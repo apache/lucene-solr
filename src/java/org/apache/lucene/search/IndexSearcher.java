@@ -187,7 +187,6 @@ public class IndexSearcher extends Searcher implements Searchable {
     scorer.score(collector, reader.maxDoc());
   }
 
-  /** */
   public Query rewrite(Query original) throws IOException {
     Query query = original;
     for (Query rewrittenQuery = query.rewrite(reader); rewrittenQuery != query;
@@ -197,7 +196,6 @@ public class IndexSearcher extends Searcher implements Searchable {
     return query;
   }
 
-  /** */
   public Explanation explain(Query query, int doc) throws IOException {
     return query.weight(this).scorer(reader).explain(doc);
   }
