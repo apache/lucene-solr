@@ -93,8 +93,7 @@ public final class Field {
   }
 
   /** Constructs a Date-valued Field that is tokenized and indexed,
-    and is stored in the index, for return with hits.  Useful for short text
-    fields, like "title" or "subject". */
+      and is stored in the index, for return with hits. */
   public static final Field Keyword(String name, Date value) {
     return new Field(name, DateField.dateToString(value), true, true, true);
   }
