@@ -15,13 +15,13 @@ $Id$
   
  3. The Russian and the German analyzers have been moved to Sandbox.
     Also, the WordlistLoader class has been moved one level up in the
-    hierarchie and is now org.apache.lucene.analysis.WordlistLoader
+    hierarchy and is now org.apache.lucene.analysis.WordlistLoader
     (Daniel Naber)
     
   4. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
      prevented deletion of obsolete segments. (Christoph Goller)
      
-  5. Disk usage (peek requirements during indexing and optimization)
+  5. Disk usage (peak requirements during indexing and optimization)
      in case of compound file format has been improved. 
      (Bernhard, Dmitry, and Christoph)
  
