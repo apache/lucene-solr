@@ -54,7 +54,9 @@
 
 
 options {
-  STATIC= false;
+  STATIC=false;
+  JAVA_UNICODE_ESCAPE=true;
+  USER_CHAR_STREAM=true;
 }
 
 PARSER_BEGIN(QueryParser)
@@ -94,6 +96,8 @@ import org.apache.lucene.search.*;
  *   Query  ::= ( Clause )*
  *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
  * </pre>
+ *
+ * @author Brian Goetz
  */
 
 public class QueryParser {
@@ -118,7 +122,7 @@ public class QueryParser {
    *  @param analyzer   used to find terms in the query text.
    */
   public QueryParser(String f, Analyzer a) {
-    this(new StringReader(""));
+    this(new FastCharStream(new StringReader("")));
     analyzer = a;
     field = f;
   }
@@ -128,7 +132,7 @@ public class QueryParser {
    *  @param query	the query string to be parsed.
    */
   public Query parse(String query) throws ParseException {
-    ReInit(new StringReader(query));
+    ReInit(new FastCharStream(new StringReader(query)));
     return Query(field);
   }
 
@@ -168,7 +172,8 @@ public class QueryParser {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
     
-    TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
+    TokenStream source = analyzer.tokenStream(field, 
+                                              new StringReader(queryText));
     Vector v = new Vector();
     org.apache.lucene.analysis.Token t;
 
@@ -252,8 +257,8 @@ PARSER_END(QueryParser)
   <#_ALPHA_CHAR: ["a"-"z", "A"-"Z"] >
 | <#_NUM_CHAR:   ["0"-"9"] >
 | <#_ALPHANUM_CHAR: [ "a"-"z", "A"-"Z", "0"-"9" ] >
-| <#_IDENTIFIER_CHAR: [ "a"-"z", "A"-"Z", "0"-"9", "_" ] >
-| <#_IDENTIFIER: <_ALPHA_CHAR> (<_IDENTIFIER_CHAR>)* >
+| <#_TERM_START_CHAR: [ "a"-"z", "A"-"Z", "_", "\u0080"-"\uFFFE" ] >
+| <#_TERM_CHAR: [ "a"-"z", "A"-"Z", "0"-"9", "_", "\u0080"-"\uFFFE" ] >
 | <#_NEWLINE:    ( "\r\n" | "\r" | "\n" ) >
 | <#_WHITESPACE: ( " " | "\t" ) >
 | <#_QCHAR:      ( "\\" (<_NEWLINE> | ~["a"-"z", "A"-"Z", "0"-"9"] ) ) >
@@ -272,12 +277,11 @@ PARSER_END(QueryParser)
 | <CARAT:     "^" >
 | <STAR:      "*" >
 | <QUOTED:     "\"" (~["\""])+ "\"">
-| <NUMBER:    (<_NUM_CHAR>)+ "." (<_NUM_CHAR>)+ >
-| <TERM:      <_IDENTIFIER_CHAR> 
-              ( ~["\"", " ", "\t", "(", ")", ":", "&", "|", "^", "*", "?", "~", "{", "}", "[", "]" ] )* >
+| <NUMBER:    (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? >
+| <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY:     "~" >
-| <WILDTERM:  <_IDENTIFIER_CHAR>
-              ( ~["\"", " ", "\t", "(", ")", ":", "&", "|", "^", "~", "{", "}", "[", "]" ] )* <_IDENTIFIER_CHAR>>
+| <WILDTERM:  <_TERM_START_CHAR> 
+              (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
 | <RANGEIN:   "[" (~["]"])+ "]">
 | <RANGEEX:   "{" (~["}"])+ "}">
 }
@@ -363,23 +367,34 @@ Query Term(String field) : {
 }
 {
   ( 
-     (term=<TERM>|term=<WILDTERM>{wildcard=true;}|term=<NUMBER>)[<STAR>{prefix=true;}|<FUZZY>{fuzzy=true;}][<CARAT> boost=<NUMBER>]
-      { if (wildcard)
-          q = new WildcardQuery(new Term(field, term.image));
-        else if (prefix) 
-          q = new PrefixQuery(new Term(field, term.image));
-        else if (fuzzy)
-          q = new FuzzyQuery(new Term(field, term.image));
-        else
-          q = getFieldQuery(field, analyzer, term.image); }
-    | (term=<RANGEIN>{rangein=true;}|term=<RANGEEX>)
+     (
+       term=<TERM>
+       | term=<WILDTERM> { wildcard=true; }
+       | term=<NUMBER>
+     )
+     [ <STAR> { prefix=true; } | <FUZZY> { fuzzy=true; } ]
+     [ <CARAT> boost=<NUMBER> ]
+     { 
+       if (wildcard)
+         q = new WildcardQuery(new Term(field, term.image));
+       else if (prefix) 
+         q = new PrefixQuery(new Term(field, term.image));
+       else if (fuzzy)
+         q = new FuzzyQuery(new Term(field, term.image));
+       else
+         q = getFieldQuery(field, analyzer, term.image); 
+     }
+     | ( term=<RANGEIN> { rangein=true; } | term=<RANGEEX> )
         {
           q = getRangeQuery(field, analyzer, 
-                            term.image.substring(1, term.image.length()-1), rangein);
+                            term.image.substring(1, term.image.length()-1), 
+                            rangein);
         }
-    | term=<QUOTED> 
-      { q = getFieldQuery(field, analyzer, 
-                          term.image.substring(1, term.image.length()-1)); }
+     | term=<QUOTED> 
+       { 
+         q = getFieldQuery(field, analyzer, 
+                           term.image.substring(1, term.image.length()-1)); 
+       }
   )
   { 
     if (boost != null) {

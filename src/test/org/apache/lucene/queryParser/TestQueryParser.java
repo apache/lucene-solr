@@ -138,6 +138,8 @@ public class TestQueryParser extends TestCase {
 
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
+    assertQueryEquals("türm term term", null, "türm term term");
+    assertQueryEquals("ümlaut", null, "ümlaut");
     assertQueryEquals("term term1 term2", null, "term term term");
     assertQueryEquals("term 1.0 1 2", null, "term");
 
@@ -163,6 +165,7 @@ public class TestQueryParser extends TestCase {
 
     assertQueryEquals("germ term^2.0", null, "germ term^2.0");
     assertQueryEquals("term^2.0", null, "term^2.0");
+    assertQueryEquals("term^2", null, "term^2.0");
 
     assertQueryEquals("(foo OR bar) AND (baz OR boo)", null, 
                       "+(foo bar) +(baz boo)");
