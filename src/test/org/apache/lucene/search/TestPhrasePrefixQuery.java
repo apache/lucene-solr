@@ -80,7 +80,7 @@ public class TestPhrasePrefixQuery
 {
     public TestPhrasePrefixQuery(String name)
     {
-	super(name);
+        super(name);
     }
 
     /**
@@ -94,41 +94,49 @@ public class TestPhrasePrefixQuery
         Document doc1 = new Document();
         Document doc2 = new Document();
         Document doc3 = new Document();
-	Document doc4 = new Document();
-	doc1.add(Field.Text("body", "blueberry pie"));
-        doc2.add(Field.Text("body", "blueberry pizza"));
-        doc3.add(Field.Text("body", "blueberry chewing gum"));
-        doc4.add(Field.Text("body", "picadelly circus"));
+        Document doc4 = new Document();
+        Document doc5 = new Document();
+        doc1.add(Field.Text("body", "blueberry pie"));
+        doc2.add(Field.Text("body", "blueberry strudel"));
+        doc3.add(Field.Text("body", "blueberry pizza"));
+        doc4.add(Field.Text("body", "blueberry chewing gum"));
+        doc5.add(Field.Text("body", "piccadilly circus"));
         writer.addDocument(doc1);
         writer.addDocument(doc2);
         writer.addDocument(doc3);
         writer.addDocument(doc4);
-	writer.optimize();
-	writer.close();
+        writer.addDocument(doc5);
+        writer.optimize();
+        writer.close();
 
-	IndexSearcher searcher = new IndexSearcher(indexStore);
+        IndexSearcher searcher = new IndexSearcher(indexStore);
 
-	PhrasePrefixQuery query1 = new PhrasePrefixQuery();
-	PhrasePrefixQuery query2 = new PhrasePrefixQuery();
-	query1.add(new Term("body", "blueberry"));
-	query2.add(new Term("body", "strawberry"));
+        PhrasePrefixQuery query1 = new PhrasePrefixQuery();
+        PhrasePrefixQuery query2 = new PhrasePrefixQuery();
+        query1.add(new Term("body", "blueberry"));
+        query2.add(new Term("body", "strawberry"));
 
-	LinkedList termsWithPrefix = new LinkedList();
+        LinkedList termsWithPrefix = new LinkedList();
         IndexReader ir = IndexReader.open(indexStore);
 
-	// this TermEnum gives "picadelly", "pie" and "pizza".
-        TermEnum te = ir.terms(new Term("body", "pi*"));
+        // this TermEnum gives "piccadilly", "pie" and "pizza".
+        String prefix = "pi";
+        TermEnum te = ir.terms(new Term("body", prefix + "*"));
         do {
-            termsWithPrefix.add(te.term());
+            if (te.term().text().startsWith(prefix))
+            {
+                termsWithPrefix.add(te.term());
+            }
         } while (te.next());
-	query1.add((Term[])termsWithPrefix.toArray(new Term[0]));
-	query2.add((Term[])termsWithPrefix.toArray(new Term[0]));
 
-	Hits result;
-	result = searcher.search(query1);
-	assertEquals(2, result.length());
+        query1.add((Term[])termsWithPrefix.toArray(new Term[0]));
+        query2.add((Term[])termsWithPrefix.toArray(new Term[0]));
 
-	result = searcher.search(query2);
-	assertEquals(0, result.length());
+        Hits result;
+        result = searcher.search(query1);
+        assertEquals(2, result.length());
+
+        result = searcher.search(query2);
+        assertEquals(0, result.length());
     }
 }
