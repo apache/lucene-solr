@@ -12,8 +12,8 @@ import java.io.IOException;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2003 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -86,12 +86,12 @@ public class TestIndexReader extends TestCase
         // add more documents
         writer = new IndexWriter(d, new StandardAnalyzer(), false);
         // want to get some more segments here
-        for (int i=0;i<5*writer.mergeFactor;i++)
+        for (int i = 0; i < 5*writer.mergeFactor; i++)
         {
             addDocumentWithFields(writer);
         }
         // new fields are in some different segments (we hope)
-        for (int i=0;i<5*writer.mergeFactor;i++)
+        for (int i = 0; i < 5*writer.mergeFactor; i++)
         {
             addDocumentWithDifferentFields(writer);
         }
@@ -107,6 +107,20 @@ public class TestIndexReader extends TestCase
         assertTrue(fieldNames.contains("text2"));
         assertTrue(fieldNames.contains("unindexed2"));
         assertTrue(fieldNames.contains("unstored2"));
+
+        // verify that only indexed fields were returned
+        Collection indexedFieldNames = reader.getFieldNames(true);
+        assertTrue(fieldNames.contains("keyword"));
+        assertTrue(fieldNames.contains("text"));
+        assertTrue(fieldNames.contains("unstored"));
+        assertTrue(fieldNames.contains("keyword2"));
+        assertTrue(fieldNames.contains("text2"));
+        assertTrue(fieldNames.contains("unindexed2"));
+        assertTrue(fieldNames.contains("unstored2"));
+
+        // verify that only unindexed fields were returned
+        Collection unindexedFieldNames = reader.getFieldNames(false);
+        assertTrue(fieldNames.contains("unindexed"));
     }
 
     private void addDocumentWithFields(IndexWriter writer) throws IOException
@@ -129,4 +143,3 @@ public class TestIndexReader extends TestCase
         writer.addDocument(doc);
     }
 }
-
