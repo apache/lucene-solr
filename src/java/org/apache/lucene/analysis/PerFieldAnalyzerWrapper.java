@@ -62,7 +62,7 @@ import java.util.HashMap;
  * This analyzer is used to facilitate scenarios where different
  * fields require different analysis techniques.  Use {@link #addAnalyzer}
  * to add a non-default analyzer on a field name basis.
- * See {@link TestPerFieldAnalzyerWrapper} for example usage.
+ * See {@link TestPerFieldAnalyzerWrapper} for example usage.
  */
 public class PerFieldAnalyzerWrapper extends Analyzer {
   private Analyzer defaultAnalyzer;
