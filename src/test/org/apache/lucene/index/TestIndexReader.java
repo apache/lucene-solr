@@ -62,7 +62,7 @@ public class TestIndexReader extends TestCase
         writer.close();
         // set up reader
         IndexReader reader = IndexReader.open(d);
-        Collection fieldNames = reader.getFieldNames();
+        Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
         assertTrue(fieldNames.contains("keyword"));
         assertTrue(fieldNames.contains("text"));
         assertTrue(fieldNames.contains("unindexed"));
@@ -79,11 +79,17 @@ public class TestIndexReader extends TestCase
         {
             addDocumentWithDifferentFields(writer);
         }
+        // new termvector fields
+        for (int i = 0; i < 5*writer.getMergeFactor(); i++)
+        {
+          addDocumentWithTermVectorFields(writer);
+        }
+        
         writer.close();
         // verify fields again
         reader = IndexReader.open(d);
-        fieldNames = reader.getFieldNames();
-        assertEquals(8, fieldNames.size());    // the following fields
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
+        assertEquals(13, fieldNames.size());    // the following fields
         assertTrue(fieldNames.contains("keyword"));
         assertTrue(fieldNames.contains("text"));
         assertTrue(fieldNames.contains("unindexed"));
@@ -92,22 +98,50 @@ public class TestIndexReader extends TestCase
         assertTrue(fieldNames.contains("text2"));
         assertTrue(fieldNames.contains("unindexed2"));
         assertTrue(fieldNames.contains("unstored2"));
-
+        assertTrue(fieldNames.contains("tvnot"));
+        assertTrue(fieldNames.contains("termvector"));
+        assertTrue(fieldNames.contains("tvposition"));
+        assertTrue(fieldNames.contains("tvoffset"));
+        assertTrue(fieldNames.contains("tvpositionoffset"));
+        
         // verify that only indexed fields were returned
-        Collection indexedFieldNames = reader.getFieldNames(true);
-        assertEquals(6, indexedFieldNames.size());
-        assertTrue(indexedFieldNames.contains("keyword"));
-        assertTrue(indexedFieldNames.contains("text"));
-        assertTrue(indexedFieldNames.contains("unstored"));
-        assertTrue(indexedFieldNames.contains("keyword2"));
-        assertTrue(indexedFieldNames.contains("text2"));
-        assertTrue(indexedFieldNames.contains("unstored2"));
-
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
+        assertEquals(11, fieldNames.size());    // 6 original + the 5 termvector fields 
+        assertTrue(fieldNames.contains("keyword"));
+        assertTrue(fieldNames.contains("text"));
+        assertTrue(fieldNames.contains("unstored"));
+        assertTrue(fieldNames.contains("keyword2"));
+        assertTrue(fieldNames.contains("text2"));
+        assertTrue(fieldNames.contains("unstored2"));
+        assertTrue(fieldNames.contains("tvnot"));
+        assertTrue(fieldNames.contains("termvector"));
+        assertTrue(fieldNames.contains("tvposition"));
+        assertTrue(fieldNames.contains("tvoffset"));
+        assertTrue(fieldNames.contains("tvpositionoffset"));
+        
         // verify that only unindexed fields were returned
-        Collection unindexedFieldNames = reader.getFieldNames(false);
-        assertEquals(2, unindexedFieldNames.size());    // the following fields
-        assertTrue(unindexedFieldNames.contains("unindexed"));
-        assertTrue(unindexedFieldNames.contains("unindexed2"));
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
+        assertEquals(2, fieldNames.size());    // the following fields
+        assertTrue(fieldNames.contains("unindexed"));
+        assertTrue(fieldNames.contains("unindexed2"));
+                
+        // verify index term vector fields  
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR);
+        assertEquals(1, fieldNames.size());    // 1 field has term vector only
+        assertTrue(fieldNames.contains("termvector"));
+        
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION);
+        assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
+        assertTrue(fieldNames.contains("tvposition"));
+        
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET);
+        assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
+        assertTrue(fieldNames.contains("tvoffset"));
+                
+        fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET);
+        assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
+        assertTrue(fieldNames.contains("tvpositionoffset"));
+        
     }
 
 
@@ -431,6 +465,18 @@ public class TestIndexReader extends TestCase
         writer.addDocument(doc);
     }
 
+    private void addDocumentWithTermVectorFields(IndexWriter writer) throws IOException
+    {
+        Document doc = new Document();
+        doc.add(new Field("tvnot","tvnot", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO));
+        doc.add(new Field("termvector","termvector", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
+        doc.add(new Field("tvoffset","tvoffset", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_OFFSETS));
+        doc.add(new Field("tvposition","tvposition", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
+        doc.add(new Field("tvpositionoffset","tvpositionoffset", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        
+        writer.addDocument(doc);
+    }
+    
     private void addDoc(IndexWriter writer, String value)
     {
         Document doc = new Document();

@@ -104,7 +104,7 @@ public class TestSegmentReader extends TestCase {
   }    
   
   public void testGetFieldNameVariations() {
-    Collection result = reader.getFieldNames();
+    Collection result = reader.getFieldNames(IndexReader.FieldOption.ALL);
     assertTrue(result != null);
     assertTrue(result.size() == 6);
     for (Iterator iter = result.iterator(); iter.hasNext();) {
@@ -112,7 +112,7 @@ public class TestSegmentReader extends TestCase {
       //System.out.println("Name: " + s);
       assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
     }                                                                               
-    result = reader.getFieldNames(true);
+    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
     assertTrue(result != null);
     assertTrue(result.size() == 5);
     for (Iterator iter = result.iterator(); iter.hasNext();) {
@@ -120,15 +120,15 @@ public class TestSegmentReader extends TestCase {
       assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
     }
     
-    result = reader.getFieldNames(false);
+    result = reader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
     assertTrue(result != null);
     assertTrue(result.size() == 1);
     //Get all indexed fields that are storing term vectors
-    result = reader.getIndexedFieldNames(true);
+    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
     assertTrue(result != null);
     assertTrue(result.size() == 2);
     
-    result = reader.getIndexedFieldNames(false);
+    result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR);
     assertTrue(result != null);
     assertTrue(result.size() == 3);
   } 
