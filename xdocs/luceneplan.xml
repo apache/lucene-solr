@@ -173,6 +173,16 @@
                                         times)
                                 </li>
                                 <li>
+                                        ExpandOnly - use but do not index items
+                                        that match this pattern (regex?) (can
+                                        occur multiple times)
+                                </li>
+                                <li>
+                                        NoExpand - Index but do not follow the
+                                        links in items that match this pattern
+                                        (regex?) (can occur multiple times)
+                                </li>
+                                <li>
                                         MaxItems - stops indexing after x
                                         documents have been indexed.
                                 </li>
