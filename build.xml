@@ -125,26 +125,36 @@
   <!-- ================================================================== -->
   <target name="jar" depends="compile">
 
-    <!-- Create Jar MANIFEST file -->
-    <echo file="${build.manifest}">Manifest-Version: 1.0
-      Created-By: Apache Jakarta
-
-      Name: org/apache/lucene
-      Specification-Title: Lucene Search Engine
-      Specification-Version: ${version}
-      Specification-Vendor: Lucene
-      Implementation-Title: org.apache.lucene
-      Implementation-Version: build ${DSTAMP} ${TSTAMP}
-      Implementation-Vendor: Lucene
-    </echo>
-
     <jar
       jarfile="${build.dir}/${final.name}.jar"
       basedir="${build.classes}"
-      excludes="**/*.java"
-      manifest="${build.manifest}"
-      />
+      excludes="**/*.java">
+      <manifest>
+        <attribute name="Created-By" value="Apache Jakarta"/>
+        <section name="org/apache/lucene">
+          <attribute name="Specification-Title" value="Lucene Search Engine"/>
+          <attribute name="Specification-Version" value="${version}"/>
+          <attribute name="Specification-Vendor" value="Lucene"/>
+          <attribute name="Implementation-Title" value="org.apache.lucene"/>
+          <attribute name="Implementation-Version" value="build ${DSTAMP} ${TSTAMP}"/>
+          <attribute name="Implementation-Vemdpr" value="Lucene"/>
+        </section>
+      </manifest>
+    </jar>
   </target>
+  <!--
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.6alpha
+Created-By: Apache Jakarta
+
+Name: org/apache/lucene
+Specification-Title: Lucene Search Engine
+Specification-Version: 1.3-rc2-dev
+Specification-Vendor: Lucene
+Implementation-Title: org.apache.lucene
+Implementation-Version: build 2003-09-18 13:08:01
+Implementation-Vendor: Lucene
+  -->
 
   <target name="jardemo" depends="compile,demo">
     <jar
