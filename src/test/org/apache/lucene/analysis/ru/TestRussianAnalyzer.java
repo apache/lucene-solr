@@ -48,7 +48,7 @@ public class TestRussianAnalyzer extends TestCase
 
     protected void setUp() throws Exception
     {
-      dataDir = new File(System.getProperty("dataDir"));
+      dataDir = new File(System.getProperty("dataDir", "./bin"));
     }
 
     public void testUnicode() throws IOException
