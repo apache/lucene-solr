@@ -56,7 +56,7 @@ package org.apache.lucene.search;
 
 import junit.framework.TestCase;
 
-import java.util.Vector;
+import java.util.Collection;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
@@ -81,7 +81,7 @@ public class TestSimilarity extends TestCase {
     public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
     public float tf(float freq) { return freq; }
     public float sloppyFreq(int distance) { return 2.0f; }
-    public float idf(Vector terms, Searcher searcher) { return 1.0f; }
+    public float idf(Collection terms, Searcher searcher) { return 1.0f; }
     public float idf(int docFreq, int numDocs) { return 1.0f; }
     public float coord(int overlap, int maxOverlap) { return 1.0f; }
   }

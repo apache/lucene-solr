@@ -55,7 +55,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Vector;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 import org.apache.lucene.index.Term;
 
@@ -296,14 +298,15 @@ public abstract class Similarity {
    * <p>The default implementation sums the {@link #idf(Term,Searcher)} factor
    * for each term in the phrase.
    *
-   * @param terms the vector of terms in the phrase
+   * @param terms the terms in the phrase
    * @param searcher the document collection being searched
    * @return a score factor for the phrase
    */
-  public float idf(Vector terms, Searcher searcher) throws IOException {
+  public float idf(Collection terms, Searcher searcher) throws IOException {
     float idf = 0.0f;
-    for (int i = 0; i < terms.size(); i++) {
-      idf += idf((Term)terms.elementAt(i), searcher);
+    Iterator i = terms.iterator();
+    while (i.hasNext()) {
+      idf += idf((Term)i.next(), searcher);
     }
     return idf;
   }

@@ -42,6 +42,9 @@ $Id$
  6. Changed FSDirectory to auto-create a full directory tree that it
     needs by using mkdirs() instead of mkdir().  (Mladen Turk via Otis)
 
+ 7. Added a new span-based query API.  This implements, among other
+    things, nested phrases.  See javadocs for details.  (Doug Cutting)
+
 
 1.3 final
 
