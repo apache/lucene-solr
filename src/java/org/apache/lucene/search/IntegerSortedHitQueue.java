@@ -28,8 +28,8 @@ import java.io.IOException;
  * Expert: A sorted hit queue for fields that contain strictly integer values.
  * Hits are sorted into the queue by the values in the field and then by document number.
  *
- * <p>Created: Jan 30, 2004 3:35:09 PM 
- * 
+ * <p>Created: Jan 30, 2004 3:35:09 PM
+ *
  * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
@@ -67,12 +67,13 @@ extends FieldSortedHitQueue {
 	/**
 	 * Returns a comparator for sorting hits according to a field containing integers.
 	 * @param reader  Index to use.
-	 * @param field  Field containg integer values.
+	 * @param fieldname  Field containg integer values.
 	 * @return  Comparator for sorting hits.
 	 * @throws IOException If an error occurs reading the index.
 	 */
-	static ScoreDocLookupComparator comparator (final IndexReader reader, final String field)
+	static ScoreDocLookupComparator comparator (final IndexReader reader, final String fieldname)
 	throws IOException {
+		final String field = fieldname.intern();
 		return new ScoreDocLookupComparator() {
 
 			/** The sort information being used by this instance */
@@ -142,12 +143,13 @@ extends FieldSortedHitQueue {
 	 * Returns a comparator for sorting hits according to a field containing integers using the given enumerator
 	 * to collect term values.
 	 * @param reader  Index to use.
-	 * @param field  Field containg integer values.
+	 * @param fieldname  Field containg integer values.
 	 * @return  Comparator for sorting hits.
 	 * @throws IOException If an error occurs reading the index.
 	 */
-	static ScoreDocLookupComparator comparator (final IndexReader reader, final TermEnum enumerator, final String field)
+	static ScoreDocLookupComparator comparator (final IndexReader reader, final TermEnum enumerator, final String fieldname)
 	throws IOException {
+		final String field = fieldname.intern();
 		return new ScoreDocLookupComparator() {
 
 			protected final int[] fieldOrder = generateSortIndex();

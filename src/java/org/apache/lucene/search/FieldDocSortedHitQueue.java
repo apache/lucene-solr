@@ -33,8 +33,10 @@ import java.io.IOException;
 class FieldDocSortedHitQueue
 extends PriorityQueue {
 
-	// this cannot contain AUTO fields
-	SortField[] fields;
+	// this cannot contain AUTO fields - any AUTO fields should
+	// have been resolved by the time this class is used.
+	volatile SortField[] fields;
+
 
 	/**
 	 * Creates a hit queue sorted by the given list of fields.
@@ -51,15 +53,14 @@ extends PriorityQueue {
 
 	/**
 	 * Allows redefinition of sort fields if they are <code>null</code>.
-	 * This is to handle the
-	 * case using ParallelMultiSearcher where the original list
-	 * contains AUTO and we don't know
-	 * the actual sort type until the values come back.  This
-	 * method is thread safe.
+	 * This is to handle the case using ParallelMultiSearcher where the
+	 * original list contains AUTO and we don't know the actual sort
+	 * type until the values come back.  The fields can only be set once.
+	 * This method is thread safe.
 	 * @param fields
 	 */
 	synchronized void setFields (SortField[] fields) {
-		if (fields == null) this.fields = fields;
+		if (this.fields == null) this.fields = fields;
 	}
 
 
@@ -92,11 +93,15 @@ extends PriorityQueue {
 						break;
 					case SortField.DOC:
 					case SortField.INT:
-					case SortField.STRING:
 						int i1 = ((Integer)docA.fields[i]).intValue();
 						int i2 = ((Integer)docB.fields[i]).intValue();
 						if (i1 > i2) c = -1;
 						if (i1 < i2) c = 1;
+						break;
+					case SortField.STRING:
+						String s1 = (String) docA.fields[i];
+						String s2 = (String) docB.fields[i];
+						c = s2.compareTo(s1);
 						break;
 					case SortField.FLOAT:
 						float f1 = ((Float)docA.fields[i]).floatValue();
@@ -123,11 +128,15 @@ extends PriorityQueue {
 						break;
 					case SortField.DOC:
 					case SortField.INT:
-					case SortField.STRING:
 						int i1 = ((Integer)docA.fields[i]).intValue();
 						int i2 = ((Integer)docB.fields[i]).intValue();
 						if (i1 < i2) c = -1;
 						if (i1 > i2) c = 1;
+						break;
+					case SortField.STRING:
+						String s1 = (String) docA.fields[i];
+						String s2 = (String) docB.fields[i];
+						c = s1.compareTo(s2);
 						break;
 					case SortField.FLOAT:
 						float f1 = ((Float)docA.fields[i]).floatValue();

@@ -39,10 +39,15 @@ import java.util.regex.Pattern;
  *
  * <p>A static cache is maintained.  This cache contains an integer
  * or float array of length <code>IndexReader.maxDoc()</code> for each field
- * name for which a sort is performed.  In other words, the size of
- * the cache in bytes is:
+ * name for which a sort is performed.  In other words, the size of the
+ * cache in bytes is:
  *
  * <p><code>4 * IndexReader.maxDoc() * (# of different fields actually used to sort)</code>
+ *
+ * <p>For String fields, the cache is larger: in addition to the
+ * above array, the value of every term in the field is kept in memory.
+ * If there are many unique terms in the field, this could 
+ * be quite large.
  *
  * <p>Note that the size of the cache is not affected by how many
  * fields are in the index and <i>might</i> be used to sort - only by
@@ -172,7 +177,7 @@ extends PriorityQueue {
 	 */
 	protected static ScoreDocComparator determineComparator (IndexReader reader, String field)
 	throws IOException {
-
+		field = field.intern();
 		TermEnum enumerator = reader.terms (new Term (field, ""));
 		try {
 			Term term = enumerator.term();

@@ -26,8 +26,8 @@ import java.io.IOException;
  * The type of content in each field could be determined dynamically by
  * FieldSortedHitQueue.determineComparator().
  *
- * <p>Created: Feb 3, 2004 4:46:55 PM 
- * 
+ * <p>Created: Feb 3, 2004 4:46:55 PM
+ *
  * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
@@ -50,8 +50,9 @@ extends PriorityQueue {
 		comparators = new ScoreDocComparator[n];
 		this.fields = new SortField[n];
 		for (int i=0; i<n; ++i) {
-			comparators[i] = FieldSortedHitQueue.getCachedComparator (reader, fields[i].getField(), fields[i].getType());
-			this.fields[i] = new SortField (fields[i].getField(), comparators[i].sortType(), fields[i].getReverse());
+			String fieldname = fields[i].getField();
+			comparators[i] = FieldSortedHitQueue.getCachedComparator (reader, fieldname, fields[i].getType());
+			this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
 		}
 		initialize (size);
 	}

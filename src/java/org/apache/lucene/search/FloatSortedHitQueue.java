@@ -66,12 +66,13 @@ extends FieldSortedHitQueue {
 	/**
 	 * Returns a comparator for sorting hits according to a field containing floats.
 	 * @param reader  Index to use.
-	 * @param field  Field containg float values.
+	 * @param fieldname  Field containg float values.
 	 * @return  Comparator for sorting hits.
 	 * @throws IOException If an error occurs reading the index.
 	 */
-	static ScoreDocLookupComparator comparator (final IndexReader reader, final String field)
+	static ScoreDocLookupComparator comparator (final IndexReader reader, final String fieldname)
 	throws IOException {
+		final String field = fieldname.intern();
 		return new ScoreDocLookupComparator () {
 
 			protected final float[] fieldOrder = generateSortIndex();
@@ -140,12 +141,13 @@ extends FieldSortedHitQueue {
 	 * Returns a comparator for sorting hits according to a field containing floats using the given enumerator
 	 * to collect term values.
 	 * @param reader  Index to use.
-	 * @param field  Field containg float values.
+	 * @param fieldname  Field containg float values.
 	 * @return  Comparator for sorting hits.
 	 * @throws IOException If an error occurs reading the index.
 	 */
-	static ScoreDocLookupComparator comparator (final IndexReader reader, final TermEnum enumerator, final String field)
+	static ScoreDocLookupComparator comparator (final IndexReader reader, final TermEnum enumerator, final String fieldname)
 	throws IOException {
+		final String field = fieldname.intern();
 		return new ScoreDocLookupComparator () {
 
 			protected final float[] fieldOrder = generateSortIndex();

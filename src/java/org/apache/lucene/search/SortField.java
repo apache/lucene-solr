@@ -74,7 +74,7 @@ implements Serializable {
    * @param field Name of field to sort by, cannot be <code>null</code>.
    */
   public SortField (String field) {
-    this.field = field;
+    this.field = field.intern();
   }
 
   /** Creates a sort, possibly in reverse, by terms in the given field where
@@ -83,7 +83,7 @@ implements Serializable {
    * @param reverse True if natural order should be reversed.
    */
   public SortField (String field, boolean reverse) {
-    this.field = field;
+    this.field = field.intern();
     this.reverse = reverse;
   }
 
@@ -94,7 +94,7 @@ implements Serializable {
    * @param type   Type of values in the terms.
    */
   public SortField (String field, int type) {
-    this.field = field;
+    this.field = (field != null) ? field.intern() : field;
     this.type = type;
   }
 
@@ -106,7 +106,7 @@ implements Serializable {
    * @param reverse True if natural order should be reversed.
    */
   public SortField (String field, int type, boolean reverse) {
-    this.field = field;
+    this.field = (field != null) ? field.intern() : field;
     this.type = type;
     this.reverse = reverse;
   }
