@@ -289,7 +289,7 @@ class NearSpans implements Spans {
         // When queue is empty and checkSlop() and ordered there is a match.
       }
     }
-    throw new AssertionError("Unexpected: ordered");
+    throw new RuntimeException("Unexpected: ordered");
   }
 
   private void listToQueue() {
