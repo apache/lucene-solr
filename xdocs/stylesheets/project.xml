@@ -14,8 +14,7 @@
 
     <menu name="Resources">
         <item name="Wiki"              href="http://wiki.apache.org/jakarta-lucene"/>
-        <item name="FAQ (Official)"    href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
-        <item name="jGuru FAQ"         href="http://www.jguru.com/faq/Lucene"/>
+        <item name="FAQ"               href="http://wiki.apache.org/jakarta-lucene/LuceneFAQ"/>
         <item name="Getting Started"   href="/gettingstarted.html"/>
         <item name="Query Syntax"      href="/queryparsersyntax.html"/>
         <item name="File Formats"      href="/fileformats.html"/>
