@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <document>
 <properties>
-<author email="husted@apache.org">Ted Husted</author>
 <author email="cutting@apache.org">Doug Cutting</author>
 <title>Powered by Lucene - Jakarta Lucene</title>
 </properties>
@@ -42,4 +41,3 @@ src="images/lucene_green_100.gif" alt="Lucene" border="0"
 
 </body>
 </document>
-
