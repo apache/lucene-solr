@@ -91,7 +91,6 @@ public class PhraseQuery extends Query {
   
   /**
    * Returns the relative positions of terms in this phrase.
-   * @return
    */
   public int[] getPositions() {
       int[] result = new int[positions.size()];

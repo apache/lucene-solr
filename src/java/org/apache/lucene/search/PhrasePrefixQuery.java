@@ -76,7 +76,7 @@ public class PhrasePrefixQuery extends Query {
   /**
    * Allows to specify the relative position of terms within the phrase.
    * 
-   * @ see PhraseQuery#add(Term, int)
+   * @see PhraseQuery#add(Term, int)
    * @param terms
    * @param position
    */
@@ -98,7 +98,6 @@ public class PhrasePrefixQuery extends Query {
   
   /**
    * Returns the relative positions of terms in this phrase.
-   * @return
    */
   public int[] getPositions() {
       int[] result = new int[positions.size()];
