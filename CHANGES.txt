@@ -2,6 +2,11 @@ Lucene Change Log
 
 $Id$
 
+1.3 RC3
+
+ 1. Added minMergeDocs in IndexWriter. (Julien Nioche via Otis)
+
+
 1.3 RC2
 
  1. Added getFieldNames(boolean) to IndexReader, SegmentReader, and
