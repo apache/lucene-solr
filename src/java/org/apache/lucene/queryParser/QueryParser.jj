@@ -99,7 +99,7 @@ import org.apache.lucene.search.*;
  *
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="http://cvs.apache.org/viewcvs/jakarta-lucene/src/test/org/apache/lucene/queryParser/TestQueryParser.java?rev=1&content-type=text/vnd.viewcvs-markup">test cases</a>.
+ * href="http://jakarta.apache.org/lucene/src/test/org/apache/lucene/queryParser/TestQueryParser.java">test cases</a>.
  * </p>
  *
  * @author Brian Goetz
