@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="wordnet" default="default">
+
+  <description>
+    WordNet
+  </description>
+
+  <import file="../common.xml"/>
+</project>

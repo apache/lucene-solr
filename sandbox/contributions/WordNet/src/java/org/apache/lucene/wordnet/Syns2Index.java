@@ -8,7 +8,6 @@ import org.apache.lucene.document.Document;
 
 import java.io.FileInputStream;
 import java.io.DataInputStream;
-import java.io.PrintStream;
 import java.io.File;
 import java.util.List;
 import java.util.LinkedList;
@@ -226,12 +225,6 @@ public class Syns2Index
 
     /**
      * Given the 2 maps fills a document for 1 word.
-     *
-     * @param
-     * @param
-     * @param
-     * @param
-     * @return
      */
     private static int index(Map word2Nums, Map num2Words, String g, Document doc)
         throws Throwable
