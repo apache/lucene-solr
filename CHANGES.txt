@@ -2,6 +2,10 @@ Lucene Change Log
 
 $Id$
 
+
+1.2 RC6
+
+
 1.2 RC5
 
  1. Renamed build.properties to default.properties and updated
