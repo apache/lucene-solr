@@ -71,7 +71,10 @@ extends SegmentTermDocs implements TermPositions {
 
   final void seek(TermInfo ti) throws IOException {
     super.seek(ti);
-    proxStream.seek(ti.proxPointer);
+    if (ti != null)
+      proxStream.seek(ti.proxPointer);
+    else
+      proxCount = 0;
   }
 
   public final void close() throws IOException {
