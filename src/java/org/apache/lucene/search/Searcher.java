@@ -66,14 +66,45 @@ public abstract class Searcher {
 
   /** Returns the documents matching <code>query</code>. */
   public final Hits search(Query query) throws IOException {
-    return search(query, null);
+    return search(query, (Filter)null);
   }
 
   /** Returns the documents matching <code>query</code> and
     <code>filter</code>. */
-  public final Hits search(Query query, Filter filter) throws IOException {
+  public Hits search(Query query, Filter filter) throws IOException {
     return new Hits(this, query, filter);
   }
+
+  /** Lower-level search API.
+   *
+   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
+   * scoring document.
+   *
+   * <p>Applications should only use this if they need <it>all</it> of the
+   * matching documents.  The high-level search API ({@link
+   * Searcher#search(Query)}) is usually more efficient, as it skips
+   * non-high-scoring hits.  */
+  public void search(Query query, HitCollector results)
+    throws IOException {
+    search(query, (Filter)null, results);
+  }    
+
+  /** Lower-level search API.
+   *
+   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
+   * scoring document.
+   *
+   * <p>Applications should only use this if they need <it>all</it> of the
+   * matching documents.  The high-level search API ({@link
+   * Searcher#search(Query)}) is usually more efficient, as it skips
+   * non-high-scoring hits.
+   *
+   * @param query to match documents
+   * @param filter if non-null, a bitset used to eliminate some documents
+   * @param results to receive hits
+   */
+  public abstract void search(Query query, Filter filter, HitCollector results)
+    throws IOException;
 
   /** Frees resources associated with this Searcher. */
   abstract public void close() throws IOException;
@@ -82,6 +113,7 @@ public abstract class Searcher {
   abstract int maxDoc() throws IOException;
   abstract TopDocs search(Query query, Filter filter, int n)
        throws IOException;
-  abstract Document doc(int i) throws IOException;
 
+  /** For use by {@link HitCollector} implementations. */
+  public abstract Document doc(int i) throws IOException;
 }

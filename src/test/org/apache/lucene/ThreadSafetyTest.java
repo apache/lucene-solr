@@ -54,12 +54,12 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import com.lucene.store.*;
-import com.lucene.document.*;
-import com.lucene.analysis.*;
-import com.lucene.index.*;
-import com.lucene.search.*;
-import com.lucene.queryParser.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.document.*;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.*;
+import org.apache.lucene.queryParser.*;
 
 import java.io.File;
 import java.util.Random;
@@ -68,6 +68,8 @@ class ThreadSafetyTest {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
   private static final Random RANDOM = new Random();
   private static Searcher SEARCHER;
+
+  private static int ITERATIONS = 1;
 
   private static int random(int i) {		  // for JDK 1.1 compatibility
     int r = RANDOM.nextInt();
@@ -85,7 +87,7 @@ class ThreadSafetyTest {
 
     public void run() {
       try {
-	for (int i = 0; i < 1024*16; i++) {
+	for (int i = 0; i < 1024*ITERATIONS; i++) {
 	  Document d = new Document();
 	  int n = RANDOM.nextInt();
 	  d.add(Field.Keyword("id", Integer.toString(n)));
@@ -98,6 +100,9 @@ class ThreadSafetyTest {
 	    writer = new IndexWriter("index", ANALYZER, false);
 	  }
 	}
+	
+	writer.close();
+
       } catch (Exception e) {
 	System.out.println(e.toString());
 	e.printStackTrace();
@@ -117,7 +122,7 @@ class ThreadSafetyTest {
 
     public void run() {
       try {
-	for (int i = 0; i < 1024*8; i++) {
+	for (int i = 0; i < 512*ITERATIONS; i++) {
 	  searchFor(RANDOM.nextInt(), (searcher==null)?SEARCHER:searcher);
 	  if (i%reopenInterval == 0) {
 	    if (searcher == null) {
@@ -150,12 +155,24 @@ class ThreadSafetyTest {
 
   public static void main(String[] args) throws Exception {
 
-    IndexWriter writer = new IndexWriter("index", ANALYZER, true);
+    boolean readOnly = false;
+    boolean add = false;
 
-    Thread indexerThread = new IndexerThread(writer);
-    indexerThread.start();
+    for (int i = 0; i < args.length; i++) {
+      if ("-ro".equals(args[i]))
+	readOnly = true;
+      if ("-add".equals(args[i]))
+	add = true;
+    }
 
-    Thread.sleep(1000);
+    if (!readOnly) {
+      IndexWriter writer = new IndexWriter("index", ANALYZER, !add);
+      
+      Thread indexerThread = new IndexerThread(writer);
+      indexerThread.start();
+      
+      Thread.sleep(1000);
+    }
       
     SearcherThread searcherThread1 = new SearcherThread(false);
     searcherThread1.start();

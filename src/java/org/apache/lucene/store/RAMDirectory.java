@@ -123,6 +123,26 @@ final public class RAMDirectory extends Directory {
     return new RAMInputStream(file);
   }
 
+  /** Construct a {@link Lock}.
+   * @param name the name of the lock file
+   */
+  public final Lock makeLock(final String name) {
+    return new Lock() {
+	public boolean obtain() throws IOException {
+	  synchronized (files) {
+	    if (!fileExists(name)) {
+	      createFile(name).close();
+	      return true;
+	    }
+	    return false;
+	  }
+	}
+	public void release() {
+	  deleteFile(name);
+	}
+      };
+  }
+
   /** Closes the store to future operations. */
   public final void close() {
   }

@@ -54,10 +54,10 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import com.lucene.analysis.SimpleAnalyzer;
-import com.lucene.analysis.Analyzer;
-import com.lucene.analysis.TokenStream;
-import com.lucene.analysis.Token;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Token;
 
 import java.io.Reader;
 import java.io.StringReader;

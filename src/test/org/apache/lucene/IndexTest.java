@@ -54,11 +54,11 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import com.lucene.analysis.SimpleAnalyzer;
-import com.lucene.index.IndexWriter;
-import com.lucene.index.TermPositions;
-import com.lucene.document.Document;
-import demo.FileDocument;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.FileDocument;
 
 import java.io.File;
 import java.util.Date;

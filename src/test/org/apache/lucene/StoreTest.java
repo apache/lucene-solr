@@ -54,11 +54,11 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import com.lucene.store.Directory;
-import com.lucene.store.InputStream;
-import com.lucene.store.OutputStream;
-import com.lucene.store.FSDirectory;
-import com.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 
 import java.util.Date;
 import java.util.Random;

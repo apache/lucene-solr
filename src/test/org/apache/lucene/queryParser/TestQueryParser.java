@@ -57,11 +57,11 @@ package org.apache.lucene.queryParser;
 import java.io.*;
 import junit.framework.*;
 
-import com.lucene.*;
-import com.lucene.queryParser.*;
-import com.lucene.search.*;
-import com.lucene.analysis.*;
-import com.lucene.analysis.Token;
+import org.apache.lucene.*;
+import org.apache.lucene.queryParser.*;
+import org.apache.lucene.search.*;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Token;
 
 public class TestQueryParser extends TestCase {
 
