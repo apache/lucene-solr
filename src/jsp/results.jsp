@@ -15,6 +15,16 @@
 
 */
 %>
+<%!
+public String escapeHTML(String s) {
+  s = s.replaceAll("&", "&amp;");
+  s = s.replaceAll("<", "&lt;");
+  s = s.replaceAll(">", "&gt;");
+  s = s.replaceAll("\"", "&quot;");
+  s = s.replaceAll("'", "&apos;");
+  return s;
+}
+%>
 <%@include file="header.jsp"%>
 <%
         boolean error = false;                  //used to control flow for error messages
@@ -40,7 +50,7 @@
                                                         //or otherwise corrupt index
 %>
                 <p>ERROR opening the Index - contact sysadmin!</p>
-                <p>While parsing query: <%=e.getMessage()%></p>   
+                <p>Error message: <%=escapeHTML(e.getMessage())%></p>   
 <%                error = true;                                  //don't do anything up to the footer
         }
 %>
@@ -72,7 +82,7 @@
                                                                       //send them a nice error HTML
                                                                       
 %>
-                        <p>Error while parsing query: <%=e.getMessage()%></p>
+                        <p>Error while parsing query: <%=escapeHTML(e.getMessage())%></p>
 <%
                         error = true;                                 //don't bother with the rest of
                                                                       //the page
