@@ -25,8 +25,8 @@ hauen;hau
 Drama;drama
 Dramen;dram
 
-# TODO: known bug: "ﬂ" at the end of a word isn't replaced:
-Ausmaﬂ;ausmaﬂ
+# replace "ﬂ" with 'ss':
+Ausmaﬂ;ausmass
 
 # fake words to test if suffixes are cut off:
 xxxxxe;xxxxx
