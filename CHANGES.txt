@@ -109,6 +109,11 @@ $Id$
     characters from user input in order to avoid so-called cross site
     scripting attacks. (Daniel Naber)
 
+24. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
+    of 0 now run 20-50% faster (Patch #31882).
+    (Jonathan Hager via Daniel Naber)
+
+
 1.4.1
 
  1. Fixed a performance bug in hit sorting code, where values were not
