@@ -315,10 +315,11 @@ public class QueryParser {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
-    TokenStream source = analyzer.tokenStream(field,
-                                              new StringReader(queryText));
+    TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
     Vector v = new Vector();
     org.apache.lucene.analysis.Token t;
+    int positionCount = 0;
+    boolean severalTokensAtSamePosition = false;
 
     while (true) {
       try {
@@ -329,7 +330,11 @@ public class QueryParser {
       }
       if (t == null)
         break;
-      v.addElement(t.termText());
+      v.addElement(t);
+      if (t.getPositionIncrement() == 1)
+        positionCount++;
+      else
+        severalTokensAtSamePosition = true;
     }
     try {
       source.close();
@@ -340,15 +345,48 @@ public class QueryParser {
 
     if (v.size() == 0)
       return null;
-    else if (v.size() == 1)
-      return new TermQuery(new Term(field, (String) v.elementAt(0)));
-    else {
-      PhraseQuery q = new PhraseQuery();
-      q.setSlop(phraseSlop);
-      for (int i=0; i<v.size(); i++) {
-        q.add(new Term(field, (String) v.elementAt(i)));
+    else if (v.size() == 1) {
+      t = (org.apache.lucene.analysis.Token) v.elementAt(0);
+      return new TermQuery(new Term(field, t.termText()));
+    } else {
+      if (severalTokensAtSamePosition) {
+        if (positionCount == 1) {
+          // no phrase query:
+          BooleanQuery q = new BooleanQuery();
+          for (int i = 0; i < v.size(); i++) {
+            t = (org.apache.lucene.analysis.Token) v.elementAt(i);
+            TermQuery currentQuery = new TermQuery(
+                new Term(field, t.termText()));
+            q.add(currentQuery, BooleanClause.Occur.SHOULD);
+          }
+          return q;
+        }
+        else {
+          // phrase query:
+          MultiPhraseQuery mpq = new MultiPhraseQuery();
+          List multiTerms = new ArrayList();
+          for (int i = 0; i < v.size(); i++) {
+            t = (org.apache.lucene.analysis.Token) v.elementAt(i);
+            if (t.getPositionIncrement() == 1 && multiTerms.size() > 0) {
+              mpq.add((Term[])multiTerms.toArray(new Term[0]));
+              multiTerms.clear();
+            }
+            multiTerms.add(new Term(field, t.termText()));
+          }
+          mpq.add((Term[])multiTerms.toArray(new Term[0]));
+          return mpq;
+        }
       }
-      return q;
+      else {
+        PhraseQuery q = new PhraseQuery();
+        q.setSlop(phraseSlop);
+        for (int i = 0; i < v.size(); i++) {
+          q.add(new Term(field, ((org.apache.lucene.analysis.Token) 
+              v.elementAt(i)).termText()));
+
+        }
+        return q;
+      }
     }
   }
   
@@ -379,6 +417,9 @@ public class QueryParser {
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
+    }
+    if (query instanceof MultiPhraseQuery) {
+      ((MultiPhraseQuery) query).setSlop(slop);
     }
 
     return query;

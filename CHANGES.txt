@@ -12,7 +12,7 @@ $Id$
  2. FuzzyQuery now takes an additional parameter that specifies the
     minimum similarity that is required for a term to match the query.
     The QueryParser syntax for this is term~x, where x is a floating 
-    point number between 0 and 1 (a bigger number means that a higher
+    point number >= 0 and < 1 (a bigger number means that a higher
     similarity is required). Furthermore, a prefix can be specified
     for FuzzyQuerys so that only those terms are considered similar that 
     start with this prefix. This can speed up FuzzyQuery greatly.
@@ -112,6 +112,13 @@ $Id$
 24. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
     of 0 now run 20-50% faster (Patch #31882).
     (Jonathan Hager via Daniel Naber)
+
+25. QueryParser now correctly works with Analyzers that can return more 
+    than one token per position. For example, a query "+fast +car"
+    would be parsed as "+fast +(car automobile)" if the Analyzer
+    returns "car" and "automobile" at the same position whenever it 
+    finds "car" (Patch #23307).
+    (Pierrick Brihaye, Daniel Naber)
 
 
 1.4.1
