@@ -63,6 +63,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -142,9 +143,10 @@ public final class FrenchAnalyzer extends Analyzer {
 
   /**
    * Builds an analyzer with the given stop words.
+   * @throws IOException
    */
-  public FrenchAnalyzer(File stopwords) {
-    stoptable = new HashSet(WordlistLoader.getWordtable(stopwords).keySet());
+  public FrenchAnalyzer(File stopwords) throws IOException {
+    stoptable = new HashSet(WordlistLoader.getWordSet(stopwords));
   }
 
   /**
@@ -163,9 +165,10 @@ public final class FrenchAnalyzer extends Analyzer {
 
   /**
    * Builds an exclusionlist from the words contained in the given file.
+   * @throws IOException
    */
-  public void setStemExclusionTable(File exclusionlist) {
-    excltable = new HashSet(WordlistLoader.getWordtable(exclusionlist).keySet());
+  public void setStemExclusionTable(File exclusionlist) throws IOException {
+    excltable = new HashSet(WordlistLoader.getWordSet(exclusionlist));
   }
 
   /**
