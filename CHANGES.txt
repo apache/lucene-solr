@@ -23,12 +23,22 @@ $Id$
  5. Added support for new range query syntax to QueryParser.jj.
     (briangoetz)
 
- 6. Added the ability to retrieve HTML documents' META tag values to HTMLParser.jj.
+ 6. Added the ability to retrieve HTML documents' META tag values to
+    HTMLParser.jj.
     (Mark Harwood via otis)
 
  7. Modified QueryParser to make it possible to programmatically specify the
     default Boolean operator (OR or AND).
     (Péter Halácsy via otis)
+
+ 8. Made many search methods and classes non-final, per requests.
+    This includes IndexWriter and IndexSearcher, among others.
+    (cutting)
+  
+ 9. Added class RemoteSearchable, providing support for remote
+    searching via RMI.  The test class RemoteSearchableTest.java
+    provides an example of how this can be used.  (cutting)
+
 
 1.2 RC6
 
