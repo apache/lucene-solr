@@ -112,8 +112,8 @@ public abstract class Similarity {
    * and larger values when <code>numTokens</code> is small.
    *
    * <p>That these values are computed under {@link
-   * IndexWriter#addDocument(Document)} and stored then using
-   * {#encodeNorm(float)}.  Thus they have limited precision, and documents
+   * IndexWriter#addDocument(org.apache.lucene.document.Document)} and stored then using
+   * {@link #encodeNorm(float)}.  Thus they have limited precision, and documents
    * must be re-indexed if this method is altered.
    *
    * @param fieldName the name of the field
