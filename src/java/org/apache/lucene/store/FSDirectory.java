@@ -54,7 +54,7 @@ public final class FSDirectory extends Directory {
    */
   public static final String LOCK_DIR =
     System.getProperty("org.apache.lucene.lockdir",
-      System.getProperty("java.io.tmpdir", "."));
+      System.getProperty("java.io.tmpdir"));
 
   private static MessageDigest DIGESTER;
 
@@ -118,17 +118,15 @@ public final class FSDirectory extends Directory {
   private FSDirectory(File path, boolean create) throws IOException {
     directory = path;
 
-   lockDir = new File(LOCK_DIR);
-   if (!lockDir.isAbsolute()) {
-     lockDir = new File(directory, LOCK_DIR);
-   }
-   if (lockDir.exists() == false) {
-     if (lockDir.mkdirs() == false) {
-       throw new IOException("Cannot create lock directory: " + lockDir);
-     }
-   }
-    if (create)
+    if (LOCK_DIR == null) {
+      lockDir = directory;
+    }
+    else {
+      lockDir = new File(LOCK_DIR);
+    }
+    if (create) {
       create();
+    }
 
     if (!directory.isDirectory())
       throw new IOException(path + " not a directory");
@@ -137,7 +135,7 @@ public final class FSDirectory extends Directory {
   private synchronized void create() throws IOException {
     if (!directory.exists())
       if (!directory.mkdirs())
-        throw new IOException("Cannot create lock directory: " + directory);
+        throw new IOException("Cannot create directory: " + directory);
 
     String[] files = directory.list();            // clear old files
     for (int i = 0; i < files.length; i++) {
@@ -299,6 +297,13 @@ public final class FSDirectory extends Directory {
       public boolean obtain() throws IOException {
         if (DISABLE_LOCKS)
           return true;
+
+        if (!lockDir.exists()) {
+          if (!lockDir.mkdirs()) {
+            throw new IOException("Cannot create lock directory: " + lockDir);
+          }
+        }
+
         return lockFile.createNewFile();
       }
       public void release() {
