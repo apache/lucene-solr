@@ -35,8 +35,7 @@ extends SegmentTermDocs implements TermPositions {
     super.seek(ti);
     if (ti != null)
       proxStream.seek(ti.proxPointer);
-    else
-      proxCount = 0;
+    proxCount = 0;
   }
 
   public final void close() throws IOException {
