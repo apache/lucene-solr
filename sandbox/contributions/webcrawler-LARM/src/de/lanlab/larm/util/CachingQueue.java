@@ -395,7 +395,7 @@ public class CachingQueue implements Queue
         }
         if (last == null && first != null)
         {
-            // assert((last==null && first==null) || (last!= null && first!=null));
+            // affirm((last==null && first==null) || (last!= null && first!=null));
             System.err.println("Error in CachingQueue: last!=first==null");
         }
 
@@ -446,7 +446,7 @@ public class CachingQueue implements Queue
             }
             else if (numBlocks < 0)
             {
-                // assert(numBlocks >= 0)
+                // affirm(numBlocks >= 0)
                 System.err.println("CachingQueue.remove: numBlocks<0!");
                 throw new UnderflowException();
             }
@@ -563,9 +563,9 @@ class CachingQueueTester
     {
         CachingQueue cq = new CachingQueue("testQueue2", 10);
         String test = "Test1";
-        assert(cq.size() == 0);
+        affirm(cq.size() == 0);
         cq.insert(test);
-        assert(cq.size() == 1);
+        affirm(cq.size() == 1);
         return (cq.remove() == test);
     }
 
@@ -584,10 +584,10 @@ class CachingQueueTester
         cq.insert(test1);
         cq.insert(test2);
         cq.insert(test3);
-        assert(cq.size() == 3);
+        affirm(cq.size() == 3);
         cq.remove();
         cq.remove();
-        assert(cq.size() == 1);
+        affirm(cq.size() == 1);
         return (cq.remove() == test3);
     }
 
@@ -610,17 +610,17 @@ class CachingQueueTester
         cq.insert(test3);
         cq.insert(test4);
         cq.insert(test5);
-        assert(cq.size() == 5);
+        affirm(cq.size() == 5);
         String t = (String) cq.remove();
-        assert(t.equals(test1));
+        affirm(t.equals(test1));
         t = (String) cq.remove();
-        assert(t.equals(test2));
+        affirm(t.equals(test2));
         t = (String) cq.remove();
-        assert(t.equals(test3));
+        affirm(t.equals(test3));
         t = (String) cq.remove();
-        assert(t.equals(test4));
+        affirm(t.equals(test4));
         t = (String) cq.remove();
-        assert(cq.size() == 0);
+        affirm(cq.size() == 0);
         return (t.equals(test5));
     }
 
@@ -630,7 +630,7 @@ class CachingQueueTester
      *
      * @param expr  Description of the Parameter
      */
-    public static void assert(boolean expr)
+    public static void affirm(boolean expr)
     {
         if (!expr)
         {
@@ -657,11 +657,11 @@ class CachingQueueTester
         cq.insert(test3);
         cq.insert(test4);
         cq.insert(test5);
-        assert(cq.remove().equals(test1));
-        assert(cq.remove().equals(test2));
-        assert(cq.remove().equals(test3));
-        assert(cq.remove().equals(test4));
-        assert(cq.remove().equals(test5));
+        affirm(cq.remove().equals(test1));
+        affirm(cq.remove().equals(test2));
+        affirm(cq.remove().equals(test3));
+        affirm(cq.remove().equals(test4));
+        affirm(cq.remove().equals(test5));
         try
         {
             cq.remove();
@@ -693,13 +693,13 @@ class CachingQueueTester
         cq.insert(test4);
         cq.insert(test5);
         String t = (String) cq.remove();
-        assert(t.equals(test1));
+        affirm(t.equals(test1));
         t = (String) cq.remove();
-        assert(t.equals(test2));
+        affirm(t.equals(test2));
         t = (String) cq.remove();
-        assert(t.equals(test3));
+        affirm(t.equals(test3));
         t = (String) cq.remove();
-        assert(t.equals(test4));
+        affirm(t.equals(test4));
         t = (String) cq.remove();
         return (t.equals(test5));
     }
@@ -735,15 +735,15 @@ class CachingQueueTester
                 System.err.println("CachingQueueTester.textExceptions: Store 2 nicht vorhanden. Filename geändert?");
             }
             String t = (String) cq.remove();
-            assert(t.equals(test1));
+            affirm(t.equals(test1));
             t = (String) cq.remove();
-            assert(t.equals(test2));
+            affirm(t.equals(test2));
             t = (String) cq.remove();
-            assert(t.equals(test3));
+            affirm(t.equals(test3));
             t = (String) cq.remove();
-            assert(t.equals(test4));
+            affirm(t.equals(test4));
             t = (String) cq.remove();
-            assert(t.equals(test5));
+            affirm(t.equals(test5));
         }
         catch (StoreException e)
         {
