@@ -97,11 +97,6 @@ public class TestRussianAnalyzer extends TestCase
         super(name);
     }
 
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(RussianAnalyzerTest.class);
-    }
-
     /**
      * @see TestCase#setUp()
      */
@@ -116,13 +111,11 @@ public class TestRussianAnalyzer extends TestCase
      */
     protected void tearDown() throws Exception
     {
-
         super.tearDown();
     }
 
     public void testUnicode() throws IOException
     {
-
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.UnicodeRussian);
         inWords =
             new InputStreamReader(

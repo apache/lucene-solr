@@ -72,11 +72,6 @@ public class TestRussianStem extends TestCase
         super(name);
     }
 
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(RussianStemTest.class);
-    }
-
     /**
      * @see TestCase#setUp()
      */
@@ -109,7 +104,6 @@ public class TestRussianStem extends TestCase
             stems.add(str);
         }
         inStems.close();
-
     }
 
     /**
