@@ -97,7 +97,7 @@ public class TestDateFilter
 
  	Document doc = new Document();
  	// add time that is in the past
- 	doc.add(Field.Text("datefield", DateField.timeToString(now - 1000)));
+ 	doc.add(Field.Keyword("datefield", DateField.timeToString(now - 1000)));
  	doc.add(Field.Text("body", "Today is a very sunny day in New York City"));
   	writer.addDocument(doc);
  	writer.optimize();
@@ -155,7 +155,7 @@ public class TestDateFilter
 
  	Document doc = new Document();
  	// add time that is in the future
- 	doc.add(Field.Text("datefield", DateField.timeToString(now - 888888)));
+ 	doc.add(Field.Keyword("datefield", DateField.timeToString(now - 888888)));
  	doc.add(Field.Text("body", "Today is a very sunny day in New York City"));
   	writer.addDocument(doc);
  	writer.optimize();
