@@ -128,6 +128,9 @@ public class FilterIndexReader extends IndexReader {
   public void undeleteAll() throws IOException { in.undeleteAll(); }
 
   public byte[] norms(String f) throws IOException { return in.norms(f); }
+  public void norms(String f, byte[] bytes, int offset) throws IOException {
+    in.norms(f, bytes, offset);
+  }
   public void setNorm(int d, String f, byte b) throws IOException {
     in.setNorm(d,f,b);
   }

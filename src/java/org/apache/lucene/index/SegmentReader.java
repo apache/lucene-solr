@@ -357,7 +357,7 @@ final class SegmentReader extends IndexReader {
   }
 
   /** Read norms into a pre-allocated array. */
-  synchronized void norms(String field, byte[] bytes, int offset)
+  public synchronized void norms(String field, byte[] bytes, int offset)
     throws IOException {
 
     Norm norm = (Norm)norms.get(field);

@@ -51,6 +51,8 @@ $Id$
     one that delegates through that of the Searcher.  (Julien Nioche
     via Cutting)
 
+ 9. Added MultiReader, an IndexReader that combines multiple other
+    IndexReaders.  (Cutting)
 
 1.3 final
 

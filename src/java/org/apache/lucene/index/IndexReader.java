@@ -117,10 +117,10 @@ public abstract class IndexReader {
             if (infos.size() == 1) {		  // index is optimized
               return new SegmentReader(infos, infos.info(0), true);
             } else {
-                SegmentReader[] readers = new SegmentReader[infos.size()];
+                IndexReader[] readers = new IndexReader[infos.size()];
                 for (int i = 0; i < infos.size(); i++)
                   readers[i] = new SegmentReader(infos, infos.info(i), i==infos.size()-1);
-                return new SegmentsReader(infos, directory, readers);
+                return new MultiReader(directory, readers);
             }
           }
         }.run();
@@ -271,6 +271,14 @@ public abstract class IndexReader {
    * @see Field#setBoost(float)
    */
   public abstract byte[] norms(String field) throws IOException;
+
+  /** Reads the byte-encoded normalization factor for the named field of every
+   *  document.  This is used by the search code to score documents.
+   *
+   * @see Field#setBoost(float)
+   */
+  public abstract void norms(String field, byte[] bytes, int offset)
+    throws IOException;
 
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
