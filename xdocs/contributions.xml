@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<document>
+<properties>
+<author email="carlson@apache.org">Peter Carlson</author>
+<title>Contributions - Jakarta Lucene</title>
+</properties>
+<body>
+
+<section name="User Contributions">
+	- <subsection name="Lucene Documents">
+Ê <p>Lucene requires information you want to index to be converted into a Document class.
+Here are contributions for various Document classes for different formats.</p> 
+  <table>
+  <tr>
+	Ê <th>XMLDocument Key </th> 
+	 <td>
+	Ê <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html</a> 
+	Ê </td>
+   </tr>
+     <tr>
+	Ê <th>author</th> 
+	 <td>Peter Carlson</td>
+   </tr>
+
+Ê </table>
+
+Ê </subsection>
+</section>
+</body>
+</document>
+
