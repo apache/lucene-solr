@@ -73,8 +73,8 @@ class DocTest {
        throws Exception {
     Directory directory = FSDirectory.getDirectory("test", false);
 
-    SegmentReader r1 = new SegmentReader(new SegmentInfo(seg1, 1, directory));
-    SegmentReader r2 = new SegmentReader(new SegmentInfo(seg2, 1, directory));
+    SegmentReader r1 = SegmentReader.get(new SegmentInfo(seg1, 1, directory));
+    SegmentReader r2 = SegmentReader.get(new SegmentInfo(seg2, 1, directory));
 
     SegmentMerger merger = new SegmentMerger(directory, merged);
     merger.add(r1);
@@ -89,7 +89,7 @@ class DocTest {
        throws Exception {
     Directory directory = FSDirectory.getDirectory("test", false);
     SegmentReader reader =
-      new SegmentReader(new SegmentInfo(segment, 1, directory));
+      SegmentReader.get(new SegmentInfo(segment, 1, directory));
 
     for (int i = 0; i < reader.numDocs(); i++)
       System.out.println(reader.document(i));

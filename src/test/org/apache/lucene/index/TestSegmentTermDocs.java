@@ -50,7 +50,7 @@ public class TestSegmentTermDocs extends TestCase {
   public void testTermDocs() {
     try {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(new SegmentInfo("test", 1, dir));
+      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);
@@ -71,7 +71,7 @@ public class TestSegmentTermDocs extends TestCase {
   public void testBadSeek() {
     try {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(new SegmentInfo("test", 3, dir));
+      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 3, dir));
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);
@@ -83,7 +83,7 @@ public class TestSegmentTermDocs extends TestCase {
     }
     try {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(new SegmentInfo("test", 3, dir));
+      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 3, dir));
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);

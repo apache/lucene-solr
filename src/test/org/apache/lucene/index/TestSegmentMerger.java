@@ -50,8 +50,8 @@ public class TestSegmentMerger extends TestCase {
     DocHelper.setupDoc(doc2);
     DocHelper.writeDoc(merge2Dir, merge2Segment, doc2);
     try {
-      reader1 = new SegmentReader(new SegmentInfo(merge1Segment, 1, merge1Dir));
-      reader2 = new SegmentReader(new SegmentInfo(merge2Segment, 1, merge2Dir));
+      reader1 = SegmentReader.get(new SegmentInfo(merge1Segment, 1, merge1Dir));
+      reader2 = SegmentReader.get(new SegmentInfo(merge2Segment, 1, merge2Dir));
     } catch (IOException e) {
       e.printStackTrace();                                                      
     }
@@ -80,7 +80,7 @@ public class TestSegmentMerger extends TestCase {
       merger.closeReaders();
       assertTrue(docsMerged == 2);
       //Should be able to open a new SegmentReader against the new directory
-      SegmentReader mergedReader = new SegmentReader(new SegmentInfo(mergedSegment, docsMerged, mergedDir));
+      SegmentReader mergedReader = SegmentReader.get(new SegmentInfo(mergedSegment, docsMerged, mergedDir));
       assertTrue(mergedReader != null);
       assertTrue(mergedReader.numDocs() == 2);
       Document newDoc1 = mergedReader.document(0);

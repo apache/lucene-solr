@@ -35,7 +35,7 @@ import org.apache.lucene.util.BitVector;
  *
  * @version $Id$
  */
-final class SegmentReader extends IndexReader {
+class SegmentReader extends IndexReader {
   private String segment;
 
   FieldInfos fieldInfos;
@@ -89,19 +89,46 @@ final class SegmentReader extends IndexReader {
 
   private Hashtable norms = new Hashtable();
 
-  SegmentReader(SegmentInfos sis, SegmentInfo si, boolean closeDir)
-          throws IOException {
-    super(si.dir, sis, closeDir);
-    initialize(si);
+  /** The class which implements SegmentReader. */
+  private static final Class IMPL;
+  static {
+    try {
+      String name =
+        System.getProperty("org.apache.lucene.SegmentReader.class",
+                           SegmentReader.class.getName());
+      IMPL = Class.forName(name);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  SegmentReader(SegmentInfo si) throws IOException {
-    super(si.dir);
-    initialize(si);
+  protected SegmentReader() { super(null); }
+
+  public static SegmentReader get(SegmentInfo si) throws IOException {
+    return get(si.dir, si, null, false, false);
+  }
+
+  public static SegmentReader get(SegmentInfos sis, SegmentInfo si,
+                                  boolean closeDir) throws IOException {
+    return get(si.dir, si, sis, closeDir, true);
+  }
+
+  public static SegmentReader get(Directory dir, SegmentInfo si,
+                                  SegmentInfos sis,
+                                  boolean closeDir, boolean ownDir)
+    throws IOException {
+    SegmentReader instance;
+    try {
+      instance = (SegmentReader)IMPL.newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    instance.init(dir, sis, closeDir, ownDir);
+    instance.initialize(si);
+    return instance;
   }
           
-   private void initialize(SegmentInfo si) throws IOException
-   {
+   private void initialize(SegmentInfo si) throws IOException {
     segment = si.name;
 
     // Use compound file directory for some files, if it exists
@@ -132,7 +159,7 @@ final class SegmentReader extends IndexReader {
     }
   }
 
-  protected final void doCommit() throws IOException {
+  protected void doCommit() throws IOException {
     if (deletedDocsDirty) {               // re-write deleted 
       deletedDocs.write(directory(), segment + ".tmp");
       directory().renameFile(segment + ".tmp", segment + ".del");
@@ -154,7 +181,7 @@ final class SegmentReader extends IndexReader {
     undeleteAll = false;
   }
   
-  protected final void doClose() throws IOException {
+  protected void doClose() throws IOException {
     fieldsReader.close();
     tis.close();
 
@@ -170,7 +197,7 @@ final class SegmentReader extends IndexReader {
       cfsReader.close();
   }
 
-  static final boolean hasDeletions(SegmentInfo si) throws IOException {
+  static boolean hasDeletions(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".del");
   }
 
@@ -179,11 +206,11 @@ final class SegmentReader extends IndexReader {
   }
 
 
-  static final boolean usesCompoundFile(SegmentInfo si) throws IOException {
+  static boolean usesCompoundFile(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".cfs");
   }
   
-  static final boolean hasSeparateNorms(SegmentInfo si) throws IOException {
+  static boolean hasSeparateNorms(SegmentInfo si) throws IOException {
     String[] result = si.dir.list();
     String pattern = si.name + ".s";
     int patternLength = pattern.length();
@@ -194,7 +221,7 @@ final class SegmentReader extends IndexReader {
     return false;
   }
 
-  protected final void doDelete(int docNum) {
+  protected void doDelete(int docNum) {
     if (deletedDocs == null)
       deletedDocs = new BitVector(maxDoc());
     deletedDocsDirty = true;
@@ -202,13 +229,13 @@ final class SegmentReader extends IndexReader {
     deletedDocs.set(docNum);
   }
 
-  protected final void doUndeleteAll() {
+  protected void doUndeleteAll() {
       deletedDocs = null;
       deletedDocsDirty = false;
       undeleteAll = true;
   }
 
-  final Vector files() throws IOException {
+  Vector files() throws IOException {
     Vector files = new Vector(16);
     final String ext[] = new String[]{
       "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
@@ -235,34 +262,34 @@ final class SegmentReader extends IndexReader {
     return files;
   }
 
-  public final TermEnum terms() {
+  public TermEnum terms() {
     return tis.terms();
   }
 
-  public final TermEnum terms(Term t) throws IOException {
+  public TermEnum terms(Term t) throws IOException {
     return tis.terms(t);
   }
 
-  public final synchronized Document document(int n) throws IOException {
+  public synchronized Document document(int n) throws IOException {
     if (isDeleted(n))
       throw new IllegalArgumentException
               ("attempt to access a deleted document");
     return fieldsReader.doc(n);
   }
 
-  public final synchronized boolean isDeleted(int n) {
+  public synchronized boolean isDeleted(int n) {
     return (deletedDocs != null && deletedDocs.get(n));
   }
 
-  public final TermDocs termDocs() throws IOException {
+  public TermDocs termDocs() throws IOException {
     return new SegmentTermDocs(this);
   }
 
-  public final TermPositions termPositions() throws IOException {
+  public TermPositions termPositions() throws IOException {
     return new SegmentTermPositions(this);
   }
 
-  public final int docFreq(Term t) throws IOException {
+  public int docFreq(Term t) throws IOException {
     TermInfo ti = tis.get(t);
     if (ti != null)
       return ti.docFreq;
@@ -270,14 +297,14 @@ final class SegmentReader extends IndexReader {
       return 0;
   }
 
-  public final int numDocs() {
+  public int numDocs() {
     int n = maxDoc();
     if (deletedDocs != null)
       n -= deletedDocs.count();
     return n;
   }
 
-  public final int maxDoc() {
+  public int maxDoc() {
     return fieldsReader.size();
   }
 
@@ -339,7 +366,7 @@ final class SegmentReader extends IndexReader {
     return norm.bytes;
   }
 
-  protected final void doSetNorm(int doc, String field, byte value)
+  protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     Norm norm = (Norm) norms.get(field);
     if (norm == null)                             // not an indexed field
@@ -372,7 +399,7 @@ final class SegmentReader extends IndexReader {
     }
   }
 
-  private final void openNorms(Directory cfsDir) throws IOException {
+  private void openNorms(Directory cfsDir) throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
@@ -388,7 +415,7 @@ final class SegmentReader extends IndexReader {
     }
   }
 
-  private final void closeNorms() throws IOException {
+  private void closeNorms() throws IOException {
     synchronized (norms) {
       Enumeration enumerator = norms.elements();
       while (enumerator.hasMoreElements()) {

@@ -44,8 +44,8 @@ public class TestMultiReader extends TestCase {
     
     try {
       sis.write(dir);
-      reader1 = new SegmentReader(new SegmentInfo("seg-1", 1, dir));
-      reader2 = new SegmentReader(new SegmentInfo("seg-2", 1, dir));
+      reader1 = SegmentReader.get(new SegmentInfo("seg-1", 1, dir));
+      reader2 = SegmentReader.get(new SegmentInfo("seg-2", 1, dir));
       readers[0] = reader1;
       readers[1] = reader2;      
     } catch (IOException e) {

@@ -41,7 +41,7 @@ public class TestSegmentReader extends TestCase {
     try {
       DocHelper.setupDoc(testDoc);
       DocHelper.writeDoc(dir, testDoc);
-      reader = new SegmentReader(new SegmentInfo("test", 1, dir));
+      reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
     } catch (IOException e) {
       
     }
@@ -84,7 +84,7 @@ public class TestSegmentReader extends TestCase {
     DocHelper.setupDoc(docToDelete);
     DocHelper.writeDoc(dir, "seg-to-delete", docToDelete);
     try {
-      SegmentReader deleteReader = new SegmentReader(new SegmentInfo("seg-to-delete", 1, dir));
+      SegmentReader deleteReader = SegmentReader.get(new SegmentInfo("seg-to-delete", 1, dir));
       assertTrue(deleteReader != null);
       assertTrue(deleteReader.numDocs() == 1);
       deleteReader.delete(0);

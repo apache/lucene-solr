@@ -8,9 +8,17 @@ DEST=$(BUILD)/gcj
 CORE=$(BUILD)/classes/java
 SRC=.
 
-CORE_HEADERS=$(CORE)/org/apache/lucene/store/IndexInput.h
-GCJ_JAVA=$(wildcard $(SRC)/org/apache/lucene/store/*.java)
-GCJ_OBJ=$(DEST)/lucene-gcj.a
+CORE_HEADERS=\
+  $(CORE)/org/apache/lucene/store/IndexInput.h \
+  $(CORE)/org/apache/lucene/util/BitVector.h \
+  $(CORE)/org/apache/lucene/index/SegmentTermDocs.h
+
+JAVA=$(wildcard $(SRC)/org/apache/lucene/*/*.java)
+JAVA_HEADERS=$(subst $(SRC)/,$(DEST)/,$(subst .java,.h,$(JAVA)))
+JAVA_OBJ=$(DEST)/lucene-gcj.a
+
+CNI=$(wildcard $(SRC)/org/apache/lucene/*/*.cc)
+CNI_OBJ=$(subst $(SRC)/,$(DEST)/,$(subst .cc,.o,$(CNI)))
 
 CFLAGS ?= -O3 -ffast-math 
 GCJFLAGS ?= $(CFLAGS) -fno-bounds-check -fno-store-check
@@ -36,6 +44,8 @@ $(DEST)/%.class : $(SRC)/%.java
 	mkdir -p $(dir $@)
 	gcj -C -I $(CORE) -d $(DEST) $<
 
+.PRECIOUS : $(CORE)/%.h $(DEST)/%.h
+
 $(CORE)/%.h : $(CORE)/%.class
 	gcjh --classpath=$(CORE) -d $(CORE) \
 	 $(subst /,.,$(subst .class,,$(subst $(CORE)/,,$<)))
@@ -44,20 +54,30 @@ $(DEST)/%.h : $(DEST)/%.class
 	gcjh --classpath=$(DEST) -d $(DEST) \
 	 $(subst /,.,$(subst .class,,$(subst $(DEST)/,,$<)))
 
-$(DEST)/%.o : $(SRC)/%.cc $(DEST)/%.h $(CORE_HEADERS)
+$(DEST)/%.cc : $(DEST)/%.class
+	gcjh -stubs --classpath=$(DEST) -d $(DEST) \
+	 $(subst /,.,$(subst .class,,$(subst $(DEST)/,,$<)))
+
+$(DEST)/%.o : $(SRC)/%.cc $(DEST)/%.h $(CORE_HEADERS) $(JAVA_HEADERS)
 	g++ $(CFLAGS) -c -I $(CORE) -I $(DEST) -o $@ $<
 
-$(GCJ_OBJ) : $(GCJ_JAVA)
+$(DEST)/%.s : $(SRC)/%.cc $(DEST)/%.h $(CORE_HEADERS) $(JAVA_HEADERS)
+	g++ $(CFLAGS) -S -I $(CORE) -I $(DEST) -o $@ $<
+
+$(JAVA_OBJ) : $(JAVA)
 	mkdir -p $(dir $@)
 	gcj $(GCJFLAGS) -c -I $(CORE) -I $(DEST) -o $@ $^
 
 # list of all object code to be linked
-OBJ = $(LUCENE_OBJ) $(GCJ_OBJ) $(DEST)/org/apache/lucene/store/GCJIndexInput.o
+OBJ = $(LUCENE_OBJ) $(JAVA_OBJ) $(CNI_OBJ)
 
 USE_GCJ_DIRECTORY =\
  -Dorg.apache.lucene.FSDirectory.class=org.apache.lucene.store.GCJDirectory
 
-PROPS = $(USE_GCJ_DIRECTORY)
+USE_GCJ_SEGMENT_READER =\
+ -Dorg.apache.lucene.SegmentReader.class=org.apache.lucene.index.GCJSegmentReader
+
+PROPS = $(USE_GCJ_DIRECTORY) $(USE_GCJ_SEGMENT_READER)
 
 # link together various applications
 $(BUILD)/indexFiles: $(OBJ)

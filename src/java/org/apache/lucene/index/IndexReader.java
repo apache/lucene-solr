@@ -53,12 +53,6 @@ public abstract class IndexReader {
    */
   protected IndexReader(Directory directory) {
     this.directory = directory;
-    segmentInfos = null;
-    directoryOwner = false;
-    closeDirectory = false;
-    stale = false;
-    hasChanges = false;
-    writeLock = null;
   }
   
   /**
@@ -70,24 +64,25 @@ public abstract class IndexReader {
    * @param closeDirectory
    */
   IndexReader(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory) {
-    this.directory = directory;
-    this.segmentInfos = segmentInfos;
-    directoryOwner = true;
-    this.closeDirectory = closeDirectory;
-    stale = false;
-    hasChanges = false;
-    writeLock = null;
+    init(directory, segmentInfos, closeDirectory, true);
   }
 
-  final private Directory directory;
-  
-  final private boolean directoryOwner;
-  final private SegmentInfos segmentInfos;
+  void init(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory, boolean directoryOwner) {
+    this.directory = directory;
+    this.segmentInfos = segmentInfos;
+    this.directoryOwner = directoryOwner;
+    this.closeDirectory = closeDirectory;
+  }
+
+  private Directory directory;
+  private boolean directoryOwner;
+  private boolean closeDirectory;
+
+  private SegmentInfos segmentInfos;
   private Lock writeLock;
   private boolean stale;
   private boolean hasChanges;
   
-  final private boolean closeDirectory;
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
    path. */
@@ -115,11 +110,11 @@ public abstract class IndexReader {
             SegmentInfos infos = new SegmentInfos();
             infos.read(directory);
             if (infos.size() == 1) {		  // index is optimized
-              return new SegmentReader(infos, infos.info(0), closeDirectory);
+              return SegmentReader.get(infos, infos.info(0), closeDirectory);
             } else {
               IndexReader[] readers = new IndexReader[infos.size()];
               for (int i = 0; i < infos.size(); i++)
-                readers[i] = new SegmentReader(infos.info(i));
+                readers[i] = SegmentReader.get(infos.info(i));
               return new MultiReader(directory, infos, closeDirectory, readers);
             }
           }

@@ -28,8 +28,8 @@ public class GCJIndexInput extends IndexInput {
   private String file;
   private int fd;
   private long fileLength;
-  private RawData data;
-  private RawData pointer;
+  public RawData data;
+  public RawData pointer;
   private boolean isClone;
 
   public GCJIndexInput(String file) throws IOException {

@@ -56,7 +56,7 @@ public class TestDocumentWriter extends TestCase {
     try {
       writer.addDocument("test", testDoc);
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = new SegmentReader(new SegmentInfo("test", 1, dir));
+      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
       assertTrue(reader != null);
       Document doc = reader.document(0);
       assertTrue(doc != null);

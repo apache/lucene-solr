@@ -406,7 +406,7 @@ public class IndexWriter {
     final Vector segmentsToDelete = new Vector();
     IndexReader sReader = null;
     if (segmentInfos.size() == 1){ // add existing index, if any
-        sReader = new SegmentReader(segmentInfos.info(0));
+        sReader = SegmentReader.get(segmentInfos.info(0));
         merger.add(sReader);
         segmentsToDelete.addElement(sReader);   // queue segment for deletion
     }
@@ -503,7 +503,7 @@ public class IndexWriter {
       SegmentInfo si = segmentInfos.info(i);
       if (infoStream != null)
         infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-      IndexReader reader = new SegmentReader(si);
+      IndexReader reader = SegmentReader.get(si);
       merger.add(reader);
       if ((reader.directory() == this.directory) || // if we own the directory
           (reader.directory() == this.ramDirectory))

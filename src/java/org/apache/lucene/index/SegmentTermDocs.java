@@ -22,10 +22,10 @@ import org.apache.lucene.store.IndexInput;
 
 class SegmentTermDocs implements TermDocs {
   protected SegmentReader parent;
-  private IndexInput freqStream;
-  private int count;
-  private int df;
-  private BitVector deletedDocs;
+  protected IndexInput freqStream;
+  protected int count;
+  protected int df;
+  protected BitVector deletedDocs;
   int doc = 0;
   int freq;
 
@@ -39,7 +39,7 @@ class SegmentTermDocs implements TermDocs {
   private long skipPointer;
   private boolean haveSkipped;
 
-  SegmentTermDocs(SegmentReader parent) {
+  protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
     this.freqStream = (IndexInput) parent.freqStream.clone();
     this.deletedDocs = parent.deletedDocs;
