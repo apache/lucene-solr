@@ -202,26 +202,29 @@ public class BooleanQuery extends Query {
     if (clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.elementAt(0);
       if (!c.prohibited) {			  // just return clause
-        Query clone = (Query)c.query.clone();     // have to clone to boost
-        clone.setBoost(getBoost() * clone.getBoost());
-        return clone;
+        Query query = c.query;
+        if (getBoost() != 1.0f) {                 // have to clone to boost
+          query = (Query)query.clone();
+          query.setBoost(getBoost() * query.getBoost());
+        }
+        return query;
       }
     }
 
-    BooleanQuery clone = (BooleanQuery)this.clone(); // recursively clone
-    boolean changed = false;
+    BooleanQuery clone = null;                    // recursively rewrite
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      Query q = c.query.rewrite(reader);
-      if (q != c.query) {                         // rewrote
-        changed = true;                           // replace in clone
+      Query query = c.query.rewrite(reader);
+      if (query != c.query) {                     // clause rewrote: must clone
+        if (clone == null)
+          clone = (BooleanQuery)this.clone();
         clone.clauses.setElementAt
-          (new BooleanClause(q, c.required, c.prohibited), i);
+          (new BooleanClause(query, c.required, c.prohibited), i);
       }
     }
-    if (changed)
-      return clone;                               // clauses rewrote
-    else
+    if (clone != null) {
+      return clone;                               // some clauses rewrote
+    } else
       return this;                                // no clauses rewrote
   }
 
