@@ -35,6 +35,13 @@ $Id$
     RemoteSearchable this makes it easy to implement distributed
     search systems.  (Jean-Francois Halleux via cutting)
 
+ 5. Added IntegerSortedSearcher and FieldSortedHitQueue classes that
+    together provide the ability to sort by single-valued Integer
+    fields.  (Tim Jones via Otis)
+
+ 6. Changed FSDirectory to auto-create a full directory tree that it
+    needs by using mkdirs() instead of mkdir().  (Mladen Turk via Otis)
+
 
 1.3 final
 
