@@ -7,7 +7,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 
 import java.io.BufferedReader;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.File;
+import java.io.PrintStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -17,37 +20,59 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.TreeMap;
 
 /**
- * Convert the prolog file wn_s.pl from the wordnet prolog download
- * into a Lucene index suitable for looking up synonyms.
- * The index is named 'syn_index' and has fields named "word"
- * and "syn".
+ * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/~wn/obtain.shtml">WordNet prolog download</a>
+ * into a Lucene index suitable for looking up synonyms and performing query expansion.
+ *
+ * The index has fields named "word" ({@see #F_WORD})
+ * and "syn" ({@see #F_SYN}).
  * <p>
  * The source word (such as 'big') can be looked up in the
  * "word" field, and if present there will be fields named "syn"
- * for every synonym.
+ * for every synonym. What's tricky here is that there could be <b>multiple</b>
+ * fields with the same name, in the general case for words that have multiple synonyms.
+ * That's not a problem with Lucene, you just use {@see org.apache.lucene.document.Document#getValues}
  * </p>
  * <p>
- * While the wordnet file distinguishes groups of synonyms with
+ * While the WordNet file distinguishes groups of synonyms with
  * related meanings we don't do that here.
  * </p>
- * <p>
- * By default, with no args, we expect the prolog
- * file to be at 'c:/proj/wordnet/prolog/wn_s.pl' and will
- * write to an index named 'syn_index' in the current dir.
- * See constants at the bottom of this file to change these.
- * </p>
- * See also:
- * <br/>
- * http://www.cogsci.princeton.edu/~wn/
- * <br/>
- * http://www.tropo.com/techno/java/lucene/wordnet.html
  *
- * @author Dave Spencer, dave@lumos.com
+ * This can take 8 minutes to execute and build an index on a "fast" system and the index takes up almost 3 MB.
+ * If you boost the minMergeDocuments and mergeFactor of the index writer than you can get this down to under 4 minutes.
+ *
+ * @author Dave Spencer, dave&#064;searchmorph.com
+ * @see <a href="http://www.cogsci.princeton.edu/~wn/">WordNet home page</a>
+ * @see <a href="http://www.cogsci.princeton.edu/~wn/man/prologdb.5WN.html">prologdb man page</a>
+ * @see <a href="http://www.hostmon.com/rfc/advanced.jsp">sample site that uses it</a>
  */
 public class Syns2Index
 {
+	/**
+	 *
+	 */
+	private static final PrintStream o = System.out;
+
+	/**
+	 *
+	 */
+	private static final PrintStream err = System.err;
+	
+	/**
+	 *
+	 */
+	public static final String F_SYN = "syn";
+
+	/**
+	 *
+	 */
+	public static final String F_WORD = "word";
+
+	/**
+	 *
+	 */
     private static final Analyzer ana = new StandardAnalyzer();
 
     /**
@@ -57,7 +82,7 @@ public class Syns2Index
         throws Throwable
     {
         // get command line arguments
-        String prologFilename = null;
+        String prologFilename = null; // name of file "wn_s.pl"
         String indexDir = null;
         if (args.length == 2)
         {
@@ -73,26 +98,26 @@ public class Syns2Index
         // ensure that the prolog file is readable
         if (! (new File(prologFilename)).canRead())
         {
-            System.err.println("Error: cannot read Prolog file: " + prologFilename);
+            err.println("Error: cannot read Prolog file: " + prologFilename);
             System.exit(1);
         }
         // exit if the target index directory already exists
         if ((new File(indexDir)).isDirectory())
         {
-            System.err.println("Error: index directory already exists: " + indexDir);
-            System.err.println("Please specify a name of a non-existent directory");
+            err.println("Error: index directory already exists: " + indexDir);
+            err.println("Please specify a name of a non-existent directory");
             System.exit(1);
         }
 
-        System.out.println("Opening Prolog file " + prologFilename);
+        o.println("Opening Prolog file " + prologFilename);
         final FileInputStream fis = new FileInputStream(prologFilename);
         final BufferedReader br = new BufferedReader(new InputStreamReader(fis));
         String line;
 
         // maps a word to all the "groups" it's in
-        final Map word2Nums = new HashMap();
+        final Map word2Nums = new TreeMap();
         // maps a group to all the words in it
-        final Map num2Words = new HashMap();
+        final Map num2Words = new TreeMap();
         // number of rejected words
         int ndecent = 0;
 
@@ -100,20 +125,21 @@ public class Syns2Index
         int mod = 1;
         int row = 1;
         // parse prolog file
+		o.println( "[1/2] Parsing " + prologFilename);
         while ((line = br.readLine()) != null)
         {
             // occasional progress
-            if ((++row) % mod == 0)
+            if ((++row) % mod == 0) // periodically print out line we read in
             {
                 mod *= 2;
-                System.out.println("" + row + " " + line + " " + word2Nums.size()
+                o.println("\t" + row + " " + line + " " + word2Nums.size()
                     + " " + num2Words.size() + " ndecent=" + ndecent);
             }
 
             // syntax check
             if (! line.startsWith("s("))
             {
-                System.err.println("OUCH: " + line);
+                err.println("OUCH: " + line);
                 System.exit(1);
             }
 
@@ -162,6 +188,8 @@ public class Syns2Index
         br.close();
 
         // create the index
+		o.println( "[2/2] Building index to store synonyms, " +
+				   " map sizes are " + word2Nums.size() + " and " + num2Words.size());
         index(indexDir, word2Nums, num2Words);
     }
 
@@ -201,6 +229,8 @@ public class Syns2Index
         // override the specific index if it already exists
         IndexWriter writer = new IndexWriter(indexDir, ana, true);
         writer.setUseCompoundFile(true);
+		writer.mergeFactor *= 2;
+		writer.minMergeDocs *= 2;
         Iterator i1 = word2Nums.keySet().iterator();
         while (i1.hasNext()) // for each word
         {
@@ -210,15 +240,16 @@ public class Syns2Index
             int n = index(word2Nums, num2Words, g, doc);
             if (n > 0)
             {
-                doc.add(Field.Keyword("word", g));
+				doc.add( new Field( F_WORD, g, Field.Store.YES, Field.Index.UN_TOKENIZED));
                 if ((++row % mod) == 0)
                 {
-                    System.out.println("row=" + row + " doc= " + doc);
+                    o.println("\trow=" + row + "/" + word2Nums.size() + " doc= " + doc);
                     mod *= 2;
                 }
                 writer.addDocument(doc);
             } // else degenerate
         }
+		o.println( "Optimizing..");
         writer.optimize();
         writer.close();
     }
@@ -251,14 +282,18 @@ public class Syns2Index
                 continue;
             }
             num++;
-            doc.add(Field.UnIndexed("syn" , cur));
+			doc.add( new Field( F_SYN, cur, Field.Store.YES, Field.Index.NO));
         }
         return num;
     }
 
+	/**
+	 *
+	 */
     private static void usage()
     {
-        System.out.println("\n\n" +
+        o.println("\n\n" +
             "java org.apache.lucene.wordnet.Syn2Index <prolog file> <index dir>\n\n");
     }
+
 }
