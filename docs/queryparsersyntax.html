@@ -119,8 +119,36 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>Although Lucene provides the ability to create your own query's though its API, it also provides a rich query language through the QueryParser.</p>
-                                                <p>This page provides syntax of Lucene's Query Parser, a lexer which interprets a string into a Lucene Query using JavaCC.</p>
+                                    <p>Although Lucene provides the ability to create your own
+            queries through its API, it also provides a rich query
+            language through the Query Parser.</p>
+                                                <p>This page
+            provides syntax of Lucene's Query Parser, a lexer which
+            interprets a string into a Lucene Query using JavaCC.</p>
+                                                <p>
+            Before choosing to use the provided Query Parser, please consider the following:
+            <ol>
+            <li>If you are programmatically generating a query string and then 
+            parsing it with the query parser then you should seriously consider building 
+            your queries directly with the query API.  In other words, the query
+            parser is designed for human-entered text, not for program-generated 
+            text.</li>
+
+            <li>Untokenized fields are best added directly to queries, and not 
+            through the query parser.  If a field's values are generated programmatically 
+            by the application, then so should query clauses for this field. 
+            Analyzers, like the query parser, are designed to convert human-entered 
+            text to terms.  Program-generated values, like dates, keywords, etc., 
+            should be consistently program-generated.</li>
+
+            <li>In a query form, fields which are general text should use the query 
+            parser.  All others, such as date ranges, keywords, etc. are better added 
+            directly through the query API.  A field with a limit set of values, 
+            that can be specified with a pull-down menu should not be added to a 
+            query string which is subsequently parsed, but rather added as a 
+            TermQuery clause.</li>
+            </ol>
+            </p>
                             </blockquote>
         </p>
       </td></tr>
@@ -377,6 +405,63 @@
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
         <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Range Searches"><strong>Range Searches</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>Range Queries allow one to match documents whose field(s) values
+            are between the lower and upper bound specified by the Range Query.
+            Range Queries are inclusive (i.e. the query includes the specified lower and upper bound).
+            Sorting is done lexicographically.</p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>mod_date:[20020101 TO 20030101]</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>This will find documents whose mod_date fields have values between 20020101 and 20030101.
+            Note that Range Queries are not reserved for date fields.  You could also use range queries with non-date fields:</p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>title:[Aida TO Carmen]</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>This will find all documents whose titles are between Aida and Carmen.</p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
           <a name="Boosting a Term"><strong>Boosting a Term</strong></a>
         </font>
       </td></tr>
@@ -444,7 +529,7 @@
     </tr>
     </table>
     </div>
-                                                <p>By default, the boost factor is 1. Although, the boost factor must be positive, it can be less than 1 (i.e. .2)</p>
+                                                <p>By default, the boost factor is 1. Although the boost factor must be positive, it can be less than 1 (e.g. 0.2)</p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
@@ -708,6 +793,40 @@
     </table>
     </div>
                                                 <p>This eliminates any confusion and makes sure you that website must exist and either term jakarta or apache may exist.</p>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Field Grouping"><strong>Field Grouping</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>Lucene supports using parentheses to group multiple clauses to a single field.</p>
+                                                <p>To search for a title that contains both the word "return" and the phrase "pink panther" use the query:</p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>title:(+return +&quot;pink panther&quot;)</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
                             </blockquote>
         </p>
       </td></tr>
