@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project basedir="." default="rebuild" name="Spelling checker">
+
+<property name="lucene.lib" value="d:/dev/lib/lucene.jar"/>
+<property name="lucenetest.lib" value="D:/dev/jakarta-lucene/build/classes/test"/>
+
+
+<property name="name" value="spellchecker"/>
+<property name="Name" value="spellchecker"/>
+<property name="version" value="1.1"/>
+<property name="year" value="2004"/>
+<property name="final.name" value="${name}-${version}"/>
+<property name="java" location="src/java"/>
+<property name="test" location="src/test"/>
+<property name="build.dir" location="build"/>
+<property name="build.java" location="${build.dir}/classes/java"/>
+<property name="build.test" location="${build.dir}/classes/test"/>
+<property name="build.javadocs" location="doc"/>
+<property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
+<property name="javac.debug" value="off"/>
+<property name="junit.output.dir" location="${build.dir}/test"/>
+<property name="junit.reports" location="${build.dir}/test/reports"/>
+
+
+
+   <!-- Build classpath -->
+  <path id="classpath">
+    <pathelement location="${lucene.lib}"/>
+
+    <pathelement location="${build.java}"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="classpath"/>
+	<pathelement location="${lucenetest.lib}"/>
+    <pathelement location="${build.dir}/classes/test"/>
+  </path>
+  <!--Patternset to exclude files from the output directory:-->
+
+  <!-- ================================================================== -->
+  <!-- C O M P I L E                                                      -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="javacompile"
+    description="Compiles core classes">
+    <mkdir dir="${build.java}"/>
+    <javac
+      srcdir="${java}"
+      includes="**/*.java"
+      destdir="${build.java}"
+      debug="${javac.debug}"
+	  optimize="on">
+      <classpath refid="classpath"/>
+    </javac>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- J A R                                                              -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="jar"  depends="javacompile" description="Generates the Jar file">
+    <jar 
+	destfile="${build.dir}/${final.name}.jar"
+    basedir="${build.java}" />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- J A V A D O C                                                      -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="javadoc">
+    <mkdir dir="${build.javadocs}"/>
+    <javadoc
+      sourcepath="${java}"
+      overview="src/java/overview.html"
+      packagenames="org.apache.lucene.*"
+      destdir="${build.javadocs}"
+      author="true"
+      version="true"
+      use="true"
+      link="${javadoc.link}"
+      windowtitle="${Name} ${version} API"
+      doctitle="${Name} ${version} API"
+      bottom="Author: Nicolas Maisonneuve (${year})"  >
+      </javadoc>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- C L E A N                                                          -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="clean">
+    <delete failonerror="false" includeemptydirs="true">
+      <fileset dir="${build.dir}"/>
+    </delete>
+  </target>
+
+
+  <!-- ================================================================== -->
+  <!-- B U I L D  T E S T                                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="compile-test" depends="javacompile">
+    <mkdir dir="${build.test}"/>
+    <javac
+      srcdir="${test}"
+      includes="**/*.java"
+      destdir="${build.test}"
+      debug="true">
+      <classpath refid="test.classpath"/>
+    </javac>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- R U N  T E S T S                                                   -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="test" depends="compile-test" description="Runs unit tests">
+    <fail unless="junit.present">
+      ##################################################################
+      JUnit not found.
+      Please make sure junit.jar is in ANT_HOME/lib, or made available
+      to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+	  </fail>
+    <mkdir dir="${junit.output.dir}"/>
+    <junit printsummary="off" haltonfailure="no"
+      errorProperty="tests.failed" failureProperty="tests.failed">
+      <classpath refid="junit.classpath"/>
+      <sysproperty key="dataDir" file="src/test"/>
+      <sysproperty key="tempDir" file="${build.dir}/test"/>
+      <formatter type="xml"/>
+      <formatter type="brief" usefile="false"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/test" includes="**/Test*.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/test" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+
+  <target depends="javacompile" name="make"/>
+
+  <target depends="clean,make" name="rebuild"/>
+
+</project>
