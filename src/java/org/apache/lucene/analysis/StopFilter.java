@@ -55,31 +55,55 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 
-/** Removes stop words from a token stream. */
+/**
+ * Removes stop words from a token stream.
+ */
 
 public final class StopFilter extends TokenFilter {
 
-  private Hashtable table;
+  private Set table;
 
-  /** Constructs a filter which removes words from the input
-   TokenStream that are named in the array of words. */
+  /**
+   * Constructs a filter which removes words from the input
+   * TokenStream that are named in the array of words.
+   */
   public StopFilter(TokenStream in, String[] stopWords) {
     super(in);
-    table = makeStopTable(stopWords);
+    table = makeStopSet(stopWords);
   }
 
-  /** Constructs a filter which removes words from the input
-   TokenStream that are named in the Hashtable. */
+  /**
+   * Constructs a filter which removes words from the input
+   * TokenStream that are named in the Hashtable.
+   *
+   * @deprecated Use {@link #StopFilter(TokenStream, Set)} StopFilter(TokenStream,Map)} instead
+   */
   public StopFilter(TokenStream in, Hashtable stopTable) {
+    super(in);
+    table = stopTable.keySet();
+  }
+
+  /**
+   * Constructs a filter which removes words from the input
+   * TokenStream that are named in the Set.
+   */
+  public StopFilter(TokenStream in, Set stopTable) {
     super(in);
     table = stopTable;
   }
 
-  /** Builds a Hashtable from an array of stop words, appropriate for passing
-   into the StopFilter constructor.  This permits this table construction to
-   be cached once when an Analyzer is constructed. */
+  /**
+   * Builds a Hashtable from an array of stop words,
+   * appropriate for passing into the StopFilter constructor.
+   * This permits this table construction to be cached once when
+   * an Analyzer is constructed.
+   *
+   * @deprecated Use {@link #makeStopSet(String[] makeStopSet) instead.
+   */
   public static final Hashtable makeStopTable(String[] stopWords) {
     Hashtable stopTable = new Hashtable(stopWords.length);
     for (int i = 0; i < stopWords.length; i++)
@@ -87,11 +111,26 @@ public final class StopFilter extends TokenFilter {
     return stopTable;
   }
 
-  /** Returns the next input Token whose termText() is not a stop word. */
+  /**
+   * Builds a Set from an array of stop words,
+   * appropriate for passing into the StopFilter constructor.
+   * This permits this table construction to be cached once when
+   * an Analyzer is constructed.
+   */
+  public static final Set makeStopSet(String[] stopWords) {
+    Set stopTable = new HashSet(stopWords.length);
+    for (int i = 0; i < stopWords.length; i++)
+      stopTable.add(stopWords[i]);
+    return stopTable;
+  }
+
+  /**
+   * Returns the next input Token whose termText() is not a stop word.
+   */
   public final Token next() throws IOException {
     // return the first non-stop word found
     for (Token token = input.next(); token != null; token = input.next())
-      if (table.get(token.termText) == null)
+      if (!table.contains(token.termText))
         return token;
     // reached EOS -- return null
     return null;
