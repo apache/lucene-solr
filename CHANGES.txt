@@ -95,6 +95,8 @@ $Id$
 
  18. Added a public, extensible scoring API.  For details, see the
      javadoc for org.apache.lucene.search.Similarity.
+ 
+ 19. Fixed return of Hits.id() from float to int. (Terry Steichen via Peter).
 
 
 1.2 RC6
