@@ -55,16 +55,16 @@ public abstract class PriorityQueue {
    */
   public boolean insert(Object element){
     if(size < maxSize){
-        put(element);
-        return true;
+      put(element);
+      return true;
     }
     else if(size > 0 && !lessThan(element, top())){
-        heap[1] = element;
-        adjustTop();
-        return true;
+      heap[1] = element;
+      adjustTop();
+      return true;
     }
     else
-        return false;
+      return false;
    }
 
   /** Returns the least element of the PriorityQueue in constant time. */
