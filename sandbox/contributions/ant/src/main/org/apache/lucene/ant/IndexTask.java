@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.de.GermanAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
@@ -260,12 +261,11 @@ public class IndexTask extends Task {
             boolean indexIt = true;
 
             if (checkLastModified) {
-              Hits hits = null;
               Term pathTerm =
                 new Term("path", file.getPath());
               TermQuery query =
                 new TermQuery(pathTerm);
-              hits = searcher.search(query);
+              Hits hits = searcher.search(query);
 
               // if document is found, compare the
               // indexed last modified time with the
@@ -353,12 +353,7 @@ public class IndexTask extends Task {
     }
   }
 
-  /**
-   * @todo - the RusionAnalyzer requires a constructor argument
-   *         so its being removed from here until a mechanism
-   *         is developed to pass ctor info somehow
-   */
-  public static class AnalyzerType extends EnumeratedAttribute {
+ public static class AnalyzerType extends EnumeratedAttribute {
     private static Map analyzerLookup = new HashMap();
 
     static {
@@ -367,7 +362,7 @@ public class IndexTask extends Task {
       analyzerLookup.put("stop", StopAnalyzer.class.getName());
       analyzerLookup.put("whitespace", WhitespaceAnalyzer.class.getName());
       analyzerLookup.put("german", GermanAnalyzer.class.getName());
-//            analyzerLookup.put("russian", RussianAnalyzer.class.getName());
+      analyzerLookup.put("russian", RussianAnalyzer.class.getName());
     }
 
     /**
