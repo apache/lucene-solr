@@ -18,9 +18,10 @@ package org.apache.lucene.document;
 
 import java.io.Reader;
 import java.util.Date;
-import org.apache.lucene.index.IndexReader;       // for javadoc
-import org.apache.lucene.search.Similarity;       // for javadoc
-import org.apache.lucene.search.Hits;             // for javadoc
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.Similarity;
 
 /**
   A field is a section of a Document.  Each field has two parts, a name and a
@@ -33,12 +34,15 @@ import org.apache.lucene.search.Hits;             // for javadoc
 public final class Field implements java.io.Serializable {
   private String name = "body";
   private String stringValue = null;
-  private boolean storeTermVector = false;
   private Reader readerValue = null;
+  private byte[] binaryValue = null;
+  
+  private boolean storeTermVector = false;
   private boolean isStored = false;
   private boolean isIndexed = true;
   private boolean isTokenized = true;
-
+  private boolean isBinary = false;
+  
   private float boost = 1.0f;
   
   public static final class Store {
@@ -101,7 +105,7 @@ public final class Field implements java.io.Serializable {
      * of the document's terms and their number of occurences in that document. */
     public static final TermVector YES = new TermVector("YES");
   }
-
+  
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this
    * document.
@@ -213,7 +217,7 @@ public final class Field implements java.io.Serializable {
     f.storeTermVector = storeTermVector;
     return f;
   }
-
+  
   /** The name of the field (e.g., "date", "title", "body", ...)
     as an interned string. */
   public String name() 		{ return name; }
@@ -224,7 +228,11 @@ public final class Field implements java.io.Serializable {
   /** The value of the field as a Reader, or null.  If null, the String value
     is used.  Exactly one of stringValue() and readerValue() must be set. */
   public Reader readerValue()	{ return readerValue; }
-
+  /** The value of the field in Binary, or null.  If null, the Reader or
+     String value is used.  Exactly one of stringValue(), readerValue() and
+     binaryValue() must be set. */
+  public byte[] binaryValue() { return binaryValue; }
+  
   /**
    * Create a field by specifying its name, value and how it will
    * be saved in the index. Term vectors will not be stored in the index.
@@ -240,7 +248,7 @@ public final class Field implements java.io.Serializable {
   public Field(String name, String value, Store store, Index index) {
     this(name, value, store, index, TermVector.NO);
   }
-
+  
   /**
    * Create a field by specifying its name, value and how it will
    * be saved in the index.
@@ -340,6 +348,23 @@ public final class Field implements java.io.Serializable {
     this(name, string, store, index, token, false);
   }
 
+  public Field(String name, byte[] value) {
+    if (name == null)
+      throw new IllegalArgumentException("name cannot be null");
+    if (value == null)
+      throw new IllegalArgumentException("value cannot be null");
+    
+    this.name = name.intern();
+    this.binaryValue = value;
+    
+    this.isBinary    = true;
+    this.isStored    = true;
+    
+    this.isIndexed   = false;
+    this.isTokenized = false;
+    this.storeTermVector = false;
+  }
+  
   /**
    * 
    * @param name The name of the field
@@ -402,6 +427,9 @@ public final class Field implements java.io.Serializable {
    */
   public final boolean isTermVectorStored() { return storeTermVector; }
 
+  /** True iff the value of the filed is stored as binary */
+  public final boolean  isBinary()      { return isBinary; }
+  
   /** Prints a Field for human consumption. */
   public final String toString() {
     StringBuffer result = new StringBuffer();
@@ -422,6 +450,12 @@ public final class Field implements java.io.Serializable {
         result.append(",");
       result.append("termVector");
     }
+    if (isBinary) {
+      if (result.length() > 0)
+        result.append(",");
+      result.append("binary");
+    }
+    
     result.append('<');
     result.append(name);
     result.append(':');

@@ -18,10 +18,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.InputStream;
 
 /**
  * Class responsible for access to stored document fields.
@@ -67,20 +67,28 @@ final class FieldsReader {
 
       byte bits = fieldsStream.readByte();
 
-      Field.Index index;
-      boolean tokenize = (bits & 1) != 0;
-      if (fi.isIndexed && tokenize)
-        index = Field.Index.TOKENIZED;
-      else if (fi.isIndexed && !tokenize)
-        index = Field.Index.UN_TOKENIZED;
-      else
-        index = Field.Index.NO;
-      doc.add(new Field(fi.name,		  // name
-			fieldsStream.readString(), // read value
-			Field.Store.YES, index,
-			fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
+      if ((bits & 2) != 0) {
+        final byte[] b = new byte[fieldsStream.readVInt()];
+        fieldsStream.readBytes(b, 0, b.length);
+        doc.add(new Field(fi.name, b));
+      }
+      else {
+        Field.Index index;
+        boolean tokenize = (bits & 1) != 0;
+        if (fi.isIndexed && tokenize)
+          index = Field.Index.TOKENIZED;
+        else if (fi.isIndexed && !tokenize)
+          index = Field.Index.UN_TOKENIZED;
+        else
+          index = Field.Index.NO;
+        doc.add(new Field(fi.name,		  // name
+  			fieldsStream.readString(), // read value
+  			Field.Store.YES, index,
+  			fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
+      }
     }
 
     return doc;
   }
+  
 }

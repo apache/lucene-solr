@@ -144,14 +144,16 @@ public final class Document implements java.io.Serializable {
 
   /** Returns the string value of the field with the given name if any exist in
    * this document, or null.  If multiple fields exist with this name, this
-   * method returns the first value added.
+   * method returns the first value added. If only binary fields with this name
+   * exist, returns null.
    */
   public final String get(String name) {
-    Field field = getField(name);
-    if (field != null)
-      return field.stringValue();
-    else
-      return null;
+    for (int i = 0; i < fields.size(); i++) {
+      Field field = (Field)fields.get(i);
+      if (field.name().equals(name) && (!field.isBinary()))
+        return field.stringValue();
+    }
+    return null;
   }
 
   /** Returns an Enumeration of all the fields in a document. */
@@ -189,16 +191,59 @@ public final class Document implements java.io.Serializable {
    * @return a <code>String[]</code> of field values
    */
   public final String[] getValues(String name) {
-    Field[] namedFields = getFields(name);
-    if (namedFields == null)
-      return null;
-    String[] values = new String[namedFields.length];
-    for (int i = 0; i < namedFields.length; i++) {
-      values[i] = namedFields[i].stringValue();
+    List result = new ArrayList();
+    for (int i = 0; i < fields.size(); i++) {
+      Field field = (Field)fields.get(i);
+      if (field.name().equals(name) && (!field.isBinary()))
+        result.add(field.stringValue());
     }
-    return values;
+    
+    if (result.size() == 0)
+      return null;
+    
+    return (String[])result.toArray(new String[result.size()]);
   }
 
+  /**
+  * Returns an array of byte arrays for of the fields that have the name specified
+  * as the method parameter. This method will return <code>null</code> if no
+  * binary fields with the specified name are available.
+  *
+  * @param name the name of the field
+  * @return a  <code>byte[][]</code> of binary field values.
+  */
+  public final byte[][] getBinaryValues(String name) {
+    List result = new ArrayList();
+    for (int i = 0; i < fields.size(); i++) {
+      Field field = (Field)fields.get(i);
+      if (field.name().equals(name) && (field.isBinary()))
+        result.add(field.binaryValue());
+    }
+  
+    if (result.size() == 0)
+      return null;
+  
+    return (byte[][])result.toArray(new byte[result.size()][]);
+  }
+  
+  /**
+  * Returns an array of bytes for the first (or only) field that has the name
+  * specified as the method parameter. This method will return <code>null</code>
+  * if no binary fields with the specified name are available.
+  * There may be non-binary fields with the same name.
+  *
+  * @param name the name of the field.
+  * @return a <code>byte[]</code> containing the binary field value.
+  */
+  public final byte[] getBinaryValue(String name) {
+    for (int i=0; i < fields.size(); i++) {
+      Field field = (Field)fields.get(i);
+      if (field.name().equals(name) && (field.isBinary()))
+        return field.binaryValue();
+    }
+    return null;
+  }
+  
   /** Prints the fields of a document for human consumption. */
   public final String toString() {
     StringBuffer buffer = new StringBuffer();

@@ -39,6 +39,56 @@ import org.apache.lucene.search.Hits;
 public class TestDocument extends TestCase
 {
 
+  String binaryVal = "this text will be stored as a byte array in the index";
+  String binaryVal2 = "this text will be also stored as a byte array in the index";
+  
+  public void testBinaryField()
+    throws Exception
+  {
+    Document doc = new Document();
+    Field stringFld = new Field("string", binaryVal, Field.Store.YES, Field.Index.NO);
+    Field binaryFld = new Field("binary", binaryVal.getBytes());
+    Field binaryFld2 = new Field("binary", binaryVal2.getBytes());
+    
+    doc.add(stringFld);
+    doc.add(binaryFld);
+    
+    assertEquals(2, doc.fields.size());
+    
+    assertTrue(binaryFld.isBinary());
+    assertTrue(binaryFld.isStored());
+    assertFalse(binaryFld.isIndexed());
+    assertFalse(binaryFld.isTokenized());
+    
+    String binaryTest = new String(doc.getBinaryValue("binary"));
+    assertTrue(binaryTest.equals(binaryVal));
+    
+    String stringTest = doc.get("string");
+    assertTrue(binaryTest.equals(stringTest));
+    
+    doc.add(binaryFld2);
+    
+    assertEquals(3, doc.fields.size());
+    
+    byte[][] binaryTests = doc.getBinaryValues("binary");
+        
+    assertEquals(2, binaryTests.length);
+    
+    binaryTest = new String(binaryTests[0]);
+    String binaryTest2 = new String(binaryTests[1]);
+    
+    assertFalse(binaryTest.equals(binaryTest2));
+    
+    assertTrue(binaryTest.equals(binaryVal));
+    assertTrue(binaryTest2.equals(binaryVal2));
+    
+    doc.removeField("string");
+    assertEquals(2, doc.fields.size());
+    
+    doc.removeFields("binary");
+    assertEquals(0, doc.fields.size());
+  }
+  
   /**
    * Tests {@link Document#removeField(String)} method for a brand new Document
    * that has not been indexed yet.
