@@ -120,7 +120,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     Query query = searcher.rewrite(this);
     Weight weight = query.createWeight(searcher);
     float sum = weight.sumOfSquaredWeights();
-    float norm = searcher.getSimilarity().queryNorm(sum);
+    float norm = getSimilarity(searcher).queryNorm(sum);
     weight.normalize(norm);
     return weight;
   }
@@ -161,6 +161,15 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     }
     return result;
   }
+
+  /** Expert: Returns the Similarity implementation to be used for this query.
+   * Subclasses may override this method to specify their own Similarity
+   * implementation, perhaps one that delegates through that of the Searcher.
+   * By default the Searcher's Similarity implementation is returned.*/
+  public Similarity getSimilarity(Searcher searcher) {
+    return searcher.getSimilarity();
+  }
+
 
 
   /** Returns a clone of this query. */

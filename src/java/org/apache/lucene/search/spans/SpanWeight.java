@@ -51,7 +51,7 @@ class SpanWeight implements Weight {
   public float getValue() { return value; }
 
   public float sumOfSquaredWeights() throws IOException {
-    idf = searcher.getSimilarity().idf(terms, searcher);
+    idf = this.query.getSimilarity(searcher).idf(terms, searcher);
     queryWeight = idf * query.getBoost();         // compute query weight
     return queryWeight * queryWeight;             // square it
   }
@@ -64,7 +64,7 @@ class SpanWeight implements Weight {
 
   public Scorer scorer(IndexReader reader) throws IOException {
     return new SpanScorer(query.getSpans(reader), this,
-                          searcher.getSimilarity(),
+                          query.getSimilarity(searcher),
                           reader.norms(query.getField()));
   }
 

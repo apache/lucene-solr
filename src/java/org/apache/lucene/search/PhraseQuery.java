@@ -121,7 +121,7 @@ public class PhraseQuery extends Query {
     public float getValue() { return value; }
 
     public float sumOfSquaredWeights() throws IOException {
-      idf = searcher.getSimilarity().idf(terms, searcher);
+      idf = getSimilarity(searcher).idf(terms, searcher);
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
@@ -145,11 +145,11 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0)				  // optimize exact case
-        return new ExactPhraseScorer(this, tps, searcher.getSimilarity(),
+        return new ExactPhraseScorer(this, tps, getSimilarity(searcher),
                                      reader.norms(field));
       else
         return
-          new SloppyPhraseScorer(this, tps, searcher.getSimilarity(), slop,
+          new SloppyPhraseScorer(this, tps, getSimilarity(searcher), slop,
                                  reader.norms(field));
       
     }

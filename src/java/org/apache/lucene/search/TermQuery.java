@@ -80,7 +80,7 @@ public class TermQuery extends Query {
     public float getValue() { return value; }
 
     public float sumOfSquaredWeights() throws IOException {
-      idf = searcher.getSimilarity().idf(term, searcher); // compute idf
+      idf = getSimilarity(searcher).idf(term, searcher); // compute idf
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
@@ -97,7 +97,7 @@ public class TermQuery extends Query {
       if (termDocs == null)
         return null;
       
-      return new TermScorer(this, termDocs, searcher.getSimilarity(),
+      return new TermScorer(this, termDocs, getSimilarity(searcher),
                             reader.norms(term.field()));
     }
 

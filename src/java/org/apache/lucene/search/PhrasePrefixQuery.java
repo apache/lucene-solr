@@ -135,7 +135,7 @@ public class PhrasePrefixQuery extends Query {
       while (i.hasNext()) {
         Term[] terms = (Term[])i.next();
         for (int j=0; j<terms.length; j++)
-          idf += searcher.getSimilarity().idf(terms[j], searcher);
+          idf += getSimilarity(searcher).idf(terms[j], searcher);
       }
 
       queryWeight = idf * getBoost();             // compute query weight
@@ -169,10 +169,10 @@ public class PhrasePrefixQuery extends Query {
       }
     
       if (slop == 0)
-        return new ExactPhraseScorer(this, tps, searcher.getSimilarity(),
+        return new ExactPhraseScorer(this, tps, getSimilarity(searcher),
                                      reader.norms(field));
       else
-        return new SloppyPhraseScorer(this, tps, searcher.getSimilarity(),
+        return new SloppyPhraseScorer(this, tps, getSimilarity(searcher),
                                       slop, reader.norms(field));
     }
     

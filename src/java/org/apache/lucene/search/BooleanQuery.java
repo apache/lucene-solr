@@ -176,7 +176,7 @@ public class BooleanQuery extends Query {
 
       if (allRequired && noneBoolean) {           // ConjunctionScorer is okay
         ConjunctionScorer result =
-          new ConjunctionScorer(searcher.getSimilarity());
+          new ConjunctionScorer(getSimilarity(searcher));
         for (int i = 0 ; i < weights.size(); i++) {
           BooleanClause c = (BooleanClause)clauses.elementAt(i);
           Weight w = (Weight)weights.elementAt(i);
@@ -189,7 +189,7 @@ public class BooleanQuery extends Query {
       }
 
       // Use good-old BooleanScorer instead.
-      BooleanScorer result = new BooleanScorer(searcher.getSimilarity());
+      BooleanScorer result = new BooleanScorer(getSimilarity(searcher));
 
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
@@ -233,7 +233,7 @@ public class BooleanQuery extends Query {
       if (coord == 1)                               // only one clause matched
         sumExpl = sumExpl.getDetails()[0];          // eliminate wrapper
 
-      float coordFactor = searcher.getSimilarity().coord(coord, maxCoord);
+      float coordFactor = getSimilarity(searcher).coord(coord, maxCoord);
       if (coordFactor == 1.0f)                      // coord is no-op
         return sumExpl;                             // eliminate wrapper
       else {

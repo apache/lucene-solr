@@ -45,6 +45,11 @@ $Id$
  7. Added a new span-based query API.  This implements, among other
     things, nested phrases.  See javadocs for details.  (Doug Cutting)
 
+ 8. Added new method Query.getSimilarity(Searcher), and changed
+    scorers to use it.  This permits one to subclass a Query class so
+    that it can specify it's own Similarity implementation, perhaps
+    one that delegates through that of the Searcher.
+
 
 1.3 final
 
