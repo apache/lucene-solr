@@ -117,7 +117,7 @@ public final class BrazilianStemFilter extends TokenFilter {
       String s = stemmer.stem(token.termText());
       // If not stemmed, dont waste the time creating a new token.
       if ((s != null) && !s.equals(token.termText())) {
-        return new Token(s, 0, s.length(), token.type());
+        return new Token(s, token.startOffset(), token.endOffset(), token.type());
       }
       return token;
     }
