@@ -43,8 +43,23 @@ public class TestTermVectors extends TestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
+      Field.TermVector termVector;
+      int mod3 = i % 3;
+      int mod2 = i % 2;
+      if (mod2 == 0 && mod3 == 0){
+        termVector = Field.TermVector.WITH_POSITIONS_OFFSETS;
+      }
+      else if (mod2 == 0){
+        termVector = Field.TermVector.WITH_POSITIONS;
+      }
+      else if (mod3 == 0){
+        termVector = Field.TermVector.WITH_OFFSETS;
+      }
+      else {
+        termVector = Field.TermVector.YES;
+      }
       doc.add(new Field("field", English.intToEnglish(i),
-          Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.YES));
+          Field.Store.YES, Field.Index.TOKENIZED, termVector));
       writer.addDocument(doc);
     }
     writer.close();
@@ -70,17 +85,74 @@ public class TestTermVectors extends TestCase {
         TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
         assertTrue(vector != null);
         assertTrue(vector.length == 1);
-        //assertTrue();
       }
-      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(50));
-      //System.out.println("Explain: " + searcher.explain(query, hits.id(50)));
-      //System.out.println("Vector: " + vector[0].toString());
     } catch (IOException e) {
       assertTrue(false);
     }
   }
   
   public void testTermPositionVectors() {
+    Query query = new TermQuery(new Term("field", "zero"));
+    try {
+      Hits hits = searcher.search(query);
+      assertEquals(1, hits.length());
+      
+      for (int i = 0; i < hits.length(); i++)
+      {
+        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
+        assertTrue(vector != null);
+        assertTrue(vector.length == 1);
+        
+        boolean shouldBePosVector = (hits.id(i) % 2 == 0) ? true : false;
+        assertTrue((shouldBePosVector == false) || (shouldBePosVector == true && (vector[0] instanceof TermPositionVector == true)));
+       
+        boolean shouldBeOffVector = (hits.id(i) % 3 == 0) ? true : false;
+        assertTrue((shouldBeOffVector == false) || (shouldBeOffVector == true && (vector[0] instanceof TermPositionVector == true)));
+        
+        if(shouldBePosVector || shouldBeOffVector){
+          TermPositionVector posVec = (TermPositionVector)vector[0];
+          String [] terms = posVec.getTerms();
+          assertTrue(terms != null && terms.length > 0);
+          
+          for (int j = 0; j < terms.length; j++) {
+            int [] positions = posVec.getTermPositions(j);
+            TermVectorOffsetInfo [] offsets = posVec.getOffsets(j);
+            
+            if(shouldBePosVector){
+              assertTrue(positions != null);
+              assertTrue(positions.length > 0);
+            }
+            else
+              assertTrue(positions == null);
+            
+            if(shouldBeOffVector){
+              assertTrue(offsets != null);
+              assertTrue(offsets.length > 0);
+            }
+            else
+              assertTrue(offsets == null);
+          }
+        }
+        else{
+          try{
+            TermPositionVector posVec = (TermPositionVector)vector[0];
+            assertTrue(false);
+          }
+          catch(ClassCastException ignore){
+            TermFreqVector freqVec = vector[0];
+            String [] terms = freqVec.getTerms();
+            assertTrue(terms != null && terms.length > 0);
+          }
+          
+        }
+       
+      }
+    } catch (IOException e) {
+      assertTrue(false);
+    }
+  }
+  
+  public void testTermOffsetVectors() {
     Query query = new TermQuery(new Term("field", "fifty"));
     try {
       Hits hits = searcher.search(query);
@@ -91,6 +163,7 @@ public class TestTermVectors extends TestCase {
         TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits.id(i));
         assertTrue(vector != null);
         assertTrue(vector.length == 1);
+        
         //assertTrue();
       }
     } catch (IOException e) {
@@ -164,7 +237,7 @@ public class TestTermVectors extends TestCase {
           int [] freqs = vector.getTermFrequencies();
           for (int i = 0; i < vTerms.length; i++)
           {
-            if (term.text().equals(vTerms[i]) == true)
+            if (term.text().equals(vTerms[i]))
             {
               assertTrue(freqs[i] == freq);
             }
@@ -184,9 +257,9 @@ public class TestTermVectors extends TestCase {
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(1)));
       System.out.println("Hit 2: " + hits.id(2) + " Score: " + hits.score(2) + " String: " +  hits.doc(2).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(2)));*/
-      assertTrue(testDoc3.toString().equals(hits.doc(0).toString()));
-      assertTrue(testDoc4.toString().equals(hits.doc(1).toString()));
-      assertTrue(testDoc1.toString().equals(hits.doc(2).toString()));
+      assertTrue(hits.id(0) == 2);
+      assertTrue(hits.id(1) == 3);
+      assertTrue(hits.id(2) == 0);
       TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits.id(1), "field");
       assertTrue(vector != null);
       //System.out.println("Vector: " + vector);

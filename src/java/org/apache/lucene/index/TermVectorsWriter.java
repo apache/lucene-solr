@@ -50,14 +50,17 @@ import java.util.Vector;
  * 
  */
 final class TermVectorsWriter {
-  public static final int FORMAT_VERSION = 1;
+  public static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
+  public static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
+  
+  public static final int FORMAT_VERSION = 2;
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   public static final int FORMAT_SIZE = 4;
   
-  //TODO: Figure out how to write with or w/o position information and read back in
   public static final String TVX_EXTENSION = ".tvx";
   public static final String TVD_EXTENSION = ".tvd";
   public static final String TVF_EXTENSION = ".tvf";
+  
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private Vector fields = null;
   private Vector terms = null;
@@ -66,13 +69,6 @@ final class TermVectorsWriter {
   private TVField currentField = null;
   private long currentDocPointer = -1;
 
-  /** Create term vectors writer for the specified segment in specified
-   *  directory.  A new TermVectorsWriter should be created for each
-   *  segment. The parameter <code>maxFields</code> indicates how many total
-   *  fields are found in this document. Not all of these fields may require
-   *  termvectors to be stored, so the number of calls to
-   *  <code>openField</code> is less or equal to this number.
-   */
   public TermVectorsWriter(Directory directory, String segment,
                            FieldInfos fieldInfos)
     throws IOException {
@@ -93,7 +89,6 @@ final class TermVectorsWriter {
   public final void openDocument()
           throws IOException {
     closeDocument();
-
     currentDocPointer = tvd.getFilePointer();
   }
 
@@ -119,12 +114,17 @@ final class TermVectorsWriter {
    *  processing of this field. If a field was previously open, it is
    *  closed automatically.
    */
-  public final void openField(String field)
-          throws IOException {
-    if (!isDocumentOpen()) throw new IllegalStateException("Cannot open field when no document is open.");
-
+  public final void openField(String field) throws IOException {
+    FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+    openField(fieldInfo.number, fieldInfo.storePositionWithTermVector, fieldInfo.storeOffsetWithTermVector);
+  }
+  
+  private void openField(int fieldNumber, boolean storePositionWithTermVector, 
+      boolean storeOffsetWithTermVector) throws IOException{
+    if (!isDocumentOpen()) 
+      throw new IllegalStateException("Cannot open field when no document is open.");
     closeField();
-    currentField = new TVField(fieldInfos.fieldNumber(field));
+    currentField = new TVField(fieldNumber, storePositionWithTermVector, storeOffsetWithTermVector);
   }
 
   /** Finished processing current field. This should be followed by a call to
@@ -157,57 +157,80 @@ final class TermVectorsWriter {
    *  times this term appears in this field, in this document.
    */
   public final void addTerm(String termText, int freq) {
-    if (!isDocumentOpen()) throw new IllegalStateException("Cannot add terms when document is not open");
-    if (!isFieldOpen()) throw new IllegalStateException("Cannot add terms when field is not open");
-
-    addTermInternal(termText, freq);
+    addTerm(termText, freq, null, null);
+  }
+  
+  public final void addTerm(String termText, int freq, int [] positions, TermVectorOffsetInfo [] offsets)
+  {
+    if (!isDocumentOpen()) 
+      throw new IllegalStateException("Cannot add terms when document is not open");
+    if (!isFieldOpen()) 
+      throw new IllegalStateException("Cannot add terms when field is not open");
+    
+    addTermInternal(termText, freq, positions, offsets);
   }
 
-  private final void addTermInternal(String termText, int freq) {
-    currentField.length += freq;
+  private final void addTermInternal(String termText, int freq, int [] positions, TermVectorOffsetInfo [] offsets) {
     TVTerm term = new TVTerm();
     term.termText = termText;
     term.freq = freq;
+    term.positions = positions;
+    term.offsets = offsets;
     terms.add(term);
   }
 
-
-  /** Add specified vectors to the document.
+  /**
+   * Add a complete document specified by all its term vectors. If document has no
+   * term vectors, add value for tvx.
+   * 
+   * @param vectors
+   * @throws IOException
    */
-  public final void addVectors(TermFreqVector[] vectors)
-          throws IOException {
-    if (!isDocumentOpen()) throw new IllegalStateException("Cannot add term vectors when document is not open");
-    if (isFieldOpen()) throw new IllegalStateException("Cannot add term vectors when field is open");
+  public final void addAllDocVectors(TermFreqVector[] vectors)
+      throws IOException {
+    openDocument();
 
-    for (int i = 0; i < vectors.length; i++) {
-      addTermFreqVector(vectors[i]);
+    if (vectors != null) {
+      for (int i = 0; i < vectors.length; i++) {
+        boolean storePositionWithTermVector = false;
+        boolean storeOffsetWithTermVector = false;
+
+        try {
+
+          TermPositionVector tpVector = (TermPositionVector) vectors[i];
+
+          if (tpVector.size() > 0 && tpVector.getTermPositions(0) != null)
+            storePositionWithTermVector = true;
+          if (tpVector.size() > 0 && tpVector.getOffsets(0) != null)
+            storeOffsetWithTermVector = true;
+
+          FieldInfo fieldInfo = fieldInfos.fieldInfo(tpVector.getField());
+          openField(fieldInfo.number, storePositionWithTermVector, storeOffsetWithTermVector);
+
+          for (int j = 0; j < tpVector.size(); j++)
+            addTermInternal(tpVector.getTerms()[j], tpVector.getTermFrequencies()[j], tpVector.getTermPositions(j),
+                tpVector.getOffsets(j));
+
+          closeField();
+
+        } catch (ClassCastException ignore) {
+
+          TermFreqVector tfVector = vectors[i];
+
+          FieldInfo fieldInfo = fieldInfos.fieldInfo(tfVector.getField());
+          openField(fieldInfo.number, storePositionWithTermVector, storeOffsetWithTermVector);
+
+          for (int j = 0; j < tfVector.size(); j++)
+            addTermInternal(tfVector.getTerms()[j], tfVector.getTermFrequencies()[j], null, null);
+
+          closeField();
+
+        }
+      }
     }
+
+    closeDocument();
   }
-
-
-  /** Add specified vector to the document. Document must be open but no field
-   *  should be open or exception is thrown. The same document can have <code>addTerm</code>
-   *  and <code>addVectors</code> calls mixed, however a given field must either be
-   *  populated with <code>addTerm</code> or with <code>addVector</code>.     *
-   */
-  public final void addTermFreqVector(TermFreqVector vector)
-          throws IOException {
-    if (!isDocumentOpen()) throw new IllegalStateException("Cannot add term vector when document is not open");
-    if (isFieldOpen()) throw new IllegalStateException("Cannot add term vector when field is open");
-    addTermFreqVectorInternal(vector);
-  }
-
-  private final void addTermFreqVectorInternal(TermFreqVector vector)
-          throws IOException {
-    openField(vector.getField());
-    for (int i = 0; i < vector.size(); i++) {
-      addTermInternal(vector.getTerms()[i], vector.getTermFrequencies()[i]);
-    }
-    closeField();
-  }
-
- 
-  
   
   /** Close all streams. */
   final void close() throws IOException {
@@ -245,47 +268,74 @@ final class TermVectorsWriter {
     // remember where this field is written
     currentField.tvfPointer = tvf.getFilePointer();
     //System.out.println("Field Pointer: " + currentField.tvfPointer);
-    final int size;
-
-    tvf.writeVInt(size = terms.size());
-    tvf.writeVInt(currentField.length - size);
+    
+    final int size = terms.size();
+    tvf.writeVInt(size);
+    
+    boolean storePositions = currentField.storePositions;
+    boolean storeOffsets = currentField.storeOffsets;
+    byte bits = 0x0;
+    if (storePositions) 
+      bits |= STORE_POSITIONS_WITH_TERMVECTOR;
+    if (storeOffsets) 
+      bits |= STORE_OFFSET_WITH_TERMVECTOR;
+    tvf.writeByte(bits);
+    
     String lastTermText = "";
-    // write term ids and positions
     for (int i = 0; i < size; i++) {
       TVTerm term = (TVTerm) terms.elementAt(i);
-      //tvf.writeString(term.termText);
       int start = StringHelper.stringDifference(lastTermText, term.termText);
       int length = term.termText.length() - start;
-      tvf.writeVInt(start);			  // write shared prefix length
-      tvf.writeVInt(length);			  // write delta length
+      tvf.writeVInt(start);       // write shared prefix length
+      tvf.writeVInt(length);        // write delta length
       tvf.writeChars(term.termText, start, length);  // write delta chars
       tvf.writeVInt(term.freq);
       lastTermText = term.termText;
+      
+      if(storePositions){
+        if(term.positions == null)
+          throw new IllegalStateException("Trying to write positions that are null!");
+        
+        // use delta encoding for positions
+        int position = 0;
+        for (int j = 0; j < term.freq; j++){
+          tvf.writeVInt(term.positions[j] - position);
+          position = term.positions[j];
+        }
+      }
+      
+      if(storeOffsets){
+        if(term.offsets == null)
+          throw new IllegalStateException("Trying to write offsets that are null!");
+        
+        // use delta encoding for offsets
+        int position = 0;
+        for (int j = 0; j < term.freq; j++) {
+          tvf.writeVInt(term.offsets[j].getStartOffset() - position);
+          tvf.writeVInt(term.offsets[j].getEndOffset() - term.offsets[j].getStartOffset()); //Save the diff between the two.
+          position = term.offsets[j].getEndOffset();
+        }
+      }
     }
   }
 
-
-
-
   private void writeDoc() throws IOException {
-    if (isFieldOpen()) throw new IllegalStateException("Field is still open while writing document");
+    if (isFieldOpen()) 
+      throw new IllegalStateException("Field is still open while writing document");
     //System.out.println("Writing doc pointer: " + currentDocPointer);
     // write document index record
     tvx.writeLong(currentDocPointer);
 
     // write document data record
-    final int size;
+    final int size = fields.size();
 
     // write the number of fields
-    tvd.writeVInt(size = fields.size());
+    tvd.writeVInt(size);
 
     // write field numbers
-    int lastFieldNumber = 0;
     for (int i = 0; i < size; i++) {
       TVField field = (TVField) fields.elementAt(i);
-      tvd.writeVInt(field.number - lastFieldNumber);
-
-      lastFieldNumber = field.number;
+      tvd.writeVInt(field.number);
     }
 
     // write field pointers
@@ -293,7 +343,6 @@ final class TermVectorsWriter {
     for (int i = 0; i < size; i++) {
       TVField field = (TVField) fields.elementAt(i);
       tvd.writeVLong(field.tvfPointer - lastFieldPointer);
-
       lastFieldPointer = field.tvfPointer;
     }
     //System.out.println("After writing doc pointer: " + tvx.getFilePointer());
@@ -303,17 +352,20 @@ final class TermVectorsWriter {
   private static class TVField {
     int number;
     long tvfPointer = 0;
-    int length = 0;   // number of distinct term positions
-
-    TVField(int number) {
+    boolean storePositions = false;
+    boolean storeOffsets = false;
+    TVField(int number, boolean storePos, boolean storeOff) {
       this.number = number;
+      storePositions = storePos;
+      storeOffsets = storeOff;
     }
   }
 
   private static class TVTerm {
     String termText;
     int freq = 0;
-    //int positions[] = null;
+    int positions[] = null;
+    TermVectorOffsetInfo [] offsets = null;
   }
 
 

@@ -11,7 +11,11 @@ public class TestTermVectorsReader extends TestCase {
   private TermVectorsWriter writer = null;
   //Must be lexicographically sorted, will do in setup, versus trying to maintain here
   private String [] testFields = {"f1", "f2", "f3"};
+  private boolean [] testFieldsStorePos = {true, false, true, false};
+  private boolean [] testFieldsStoreOff = {true, false, false, true};  
   private String [] testTerms = {"this", "is", "a", "test"};
+  private int [][] positions = new int[testTerms.length][];
+  private TermVectorOffsetInfo [][] offsets = new TermVectorOffsetInfo[testTerms.length][];
   private RAMDirectory dir = new RAMDirectory();
   private String seg = "testSegment";
   private FieldInfos fieldInfos = new FieldInfos();
@@ -22,9 +26,22 @@ public class TestTermVectorsReader extends TestCase {
 
   protected void setUp() {
     for (int i = 0; i < testFields.length; i++) {
-      fieldInfos.add(testFields[i], true, true);
+      fieldInfos.add(testFields[i], true, true, testFieldsStorePos[i], testFieldsStoreOff[i]);
     }
     
+    for (int i = 0; i < testTerms.length; i++)
+    {
+      positions[i] = new int[3];
+      for (int j = 0; j < positions[i].length; j++) {
+        // poditions are always sorted in increasing order
+        positions[i][j] = (int)(j * 10 + Math.random() * 10);
+      }
+      offsets[i] = new TermVectorOffsetInfo[3];
+      for (int j = 0; j < offsets[i].length; j++){
+        // ofsets are alway sorted in increasing order
+        offsets[i][j] = new TermVectorOffsetInfo(j * 10, j * 10 + testTerms[i].length());
+      }        
+    }
     try {
       Arrays.sort(testTerms);
       for (int j = 0; j < 5; j++) {
@@ -34,7 +51,7 @@ public class TestTermVectorsReader extends TestCase {
         for (int k = 0; k < testFields.length; k++) {
           writer.openField(testFields[k]);
           for (int i = 0; i < testTerms.length; i++) {
-            writer.addTerm(testTerms[i], i);      
+            writer.addTerm(testTerms[i], 3, positions[i], offsets[i]);      
           }
           writer.closeField();
         }
@@ -79,6 +96,103 @@ public class TestTermVectorsReader extends TestCase {
       assertTrue(false);
     }
   }  
+  
+  public void testPositionReader() {
+    try {
+      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      assertTrue(reader != null);
+      TermPositionVector vector;
+      String [] terms;
+      vector = (TermPositionVector)reader.get(0, testFields[0]);
+      assertTrue(vector != null);      
+      terms = vector.getTerms();
+      assertTrue(terms != null);
+      assertTrue(terms.length == testTerms.length);
+      for (int i = 0; i < terms.length; i++) {
+        String term = terms[i];
+        //System.out.println("Term: " + term);
+        assertTrue(term.equals(testTerms[i]));
+        int [] positions = vector.getTermPositions(i);
+        assertTrue(positions != null);
+        assertTrue(positions.length == this.positions[i].length);
+        for (int j = 0; j < positions.length; j++) {
+          int position = positions[j];
+          assertTrue(position == this.positions[i][j]);
+        }
+        TermVectorOffsetInfo [] offset = vector.getOffsets(i);
+        assertTrue(offset != null);
+        assertTrue(offset.length == this.offsets[i].length);
+        for (int j = 0; j < offset.length; j++) {
+          TermVectorOffsetInfo termVectorOffsetInfo = offset[j];
+          assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
+        }
+      }
+      
+      TermFreqVector freqVector = (TermFreqVector)reader.get(0, testFields[1]); //no pos, no offset
+      assertTrue(freqVector != null);      
+      assertTrue(freqVector instanceof TermPositionVector == false);
+      terms = freqVector.getTerms();
+      assertTrue(terms != null);
+      assertTrue(terms.length == testTerms.length);
+      for (int i = 0; i < terms.length; i++) {
+        String term = terms[i];
+        //System.out.println("Term: " + term);
+        assertTrue(term.equals(testTerms[i]));        
+      }
+      
+      
+    } catch (IOException e) {
+      e.printStackTrace();
+      assertTrue(false);
+    }
+    catch (ClassCastException cce)
+    {
+      cce.printStackTrace();
+      assertTrue(false);
+    }
+  }
+  
+  public void testOffsetReader() {
+    try {
+      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      assertTrue(reader != null);
+      TermPositionVector vector = (TermPositionVector)reader.get(0, testFields[0]);
+      assertTrue(vector != null);
+      String [] terms = vector.getTerms();
+      assertTrue(terms != null);
+      assertTrue(terms.length == testTerms.length);
+      for (int i = 0; i < terms.length; i++) {
+        String term = terms[i];
+        //System.out.println("Term: " + term);
+        assertTrue(term.equals(testTerms[i]));
+        int [] positions = vector.getTermPositions(i);
+        assertTrue(positions != null);
+        assertTrue(positions.length == this.positions[i].length);
+        for (int j = 0; j < positions.length; j++) {
+          int position = positions[j];
+          assertTrue(position == this.positions[i][j]);
+        }
+        TermVectorOffsetInfo [] offset = vector.getOffsets(i);
+        assertTrue(offset != null);
+        assertTrue(offset.length == this.offsets[i].length);
+        for (int j = 0; j < offset.length; j++) {
+          TermVectorOffsetInfo termVectorOffsetInfo = offset[j];
+          assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
+        }
+      }
+      
+      
+    } catch (IOException e) {
+      e.printStackTrace();
+      assertTrue(false);
+    }
+    catch (ClassCastException cce)
+    {
+      cce.printStackTrace();
+      assertTrue(false);
+    }
+  }
+  
 
   /**
    * Make sure exceptions and bad params are handled appropriately
@@ -89,9 +203,9 @@ public class TestTermVectorsReader extends TestCase {
       assertTrue(reader != null);
       //Bad document number, good field number
       TermFreqVector vector = reader.get(50, testFields[0]);
-      assertTrue(vector == null);      
+      assertTrue(false);      
     } catch (Exception e) {
-      assertTrue(false);
+      assertTrue(true);
     }
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);

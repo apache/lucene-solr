@@ -74,6 +74,7 @@ final class DocumentWriter {
     postingTable.clear();			  // clear postingTable
     fieldLengths = new int[fieldInfos.size()];    // init fieldLengths
     fieldPositions = new int[fieldInfos.size()];  // init fieldPositions
+    fieldOffsets = new int[fieldInfos.size()];    // init fieldOffsets
 
     fieldBoosts = new float[fieldInfos.size()];	  // init fieldBoosts
     Arrays.fill(fieldBoosts, doc.getBoost());
@@ -100,7 +101,7 @@ final class DocumentWriter {
     writePostings(postings, segment);
 
     // write norms of indexed fields
-    writeNorms(doc, segment);
+    writeNorms(segment);
 
   }
 
@@ -109,6 +110,7 @@ final class DocumentWriter {
   private final Hashtable postingTable = new Hashtable();
   private int[] fieldLengths;
   private int[] fieldPositions;
+  private int[] fieldOffsets;
   private float[] fieldBoosts;
 
   // Tokenizes the fields of a document into Postings.
@@ -122,12 +124,19 @@ final class DocumentWriter {
 
       int length = fieldLengths[fieldNumber];     // length of field
       int position = fieldPositions[fieldNumber]; // position in field
+      int offset = fieldOffsets[fieldNumber];       // offset field
 
       if (field.isIndexed()) {
         if (!field.isTokenized()) {		  // un-tokenized field
-          addPosition(fieldName, field.stringValue(), position++);
+          String stringValue = field.stringValue();
+          if(field.isStoreOffsetWithTermVector())
+            addPosition(fieldName, stringValue, position++, new TermVectorOffsetInfo(offset, offset + stringValue.length()));
+          else
+            addPosition(fieldName, stringValue, position++, null);
+          offset += stringValue.length();
           length++;
-        } else {
+        } else 
+        {
           Reader reader;			  // find or make Reader
           if (field.readerValue() != null)
             reader = field.readerValue();
@@ -140,11 +149,23 @@ final class DocumentWriter {
           // Tokenize field and add to postingTable
           TokenStream stream = analyzer.tokenStream(fieldName, reader);
           try {
+            Token lastToken = null;
             for (Token t = stream.next(); t != null; t = stream.next()) {
               position += (t.getPositionIncrement() - 1);
-              addPosition(fieldName, t.termText(), position++);
-              if (++length > maxFieldLength) break;
+              
+              if(field.isStoreOffsetWithTermVector())
+                addPosition(fieldName, t.termText(), position++, new TermVectorOffsetInfo(offset + t.startOffset(), offset + t.endOffset()));
+              else
+                addPosition(fieldName, t.termText(), position++, null);
+              
+              lastToken = t;
+              if (++length > maxFieldLength) 
+                break;
             }
+            
+            if(lastToken != null)
+              offset += lastToken.endOffset() + 1;
+            
           } finally {
             stream.close();
           }
@@ -153,14 +174,16 @@ final class DocumentWriter {
         fieldLengths[fieldNumber] = length;	  // save field length
         fieldPositions[fieldNumber] = position;	  // save field position
         fieldBoosts[fieldNumber] *= field.getBoost();
+        fieldOffsets[fieldNumber] = offset;
       }
     }
   }
 
   private final Term termBuffer = new Term("", ""); // avoid consing
 
-  private final void addPosition(String field, String text, int position) {
+  private final void addPosition(String field, String text, int position, TermVectorOffsetInfo offset) {
     termBuffer.set(field, text);
+    //System.out.println("Offset: " + offset);
     Posting ti = (Posting) postingTable.get(termBuffer);
     if (ti != null) {				  // word seen before
       int freq = ti.freq;
@@ -172,10 +195,23 @@ final class DocumentWriter {
         ti.positions = newPositions;
       }
       ti.positions[freq] = position;		  // add new position
+
+      if (offset != null) {
+        if (ti.offsets.length == freq){
+          TermVectorOffsetInfo [] newOffsets = new TermVectorOffsetInfo[freq*2];
+          TermVectorOffsetInfo [] offsets = ti.offsets;
+          for (int i = 0; i < freq; i++)
+          {
+            newOffsets[i] = offsets[i];
+          }
+          ti.offsets = newOffsets;
+        }
+        ti.offsets[freq] = offset;
+      }
       ti.freq = freq + 1;			  // update frequency
     } else {					  // word not seen before
       Term term = new Term(field, text, false);
-      postingTable.put(term, new Posting(term, position));
+      postingTable.put(term, new Posting(term, position, offset));
     }
   }
 
@@ -294,12 +330,13 @@ final class DocumentWriter {
               termVectorWriter.openDocument();
             }
             termVectorWriter.openField(currentField);
+
           } else if (termVectorWriter != null) {
             termVectorWriter.closeField();
           }
         }
         if (termVectorWriter != null && termVectorWriter.isFieldOpen()) {
-          termVectorWriter.addTerm(posting.term.text(), postingFreq);
+            termVectorWriter.addTerm(posting.term.text(), postingFreq, posting.positions, posting.offsets);
         }
       }
       if (termVectorWriter != null)
@@ -316,7 +353,7 @@ final class DocumentWriter {
     }
   }
 
-  private final void writeNorms(Document doc, String segment) throws IOException { 
+  private final void writeNorms(String segment) throws IOException { 
     for(int n = 0; n < fieldInfos.size(); n++){
       FieldInfo fi = fieldInfos.fieldInfo(n);
       if(fi.isIndexed){
@@ -336,11 +373,18 @@ final class Posting {				  // info about a Term in a doc
   Term term;					  // the Term
   int freq;					  // its frequency in doc
   int[] positions;				  // positions it occurs at
+  TermVectorOffsetInfo [] offsets;
 
-  Posting(Term t, int position) {
+  Posting(Term t, int position, TermVectorOffsetInfo offset) {
     term = t;
     freq = 1;
     positions = new int[1];
     positions[0] = position;
+    if(offset != null){
+    offsets = new TermVectorOffsetInfo[1];
+    offsets[0] = offset;
+    }
+    else
+      offsets = null;
   }
 }

@@ -44,7 +44,7 @@ public class TestTermVectorsWriter extends TestCase {
     for (int i = 0; i < testTerms.length; i++) {
       positions[i] = new int[5];
       for (int j = 0; j < positions[i].length; j++) {
-        positions[i][j] = i * 100;
+        positions[i][j] = j * 10;
       }
     }
   }
@@ -107,7 +107,7 @@ public class TestTermVectorsWriter extends TestCase {
     }
   }
   
-  private void checkTermVector(TermVectorsReader reader, int docNum, String field) {
+  private void checkTermVector(TermVectorsReader reader, int docNum, String field) throws IOException {
     TermFreqVector vector = reader.get(docNum, field);
     assertTrue(vector != null);
     String[] terms = vector.getTerms();

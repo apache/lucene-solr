@@ -33,6 +33,9 @@ class TermVectorsReader {
   private IndexInput tvd;
   private IndexInput tvf;
   private int size;
+  
+  private int tvdFormat;
+  private int tvfFormat;
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos)
     throws IOException {
@@ -40,16 +43,16 @@ class TermVectorsReader {
       tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION);
       checkValidFormat(tvx);
       tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION);
-      checkValidFormat(tvd);
+      tvdFormat = checkValidFormat(tvd);
       tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION);
-      checkValidFormat(tvf);
+      tvfFormat = checkValidFormat(tvf);
       size = (int) tvx.length() / 8;
     }
 
     this.fieldInfos = fieldInfos;
   }
   
-  private void checkValidFormat(IndexInput in) throws IOException
+  private int checkValidFormat(IndexInput in) throws IOException
   {
     int format = in.readInt();
     if (format > TermVectorsWriter.FORMAT_VERSION)
@@ -57,7 +60,7 @@ class TermVectorsReader {
       throw new IOException("Incompatible format version: " + format + " expected " 
               + TermVectorsWriter.FORMAT_VERSION + " or less");
     }
-    
+    return format;
   }
 
   void close() throws IOException {
@@ -82,100 +85,101 @@ class TermVectorsReader {
    * Retrieve the term vector for the given document and field
    * @param docNum The document number to retrieve the vector for
    * @param field The field within the document to retrieve
-   * @return The TermFreqVector for the document and field or null
+   * @return The TermFreqVector for the document and field or null if there is no termVector for this field.
+   * @throws IOException
    */ 
-  synchronized TermFreqVector get(int docNum, String field) {
+  synchronized TermFreqVector get(int docNum, String field) throws IOException {
     // Check if no term vectors are available for this segment at all
     int fieldNumber = fieldInfos.fieldNumber(field);
     TermFreqVector result = null;
     if (tvx != null) {
-      try {
-        //We need to account for the FORMAT_SIZE at when seeking in the tvx
-        //We don't need to do this in other seeks because we already have the file pointer
-        //that was written in another file
-        tvx.seek((docNum * 8L) + TermVectorsWriter.FORMAT_SIZE);
-        //System.out.println("TVX Pointer: " + tvx.getFilePointer());
-        long position = tvx.readLong();
+      //We need to account for the FORMAT_SIZE at when seeking in the tvx
+      //We don't need to do this in other seeks because we already have the
+      // file pointer
+      //that was written in another file
+      tvx.seek((docNum * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      //System.out.println("TVX Pointer: " + tvx.getFilePointer());
+      long position = tvx.readLong();
 
-        tvd.seek(position);
-        int fieldCount = tvd.readVInt();
-        //System.out.println("Num Fields: " + fieldCount);
-        // There are only a few fields per document. We opt for a full scan
-        // rather then requiring that they be ordered. We need to read through
-        // all of the fields anyway to get to the tvf pointers.
-        int number = 0;
-        int found = -1;
-        for (int i = 0; i < fieldCount; i++) {
+      tvd.seek(position);
+      int fieldCount = tvd.readVInt();
+      //System.out.println("Num Fields: " + fieldCount);
+      // There are only a few fields per document. We opt for a full scan
+      // rather then requiring that they be ordered. We need to read through
+      // all of the fields anyway to get to the tvf pointers.
+      int number = 0;
+      int found = -1;
+      for (int i = 0; i < fieldCount; i++) {
+        if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
+          number = tvd.readVInt();
+        else
           number += tvd.readVInt();
-          if (number == fieldNumber) found = i;
-        }
-  
-        // This field, although valid in the segment, was not found in this document
-        if (found != -1) {
-          // Compute position in the tvf file
-          position = 0;
-          for (int i = 0; i <= found; i++)
-          {
-            position += tvd.readVLong();
-          }
-          result = readTermVector(field, position);
-        }
-        else {
-          //System.out.println("Field not found");
-        }
-          
-      } catch (Exception e) {
-        //e.printStackTrace();
+        
+        if (number == fieldNumber)
+          found = i;
       }
-    }
-    else
-    {
-      System.out.println("No tvx file");
+
+      // This field, although valid in the segment, was not found in this
+      // document
+      if (found != -1) {
+        // Compute position in the tvf file
+        position = 0;
+        for (int i = 0; i <= found; i++)
+          position += tvd.readVLong();
+
+        result = readTermVector(field, position);
+      } else {
+        //System.out.println("Field not found");
+      }
+    } else {
+      //System.out.println("No tvx file");
     }
     return result;
   }
 
 
-  /** Return all term vectors stored for this document or null if the could not be read in. */
-  synchronized TermFreqVector[] get(int docNum) {
+  /**
+   * Return all term vectors stored for this document or null if there are no term vectors
+   * for the document.
+   * @throws IOException
+   */
+  synchronized TermFreqVector[] get(int docNum) throws IOException {
     TermFreqVector[] result = null;
     // Check if no term vectors are available for this segment at all
     if (tvx != null) {
-      try {
-        //We need to offset by
-        tvx.seek((docNum * 8L) + TermVectorsWriter.FORMAT_SIZE);
-        long position = tvx.readLong();
+      //We need to offset by
+      tvx.seek((docNum * 8L) + TermVectorsWriter.FORMAT_SIZE);
+      long position = tvx.readLong();
 
-        tvd.seek(position);
-        int fieldCount = tvd.readVInt();
+      tvd.seek(position);
+      int fieldCount = tvd.readVInt();
 
-        // No fields are vectorized for this document
-        if (fieldCount != 0) {
-          int number = 0;
-          String[] fields = new String[fieldCount];
-
-          for (int i = 0; i < fieldCount; i++) {
+      // No fields are vectorized for this document
+      if (fieldCount != 0) {
+        int number = 0;
+        String[] fields = new String[fieldCount];
+        
+        for (int i = 0; i < fieldCount; i++) {
+          if(tvdFormat == TermVectorsWriter.FORMAT_VERSION)
+            number = tvd.readVInt();
+          else
             number += tvd.readVInt();
-            fields[i] = fieldInfos.fieldName(number);
-          }
-  
-          // Compute position in the tvf file
-          position = 0;
-          long[] tvfPointers = new long[fieldCount];
-          for (int i = 0; i < fieldCount; i++) {
-            position += tvd.readVLong();
-            tvfPointers[i] = position;
-          }
 
-          result = readTermVectors(fields, tvfPointers);
+          fields[i] = fieldInfos.fieldName(number);
         }
-      } catch (IOException e) {
-        e.printStackTrace();
+
+        // Compute position in the tvf file
+        position = 0;
+        long[] tvfPointers = new long[fieldCount];
+        for (int i = 0; i < fieldCount; i++) {
+          position += tvd.readVLong();
+          tvfPointers[i] = position;
+        }
+
+        result = readTermVectors(fields, tvfPointers);
       }
-    }
-    else
-    {
-      System.out.println("No tvx file");
+    } else {
+      //System.out.println("No tvx file");
     }
     return result;
   }
@@ -206,20 +210,41 @@ class TermVectorsReader {
 
     int numTerms = tvf.readVInt();
     //System.out.println("Num Terms: " + numTerms);
-    // If no terms - return a constant empty termvector
-    if (numTerms == 0) return new SegmentTermVector(field, null, null);
-
-    tvf.readVInt();
+    // If no terms - return a constant empty termvector. However, this should never occur!
+    if (numTerms == 0) 
+      return new SegmentTermVector(field, null, null);
     
+    boolean storePositions;
+    boolean storeOffsets;
+    
+    if(tvfFormat == TermVectorsWriter.FORMAT_VERSION){
+      byte bits = tvf.readByte();
+      storePositions = (bits & TermVectorsWriter.STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+      storeOffsets = (bits & TermVectorsWriter.STORE_OFFSET_WITH_TERMVECTOR) != 0;
+    }
+    else{
+      tvf.readVInt();
+      storePositions = false;
+      storeOffsets = false;
+    }
+
     String terms[] = new String[numTerms];
-    
     int termFreqs[] = new int[numTerms];
-
+    
+    //  we may not need these, but declare them
+    int positions[][] = null;
+    TermVectorOffsetInfo offsets[][] = null;
+    if(storePositions)
+      positions = new int[numTerms][];
+    if(storeOffsets)
+      offsets = new TermVectorOffsetInfo[numTerms][];
+    
     int start = 0;
     int deltaLength = 0;
     int totalLength = 0;
     char [] buffer = {};
     String previousString = "";
+    
     for (int i = 0; i < numTerms; i++) {
       start = tvf.readVInt();
       deltaLength = tvf.readVInt();
@@ -233,9 +258,40 @@ class TermVectorsReader {
       tvf.readChars(buffer, start, deltaLength);
       terms[i] = new String(buffer, 0, totalLength);
       previousString = terms[i];
-      termFreqs[i] = tvf.readVInt();
+      int freq = tvf.readVInt();
+      termFreqs[i] = freq;
+      
+      if (storePositions) { //read in the positions
+        int [] pos = new int[freq];
+        positions[i] = pos;
+        int prevPosition = 0;
+        for (int j = 0; j < freq; j++)
+        {
+          pos[j] = prevPosition + tvf.readVInt();
+          prevPosition = pos[j];
+        }
+      }
+      
+      if (storeOffsets) {
+        TermVectorOffsetInfo[] offs = new TermVectorOffsetInfo[freq];
+        offsets[i] = offs;
+        int prevOffset = 0;
+        for (int j = 0; j < freq; j++) {
+          int startOffset = prevOffset + tvf.readVInt();
+          int endOffset = startOffset + tvf.readVInt();
+          offs[j] = new TermVectorOffsetInfo(startOffset, endOffset);
+          prevOffset = endOffset;
+        }
+      }
     }
-    SegmentTermVector tv = new SegmentTermVector(field, terms, termFreqs);
+    
+    SegmentTermVector tv;
+    if (storePositions || storeOffsets){
+      tv = new SegmentTermPositionVector(field, terms, termFreqs, positions, offsets);
+    }
+    else {
+      tv = new SegmentTermVector(field, terms, termFreqs);
+    }
     return tv;
   }
 

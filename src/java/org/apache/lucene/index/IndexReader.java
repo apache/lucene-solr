@@ -16,16 +16,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.File;
-import java.util.Collection;
-
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;          // for javadoc
-import org.apache.lucene.search.Similarity;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -209,23 +209,37 @@ public abstract class IndexReader {
     return SegmentInfos.readCurrentVersion(directory);
   }
 
-  /** Return an array of term frequency vectors for the specified document.
+  /**
+   *  Return an array of term frequency vectors for the specified document.
    *  The array contains a vector for each vectorized field in the document.
-   *  Each vector contains terms and frequencies for all terms
-   *  in a given vectorized field.
-   *  If no such fields existed, the method returns null.
-   *
-   * @see Field#isTermVectorStored()
+   *  Each vector contains terms and frequencies for all terms in a given vectorized field.
+   *  If no such fields existed, the method returns null. The term vectors that are
+   * returned my either be of type TermFreqVector or of type TermPositionsVector if
+   * positions or offsets have been stored.
+   * 
+   * @param docNumber document for which term frequency vectors are returned
+   * @return array of term frequency vectors. May be null if no term vectors have been
+   *  stored for the specified document.
+   * @throws IOException if index cannot be accessed
+   * @see Field#TermVector
    */
   abstract public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException;
 
-  /** Return a term frequency vector for the specified document and field. The
-   *  vector returned contains terms and frequencies for those terms in
-   *  the specified field of this document, if the field had storeTermVector
-   *  flag set.  If the flag was not set, the method returns null.
-   *
-   * @see Field#isTermVectorStored()
+  
+  /**
+   *  Return a term frequency vector for the specified document and field. The
+   *  returned vector contains terms and frequencies for the terms in
+   *  the specified field of this document, if the field had the storeTermVector
+   *  flag set. If termvectors had been stored with positions or offsets, a 
+   *  TermPositionsVector is returned.
+   * 
+   * @param docNumber document for which the term frequency vector is returned
+   * @param field field for which the term frequency vector is returned.
+   * @return term frequency vector May be null if field does not exist in the specified
+   * document or term vector was not stored.
+   * @throws IOException if index cannot be accessed
+   * @see Field#TermVector
    */
   abstract public TermFreqVector getTermFreqVector(int docNumber, String field)
           throws IOException;
@@ -547,8 +561,19 @@ public abstract class IndexReader {
    * @param storedTermVector if true, returns only Indexed fields that have term vector info, 
    *                        else only indexed fields without term vector info 
    * @return Collection of Strings indicating the names of the fields
+   * 
+   * @deprecated  Replaced by {@link #getIndexedFieldNames (Field.TermVector tvSpec)}
    */ 
   public abstract Collection getIndexedFieldNames(boolean storedTermVector);
+  
+  /**
+   * Get a list of unique field names that exist in this index, are indexed, and have
+   * the specified term vector information.
+   * 
+   * @param tvSpec specifies which term vector information shoul dbe available for the fields
+   * @return Collection of Strings indicating the names of the fields
+   */
+  public abstract Collection getIndexedFieldNames(Field.TermVector tvSpec);
 
   /**
    * Returns <code>true</code> iff the index in the named directory is
@@ -560,7 +585,6 @@ public abstract class IndexReader {
     return
             directory.makeLock(IndexWriter.WRITE_LOCK_NAME).isLocked() ||
             directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).isLocked();
-
   }
 
   /**

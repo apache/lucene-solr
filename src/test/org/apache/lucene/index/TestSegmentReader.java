@@ -178,7 +178,7 @@ public class TestSegmentReader extends TestCase {
 
   }    
   
-  public void testTermVectors() {
+  public void testTermVectors() throws IOException {
     TermFreqVector result = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(result != null);
     String [] terms = result.getTerms();

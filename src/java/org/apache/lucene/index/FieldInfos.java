@@ -33,6 +33,12 @@ import org.apache.lucene.store.IndexInput;
  *  accessing this object.
  */
 final class FieldInfos {
+  
+  static final byte IS_INDEXED = 0x1;
+  static final byte STORE_TERMVECTOR = 0x2;
+  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x4;
+  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
+  
   private ArrayList byNumber = new ArrayList();
   private HashMap byName = new HashMap();
 
@@ -61,23 +67,30 @@ final class FieldInfos {
     Enumeration fields = doc.fields();
     while (fields.hasMoreElements()) {
       Field field = (Field) fields.nextElement();
-      add(field.name(), field.isIndexed(), field.isTermVectorStored());
+      add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
+              field.isStoreOffsetWithTermVector());
     }
   }
-
+  
   /**
+   * Add fields that are indexed. Whether they have termvectors has to be specified.
+   * 
    * @param names The names of the fields
    * @param storeTermVectors Whether the fields store term vectors or not
+   * @param storePositionWithTermVector treu if positions should be stored.
+   * @param storeOffsetWithTermVector true if offsets should be stored
    */
-  public void addIndexed(Collection names, boolean storeTermVectors) {
+  public void addIndexed(Collection names, boolean storeTermVectors, boolean storePositionWithTermVector, 
+                         boolean storeOffsetWithTermVector) {
     Iterator i = names.iterator();
     while (i.hasNext()) {
-      add((String)i.next(), true, storeTermVectors);
+      add((String)i.next(), true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector);
     }
   }
 
   /**
-   * Assumes the field is not storing term vectors 
+   * Assumes the fields are not storing term vectors.
+   * 
    * @param names The names of the fields
    * @param isIndexed Whether the fields are indexed or not
    * 
@@ -91,28 +104,43 @@ final class FieldInfos {
   }
 
   /**
-   * Calls three parameter add with false for the storeTermVector parameter 
+   * Calls 5 parameter add with false for all TermVector parameters.
+   * 
    * @param name The name of the Field
    * @param isIndexed true if the field is indexed
-   * @see #add(String, boolean, boolean)
+   * @see #add(String, boolean, boolean, boolean, boolean)
    */
   public void add(String name, boolean isIndexed) {
-    add(name, isIndexed, false);
+    add(name, isIndexed, false, false, false);
   }
 
-
+  /**
+   * Calls 5 parameter add with false for term vector positions and offsets.
+   * 
+   * @param name The name of the field
+   * @param isIndexed  true if the field is indexed
+   * @param storeTermVector true if the term vector should be stored
+   */
+  public void add(String name, boolean isIndexed, boolean storeTermVector){
+    add(name, isIndexed, storeTermVector, false, false);
+  }
+  
   /** If the field is not yet known, adds it. If it is known, checks to make
    *  sure that the isIndexed flag is the same as was given previously for this
-   *  field. If not - marks it as being indexed.  Same goes for storeTermVector
+   *  field. If not - marks it as being indexed.  Same goes for the TermVector
+   * parameters.
    * 
    * @param name The name of the field
    * @param isIndexed true if the field is indexed
    * @param storeTermVector true if the term vector should be stored
+   * @param storePositionWithTermVector true if the term vector with positions should be stored
+   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
    */
-  public void add(String name, boolean isIndexed, boolean storeTermVector) {
+  public void add(String name, boolean isIndexed, boolean storeTermVector,
+                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      addInternal(name, isIndexed, storeTermVector);
+      addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector);
     } else {
       if (fi.isIndexed != isIndexed) {
         fi.isIndexed = true;                      // once indexed, always index
@@ -120,13 +148,21 @@ final class FieldInfos {
       if (fi.storeTermVector != storeTermVector) {
         fi.storeTermVector = true;                // once vector, always vector
       }
+      if (fi.storePositionWithTermVector != storePositionWithTermVector) {
+        fi.storePositionWithTermVector = true;                // once vector, always vector
+      }
+      if (fi.storeOffsetWithTermVector != storeOffsetWithTermVector) {
+        fi.storeOffsetWithTermVector = true;                // once vector, always vector
+      }
     }
   }
 
   private void addInternal(String name, boolean isIndexed,
-                           boolean storeTermVector) {
+                           boolean storeTermVector, boolean storePositionWithTermVector, 
+                           boolean storeOffsetWithTermVector) {
     FieldInfo fi =
-      new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector);
+      new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
+              storeOffsetWithTermVector);
     byNumber.add(fi);
     byName.put(name, fi);
   }
@@ -180,11 +216,11 @@ final class FieldInfos {
     for (int i = 0; i < size(); i++) {
       FieldInfo fi = fieldInfo(i);
       byte bits = 0x0;
-      if (fi.isIndexed) bits |= 0x1;
-      if (fi.storeTermVector) bits |= 0x2;
+      if (fi.isIndexed) bits |= IS_INDEXED;
+      if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
+      if (fi.storePositionWithTermVector) bits |= STORE_POSITIONS_WITH_TERMVECTOR;
+      if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
       output.writeString(fi.name);
-      //Was REMOVE
-      //output.writeByte((byte)(fi.isIndexed ? 1 : 0));
       output.writeByte(bits);
     }
   }
@@ -194,9 +230,11 @@ final class FieldInfos {
     for (int i = 0; i < size; i++) {
       String name = input.readString().intern();
       byte bits = input.readByte();
-      boolean isIndexed = (bits & 0x1) != 0;
-      boolean storeTermVector = (bits & 0x2) != 0;
-      addInternal(name, isIndexed, storeTermVector);
+      boolean isIndexed = (bits & IS_INDEXED) != 0;
+      boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
+      boolean storePositionsWithTermVector = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+      boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
+      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector);
     }    
   }
 

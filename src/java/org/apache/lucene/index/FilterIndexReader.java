@@ -16,10 +16,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+
 import java.io.IOException;
 import java.util.Collection;
-
-import org.apache.lucene.document.Document;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -145,5 +146,9 @@ public class FilterIndexReader extends IndexReader {
    */
   public Collection getIndexedFieldNames(boolean storedTermVector) {
     return in.getIndexedFieldNames(storedTermVector);
+  }
+
+  public Collection getIndexedFieldNames (Field.TermVector tvSpec){
+    return in.getIndexedFieldNames(tvSpec);
   }
 }

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
@@ -191,7 +192,9 @@ class SegmentReader extends IndexReader {
       proxStream.close();
 
     closeNorms();
-    if (termVectorsReader != null) termVectorsReader.close();
+    
+    if (termVectorsReader != null) 
+      termVectorsReader.close();
 
     if (cfsReader != null)
       cfsReader.close();
@@ -342,16 +345,63 @@ class SegmentReader extends IndexReader {
    * @return Collection of Strings indicating the names of the fields
    */
   public Collection getIndexedFieldNames(boolean storedTermVector) {
+    if(storedTermVector){
+      Set fieldSet = new HashSet();
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.YES));
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS));
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_OFFSETS));
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS_OFFSETS));
+      return fieldSet;
+    }
+    else
+      return getIndexedFieldNames(Field.TermVector.NO);
+  }
+  
+  public Collection getIndexedFieldNames (Field.TermVector tvSpec){
+    boolean storedTermVector;
+    boolean storePositionWithTermVector;
+    boolean storeOffsetWithTermVector;
+    
+    if(tvSpec == Field.TermVector.NO){
+      storedTermVector = false;
+      storePositionWithTermVector = false;
+      storeOffsetWithTermVector = false;
+    }
+    else if(tvSpec == Field.TermVector.YES){
+      storedTermVector = true;
+      storePositionWithTermVector = false;
+      storeOffsetWithTermVector = false;
+    }
+    else if(tvSpec == Field.TermVector.WITH_POSITIONS){
+      storedTermVector = true;
+      storePositionWithTermVector = true;
+      storeOffsetWithTermVector = false;
+    }
+    else if(tvSpec == Field.TermVector.WITH_OFFSETS){
+      storedTermVector = true;
+      storePositionWithTermVector = false;
+      storeOffsetWithTermVector = true;
+    }
+    else if(tvSpec == Field.TermVector.WITH_POSITIONS_OFFSETS){
+      storedTermVector = true;
+      storePositionWithTermVector = true;
+      storeOffsetWithTermVector = true;
+    }
+    else{
+      throw new IllegalArgumentException("unknown termVector parameter " + tvSpec);
+    }
+    
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed == true && fi.storeTermVector == storedTermVector){
+      if (fi.isIndexed && fi.storeTermVector == storedTermVector && 
+          fi.storePositionWithTermVector == storePositionWithTermVector && 
+          fi.storeOffsetWithTermVector == storeOffsetWithTermVector){
         fieldSet.add(fi.name);
       }
     }
-    return fieldSet;
-
+    return fieldSet;    
   }
 
   public synchronized byte[] norms(String field) throws IOException {
@@ -429,11 +479,13 @@ class SegmentReader extends IndexReader {
    *  vector returned contains term numbers and frequencies for all terms in
    *  the specified field of this document, if the field had storeTermVector
    *  flag set.  If the flag was not set, the method returns null.
+   * @throws IOException
    */
-  public TermFreqVector getTermFreqVector(int docNumber, String field) {
+  public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     // Check if this field is invalid or has no stored term vector
     FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.storeTermVector) return null;
+    if (fi == null || !fi.storeTermVector || termVectorsReader == null) 
+      return null;
 
     return termVectorsReader.get(docNumber, field);
   }
@@ -444,8 +496,9 @@ class SegmentReader extends IndexReader {
    *  Each vector vector contains term numbers and frequencies for all terms
    *  in a given vectorized field.
    *  If no such fields existed, the method returns null.
+   * @throws IOException
    */
-  public TermFreqVector[] getTermFreqVectors(int docNumber) {
+  public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
     if (termVectorsReader == null)
       return null;
 

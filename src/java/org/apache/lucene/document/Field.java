@@ -38,6 +38,8 @@ public final class Field implements java.io.Serializable {
   private Object fieldsData = null;
   
   private boolean storeTermVector = false;
+  private boolean storeOffsetWithTermVector = false; 
+  private boolean storePositionWithTermVector = false;
   private boolean isStored = false;
   private boolean isIndexed = true;
   private boolean isTokenized = true;
@@ -55,16 +57,19 @@ public final class Field implements java.io.Serializable {
     public String toString() {
       return name;
     }
+    
     /** Store the original field value in the index in a compressed form. This is
      * useful for long documents and for binary valued fields.
      */
     public static final Store COMPRESS = new Store("COMPRESS");
+    
     /** Store the original field value in the index. This is useful for short texts
      * like a document's title which should be displayed with the results. The
      * value is stored in its original form, i.e. no analyzer is used before it is
      * stored. 
      */
     public static final Store YES = new Store("YES");
+    
     /** Do not store the field value in the index. */
     public static final Store NO = new Store("NO");
   }
@@ -100,15 +105,41 @@ public final class Field implements java.io.Serializable {
     private TermVector(String name) {
       this.name = name;
     }
+
     public String toString() {
       return name;
     }
+    
     /** Do not store term vectors. 
      */
     public static final TermVector NO = new TermVector("NO");
+    
     /** Store the term vectors of each document. A term vector is a list
      * of the document's terms and their number of occurences in that document. */
     public static final TermVector YES = new TermVector("YES");
+    
+    /**
+     * Store the term vector + token position information
+     * 
+     * @see #YES
+     */ 
+    public static final TermVector WITH_POSITIONS = new TermVector("WITH_POSITIONS");
+    
+    /**
+     * Store the term vector + Token offset information
+     * 
+     * @see #YES
+     */ 
+    public static final TermVector WITH_OFFSETS = new TermVector("WITH_OFFSETS");
+    
+    /**
+     * Store the term vector + Token position and offset information
+     * 
+     * @see #YES
+     * @see #WITH_POSITIONS
+     * @see #WITH_OFFSETS
+     */ 
+    public static final TermVector WITH_POSITIONS_OFFSETS = new TermVector("WITH_POSITIONS_OFFSETS");
   }
   
   /** Sets the boost factor hits on this field.  This value will be
@@ -290,14 +321,18 @@ public final class Field implements java.io.Serializable {
     this.name = name.intern();        // field names are interned
     this.fieldsData = value;
 
-    if (store == Store.YES)
+    if (store == Store.YES){
       this.isStored = true;
+      this.isCompressed = false;
+    }
     else if (store == Store.COMPRESS) {
       this.isStored = true;
       this.isCompressed = true;
     }
-    else if (store == Store.NO)
+    else if (store == Store.NO){
       this.isStored = false;
+      this.isCompressed = false;
+    }
     else
       throw new IllegalArgumentException("unknown store parameter " + store);
    
@@ -313,6 +348,8 @@ public final class Field implements java.io.Serializable {
     } else {
       throw new IllegalArgumentException("unknown index parameter " + index);
     }
+    
+    this.isBinary = false;
 
     setStoreTermVector(termVector);
   }
@@ -343,11 +380,18 @@ public final class Field implements java.io.Serializable {
       throw new NullPointerException("name cannot be null");
     if (reader == null)
       throw new NullPointerException("reader cannot be null");
+    
     this.name = name.intern();        // field names are interned
     this.fieldsData = reader;
+    
     this.isStored = false;
+    this.isCompressed = false;
+    
     this.isIndexed = true;
     this.isTokenized = true;
+    
+    this.isBinary = false;
+    
     setStoreTermVector(termVector);
   }
 
@@ -374,21 +418,29 @@ public final class Field implements java.io.Serializable {
       throw new IllegalArgumentException("name cannot be null");
     if (value == null)
       throw new IllegalArgumentException("value cannot be null");
-    if (store == Store.NO)
-      throw new IllegalArgumentException("binary values can't be unstored");
-    if (store == Store.COMPRESS)
-      this.isCompressed = true;
     
     this.name = name.intern();
-    //wrap the byte[] to a ByteBuffer object
     this.fieldsData = value;
     
-    this.isBinary    = true;
-    this.isStored    = true;
+    if (store == Store.YES){
+      this.isStored = true;
+      this.isCompressed = false;
+    }
+    else if (store == Store.COMPRESS) {
+      this.isStored = true;
+      this.isCompressed = true;
+    }
+    else if (store == Store.NO)
+      throw new IllegalArgumentException("binary values can't be unstored");
+    else
+      throw new IllegalArgumentException("unknown store parameter " + store);
     
     this.isIndexed   = false;
     this.isTokenized = false;
-    this.storeTermVector = false;
+    
+    this.isBinary    = true;
+    
+    setStoreTermVector(TermVector.NO);
   }
   
   /**
@@ -422,9 +474,30 @@ public final class Field implements java.io.Serializable {
   private void setStoreTermVector(TermVector termVector) {
     if (termVector == TermVector.NO) {
       this.storeTermVector = false;
-    } else if (termVector == TermVector.YES) {
+      this.storePositionWithTermVector = false;
+      this.storeOffsetWithTermVector = false;
+    } 
+    else if (termVector == TermVector.YES) {
       this.storeTermVector = true;
-    } else {
+      this.storePositionWithTermVector = false;
+      this.storeOffsetWithTermVector = false;
+    }
+    else if (termVector == TermVector.WITH_POSITIONS) {
+      this.storeTermVector = true;
+      this.storePositionWithTermVector = true;
+      this.storeOffsetWithTermVector = false;
+    } 
+    else if (termVector == TermVector.WITH_OFFSETS) {
+      this.storeTermVector = true;
+      this.storePositionWithTermVector = false;
+      this.storeOffsetWithTermVector = true;
+    } 
+    else if (termVector == TermVector.WITH_POSITIONS_OFFSETS) {
+      this.storeTermVector = true;
+      this.storePositionWithTermVector = true;
+      this.storeOffsetWithTermVector = true;
+    } 
+    else {
       throw new IllegalArgumentException("unknown termVector parameter " + termVector);
     }
   }
@@ -455,7 +528,24 @@ public final class Field implements java.io.Serializable {
    * @see IndexReader#getTermFreqVector(int, String)
    */
   public final boolean isTermVectorStored() { return storeTermVector; }
-
+  
+  /**
+   * True iff terms are stored as term vector together with their offsets 
+   * (start and end positon in source text).
+   * @return
+   */
+  public boolean isStoreOffsetWithTermVector(){ 
+    return storeOffsetWithTermVector; 
+  } 
+  
+  /**
+   * True iff terms are stored as term vector together with their token positions.
+   * @return
+   */
+  public boolean isStorePositionWithTermVector(){ 
+    return storePositionWithTermVector; 
+  }
+      
   /** True iff the value of the filed is stored as binary */
   public final boolean  isBinary()      { return isBinary; }
   
@@ -479,6 +569,16 @@ public final class Field implements java.io.Serializable {
         result.append(",");
       result.append("termVector");
     }
+    if (storeOffsetWithTermVector) { 
+      if (result.length() > 0) 
+        result.append(","); 
+      result.append("termVectorOffsets"); 
+    } 
+    if (storePositionWithTermVector) { 
+      if (result.length() > 0) 
+        result.append(","); 
+      result.append("termVectorPosition"); 
+    } 
     if (isBinary) {
       if (result.length() > 0)
         result.append(",");

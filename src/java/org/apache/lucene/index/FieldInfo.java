@@ -23,11 +23,16 @@ final class FieldInfo {
 
   // true if term vector for this field should be stored
   boolean storeTermVector;
+  boolean storeOffsetWithTermVector;
+  boolean storePositionWithTermVector;
 
-  FieldInfo(String na, boolean tk, int nu, boolean storeTermVector) {
+  FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
+            boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector) {
     name = na;
     isIndexed = tk;
     number = nu;
     this.storeTermVector = storeTermVector;
+    this.storeOffsetWithTermVector = storeOffsetWithTermVector;
+    this.storePositionWithTermVector = storePositionWithTermVector;
   }
 }

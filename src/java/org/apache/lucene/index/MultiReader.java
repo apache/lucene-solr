@@ -16,15 +16,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
+
+import java.io.IOException;
+import java.util.*;
 
 /** An IndexReader which reads multiple indexes, appending their content.
  *
@@ -219,11 +216,7 @@ public class MultiReader extends IndexReader {
     for (int i = 0; i < subReaders.length; i++) {
       IndexReader reader = subReaders[i];
       Collection names = reader.getFieldNames();
-      // iterate through the field names and add them to the set
-      for (Iterator iterator = names.iterator(); iterator.hasNext();) {
-        String s = (String) iterator.next();
-        fieldSet.add(s);
-      }
+      fieldSet.addAll(names);
     }
     return fieldSet;
   }
@@ -248,6 +241,17 @@ public class MultiReader extends IndexReader {
     for (int i = 0; i < subReaders.length; i++) {
       IndexReader reader = subReaders[i];
       Collection names = reader.getIndexedFieldNames(storedTermVector);
+      fieldSet.addAll(names);
+    }
+    return fieldSet;
+  }
+
+  public Collection getIndexedFieldNames (Field.TermVector tvSpec){
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < subReaders.length; i++) {
+      IndexReader reader = subReaders[i];
+      Collection names = reader.getIndexedFieldNames(tvSpec);
       fieldSet.addAll(names);
     }
     return fieldSet;

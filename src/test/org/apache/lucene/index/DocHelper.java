@@ -34,7 +34,7 @@ class DocHelper {
   //Fields will be lexicographically sorted.  So, the order is: field, text, two
   public static final int [] FIELD_2_FREQS = {3, 1, 1}; 
   public static final String TEXT_FIELD_2_KEY = "textField2";
-  public static Field textField2 = Field.Text(TEXT_FIELD_2_KEY, FIELD_2_TEXT, true);
+  public static Field textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
   
   public static final String KEYWORD_TEXT = "Keyword";
   public static final String KEYWORD_FIELD_KEY = "keyField";
@@ -135,7 +135,7 @@ class DocHelper {
     Enumeration fields = doc.fields();
     int result = 0;
     while (fields.hasMoreElements()) {
-      fields.nextElement();
+      String name = fields.nextElement().toString();
       result++;
     }
     return result;

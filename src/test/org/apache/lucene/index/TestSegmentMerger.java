@@ -109,6 +109,7 @@ public class TestSegmentMerger extends TestCase {
       int [] freqs = vector.getTermFrequencies();
       assertTrue(freqs != null);
       //System.out.println("Freqs size: " + freqs.length);
+      assertTrue(vector instanceof TermPositionVector == true);
       
       for (int i = 0; i < terms.length; i++) {
         String term = terms[i];

@@ -20,6 +20,7 @@ import java.util.Vector;
 import java.util.Iterator;
 import java.io.IOException;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -157,8 +158,11 @@ final class SegmentMerger {
     int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(true), true);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(false), false);
+      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.WITH_POSITIONS_OFFSETS), true, true, true);
+      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.WITH_POSITIONS), true, true, false);
+      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.WITH_OFFSETS), true, false, true);
+      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.YES), true, false, false);
+      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.NO), false, false, false);
       fieldInfos.add(reader.getFieldNames(false), false);
     }
     fieldInfos.write(directory, segment + ".fnm");
@@ -195,29 +199,9 @@ final class SegmentMerger {
         int maxDoc = reader.maxDoc();
         for (int docNum = 0; docNum < maxDoc; docNum++) {
           // skip deleted docs
-          if (reader.isDeleted(docNum)) {
+          if (reader.isDeleted(docNum)) 
             continue;
-          }
-          termVectorsWriter.openDocument();
-
-          // get all term vectors
-          TermFreqVector[] sourceTermVector =
-            reader.getTermFreqVectors(docNum);
-
-          if (sourceTermVector != null) {
-            for (int f = 0; f < sourceTermVector.length; f++) {
-              // translate field numbers
-              TermFreqVector termVector = sourceTermVector[f];
-              termVectorsWriter.openField(termVector.getField());
-              String [] terms = termVector.getTerms();
-              int [] freqs = termVector.getTermFrequencies();
-              
-              for (int t = 0; t < terms.length; t++) {
-                termVectorsWriter.addTerm(terms[t], freqs[t]);
-              }
-            }
-            termVectorsWriter.closeDocument();
-          }
+          termVectorsWriter.addAllDocVectors(reader.getTermFreqVectors(docNum));
         }
       }
     } finally {
