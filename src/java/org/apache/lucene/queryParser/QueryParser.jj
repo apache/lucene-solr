@@ -462,8 +462,8 @@ public class QueryParser {
       char c = s.charAt(i);
       // NOTE: keep this in sync with _ESCAPED_CHAR below!
       if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
-      	|| c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-      	|| c == '*' || c == '?') {
+        || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+        || c == '*' || c == '?') {
         sb.append('\\');
       }
       sb.append(c);
