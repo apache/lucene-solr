@@ -59,6 +59,7 @@ import java.util.Vector;
 
 import org.apache.lucene.index.Term;
 
+import org.apache.lucene.index.IndexReader;       // for javadoc
 import org.apache.lucene.index.IndexWriter;       // for javadoc
 import org.apache.lucene.document.Field;          // for javadoc
 
@@ -277,10 +278,10 @@ public abstract class Similarity {
    *   return idf(searcher.docFreq(term), searcher.maxDoc());
    * </pre>
    *
-   * Note that {@link Searcher#maxDoc()} is used instead of {@link
-   * IndexReader#numDocs()} because it is proportional to {@link
-   * Searcher#docFreq(Term)} , i.e., when one is inaccurate, so is the other,
-   * and in the same direction.
+   * Note that {@link Searcher#maxDoc()} is used instead of
+   * {@link IndexReader#numDocs()} because it is proportional to
+   * {@link Searcher#docFreq(Term)} , i.e., when one is inaccurate,
+   * so is the other, and in the same direction.
    *
    * @param term the term in question
    * @param searcher the document collection being searched
