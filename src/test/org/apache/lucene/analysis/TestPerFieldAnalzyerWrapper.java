@@ -58,17 +58,24 @@ import java.io.StringReader;
  */
 
 public class TestPerFieldAnalzyerWrapper extends TestCase {
-  public void testIt() throws Exception {
+  public void testPerField() throws Exception {
     String text = "Qwerty";
-    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer());
+    PerFieldAnalyzerWrapper analyzer =
+              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer());
     analyzer.addAnalyzer("special", new SimpleAnalyzer());
 
-    TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
+    TokenStream tokenStream = analyzer.tokenStream("field",
+                                            new StringReader(text));
     Token token = tokenStream.next();
-    assertEquals("WhitespaceAnalyzer does not lowercase", "Qwerty", token.termText());
+    assertEquals("WhitespaceAnalyzer does not lowercase",
+                 "Qwerty",
+                 token.termText());
 
-    tokenStream = analyzer.tokenStream("special", new StringReader(text));
+    tokenStream = analyzer.tokenStream("special",
+                                            new StringReader(text));
     token = tokenStream.next();
-    assertEquals("SimpleAnalyzer lowercases", "qwerty", token.termText());
+    assertEquals("SimpleAnalyzer lowercases",
+                 "qwerty",
+                 token.termText());
   }
 }
