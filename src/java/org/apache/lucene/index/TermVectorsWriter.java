@@ -50,16 +50,16 @@ import java.util.Vector;
  * 
  */
 final class TermVectorsWriter {
-  public static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
-  public static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
+  static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
+  static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x2;
   
-  public static final int FORMAT_VERSION = 2;
+  static final int FORMAT_VERSION = 2;
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
-  public static final int FORMAT_SIZE = 4;
+  static final int FORMAT_SIZE = 4;
   
-  public static final String TVX_EXTENSION = ".tvx";
-  public static final String TVD_EXTENSION = ".tvd";
-  public static final String TVF_EXTENSION = ".tvf";
+  static final String TVX_EXTENSION = ".tvx";
+  static final String TVD_EXTENSION = ".tvd";
+  static final String TVF_EXTENSION = ".tvf";
   
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private Vector fields = null;
