@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <properties>
+        <title>Lucene TODO List</title>
+        <authors>
+            <person email="pmularien@deploy.com" name="Peter Mularien" id="PM"/>
+        </authors>
+    </properties>
+    <body>
+        <section name="Purpose">
+            <p>
+                This document describes the list of tasks on
+                the plates of the Lucene development team. Tasks are assigned into two
+                categories: core or non-core.
+            </p>
+        </section>
+        <section name="About Core vs. Non-Core Development">
+            <p>
+                Currently the Lucene development team is working on
+                categorizing change requests into <b>core</b> and <b>non-core</b>
+                changes.
+            </p>
+            <p>
+                Core changes would entail a change to the search engine
+                core itself. From Doug Cutting:
+                <blockquote><i>
+                        "Examples include: file locking to make things
+                        multi-process safe; adding an API for boosting individual documents and fields
+                        values; making the scoring API extensible and public; etc."
+                    </i></blockquote>
+            </p>
+            <p>
+                Non-core changes would not affect the search engine
+                itself, but would consist instead of projects or components that would
+                make useful
+                additions to the core framework. Again, from Doug
+                Cutting:
+                <blockquote><i>
+                        "[Examples] include: support for more languages; query
+                        parsers; database storage; crawlers, etc.  Whether these belong in the
+                        base distribution is a matter of debate (sometimes hot).  My rule of
+                        thumb for including them is their generality: if they are likely to be
+                        useful to a large proportion of Lucene users then they should probably go
+                        in the base distribution.  Language support in particular is tricky.
+                        Perhaps we should migrate to a model where the base distribution
+                        includes no analyzers, and supply separate language packages."
+                    </i></blockquote>
+            </p>
+            <p>
+                Change requests will be categorically defined by the
+                development team (committers) as core or non-core, and a committer will
+                be assigned responsibility for
+                coordinating development of the change request. All
+                change requests should be submitted to one of the Lucene mailing lists, or
+                through
+                the <a href="http://issues.apache.org/bugzilla/">Apache
+                    Bugzilla</a> database.
+            </p>
+        </section>
+        <section name="Core Development Changes">
+            <p>
+                <i>No change requests classified as core yet!</i>
+            </p>
+        </section>
+        <section name="Non-Core Development Changes">
+            <p>
+                <i>No change requests classified as non-core yet!</i>
+            </p>
+        </section>
+        <section name="Unclassified Changes">
+            <p>
+                <table cellpadding="5">
+                    <tr>
+                        <th valign="top">Name</th>
+                        <th valign="top">Description</th>
+                        <th valign="top">Links</th>
+                    </tr>
+                    <tr>
+                        <td valign="top">Term Vector support</td>
+                        <td valign="top"></td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=273">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=273</a></li>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=272">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=272</a></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Support for Search Term Highlighting</td>
+                        <td valign="top"></td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://www.geocrawler.org/archives/3/2624/2001/9/50/6553088/">http://www.geocrawler.org/archives/3/2624/2001/9/50/6553088/</a></li>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=115271">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=115271</a></li>
+                                <li><a
+                                       href="http://www.iq-computing.de/index.asp?menu=projekte-lucene-highlight">http://www.iq-computing.de/index.asp?menu=projekte-lucene-highlight</a></li>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&amp;by=thread&amp;from=56403">http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&amp;by=thread&amp;from=56403</a></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Better support for hits sorted by things other
+                            than score.</td>
+                        <td valign="top">  An easy, efficient case is to support results
+                            sorted by the order documents were
+                            added to the index.  A little harder and less efficient is support
+                            for
+                            results sorted by an arbitrary field.
+                        </td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=114756">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=114756</a></li>
+                                <li><a
+                                       href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00228.html">http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00228.html</a></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Add some requested methods: Document.getValues,
+                            IndexReader.getIndexedFields</td>
+                        <td valign="top">    String[] Document.getValues(String
+                            fieldName);
+                            String[] IndexReader.getIndexedFields();
+                            void Token.setPositionIncrement(int);</td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=330010">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=330010</a></li>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=330009">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=330009</a></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Add lastModified() method to Directory,
+                            FSDirectory and RamDirectory, so  it could be cached in IndexWriter/Searcher
+                            manager.</td>
+                        <td valign="top"></td>
+                        <td valign="top"></td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Support for adding more than 1 term to the same
+                            position.</td>
+                        <td valign="top">N.B. I think the Finnish lady already
+                            implemented this.  It required some  pieces of Lucene to be modified. (OG).</td>
+                        <td valign="top"></td>
+                    </tr>
+                    <tr>
+                        <td valign="top">The ability to retrieve the number of occurrences
+                            not only for a term but also for a Phrase.</td>
+                        <td valign="top"></td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://www.mail-archive.com/lucene-dev@jakarta.apache.org/msg00101.html">http://www.mail-archive.com/lucene-dev@jakarta.apache.org/msg00101.html</a></li>
+                            </ul></td>
+                    </tr>
+                    <tr>
+                        <td valign="top">A lady from Finland submitted code for handling
+                            Finnish.</td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Dutch stemmer, analyzer, etc.</td>
+                        <td valign="top"></td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=145">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=145</a></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign="top">French stemmer, analyzer, etc.</td>
+                        <td valign="top"></td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&amp;by=thread&amp;from=56256">http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&amp;by=thread&amp;from=56256</a></li>
+                            </ul></td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Che Dong's CJKTokenizer for Chinese, Japanese,
+                            and Korean.</td>
+                        <td valign="top"></td>
+                        <td valign="top">
+                            <ul>
+                                <li><a
+                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=330905">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgId=330905</a></li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Selecting a language-specific analyzer according
+                            to a locale.</td>
+                        <td valign="top">  Now we rewrite parts of Lucene code in order
+                            to use another analyzer. It will be useful to select analyzer without
+                            touching code.</td>
+                        <td valign="top"></td>
+                    </tr>
+                    <tr>
+                        <td valign="top">Adding "-encoding" option and encoding-sensitive
+                            methods to tools.</td>
+                        <td valign="top">  Current tools needs minor changes on a
+                            Japanese (and other language) environment: adding an "-encode" option and
+                            argument, using  Reader/Writer classes instead of InputStream/OutputStream
+                            classes, etc.</td>
+                        <td valign="top"></td>
+                    </tr>
+                </table>
+            </p>
+        </section>
+    </body>
+</document>
