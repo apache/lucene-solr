@@ -66,11 +66,11 @@ public class PhrasePrefixQuery extends Query {
    * @see PhraseQuery#add(Term)
    */
   public void add(Term[] terms) {
-      int position = 0;
-      if(positions.size() > 0)
-          position = ((Integer) positions.lastElement()).intValue() + 1;
-      
-      add(terms, position);
+    int position = 0;
+    if (positions.size() > 0)
+      position = ((Integer) positions.lastElement()).intValue() + 1;
+
+    add(terms, position);
   }
   
   /**
@@ -81,29 +81,29 @@ public class PhrasePrefixQuery extends Query {
    * @param position
    */
   public void add(Term[] terms, int position) {
-      if (termArrays.size() == 0)
-          field = terms[0].field();
-        
-        for (int i=0; i<terms.length; i++) {
-          if (terms[i].field() != field) {
-            throw new IllegalArgumentException
-              ("All phrase terms must be in the same field (" + field + "): "
-               + terms[i]);
-          }
-        }
+    if (termArrays.size() == 0)
+      field = terms[0].field();
 
-        termArrays.add(terms);
-        positions.addElement(new Integer(position));
+    for (int i = 0; i < terms.length; i++) {
+      if (terms[i].field() != field) {
+        throw new IllegalArgumentException(
+            "All phrase terms must be in the same field (" + field + "): "
+                + terms[i]);
+      }
+    }
+
+    termArrays.add(terms);
+    positions.addElement(new Integer(position));
   }
   
   /**
    * Returns the relative positions of terms in this phrase.
    */
   public int[] getPositions() {
-      int[] result = new int[positions.size()];
-      for(int i = 0; i < positions.size(); i++)
-          result[i] = ((Integer) positions.elementAt(i)).intValue();
-      return result;
+    int[] result = new int[positions.size()];
+    for (int i = 0; i < positions.size(); i++)
+      result[i] = ((Integer) positions.elementAt(i)).intValue();
+    return result;
   }
 
   private class PhrasePrefixWeight implements Weight {
