@@ -202,4 +202,16 @@ implements Serializable {
 	public void setSort (SortField[] fields) {
 		this.fields = fields;
 	}
+
+  public String toString() {
+    StringBuffer buffer = new StringBuffer();
+
+    for (int i = 0; i < fields.length; i++) {
+      buffer.append(fields[i].toString());
+      if ((i +1) < fields.length)
+        buffer.append(',');
+    }
+
+    return buffer.toString();
+  }
 }

@@ -133,4 +133,22 @@ implements Serializable {
   public boolean getReverse() {
     return reverse;
   }
+
+  public String toString() {
+    StringBuffer buffer = new StringBuffer();
+    switch (type) {
+      case SCORE: buffer.append("<score>");
+                  break;
+
+      case DOC: buffer.append("<doc>");
+                break;
+
+      default: buffer.append("\"" + field + "\"");
+               break;
+    }
+    
+    buffer.append(reverse ? " DESC" : " ASC");
+
+    return buffer.toString();
+  }
 }
