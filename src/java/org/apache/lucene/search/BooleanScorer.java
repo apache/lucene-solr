@@ -87,6 +87,7 @@ final class BooleanScorer extends Scorer {
   private Bucket current;
 
   public void score(HitCollector hc) throws IOException {
+    next();
     score(hc, Integer.MAX_VALUE);
   }
 
@@ -95,19 +96,35 @@ final class BooleanScorer extends Scorer {
       computeCoordFactors();
 
     boolean more;
+    Bucket tmp;
+    
     do {
-      while (bucketTable.first != null) {         // more queued
-        current = bucketTable.first;
-        if (current.doc >= max)
-          return true;
+      bucketTable.first = null;
+      
+      while (current != null) {         // more queued 
 
         // check prohibited & required
         if ((current.bits & prohibitedMask) == 0 && 
             (current.bits & requiredMask) == requiredMask) {
+          
+          if (current.doc >= max){
+            tmp = current;
+            current = current.next;
+            tmp.next = bucketTable.first;
+            bucketTable.first = tmp;
+            continue;
+          }
+          
           hc.collect(current.doc, current.score * coordFactors[current.coord]);
         }
         
-        bucketTable.first = current.next;         // pop the queue
+        current = current.next;         // pop the queue
+      }
+      
+      if( bucketTable.first != null){
+        current = bucketTable.first;
+        bucketTable.first = current.next;
+        return true;
       }
 
       // refill the queue
@@ -120,11 +137,12 @@ final class BooleanScorer extends Scorer {
             more = true;
         }
       }
-    } while (bucketTable.first != null || more);
+      current = bucketTable.first;
+      
+    } while (current != null || more);
 
     return false;
   }
-
 
   public int doc() { return current.doc; }
 
