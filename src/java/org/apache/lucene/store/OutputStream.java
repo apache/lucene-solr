@@ -149,7 +149,7 @@ public abstract class OutputStream {
    * occur.
    * @see #seek(long)
    */
-  public final long getFilePointer() throws IOException {
+  public final long getFilePointer() {
     return bufferStart + bufferPosition;
   }
 

@@ -106,13 +106,13 @@ public final class RAMDirectory extends Directory {
   }
 
   /** Returns the time the named file was last modified. */
-  public final long fileModified(String name) throws IOException {
+  public final long fileModified(String name) {
     RAMFile file = (RAMFile)files.get(name);
     return file.lastModified;
   }
 
   /** Set the modified time of an existing file to now. */
-  public void touchFile(String name) throws IOException {
+  public void touchFile(String name) {
 //     final boolean MONITOR = false;
     
     RAMFile file = (RAMFile)files.get(name);

@@ -156,37 +156,36 @@ public final class FSDirectory extends Directory {
   }
 
   /** Returns an array of strings, one for each file in the directory. */
-  public final String[] list() throws IOException {
+  public final String[] list() {
     return directory.list();
   }
 
   /** Returns true iff a file with the given name exists. */
-  public final boolean fileExists(String name) throws IOException {
+  public final boolean fileExists(String name) {
     File file = new File(directory, name);
     return file.exists();
   }
 
   /** Returns the time the named file was last modified. */
-  public final long fileModified(String name) throws IOException {
+  public final long fileModified(String name) {
     File file = new File(directory, name);
     return file.lastModified();
   }
 
   /** Returns the time the named file was last modified. */
-  public static final long fileModified(File directory, String name)
-       throws IOException {
+  public static final long fileModified(File directory, String name) {
     File file = new File(directory, name);
     return file.lastModified();
   }
 
   /** Set the modified time of an existing file to now. */
-  public void touchFile(String name) throws IOException {
+  public void touchFile(String name) {
     File file = new File(directory, name);
     file.setLastModified(System.currentTimeMillis());
   }
 
   /** Returns the length in bytes of a file in the directory. */
-  public final long fileLength(String name) throws IOException {
+  public final long fileLength(String name) {
     File file = new File(directory, name);
     return file.length();
   }
@@ -347,7 +346,7 @@ public final class FSDirectory extends Directory {
   }
 
   /** Closes the store to future operations. */
-  public final synchronized void close() throws IOException {
+  public final synchronized void close() {
     if (--refCount <= 0) {
       synchronized (DIRECTORIES) {
         DIRECTORIES.remove(directory);
@@ -432,7 +431,7 @@ final class FSInputStream extends InputStream {
   }
 
   /** Random-access methods */
-  protected final void seekInternal(long position) throws IOException {
+  protected final void seekInternal(long position) {
   }
 
   protected final void finalize() throws IOException {
