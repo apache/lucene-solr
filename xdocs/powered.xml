@@ -27,6 +27,7 @@
                     <li><a href="http://search.soufun.com/">SouFun</a></li>
                     <li><a href="http://www.bitmechanic.com/projects/spindle/">Spindle</a></li>
                     <li><a href="http://www.thomasmorestudies.org/segn/control/initContext?title=Search+Help">Thomas More Studies</a></li>
+                    <li><a href="http://www.trackstudio.com/">TrackStudio</a></li>
                     <li><a href="http://www.eluniversal.com/">El Universal</a></li>
                     <li><a href="http://www.webfood.us/">Webfood.us</a></li>
                     <li><a href="http://yazd.yasna.com/">Yazd Discussion Forum Software</a></li>
@@ -35,7 +36,8 @@
             </p>
 
             <p>If you wish to have your site listed on this page, send <a
-                    href="mailto:lucene-dev@jakarta.apache.org">us</a> a note.</p>
+                    href="mailto:lucene-dev@jakarta.apache.org">us</a> a note (subscribe
+                to lucene-dev before sending).</p>
 
             <p>Please include something like the following with your search results:</p>
 
