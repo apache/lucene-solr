@@ -1,0 +1,464 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+<head>
+	<title>com.netwebapps.tablib.search</title>
+</head>
+
+<body>
+<META http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+	<meta name="author" content="Bryan LaPlante">
+	<title>Lucene-Taglibs: Search engine Tag library (Beta 1)</title>
+	<style>
+	TD{ vertical-align:top; align:left; border-bottom:1px solid #C0C0C0; }
+	</style>
+</head>
+
+
+
+<body bgcolor="white">
+<center>
+<h1>Search engine Tag library (Beta 1)</h1>
+<h3>Version: 1.0</h3>
+<br><br>
+</center>
+<h3>Table of Contents</h3>
+<ul>
+<li>
+<a href="#overview">Overview</a>
+</li>
+<li>
+<a href="#requirements">Requirements</a>
+</li>
+<li>
+<a href="#config">Configuration</a>
+</li>
+<li>
+<a href="#summary">Tag Summary</a>
+</li>
+<li>
+<a href="#reference">Tag Reference</a>
+</li>
+<li>
+<a href="#examples">Examples</a>
+</li>
+<li>
+<a href="#javadocs">Javadocs</a>
+</li>
+<li>
+<a href="#history">Revision History</a>
+</li>
+</ul>
+<a name="overview"></a>
+<h3>Overview</h3>
+<p>
+	The Search custom tag is an iteration tag that loops over the results of
+	criteria passed to the Lucene search engine.
+	<br><br>
+	This tag supports parameters for passing the search criteria to the search engine
+	and then returns information about the result set to the page programmer through the
+	name used in this tags ID attribute.
+	<br><br>
+	Any field stored in the search index will be accessible after the start tag has run
+	by calling the result set's someID.getField(String name) method which will locate the
+	value of the field and return it as a string. In the event that no such field exists
+	it will return an empty string.<br>
+	There is also a <a href="">&lt;LUCENE:Field&gt;</a> tag that does this for you.
+	<br><br>
+	If you need to get a list of the column names ahead of time you can call the tags's getFields()
+	method and it will return you a Set of field names that can be iterated over as you will
+	see in the result.jsp example provided with this documentation.<br>
+	There is also a <a href="">&lt;LUCNENE:Column&gt;</a> tag that does the same thing.
+	<br>
+	The object passed back through the tag's ID attribute is the current instance of the tag 
+	itself, so all of the public information for this instance is available and you will see
+	more reference to this in the <a href="#reference">tag reference section.</a>
+</p>
+<br><br>
+<a name="requirements"></a>
+<h3>Requirements</h3>
+<br><br>
+    
+<P>This custom tag requires no software other than a servlet
+   container that supports the JavaServer Applications Specification, version 1.2.
+</P> 
+<br><br>
+
+<a name="config"></a>
+<h3>Configuration</h3>
+<p>Follow these steps to configure your web application with this tag</p>
+<ul>
+<li>Copy the tag library descriptor file to the /WEB-INF subdirectory
+        of your web application.</li>
+<li>Copy the tag library JAR file to the /WEB-INF/lib subdirectory 
+        of your web application.</li>
+</li>
+</ul>
+<p>To use the search tag in your JSP pages, add the following
+     directive at the top of each page: </p>
+<pre>
+&lt;%@ taglib uri="/WEB-INF/lucene-taglib.tld" prefix="LUCENE" %&gt;
+</pre>
+<p>where "<i>LUCENE</i>" is the tag
+     name prefix you wish to use for tags from this library. You can change
+     this value to any prefix you like.</p>
+<br><br>
+<a name="summary"></a>
+<h3>Tag Summary</h3>
+<table cellspacing=0 cellpadding=4>
+<tr>
+	<td colspan=2><b>search tag attributes</b></td>
+</tr>
+<tr>
+	<td width="10%"><b>id</b></td>
+	<td width="75%">The name were the tag will return and instance of itself.</td>
+</tr>
+<tr>
+	<td><b>criteria</b></td>
+	<td>search criteria provided by the user to be search.</td>
+</tr>
+<tr>
+	<td><b>collection</b></td>
+	<td>path to the index to be searched.</td>
+</tr>
+<tr>
+	<td><b>startrow</b></td>
+	<td>The row of the result to start looping over.</td>
+</tr>
+<tr>
+	<td><b>maxrows</b></td>
+	<td>the number of results to output to the page.</td>
+</tr>
+<tr>
+	<td><b>analyzerType</b></td>
+	<td>chooses wich analyzer to use with the search.</td>
+</tr>
+<tr>
+	<td><b>search</b></td>
+	<td>changes the default searched content to another field.</td>
+</tr>
+<tr>
+	<td><b>stopWords</b></td>
+	<td>a comma seperated list of words to filter search results.</td>
+</tr>
+<tr>
+	<td><b>fieldList</b></td>
+	<td>comma seperated list of fields to be searched.</td>
+</tr>
+<tr>
+	<td><b>flagList</b></td>
+	<td>comma seperated list of rules to apply to the fieldList.</td>
+</tr>
+</table>
+<br><br>
+
+<a name="reference"></a>
+<h3>Tag Reference</h3>
+<br>
+<table border=0 cellspacing=0 cellpadding=4>
+<tr>
+	<td>Tag Body</td>
+	<td colspan=5>JSP</td>
+</tr>
+<tr>
+	<td>Restrictions</td>
+	<td colspan=5>none</td>
+</tr>
+<tr style="background-color:#C0C0C0">
+	<td width="15%"><b>Attributes</b></td>
+	<td><b>name</b></td>
+	<td><b>required</b></td>
+	<td colspan=2><b>params</b></td>
+	<td>Default</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>id</b></td>
+	<td>true</td>
+	<td colspan=2>String</td>
+	<td>&nbsp;</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>criteria</b></td>
+	<td>true</td>
+	<td colspan=2>String</td>
+	<td>&nbsp;</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>collection</b></td>
+	<td>true</td>
+	<td colspan=2>comma seperated String of one or more directory paths to the index(s) to be searched</td>
+	<td>&nbsp;</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>startrow</b></td>
+	<td>false</td>
+	<td colspan=2>String | int</td>
+	<td>0</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>maxrows</b></td>
+	<td>false</td>
+	<td colspan=2>String | int</td>
+	<td>50</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>analyzerType</b></td>
+	<td>false</td>
+	<td colspan=2>String<br>
+	One of the following.
+	<ul>
+		<li>GERMANAN_ALYZER</li>
+		<li>SIMPLE_ANALYZER</li>
+		<li>STANDARD_ANALYZER</li>
+		<li>STOP_ANALYZER</li>
+		<li>WHITESPACE_ANALYZER</li>
+	</li>
+	</td>
+	<td>STANDARD_ANALYZER</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>search</b></td>
+	<td>false</td>
+	<td colspan=2>String</td>
+	<td>contents</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>stopWords</b></td>
+	<td>false</td>
+	<td colspan=2>String<br>
+	<ul>
+		<li>Abstract file path</li>
+		<li>comma seperated list of words</li>
+	</ul>
+	NOTE: you can also comma seperate any combination of file
+	paths and or words but the file path must point to a file
+	that contains one word per line.
+	</td>
+	<td>&nbsp;</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>fieldList</b></td>
+	<td>false</td>
+	<td colspan=2>String<br>
+	NOTE: if you also supply a flagList there must be an equal number of
+	elements as there are in fieldList.
+	</td>
+	<td>&nbsp;</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>flagList</b></td>
+	<td>false</td>
+	<td colspan=2>String</td>
+	<td>&nbsp;</td>
+</tr>
+<tr style="background-color:#C0C0C0">
+	<td><b>Variables</b></td>
+	<td><b>name</b></td>
+	<td><b>scope</b></td>
+	<td><b>return datatype</b></td>
+	<td><b>read / write</b></td>
+	<td><b>description</b></td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>startRow</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>String representing the number passed in as the startrow parameter</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>maxRows</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>String representing the number passed in as the maxrows parameter</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>rowCount</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>String representing on which iteration the tag is currently looping</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>pageCount</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>String representing the offset between the maxrows and the total number of hits</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>hitCount</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>String representing the total number of results</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>firstPage</b></td>
+	<td>AT_END</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>variable containing the query string needed by a navigation element to return you to the first page of the result</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>nextPage</b></td>
+	<td>AT_END</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>variable containing the query string needed by a navigation element to move to the next page of the result</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>previousPage</b></td>
+	<td>AT_END</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>variable containing the query string needed by a navigation element to return to the previous page of the result</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>lastPage</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>variable containing the query string needed by a navigation element to move to the last page of the result</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>pageList</b></td>
+	<td>AT_BEGIN</td>
+	<td>LinkedList</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>
+	returns a LinkedList of query strings needed to produce links to the number of page
+	represented by the offset of the current page and the maxrows being displayed on each page.
+	In other words it is for the next 10x page links at the bottom of the page.
+	</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>score</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>
+	returns a string representation of the float value stored in every lucene index as the value score.
+	if you want to translate it into something useful to a user you will need to create new <br>
+	<nobr>Float(tagid.getField("score")).floatValue()</nobr>
+	and then you can use your own conversion method as this will return you the original float value that
+	was stored in the index.
+	</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>getField(String name)</b></td>
+	<td>AT_BEGIN</td>
+	<td>String</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>
+	used to retreive the named field from the index for that iteration of the loop.
+	If no such name exists in the index such as author the method will return an empty string.
+	</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td><b>getFields()</b></td>
+	<td>AT_BEGIN</td>
+	<td>Set</td>
+	<td colspan=2>readonly</td>
+</tr>
+<tr>
+	<td>&nbsp;</td>
+	<td>&nbsp;</td>
+	<td colspan=4>used to retrieve a Set view of all of the fields contained in the index
+	for each iteration of the loop, most generally would be used to write your table headers
+	when the field names are not known until runtime.
+	</td>
+</tr>
+<tr>
+	<td><b>Example</b></td>
+	<td colspan=4>loop over the results outputing the value for the url field stored in the index</td>
+</tr>
+<tr>
+	<td colspan=6>
+	<pre>
+	&lt;LUCENE:Search id="rs" collection="C:/opt/lucene/index" criteria="user input" startRow="0" maxRows="10"&gt;
+		&lt;%= rs.getField("url") %&gt;
+	&lt;/LUCENE:Search&gt;
+	</pre>
+	<br><br>
+	<p>
+	
+	</p>
+	</td>
+</tr>
+</table>
+
+</body>
+</html>
