@@ -399,8 +399,8 @@ public class IndexWriter {
 
     optimize();					  // start with zero or 1 seg
 
-    String mergedName = newSegmentName();
-    final SegmentMerger merger = new SegmentMerger(directory, mergedName);
+    final String mergedName = newSegmentName();
+    SegmentMerger merger = new SegmentMerger(directory, mergedName);
 
     final Vector segmentsToDelete = new Vector();
     IndexReader sReader = null;
@@ -422,15 +422,28 @@ public class IndexWriter {
         sReader.close();
 
     synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
+      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit changes
 	    deleteSegments(segmentsToDelete);  // delete now-unused segments
-	    if(useCompoundFile)
-	        merger.createCompoundFile();
 	    return null;
 	  }
 	}.run();
+    }
+    
+    if (useCompoundFile) {
+      final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
+      synchronized (directory) { // in- & inter-process sync
+        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+          public Object doBody() throws IOException {
+            // make compound file visible for SegmentReaders
+            directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
+            // delete now unused files of segment 
+            deleteFiles(filesToDelete);   
+            return null;
+          }
+        }.run();
+      }
     }
   }
 
@@ -479,9 +492,9 @@ public class IndexWriter {
     and pushes the merged index onto the top of the segmentInfos stack. */
   private final void mergeSegments(int minSegment)
       throws IOException {
-    String mergedName = newSegmentName();
+    final String mergedName = newSegmentName();
     if (infoStream != null) infoStream.print("merging segments");
-    final SegmentMerger merger =
+    SegmentMerger merger =
         new SegmentMerger(directory, mergedName);
 
     final Vector segmentsToDelete = new Vector();
@@ -510,23 +523,37 @@ public class IndexWriter {
     merger.closeReaders();
 
     synchronized (directory) {                 // in- & inter-process sync
-      new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
             segmentInfos.write(directory);     // commit before deleting
             deleteSegments(segmentsToDelete);  // delete now-unused segments
-            if(useCompoundFile)
-                merger.createCompoundFile();
             return null;
           }
         }.run();
     }
-
+    
+    if (useCompoundFile) {
+      final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
+      synchronized (directory) { // in- & inter-process sync
+        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+          public Object doBody() throws IOException {
+            // make compound file visible for SegmentReaders
+            directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
+            // delete now unused files of segment 
+            deleteFiles(filesToDelete);   
+            return null;
+          }
+        }.run();
+      }
+    }
   }
 
-  /* Some operating systems (e.g. Windows) don't permit a file to be deleted
-     while it is opened for read (e.g. by another process or thread).  So we
-     assume that when a delete fails it is because the file is open in another
-     process, and queue the file for subsequent deletion. */
+  /*
+   * Some operating systems (e.g. Windows) don't permit a file to be deleted
+   * while it is opened for read (e.g. by another process or thread). So we
+   * assume that when a delete fails it is because the file is open in another
+   * process, and queue the file for subsequent deletion.
+   */
 
   private final void deleteSegments(Vector segments) throws IOException {
     Vector deletable = new Vector();
@@ -542,6 +569,13 @@ public class IndexWriter {
     }
 
     writeDeleteableFiles(deletable);		  // note files we can't delete
+  }
+  
+  private final void deleteFiles(Vector files) throws IOException {
+      Vector deletable = new Vector();
+      deleteFiles(readDeleteableFiles(), deletable); // try to delete deleteable
+      deleteFiles(files, deletable);     // try to delete our files
+      writeDeleteableFiles(deletable);        // note files we can't delete
   }
 
   private final void deleteFiles(Vector files, Directory directory)

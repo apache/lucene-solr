@@ -53,7 +53,7 @@ final class SegmentReader extends IndexReader {
   InputStream proxStream;
 
   // Compound File Reader when based on a compound file segment
-  CompoundFileReader cfsReader;
+  CompoundFileReader cfsReader = null;
 
   private class Norm {
     public Norm(InputStream in, int number) 
@@ -75,7 +75,13 @@ final class SegmentReader extends IndexReader {
       } finally {
         out.close();
       }
-      String fileName = segment + ".f" + number;
+      String fileName;
+      if(cfsReader == null)
+          fileName = segment + ".f" + number;
+      else{ 
+          // use a different file name if we have compound format
+          fileName = segment + ".s" + number;
+      }
       directory().renameFile(segment + ".tmp", fileName);
       this.dirty = false;
     }
@@ -216,8 +222,15 @@ final class SegmentReader extends IndexReader {
 
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed)
-        files.addElement(segment + ".f" + i);
+      if (fi.isIndexed){
+        String name;
+        if(cfsReader == null)
+            name = segment + ".f" + i;
+        else
+            name = segment + ".s" + i;
+        if (directory().fileExists(name))
+            files.addElement(name);
+      }
     }
     return files;
   }
@@ -363,9 +376,13 @@ final class SegmentReader extends IndexReader {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
-        String fileName = segment + ".f" + fi.number;
-        // look first for re-written file, then in compound format
-        Directory d = directory().fileExists(fileName) ? directory() : cfsDir;
+        // look first if there are separate norms in compound format
+        String fileName = segment + ".s" + fi.number;
+        Directory d = directory();
+        if(!d.fileExists(fileName)){
+            fileName = segment + ".f" + fi.number;
+            d = cfsDir;
+        }
         norms.put(fi.name, new Norm(d.openFile(fileName), fi.number));
       }
     }

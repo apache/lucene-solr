@@ -188,8 +188,11 @@ public class TestDoc extends TestCase {
       merger.merge();
       merger.closeReaders();
       
-      if(useCompoundFile)
-          merger.createCompoundFile();
+      if (useCompoundFile) {
+        Vector filesToDelete = merger.createCompoundFile(merged + ".cfs");
+        for (Iterator iter = filesToDelete.iterator(); iter.hasNext();)
+          directory.deleteFile((String) iter.next());
+      }
 
       directory.close();
    }

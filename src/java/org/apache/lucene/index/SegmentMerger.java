@@ -108,13 +108,13 @@ final class SegmentMerger {
     }
   }
 
-  final void createCompoundFile()
+  final Vector createCompoundFile(String fileName)
           throws IOException {
     CompoundFileWriter cfsWriter =
-            new CompoundFileWriter(directory, segment + ".cfs");
+            new CompoundFileWriter(directory, fileName);
 
-    ArrayList files =
-      new ArrayList(COMPOUND_EXTENSIONS.length + fieldInfos.size());    
+    Vector files =
+      new Vector(COMPOUND_EXTENSIONS.length + fieldInfos.size());    
     
     // Basic files
     for (int i = 0; i < COMPOUND_EXTENSIONS.length; i++) {
@@ -144,12 +144,8 @@ final class SegmentMerger {
     
     // Perform the merge
     cfsWriter.close();
-        
-    // Now delete the source files
-    it = files.iterator();
-    while (it.hasNext()) {
-      directory.deleteFile((String) it.next());
-    }
+   
+    return files;
   }
 
   /**
