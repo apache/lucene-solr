@@ -225,7 +225,7 @@ public class MultiPhraseQuery extends Query {
     }
   }
 
-  protected Weight createWeight(Searcher searcher) {
+  public Query rewrite(IndexReader reader) {
     if (termArrays.size() == 1) {                 // optimize one-term case
       Term[] terms = (Term[])termArrays.get(0);
       BooleanQuery boq = new BooleanQuery();
@@ -233,8 +233,13 @@ public class MultiPhraseQuery extends Query {
         boq.add(new TermQuery(terms[i]), BooleanClause.Occur.SHOULD);
       }
       boq.setBoost(getBoost());
-      return boq.createWeight(searcher);
+      return boq;
+    } else {
+      return this;
     }
+  }
+  
+  protected Weight createWeight(Searcher searcher) {
     return new MultiPhraseWeight(searcher);
   }
 

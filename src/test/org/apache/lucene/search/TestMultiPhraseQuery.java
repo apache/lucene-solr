@@ -39,13 +39,11 @@ import java.util.LinkedList;
  */
 public class TestMultiPhraseQuery extends TestCase
 {
-    public TestMultiPhraseQuery(String name)
-    {
+    public TestMultiPhraseQuery(String name) {
         super(name);
     }
 
-    public void testPhrasePrefix() throws IOException
-    {
+    public void testPhrasePrefix() throws IOException {
         RAMDirectory indexStore = new RAMDirectory();
         IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
         add("blueberry pie", writer);
@@ -128,10 +126,43 @@ public class TestMultiPhraseQuery extends TestCase
 
     }
     
-    private void add(String s, IndexWriter writer) throws IOException
-    {
+    private void add(String s, IndexWriter writer) throws IOException {
       Document doc = new Document();
       doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
+    
+    public void testBooleanQueryContainingSingleTermPrefixQuery() throws IOException {
+      // this tests against bug 33161 (now fixed)
+      // In order to cause the bug, the outer query must have more than one term 
+      // and all terms required.
+      // The contained PhraseMultiQuery must contain exactly one term array.
+
+      RAMDirectory indexStore = new RAMDirectory();
+      IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true);
+      add("blueberry pie", writer);
+      add("blueberry chewing gum", writer);
+      add("blue raspberry pie", writer);
+      writer.optimize();
+      writer.close();
+
+      IndexSearcher searcher = new IndexSearcher(indexStore);
+      // This query will be equivalent to +body:pie +body:"blue*"
+      BooleanQuery q = new BooleanQuery();
+      q.add(new TermQuery(new Term("body", "pie")), BooleanClause.Occur.MUST);
+
+      MultiPhraseQuery trouble = new MultiPhraseQuery();
+      trouble.add(new Term[] {
+          new Term("body", "blueberry"),
+          new Term("body", "blue")
+      });
+      q.add(trouble, BooleanClause.Occur.MUST);
+
+      // exception will be thrown here without fix
+      Hits hits = searcher.search(q);
+
+      assertEquals("Wrong number of hits", 2, hits.length());
+      searcher.close();
+  }
+
 }
