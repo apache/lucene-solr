@@ -160,21 +160,22 @@ final class RAMInputStream extends InputStream implements Cloneable {
 
   /** InputStream methods */
   public final void readInternal(byte[] dest, int destOffset, int len) {
-    int bufferNumber = pointer/InputStream.BUFFER_SIZE;
-    int bufferOffset = pointer%InputStream.BUFFER_SIZE;
-    int bytesInBuffer = InputStream.BUFFER_SIZE - bufferOffset;
-    int bytesToCopy = bytesInBuffer >= len ? len : bytesInBuffer;
-    byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
-    System.arraycopy(buffer, bufferOffset, dest, destOffset, bytesToCopy);
-
-    if (bytesToCopy < len) {			  // not all in one buffer
+    int remainder = len;
+    int start = pointer;
+    while (remainder != 0) {
+      int bufferNumber = start/InputStream.BUFFER_SIZE;
+      int bufferOffset = start%InputStream.BUFFER_SIZE;
+      int bytesInBuffer = InputStream.BUFFER_SIZE - bufferOffset;
+      int bytesToCopy = bytesInBuffer >= remainder ? remainder : bytesInBuffer;
+      byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
+      System.arraycopy(buffer, bufferOffset, dest, destOffset, bytesToCopy);
       destOffset += bytesToCopy;
-      bytesToCopy = len - bytesToCopy;		  // remaining bytes
-      buffer = (byte[])file.buffers.elementAt(bufferNumber+1);
-      System.arraycopy(buffer, 0, dest, destOffset, bytesToCopy);
+      start += bytesToCopy;
+      remainder -= bytesToCopy;
     }
     pointer += len;
   }
+
   public final void close() {
   }
 
