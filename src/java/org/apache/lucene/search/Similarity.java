@@ -60,7 +60,6 @@ import java.util.Vector;
 import org.apache.lucene.index.Term;
 
 import org.apache.lucene.index.IndexWriter;       // for javadoc
-import org.apache.lucene.index.IndexReader;       // for javadoc
 import org.apache.lucene.document.Field;          // for javadoc
 
 
@@ -86,7 +85,7 @@ import org.apache.lucene.document.Field;          // for javadoc
  *    {@link #queryNorm(float) queryNorm}(q)
  *    </td>
  *  </tr>
- *  <tr> 
+ *  <tr>
  *   <td valign="top" align="right">
  *    <small>t in q</small>
  *    </td>
@@ -173,7 +172,7 @@ public abstract class Similarity {
    */
   public abstract float queryNorm(float sumOfSquaredWeights);
 
-  /** Encodes a normalization factor for storage in an index.  
+  /** Encodes a normalization factor for storage in an index.
    *
    * <p>The encoding uses a five-bit exponent and three-bit mantissa, thus
    * representing values from around 7x10^9 to 2x10^-9 with about one
@@ -197,7 +196,7 @@ public abstract class Similarity {
     int bits = ((exponent+(63-15)) << 24) | (mantissa << 21);
     return Float.intBitsToFloat(bits);
   }
-   
+
   private static byte floatToByte(float f) {
     if (f < 0.0f)                                 // round negatives up to zero
       f = 0.0f;
@@ -229,13 +228,13 @@ public abstract class Similarity {
    * form the initial score for a document.
    *
    * <p>Terms and phrases repeated in a document indicate the topic of the
-   * document, so implemenations of this method usually return larger values
+   * document, so implementations of this method usually return larger values
    * when <code>freq</code> is large, and smaller values when <code>freq</code>
    * is small.
    *
    * <p>The default implementation calls {@link #tf(float)}.
    *
-   * @param tf the frequency of a term within a document
+   * @param freq the frequency of a term within a document
    * @return a score factor based on a term's within-document frequency
    */
   public float tf(int freq) {
@@ -247,7 +246,7 @@ public abstract class Similarity {
    * the frequency that is passed to {@link #tf(float)}.
    *
    * <p>A phrase match with a small edit distance to a document passage more
-   * closely matches the document, so implemenations of this method usually
+   * closely matches the document, so implementations of this method usually
    * return larger values when the edit distance is small and smaller values
    * when it is large.
    *
@@ -267,11 +266,11 @@ public abstract class Similarity {
    * when <code>freq</code> is large, and smaller values when <code>freq</code>
    * is small.
    *
-   * @param tf the frequency of a term within a document
+   * @param freq the frequency of a term within a document
    * @return a score factor based on a term's within-document frequency
    */
   public abstract float tf(float freq);
-    
+
   /** Computes a score factor for a simple term.
    *
    * <p>The default implementation is:<pre>
@@ -322,7 +321,7 @@ public abstract class Similarity {
    * @return a score factor based on the term's document frequency
    */
   protected abstract float idf(int docFreq, int numDocs);
-    
+
   /** Computes a score factor based on the fraction of all query terms that a
    * document contains.  This value is multiplied into scores.
    *
