@@ -40,11 +40,17 @@ class IndexFiles {
       System.exit(1);
     }
     
+    final File docDir = new File(args[0]);
+    if (!docDir.exists() || !docDir.canRead()) {
+      System.out.println("Document directory '" +docDir.getAbsolutePath()+ "' does not exist or is not readable, please check the path");
+      System.exit(1);
+    }
+    
     Date start = new Date();
     try {
       IndexWriter writer = new IndexWriter(INDEX_DIR, new StandardAnalyzer(), true);
       System.out.println("Indexing to directory '" +INDEX_DIR+ "'...");
-      indexDocs(writer, new File(args[0]));
+      indexDocs(writer, docDir);
       System.out.println("Optimizing...");
       writer.optimize();
       writer.close();
