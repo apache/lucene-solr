@@ -25,8 +25,9 @@ import java.io.IOException;
 import java.util.Date;
 
 class IndexFiles {
-  public static void main(String[] args) throws IOException {
-    String usage = "java " + IndexFiles.class + " <root_directory>";
+  
+  public static void main(String[] args) {
+    String usage = "java org.apache.lucene.demo.IndexFiles <root_directory>";
     if (args.length == 0) {
       System.err.println("Usage: " + usage);
       System.exit(1);
@@ -36,12 +37,10 @@ class IndexFiles {
     try {
       IndexWriter writer = new IndexWriter("index", new StandardAnalyzer(), true);
       indexDocs(writer, new File(args[0]));
-
       writer.optimize();
       writer.close();
 
       Date end = new Date();
-
       System.out.print(end.getTime() - start.getTime());
       System.out.println(" total milliseconds");
 
@@ -76,4 +75,5 @@ class IndexFiles {
       }
     }
   }
+  
 }
