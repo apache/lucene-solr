@@ -74,94 +74,104 @@ import java.util.Hashtable;
  * @author    Gerhard Schwarz
  * @version   $Id$
  */
-public class GermanAnalyzer extends Analyzer {
+public class GermanAnalyzer extends Analyzer
+{
+    /**
+     * List of typical german stopwords.
+     */
+    private String[] GERMAN_STOP_WORDS = {
+	"einer", "eine", "eines", "einem", "einen",
+	"der", "die", "das", "dass", "daß",
+	"du", "er", "sie", "es",
+	"was", "wer", "wie", "wir",
+	"und", "oder", "ohne", "mit",
+	"am", "im", "in", "aus", "auf",
+	"ist", "sein", "war", "wird",
+	"ihr", "ihre", "ihres",
+	"als", "für", "von", "mit",
+	"dich", "dir", "mich", "mir",
+	"mein", "sein", "kein",
+	"durch", "wegen", "wird"
+    };
 
-	/**
-	 * List of typical german stopwords.
-	 */
-	private String[] GERMAN_STOP_WORDS = {
-		"einer", "eine", "eines", "einem", "einen",
-		"der", "die", "das", "dass", "daß",
-		"du", "er", "sie", "es",
-		"was", "wer", "wie", "wir",
-		"und", "oder", "ohne", "mit",
-		"am", "im", "in", "aus", "auf",
-		"ist", "sein", "war", "wird",
-		"ihr", "ihre", "ihres",
-		"als", "für", "von", "mit",
-		"dich", "dir", "mich", "mir",
-		"mein", "sein", "kein",
-		"durch", "wegen", "wird"
-	};
-	
-	/**
-	 * Contains the stopwords used with the StopFilter.
-	 */
-	private Hashtable stoptable = new Hashtable();
-	/**
-	 * Contains words that should be indexed but not stemmed.
-	 */
-	private Hashtable excltable = new Hashtable();
-	
-	/**
-	 * Builds an analyzer.
-	 */
-	public GermanAnalyzer() {
-		stoptable = StopFilter.makeStopTable( GERMAN_STOP_WORDS );
-	}
+    /**
+     * Contains the stopwords used with the StopFilter.
+     */
+    private Hashtable stoptable = new Hashtable();
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 */
-	public GermanAnalyzer( String[] stopwords ) {
-		stoptable = StopFilter.makeStopTable( stopwords );
-	}
+    /**
+     * Contains words that should be indexed but not stemmed.
+     */
+    private Hashtable excltable = new Hashtable();
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 */
-	public GermanAnalyzer( Hashtable stopwords ) {
-		stoptable = stopwords;
-	}
+    /**
+     * Builds an analyzer.
+     */
+    public GermanAnalyzer()
+    {
+	stoptable = StopFilter.makeStopTable( GERMAN_STOP_WORDS );
+    }
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 */
-	public GermanAnalyzer( File stopwords ) {
-		stoptable = WordlistLoader.getWordtable( stopwords );
-	}
+    /**
+     * Builds an analyzer with the given stop words.
+     */
+    public GermanAnalyzer( String[] stopwords )
+    {
+	stoptable = StopFilter.makeStopTable( stopwords );
+    }
 
-	/**
-	 * Builds an exclusionlist from an array of Strings.
-	 */
-	public void setStemExclusionTable( String[] exclusionlist ) {
-		excltable = StopFilter.makeStopTable( exclusionlist );
-	}
-	/**
-	 * Builds an exclusionlist from a Hashtable.
-	 */
-	public void setStemExclusionTable( Hashtable exclusionlist ) {
-		excltable = exclusionlist;
-	}
-	/**
-	 * Builds an exclusionlist from the words contained in the given file.
-	 */
-	public void setStemExclusionTable( File exclusionlist ) {
-		excltable = WordlistLoader.getWordtable( exclusionlist );
-	}
-	
-	/**
-	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
-	 *
-	 * @return  A TokenStream build from a StandardTokenizer filtered with
-	 * 			StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter
-	 */
-	public TokenStream tokenStream( String fieldName, Reader reader ) {
-		TokenStream result = new StandardTokenizer( reader );
-		result = new StandardFilter( result );
-		result = new StopFilter( result, stoptable );
-		result = new GermanStemFilter( result, excltable );
-		return result;
-	}
+    /**
+     * Builds an analyzer with the given stop words.
+     */
+    public GermanAnalyzer( Hashtable stopwords )
+    {
+	stoptable = stopwords;
+    }
+
+    /**
+     * Builds an analyzer with the given stop words.
+     */
+    public GermanAnalyzer( File stopwords )
+    {
+	stoptable = WordlistLoader.getWordtable( stopwords );
+    }
+
+    /**
+     * Builds an exclusionlist from an array of Strings.
+     */
+    public void setStemExclusionTable( String[] exclusionlist )
+    {
+	excltable = StopFilter.makeStopTable( exclusionlist );
+    }
+
+    /**
+     * Builds an exclusionlist from a Hashtable.
+     */
+    public void setStemExclusionTable( Hashtable exclusionlist )
+    {
+	excltable = exclusionlist;
+    }
+
+    /**
+     * Builds an exclusionlist from the words contained in the given file.
+     */
+    public void setStemExclusionTable( File exclusionlist )
+    {
+	excltable = WordlistLoader.getWordtable( exclusionlist );
+    }
+
+    /**
+     * Creates a TokenStream which tokenizes all the text in the provided Reader.
+     *
+     * @return  A TokenStream build from a StandardTokenizer filtered with
+     *		StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter
+     */
+    public TokenStream tokenStream( String fieldName, Reader reader )
+    {
+	TokenStream result = new StandardTokenizer( reader );
+	result = new StandardFilter( result );
+	result = new StopFilter( result, stoptable );
+	result = new GermanStemFilter( result, excltable );
+	return result;
+    }
 }
-
