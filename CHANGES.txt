@@ -272,7 +272,7 @@ $Id$
 
  7. Modified QueryParser to make it possible to programmatically specify the
     default Boolean operator (OR or AND).
-    (Péter Halácsy via otis)
+    (P√©ter Hal√°csy via otis)
 
  8. Made many search methods and classes non-final, per requests.
     This includes IndexWriter and IndexSearcher, among others.
