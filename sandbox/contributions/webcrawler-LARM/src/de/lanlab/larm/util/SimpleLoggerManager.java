@@ -58,14 +58,15 @@ import java.util.*;
 import java.io.IOException;
 
 /**
- * this singleton manages all loggers. It can be used to flush all SimpleLoggers
- * at once
+ * This singleton manages all loggers. It can be used to flush all SimpleLoggers
+ * at once.
+ * @version $Id$
  */
 public class SimpleLoggerManager
 {
-    static SimpleLoggerManager instance = null;
+    private static SimpleLoggerManager instance = null;
 
-    ArrayList logs;
+    private ArrayList logs;
 
     private SimpleLoggerManager()
     {
@@ -93,15 +94,15 @@ public class SimpleLoggerManager
                ex = e;
             }
         }
-        if(ex != null)
+        if (ex != null)
         {
             throw ex;
         }
     }
 
-    public static SimpleLoggerManager getInstance()
+    public synchronized static SimpleLoggerManager getInstance()
     {
-        if(instance == null)
+        if (instance == null)
         {
             instance = new SimpleLoggerManager();
         }
