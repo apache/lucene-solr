@@ -53,7 +53,8 @@ public class HTMLDocument {
     // Add the last modified date of the file a field named "modified".  
     // Use a field that is indexed (i.e. searchable), but don't tokenize
     // the field into words.
-    doc.add(new Field("modified", DateField.timeToString(f.lastModified()),
+    doc.add(new Field("modified",
+        DateTools.timeToString(f.lastModified(), DateTools.Resolution.MINUTE),
         Field.Store.YES, Field.Index.UN_TOKENIZED));
 
     // Add the uid as a field, so that index can be incrementally maintained.

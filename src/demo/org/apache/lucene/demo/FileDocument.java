@@ -19,9 +19,9 @@ package org.apache.lucene.demo;
 import java.io.File;
 import java.io.FileReader;
 
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DateField;
 
 /** A utility for making Lucene Documents from a File. */
 
@@ -33,8 +33,8 @@ public class FileDocument {
     <li><code>path</code>--containing the pathname of the file, as a stored,
     untokenized field;
     <li><code>modified</code>--containing the last modified date of the file as
-    a keyword field as encoded by <a
-    href="lucene.document.DateField.html">DateField</a>; and
+    a field as created by <a
+    href="lucene.document.DateTools.html">DateTools</a>; and
     <li><code>contents</code>--containing the full contents of the file, as a
     Reader field;
     */
@@ -51,7 +51,8 @@ public class FileDocument {
     // Add the last modified date of the file a field named "modified".  Use 
     // a field that is indexed (i.e. searchable), but don't tokenize the field
     // into words.
-    doc.add(new Field("modified", DateField.timeToString(f.lastModified()),
+    doc.add(new Field("modified",
+        DateTools.timeToString(f.lastModified(), DateTools.Resolution.MINUTE),
         Field.Store.YES, Field.Index.UN_TOKENIZED));
 
     // Add the contents of the file to a field named "contents".  Specify a Reader,
