@@ -74,15 +74,6 @@ public class BrazilianStemmer {
 	private   String RV ;
 
 
-	/**
-	 * Buffer for the terms while stemming them.
-	 */
-	private StringBuffer sb = new StringBuffer();
-	/**
-	 * Amount of characters that are removed with <tt>substitute()</tt> while stemming.
-	 */
-	private int substCount = 0;
-
 	public BrazilianStemmer() {
 	}
 
@@ -175,7 +166,6 @@ public class BrazilianStemmer {
 	private String getR1( String value ) {
     int     i;
     int     j;
-    String  r1 = null ;
 
     // be-safe !!!
     if (value == null) {
@@ -228,7 +218,6 @@ public class BrazilianStemmer {
 	private String getRV( String value ) {
     int     i;
     int     j;
-    String  r1 = null ;
 
     // be-safe !!!
     if (value == null) {
@@ -288,7 +277,6 @@ public class BrazilianStemmer {
    * @return null or a string transformed
 	 */
 	private String changeTerm( String value ) {
-    int     i;
     int     j;
     String  r = "" ;
 
