@@ -61,7 +61,7 @@ public abstract class Parameter implements Serializable
    * @return a reference to Parameter as resolved in the local VM
    * @throws ObjectStreamException
    */
-  private Object readResolve() throws ObjectStreamException {
+  protected Object readResolve() throws ObjectStreamException {
     Object par = allParameters.get(makeKey(name));
     
     if(par == null)
