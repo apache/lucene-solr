@@ -102,8 +102,8 @@
       <tr><td>&nbsp;</tr>
       <tr><th><p>Current Query:</th><td><pre id="curQuery"></pre><pre id="curQueryValid"></pre></td><td>
             
-      <input type="button" name="Update" value="Update Query" onClick="doSubmitForm(this.form); curQuery.innerText = this.form.query.value" />
-      <input type="button" name="Validate" value="Validate" onClick="doCheckLuceneQuery(this.form.query); curQueryValid.innerText = 'Query is valid'" />      
+      <input type="button" name="Update" value="Update Query" onClick="doSubmitForm(this.form); document.getElementById('curQuery').innerHTML = this.form.query.value" />
+      <input type="button" name="Validate" value="Validate" onClick="doCheckLuceneQuery(this.form.query); getElementById('curQueryValid').innerHTML = 'Query is valid'" />      
       </td>      
     </table>
     </form>
