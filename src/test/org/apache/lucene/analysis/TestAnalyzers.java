@@ -19,9 +19,6 @@ package org.apache.lucene.analysis;
 import java.io.*;
 import junit.framework.*;
 
-import org.apache.lucene.*;
-import org.apache.lucene.analysis.*;
-
 public class TestAnalyzers extends TestCase {
 
    public TestAnalyzers(String name) {
