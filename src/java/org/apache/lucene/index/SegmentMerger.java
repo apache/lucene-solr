@@ -94,10 +94,9 @@ final class SegmentMerger {
   final int merge() throws IOException {
     int value;
     try {
-      mergeFields();
+      value = mergeFields();
       mergeTerms();
-      value = mergeNorms();
-      
+      mergeNorms();
     } finally {
       for (int i = 0; i < readers.size(); i++) {  // close readers
 	IndexReader reader = (IndexReader)readers.elementAt(i);
@@ -149,8 +148,9 @@ final class SegmentMerger {
   }
   
   
-  private final void mergeFields() throws IOException {
+  private final int mergeFields() throws IOException {
     fieldInfos = new FieldInfos();		  // merge field names
+    int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader)readers.elementAt(i);
       fieldInfos.add(reader.getFieldNames(true), true);
@@ -165,12 +165,15 @@ final class SegmentMerger {
 	IndexReader reader = (IndexReader)readers.elementAt(i);
 	int maxDoc = reader.maxDoc();
 	for (int j = 0; j < maxDoc; j++)
-	  if (!reader.isDeleted(j))               // skip deleted docs
-	    fieldsWriter.addDocument(reader.document(j));
+	  if (!reader.isDeleted(j)){               // skip deleted docs
+            fieldsWriter.addDocument(reader.document(j));
+            docCount++;
+	  }
       }
     } finally {
       fieldsWriter.close();
     }
+    return docCount;
   }
 
   private OutputStream freqOutput = null;
@@ -292,8 +295,7 @@ final class SegmentMerger {
     }
     return df;
   }
-  private final int mergeNorms() throws IOException {
-    int docCount = 0;
+  private final void mergeNorms() throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
@@ -307,7 +309,6 @@ final class SegmentMerger {
               byte norm = input != null ? input[k] : (byte)0;
               if (!reader.isDeleted(k)) {
                 output.writeByte(norm);
-                docCount++;
               }
 	    }
 	  }
@@ -316,7 +317,6 @@ final class SegmentMerger {
 	}
       }
     }
-    return docCount;
   }
 
 }
