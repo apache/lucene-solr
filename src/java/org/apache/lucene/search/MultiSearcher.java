@@ -98,13 +98,20 @@ public class MultiSearcher extends Searcher implements Searchable {
 
   /** For use by {@link HitCollector} implementations. */
   public Document doc(int n) throws IOException {
-    int i = searcherIndex(n);			  // find searcher index
+    int i = subSearcher(n);			  // find searcher index
     return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
   }
 
-  /** For use by {@link HitCollector} implementations to identify the
-   * index of the sub-searcher that a particular hit came from. */
-  public int searcherIndex(int n) {               // find searcher for doc n:
+  /** Call {@link #subSearcher} instead.
+   * @deprecated
+   */
+  public int searcherIndex(int n) {
+    return subSearcher(n);
+  }
+
+  /** Returns index of the searcher for document <code>n</code> in the array
+   * used to construct this searcher. */
+  public int subSearcher(int n) {                 // find searcher for doc n:
     // replace w/ call to Arrays.binarySearch in Java 1.2
     int lo = 0;					  // search starts array
     int hi = searchables.length - 1;		  // for first element less
@@ -124,6 +131,12 @@ public class MultiSearcher extends Searcher implements Searchable {
       }
     }
     return hi;
+  }
+
+  /** Returns the document number of document <code>n</code> within its
+   * sub-index. */
+  public int subDoc(int n) {
+    return n - starts[subSearcher(n)];
   }
 
   public int maxDoc() throws IOException {
