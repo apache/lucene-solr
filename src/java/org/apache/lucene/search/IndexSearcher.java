@@ -197,7 +197,7 @@ public class IndexSearcher extends Searcher implements Searchable {
   }
 
   public Explanation explain(Query query, int doc) throws IOException {
-    return query.weight(this).scorer(reader).explain(doc);
+    return query.weight(this).explain(reader, doc);
   }
 
 }

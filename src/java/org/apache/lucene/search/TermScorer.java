@@ -124,14 +124,7 @@ final class TermScorer extends Scorer {
   }
 
   public Explanation explain(int doc) throws IOException {
-    Explanation result = new Explanation();
     TermQuery query = (TermQuery)weight.getQuery();
-
-    result.setDescription("termScore(" + query + "), product of:");
-    
-    Explanation weightExplanation = weight.explain();
-    result.addDetail(weightExplanation);
-
     Explanation tfExplanation = new Explanation();
     int tf = 0;
     while (pointer < pointerMax) {
@@ -149,18 +142,7 @@ final class TermScorer extends Scorer {
     termDocs.close();
     tfExplanation.setValue(getSimilarity().tf(tf));
     tfExplanation.setDescription("tf(termFreq("+query.getTerm()+")="+tf+")");
-    result.addDetail(tfExplanation);
     
-    Explanation normExplanation = new Explanation();
-    normExplanation.setValue(Similarity.decodeNorm(norms[doc]));
-    String field = query.getTerm().field();
-    normExplanation.setDescription("norm(field="+field + ", doc="+doc + ")");
-    result.addDetail(normExplanation);
-
-    result.setValue(weightExplanation.getValue() *
-                    tfExplanation.getValue() *
-                    normExplanation.getValue());
-    
-    return result;
+    return tfExplanation;
   }
 }

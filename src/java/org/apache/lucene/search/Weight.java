@@ -83,6 +83,6 @@ public interface Weight extends java.io.Serializable {
   /** Constructs a scorer for this. */
   Scorer scorer(IndexReader reader) throws IOException;
 
-  /** An explanation of this weight computation. */
-  Explanation explain() throws IOException;
+  /** An explanation of the score computation for the named document. */
+  Explanation explain(IndexReader reader, int doc) throws IOException;
 }

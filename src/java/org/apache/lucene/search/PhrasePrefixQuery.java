@@ -125,6 +125,7 @@ public class PhrasePrefixQuery extends Query {
     private float value;
     private float idf;
     private float queryNorm;
+    private float queryWeight;
 
     public PhrasePrefixWeight(Searcher searcher) {
       this.searcher = searcher;
@@ -141,14 +142,14 @@ public class PhrasePrefixQuery extends Query {
           idf += searcher.getSimilarity().idf(terms[j], searcher);
       }
 
-      value = idf * getBoost();
-      return value * value;
+      queryWeight = idf * getBoost();             // compute query weight
+      return queryWeight * queryWeight;           // square it
     }
 
-    public void normalize(float norm) {
-      queryNorm = norm;
-      queryNorm *= idf;                           // factor from document
-      value *= queryNorm;                         // normalize for query
+    public void normalize(float queryNorm) {
+      this.queryNorm = queryNorm;
+      queryWeight *= queryNorm;                   // normalize query weight
+      value = queryWeight * idf;                  // idf for document 
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
@@ -179,25 +180,57 @@ public class PhrasePrefixQuery extends Query {
                                       slop, reader.norms(field));
     }
     
-    public Explanation explain() throws IOException {
-      Query q = getQuery();
-
+    public Explanation explain(IndexReader reader, int doc)
+      throws IOException {
       Explanation result = new Explanation();
-      result.setDescription("weight(" + getQuery() + "), product of:");
+      result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
+
+      Explanation idfExpl = new Explanation(idf, "idf("+getQuery()+")");
+      
+      // explain query weight
+      Explanation queryExpl = new Explanation();
+      queryExpl.setDescription("queryWeight(" + getQuery() + "), product of:");
 
       Explanation boostExpl = new Explanation(getBoost(), "boost");
       if (getBoost() != 1.0f)
-        result.addDetail(boostExpl);
-      
-      Explanation idfExpl = new Explanation(idf, "idf");
-      result.addDetail(idfExpl);
-      
-      Explanation normExpl = new Explanation(queryNorm, "queryNorm");
-      result.addDetail(normExpl);
+        queryExpl.addDetail(boostExpl);
 
-      result.setValue(boostExpl.getValue() *
-                      idfExpl.getValue() *
-                      normExpl.getValue());
+      queryExpl.addDetail(idfExpl);
+      
+      Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
+      queryExpl.addDetail(queryNormExpl);
+      
+      queryExpl.setValue(boostExpl.getValue() *
+                         idfExpl.getValue() *
+                         queryNormExpl.getValue());
+
+      result.addDetail(queryExpl);
+     
+      // explain field weight
+      Explanation fieldExpl = new Explanation();
+      fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
+                               "), product of:");
+
+      Explanation tfExpl = scorer(reader).explain(doc);
+      fieldExpl.addDetail(tfExpl);
+      fieldExpl.addDetail(idfExpl);
+
+      Explanation fieldNormExpl = new Explanation();
+      fieldNormExpl.setValue(Similarity.decodeNorm(reader.norms(field)[doc]));
+      fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
+      fieldExpl.addDetail(fieldNormExpl);
+
+      fieldExpl.setValue(tfExpl.getValue() *
+                         idfExpl.getValue() *
+                         fieldNormExpl.getValue());
+      
+      result.addDetail(fieldExpl);
+
+      // combine them
+      result.setValue(queryExpl.getValue() * fieldExpl.getValue());
+
+      if (queryExpl.getValue() == 1.0f)
+        return fieldExpl;
 
       return result;
     }

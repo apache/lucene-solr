@@ -150,13 +150,48 @@ public class BooleanQuery extends Query {
       return result;
     }
 
-    public Explanation explain() throws IOException {
-      Explanation result = new Explanation();
-      result.setDescription("boost(" + getQuery() + ")");
-      result.setValue(getBoost());
-      return result;
-    }
+    public Explanation explain(IndexReader reader, int doc)
+      throws IOException {
+      Explanation sumExpl = new Explanation();
+      sumExpl.setDescription("sum of:");
+      int coord = 0;
+      int maxCoord = 0;
+      float sum = 0.0f;
+      for (int i = 0 ; i < weights.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(0);
+        Weight w = (Weight)weights.elementAt(i);
+        Explanation e = w.explain(reader, doc);
+        if (!c.prohibited) maxCoord++;
+        if (e.getValue() > 0) {
+          if (!c.prohibited) {
+            sumExpl.addDetail(e);
+            sum += e.getValue();
+            coord++;
+          } else {
+            return new Explanation(0.0f, "match prohibited");
+          }
+        } else if (c.required) {
+          return new Explanation(0.0f, "match required");
+        }
+      }
+      sumExpl.setValue(sum);
 
+      if (coord == 1)                               // only one clause matched
+        sumExpl = sumExpl.getDetails()[0];          // eliminate wrapper
+
+      float coordFactor = searcher.getSimilarity().coord(coord, maxCoord);
+      if (coordFactor == 1.0f)                      // coord is no-op
+        return sumExpl;                             // eliminate wrapper
+      else {
+        Explanation result = new Explanation();
+        result.setDescription("product of:");
+        result.addDetail(sumExpl);
+        result.addDetail(new Explanation(coordFactor,
+                                         "coord("+coord+"/"+maxCoord+")"));
+        result.setValue(sum*coordFactor);
+        return result;
+      }
+    }
   }
 
   protected Weight createWeight(Searcher searcher) {

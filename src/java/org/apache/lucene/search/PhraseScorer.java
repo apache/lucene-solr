@@ -130,15 +130,8 @@ abstract class PhraseScorer extends Scorer {
   }
 
   public Explanation explain(final int doc) throws IOException {
-    Explanation result = new Explanation();
-    PhraseQuery query = (PhraseQuery)weight.getQuery();
-
-    result.setDescription("phraseScore(" + query + "), product of:");
-    
-    Explanation weightExplanation = weight.explain();
-    result.addDetail(weightExplanation);
-
     Explanation tfExplanation = new Explanation();
+
     score(new HitCollector() {
         public final void collect(int d, float score) {}
       }, doc+1);
@@ -146,19 +139,8 @@ abstract class PhraseScorer extends Scorer {
     float phraseFreq = (first.doc == doc) ? freq : 0.0f;
     tfExplanation.setValue(getSimilarity().tf(phraseFreq));
     tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
-    result.addDetail(tfExplanation);
-    
-    Explanation normExplanation = new Explanation();
-    normExplanation.setValue(Similarity.decodeNorm(norms[doc]));
-    String field = query.getTerms()[0].field();
-    normExplanation.setDescription("norm(field="+field + ", doc="+doc + ")");
-    result.addDetail(normExplanation);
 
-    result.setValue(weightExplanation.getValue() *
-                    tfExplanation.getValue() *
-                    normExplanation.getValue());
-    
-    return result;
+    return tfExplanation;
   }
 
 }
