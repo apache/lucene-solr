@@ -55,13 +55,14 @@ package org.apache.lucene.demo;
  */
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.*;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.util.Arrays;
-import org.apache.lucene.demo.html.HTMLParser;
-
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 import java.io.File;
 import java.util.Date;
+import java.util.Arrays;
 
 class IndexHTML {
   private static boolean deleting = false;	  // true during deletion pass
@@ -74,7 +75,7 @@ class IndexHTML {
       String index = "index";
       boolean create = false;
       File root = null;
-      
+
       String usage = "IndexHTML [-create] [-index <index>] <root_directory>";
 
       if (argv.length == 0) {
@@ -130,10 +131,10 @@ class IndexHTML {
   private static void indexDocs(File file, String index, boolean create)
        throws Exception {
     if (!create) {				  // incrementally update
-      
+
       reader = IndexReader.open(index);		  // open existing index
       uidIter = reader.terms(new Term("uid", "")); // init uid iterator
-    
+
       indexDocs(file);
 
       if (deleting) {				  // delete rest of stale docs
@@ -163,7 +164,7 @@ class IndexHTML {
     } else if (file.getPath().endsWith(".html") || // index .html files
 	       file.getPath().endsWith(".htm") || // index .htm files
 	       file.getPath().endsWith(".txt")) { // index .txt files
-      
+
       if (uidIter != null) {
 	String uid = HTMLDocument.uid(file);	  // construct uid for doc
 
