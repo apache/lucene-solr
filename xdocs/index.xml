@@ -1,46 +1,41 @@
 <?xml version="1.0"?>
 <document>
-<properties>
-<author email="jon@latchkey.com">Jon S. Stevens</author>
-<author email="husted@apache.org">Ted Husted</author>
-<author email="cutting@apache.org">Doug Cutting</author>
-<author email="carlson@apache.org">Peter Carlson</author>
-<title>Overview - Jakarta Lucene</title>
-</properties>
-<body>
+    <properties>
+        <author email="jon@latchkey.com">Jon S. Stevens</author>
+        <author email="husted@apache.org">Ted Husted</author>
+        <author email="cutting@apache.org">Doug Cutting</author>
+        <author email="carlson@apache.org">Peter Carlson</author>
+        <title>Overview - Jakarta Lucene</title>
+    </properties>
+    <body>
+        <section name="Jakarta Lucene">
+            <p>
+                Jakarta Lucene is a high-performance, full-featured text search engine
+                library written entirely in Java.  It is a technology suitable for nearly any
+                application that requires full-text search, especially cross-platform.
+            </p>
+            <p>
+                Jakarta Lucene is an open source project available for
+                <a href="http://jakarta.apache.org/site/binindex.html">free download</a> from Apache Jakarta.
+                Please use the links on the left to access Lucene.
+            </p>
+        </section>
 
-<section name="Jakarta Lucene">
-<p>
-Jakarta Lucene is a high-performance, full-featured text search engine
-written entirely in Java.  It is a technology suitable for nearly any
-application that requires full-text search, especially cross-platform. 
-</p>
-<p>
-Jakarta Lucene is an open source project available for 
-<a href="http://jakarta.apache.org/site/binindex.html">free download</a> from Apache Jakarta.  
-Please use the links on the left to access Lucene.
-</p>
-</section>
+        <section name="Lucene News">
+            <h3>26 December 2003 - Lucene 1.3 Final Released</h3> <p>A new release
+                of is available with many new features and bug fixes.  See <a
+                    href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.65">CHANGES.txt</a>
+                for details.  Binary and source distributions are available <a
+                    href="http://cvs.apache.org/dist/jakarta/lucene/v1.3-final/">here</a>.
+            </p>
+        </section>
 
-<section name="Lucene News">
-
-<h3>26 December 2003 - Lucene 1.3 Final Released</h3> <p>A new release
-of is available with many new features and bug fixes.  See <a
-href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.65">CHANGES.txt</a>
-for details.  Binary and source distributions are available <a
-href="http://cvs.apache.org/dist/jakarta/lucene/v1.3-final/">here</a>.
-</p>
-
-</section>
-
-<section name="About Apache Jakarta">
-<p>
-The goal of the <a href="http://jakarta.apache.org/">Apache Jakarta Project</a> 
-is to provide commercial-quality server solutions, based on the Java Platform,
-developed in an open and cooperative fashion.
-</p>
-</section>
-
-</body>
+        <section name="About Apache Jakarta">
+            <p>
+                The goal of the <a href="http://jakarta.apache.org/">Apache Jakarta Project</a>
+                is to provide commercial-quality server solutions, based on the Java Platform,
+                developed in an open and cooperative fashion.
+            </p>
+        </section>
+    </body>
 </document>
-
