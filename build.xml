@@ -126,7 +126,8 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="compile-core" depends="init">
+  <target name="compile-core" depends="init"
+    description="Compiles core classes">
     <mkdir dir="${build.dir}/classes/java"/>
     <javac
       encoding="${build.encoding}"
@@ -148,8 +149,8 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="jar-core" depends="compile-core">
-
+  <target name="jar-core" depends="compile-core"
+    description="Generates the Jar file">
     <jar
       destfile="${build.dir}/${final.name}.jar"
       basedir="${build.dir}/classes/java"
@@ -236,7 +237,8 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="test" depends="compile-test" if="junit.present">
+  <target name="test" depends="compile-test" if="junit.present"
+    description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <junit printsummary="off" haltonfailure="no"
       errorProperty="tests.failed" failureProperty="tests.failed">
@@ -258,7 +260,7 @@
   <!-- backwards compatible target - may be removed -->
   <target name="test-unit" depends="test"/>
 
-  <target name="generate-test-reports" description="Generate test reports">
+  <target name="generate-test-reports" description="Generates test reports">
     <mkdir dir="${junit.reports}"/>
     <junitreport todir="${junit.output.dir}">
       <fileset dir="${junit.output.dir}">
@@ -464,13 +466,14 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="clean">
+  <target name="clean"
+    description="Removes contents of build and dist directories">
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
   </target>
 
   <!-- ================================================================== -->
-  <!-- Build the JavaCC files into the source tree                                              -->
+  <!-- Build the JavaCC files into the source tree                        -->
   <!-- ================================================================== -->
   <target name="javacc" depends="javacc-StandardAnalyzer,javacc-QueryParser,javacc-HTMLParser"/>
 
