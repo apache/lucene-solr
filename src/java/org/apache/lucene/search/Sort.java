@@ -69,8 +69,28 @@ import java.io.Serializable;
  *
  * <p><h3>Memory Usage</h3>
  *
- * See {@link FieldSortedHitQueue FieldSortedHitQueue} for
- * information on the memory requirements of sorting hits.
+ * <p>Sorting uses of caches of term values maintained by the
+ * internal HitQueue(s).  The cache is static and contains an integer
+ * or float array of length <code>IndexReader.maxDoc()</code> for each field
+ * name for which a sort is performed.  In other words, the size of the
+ * cache in bytes is:
+ *
+ * <p><code>4 * IndexReader.maxDoc() * (# of different fields actually used to sort)</code>
+ *
+ * <p>For String fields, the cache is larger: in addition to the
+ * above array, the value of every term in the field is kept in memory.
+ * If there are many unique terms in the field, this could
+ * be quite large.
+ *
+ * <p>Note that the size of the cache is not affected by how many
+ * fields are in the index and <i>might</i> be used to sort - only by
+ * the ones actually used to sort a result set.
+ *
+ * <p>The cache is cleared each time a new <code>IndexReader</code> is
+ * passed in, or if the value returned by <code>maxDoc()</code>
+ * changes for the current IndexReader.  This class is not set up to
+ * be able to efficiently sort hits from more than one index
+ * simultaneously.
  *
  * <p>Created: Feb 12, 2004 10:53:57 AM
  *
@@ -82,9 +102,9 @@ public class Sort
 implements Serializable {
 
 	/** Represents sorting by computed relevance. Using this sort criteria
-	 * returns the same results with slightly more overhead as calling
-	 * Searcher#search() without a sort criteria. */
-	public static final Sort RELEVANCE = new Sort ();
+	 * returns the same results as calling {@link Searcher#search(Query) Searcher#search()}
+	 * without a sort criteria, only with slightly more overhead. */
+	public static final Sort RELEVANCE = new Sort();
 
 	/** Represents sorting by index order. */
 	public static final Sort INDEXORDER = new Sort (SortField.FIELD_DOC);
@@ -94,7 +114,7 @@ implements Serializable {
 
 
 	/** Sorts by computed relevance.  This is the same sort criteria as
-	 * calling Searcher#search() without a sort criteria, only with
+	 * calling {@link Searcher#search(Query) Searcher#search()} without a sort criteria, only with
 	 * slightly more overhead. */
 	public Sort() {
 		this (new SortField[]{SortField.FIELD_SCORE, SortField.FIELD_DOC});
@@ -102,20 +122,30 @@ implements Serializable {
 
 
 	/** Sorts by the terms in <code>field</code> then by index order (document
-	 * number). */
+	 * number). The type of value in <code>field</code> is determined
+	 * automatically.
+	 * @see SortField#AUTO
+	 */
 	public Sort (String field) {
 		setSort (field, false);
 	}
 
 
 	/** Sorts possibly in reverse by the terms in <code>field</code> then by
-	 * index order (document number). */
+	 * index order (document number). The type of value in <code>field</code> is determined
+	 * automatically.
+	 * @see SortField#AUTO
+	 */
 	public Sort (String field, boolean reverse) {
 		setSort (field, reverse);
 	}
 
 
-	/** Sorts in succession by the terms in each field. */
+	/** Sorts in succession by the terms in each field.
+	 * The type of value in <code>field</code> is determined
+	 * automatically.
+	 * @see SortField#AUTO
+	 */
 	public Sort (String[] fields) {
 		setSort (fields);
 	}

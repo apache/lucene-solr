@@ -27,6 +27,7 @@ import java.io.Serializable;
  * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
+ * @see Sort
  */
 public class SortField
 implements Serializable {
