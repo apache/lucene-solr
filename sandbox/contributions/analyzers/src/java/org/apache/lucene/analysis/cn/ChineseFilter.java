@@ -103,6 +103,7 @@ public final class ChineseFilter extends TokenFilter {
         for (Token token = input.next(); token != null; token = input.next()) {
             String text = token.termText();
 
+          // why not key off token type here assuming ChineseTokenizer comes first?
             if (stopTable.get(text) == null) {
                 switch (Character.getType(text.charAt(0))) {
 
