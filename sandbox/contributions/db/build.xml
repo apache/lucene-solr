@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<project name="lucene-db" default="default">
+
+  <description>
+    Lucene DB integration
+  </description>
+
+  <path id="additional.dependencies">
+    <pathelement location="lib/db.jar"/>
+  </path>
+
+  <pathconvert property="project.classpath"
+               targetos="unix"
+               refid="additional.dependencies"
+  />
+
+  <import file="../common.xml"/>
+</project>
