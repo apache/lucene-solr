@@ -64,6 +64,7 @@ import java.util.Vector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
@@ -84,6 +85,7 @@ final class SegmentReader extends IndexReader {
 
   BitVector deletedDocs = null;
   private boolean deletedDocsDirty = false;
+  private boolean normsDirty = false;
 
   InputStream freqStream;
   InputStream proxStream;
@@ -91,10 +93,25 @@ final class SegmentReader extends IndexReader {
   // Compound File Reader when based on a compound file segment
   CompoundFileReader cfsReader;
 
-  private static class Norm {
+  private class Norm {
     public Norm(InputStream in) { this.in = in; }
-    public InputStream in;
-    public byte[] bytes;
+
+    private InputStream in;
+    private byte[] bytes;
+    private boolean dirty;
+
+    private void reWrite(String name) throws IOException {
+      // NOTE: norms are re-written in regular directory, not cfs
+      OutputStream out = directory().createFile(segment + ".tmp");
+      try {
+        out.writeBytes(bytes, maxDoc());
+      } finally {
+        out.close();
+      }
+      String fileName = segment + ".f" + fieldInfos.fieldNumber(name);
+      directory().renameFile(segment + ".tmp",  fileName);
+      this.dirty = false;
+    }
   }
   private Hashtable norms = new Hashtable();
 
@@ -135,13 +152,29 @@ final class SegmentReader extends IndexReader {
   }
 
   protected final synchronized void doClose() throws IOException {
-    if (deletedDocsDirty) {
+    if (deletedDocsDirty || normsDirty) {
       synchronized (directory()) {		  // in- & inter-process sync
         new Lock.With(directory().makeLock(IndexWriter.COMMIT_LOCK_NAME),
           IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
-            deletedDocs.write(directory(), segment + ".tmp");
-            directory().renameFile(segment + ".tmp", segment + ".del");
+
+            if (deletedDocsDirty) {               // re-write deleted 
+              deletedDocs.write(directory(), segment + ".tmp");
+              directory().renameFile(segment + ".tmp", segment + ".del");
+            }
+
+            if (normsDirty) {               // re-write norms 
+              Enumeration keys  = norms.keys();
+              Enumeration values  = norms.elements();
+              while (values.hasMoreElements()) {
+                String field = (String)keys.nextElement();
+                Norm norm = (Norm)values.nextElement();
+                if (norm.dirty) {
+                  norm.reWrite(field);
+                }
+              }
+            }
+
             if(segmentInfos != null)
               segmentInfos.write(directory());
             else
@@ -151,6 +184,7 @@ final class SegmentReader extends IndexReader {
         }.run();
       }
       deletedDocsDirty = false;
+      normsDirty = false;
     }
 
     fieldsReader.close();
@@ -189,7 +223,7 @@ final class SegmentReader extends IndexReader {
     deletedDocs.set(docNum);
   }
 
-  public void undeleteAll() throws IOException {
+  public synchronized void undeleteAll() throws IOException {
     synchronized (directory()) {		  // in- & inter-process sync
       new Lock.With(directory().makeLock(IndexWriter.COMMIT_LOCK_NAME),
                     IndexWriter.COMMIT_LOCK_TIMEOUT) {
@@ -299,44 +333,60 @@ final class SegmentReader extends IndexReader {
       return fieldSet;
     }
 
-  public final byte[] norms(String field) throws IOException {
+  public synchronized byte[] norms(String field) throws IOException {
     Norm norm = (Norm)norms.get(field);
-    if (norm == null)
+    if (norm == null)                             // not an indexed field
       return null;
-    if (norm.bytes == null) {
+    if (norm.bytes == null) {                     // value not yet read
       byte[] bytes = new byte[maxDoc()];
       norms(field, bytes, 0);
-      norm.bytes = bytes;
+      norm.bytes = bytes;                         // cache it
     }
     return norm.bytes;
   }
 
-  final void norms(String field, byte[] bytes, int offset) throws IOException {
-    InputStream normStream = normStream(field);
-    if (normStream == null)
+  public synchronized void setNorm(int doc, String field, byte value)
+    throws IOException {
+    Norm norm = (Norm)norms.get(field);
+    if (norm == null)                             // not an indexed field
+      return;
+    norm.dirty = true;                            // mark it dirty
+    normsDirty = true;
+
+    norms(field)[doc] = value;                    // set the value
+  }
+
+  /** Read norms into a pre-allocated array. */
+  synchronized void norms(String field, byte[] bytes, int offset)
+    throws IOException {
+
+    Norm norm = (Norm)norms.get(field);
+    if (norm == null)
       return;					  // use zeros in array
-    try {
+
+    if (norm.bytes != null) {                     // can copy from cache
+      System.arraycopy(norm.bytes, 0, bytes, offset, maxDoc());
+      return;
+    }
+
+    InputStream normStream = (InputStream)norm.in.clone();
+    try {                                         // read from disk
+      normStream.seek(0);
       normStream.readBytes(bytes, offset, maxDoc());
     } finally {
       normStream.close();
     }
   }
 
-  final InputStream normStream(String field) throws IOException {
-    Norm norm = (Norm)norms.get(field);
-    if (norm == null)
-      return null;
-    InputStream result = (InputStream)norm.in.clone();
-    result.seek(0);
-    return result;
-  }
-
-  private final void openNorms(Directory useDir) throws IOException {
+  private final void openNorms(Directory cfsDir) throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed)
-        norms.put(fi.name,
-                  new Norm(useDir.openFile(segment + ".f" + fi.number)));
+      if (fi.isIndexed) {
+        String fileName = segment + ".f" + fi.number;
+        // look first for re-written file, then in compound format
+        Directory d = directory().fileExists(fileName) ? directory() : cfsDir;
+        norms.put(fi.name, new Norm(d.openFile(fileName)));
+      }
     }
   }
 

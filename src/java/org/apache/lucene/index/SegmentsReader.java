@@ -165,6 +165,13 @@ final class SegmentsReader extends IndexReader
     return bytes;
   }
 
+  public synchronized void setNorm(int n, String field, byte value)
+    throws IOException {
+    normsCache.remove(field);                     // clear cache
+    int i = readerIndex(n);			  // find segment num
+    readers[i].setNorm(n-starts[i], field, value); // dispatch
+  }
+
   public final TermEnum terms() throws IOException {
     return new SegmentsTermEnum(readers, starts, null);
   }

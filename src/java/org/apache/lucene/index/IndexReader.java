@@ -63,6 +63,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;          // for javadoc
+import org.apache.lucene.search.Similarity;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
   index.  Search of an index is done entirely through this abstract interface,
@@ -270,6 +271,30 @@ public abstract class IndexReader {
    * @see Field#setBoost(float)
    */
   public abstract byte[] norms(String field) throws IOException;
+
+  /** Expert: Resets the normalization factor for the named field of the named
+   * document.  The norm represents the product of the field's {@link
+   * Field#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
+   * int) length normalization}.  Thus, to preserve the length normalization
+   * values when resetting this, one should base the new value upon the old.
+   *
+   * @see #norms(String)
+   * @see Similarity#decodeNorm(byte)
+   */
+  public abstract void setNorm(int doc, String field, byte value)
+    throws IOException;
+
+  /** Expert: Resets the normalization factor for the named field of the named
+   * document.
+   *
+   * @see #norms(String)
+   * @see Similarity#decodeNorm(byte)
+   */
+  public void setNorm(int doc, String field, float value)
+    throws IOException {
+    setNorm(doc, field, Similarity.encodeNorm(value));
+  }
+
 
   /** Returns an enumeration of all the terms in the index.
     The enumeration is ordered by Term.compareTo().  Each term
