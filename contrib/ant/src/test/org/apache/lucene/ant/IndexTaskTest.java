@@ -13,7 +13,6 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.ant.IndexTask;
 
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
