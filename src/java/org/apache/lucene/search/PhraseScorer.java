@@ -58,7 +58,7 @@ abstract class PhraseScorer extends Scorer {
 
   public boolean next() throws IOException {
     if (firstTime) {
-      sort();
+      init();
       firstTime = false;
     } else if (more) {
       more = last.next();                         // trigger further scanning
@@ -97,19 +97,19 @@ abstract class PhraseScorer extends Scorer {
     return more;
   }
 
-
   protected abstract float phraseFreq() throws IOException;
 
-  private void sort() throws IOException {
-    pq.clear();
-    for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
+  private void init() throws IOException {
+    for (PhrasePositions pp = first; more && pp != null; pp = pp.next) 
       more = pp.next();
-      if (more) {
-        pq.put(pp);
-      } else {
-        return;
-      }
-    }
+    if(more)
+      sort();
+  }
+  
+  private void sort() {
+    pq.clear();
+    for (PhrasePositions pp = first; pp != null; pp = pp.next)
+      pq.put(pp);
     pqToList();
   }
 
