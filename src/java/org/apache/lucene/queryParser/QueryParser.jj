@@ -157,29 +157,27 @@ public class QueryParser {
   /** Gets the default slop for phrases. */
   public int getPhraseSlop() { return phraseSlop; }
 
-    // CODE ADDED BY PETER HALACSY
+  public static final int DEFAULT_OPERATOR_OR  = 0;
+  public static final int DEFAULT_OPERATOR_AND = 1;
 
-    public static final int DEFAULT_OPERATOR_OR  = 0;
-    public static final int DEFAULT_OPERATOR_AND = 1;
+  /** The actual operator that parser uses to combine query terms */
+  private int operator = DEFAULT_OPERATOR_OR;
 
-    /** The actual operator that parser uses to combine query terms */
-    private int operator = DEFAULT_OPERATOR_OR;
+  /**
+   * Set the boolean operator of the QueryParser.
+   * In classic mode (<code>DEFAULT_OPERATOR_OR</mode>) terms without any modifiers
+   * are considered optional: for example <code>capital of Hungary</code> is equal to
+   * <code>capital OR of OR Hungary</code>.<br/>
+   * In <code>DEFAULT_OPERATOR_AND</code> terms are considered to be in conjuction: the
+   * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
+   */
+  public void setOperator(int operator) {
+    this.operator = operator;
+  }
 
-    /**
-     * Set the boolean operator of the QueryParser.
-     * In classic mode (<code>DEFAULT_OPERATOR_OR</mode>) terms without any modifiers
-     * are considered optional: for example <code>capital of Hungary</code> is equal to
-     * <code>capital OR of OR Hungary</code>.<br/>
-     * In <code>DEFAULT_OPERATOR_AND</code> terms are considered to be in conjuction: the
-     * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
-     */
-    public void setOperator(int operator) {
-	this.operator = operator;
-    }
-
-    public int getOperator() {
-	return this.operator;
-    }
+  public int getOperator() {
+    return this.operator;
+  }
 
   private void addClause(Vector clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
@@ -191,17 +189,16 @@ public class QueryParser {
       if (!c.prohibited)
         c.required = true;
     }
-    // THIS CODE ADDED PETER HALACSY
+
     if (operator == DEFAULT_OPERATOR_AND && conj == CONJ_OR) {
-	// If this term is introduced by OR, make the preceding term optional,
-	// unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
-	// notice if the input is a OR b, first term is parsed as required; without
-	// this modification a OR b would parsed as +a OR b
-	BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
+      // If this term is introduced by OR, make the preceding term optional,
+      // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
+      // notice if the input is a OR b, first term is parsed as required; without
+      // this modification a OR b would parsed as +a OR b
+      BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
       if (!c.prohibited)
-          c.required = false;
+        c.required = false;
     }
-    // THIS CODE ADDED BY PETER HALACSY
 
     // We might have been passed a null query; the term might have been
     // filtered away by the analyzer.
@@ -209,21 +206,21 @@ public class QueryParser {
       return;
 
     if (operator == DEFAULT_OPERATOR_OR) {
-	// THIS IS THE ORIGINAL CODE
-        // We set REQUIRED if we're introduced by AND or +; PROHIBITED if
-        // introduced by NOT or -; make sure not to set both.
-	prohibited = (mods == MOD_NOT);
-	required = (mods == MOD_REQ);
-	if (conj == CONJ_AND && !prohibited) {
-	    required = true;
-	}
-     } else {
-	 // THIS CODE ADDED BY PETER HALACSY
-	 // We set PROHIBITED if we're  introduced by NOT or -; We set REQUIRED
-	 // if not PROHIBITED and not introduced by OR
-	 prohibited = (mods == MOD_NOT);
-	 required   = (!prohibited && conj != CONJ_OR);
-	}
+      // THIS IS THE ORIGINAL CODE
+      // We set REQUIRED if we're introduced by AND or +; PROHIBITED if
+      // introduced by NOT or -; make sure not to set both.
+      prohibited = (mods == MOD_NOT);
+      required = (mods == MOD_REQ);
+      if (conj == CONJ_AND && !prohibited) {
+        required = true;
+      }
+    } else {
+      // THIS CODE ADDED BY PETER HALACSY
+      // We set PROHIBITED if we're introduced by NOT or -; We set REQUIRED
+      // if not PROHIBITED and not introduced by OR
+      prohibited = (mods == MOD_NOT);
+      required   = (!prohibited && conj != CONJ_OR);
+    }
     clauses.addElement(new BooleanClause(q, required, prohibited));
   }
 
