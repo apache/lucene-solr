@@ -1,13 +1,9 @@
 import org.apache.log4j.Category;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Hits;
+import search.SearchResultFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import search.SearchResultFactory;
 
 /**
  * <p>
@@ -27,8 +23,8 @@ import search.SearchResultFactory;
 public class SearchResults
 {
     private static Category cat = Category.getInstance(SearchResults.class);
-    private List hitsDocuments;
-    private List objectResults;
+    private Document[] hitsDocuments;
+    private Object[] objectResults;
     private int totalNumberOfResults;
 
     public SearchResults(Hits hits) throws IOException
@@ -38,7 +34,7 @@ public class SearchResults
 
     public SearchResults(Hits hits, int from, int to) throws IOException
     {
-        hitsDocuments = new ArrayList();
+        hitsDocuments = new Document[hits.length()];
         totalNumberOfResults = hits.length();
         if (to > totalNumberOfResults)
         {
@@ -46,7 +42,7 @@ public class SearchResults
         }
         for (int i = from; i < to; i++)
         {
-            hitsDocuments.add(hits.doc(i));
+            hitsDocuments[i] = hits.doc(i));
         }
     }
 
@@ -58,19 +54,17 @@ public class SearchResults
     /**
      * Obtain the results of the search as objects.
      */
-    public List getResultsAsObjects()
+    public Object[] getResultsAsObjects()
     {
         if (objectResults == null)
         {
-            objectResults = new ArrayList();
-            for (Iterator it = hitsDocuments.iterator(); it.hasNext();)
+            objectResults = new Object[hitsDocuments.length];
+            for (int i = 0; i < hitsDocuments.length; i++)
             {
                 try
                 {
-                    Object o = SearchResultFactory.
-                            getDocAsObject((Document) it.next());
-                    if (!objectResults.contains(o))
-                        objectResults.add(o);
+                    objectResults[i] = SearchResultFactory.
+                            getDocAsObject(hitsDocuments[i]);
                 }
                 catch (Exception e)
                 {
