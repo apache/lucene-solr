@@ -14,8 +14,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Hits;
 
-import java.io.IOException;
-
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -42,7 +40,7 @@ public class TestDocument extends TestCase
 {
 
   /**
-   * Tests {@link Document#remove()} method for a brand new Document
+   * Tests {@link Document#removeField(String)} method for a brand new Document
    * that has not been indexed yet.
    *
    * @throws Exception on error
@@ -73,7 +71,7 @@ public class TestDocument extends TestCase
   }
 
     /**
-     * Tests {@link Document#getValues()} method for a brand new Document
+     * Tests {@link Document#getValues(String)} method for a brand new Document
      * that has not been indexed yet.
      *
      * @throws Exception on error
@@ -84,7 +82,7 @@ public class TestDocument extends TestCase
     }
 
     /**
-     * Tests {@link Document#getValues()} method for a Document retrieved from
+     * Tests {@link Document#getValues(String)} method for a Document retrieved from
      * an index.
      *
      * @throws Exception on error
@@ -120,13 +118,13 @@ public class TestDocument extends TestCase
         }
     }
 
-    private Document makeDocumentWithFields() throws IOException
+    private Document makeDocumentWithFields()
     {
         Document doc = new Document();
         doc.add(Field.Keyword(  "keyword",   "test1"));
         doc.add(Field.Keyword(  "keyword",   "test2"));
-        doc.add(Field.Text(     "text",      "test1"));
-        doc.add(Field.Text(     "text",      "test2"));
+        doc.add(new Field(     "text",      "test1", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field(     "text",      "test2", Field.Store.YES, Field.Index.TOKENIZED));
         doc.add(Field.UnIndexed("unindexed", "test1"));
         doc.add(Field.UnIndexed("unindexed", "test2"));
         doc.add(Field.UnStored( "unstored",  "test1"));
