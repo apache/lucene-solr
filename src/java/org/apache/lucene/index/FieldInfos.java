@@ -33,8 +33,8 @@ import org.apache.lucene.store.InputStream;
  *  accessing this object.
  */
 final class FieldInfos {
-  private Vector byNumber = new Vector();
-  private Hashtable byName = new Hashtable();
+  private ArrayList byNumber = new ArrayList();
+  private HashMap byName = new HashMap();
 
   FieldInfos() {
     add("", false);
@@ -131,7 +131,7 @@ final class FieldInfos {
                            boolean storeTermVector) {
     FieldInfo fi =
       new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector);
-    byNumber.addElement(fi);
+    byNumber.add(fi);
     byName.put(name, fi);
   }
 
@@ -152,7 +152,7 @@ final class FieldInfos {
   }
 
   public FieldInfo fieldInfo(int fieldNumber) {
-    return (FieldInfo) byNumber.elementAt(fieldNumber);
+    return (FieldInfo) byNumber.get(fieldNumber);
   }
 
   public int size() {
