@@ -78,7 +78,7 @@ public final class Field {
     return new Field(name, value, true, true, false);
   }
 
-  /** Constructs a String-valued Field that is not tokenized or indexed,
+  /** Constructs a String-valued Field that is not tokenized nor indexed,
     but is stored in the index, for return with hits. */
   public static final Field UnIndexed(String name, String value) {
     return new Field(name, value, true, false, false);
