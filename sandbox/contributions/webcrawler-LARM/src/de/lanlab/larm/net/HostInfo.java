@@ -52,6 +52,7 @@
  *  information on the Apache Software Foundation, please see
  *  <http://www.apache.org/>.
  */
+
 package de.lanlab.larm.net;
 
 import java.util.HashMap;
@@ -62,8 +63,11 @@ import java.util.LinkedList;
 import de.lanlab.larm.fetcher.Message;
 
 /**
- * contains information about a host. If a host doesn't respond too often, it's
- * excluded from the crawl. This class is used by the HostManager
+ * Contains information about a host. If a host doesn't respond too often, it's
+ * excluded from the crawl. This class is used by the HostManager.
+ * TODO: there needs to be a way to re-include the host in the crawl.  Perhaps
+ * all hosts marked as unhealthy should be checked periodically and marked
+ * healthy again, if they respond.
  *
  * @author    Clemens Marschner
  * @created   16. Februar 2002
@@ -73,24 +77,40 @@ public class HostInfo
 {
     final static String[] emptyKeepOutDirectories = new String[0];
 
-    int id;
+    private int id;
 
-    int healthyCount = 5;
+    private int healthyCount = 5;
 
     // five strikes, and you're out
-    boolean isReachable = true;
+    private boolean isReachable = true;
 
-    boolean robotTxtChecked = false;
+    private boolean robotTxtChecked = false;
 
-    String[] disallows;
-
-    // robot exclusion
-    boolean isLoadingRobotsTxt = false;
-
-    Queue queuedRequests = null;
+    private String[] disallows;
 
     // robot exclusion
-    String hostName;
+    private boolean isLoadingRobotsTxt = false;
+
+    private Queue queuedRequests = null;
+
+    // robot exclusion
+    private String hostName;
+
+
+    //LinkedList synonyms = new LinkedList();
+
+    /**
+     * Constructor for the HostInfo object
+     *
+     * @param hostName  Description of the Parameter
+     * @param id        Description of the Parameter
+     */
+    public HostInfo(String hostName, int id)
+    {
+        this.id = id;
+        this.disallows = HostInfo.emptyKeepOutDirectories;
+        this.hostName = hostName;
+    }
 
 
     /**
@@ -154,22 +174,6 @@ public class HostInfo
     public Message removeFromQueue()
     {
         return (Message) queuedRequests.remove();
-    }
-
-
-    //LinkedList synonyms = new LinkedList();
-
-    /**
-     * Constructor for the HostInfo object
-     *
-     * @param hostName  Description of the Parameter
-     * @param id        Description of the Parameter
-     */
-    public HostInfo(String hostName, int id)
-    {
-        this.id = id;
-        this.disallows = HostInfo.emptyKeepOutDirectories;
-        this.hostName = hostName;
     }
 
 
@@ -247,6 +251,7 @@ public class HostInfo
         this.isLoadingRobotsTxt = isLoading;
         if (isLoading)
         {
+	    // FIXME: move '100' to properties
             this.queuedRequests = new CachingQueue("HostInfo_" + id + "_QueuedRequests", 100);
         }
 
@@ -294,5 +299,4 @@ public class HostInfo
         }
         return true;
     }
-
 }
