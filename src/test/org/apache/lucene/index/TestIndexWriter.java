@@ -14,13 +14,11 @@ import org.apache.lucene.store.RAMDirectory;
 
 
 /**
- *
  * @author goller
+ * @version $Id$
  */
 public class TestIndexWriter extends TestCase
 {
-    private int docCount = 0;
-
     public void testDocCount()
     {
         Directory dir = new RAMDirectory();
@@ -30,46 +28,56 @@ public class TestIndexWriter extends TestCase
         int i;
 
         try {
-          writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
 
-          // add 100 documents
-          for (i = 0; i < 100; i++) {
-              addDoc(writer);
-          }
-          assertEquals(100, writer.docCount());
-          writer.close();
+            // add 100 documents
+            for (i = 0; i < 100; i++) {
+                addDoc(writer);
+            }
+            assertEquals(100, writer.docCount());
+            writer.close();
 
-          // delete 50 documents
-          reader = IndexReader.open(dir);
-          for (i = 0; i < 50; i++) {
-              reader.delete(i);
-          }
-          reader.close();
+            // delete 50 documents
+            reader = IndexReader.open(dir);
+            for (i = 0; i < 50; i++) {
+                reader.delete(i);
+            }
+            reader.close();
 
-          writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
-          assertEquals(50, writer.docCount());
-          writer.optimize();
-          assertEquals(50, writer.docCount());
-          writer.close();
+            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            assertEquals(100, writer.docCount());
+            writer.close();
+
+            reader = IndexReader.open(dir);
+            assertEquals(100, reader.maxDoc());
+            assertEquals(50, reader.numDocs());
+            reader.close();
+
+            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            writer.optimize();
+            assertEquals(50, writer.docCount());
+            writer.close();
+
+            reader = IndexReader.open(dir);
+            assertEquals(50, reader.maxDoc());
+            assertEquals(50, reader.numDocs());
+            reader.close();
         }
         catch (IOException e) {
-          e.printStackTrace();
+            e.printStackTrace();
         }
     }
 
     private void addDoc(IndexWriter writer)
     {
         Document doc = new Document();
-
-        doc.add(Field.Keyword("id","id" + docCount));
-        doc.add(Field.UnStored("content","aaa"));
+        doc.add(Field.UnStored("content", "aaa"));
 
         try {
-          writer.addDocument(doc);
+            writer.addDocument(doc);
         }
         catch (IOException e) {
-          e.printStackTrace();
+            e.printStackTrace();
         }
-        docCount++;
     }
 }
