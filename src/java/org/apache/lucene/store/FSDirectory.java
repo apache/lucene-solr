@@ -35,7 +35,7 @@ import org.apache.lucene.util.Constants;
  * @see Directory
  * @author Doug Cutting
  */
-public final class FSDirectory extends Directory {
+public class FSDirectory extends Directory {
   /** This cache of directories ensures that there is a unique Directory
    * instance per path, so that synchronization on the Directory can be used to
    * synchronize access between readers and writers.
@@ -156,24 +156,24 @@ public final class FSDirectory extends Directory {
   }
 
   /** Returns an array of strings, one for each file in the directory. */
-  public final String[] list() {
+  public String[] list() {
     return directory.list();
   }
 
   /** Returns true iff a file with the given name exists. */
-  public final boolean fileExists(String name) {
+  public boolean fileExists(String name) {
     File file = new File(directory, name);
     return file.exists();
   }
 
   /** Returns the time the named file was last modified. */
-  public final long fileModified(String name) {
+  public long fileModified(String name) {
     File file = new File(directory, name);
     return file.lastModified();
   }
 
   /** Returns the time the named file was last modified. */
-  public static final long fileModified(File directory, String name) {
+  public static long fileModified(File directory, String name) {
     File file = new File(directory, name);
     return file.lastModified();
   }
@@ -185,20 +185,20 @@ public final class FSDirectory extends Directory {
   }
 
   /** Returns the length in bytes of a file in the directory. */
-  public final long fileLength(String name) {
+  public long fileLength(String name) {
     File file = new File(directory, name);
     return file.length();
   }
 
   /** Removes an existing file in the directory. */
-  public final void deleteFile(String name) throws IOException {
+  public void deleteFile(String name) throws IOException {
     File file = new File(directory, name);
     if (!file.delete())
       throw new IOException("Cannot delete " + name);
   }
 
   /** Renames an existing file in the directory. */
-  public final synchronized void renameFile(String from, String to)
+  public synchronized void renameFile(String from, String to)
       throws IOException {
     File old = new File(directory, from);
     File nu = new File(directory, to);
@@ -258,12 +258,12 @@ public final class FSDirectory extends Directory {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public final OutputStream createFile(String name) throws IOException {
+  public OutputStream createFile(String name) throws IOException {
     return new FSOutputStream(new File(directory, name));
   }
 
   /** Returns a stream reading an existing file. */
-  public final InputStream openFile(String name) throws IOException {
+  public InputStream openFile(String name) throws IOException {
     return new FSInputStream(new File(directory, name));
   }
 
@@ -284,7 +284,7 @@ public final class FSDirectory extends Directory {
    * @param name the name of the lock file
    * @return an instance of <code>Lock</code> holding the lock
    */
-  public final Lock makeLock(String name) {
+  public Lock makeLock(String name) {
     StringBuffer buf = getLockPrefix();
     buf.append("-");
     buf.append(name);
@@ -346,7 +346,7 @@ public final class FSDirectory extends Directory {
   }
 
   /** Closes the store to future operations. */
-  public final synchronized void close() {
+  public synchronized void close() {
     if (--refCount <= 0) {
       synchronized (DIRECTORIES) {
         DIRECTORIES.remove(directory);
@@ -365,7 +365,7 @@ public final class FSDirectory extends Directory {
 }
 
 
-final class FSInputStream extends InputStream {
+class FSInputStream extends InputStream {
   private class Descriptor extends RandomAccessFile {
     /* DEBUG */
     //private String name;
@@ -406,7 +406,7 @@ final class FSInputStream extends InputStream {
   }
 
   /** InputStream methods */
-  protected final void readInternal(byte[] b, int offset, int len)
+  protected void readInternal(byte[] b, int offset, int len)
        throws IOException {
     synchronized (file) {
       long position = getFilePointer();
@@ -425,16 +425,16 @@ final class FSInputStream extends InputStream {
     }
   }
 
-  public final void close() throws IOException {
+  public void close() throws IOException {
     if (!isClone)
       file.close();
   }
 
   /** Random-access methods */
-  protected final void seekInternal(long position) {
+  protected void seekInternal(long position) {
   }
 
-  protected final void finalize() throws IOException {
+  protected void finalize() throws IOException {
     close();            // close the file
   }
 
@@ -453,7 +453,7 @@ final class FSInputStream extends InputStream {
 }
 
 
-final class FSOutputStream extends OutputStream {
+class FSOutputStream extends OutputStream {
   RandomAccessFile file = null;
 
   public FSOutputStream(File path) throws IOException {
@@ -461,24 +461,24 @@ final class FSOutputStream extends OutputStream {
   }
 
   /** output methods: */
-  public final void flushBuffer(byte[] b, int size) throws IOException {
+  public void flushBuffer(byte[] b, int size) throws IOException {
     file.write(b, 0, size);
   }
-  public final void close() throws IOException {
+  public void close() throws IOException {
     super.close();
     file.close();
   }
 
   /** Random-access methods */
-  public final void seek(long pos) throws IOException {
+  public void seek(long pos) throws IOException {
     super.seek(pos);
     file.seek(pos);
   }
-  public final long length() throws IOException {
+  public long length() throws IOException {
     return file.length();
   }
 
-  protected final void finalize() throws IOException {
+  protected void finalize() throws IOException {
     file.close();          // close the file
   }
 
