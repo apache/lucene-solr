@@ -25,6 +25,12 @@
     <pathelement path="${java.class.path}" />
   </path>
 
+  <path id="anakia.classpath">
+    <fileset dir="${jakarta.site2.home}/lib">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
@@ -211,14 +217,14 @@
     <available 
       classname="org.apache.velocity.anakia.AnakiaTask" 
       property="AnakiaTask.present"
-      classpathref="classpath"
+      classpathref="anakia.classpath"
     />
   </target>
 
   <target depends="docs-prepare" name="prepare-error" unless="AnakiaTask.present">
     <echo>
       AnakiaTask is not present! Please check to make sure that 
-      velocity.jar is in your classpath.
+      you have jakarta.site2.home set correctly.
     </echo>
   </target>
 
@@ -227,7 +233,7 @@
       name="anakia" 
       classname="org.apache.velocity.anakia.AnakiaTask"
       >
-      <classpath refid="classpath"/>
+      <classpath refid="anakia.classpath"/>
     </taskdef>
       
     <anakia 
@@ -238,7 +244,7 @@
       excludes="**/stylesheets/** empty.xml"
       includes="**/*.xml"
       lastModifiedCheck="true"
-      templatePath="../jakarta-site2/xdocs/stylesheets"
+      templatePath="${jakarta.site2.home}/xdocs/stylesheets"
     >
     </anakia>
 
