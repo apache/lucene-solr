@@ -109,6 +109,10 @@ Bug fixes
  3. Fix in FieldInfos to avoid the return of an extra blank field in
     IndexReader.getFieldNames() (Patch #19058). (Mark Harwood via Bernhard)
     
+ 4. Some combinations of BooleanQuery and MultiPhraseQuery (formerly
+    PhrasePrefixQuery) could provoke UnsupportedOperationException
+    (bug #33161). (Rhett Sutphin via Daniel Naber)
+ 
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
