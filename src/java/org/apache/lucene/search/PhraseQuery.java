@@ -135,14 +135,6 @@ public class PhraseQuery extends Query {
     public Scorer scorer(IndexReader reader) throws IOException {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
-      if (terms.size() == 1) {			  // optimize one-term case
-        Term term = (Term)terms.elementAt(0);
-        TermDocs docs = reader.termDocs(term);
-        if (docs == null)
-          return null;
-        return new TermScorer(this, docs, searcher.getSimilarity(),
-                              reader.norms(term.field()));
-      }
 
       TermPositions[] tps = new TermPositions[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
@@ -195,6 +187,10 @@ public class PhraseQuery extends Query {
   }
 
   protected Weight createWeight(Searcher searcher) {
+    if (terms.size() == 1) {			  // optimize one-term case
+      Term term = (Term)terms.elementAt(0);
+      return new TermQuery(term).createWeight(searcher);
+    }
     return new PhraseWeight(searcher);
   }
 

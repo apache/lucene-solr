@@ -135,13 +135,6 @@ public class BooleanQuery extends Query {
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
-      if (weights.size() == 1) {                  // optimize 1-clause queries
-        BooleanClause c = (BooleanClause)clauses.elementAt(0);
-        Weight w = (Weight)weights.elementAt(0);
-        if (!c.prohibited)			  // just return clause scorer
-          return w.scorer(reader);
-      }
-
       BooleanScorer result = new BooleanScorer(searcher.getSimilarity());
 
       for (int i = 0 ; i < weights.size(); i++) {
@@ -167,6 +160,11 @@ public class BooleanQuery extends Query {
   }
 
   protected Weight createWeight(Searcher searcher) {
+    if (clauses.size() == 1) {                    // optimize 1-clause queries
+      BooleanClause c = (BooleanClause)clauses.elementAt(0);
+      if (!c.prohibited)			  // just return clause weight
+        return c.query.createWeight(searcher);
+    }
     return new BooleanWeight(searcher);
   }
 

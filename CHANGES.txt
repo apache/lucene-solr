@@ -141,6 +141,10 @@ $Id$
        fairly advanced programming, and I don't expect anyone to do
        this anytime soon, but at least now it is possible.
 
+       g. Added public accessors to the primitive query classes
+       (TermQuery, PhraseQuery and BooleanQuery), permitting access to
+       their terms and clauses.
+
      Caution: These are extensive changes and they have not yet been
      tested extensively.  Bug reports are appreciated.
      (cutting)

@@ -155,20 +155,6 @@ public class PhrasePrefixQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
     
-      if (termArrays.size() == 1) {                // optimize one-term case
-        Term[] terms = (Term[])termArrays.get(0);
-      
-        BooleanScorer bos = new BooleanScorer(searcher.getSimilarity());
-        for (int i=0; i<terms.length; i++) {
-          TermDocs docs = reader.termDocs(terms[i]);
-          if (docs != null)
-            bos.add(new TermScorer(this, docs, searcher.getSimilarity(),
-                                   reader.norms(field)), false, false);
-        }
-      
-        return bos;
-      }
-
       TermPositions[] tps = new TermPositions[termArrays.size()];
       for (int i=0; i<tps.length; i++) {
         Term[] terms = (Term[])termArrays.get(i);
@@ -218,6 +204,14 @@ public class PhrasePrefixQuery extends Query {
   }
 
   protected Weight createWeight(Searcher searcher) {
+    if (termArrays.size() == 1) {                 // optimize one-term case
+      Term[] terms = (Term[])termArrays.get(0);
+      BooleanQuery boq = new BooleanQuery();
+      for (int i=0; i<terms.length; i++) {
+        boq.add(new TermQuery(terms[i]), false, false);
+      }
+      return boq.createWeight(searcher);
+    }
     return new PhrasePrefixWeight(searcher);
   }
 
