@@ -114,14 +114,6 @@ public class TestQueryParser extends TestCase {
     }
   }
   
-   /**
-    * initialize this TemplateTester by creating a WebMacro instance
-    * and a default Context.
-    */
-  public void init () throws Exception
-  {
-  }
-  
   public void assertQueryEquals(String query, Analyzer a, String result) 
   throws Exception {
     if (a == null)
