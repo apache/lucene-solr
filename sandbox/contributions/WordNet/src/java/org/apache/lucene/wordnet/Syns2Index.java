@@ -2,20 +2,21 @@ package org.apache.lucene.wordnet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
 
-import java.io.FileInputStream;
-import java.io.DataInputStream;
+import java.io.BufferedReader;
 import java.io.File;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.Map;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Convert the prolog file wn_s.pl from the wordnet prolog download
@@ -85,7 +86,7 @@ public class Syns2Index
 
         System.out.println("Opening Prolog file " + prologFilename);
         final FileInputStream fis = new FileInputStream(prologFilename);
-        final DataInputStream dis = new DataInputStream(fis);
+        final BufferedReader br = new BufferedReader(new InputStreamReader(fis));
         String line;
 
         // maps a word to all the "groups" it's in
@@ -99,10 +100,8 @@ public class Syns2Index
         int mod = 1;
         int row = 1;
         // parse prolog file
-        while ((line = dis.readLine()) != null)
+        while ((line = br.readLine()) != null)
         {
-            String oline = line;
-
             // occasional progress
             if ((++row) % mod == 0)
             {
@@ -160,7 +159,7 @@ public class Syns2Index
 
         // close the streams
         fis.close();
-        dis.close();
+        br.close();
 
         // create the index
         index(indexDir, word2Nums, num2Words);
