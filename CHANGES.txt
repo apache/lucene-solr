@@ -53,6 +53,12 @@ New features
 
 11. Added NumberTools, a utility class indexing numeric fields.
     (adapted from code contributed by Matt Quail; committed by Erik)
+    
+12. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
+     FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
+     terms only the BooleanQuery.maxClauseCount most similar terms 
+     go into the rewritten query and thus the exception is avoided.
+     (Christoph)
 
 API Changes
 
