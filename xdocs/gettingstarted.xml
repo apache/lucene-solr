@@ -6,7 +6,7 @@
 </properties>
 <body>
 
-<section name="About this Document">
+<section name="Getting Started">
 <p>
 This document is intended as a "getting started" guide.  It has three basic 
 audiences: novices looking to install Jakarta Lucene on their application or 
@@ -16,53 +16,35 @@ development of Lucene.  This document is written in tutorial and walkthrough
 format.  It intends to help you in "getting started", but does not go into great
 depth into some of the conceptual or inner details of Jakarta Lucene.
 </p>
-</section>
 
-<section name="Format of this Guide">
 <p>
 Each section listed below builds on one another.  That being said more advanced users may
 wish to skip sections.  
 </p>
-</section>
 
-<section name="The Simple Demo">
-<p>
-In <a href="demo.html">this</a> section we walk through the basic Lucene demo and executing it.  
-This section is intended for anyone who wants a basic background on using the provided Lucene demos.
-</p>
-</section>
+<ul>
+	<li><a href="demo.html">About the basic Lucene demo and its usage</a>.
+	This section is intended for anyone who wants a basic background on using the provided Lucene demos.</li>
 
-<section name="Simple Demo Source Walkthrough">
-<p>
-In <a href="demo2.html">this</a> section we walk through the sources and implementation
-for the basic Lucene demo.  This section is intended for developers.  
-</p>
-</section>
+	<li><a href="demo2.html">About the sources and implementation
+	for the basic Lucene demo</a> section we walk through .  This section is intended for developers.</li>
 
-<section name="Template Web Application">
-<p>
-In <a href="demo3.html">this</a> section we walk through installing 
-and configuring the template web application.  While this walkthough assumes 
-Tomcat 4.0.x as your container of choice, there is no reason you can't (provided you have
-the requisite knowledge) adapt the instructions to your container.  This section is intended
-for those responsible for the development or deployment of Lucene-based web applications.
-</p>
-</section>
+	<li><a href="demo3.html">About installing 
+	and configuring the template web application</a>.  While this walkthrough assumes 
+	Tomcat 4.0.x as your container of choice, there is no reason you can't (provided you have
+	the requisite knowledge) adapt the instructions to your container.  This section is intended
+	for those responsible for the development or deployment of Lucene-based web applications.</li>
 
-<section name="Template Web Application sources">
-<p>
-In <a href="demo4.html">this</a> section we walk through the sources used to construct the 
-template web application.  Please note the template application is designed to highlight 
-features of Lucene and is <b>not</b> an example of best practices.  (One would hopefully 
-use MVC architecture such as provided by Jakarta Struts and taglibs, or better yet XML 
-with stylesheets, but showing you how to do that would be WAY beyond the scope of this 
-demonstration.  Additionally once could cache results, and perform other performance 
-optimizations, but those are beyond the scope of this demo).
-</p>
-<p>  
-This section is intended for developers and those wishing to customize the template web 
-application to their needs.  The sections useful to developers only are clearly delineated.
-</p>
+	<li><a href="demo4.html">About the sources used to construct the 
+	template web application</a>.  Please note the template application is designed to highlight 
+	features of Lucene and is <b>not</b> an example of best practices.  (One would hopefully 
+	use MVC architecture such as provided by Jakarta Struts and taglibs, or better yet XML 
+	with stylesheets, but showing you how to do that would be WAY beyond the scope of this 
+	demonstration.  Additionally one could cache results, and perform other performance 
+	optimizations, but those are beyond the scope of this demo).
+	This section is intended for developers and those wishing to customize the template web 
+	application to their needs.  The sections useful to developers only are clearly delineated.</li>
+</ul>
 </section>
 
 </body>
