@@ -294,7 +294,7 @@ public class IndexTask extends Task {
                 if (doc == null) {
                   totalIgnored++;
                 } else {
-                  // Add the path of the file as a field named "path".  Use a Text field, so
+                  // Add the path of the file as a field named "path".  Use a Keyword field, so
                   // that the index stores the path, and so that the path is searchable
                   doc.add(Field.Keyword("path", file.getPath()));
 

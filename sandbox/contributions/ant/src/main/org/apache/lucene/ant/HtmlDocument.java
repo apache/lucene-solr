@@ -23,7 +23,6 @@ import java.io.StringWriter;
  *  from {@link java.io.File} or {@link java.io.InputStream}.
  *
  *@author     Erik Hatcher
- *@created    October 27, 2001
  */
 public class HtmlDocument {
     private Element rawDoc;
@@ -142,7 +141,7 @@ public class HtmlDocument {
      *@param  args           Command line arguments
      *@exception  Exception  Description of Exception
      */
-    private static void main(String args[]) throws Exception {
+    public static void main(String args[]) throws Exception {
 //         HtmlDocument doc = new HtmlDocument(new File(args[0]));
 //         System.out.println("Title = " + doc.getTitle());
 //         System.out.println("Body  = " + doc.getBody());

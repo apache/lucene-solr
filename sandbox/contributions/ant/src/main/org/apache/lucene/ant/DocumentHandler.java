@@ -17,9 +17,8 @@ public interface DocumentHandler {
      *
      *@param  file  Description of Parameter
      *@return       The document value
-     *@throws DocumentHandlerException
      */
-    public Document getDocument(File file)
+    Document getDocument(File file)
             throws DocumentHandlerException;
 }
 
