@@ -10,7 +10,11 @@
 	    <ul>
 		<li><a
 		       href="http://www.javaworld.com/javaworld/jw-09-2000/jw-0915-lucene.html">The Lucene search engine Powerful flexible and free</a>
-		    <br/> - JavaWorld September 2000
+		    <br/> - JavaWorld, September 2000
+		</li>
+		<li><a
+		       href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Jakarta Lucene</a>
+		    <br/> - Onjava.com, January 2003
 		</li>
 		<li><a
 		       href="http://www.chedong.com/tech/lucene.html">Lucene introduction in Chinese</a>
