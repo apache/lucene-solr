@@ -102,9 +102,6 @@ final class ConjunctionScorer extends Scorer {
         public int compare(Object o1, Object o2) {
           return ((Scorer)o1).doc() - ((Scorer)o2).doc();
         }
-        public boolean equals(Object o1, Object o2) {
-          return ((Scorer)o1).doc() == ((Scorer)o2).doc();
-        }
       });
     
     for (int i = 0; i < array.length; i++) {
