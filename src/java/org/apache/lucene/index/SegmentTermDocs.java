@@ -68,6 +68,7 @@ class SegmentTermDocs implements TermDocs {
   int freq;
 
   private int skipInterval;
+  private int numSkips;
   private int skipCount;
   private InputStream skipStream;
   private int skipDoc;
@@ -107,6 +108,7 @@ class SegmentTermDocs implements TermDocs {
       doc = 0;
       skipDoc = 0;
       skipCount = 0;
+      numSkips = df / skipInterval;
       freqPointer = ti.freqPointer;
       proxPointer = ti.proxPointer;
       skipPointer = freqPointer + ti.skipOffset;
@@ -192,15 +194,13 @@ class SegmentTermDocs implements TermDocs {
       long lastProxPointer = -1;
       int numSkipped = -1 - (count % skipInterval);
 
-      while (target > skipDoc) {
+      while (target > skipDoc && skipCount < numSkips) {
         lastSkipDoc = skipDoc;
         lastFreqPointer = freqPointer;
         lastProxPointer = proxPointer;
+
         if (skipDoc != 0 && skipDoc >= doc)
           numSkipped += skipInterval;
-
-        if ((count + numSkipped + skipInterval) >= df)
-          break;                                  // no more skips
 
         skipDoc += skipStream.readVInt();
         freqPointer += skipStream.readVInt();
