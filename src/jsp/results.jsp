@@ -110,12 +110,12 @@
 %>
                 <tr>
 <%
-                        Document doc = hits.doc(i);                  //get the next document 
-                        String doctitle = doc.get("title");          //get its title
-                        String url = doc.get("url");                 //get its url field
-                        if (doctitle.equals(""))                     //use the url if it has no title
+                        Document doc = hits.doc(i);                    //get the next document 
+                        String doctitle = doc.get("title");            //get its title
+                        String url = doc.get("url");                   //get its url field
+                        if ((doctitle == null) || doctitle.equals("")) //use the url if it has no title
                                 doctitle = url;
-                                                                     //then output!
+                                                                       //then output!
 %>
                         <td><a href="<%=url%>"><%=doctitle%></a></td>
                         <td><%=doc.get("summary")%></td>
