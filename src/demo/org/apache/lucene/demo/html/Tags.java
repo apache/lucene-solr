@@ -52,19 +52,19 @@ package org.apache.lucene.demo.html;
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  */
- 
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 
 public final class Tags {
-  
+
   /**
-   * contains all tags for which whitespaces have to be inserted for proper tokenization 
+   * contains all tags for which whitespaces have to be inserted for proper tokenization
    */
-  public final static Set WS_ELEMS = Collections.synchronizedSet(new HashSet());
-  
+  public static final Set WS_ELEMS = Collections.synchronizedSet(new HashSet());
+
   static{
     WS_ELEMS.add("<hr");
     WS_ELEMS.add("<hr/");  // note that "<hr />" does not need to be listed explicitly
@@ -97,5 +97,4 @@ public final class Tags {
     WS_ELEMS.add("<h6");
     WS_ELEMS.add("</h6");
   }
-
 }
