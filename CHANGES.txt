@@ -12,8 +12,8 @@ $Id$
     Fix for bug 9015, http://nagoya.apache.org/bugzilla/show_bug.cgi?id=9015
     (Dale Anson via otis)
 
- 3. Added the ability to disable lock creation by using disableLocks system
-    property.  This is useful for read-only media, such as CD-ROMs.
+ 3. Added the ability to disable lock creation by using disableLuceneLocks
+    system property.  This is useful for read-only media, such as CD-ROMs.
     (otis)
     
  4. Added id method to Hits to be able to access the index global id.
