@@ -7,8 +7,9 @@ import java.io.LineNumberReader;
 import java.util.Hashtable;
 
 /**
- * Loads a textfile and adds every entry to a Hashtable. If a file is not found
- * or on any error, an empty table is returned.
+ * Loads a textfile and adds every line as an entry to a Hashtable. Every line
+ * should contain only one word. If a file is not found or on any error, an
+ * empty table is returned.
  *
  * @author    Gerhard Schwarz
  * @version   $Id$
@@ -16,15 +17,14 @@ import java.util.Hashtable;
 public class WordlistLoader {
 
 	/**
-	 * @param path      Path to the wordlist.
-	 * @param wordfile  Name of the wordlist.
+	 * @param path      Path to the wordlist
+	 * @param wordfile  Name of the wordlist
 	 */
 	public static Hashtable getWordtable( String path, String wordfile ) {
 		if ( path == null || wordfile == null ) {
 			return new Hashtable();
 		}
-		File absoluteName = new File( path, wordfile );
-		return getWordtable( absoluteName );
+		return getWordtable( new File( path, wordfile ) );
 	}
 	/**
 	 * @param wordfile  Complete path to the wordlist
@@ -33,12 +33,11 @@ public class WordlistLoader {
 		if ( wordfile == null ) {
 			return new Hashtable();
 		}
-		File absoluteName = new File( wordfile );
-		return getWordtable( absoluteName );
+		return getWordtable( new File( wordfile ) );
 	}
 
 	/**
-	 * @param wordfile  File containing the wordlist.
+	 * @param wordfile  File containing the wordlist
 	 */
 	public static Hashtable getWordtable( File wordfile ) {
 		if ( wordfile == null ) {
@@ -57,11 +56,11 @@ public class WordlistLoader {
 					System.arraycopy( stopwords, 0, tmp, 0, wordcount );
 					stopwords = tmp;
 				}
-				stopwords[wordcount] = word;
+				stopwords[wordcount-1] = word;
 			}
 			result = makeWordTable( stopwords, wordcount );
 		}
-		// On error, use an empty table.
+		// On error, use an empty table
 		catch ( IOException e ) {
 			result = new Hashtable();
 		}
@@ -71,8 +70,8 @@ public class WordlistLoader {
 	/**
 	 * Builds the wordlist table.
 	 *
-	 * @param words   Word that where read.
-	 * @param length  Amount of words that where read into <tt>words</tt>.
+	 * @param words   Word that where read
+	 * @param length  Amount of words that where read into <tt>words</tt>
 	 */
 	private static Hashtable makeWordTable( String[] words, int length ) {
 		Hashtable table = new Hashtable( length );

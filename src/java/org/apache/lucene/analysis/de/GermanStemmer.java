@@ -30,7 +30,7 @@ public class GermanStemmer {
 	/**
 	 * Stemms the given term to an unique <tt>discriminator</tt>.
 	 *
-	 * @param word  The term that should be stemmed.
+	 * @param term  The term that should be stemmed.
 	 * @return      Discriminator for <tt>term</tt>
 	 */
 	protected String stem( String term ) {
@@ -40,6 +40,9 @@ public class GermanStemmer {
 		// Mark a possible noun.
 		if ( Character.isUpperCase( term.charAt( 0 ) ) ) {
 			uppercase = true;
+		}
+		else {
+			uppercase = false;
 		}
 		// Use lowercase for medium stemming.
 		term = term.toLowerCase();
@@ -79,9 +82,10 @@ public class GermanStemmer {
 				sb.setCharAt( sb.length() - 1, 'x' );
 			}
 		}
-		// Check the 7 "base" suffixes: "e", "s", "n", "t", "em", "er", "nd" for all
+		// Strip the 7 "base" suffixes: "e", "s", "n", "t", "em", "er", "nd" from all
 		// other terms. Adjectives, Verbs and Adverbs have a total of 52 different
-		// possible suffixes.
+		// possible suffixes, stripping only the characters from they are build
+		// does mostly the same
 		else {
 			// Strip base suffixes as long as enough characters remain.
 			boolean doMore = true;
@@ -112,10 +116,10 @@ public class GermanStemmer {
 				}
 			}
 		}
+		sb = resubstitute( sb );
 		if ( !uppercase ) {
 			sb = removeParticleDenotion( sb );
 		}
-		sb = resubstitute( sb );
 		return sb.toString();
 	}
 
@@ -127,8 +131,8 @@ public class GermanStemmer {
 	 */
 	private StringBuffer removeParticleDenotion( StringBuffer buffer ) {
 		for ( int c = 0; c < buffer.length(); c++ ) {
-			// Strip from the beginning of the string to the "ge" inclusive.
-			if ( c < ( sb.length() - 3 ) && buffer.charAt( c ) == 'g' && buffer.charAt ( c + 1 ) == 'e' ) {
+			// Strip from the beginning of the string to the "ge" inclusive
+			if ( c < ( buffer.length() - 4 ) && buffer.charAt( c ) == 'g' && buffer.charAt ( c + 1 ) == 'e' ) {
 				buffer.delete( 0, c + 2 );
 			}
 		}
@@ -140,7 +144,7 @@ public class GermanStemmer {
 	 *
 	 * - Substitute Umlauts with their corresponding vowel: äöü -> aou,
 	 *   "ß" is substituted by "ss"
-	 * - Substitute an second char of an pair of equal characters with
+	 * - Substitute a second char of an pair of equal characters with
 	 *   an asterisk: ?? -> ?*
 	 * - Substitute some common character combinations with a token:
 	 *   sch/ch/ei/ie/ig/st -> $/§/%/&/#/!
@@ -149,7 +153,7 @@ public class GermanStemmer {
 	 */
 	private StringBuffer substitute( StringBuffer buffer ) {
 		for ( int c = 0; c < buffer.length(); c++ ) {
-			// Replace the second char of a pair of the equal characters with an asterisk.
+			// Replace the second char of a pair of the equal characters with an asterisk
 			if ( c > 0 && buffer.charAt( c ) == buffer.charAt ( c - 1 )  ) {
 				buffer.setCharAt( c, '*' );
 			}
@@ -163,14 +167,14 @@ public class GermanStemmer {
 			else if ( buffer.charAt( c ) == 'ü' ) {
 				buffer.setCharAt( c, 'u' );
 			}
-			// Take care that enough characters at left for search.
+			// Take care that at least one character is left left side from the current one
 			if ( c < buffer.length() - 1 ) {
 				if ( buffer.charAt( c ) == 'ß' ) {
 					buffer.setCharAt( c, 's' );
 					buffer.insert( c + 1, 's' );
 					substCount++;
 				}
-				// Masking several common character combinations with an token.
+				// Masking several common character combinations with an token
 				else if ( ( c < buffer.length() - 2 ) && buffer.charAt( c ) == 's' && buffer.charAt( c + 1 ) == 'c' && buffer.charAt( c + 2 ) == 'h' ) {
 					buffer.setCharAt( c, '$' );
 					buffer.delete( c + 1, c + 3 );
@@ -240,10 +244,11 @@ public class GermanStemmer {
 		return true;
 	}
 	/**
-	 * Undoes some changes made by substitute(). That are character pairs and
-	 * character combinations.
+	 * Undoes the changes made by substitute(). That are character pairs and
+	 * character combinations. Umlauts will remain as their corresponding vowel,
+	 * as "ß" remains as "ss".
 	 *
-	 * @return  The term without the not human reaqdable substitutions.
+	 * @return  The term without the not human readable substitutions.
 	 */
 	private StringBuffer resubstitute( StringBuffer buffer ) {
 		for ( int c = 0; c < buffer.length(); c++ ) {

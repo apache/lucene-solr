@@ -14,6 +14,8 @@ import java.util.Hashtable;
  * Analyzer for german language. Supports an external list of stopwords (words that
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
+ * A default set of stopwords is used unless an other list is specified, the
+ * exclusionlist is empty by default.
  *
  * @author    Gerhard Schwarz
  * @version   $Id$
@@ -35,8 +37,8 @@ public final class GermanAnalyzer extends Analyzer {
 		"als", "für", "von", "mit",
 		"dich", "dir", "mich", "mir",
 		"mein", "sein", "kein",
-		"durch", "wegen"
-		};
+		"durch", "wegen", "wird"
+	};
 	
 	/**
 	 * Contains the stopwords used with the StopFilter.
@@ -98,9 +100,9 @@ public final class GermanAnalyzer extends Analyzer {
 	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
 	 *
 	 * @return  A TokenStream build from a StandardTokenizer filtered with
-	 * 			StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter.
+	 * 			StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter
 	 */
-	public final TokenStream tokenStream(String fieldName, Reader reader) {
+	public final TokenStream tokenStream( String fieldName, Reader reader ) {
 		TokenStream result = new StandardTokenizer( reader );
 		result = new StandardFilter( result );
 		result = new StopFilter( result, stoptable );
