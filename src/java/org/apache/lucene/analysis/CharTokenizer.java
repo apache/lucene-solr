@@ -16,6 +16,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
 /** An abstract base class for simple, character-oriented tokenizers.*/
@@ -44,7 +45,7 @@ public abstract class CharTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next() throws java.io.IOException {
+  public final Token next() throws IOException {
     int length = 0;
     int start = offset;
     while (true) {
