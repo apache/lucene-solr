@@ -202,6 +202,14 @@ implements Serializable {
   public void setSort(SortField[] fields) {
     this.fields = fields;
   }
+  
+  /**
+   * Representation of the sort criteria.
+   * @return Array of SortField objects used in this sort criteria
+   */
+  public SortField[] getSort() {
+    return fields;
+  }
 
   public String toString() {
     StringBuffer buffer = new StringBuffer();
