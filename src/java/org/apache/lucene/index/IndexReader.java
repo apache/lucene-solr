@@ -123,13 +123,47 @@ abstract public class IndexReader {
     return directory.fileModified("segments");
   }
 
+  /**
+   * Returns <code>true</code> if an index exists at the specified directory.
+   * If the directory does not exist or if there is no index in it.
+   * <code>false</code> is returned.
+   * @param  directory the directory to check for an index
+   * @return <code>true</code> if an index exists; <code>false</code> otherwise
+   */
+  public static boolean indexExists(String directory) {
+    return (new File(directory, "segments")).exists();
+  }
+
+  /**
+   * Returns <code>true</code> if an index exists at the specified directory.
+   * If the directory does not exist or if there is no index in it.
+   * @param  directory the directory to check for an index
+   * @return <code>true</code> if an index exists; <code>false</code> otherwise
+   */
+  public static boolean indexExists(File directory) {
+    return (new File(directory, "segments")).exists();
+  }
+
+  /**
+   * Returns <code>true</code> if an index exists at the specified directory.
+   * If the directory does not exist or if there is no index in it.
+   * @param  directory the directory to check for an index
+   * @return <code>true</code> if an index exists; <code>false</code> otherwise
+   * @throws IOException if there is a problem with accessing the index
+   */
+  public static boolean indexExists(Directory directory) throws IOException {
+    return directory.fileExists("segments");
+  }
+
   /** Returns the number of documents in this index. */
   abstract public int numDocs();
+
   /** Returns one greater than the largest possible document number.
     This may be used to, e.g., determine how big to allocate an array which
     will have an element for every document number in an index.
    */
   abstract public int maxDoc();
+
   /** Returns the stored fields of the <code>n</code><sup>th</sup>
       <code>Document</code> in this index. */
   abstract public Document document(int n) throws IOException;
@@ -145,12 +179,13 @@ abstract public class IndexReader {
 
   /** Returns an enumeration of all the terms in the index.
     The enumeration is ordered by Term.compareTo().  Each term
-    is greater than all that precede it in the enumeration. 
+    is greater than all that precede it in the enumeration.
    */
   abstract public TermEnum terms() throws IOException;
+
   /** Returns an enumeration of all terms after a given term.
     The enumeration is ordered by Term.compareTo().  Each term
-    is greater than all that precede it in the enumeration. 
+    is greater than all that precede it in the enumeration.
    */
   abstract public TermEnum terms(Term t) throws IOException;
 
@@ -213,8 +248,31 @@ abstract public class IndexReader {
     return n;
   }
 
-  /** Closes files associated with this index.
-    Also saves any new deletions to disk.
-    No other methods should be called after this has been called. */
-  abstract public void close() throws IOException;
+  /**
+   * Closes files associated with this index.
+   * Also saves any new deletions to disk.
+   * No other methods should be called after this has been called.
+   */
+    abstract public void close() throws IOException;
+
+  /**
+   * Returns <code>true</code> iff the index in the named directory is
+   * currently locked.
+   * @param directory the directory to check for a lock
+   * @throws IOException if there is a problem with accessing the index
+   */
+    public static boolean isLocked(Directory directory) throws IOException {
+	return directory.fileExists("write.lock");
+    }
+
+   /**
+    * Forcibly unlocks the index in the named directory.
+    * <P>
+    * Caution: this should only be used by failure recovery code,
+    * when it is known that no other process nor thread is in fact
+    * currently accessing this index.
+    */
+    public static void unlock(Directory directory) throws IOException {
+	directory.deleteFile("write.lock");
+    }
 }
