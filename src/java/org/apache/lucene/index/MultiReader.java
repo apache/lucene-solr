@@ -43,7 +43,7 @@ public class MultiReader extends IndexReader {
   * Directory locking for delete, undeleteAll, and setNorm operations is
   * left to the subreaders. </p>
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
-  * @param readers set of (sub)readers
+  * @param subReaders set of (sub)readers
   * @throws IOException
   */
   public MultiReader(IndexReader[] subReaders) throws IOException {

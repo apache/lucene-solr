@@ -80,7 +80,7 @@ public class FilterIndexReader extends IndexReader {
    * Directory locking for delete, undeleteAll, and setNorm operations is
    * left to the base reader.</p>
    * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
-   * @param in specified base reader.
+   * @param baseReader specified base reader.
    */
   public FilterIndexReader(IndexReader baseReader) {
     super(baseReader.directory());
