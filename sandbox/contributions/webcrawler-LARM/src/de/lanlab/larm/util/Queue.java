@@ -71,4 +71,6 @@ public interface Queue
     public void insert(Object o);
     public void insertMultiple(Collection c);
     public int size();
+    public boolean isEmpty();
+    public void clear();
 }

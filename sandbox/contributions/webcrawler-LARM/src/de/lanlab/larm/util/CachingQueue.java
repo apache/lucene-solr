@@ -491,6 +491,18 @@ public class CachingQueue implements Queue
         return size;
     }
 
+    public boolean isEmpty()
+    {
+        return size == 0;
+    }
+
+    public void clear()
+    {
+        while(!isEmpty())
+        {
+            remove();
+        }
+    }
 
     /**
      * testing
@@ -520,7 +532,7 @@ class AssertionFailedException extends RuntimeException
 }
 
 /**
- * Testklasse. Enthält einige Tests für die Funktionalität der CachingQueue
+ * Testklasse. contains some tests for the caching queue
  *
  * @author    Administrator
  * @created   3. Januar 2002
@@ -727,11 +739,11 @@ class CachingQueueTester
         {
             if (!(new File("testQueue5_1.cqb").delete()))
             {
-                System.err.println("CachingQueueTester.textExceptions: Store 1 nicht vorhanden. Filename geändert?");
+                System.err.println("CachingQueueTester.textExceptions: Store 1 deleted. file name changed?");
             }
             if (!(new File("testQueue5_2.cqb").delete()))
             {
-                System.err.println("CachingQueueTester.textExceptions: Store 2 nicht vorhanden. Filename geändert?");
+                System.err.println("CachingQueueTester.textExceptions: Store 2 deleted. file name changed?");
             }
             String t = (String) cq.remove();
             affirm(t.equals(test1));
