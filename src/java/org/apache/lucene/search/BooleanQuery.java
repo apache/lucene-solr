@@ -62,6 +62,22 @@ import org.apache.lucene.index.IndexReader;
   queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
   */
 public class BooleanQuery extends Query {
+  private static int maxClauseCount = 1024;
+
+  /** Thrown when an attempt is made to add more than {@link
+   * #getMaxClauseCount()} clauses. */
+  public static class TooManyClauses extends RuntimeException {}
+
+  /** Return the maximum number of clauses permitted, 1024 by default.
+   * Attempts to add more than the permitted number of clauses cause {@link
+   * TooManyClauses} to be thrown.*/
+  public static int getMaxClauseCount() { return maxClauseCount; }
+
+  /** Set the maximum number of clauses permitted. */
+  public static void setMaxClauseCount(int maxClauseCount) {
+    BooleanQuery.maxClauseCount = maxClauseCount;
+  }
+
   private Vector clauses = new Vector();
 
   /** Constructs an empty boolean query. */
@@ -78,13 +94,20 @@ public class BooleanQuery extends Query {
     </ul>
     It is an error to specify a clause as both <code>required</code> and
     <code>prohibited</code>.
+    *
+    * @see #getMaxClauseCount()
     */
   public void add(Query query, boolean required, boolean prohibited) {
-    clauses.addElement(new BooleanClause(query, required, prohibited));
+    add(new BooleanClause(query, required, prohibited));
   }
 
-  /** Adds a clause to a boolean query. */
+  /** Adds a clause to a boolean query.
+    * @see #getMaxClauseCount()
+   */
   public void add(BooleanClause clause) {
+    if (clauses.size() >= maxClauseCount)
+      throw new TooManyClauses();
+    
     clauses.addElement(clause);
   }
 
