@@ -62,7 +62,12 @@ import org.apache.lucene.index.IndexReader;
   queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
   */
 public class BooleanQuery extends Query {
-  private static int maxClauseCount =
+
+  /**
+   * Default value is 1024.  Use <code>org.apache.lucene.maxClauseCount</code>
+   * system property to override.
+   */
+  public static int maxClauseCount =
     Integer.parseInt(System.getProperty("org.apache.lucene.maxClauseCount",
       "1024"));
 
