@@ -83,7 +83,7 @@ import org.apache.lucene.search.*;
  * This enables one to construct queries which search multiple fields.
  * </ul>
  *
- * A clause may be either a:
+ * A clause may be either:
  * <ul>
  * <li> a term, indicating all the documents that contain this term; or
  * <li> a nested query, enclosed in parentheses.  Note that this may be used
