@@ -10,7 +10,8 @@ public class HTMLParser implements HTMLParserConstants {
   StringBuffer title = new StringBuffer(SUMMARY_LENGTH);
   StringBuffer summary = new StringBuffer(SUMMARY_LENGTH * 2);
   Properties metaTags=new Properties();
-  String currentMetaTag="";
+  String currentMetaTag=null;
+  String currentMetaContent=null;
   int length = 0;
   boolean titleComplete = false;
   boolean inTitle = false;
@@ -120,11 +121,6 @@ InterruptedException {
   void addText(String text) throws IOException {
     if (inStyle)
       return;
-    if (inMetaTag)
-    {
-        metaTags.setProperty(currentMetaTag, text);
-        return;
-    }
     if (inTitle)
       title.append(text);
     else {
@@ -141,6 +137,13 @@ InterruptedException {
     pipeOut.write(text);
 
     afterSpace = false;
+  }
+
+  void addMetaTag() throws IOException {
+      metaTags.setProperty(currentMetaTag, currentMetaContent);
+      currentMetaTag = null;
+      currentMetaContent = null;
+      return;
   }
 
   void addSpace() throws IOException {
@@ -262,11 +265,17 @@ InterruptedException {
            && t2 != null)
         {
                 currentMetaTag=t2.image.toLowerCase();
+                if(currentMetaTag != null && currentMetaContent != null) {
+                addMetaTag();
+                }
         }
         if(inMetaTag && t1.image.equalsIgnoreCase("content") && t2 !=
 null)
         {
-                addText(t2.image);
+                currentMetaContent=t2.image.toLowerCase();
+                if(currentMetaTag != null && currentMetaContent != null) {
+                addMetaTag();
+                }
         }
           break;
         default:
@@ -441,15 +450,15 @@ null)
     finally { jj_save(1, xla); }
   }
 
-  final private boolean jj_3_2() {
-    if (jj_scan_token(ArgQuote2)) return true;
-    if (jj_scan_token(CloseQuote2)) return true;
-    return false;
-  }
-
   final private boolean jj_3_1() {
     if (jj_scan_token(ArgQuote1)) return true;
     if (jj_scan_token(CloseQuote1)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_2() {
+    if (jj_scan_token(ArgQuote2)) return true;
+    if (jj_scan_token(CloseQuote2)) return true;
     return false;
   }
 
