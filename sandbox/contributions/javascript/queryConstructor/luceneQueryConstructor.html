@@ -2,27 +2,67 @@
   <head>
     <title>Demo Lucene Query Constructor</title>
     <script type="text/javascript" src="luceneQueryConstructor.js"></script>
+    <script type="text/javascript" src="../queryValidator/luceneQueryValidator.js"></script>
   </head>
-  
+
   <body>
     <form>
+      <p>
       <input type="hidden" name="query">
       Name:
       <input type="text" name="name">
       <select name="nameModifier">
-        <option value="And" />And 
-        <option value="Or" selected/>Or
-        <option value="Not" />Not
+        <option value="And">And</option>
+        <option value="Or" selected="selected">Or</option>
+        <option value="Not">Not</option>
       </select>
+      </p>
+
       <p>
       Description:
       <input type="text" name="description">
       <select name="descriptionModifier">
-        <option value="And" />And 
-        <option value="Or" selected/>Or
-        <option value="Not" />Not
-      </select>  
-      <input type="button" name="Search" value="Search" onClick="doMakeQuery(this.form.query)" />
+        <option value="And">And</option>
+        <option value="Or" selected="selected">Or</option>
+        <option value="Not">Not</option>
+      </select>
+      </p>
+
+      <p>
+      Required Select:
+      <select name="choice">
+        <option value="one">One</option>
+        <option value="two">Two</option>
+      </select>
+      <input type="hidden" name="choiceModifier" value="And"/>
+      </p>
+
+      <p>
+      Multi-select:
+      <select name="multi" multiple="true" size="5">
+        <option value="multi1">multi1</option>
+        <option value="multi2">multi2</option>
+        <option value="multi3">multi3</option>
+        <option value="multi4">multi4</option>
+      </select>
+      <input type="hidden" name="multiModifier" value="Or"/>
+      </p>
+
+      <p>
+      Radio:
+      <!-- TODO: something fishy happens if none selected -->
+      <input type="radio" name="radio" value="wnrn" checked="checked" />WNRN
+      <input type="radio" name="radio" value="klpx" />KLPX
+      <input type="hidden" name="radioModifier" value="And"/>
+      </p>
+
+      <p>
+      Current Query:
+      <pre id="curQuery"></pre>
+      </p>
+
+      <input type="button" name="Update" value="Update Query" onClick="doMakeQuery(this.form.query); curQuery.innerText = this.form.query.value" />
+      <input type="button" name="Validate" value="Validate" onClick="doCheckLuceneQuery(this.form.query);" />
     </form>
   </body>
 </html>

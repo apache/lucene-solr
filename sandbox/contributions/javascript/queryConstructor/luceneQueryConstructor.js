@@ -33,14 +33,14 @@ function doMakeQuery( query, dbg )
 {
   if(typeof(dbg) != "undefined")
     debug = dbg;
-    
+
   var frm = query.form;
   var formElements = frm.elements;
   query.value = '';
-  
+
   // keep track of the fields we've examined
   var dict = new Array();
-  
+
   for(var i=0; i<formElements.length; i++)
   {
     var element = formElements[i];
@@ -48,10 +48,11 @@ function doMakeQuery( query, dbg )
     if(!contains(dict, elementName))
     {
       dict[dict.length] = elementName;
-      
+
       // ensure we get the whole group (of checkboxes, radio, etc), if applicable
-      var elementValue = getFieldValue(frm[element.name]);
-      if(elementValue.length > 0)
+      var elementValue = trim(getFieldValue(frm[element.name]));
+
+      if(elementValue.length > 0 && elementValue != ' ')
       {
         var subElement = frm[elementName + modifierSuffix];
         if(typeof(subElement) != "undefined") // found a field/fieldModifier pair
@@ -62,7 +63,7 @@ function doMakeQuery( query, dbg )
           if(logic == 'And')
           {
             addFieldWithModifier(query, AND_MODIFIER, elementName, elementValue);
-          }     
+          }
           else if(logic == 'Not')
           {
             addFieldWithModifier(query, NOT_MODIFIER, elementName, elementValue);
@@ -79,12 +80,12 @@ function doMakeQuery( query, dbg )
       }
     }
   }
-  
+
   if(debug)
   {
     alert('Query:' + query.value);
   }
-  
+
   if(submitOnConstruction)
   {
     frm.submit();
@@ -107,9 +108,9 @@ function getFieldValue(field)
     return getCheckedValues(field);
   if(typeof(field[0]) != "undefined" && field[0].type=="radio")
     return getRadioValue(field);
-  if(field.type.match("select*")) 
+  if(field.type.match("select*"))
     return getSelectedValues(field);
-  
+
   return field.value;
 }
 
@@ -146,7 +147,7 @@ function getSelectedValues (select) {
 function addFieldWithModifier(query, modifier, field, fieldValue)
 {
   fieldValue = trim(fieldValue);
-  
+
   if(query.value.length == 0)
   {
     query.value = modifier + '(' + field + ':(' + fieldValue + '))';
@@ -154,19 +155,19 @@ function addFieldWithModifier(query, modifier, field, fieldValue)
   else
   {
     query.value = query.value + ' ' + modifier + '(' + field + ':(' + fieldValue + '))';
-  }  
+  }
 }
 
 function trim(inputString) {
    if (typeof inputString != "string") { return inputString; }
-   
+
    var temp = inputString;
-   
+
    // Replace whitespace with a single space
    var pattern = /\s+/ig;
    temp = temp.replace(pattern, " ");
-  
-   // Trim 
+
+   // Trim
    pattern = /^(\s*)([\w\W]*)(\b\s*$)/;
    if (pattern.test(temp)) { temp = temp.replace(pattern, "$2"); }
    return temp; // Return the trimmed string back to the user
