@@ -57,6 +57,12 @@ function testCheckAsterisk()
   query = "bar* *bar";
   assertFalse(query, checkAsterisk(query));
 
+  query = "*";
+  assertFalse(query, checkAsterisk(query));  
+
+  query = "*bar";
+  assertFalse(query, checkAsterisk(query));  
+
   // test with a space in front
   query = " *bar";
   assertFalse(query, checkAsterisk(query));  
