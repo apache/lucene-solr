@@ -60,7 +60,13 @@ import java.util.Hashtable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 
-final class SegmentsReader extends IndexReader {
+/**
+ * FIXME: Describe class <code>SegmentsReader</code> here.
+ *
+ * @version $Id$
+ */
+final class SegmentsReader extends IndexReader
+{
   protected SegmentReader[] readers;
   protected int[] starts;			  // 1st docno for each segment
   private Hashtable normsCache = new Hashtable();
@@ -110,8 +116,8 @@ final class SegmentsReader extends IndexReader {
 
   private final int readerIndex(int n) {	  // find reader for doc n:
     int lo = 0;					  // search starts array
-    int hi = readers.length - 1;		  // for first element less
-						  // than n, return its index
+    int hi = readers.length - 1                   // for first element less
+
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
       int midValue = starts[mid];
@@ -183,7 +189,7 @@ class SegmentsTermEnum extends TermEnum {
 	termEnum = (SegmentTermEnum)reader.terms(t);
       } else
 	termEnum = (SegmentTermEnum)reader.terms();
-      
+
       SegmentMergeInfo smi = new SegmentMergeInfo(starts[i], termEnum, reader);
       if (t == null ? smi.next() : termEnum.term() != null)
 	queue.put(smi);				  // initialize queue
@@ -204,10 +210,10 @@ class SegmentsTermEnum extends TermEnum {
       term = null;
       return false;
     }
-      
+
     term = top.term;
     docFreq = 0;
-    
+
     while (top != null && term.compareTo(top.term) == 0) {
       queue.pop();
       docFreq += top.termEnum.docFreq();	  // increment freq
@@ -243,7 +249,7 @@ class SegmentsTermDocs implements TermDocs {
 
   private SegmentTermDocs[] segTermDocs;
   protected SegmentTermDocs current;              // == segTermDocs[pointer]
-  
+
   SegmentsTermDocs(SegmentReader[] r, int[] s) {
     readers = r;
     starts = s;
