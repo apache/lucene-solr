@@ -179,6 +179,7 @@ limitations under the License.
                     </p>
                     <p>
                         <b>Software environment</b><br />
+                        <li><i>Lucene Version</i>: Self-explanatory</li>
                         <li><i>Java Version</i>: Version of Java SDK/JRE that is run
                         </li>
                         <li><i>Java VM</i>: Server/client VM, Sun VM/JRockIt</li>
@@ -197,7 +198,7 @@ limitations under the License.
                             Self-explanatory</li>
                         <li><i>Source documents storage location</i>: Where are the
                             documents being indexed located?
-                            Filesystem, DB, http,etc</li>
+                            Filesystem, DB, http, etc.</li>
                         <li><i>File type of source documents</i>: Types of files being
                             indexed, e.g. HTML files, XML files, PDF files, etc.</li>
                         <li><i>Parser(s) used, if any</i>: Parsers used for parsing the
@@ -208,7 +209,7 @@ limitations under the License.
                             Document contains</li>
                         <li><i>Type of fields</i>: Type of each field</li>
                         <li><i>Index persistence</i>: Where the index is stored, e.g.
-                            FSDirectory, SqlDirectory, etc</li>
+                            FSDirectory, SqlDirectory, etc.</li>
                     </p>
                     <p>
                         <b>Figures</b><br />
@@ -217,11 +218,14 @@ limitations under the License.
                         <li><i>Time taken / 1000 docs indexed</i>: Time taken to index
                             1000 files</li>
                         <li><i>Memory consumption</i>: Self-explanatory</li>
+                        <li><i>Query speed</i>: average time a query takes, type
+                            of queries (e.g. simple one-term query, phrase query),
+                            not measuring any overhead outside Lucene</li>
                     </p>
                     <p>
                         <b>Notes</b><br />
                         <li><i>Notes</i>: Any comments which don't belong in the above,
-                            special tuning/strategies, etc</li>
+                            special tuning/strategies, etc.</li>
                     </p>
                 </ul>
             </p>
@@ -503,7 +507,7 @@ limitations under the License.
                                 XSL transformation on them, and then proceeded to index the stream.  The indexer optimized
                                 the index every 50,000 documents (on this run) though previously, we optimized every
                                 300,000 documents.  The performance didn't change much either way.  We did no other
-                                tuning (RAM Directories, separate process to pretransform the source material, etc)
+                                tuning (RAM Directories, separate process to pretransform the source material, etc.)
                                 to make it index faster.  When all of these individual indexes were built, they were
                                 merged together into the main index.  That process usually took ~ a day.
                             </p>

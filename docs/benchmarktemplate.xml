@@ -11,11 +11,12 @@ RAID-5)</li>
   </p>
   <p>
   <b>Software environment</b><br/>
+  <li><i>Lucene Version</i>: Self-explanatory</li>
   <li><i>Java Version</i>: Version of Java SDK/JRE that is run </li>
   <li><i>Java VM</i>: Server/client VM, Sun VM/JRockIt</li>
   <li><i>OS Version</i>: Self-explanatory</li>
   <li><i>Location of index</i>: Is the index stored in filesystem or 
-database? Is it on the same server(local) or 
+database? Is it on the same server (local) or 
   over the network?</li>
   </p>
   <p>
@@ -47,6 +48,9 @@ runs)</i>: Time taken to index to index all files</li>
   <li><i>Time taken / 1000 docs indexed</i>: Time taken to index 1000 
 files</li>
   <li><i>Memory consumption</i>: Self-explanatory</li>
+  <li><i>Query speed</i>: average time a query takes, type
+    of queries (e.g. simple one-term query, phrase query),
+    not measuring any overhead outside Lucene</li>
   </p>
   <p>
   <b>Notes</b><br/>
