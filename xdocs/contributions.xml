@@ -82,6 +82,28 @@
                     </tr>
                 </table>
             </subsection>
+            <subsection name="XML Document #3">
+                <table>
+                    <tr>
+                        <th>
+                            URL 
+                        </th>
+                        <td>
+                            <a href="http://www.isogen.com/papers/lucene_xml_indexing.html">
+                                http://www.isogen.com/papers/lucene_xml_indexing.html
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author 
+                        </th>
+                        <td>
+                            W. Eliot Kimber - eliot@isogen.com
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="XPDF - PDF Document Conversion">
                 <table>
                     <tr>
@@ -156,6 +178,31 @@
         <section name="Misc">
             <p>
             </p>
+            
+            <subsection name="Term Highlighter">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL 
+                        </th>
+                        <td>
+                            <a href="http://www.iq-computing.de/lucene/highlight.htm">
+                                http://www.iq-computing.de/lucene/highlight.htm
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author 
+                        </th>
+                        <td>
+                            Maik Schreiber - info@iq-computing.de 
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="Lucene Tutorial">
                 <p>
                 </p>
