@@ -274,5 +274,6 @@ abstract public class IndexReader {
     */
     public static void unlock(Directory directory) throws IOException {
 	directory.deleteFile("write.lock");
+	directory.deleteFile("commit.lock");
     }
 }
