@@ -76,7 +76,7 @@
 
       Please download and install JavaCC 2.0 from:
 
-      &lt;http://www.webgain.com/products/java_cc/&gt;
+      &lt;http://www.experimentalstuff.com/Technologies/JavaCC/&gt;
 
       Then, create a build.properties file either in your home
       directory, or within the Lucene directory and set the javacc.home

@@ -80,11 +80,10 @@ NOTE: the ~ character represents your user account home directory.
 Step 3) Install JavaCC
 
 Building the Lucene distribution from the source requires the JavaCC
-parser generator from WebGain, Inc.  This software has
-a separate license agreement that must be agreed to before you can use
-it.  The web page for JavaCC is here:
+parser generator.  This software has a separate license agreement that
+must be agreed to before you can use it.  The web page for JavaCC is here:
 
-  http://www.webgain.com/products/java_cc/
+  http://www.experimentalstuff.com/Technologies/JavaCC/
 
 Follow the download links and download the zip file to a temporary
 location on your file system. Unzip the file and run the large class file
