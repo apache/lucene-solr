@@ -31,32 +31,32 @@ class RussianStemmer
 
     // letters
     private static char A = 0;
-    private static char B = 1;
+    //private static char B = 1;
     private static char V = 2;
     private static char G = 3;
-    private static char D = 4;
+    //private static char D = 4;
     private static char E = 5;
-    private static char ZH = 6;
-    private static char Z = 7;
+    //private static char ZH = 6;
+    //private static char Z = 7;
     private static char I = 8;
     private static char I_ = 9;
-    private static char K = 10;
+    //private static char K = 10;
     private static char L = 11;
     private static char M = 12;
     private static char N = 13;
     private static char O = 14;
-    private static char P = 15;
-    private static char R = 16;
+    //private static char P = 15;
+    //private static char R = 16;
     private static char S = 17;
     private static char T = 18;
     private static char U = 19;
-    private static char F = 20;
+    //private static char F = 20;
     private static char X = 21;
-    private static char TS = 22;
-    private static char CH = 23;
+    //private static char TS = 22;
+    //private static char CH = 23;
     private static char SH = 24;
     private static char SHCH = 25;
-    private static char HARD = 26;
+    //private static char HARD = 26;
     private static char Y = 27;
     private static char SOFT = 28;
     private static char AE = 29;
@@ -272,7 +272,9 @@ class RussianStemmer
         // look for adjective ending in a stemming zone
         if (!findAndRemoveEnding(stemmingZone, adjectiveEndings))
             return false;
-        // if adjective ending was found, try for participle ending
+        // if adjective ending was found, try for participle ending.
+        // variable r is unused, we are just interested in the side effect of
+        // findAndRemoveEnding():
         boolean r =
             findAndRemoveEnding(stemmingZone, participleEndings1, participle1Predessors)
             ||
@@ -533,190 +535,6 @@ class RussianStemmer
     }
 
     /**
-     * Set ending definition as in Russian stemming algorithm.
-     * Creation date: (16/03/2002 11:16:36 PM)
-     */
-    private void setEndings()
-    {
-        vowels = new char[] { A, E, I, O, U, Y, AE, IU, IA };
-
-        perfectiveGerundEndings1 = new char[][] {
-            { V }, { V, SH, I }, { V, SH, I, S, SOFT }
-        };
-
-        perfectiveGerund1Predessors = new char[][] { { A }, { IA }
-        };
-
-        perfectiveGerundEndings2 = new char[][] {
-            { I, V },
-            { Y, V },
-            { I, V, SH, I },
-            { Y, V, SH, I },
-            { I, V, SH, I, S, SOFT },
-            { Y, V, SH, I, S, SOFT }
-        };
-
-        adjectiveEndings = new char[][] {
-            { E, E },
-            { I, E },
-            { Y, E },
-            { O, E },
-            { E, I_ },
-            { I, I_ },
-            { Y, I_ },
-            { O, I_ },
-            { E, M },
-            { I, M },
-            { Y, M },
-            { O, M },
-            { I, X },
-            { Y, X },
-            { U, IU },
-            { IU, IU },
-            { A, IA },
-            { IA, IA },
-            { O, IU },
-            { E, IU },
-            { I, M, I },
-            { Y, M, I },
-            { E, G, O },
-            { O, G, O },
-            { E, M, U },
-            { O, M, U }
-        };
-
-        participleEndings1 = new char[][] {
-            { SHCH },
-            { E, M },
-            { N, N },
-            { V, SH },
-            { IU, SHCH }
-        };
-
-        participleEndings2 = new char[][] {
-            { I, V, SH },
-            { Y, V, SH },
-            { U, IU, SHCH }
-        };
-
-        participle1Predessors = new char[][] {
-            { A },
-            { IA }
-        };
-
-        reflexiveEndings = new char[][] {
-            { S, IA },
-            { S, SOFT }
-        };
-
-        verbEndings1 = new char[][] {
-            { I_ },
-            { L },
-            { N },
-            { L, O },
-            { N, O },
-            { E, T },
-            { IU, T },
-            { L, A },
-            { N, A },
-            { L, I },
-            { E, M },
-            { N, Y },
-            { E, T, E },
-            { I_, T, E },
-            { T, SOFT },
-            { E, SH, SOFT },
-            { N, N, O }
-        };
-
-        verbEndings2 = new char[][] {
-            { IU },
-            { U, IU },
-            { E, N },
-            { E, I_ },
-            { IA, T },
-            { U, I_ },
-            { I, L },
-            { Y, L },
-            { I, M },
-            { Y, M },
-            { I, T },
-            { Y, T },
-            { I, L, A },
-            { Y, L, A },
-            { E, N, A },
-            { I, T, E },
-            { I, L, I },
-            { Y, L, I },
-            { I, L, O },
-            { Y, L, O },
-            { E, N, O },
-            { U, E, T },
-            { U, IU, T },
-            { E, N, Y },
-            { I, T, SOFT },
-            { Y, T, SOFT },
-            { I, SH, SOFT },
-            { E, I_, T, E },
-            { U, I_, T, E }
-        };
-
-        verb1Predessors = new char[][] {
-            { A },
-            { IA }
-        };
-
-        nounEndings = new char[][] {
-            { A },
-            { IU },
-            { I_ },
-            { O },
-            { U },
-            { E },
-            { Y },
-            { I },
-            { SOFT },
-            { IA },
-            { E, V },
-            { O, V },
-            { I, E },
-            { SOFT, E },
-            { IA, X },
-            { I, IU },
-            { E, I },
-            { I, I },
-            { E, I_ },
-            { O, I_ },
-            { E, M },
-            { A, M },
-            { O, M },
-            { A, X },
-            { SOFT, IU },
-            { I, IA },
-            { SOFT, IA },
-            { I, I_ },
-            { IA, M },
-            { IA, M, I },
-            { A, M, I },
-            { I, E, I_ },
-            { I, IA, M },
-            { I, E, M },
-            { I, IA, X },
-            { I, IA, M, I }
-        };
-
-        superlativeEndings = new char[][] {
-            { E, I_, SH },
-            { E, I_, SH, E }
-        };
-
-        derivationalEndings = new char[][] {
-            { O, S, T },
-            { O, S, T, SOFT }
-        };
-    }
-
-    /**
      * Finds the stem for given Russian word.
      * Creation date: (16/03/2002 3:36:48 PM)
      * @return java.lang.String
@@ -734,6 +552,8 @@ class RussianStemmer
         if (!perfectiveGerund(stemmingZone))
         {
             reflexive(stemmingZone);
+            // variable r is unused, we are just interested in the side effect of
+            // adjectival() or verb(), if adjectival() does nothing etc.:
             boolean r =
                 adjectival(stemmingZone)
                 || verb(stemmingZone)

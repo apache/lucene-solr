@@ -56,13 +56,13 @@ public final class RussianAnalyzer extends Analyzer
     private static char S = 17;
     private static char T = 18;
     private static char U = 19;
-    private static char F = 20;
+    //private static char F = 20;
     private static char X = 21;
-    private static char TS = 22;
+    //private static char TS = 22;
     private static char CH = 23;
     private static char SH = 24;
     private static char SHCH = 25;
-    private static char HARD = 26;
+    //private static char HARD = 26;
     private static char Y = 27;
     private static char SOFT = 28;
     private static char AE = 29;
