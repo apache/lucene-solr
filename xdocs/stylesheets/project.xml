@@ -3,7 +3,7 @@
 
     <title>Jakarta Lucene</title>
     <logo href="/images/lucene_green_300.gif">Jakarta Lucene</logo>
-    
+
     <body>
     <menu name="About">
         <item name="Overview"           href="/index.html"/>
@@ -14,7 +14,7 @@
 
     <menu name="Resources">
         <item name="FAQ (Official)"    href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
-        <item name="JGuru FAQ"         href="http://www.jguru.com/faq/Lucene"/>
+        <item name="jGuru FAQ"         href="http://www.jguru.com/faq/Lucene"/>
         <item name="Getting Started"   href="/gettingstarted.html"/>
         <item name="Query Syntax"      href="/queryparsersyntax.html"/>
         <item name="File Formats"      href="/fileformats.html"/>
@@ -23,10 +23,14 @@
         <item name="Lucene Sandbox"    href="/lucene-sandbox/"/>
         <item name="Articles, etc."    href="/resources.html"/>
         <item name="TODO list"         href="/todo.html"/>
+        <item name="Patches"         href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;email1=&amp;emailtype1=substring&amp;emailassigned_to1=1&amp;email2=&amp;emailtype2=substring&amp;emailreporter2=1&amp;bugidtype=include&amp;bug_id=&amp;changedin=&amp;votes=&amp;chfieldfrom=&amp;chfieldto=Now&amp;chfieldvalue=&amp;product=Lucene&amp;short_desc=%5BPATCH%5D&amp;short_desc_type=allwordssubstr&amp;long_desc=&amp;long_desc_type=allwordssubstr&amp;bug_file_loc=&amp;bug_file_loc_type=allwordssubstr&amp;keywords=&amp;keywords_type=anywords&amp;field0-0-0=noop&amp;type0-0-0=noop&amp;value0-0-0=&amp;cmdtype=doit&amp;order=%27Importance%27/todo.html"/>
         <item name="Bugs"              href="/site/bugs.html"/>
-        <item name="Lucene Bugs"       href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;email1=&amp;emailtype1=substring&amp;emailassigned_to1=1&amp;email2=&amp;emailtype2=substring&amp;emailreporter2=1&amp;bugidtype=include&amp;bug_id=&amp;changedin=&amp;votes=&amp;chfieldfrom=&amp;chfieldto=Now&amp;chfieldvalue=&amp;product=Lucene&amp;short_desc=&amp;short_desc_type=allwordssubstr&amp;long_desc=&amp;long_desc_type=allwordssubstr&amp;bug_file_loc=&amp;bug_file_loc_type=allwordssubstr&amp;keywords=&amp;keywords_type=anywords&amp;field0-0-0=noop&amp;type0-0-0=noop&amp;value0-0-0=&amp;cmdtype=doit&amp;order=%27Importance%27"/>
+        <item name="Lucene Bugs"
+              href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;email1=&amp;emailtype1=substring&amp;emailassigned_to1=1&amp;email2=&amp;emailtype2=substring&amp;emailreporter2=1&amp;bugidtype=include&amp;bug_id=&amp;changedin=&amp;votes=&amp;chfieldfrom=&amp;chfieldto=Now&amp;chfieldvalue=&amp;product=Lucene&amp;short_desc=&amp;short_desc_type=allwordssubstr&amp;long_desc=&amp;long_desc_type=allwordssubstr&amp;bug_file_loc=&amp;bug_file_loc_type=allwordssubstr&amp;keywords=&amp;keywords_type=anywords&amp;field0-0-0=noop&amp;type0-0-0=noop&amp;value0-0-0=&amp;cmdtype=doit&amp;order=%27Importance%27"/>
+        <item name="Lucene-user"       href="http://nagoya.apache.org/eyebrowse/SummarizeList?listId=30"/>
+        <item name="Lucene-dev"        href="http://nagoya.apache.org/eyebrowse/SummarizeList?listId=29"/>
     </menu>
-    
+
     <menu name="Plans">
         <item name="Application Extensions"           href="/luceneplan.html"/>
     </menu>
