@@ -40,7 +40,7 @@ function doCheckLuceneQuery(queryField)
     }
     
     // check wildcards are used properly
-    matches = query.match(/^[\*]*$|([\s]\*)/);
+    matches = query.match(/^[\*]*$|[\s]\*|^\*[^\s]/);
     if(matches != null && matches.length > 0)
     {
       if(alertUser) alert("Invalid search query! The wildcard (*) character must be preceded by at least one alphabet or number. Please try again.")
