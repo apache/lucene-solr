@@ -16,19 +16,25 @@ $Id$
 
  4. Fixed instruction for setting up JavaCC - Bug #7017 (otis)
 
- 5. Added throwing exception if FSDirectory could not create diectory - Bug 6914 (otis)
+ 5. Added throwing exception if FSDirectory could not create diectory 
+    - Bug #6914 (Eugene Gluzberg via otis)
 
- 6. Update MultiSearcher, MultiFieldParse, Constants, DateFilter, LowerCaseTokenizer javadoc (otis)
+ 6. Update MultiSearcher, MultiFieldParse, Constants, DateFilter, 
+    LowerCaseTokenizer javadoc (otis)
 
- 7. Added fix to avoid NullPointerException in results.jsp (Mark Hayes via otis)
+ 7. Added fix to avoid NullPointerException in results.jsp
+    (Mark Hayes via otis)
 
- 8. Changed Wildcard search to find 0 or more char instead of 1 or more (Lee Mallobone via otis)
+ 8. Changed Wildcard search to find 0 or more char instead of 1 or more
+    (Lee Mallobone, via otis)
 
- 9. Fixed error in offset issue in GermanStemFilter (otis)
+ 9. Fixed error in offset issue in GermanStemFilter - Bug #7412
+    (Rodrigo Reyes, via otis)
 
  10. Added unit tests for wildcard search and DateFilter (otis)
 
- 11. Allow co-existence of indexed and non-indexed fields with the same name (cutting/casper via otis)
+ 11. Allow co-existence of indexed and non-indexed fields with the same name
+     (cutting/casper, via otis)
 
 1.2 RC4
 
