@@ -122,6 +122,7 @@ public class TestQueryParser extends TestCase {
     if (a == null)
       a = new SimpleAnalyzer();
     QueryParser qp = new QueryParser("field", a);
+    qp.setOperator(QueryParser.DEFAULT_OPERATOR_OR);
     return qp.parse(query);
   }
 
