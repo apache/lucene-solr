@@ -11,13 +11,13 @@ to add search capabilities to applications.
 The Lucene Sanbox is a place for contributions that are not part of
 the core Lucene distribution. These contributions will not be part of
 distribution.
-The Sandbox is also for creating new subprojects in Lucene that may
+The Sandbox is also for creating new sub-projects in Lucene that may
 require restructuring of Lucene code.
 
 NOTE: All contributions must be under the APL license to be part of this
 repository.
 
-The basic structure for the respository is
+The basic structure for the repository is
 
 jakarta-lucene-sandbox/README.txt
 jakarta-lucene-sandbox/LICENSE.txt
