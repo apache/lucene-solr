@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexReader;
     <li> {@link WildcardQuery}
     <li> {@link PhraseQuery}
     <li> {@link PrefixQuery}
-    <li> {@link PhrasePrefixQuery}
+    <li> {@link MultiPhraseQuery}
     <li> {@link FuzzyQuery}
     <li> {@link RangeQuery}
     <li> {@link org.apache.lucene.search.spans.SpanQuery}
