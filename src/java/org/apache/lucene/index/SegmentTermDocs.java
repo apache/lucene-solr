@@ -196,9 +196,9 @@ class SegmentTermDocs implements TermDocs {
         lastSkipDoc = skipDoc;
         lastFreqPointer = freqPointer;
         lastProxPointer = proxPointer;
-        if (skipDoc >= doc)
+        if (skipDoc != 0 && skipDoc >= doc)
           numSkipped += skipInterval;
-        
+
         if ((count + numSkipped + skipInterval) > df)
           break;                                  // no more skips
 
