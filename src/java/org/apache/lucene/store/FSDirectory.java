@@ -372,6 +372,10 @@ public final class FSDirectory extends Directory {
     }
   }
 
+  public File getFile() {
+    return directory;
+  }
+
   /** For debug output. */
   public String toString() {
     return "FSDirectory@" + directory;
