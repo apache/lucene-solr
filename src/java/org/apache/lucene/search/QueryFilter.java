@@ -68,10 +68,12 @@ import org.apache.lucene.index.IndexReader;
  * QueryFilter that matches, e.g., only documents modified within the last
  * week.  The QueryFilter and RangeQuery would only need to be reconstructed
  * once per day.
+ *
+ * @version $Id$
  */
 public class QueryFilter extends Filter {
   private Query query;
-  private transient WeakHashMap cache = new WeakHashMap();
+  private transient WeakHashMap cache = null;
 
   /** Constructs a filter which only matches documents matching
    * <code>query</code>.
@@ -81,6 +83,10 @@ public class QueryFilter extends Filter {
   }
 
   public BitSet bits(IndexReader reader) throws IOException {
+
+    if (cache == null) {
+      cache = new WeakHashMap();
+    }
 
     synchronized (cache) {  // check cache
       BitSet cached = (BitSet) cache.get(reader);
@@ -96,7 +102,6 @@ public class QueryFilter extends Filter {
         bits.set(doc);  // set bit for hit
       }
     });
-
 
     synchronized (cache) {  // update cache
       cache.put(reader, bits);
