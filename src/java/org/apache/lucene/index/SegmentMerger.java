@@ -234,6 +234,7 @@ final class SegmentMerger {
   private OutputStream freqOutput = null;
   private OutputStream proxOutput = null;
   private TermInfosWriter termInfosWriter = null;
+  private int skipInterval;
   private SegmentMergeQueue queue = null;
 
   private final void mergeTerms() throws IOException {
@@ -242,6 +243,8 @@ final class SegmentMerger {
       proxOutput = directory.createFile(segment + ".prx");
       termInfosWriter =
               new TermInfosWriter(directory, segment, fieldInfos);
+      skipInterval = termInfosWriter.skipInterval;
+      queue = new SegmentMergeQueue(readers.size());
 
       mergeTermInfos();
 
@@ -254,7 +257,6 @@ final class SegmentMerger {
   }
 
   private final void mergeTermInfos() throws IOException {
-    queue = new SegmentMergeQueue(readers.size());
     int base = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
@@ -327,7 +329,6 @@ final class SegmentMerger {
    */
   private final int appendPostings(SegmentMergeInfo[] smis, int n)
           throws IOException {
-    final int skipInterval = termInfosWriter.skipInterval;
     int lastDoc = 0;
     int df = 0;					  // number of docs w/ term
     resetSkip();

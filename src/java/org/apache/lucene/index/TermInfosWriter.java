@@ -27,13 +27,13 @@ import org.apache.lucene.util.StringHelper;
 
 final class TermInfosWriter {
   /** The file format version, a negative number. */
-  public static final int FORMAT = -1;
+  public static final int FORMAT = -2;
 
   private FieldInfos fieldInfos;
   private OutputStream output;
   private Term lastTerm = new Term("", "");
   private TermInfo lastTi = new TermInfo();
-  private int size = 0;
+  private long size = 0;
 
   // TODO: the default values for these two parameters should be settable from
   // IndexWriter.  However, once that's done, folks will start setting them to
@@ -80,10 +80,8 @@ final class TermInfosWriter {
     output = directory.createFile(segment + (isIndex ? ".tii" : ".tis"));
     output.writeInt(FORMAT);                      // write format
     output.writeLong(0);                          // leave space for size
-    if (!isIndex) {
-      output.writeInt(indexInterval);             // write indexInterval
-      output.writeInt(skipInterval);              // write skipInterval
-    }
+    output.writeInt(indexInterval);             // write indexInterval
+    output.writeInt(skipInterval);              // write skipInterval
   }
 
   /** Adds a new <Term, TermInfo> pair to the set.
@@ -106,10 +104,8 @@ final class TermInfosWriter {
     output.writeVLong(ti.freqPointer - lastTi.freqPointer); // write pointers
     output.writeVLong(ti.proxPointer - lastTi.proxPointer);
 
-    if (!isIndex) {
-      if (ti.docFreq > skipInterval) {
-        output.writeVInt(ti.skipOffset);
-      }
+    if (ti.docFreq >= skipInterval) {
+      output.writeVInt(ti.skipOffset);
     }
 
     if (isIndex) {

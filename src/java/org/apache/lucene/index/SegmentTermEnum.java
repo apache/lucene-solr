@@ -33,6 +33,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   long indexPointer = 0;
   int indexInterval;
   int skipInterval;
+  private int formatM1SkipInterval;
   Term prev;
 
   private char[] buffer = {};
@@ -51,7 +52,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
       // back-compatible settings
       indexInterval = 128;
-      skipInterval = Integer.MAX_VALUE;
+      skipInterval = Integer.MAX_VALUE; // switch off skipTo optimization
 
     } else {
       // we have a format version number
@@ -62,8 +63,17 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
         throw new IOException("Unknown format version:" + format);
 
       size = input.readLong();                    // read the size
-
-      if (!isIndex) {
+      
+      if(format == -1){
+        if (!isIndex) {
+          indexInterval = input.readInt();
+          formatM1SkipInterval = input.readInt();
+        }
+        // switch off skipTo optimization for file format prior to 1.4rc2 in order to avoid a bug in 
+        // skipTo implementation of these versions
+        skipInterval = Integer.MAX_VALUE;
+      }
+      else{
         indexInterval = input.readInt();
         skipInterval = input.readInt();
       }
@@ -107,13 +117,21 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     termInfo.docFreq = input.readVInt();	  // read doc freq
     termInfo.freqPointer += input.readVLong();	  // read freq pointer
     termInfo.proxPointer += input.readVLong();	  // read prox pointer
-
-    if (!isIndex) {
-      if (termInfo.docFreq > skipInterval) {
-        termInfo.skipOffset = input.readVInt();
+    
+    if(format == -1){
+    //  just read skipOffset in order to increment  file pointer; 
+    // value is never used since skipTo is switched off
+      if (!isIndex) {
+        if (termInfo.docFreq > formatM1SkipInterval) {
+          termInfo.skipOffset = input.readVInt(); 
+        }
       }
     }
-
+    else{
+      if (termInfo.docFreq >= skipInterval) 
+        termInfo.skipOffset = input.readVInt();
+    }
+    
     if (isIndex)
       indexPointer += input.readVLong();	  // read index pointer
 

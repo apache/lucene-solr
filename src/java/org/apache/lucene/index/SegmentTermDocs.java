@@ -84,6 +84,8 @@ class SegmentTermDocs implements TermDocs {
 
   public void close() throws IOException {
     freqStream.close();
+    if (skipStream != null)
+      skipStream.close();
   }
 
   public final int doc() { return doc; }
@@ -143,7 +145,7 @@ class SegmentTermDocs implements TermDocs {
 
   /** Optimized implementation. */
   public boolean skipTo(int target) throws IOException {
-    if (df > skipInterval) {                      // optimized case
+    if (df >= skipInterval) {                      // optimized case
 
       if (skipStream == null)
         skipStream = (InputStream) freqStream.clone(); // lazily clone
