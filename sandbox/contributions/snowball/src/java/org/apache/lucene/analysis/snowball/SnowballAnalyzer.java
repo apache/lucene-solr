@@ -57,23 +57,30 @@ package org.apache.lucene.analysis.snowball;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.*;
 
+import net.sf.snowball.ext.*;
+
 import java.io.Reader;
 import java.util.Hashtable;
 
 /** Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
- * LowerCaseFilter}, {@link SnowballFilter} and {@link StopFilter}. */
+ * LowerCaseFilter}, {@link StopFilter} and {@link SnowballFilter}.
+ *
+ * Available stemmers are listed in {@link net.sf.snowball.ext}.  The name of a
+ * stemmer is the part of the class name before "Stemmer", e.g., the stemmer in
+ * {@link EnglishStemmer} is named "English".
+ */
 public class SnowballAnalyzer extends Analyzer {
-  private String language;
+  private String name;
   private Hashtable stopTable;
 
-  /** Builds an analyzer with the given stop words. */
-  public SnowballAnalyzer(String language) {
-    this.language = language;
+  /** Builds the named analyzer with no stop words. */
+  public SnowballAnalyzer(String name) {
+    this.name = name;
   }
 
-  /** Builds an analyzer with the given stop words. */
-  public SnowballAnalyzer(String language, String[] stopWords) {
-    this(language);
+  /** Builds the named analyzer with the given stop words. */
+  public SnowballAnalyzer(String name, String[] stopWords) {
+    this(name);
     stopTable = StopFilter.makeStopTable(stopWords);
   }
 
@@ -85,7 +92,7 @@ public class SnowballAnalyzer extends Analyzer {
     result = new LowerCaseFilter(result);
     if (stopTable != null)
       result = new StopFilter(result, stopTable);
-    result = new SnowballFilter(result, language);
+    result = new SnowballFilter(result, name);
     return result;
   }
 }

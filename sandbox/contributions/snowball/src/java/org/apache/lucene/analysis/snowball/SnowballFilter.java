@@ -59,13 +59,18 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 import net.sf.snowball.SnowballProgram;
+import net.sf.snowball.ext.*;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-/** 
-*/
+/** A filter that stems words using a Snowball-generated stemmer.
+ *
+ * Available stemmers are listed in {@link net.sf.snowball.ext}.  The name of a
+ * stemmer is the part of the class name before "Stemmer", e.g., the stemmer in
+ * {@link EnglishStemmer} is named "English".
+ */
 
 public class SnowballFilter extends TokenFilter {
   private static final Object [] EMPTY_ARGS = new Object[0];
@@ -73,11 +78,16 @@ public class SnowballFilter extends TokenFilter {
   private SnowballProgram stemmer;
   private Method stemMethod;
 
-  public SnowballFilter(TokenStream in, String language) {
+  /** Construct the named stemming filter.
+   *
+   * @param in the input tokens to stem
+   * @param in the name of a stemmer
+   */
+  public SnowballFilter(TokenStream in, String name) {
     this.input = in;
     try {
       Class stemClass =
-        Class.forName("net.sf.snowball.ext." + language + "Stemmer");
+        Class.forName("net.sf.snowball.ext." + name + "Stemmer");
       stemmer = (SnowballProgram) stemClass.newInstance();
       stemMethod = stemClass.getMethod("stem", new Class[0]);
     } catch (Exception e) {

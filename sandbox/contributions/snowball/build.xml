@@ -27,8 +27,6 @@
   <!-- Stuff needed by all targets                            -->
   <!-- ====================================================== -->
   <target name="init">
-    <mkdir dir="${bin.dir}"/>
-
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${build.classes}"/>
 
@@ -134,7 +132,7 @@
     <javadoc
       sourcepath="${src.dir}" 
       overview="${src.dir}/overview.html"
-      packagenames="${javadoc.packages}"
+      packagenames="*"
       destdir="${build.javadoc}"
       author="true"
       version="true"
