@@ -44,6 +44,18 @@ $Id$
     forces you to specify the desired date resolution (e.g. month, day,
     second, ...) which can make RangeQuerys on those fields more efficient.
     (Daniel Naber)
+    
+ 9. PhraseQuery and PhrasePrefixQuery now allow the explicit specification
+    of relative positions. (Christoph Goller)
+    
+ 10. QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions 
+   (patch #9110); some unused method parameters removed; The ability
+   to specify a minimum similarity for FuzzyQuery has been added.
+   (Christoph Goller)
+   
+ 11. Added support for binary stored fields (patch #29370)
+  (Drew Farris and Bernhard Messer via Christoph)
+        
 
 1.4.1
 
