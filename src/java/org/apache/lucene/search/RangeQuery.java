@@ -62,13 +62,6 @@ public class RangeQuery extends Query
         this.inclusive = inclusive;
     }
 
-    /**
-     * FIXME: Describe <code>rewrite</code> method here.
-     *
-     * @param reader an <code>IndexReader</code> value
-     * @return a <code>Query</code> value
-     * @exception IOException if an error occurs
-     */
     public Query rewrite(IndexReader reader) throws IOException {
 
         BooleanQuery query = new BooleanQuery();
