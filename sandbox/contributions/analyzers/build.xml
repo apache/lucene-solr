@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="analyzers" default="default">
+
+  <description>
+    Additional Analyzers
+  </description>
+
+  <import file="../common.xml"/>
+</project>

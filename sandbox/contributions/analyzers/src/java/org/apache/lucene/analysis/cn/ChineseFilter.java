@@ -37,7 +37,7 @@ public final class ChineseFilter extends TokenFilter {
     private Hashtable stopTable;
 
     public ChineseFilter(TokenStream in) {
-        input = in;
+        super(in);
 
         stopTable = new Hashtable(STOP_WORDS.length);
         for (int i = 0; i < STOP_WORDS.length; i++)

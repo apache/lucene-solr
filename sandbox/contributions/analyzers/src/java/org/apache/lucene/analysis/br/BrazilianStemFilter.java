@@ -29,8 +29,8 @@ public final class BrazilianStemFilter extends TokenFilter {
 	private Hashtable exclusions = null;
 
 	public BrazilianStemFilter( TokenStream in ) {
+    super(in);
 		stemmer = new BrazilianStemmer();
-		input = in;
 	}
 
 	/**
