@@ -1,3 +1,10 @@
+
+<%
+response.setHeader("Pragma", "No-cache");
+response.setDateHeader("Expires", 0);
+response.setHeader("Cache-Control", "no-cache");
+response.setHeader("Cache-Control", "private");
+%> 
 <%@include file="header.jsp"%>
 <% /* Author: Andrew C. Oliver (acoliver2@users.sourceforge.net) */ %>
 <center> 
