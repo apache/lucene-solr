@@ -83,7 +83,7 @@ public final class StopAnalyzer extends Analyzer {
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */
-  public final TokenStream tokenStream(String fieldName, Reader reader) {
+  public TokenStream tokenStream(String fieldName, Reader reader) {
     return new StopFilter(new LowerCaseTokenizer(reader), stopTable);
   }
 }

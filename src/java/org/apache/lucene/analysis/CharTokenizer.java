@@ -59,7 +59,7 @@ import java.io.Reader;
 /** An abstract base class for simple, character-oriented tokenizers.*/
 public abstract class CharTokenizer extends Tokenizer {
   public CharTokenizer(Reader input) {
-    this.input = input;
+    super(input);
   }
 
   private int offset = 0, bufferIndex=0, dataLen=0;

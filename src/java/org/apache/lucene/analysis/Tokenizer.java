@@ -66,6 +66,14 @@ public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
   protected Reader input;
 
+  /** Construct a tokenizer with null input. */
+  protected Tokenizer() {}
+
+  /** Construct a token stream processing the given input. */
+  protected Tokenizer(Reader input) {
+    this.input = input;
+  }
+
   /** By default, closes the input Reader. */
   public void close() throws IOException {
     input.close();

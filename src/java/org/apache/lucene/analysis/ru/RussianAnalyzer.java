@@ -280,7 +280,7 @@ public final class RussianAnalyzer extends Analyzer
      * @return  A TokenStream build from a RussianLetterTokenizer filtered with
      *                  RussianLowerCaseFilter, StopFilter, and RussianStemFilter
      */
-    public final TokenStream tokenStream(String fieldName, Reader reader)
+    public TokenStream tokenStream(String fieldName, Reader reader)
     {
         TokenStream result = new RussianLetterTokenizer(reader, charset);
         result = new RussianLowerCaseFilter(result, charset);

@@ -79,8 +79,8 @@ public final class GermanStemFilter extends TokenFilter
     
     public GermanStemFilter( TokenStream in )
     {
+        super(in);
 	stemmer = new GermanStemmer();
-	input = in;
     }
     
     /**

@@ -66,14 +66,14 @@ public final class StopFilter extends TokenFilter {
   /** Constructs a filter which removes words from the input
     TokenStream that are named in the array of words. */
   public StopFilter(TokenStream in, String[] stopWords) {
-    input = in;
+    super(in);
     table = makeStopTable(stopWords);
   }
 
   /** Constructs a filter which removes words from the input
     TokenStream that are named in the Hashtable. */
   public StopFilter(TokenStream in, Hashtable stopTable) {
-    input = in;
+    super(in);
     table = stopTable;
   }
   

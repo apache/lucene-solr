@@ -58,7 +58,7 @@ package org.apache.lucene.analysis;
 
 public final class LowerCaseFilter extends TokenFilter {
   public LowerCaseFilter(TokenStream in) {
-    input = in;
+    super(in);
   }
 
   public final Token next() throws java.io.IOException {

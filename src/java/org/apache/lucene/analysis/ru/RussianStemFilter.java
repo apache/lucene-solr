@@ -77,8 +77,8 @@ public final class RussianStemFilter extends TokenFilter
 
     public RussianStemFilter(TokenStream in, char[] charset)
     {
+        super(in);
         stemmer = new RussianStemmer(charset);
-        input = in;
     }
 
     /**

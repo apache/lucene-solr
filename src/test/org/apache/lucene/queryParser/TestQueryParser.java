@@ -82,7 +82,7 @@ public class TestQueryParser extends TestCase {
 	 * token 'phrase' into 'phrase1 phrase2'
 	 */
 	public QPTestFilter(TokenStream in) {
-	    input = in;
+            super(in);
 	}
 
 	boolean inPhrase = false;

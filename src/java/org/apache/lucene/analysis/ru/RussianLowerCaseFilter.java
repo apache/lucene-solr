@@ -69,7 +69,7 @@ public final class RussianLowerCaseFilter extends TokenFilter
 
     public RussianLowerCaseFilter(TokenStream in, char[] charset)
     {
-        input = in;
+        super(in);
         this.charset = charset;
     }
 

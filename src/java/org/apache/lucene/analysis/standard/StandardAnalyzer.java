@@ -85,7 +85,7 @@ public class StandardAnalyzer extends Analyzer {
 
     /** Constructs a {@link StandardTokenizer} filtered by a {@link
 	StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
-    public final TokenStream tokenStream(String fieldName, Reader reader) {
+    public TokenStream tokenStream(String fieldName, Reader reader) {
 	TokenStream result = new StandardTokenizer(reader);
 	result = new StandardFilter(result);
 	result = new LowerCaseFilter(result);

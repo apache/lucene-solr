@@ -79,8 +79,8 @@ public final class PorterStemFilter extends TokenFilter {
     private PorterStemmer stemmer;
 
     public PorterStemFilter(TokenStream in) {
-	stemmer = new PorterStemmer();
-	input = in;
+      super(in);
+      stemmer = new PorterStemmer();
     }
 
     /** Returns the next input Token, after being stemmed */
