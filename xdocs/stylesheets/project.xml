@@ -9,7 +9,7 @@
         <item name="Overview"           href="/index.html"/>
         <item name="Powered by Lucene"  href="http://wiki.apache.org/jakarta-lucene/PoweredBy"/>
         <item name="Who We Are"         href="/whoweare.html"/>
-        <item name="Mailing Lists"      href="/site/mail.html"/>
+        <item name="Mailing Lists"      href="/mailinglists.html"/>
     </menu>
 
     <menu name="Resources">
