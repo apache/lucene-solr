@@ -36,7 +36,7 @@ public class BrazilianStemmer {
 	/**
 	 * Stemms the given term to an unique <tt>discriminator</tt>.
 	 *
-	 * @param word  The term that should be stemmed.
+	 * @param term  The term that should be stemmed.
 	 * @return      Discriminator for <tt>term</tt>
 	 */
 	protected String stem( String term ) {
@@ -44,7 +44,7 @@ public class BrazilianStemmer {
 
     // creates CT
     createCT(term) ;
-    
+
 		if ( !isIndexable( CT ) ) {
 			return null;
 		}
@@ -363,7 +363,7 @@ public class BrazilianStemmer {
     CT = changeTerm(term) ;
 
     if (CT.length() < 2) return ;
-    
+
     // if the first character is ... , remove it
     if ((CT.charAt(0) == '"')  ||
         (CT.charAt(0) == '\'') ||
@@ -378,7 +378,7 @@ public class BrazilianStemmer {
     }
 
     if (CT.length() < 2) return ;
-    
+
     // if the last character is ... , remove it
     if ((CT.charAt(CT.length()-1) == '-') ||
         (CT.charAt(CT.length()-1) == ',') ||
