@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 /** A clause in a BooleanQuery. */
 public class BooleanClause implements java.io.Serializable {
   
-  public static final class Occur {
+  public static final class Occur implements java.io.Serializable {
     
     private String name;
     
