@@ -1252,32 +1252,7 @@
                 probably will be.  These should therefore be replaced with either
                 UInt64 values, or better yet, with VInt values which have no limit.
             </p>
-            <p>There
-                are only two places where the code requires that a value be fixed
-                size.  These are:
-            </p>
-            <ol>
-                <li><p>
-                        The FieldValuesPosition (in the stored field index file, .fdx).
-                        This already uses a UInt64, and so is not a problem.
-                    </p></li>
-                <li><p>The
-                        TermCount (in the term info file, .tis).  This is written last but
-                        is read when the file is first opened, and so is stored at the
-                        front.  The indexing code first writes an zero here, then overwrites
-                        it after the rest of the file has been written.  So unless this is
-                        stored elsewhere, it must be fixed size and should be changed to a
-                        UInt64.
-                    </p>
-                </li>
-            </ol>
-            <p>Other
-                than these, all UInt values could be converted to VInt to remove
-                limitations.
-            </p>
-            <p><br/><br/>
 
-            </p>
         </section>
 
     </body>
