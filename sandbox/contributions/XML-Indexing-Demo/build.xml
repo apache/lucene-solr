@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="xml" default="default">
+
+  <description>
+    Example of Lucene XML indexing
+  </description>
+
+  <import file="../common.xml"/>
+</project>

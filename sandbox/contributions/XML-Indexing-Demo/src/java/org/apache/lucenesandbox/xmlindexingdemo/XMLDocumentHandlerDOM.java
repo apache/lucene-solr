@@ -10,49 +10,38 @@ import java.io.File;
 /**
  *
  */
-public class XMLDocumentHandlerDOM
-{
-    public org.apache.lucene.document.Document createXMLDocument(File f)
-    {
-	org.apache.lucene.document.Document document = new org.apache.lucene.document.Document();
-	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-	try
-        {
-	    DocumentBuilder df = dbf.newDocumentBuilder();
-	    org.w3c.dom.Document d = df.parse(f);
-	    Node root = d.getDocumentElement();
-	    traverseTree(root, document);
-	}
-	catch (Exception e)
-        {
-	    System.out.println("error: " + e);
-	    e.printStackTrace();
-	}
-	return document;
+public class XMLDocumentHandlerDOM {
+  public org.apache.lucene.document.Document createXMLDocument(File f) {
+    org.apache.lucene.document.Document document = new org.apache.lucene.document.Document();
+    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    try {
+      DocumentBuilder df = dbf.newDocumentBuilder();
+      org.w3c.dom.Document d = df.parse(f);
+      Node root = d.getDocumentElement();
+      traverseTree(root, document);
+    } catch (Exception e) {
+      System.out.println("error: " + e);
+      e.printStackTrace();
     }
+    return document;
+  }
 
-    static private void traverseTree(Node node, org.apache.lucene.document.Document document)
-    {
-	NodeList nl = node.getChildNodes();
-	if (nl.getLength() == 0)
-        {
-	    if (node.getNodeType() == Node.TEXT_NODE)
-	    {
-		Node parentNode = node.getParentNode();
-		if (parentNode.getNodeType() == Node.ELEMENT_NODE)
-                {
-		    String parentNodeName = parentNode.getNodeName();
+  static private void traverseTree(Node node, org.apache.lucene.document.Document document) {
+    NodeList nl = node.getChildNodes();
+    if (nl.getLength() == 0) {
+      if (node.getNodeType() == Node.TEXT_NODE) {
+        Node parentNode = node.getParentNode();
+        if (parentNode.getNodeType() == Node.ELEMENT_NODE) {
+//		    String parentNodeName = parentNode.getNodeName();
 // 		    String nodeValue = node.getNodeValue();
 // 		    if (parentNodeName.equals("name"))
 // 		    {
-			Node siblingNode = node.getNextSibling();
-			if (siblingNode != null)
-                        {
-			    if (siblingNode.getNodeType() == Node.CDATA_SECTION_NODE)
-			    {
-				document.add(Field.Text("name", siblingNode.getNodeValue()));
-			    }
- 			}
+          Node siblingNode = node.getNextSibling();
+          if (siblingNode != null) {
+            if (siblingNode.getNodeType() == Node.CDATA_SECTION_NODE) {
+              document.add(Field.Text("name", siblingNode.getNodeValue()));
+            }
+          }
 // 		    }
 // 		    else if (parentNodeName.equals("profession"))
 // 		    {
@@ -131,15 +120,12 @@ public class XMLDocumentHandlerDOM
 // 			    }
 // 			}
 // 		    }
-		}
-	    }
         }
-        else
-        {
-	    for(int i=0; i<nl.getLength(); i++)
-            {
-		traverseTree(nl.item(i), document);
-	    }
-        }
+      }
+    } else {
+      for (int i = 0; i < nl.getLength(); i++) {
+        traverseTree(nl.item(i), document);
+      }
     }
+  }
 }
