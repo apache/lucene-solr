@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="wordnet" default="default">
+<project name="lucene-wordnet" default="default">
 
   <description>
     WordNet
@@ -13,7 +13,7 @@
 
   <import file="../common.xml"/>
 
-  <target name="index" depends="compile">
+  <target name="index" depends="compile" description="Build WordNet index">
     <fail if="synindex.exists">
       Index already exists - must remove first.
     </fail>
@@ -29,7 +29,7 @@
     </java>
   </target>
 
-  <target name="synonym">
+  <target name="synonym" description="Find synonyms for word">
     <fail unless="synindex.exists">
       Index does not exist.
     </fail>
