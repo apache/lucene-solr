@@ -86,9 +86,13 @@ public final class FSDirectory extends Directory {
   private static final boolean DISABLE_LOCKS =
       Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
 
-   private static final String LOCK_DIR =
-     System.getProperty("org.apache.lucene.lockdir",
-       System.getProperty("java.io.tmpdir"));
+  /**
+   * Directory specified by <code>org.apache.lucene.lockdir</code>
+   * or <code>java.io.tmpdir</code> system property
+   */
+  public static final String LOCK_DIR =
+    System.getProperty("org.apache.lucene.lockdir",
+      System.getProperty("java.io.tmpdir"));
 
   private static MessageDigest DIGESTER;
 

@@ -49,9 +49,19 @@ import org.apache.lucene.analysis.Analyzer;
   */
 
 public class IndexWriter {
+
+  /**
+   * Default value is 1000.  Use <code>org.apache.lucene.writeLockTimeout</code>
+   * system property to override.
+   */
   public static long WRITE_LOCK_TIMEOUT =
     Integer.parseInt(System.getProperty("org.apache.lucene.writeLockTimeout",
       "1000"));
+
+  /**
+   * Default value is 10000.  Use <code>org.apache.lucene.commitLockTimeout</code>
+   * system property to override.
+   */
   public static long COMMIT_LOCK_TIMEOUT =
     Integer.parseInt(System.getProperty("org.apache.lucene.commitLockTimeout",
       "10000"));
@@ -59,18 +69,38 @@ public class IndexWriter {
   public static final String WRITE_LOCK_NAME = "write.lock";
   public static final String COMMIT_LOCK_NAME = "commit.lock";
 
-  private static final int DEFAULT_MERGE_FACTOR =
+  /**
+   * Default value is 10.  Use <code>org.apache.lucene.mergeFactor</code>
+   * system property to override.
+   */
+  public static final int DEFAULT_MERGE_FACTOR =
     Integer.parseInt(System.getProperty("org.apache.lucene.mergeFactor",
       "10"));
-  private static final int DEFAULT_MIN_MERGE_DOCS =
+
+  /**
+   * Default value is 10.  Use <code>org.apache.lucene.minMergeDocs</code>
+   * system property to override.
+   */
+  public static final int DEFAULT_MIN_MERGE_DOCS =
     Integer.parseInt(System.getProperty("org.apache.lucene.minMergeDocs",
       "10"));
-  private static final int DEFAULT_MAX_FIELD_LENGTH =
-    Integer.parseInt(System.getProperty("org.apache.lucene.maxFieldLength",
-      "10000"));
-  private static final int DEFAULT_MAX_MERGE_DOCS =
+
+  /**
+   * Default value is {@link Integer#MAX_VALUE}.
+   * Use <code>org.apache.lucene.maxMergeDocs</code> system property to override.
+   */
+  public static final int DEFAULT_MAX_MERGE_DOCS =
     Integer.parseInt(System.getProperty("org.apache.lucene.maxMergeDocs",
       String.valueOf(Integer.MAX_VALUE)));
+
+  /**
+   * Default value is 10000.  Use <code>org.apache.lucene.maxFieldLength</code>
+   * system property to override.
+   */
+  public static final int DEFAULT_MAX_FIELD_LENGTH =
+    Integer.parseInt(System.getProperty("org.apache.lucene.maxFieldLength",
+      "10000"));
+
 
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
