@@ -271,12 +271,12 @@
       packagenames="${packages}"
       destdir="${build.javadocs}"
       author="true"
-      private="true"
       version="true"
       use="true"
+      link="${javadoc.link}"
       windowtitle="${Name} ${version} API"
       doctitle="${Name} ${version} API"
-      bottom="Copyright &amp;copy; ${year} Lucene.com. All Rights Reserved."
+      bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
       >
       <classpath refid="classpath"/>
     </javadoc>
