@@ -67,6 +67,8 @@ import java.util.Hashtable;
  *
  * @author    Gerhard Schwarz
  * @version   $Id$
+ *
+ * @todo refactor to convert to Sets instead of Hashtable
  */
 public class WordlistLoader {
   /**
@@ -92,6 +94,7 @@ public class WordlistLoader {
 
   /**
    * @param wordfile  File containing the wordlist
+   * @todo Create a Set version of this method
    */
   public static Hashtable getWordtable(File wordfile) {
     if (wordfile == null) {

@@ -56,7 +56,7 @@ package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.*;
 import java.io.Reader;
-import java.util.Hashtable;
+import java.util.Set;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
@@ -65,7 +65,7 @@ import java.util.Hashtable;
  * @version $Id$
  */
 public class StandardAnalyzer extends Analyzer {
-  private Hashtable stopTable;
+  private Set stopSet;
 
   /** An array containing some common English words that are usually not
   useful for searching. */
@@ -78,7 +78,7 @@ public class StandardAnalyzer extends Analyzer {
 
   /** Builds an analyzer with the given stop words. */
   public StandardAnalyzer(String[] stopWords) {
-    stopTable = StopFilter.makeStopTable(stopWords);
+    stopSet = StopFilter.makeStopSet(stopWords);
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
@@ -87,7 +87,7 @@ public class StandardAnalyzer extends Analyzer {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
     result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopTable);
+    result = new StopFilter(result, stopSet);
     return result;
   }
 }

@@ -62,6 +62,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.File;
 import java.io.Reader;
 import java.util.Hashtable;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Analyzer for German language. Supports an external list of stopwords (words that
@@ -96,19 +98,19 @@ public class GermanAnalyzer extends Analyzer
     /**
      * Contains the stopwords used with the StopFilter.
      */
-    private Hashtable stoptable = new Hashtable();
+    private Set stopSet = new HashSet();
 
     /**
      * Contains words that should be indexed but not stemmed.
      */
-    private Hashtable excltable = new Hashtable();
+    private Set exclusionSet = new HashSet();
 
     /**
      * Builds an analyzer.
      */
     public GermanAnalyzer()
     {
-	stoptable = StopFilter.makeStopTable( GERMAN_STOP_WORDS );
+	stopSet = StopFilter.makeStopSet( GERMAN_STOP_WORDS );
     }
 
     /**
@@ -116,7 +118,7 @@ public class GermanAnalyzer extends Analyzer
      */
     public GermanAnalyzer( String[] stopwords )
     {
-	stoptable = StopFilter.makeStopTable( stopwords );
+	stopSet = StopFilter.makeStopSet( stopwords );
     }
 
     /**
@@ -124,7 +126,7 @@ public class GermanAnalyzer extends Analyzer
      */
     public GermanAnalyzer( Hashtable stopwords )
     {
-	stoptable = stopwords;
+	stopSet = new HashSet(stopwords.keySet());
     }
 
     /**
@@ -132,7 +134,7 @@ public class GermanAnalyzer extends Analyzer
      */
     public GermanAnalyzer( File stopwords )
     {
-	stoptable = WordlistLoader.getWordtable( stopwords );
+	stopSet = new HashSet(WordlistLoader.getWordtable( stopwords ).keySet());
     }
 
     /**
@@ -140,7 +142,7 @@ public class GermanAnalyzer extends Analyzer
      */
     public void setStemExclusionTable( String[] exclusionlist )
     {
-	excltable = StopFilter.makeStopTable( exclusionlist );
+	exclusionSet = StopFilter.makeStopSet( exclusionlist );
     }
 
     /**
@@ -148,7 +150,7 @@ public class GermanAnalyzer extends Analyzer
      */
     public void setStemExclusionTable( Hashtable exclusionlist )
     {
-	excltable = exclusionlist;
+	exclusionSet = new HashSet(exclusionlist.keySet());
     }
 
     /**
@@ -156,7 +158,7 @@ public class GermanAnalyzer extends Analyzer
      */
     public void setStemExclusionTable( File exclusionlist )
     {
-	excltable = WordlistLoader.getWordtable( exclusionlist );
+	exclusionSet = new HashSet(WordlistLoader.getWordtable( exclusionlist ).keySet());
     }
 
     /**
@@ -170,8 +172,8 @@ public class GermanAnalyzer extends Analyzer
 	TokenStream result = new StandardTokenizer( reader );
 	result = new StandardFilter( result );
   // shouldn't there be a lowercaser before stop word filtering?
-  result = new StopFilter( result, stoptable );
-	result = new GermanStemFilter( result, excltable );
+  result = new StopFilter( result, stopSet );
+	result = new GermanStemFilter( result, exclusionSet );
 	return result;
     }
 }

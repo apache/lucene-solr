@@ -56,11 +56,12 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 import java.util.Hashtable;
+import java.util.Set;
 
 /** Filters LetterTokenizer with LowerCaseFilter and StopFilter. */
 
 public final class StopAnalyzer extends Analyzer {
-  private Hashtable stopTable;
+  private Set stopWords;
 
   /** An array containing some common English words that are not usually useful
     for searching. */
@@ -74,17 +75,17 @@ public final class StopAnalyzer extends Analyzer {
 
   /** Builds an analyzer which removes words in ENGLISH_STOP_WORDS. */
   public StopAnalyzer() {
-    stopTable = StopFilter.makeStopTable(ENGLISH_STOP_WORDS);
+    stopWords = StopFilter.makeStopSet(ENGLISH_STOP_WORDS);
   }
 
   /** Builds an analyzer which removes words in the provided array. */
   public StopAnalyzer(String[] stopWords) {
-    stopTable = StopFilter.makeStopTable(stopWords);
+    this.stopWords = StopFilter.makeStopSet(stopWords);
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(new LowerCaseTokenizer(reader), stopTable);
+    return new StopFilter(new LowerCaseTokenizer(reader), stopWords);
   }
 }
 

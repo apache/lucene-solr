@@ -59,6 +59,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * A filter that stems German words. It supports a table of words that should
@@ -75,7 +77,7 @@ public final class GermanStemFilter extends TokenFilter
      */
     private Token token = null;
     private GermanStemmer stemmer = null;
-    private Hashtable exclusions = null;
+    private Set exclusionSet = null;
     
     public GermanStemFilter( TokenStream in )
     {
@@ -85,13 +87,24 @@ public final class GermanStemFilter extends TokenFilter
     
     /**
      * Builds a GermanStemFilter that uses an exclusiontable.
+     * @deprecated Use {@link #GermanStemFilter(org.apache.lucene.analysis.TokenStream, java.util.Set)} instead.
      */
     public GermanStemFilter( TokenStream in, Hashtable exclusiontable )
     {
 	this( in );
-	exclusions = exclusiontable;
+	exclusionSet = new HashSet(exclusiontable.keySet());
+
     }
-    
+
+    /**
+     * Builds a GermanStemFilter that uses an exclusiontable.
+     */
+    public GermanStemFilter( TokenStream in, Set exclusionSet )
+    {
+	this( in );
+	this.exclusionSet = exclusionSet;
+    }
+
     /**
      * @return  Returns the next token in the stream, or null at EOS
      */
@@ -102,7 +115,7 @@ public final class GermanStemFilter extends TokenFilter
 	    return null;
 	}
 	// Check the exclusiontable
-	else if ( exclusions != null && exclusions.contains( token.termText() ) ) {
+	else if ( exclusionSet != null && exclusionSet.contains( token.termText() ) ) {
 	    return token;
 	}
 	else {
@@ -128,9 +141,18 @@ public final class GermanStemFilter extends TokenFilter
 
     /**
      * Set an alternative exclusion list for this filter.
+     * @deprecated Use {@link #setExclusionSet(java.util.Set)} instead.
      */
     public void setExclusionTable( Hashtable exclusiontable )
     {
-	exclusions = exclusiontable;
+	exclusionSet = new HashSet(exclusiontable.keySet());
+    }
+
+    /**
+     * Set an alternative exclusion list for this filter.
+     */
+    public void setExclusionSet( Set exclusionSet )
+    {
+	this.exclusionSet = exclusionSet;
     }
 }

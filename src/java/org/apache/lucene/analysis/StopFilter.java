@@ -57,6 +57,7 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 
 /**
  * Removes stop words from a token stream.
@@ -64,7 +65,7 @@ import java.util.Hashtable;
 
 public final class StopFilter extends TokenFilter {
 
-  private HashSet stopWords;
+  private Set stopWords;
 
   /**
    * Constructs a filter which removes words from the input
@@ -79,7 +80,7 @@ public final class StopFilter extends TokenFilter {
    * Constructs a filter which removes words from the input
    * TokenStream that are named in the Hashtable.
    *
-   * @deprecated Use {@link #StopFilter(TokenStream, HashSet)} StopFilter(TokenStream,Map)} instead
+   * @deprecated Use {@link #StopFilter(TokenStream, Set)} StopFilter(TokenStream,Map)} instead
    */
   public StopFilter(TokenStream in, Hashtable stopTable) {
     super(in);
@@ -89,8 +90,12 @@ public final class StopFilter extends TokenFilter {
   /**
    * Constructs a filter which removes words from the input
    * TokenStream that are named in the Set.
+   * It is crucial that an efficient Set implementation is used
+   * for maximum performance.
+   *
+   * @see #makeStopSet(java.lang.String[])
    */
-  public StopFilter(TokenStream in, HashSet stopWords) {
+  public StopFilter(TokenStream in, Set stopWords) {
     super(in);
     this.stopWords = stopWords;
   }
@@ -116,7 +121,7 @@ public final class StopFilter extends TokenFilter {
    * This permits this stopWords construction to be cached once when
    * an Analyzer is constructed.
    */
-  public static final HashSet makeStopSet(String[] stopWords) {
+  public static final Set makeStopSet(String[] stopWords) {
     HashSet stopTable = new HashSet(stopWords.length);
     for (int i = 0; i < stopWords.length; i++)
       stopTable.add(stopWords[i]);

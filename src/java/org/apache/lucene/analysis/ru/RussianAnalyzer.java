@@ -60,6 +60,8 @@ import org.apache.lucene.analysis.TokenStream;
 
 import java.io.Reader;
 import java.util.Hashtable;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Analyzer for Russian language. Supports an external list of stopwords (words that
@@ -215,7 +217,7 @@ public final class RussianAnalyzer extends Analyzer
     /**
      * Contains the stopwords used with the StopFilter.
      */
-    private Hashtable stoptable = new Hashtable();
+    private Set stopSet = new HashSet();
 
     /**
      * Charset for Russian letters.
@@ -227,7 +229,7 @@ public final class RussianAnalyzer extends Analyzer
 
     public RussianAnalyzer() {
         charset = RussianCharsets.UnicodeRussian;
-        stoptable = StopFilter.makeStopTable(
+        stopSet = StopFilter.makeStopSet(
                     makeStopWords(RussianCharsets.UnicodeRussian));
     }
 
@@ -237,7 +239,7 @@ public final class RussianAnalyzer extends Analyzer
     public RussianAnalyzer(char[] charset)
     {
         this.charset = charset;
-        stoptable = StopFilter.makeStopTable(makeStopWords(charset));
+        stopSet = StopFilter.makeStopSet(makeStopWords(charset));
     }
 
     /**
@@ -246,7 +248,7 @@ public final class RussianAnalyzer extends Analyzer
     public RussianAnalyzer(char[] charset, String[] stopwords)
     {
         this.charset = charset;
-        stoptable = StopFilter.makeStopTable(stopwords);
+        stopSet = StopFilter.makeStopSet(stopwords);
     }
 
     // Takes russian stop words and translates them to a String array, using
@@ -270,11 +272,12 @@ public final class RussianAnalyzer extends Analyzer
 
     /**
      * Builds an analyzer with the given stop words.
+     * @todo create a Set version of this ctor
      */
     public RussianAnalyzer(char[] charset, Hashtable stopwords)
     {
         this.charset = charset;
-        stoptable = stopwords;
+        stopSet = new HashSet(stopwords.keySet());
     }
 
     /**
@@ -287,7 +290,7 @@ public final class RussianAnalyzer extends Analyzer
     {
         TokenStream result = new RussianLetterTokenizer(reader, charset);
         result = new RussianLowerCaseFilter(result, charset);
-        result = new StopFilter(result, stoptable);
+        result = new StopFilter(result, stopSet);
         result = new RussianStemFilter(result, charset);
         return result;
     }
