@@ -27,6 +27,9 @@
 		<li><a href="http://sourceforge.net/projects/nlucene">NLucene</a>
 		    <br/> - .NET implementation of Lucene
 		</li>
+		<li><a href="http://search.cpan.org/author/SIMON/Lucene-QueryParser-1.01/">Lucene::QueryParser</a>
+		    <br/> - Perl implementation of Lucene QueryParser
+		</li>
 	    </ul>
 	</section>
 
