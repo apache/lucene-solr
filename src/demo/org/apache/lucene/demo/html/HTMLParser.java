@@ -139,7 +139,7 @@ InterruptedException {
     afterSpace = false;
   }
 
-  void addMetaTag() throws IOException {
+  void addMetaTag() {
       metaTags.setProperty(currentMetaTag, currentMetaContent);
       currentMetaTag = null;
       currentMetaContent = null;
