@@ -141,4 +141,8 @@ public class FilterIndexReader extends IndexReader {
   public Collection getIndexedFieldNames (Field.TermVector tvSpec){
     return in.getIndexedFieldNames(tvSpec);
   }
+  
+  public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
+    return in.getFieldNames(fieldNames);
+  }
 }

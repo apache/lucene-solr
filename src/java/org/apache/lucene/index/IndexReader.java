@@ -47,6 +47,35 @@ import java.util.Set;
 */
 public abstract class IndexReader {
   
+  public static final class FieldOption {
+    private String option;
+    private FieldOption() { }
+    private FieldOption(String option) {
+      this.option = option;
+    } 
+    public String toString() {
+      return this.option;
+    }
+    // all fields
+    public static final FieldOption ALL = new FieldOption ("ALL");
+    // all indexed fields
+    public static final FieldOption INDEXED = new FieldOption ("INDEXED");
+    // all fields which are not indexed
+    public static final FieldOption UNINDEXED = new FieldOption ("UNINDEXED");
+    // all fields which are indexed with termvectors enables
+    public static final FieldOption INDEXED_WITH_TERMVECTOR = new FieldOption ("INDEXED_WITH_TERMVECTOR");
+    // all fields which are indexed but don't have termvectors enabled
+    public static final FieldOption INDEXED_NO_TERMVECTOR = new FieldOption ("INDEXED_NO_TERMVECTOR");
+    // all fields where termvectors are enabled. Please note that only standard termvector fields are returned
+    public static final FieldOption TERMVECTOR = new FieldOption ("TERMVECTOR");
+    // all field with termvectors wiht positions enabled
+    public static final FieldOption TERMVECTOR_WITH_POSITION = new FieldOption ("TERMVECTOR_WITH_POSITION");
+    // all fields where termvectors with offset position are set
+    public static final FieldOption TERMVECTOR_WITH_OFFSET = new FieldOption ("TERMVECTOR_WITH_OFFSET");
+    // all fields where termvectors with offset and position values set
+    public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
+  }
+  
   /**
    * Constructor used if IndexReader is not owner of its directory. 
    * This is used for IndexReaders that are used within other IndexReaders that take care or locking directories.
@@ -113,12 +142,12 @@ public abstract class IndexReader {
             infos.read(directory);
             if (infos.size() == 1) {		  // index is optimized
               return SegmentReader.get(infos, infos.info(0), closeDirectory);
-            } else {
-              IndexReader[] readers = new IndexReader[infos.size()];
-              for (int i = 0; i < infos.size(); i++)
-                readers[i] = SegmentReader.get(infos.info(i));
-              return new MultiReader(directory, infos, closeDirectory, readers);
             }
+            IndexReader[] readers = new IndexReader[infos.size()];
+            for (int i = 0; i < infos.size(); i++)
+              readers[i] = SegmentReader.get(infos.info(i));
+            return new MultiReader(directory, infos, closeDirectory, readers);
+            
           }
         }.run();
     }
@@ -544,6 +573,8 @@ public abstract class IndexReader {
    * to by this IndexReader.
    * @return Collection of Strings indicating the names of the fields
    * @throws IOException if there is a problem with accessing the index
+   * 
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
    */
   public abstract Collection getFieldNames() throws IOException;
 
@@ -555,6 +586,8 @@ public abstract class IndexReader {
    *                <code>false</code> if only unindexed fields should be returned.
    * @return Collection of Strings indicating the names of the fields
    * @throws IOException if there is a problem with accessing the index
+   * 
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
    */
   public abstract Collection getFieldNames(boolean indexed) throws IOException;
 
@@ -564,7 +597,7 @@ public abstract class IndexReader {
    *                        else only indexed fields without term vector info 
    * @return Collection of Strings indicating the names of the fields
    * 
-   * @deprecated  Replaced by {@link #getIndexedFieldNames (Field.TermVector tvSpec)}
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
    */ 
   public Collection getIndexedFieldNames(boolean storedTermVector){
     if(storedTermVector){
@@ -585,8 +618,19 @@ public abstract class IndexReader {
    * 
    * @param tvSpec specifies which term vector information should be available for the fields
    * @return Collection of Strings indicating the names of the fields
+   * 
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
    */
   public abstract Collection getIndexedFieldNames(Field.TermVector tvSpec);
+  
+  /**
+   * Get a list of unique field names that exist in this index and have the specified
+   * field option information.
+   * @param fldOption specifies which field option should be available for the returned fields
+   * @return Collection of Strings indicating the names of the fields.
+   * @see IndexReader.FieldOption
+   */
+  public abstract Collection getFieldNames(FieldOption fldOption);
 
   /**
    * Returns <code>true</code> iff the index in the named directory is

@@ -246,6 +246,19 @@ public class MultiReader extends IndexReader {
     return fieldSet;
   }
 
+  /**
+   * @see IndexReader#getFieldNames(IndexReader.FieldNames fldOption)
+   */
+  public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < subReaders.length; i++) {
+      IndexReader reader = subReaders[i];
+      Collection names = reader.getFieldNames(fieldNames);
+      fieldSet.addAll(names);
+    }
+    return fieldSet;
+  }
 }
 
 class MultiTermEnum extends TermEnum {

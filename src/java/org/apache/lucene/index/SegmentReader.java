@@ -320,6 +320,7 @@ class SegmentReader extends IndexReader {
 
   /**
    * @see IndexReader#getFieldNames()
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
    */
   public Collection getFieldNames() {
     // maintain a unique set of field names
@@ -333,6 +334,7 @@ class SegmentReader extends IndexReader {
 
   /**
    * @see IndexReader#getFieldNames(boolean)
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
    */
   public Collection getFieldNames(boolean indexed) {
     // maintain a unique set of field names
@@ -345,6 +347,10 @@ class SegmentReader extends IndexReader {
     return fieldSet;
   }
   
+  /**
+   * @see IndexReader#getIndexedFieldNames(Field.TermVector tvSpec)
+   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
+   */
   public Collection getIndexedFieldNames (Field.TermVector tvSpec){
     boolean storedTermVector;
     boolean storePositionWithTermVector;
@@ -392,6 +398,49 @@ class SegmentReader extends IndexReader {
     return fieldSet;    
   }
 
+  /**
+   * @see IndexReader#getFieldNames(IndexReader.FieldOption fldOption)
+   */
+  public Collection getFieldNames(IndexReader.FieldOption fieldOption) {
+    
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < fieldInfos.size(); i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      if (fieldOption == IndexReader.FieldOption.ALL) {
+        fieldSet.add(fi.name);
+      }
+      else if (!fi.isIndexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.isIndexed && fieldOption == IndexReader.FieldOption.INDEXED) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.isIndexed && fi.storeTermVector == false && fieldOption == IndexReader.FieldOption.INDEXED_NO_TERMVECTOR) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.storeTermVector == true &&
+               fi.storePositionWithTermVector == false &&
+               fi.storeOffsetWithTermVector == false &&
+               fieldOption == IndexReader.FieldOption.TERMVECTOR) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.isIndexed && fi.storeTermVector && fieldOption == IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.storePositionWithTermVector && fi.storeOffsetWithTermVector == false && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION) {
+        fieldSet.add(fi.name);
+      }
+      else if (fi.storeOffsetWithTermVector && fi.storePositionWithTermVector == false && fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET) {
+        fieldSet.add(fi.name);
+      }
+      else if ((fi.storeOffsetWithTermVector && fi.storePositionWithTermVector) &&
+                fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET) {
+        fieldSet.add(fi.name);
+      }
+    }
+    return fieldSet;
+  }
+  
   public synchronized byte[] norms(String field) throws IOException {
     Norm norm = (Norm) norms.get(field);
     if (norm == null)                             // not an indexed field
