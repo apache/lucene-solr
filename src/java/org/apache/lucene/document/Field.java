@@ -17,11 +17,13 @@ package org.apache.lucene.document;
  */
 
 import java.io.Reader;
+import java.io.Serializable;
 import java.util.Date;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.Parameter;
 
 /**
   A field is a section of a Document.  Each field has two parts, a name and a
@@ -31,7 +33,7 @@ import org.apache.lucene.search.Similarity;
   index, so that they may be returned with hits on the document.
   */
 
-public final class Field implements java.io.Serializable {
+public final class Field implements Serializable {
   private String name = "body";
   
   // the one and only data object for all different kind of field values
@@ -48,14 +50,10 @@ public final class Field implements java.io.Serializable {
   
   private float boost = 1.0f;
   
-  public static final class Store {
-    private String name;
-    private Store() {}
+  public static final class Store extends Parameter implements Serializable {
+    
     private Store(String name) {
-      this.name = name;
-    }
-    public String toString() {
-      return name;
+      super(name);
     }
     
     /** Store the original field value in the index in a compressed form. This is
@@ -74,24 +72,23 @@ public final class Field implements java.io.Serializable {
     public static final Store NO = new Store("NO");
   }
   
-  public static final class Index {
-    private String name;
-    private Index() {}
+  public static final class Index extends Parameter implements Serializable {
+    
     private Index(String name) {
-      this.name = name;
+      super(name);
     }
-    public String toString() {
-      return name;
-    }
+    
     /** Do not index the field value. This field can thus not be searched,
      * but one can still access its contents provided it is 
      * {@link Field.Store stored}. */
     public static final Index NO = new Index("NO");
+    
     /** Index the field's value so it can be searched. An Analyzer will be used
      * to tokenize and possibly further normalize the text before its
      * terms will be stored in the index. This is useful for common text.
      */
     public static final Index TOKENIZED = new Index("TOKENIZED");
+    
     /** Index the field's value without using an Analyzer, so it can be searched.
      * As no analyzer is used the value will be stored as a single term. This is 
      * useful for unique Ids like product numbers.
@@ -99,15 +96,10 @@ public final class Field implements java.io.Serializable {
     public static final Index UN_TOKENIZED = new Index("UN_TOKENIZED");
   }
 
-  public static final class TermVector {
-    private String name;
-    private TermVector() {}
+  public static final class TermVector  extends Parameter implements Serializable {
+    
     private TermVector(String name) {
-      this.name = name;
-    }
-
-    public String toString() {
-      return name;
+      super(name);
     }
     
     /** Do not store term vectors. 
