@@ -158,6 +158,7 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("germ term^2.0", null, "germ term^2.0");
     assertQueryEquals("term^2.0", null, "term^2.0");
     assertQueryEquals("term^2", null, "term^2.0");
+    assertQueryEquals("\"germ term\"^2.0", null, "\"germ term\"^2.0");
 
     assertQueryEquals("(foo OR bar) AND (baz OR boo)", null, 
                       "+(foo bar) +(baz boo)");
@@ -179,6 +180,17 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer, 
                       "+term -\"phrase1 phrase2\" term");
     assertQueryEquals("stop", qpAnalyzer, "");
+  }
+
+  public void testRange() throws Exception {
+    assertQueryEquals("[ a z]", null, "[a-z]");
+    assertQueryEquals("[ a z ]", null, "[a-z]");
+    assertQueryEquals("{ a z}", null, "{a-z}");
+    assertQueryEquals("{ a z }", null, "{a-z}");
+    assertQueryEquals("{ a z }^2.0", null, "{a-z}^2.0");
+    assertQueryEquals("[ a z] OR bar", null, "[a-z] bar");
+    assertQueryEquals("[ a z] AND bar", null, "+[a-z] +bar");
+    assertQueryEquals("( bar blar { a z}) ", null, "(bar blar {a-z})");
   }
 }
 
