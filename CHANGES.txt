@@ -55,17 +55,17 @@ New features
     (adapted from code contributed by Matt Quail; committed by Erik)
     
 12. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
-     FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
-     terms only the BooleanQuery.maxClauseCount most similar terms 
-     go into the rewritten query and thus the exception is avoided.
-     (Christoph)
+    FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
+    terms only the BooleanQuery.maxClauseCount most similar terms 
+    go into the rewritten query and thus the exception is avoided.
+    (Christoph)
 
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
     contains information about the recommended replacements. It is planned
-    that the deprecated methods and fields will be removed in Lucene 2.0.
-    (Daniel Naber)
+    that most of the deprecated methods and fields will be removed in 
+    Lucene 2.0. (Daniel Naber)
 
  2. The Russian and the German analyzers have been moved to Sandbox.
     Also, the WordlistLoader class has been moved one level up in the
@@ -79,7 +79,6 @@ API Changes
     
  4. Add a serializable Parameter Class to standardize parameter enum
     classes in BooleanClause and Field. (Christoph)
- 
 
 Bug fixes
 

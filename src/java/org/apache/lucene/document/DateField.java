@@ -37,7 +37,9 @@ import org.apache.lucene.search.RangeQuery;   // for javadoc
  * indexed when using this class. See {@link DateTools} for an
  * alternative without such a limitation.
  * 
- * @deprecated Use {@link DateTools} instead.
+ * @deprecated If you build a new index, use {@link DateTools} instead. For 
+ *  existing indices you can continue using this class, as it will not be 
+ *  removed in the near future despite being deprecated.
  */
 public class DateField {
   
