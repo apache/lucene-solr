@@ -65,6 +65,9 @@ $Id$
     missing, others duplicated) if the sort keys were not unique and there
     were more than 100 matches. (Daniel Naber)
 
+14. Add native Directory implementation that works under GCJ.  (cutting)
+
+
 1.4.1
 
  1. Fixed a performance bug in hit sorting code, where values were not
