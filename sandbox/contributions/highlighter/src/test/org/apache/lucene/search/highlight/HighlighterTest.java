@@ -152,7 +152,6 @@ public class HighlighterTest extends TestCase implements Formatter
 	public void testGetBestSingleFragment() throws Exception
 	{
 		doSearching("Kennedy");
-//		QueryHighlightExtractor highlighter = new QueryHighlightExtractor(this, query, new StandardAnalyzer());
 		Highlighter highlighter =new Highlighter(this,new QueryScorer(query));
 		highlighter.setTextFragmenter(new SimpleFragmenter(40));
 

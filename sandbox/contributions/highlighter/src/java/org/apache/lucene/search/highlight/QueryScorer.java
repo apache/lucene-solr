@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 
 /**
@@ -27,7 +28,6 @@ import org.apache.lucene.search.Query;
  * their boosts to be used. 
  * @author mark@searcharea.co.uk
  */
-//TODO: provide option to roll idf into the scoring equation by passing a IndexReader.
 //TODO: provide option to boost score of fragments near beginning of document 
 // based on fragment.getFragNum()
 public class QueryScorer implements Scorer
@@ -48,6 +48,18 @@ public class QueryScorer implements Scorer
 		this(QueryTermExtractor.getTerms(query));
 	}
 
+	/**
+	 * 
+	 * @param query a Lucene query (ideally rewritten using query.rewrite 
+	 * before being passed to this class and the searcher)
+	 * @param reader used to compute IDF which can be used to a) score selected fragments better 
+	 * b) use graded highlights eg set font color intensity
+	 * @param fieldName the field on which Inverse Document Frequency (IDF) calculations are based
+	 */
+	public QueryScorer(Query query, IndexReader reader, String fieldName)
+	{
+		this(QueryTermExtractor.getIdfWeightedTerms(query, reader, fieldName)); 
+	}
 
 	public QueryScorer(WeightedTerm []weightedTerms	)
 	{
@@ -83,7 +95,7 @@ public class QueryScorer implements Scorer
 			//not a query term - return
 			return 0;
 		}
-		//found a query term - is it unique in this fragment?
+		//found a query term - is it unique in this doc?
 		if(!uniqueTermsInFragment.contains(termText))
 		{
 			totalScore+=queryTerm.getWeight();

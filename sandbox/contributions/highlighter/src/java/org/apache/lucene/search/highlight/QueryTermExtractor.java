@@ -15,8 +15,10 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.HashSet;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -45,6 +47,35 @@ public final class QueryTermExtractor
 		return getTerms(query,false);
 	}
 
+	/**
+	 * Extracts all terms texts of a given Query into an array of WeightedTerms
+	 *
+	 * @param query      Query to extract term texts from
+	 * @param reader used to compute IDF which can be used to a) score selected fragments better 
+	 * b) use graded highlights eg chaning intensity of font color
+	 * @param fieldName the field on which Inverse Document Frequency (IDF) calculations are based
+	 * @return an array of the terms used in a query, plus their weights.
+	 */
+	public static final WeightedTerm[] getIdfWeightedTerms(Query query, IndexReader reader, String fieldName) 
+	{
+	    WeightedTerm[] terms=getTerms(query,false);
+	    int totalNumDocs=reader.numDocs();
+	    for (int i = 0; i < terms.length; i++)
+        {
+	        try
+            {
+                int docFreq=reader.docFreq(new Term(fieldName,terms[i].term));
+                //IDF algorithm taken from DefaultSimilarity class
+                float idf=(float)(Math.log((float)totalNumDocs/(double)(docFreq+1)) + 1.0);
+                terms[i].weight*=idf;
+            } 
+	        catch (IOException e)
+            {
+	            //ignore 
+            }
+        }
+		return terms;
+	}
 
 	/**
 	 * Extracts all terms texts of a given Query into an array of WeightedTerms
