@@ -72,67 +72,8 @@ extends FieldSortedHitQueue {
 	 */
 	static ScoreDocLookupComparator comparator (final IndexReader reader, final String fieldname)
 	throws IOException {
-		final String field = fieldname.intern();
-		return new ScoreDocLookupComparator () {
-
-			protected final float[] fieldOrder = generateSortIndex();
-
-			protected final float[] generateSortIndex()
-			throws IOException {
-
-				float[] retArray = new float[reader.maxDoc()];
-				if (retArray.length > 0) {
-					TermEnum enumerator = reader.terms (new Term (field, ""));
-					TermDocs termDocs = reader.termDocs();
-					try {
-						if (enumerator.term() == null) {
-							throw new RuntimeException ("no terms in field " + field);
-						}
-						do {
-							Term term = enumerator.term();
-							if (term.field() != field) break;
-							float termval = Float.parseFloat (term.text());
-							termDocs.seek (enumerator);
-							while (termDocs.next()) {
-								retArray[termDocs.doc()] = termval;
-							}
-						} while (enumerator.next());
-					} finally {
-						enumerator.close();
-						termDocs.close();
-					}
-				}
-				return retArray;
-			}
-
-			public final int compare (final ScoreDoc i, final ScoreDoc j) {
-				final float fi = fieldOrder[i.doc];
-				final float fj = fieldOrder[j.doc];
-				if (fi < fj) return -1;
-				if (fi > fj) return 1;
-				return 0;
-			}
-
-			public final int compareReverse (final ScoreDoc i, final ScoreDoc j) {
-				final float fi = fieldOrder[i.doc];
-				final float fj = fieldOrder[j.doc];
-				if (fi > fj) return -1;
-				if (fi < fj) return 1;
-				return 0;
-			}
-
-			public final boolean sizeMatches (final int n) {
-				return fieldOrder.length == n;
-			}
-
-			public Object sortValue (final ScoreDoc i) {
-				return new Float (fieldOrder[i.doc]);
-			}
-
-			public int sortType() {
-				return SortField.FLOAT;
-			}
-		};
+		TermEnum enumerator = reader.terms (new Term (fieldname, ""));
+		return comparator (reader, enumerator, fieldname);
 	}
 
 
