@@ -582,7 +582,7 @@
            outputfile="${build.dir}/docs/grammars/QueryParser.html"
            javacchome="${javacc.home}"
     />
-    <jjdoc target="src/java/org/apache/lucene/queryParser/PrecedenceQueryParser.jj"
+    <jjdoc target="src/java/org/apache/lucene/queryParser/precedence/PrecedenceQueryParser.jj"
            outputfile="${build.dir}/docs/grammars/PrecedenceQueryParser.html"
            javacchome="${javacc.home}"
     />
