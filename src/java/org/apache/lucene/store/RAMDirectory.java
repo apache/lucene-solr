@@ -146,8 +146,23 @@ public final class RAMDirectory extends Directory {
 
   /** Set the modified time of an existing file to now. */
   public void touchFile(String name) throws IOException {
+    final boolean MONITOR = false;
+    int count = 0;
+    
     RAMFile file = (RAMFile)files.get(name);
-    file.lastModified = System.currentTimeMillis();
+    long ts2, ts1 = System.currentTimeMillis();
+    do {
+        try {
+            Thread.sleep(0, 1);
+        } catch (InterruptedException e) {}
+        ts2 = System.currentTimeMillis();
+        if (MONITOR) count ++;
+    } while(ts1 == ts2);
+    
+    file.lastModified = ts2;
+
+    if (MONITOR)
+        System.out.println("SLEEP COUNT: " + count);        
   }
 
   /** Returns the length in bytes of a file in the directory. */
@@ -187,21 +202,21 @@ public final class RAMDirectory extends Directory {
    */
   public final Lock makeLock(final String name) {
     return new Lock() {
-	public boolean obtain() throws IOException {
-	  synchronized (files) {
-	    if (!fileExists(name)) {
-	      createFile(name).close();
-	      return true;
-	    }
-	    return false;
-	  }
-	}
-	public void release() {
-	  deleteFile(name);
-	}
-	public boolean isLocked() {
-	  return fileExists(name);
-	}
+        public boolean obtain() throws IOException {
+          synchronized (files) {
+            if (!fileExists(name)) {
+              createFile(name).close();
+              return true;
+            }
+            return false;
+          }
+        }
+        public void release() {
+          deleteFile(name);
+        }
+        public boolean isLocked() {
+          return fileExists(name);
+        }
       };
   }
 
@@ -274,7 +289,7 @@ final class RAMOutputStream extends OutputStream {
       bytesToCopy = len - bytesToCopy;		  // remaining bytes
       bufferNumber++;
       if (bufferNumber == file.buffers.size())
-	file.buffers.addElement(new byte[OutputStream.BUFFER_SIZE]);
+        file.buffers.addElement(new byte[OutputStream.BUFFER_SIZE]);
       buffer = (byte[])file.buffers.elementAt(bufferNumber);
       System.arraycopy(src, srcOffset, buffer, 0, bytesToCopy);
     }
