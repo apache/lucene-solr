@@ -13,6 +13,7 @@
             <p>
               <a href="mailto:java-user-subscribe@lucene.apache.org">Subscribe</a>
               <a href="mailto:java-user-unsubscribe@lucene.apache.org">Unsubscribe</a>
+              <a href="http://mail-archives.eu.apache.org/mod_mbox/lucene-java-user/">Archive</a>
             </p>
         </section>
 
@@ -20,12 +21,39 @@
             <p>
               This is the list where participating developers of the Java Lucene project meet
               and discuss issues, code changes/additions, etc. Do not send mail to this list
-              with usage questions or configuration problems.
+              with usage questions or configuration questions and problems.
             </p>
           <p>
             <a href="mailto:java-dev-subscribe@lucene.apache.org">Subscribe</a>
             <a href="mailto:java-dev-unsubscribe@lucene.apache.org">Unsubscribe</a>
+            <a href="http://mail-archives.eu.apache.org/mod_mbox/lucene-java-dev/">Archive</a>
           </p>
         </section>
+
+        <section name="Lucene4c Developer List">
+            <p>
+              This is the list where participating developers of the lucene4c
+              project meet and disucss issues related to development of
+              lucene4c.  Do not send mail to this list with usage or
+              configuration questions and problems.
+            </p>
+          <p>
+            <a href="mailto:c-dev-subscribe@lucene.apache.org">Subscribe</a>
+            <a href="mailto:c-dev-unsubscribe@lucene.apache.org">Unsubscribe</a>
+            <a href="http://mail-archives.eu.apache.org/mod_mbox/lucene-c-dev/">Archive</a>
+          </p>
+        </section>
+
+        <section name="All Lucene Commits List">
+            <p>
+              This is a read-only list where all code commits messages go.
+            </p>
+          <p>
+            <a href="mailto:commits-subscribe@lucene.apache.org">Subscribe</a>
+            <a href="mailto:commits-unsubscribe@lucene.apache.org">Unsubscribe</a>
+            <a href="http://mail-archives.eu.apache.org/mod_mbox/lucene-commits/">Archive</a>
+          </p>
+        </section>
+
     </body>
 </document>
