@@ -14,7 +14,7 @@
     <pathelement location="${build.classes}"/>
     <pathelement location="${build.test.classes}"/>
     <pathelement location="."/>
-    <fileset dir="lib">
+    <fileset dir="lib.dir">
       <include name="*.jar" />
     </fileset>
   </path>
@@ -22,7 +22,7 @@
   <path id="junit.classpath">
     <pathelement location="${junit.classes}" />
     <pathelement location="${build.classes}"/>
-    <fileset dir="lib">
+    <fileset dir="lib.dir">
       <include name="*.jar" />
     </fileset>
     <pathelement path="${java.class.path}" />
@@ -35,6 +35,7 @@
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${build.classes}"/>
     <mkdir dir="${build.src}"/>
+    <mkdir dir="lib.dir"/>
     
     <available
       property="junit.present"
@@ -50,7 +51,6 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="compile" depends="init" >
-
     <javac
       encoding="${build.encoding}"
       srcdir="${src.dir}"
