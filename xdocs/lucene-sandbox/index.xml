@@ -15,20 +15,11 @@ distribution.<br/>
 Users are free to experiment with the components developed in the Sandbox, but Sandbox components will
 not necessarily be maintained, particularly in their current state.
 </p>
+
 <p>
 You can access the Lucene Sandbox CVS repository at
 <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/">http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/</a>.
 </p>
-
-
-<subsection name="Indyo">
-<p>
-Indyo is a datasource-independent Lucene indexing framework.
-</p>
-<p>
-A tutorial for using Indyo can be found <a href="indyo/tutorial.html">here</a>.
-</p>
-</subsection>
 
 <subsection name="LARM">
 <p>
@@ -44,7 +35,7 @@ for Lucene.
 </p>
 
 <p>
-More information can be found 
+More information can be found
 <a href="http://jakarta.apache.org/lucene/docs/lucene-sandbox/snowball/">here</a>.
 </p>
 
@@ -61,7 +52,7 @@ The Ant project is a useful Ant task that creates a Lucene index out of an Ant f
 contains an example HTML parser that uses JTidy.
 </p>
 <p>
-<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/ant/">The 
+<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/ant/">The
 CVS repository for the Ant contribution.</a>
 </p>
 </subsection>
@@ -74,7 +65,7 @@ them into the HitsIterator class, which can be used for paging and sorting throu
 
 </p>
 <p>
-<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/searchBean/">The 
+<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/searchBean/">The
 CVS repository for the SearchBean contribution.</a>
 </p>
 <p>
@@ -84,40 +75,22 @@ which is a language for stemmers developed by Martin Porter.
 
 </subsection>
 
-<subsection name="Lucene Service for Fulcrum">
-<p>
-Lucene can be run as a service inside <a href="http://jakarta.apache.org/turbine/fulcrum/index.html">Fulcrum</a>,
-which is the services framework from the 
-<a href="http://jakarta.apache.org/turbine/">Turbine</a> project.</p>
-<p>
-The implementation consists of a SearchService interface, a LuceneSearchSearchService implementation, and a
-SearchResults object that gets an array of Document objects from a Hits object. Calls to the search methods on 
-the service return the SearchResults object.
-</p>
-<p>
-The service supports querying, but does not support indexing.  
-</p>
-<p>
-<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/fulcrum/"> 
-CVS repository for the Fulcrum Service.</a>
-</p>
-</subsection>
 
 <subsection name="WordNet/Synonyms">
 <p>
-The Lucene WordNet code consists of a single class which parses a prolog file 
-from the WordNet site that contains a list of English words and synonyms. 
+The Lucene WordNet code consists of a single class which parses a prolog file
+from the WordNet site that contains a list of English words and synonyms.
 The class builds a Lucene index from the synonyms file.  Your querying code could
 hit this index to build up a set of synonyms for the terms in the
-search query.  
+search query.
 </p>
 <p>
-More information on the <a href="http://www.tropo.com/techno/java/lucene/wordnet.html">Lucene WordNet package</a>.  
+More information on the <a href="http://www.tropo.com/techno/java/lucene/wordnet.html">Lucene WordNet package</a>.
 <a href="http://www.cogsci.princeton.edu/~wn/">WordNet</a> is an online database of English language words that contains
 synonyms, definitions, and various relationships between synonym sets.
 </p>
 <p>
-<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/WordNet/"> 
+<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/WordNet/">
 CVS for the WordNet module.</a>
 </p>
 </subsection>
@@ -130,8 +103,33 @@ There are examples included for both SAX and DOM.
 </p>
 <p>
 
-<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/XML-Indexing-Demo/"> 
+<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/XML-Indexing-Demo/">
 CVS for the XML Indexing Demo.</a>
+</p>
+</subsection>
+
+<subsection name="Javascript Query Constructor">
+<p>
+Javascript library to support client-side query-building. Provides support for a user interface similar to
+<a href="http://www.google.com.sg/advanced_search">Google's Advanced Search</a>.
+</p>
+<p>
+
+<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/javascript/queryConstructor/">
+CVS for the files.</a>
+</p>
+</subsection>
+
+<subsection name="Javascript Query Validator">
+<p>
+Javascript library to support client-side query validation. Lucene doesn't like malformed queries and tends to
+throw ParseException, which are often difficult to interpret and pass on to the user. This library hopes to
+alleviate that problem.
+</p>
+<p>
+
+<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/javascript/queryValidator/">
+CVS for files.</a>
 </p>
 </subsection>
 
@@ -143,7 +141,7 @@ into a custom stop word list for better search results.
 </p>
 <p>
 
-<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/miscellaneous/src/java/org/apache/lucene/misc/"> 
+<a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/miscellaneous/src/java/org/apache/lucene/misc/">
 CVS for miscellaneous classes.</a>
 </p>
 </subsection>
