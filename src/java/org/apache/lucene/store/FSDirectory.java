@@ -54,7 +54,7 @@ public final class FSDirectory extends Directory {
    */
   public static final String LOCK_DIR =
     System.getProperty("org.apache.lucene.lockdir",
-      System.getProperty("java.io.tmpdir"));
+      System.getProperty("java.io.tmpdir", "."));
 
   private static MessageDigest DIGESTER;
 
