@@ -699,7 +699,7 @@ public class IndexWriter {
       } catch (IOException e) {			  // if delete fails
         if (directory.fileExists(file)) {
           if (infoStream != null)
-            infoStream.println(e.getMessage() + "; Will re-try later.");
+            infoStream.println(e.toString() + "; Will re-try later.");
           deletable.addElement(file);		  // add to deletable
         }
       }
