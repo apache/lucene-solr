@@ -108,7 +108,6 @@ public class Highlighter
 
 		//Get text
 		ArrayList fragTexts = new ArrayList();
-		int n = 0;
 		for (int i = 0; i < frag.length; i++)
 		{
 			if ((frag[i] != null) && (frag[i].getScore() > 0))
@@ -217,7 +216,6 @@ public class Highlighter
 			currentFrag.textEndPos = newText.length();
 
 			//sort the most relevant sections of the text
-			int minScore = 0;
 			for (Iterator i = docFrags.iterator(); i.hasNext();)
 			{
 				currentFrag = (TextFragment) i.next();

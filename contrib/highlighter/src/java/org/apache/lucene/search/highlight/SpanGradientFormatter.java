@@ -24,8 +24,6 @@ package org.apache.lucene.search.highlight;
  * @author David Spencer dave@searchmorph.com
  */
 
-import org.apache.lucene.search.highlight.*;
-
 public class SpanGradientFormatter
 	extends GradientFormatter
 {

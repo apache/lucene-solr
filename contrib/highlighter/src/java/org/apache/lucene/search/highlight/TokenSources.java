@@ -100,7 +100,7 @@ public class TokenSources
             {
                 this.tokens=tokens;
             }
-            public Token next() throws IOException
+            public Token next()
             {
                 if(currentToken>=tokens.length)
                 {
