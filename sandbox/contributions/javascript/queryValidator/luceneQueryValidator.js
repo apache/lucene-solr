@@ -103,10 +103,10 @@ function removeEscapes(query)
 
 function checkAllowedCharacters(query)
 {
-  matches = query.match(/[^a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#$%'= ]/);
+  matches = query.match(/[^a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#/$%'= ]/);
   if(matches != null && matches.length > 0)
   {
-    if(alertUser) alert("Invalid search query! The allowed characters are a-z A-Z 0-9.  _ + - : () \" & * ? | ! {} [ ] ^ ~ \\ @ = # % $ '. Please try again.")
+    if(alertUser) alert("Invalid search query! The allowed characters are a-z A-Z 0-9.  _ + - : () \" & * ? | ! {} [ ] ^ ~ \\ @ = # % $ ' /. Please try again.")
     return false;
   }
   return true;
@@ -129,7 +129,7 @@ function checkAmpersands(query)
   matches = query.match(/[&]{2}/);
   if(matches != null && matches.length > 0)
   {
-    matches = query.match(/^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#$%'=]+( && )?[a-zA-Z0-9_+\-:.()\"*?|!{}\[\]\^~\\@#$%'=]+[ ]*)+$/); // note missing & in pattern
+    matches = query.match(/^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#/$%'=]+( && )?[a-zA-Z0-9_+\-:.()\"*?|!{}\[\]\^~\\@#/$%'=]+[ ]*)+$/); // note missing & in pattern
     if(matches == null)
     {
       if(alertUser) alert("Invalid search query! Queries containing the special characters && must be in the form: term1 && term2. Please try again.")
@@ -141,7 +141,7 @@ function checkAmpersands(query)
 
 function checkCaret(query)
 {
-  //matches = query.match(/^[^\^]*$|^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\~\\@#]+(\^[\d]+)?[ ]*)+$/); // note missing ^ in pattern
+  //matches = query.match(/^[^\^]*$|^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\~\\@#/]+(\^[\d]+)?[ ]*)+$/); // note missing ^ in pattern
   matches = query.match(/[^\\]\^([^\s]*[^0-9.]+)|[^\\]\^$/);
   if(matches != null)
   {
@@ -153,7 +153,7 @@ function checkCaret(query)
 
 function checkSquiggle(query)
 {
-  //matches = query.match(/^[^~]*$|^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^\\@#]+(~[\d.]+|[^\\]\\~)?[ ]*)+$/); // note missing ~ in pattern
+  //matches = query.match(/^[^~]*$|^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^\\@#/]+(~[\d.]+|[^\\]\\~)?[ ]*)+$/); // note missing ~ in pattern
   matches = query.match(/[^\\]~[^\s]*[^0-9\s]+/);
   if(matches != null)
   {
@@ -165,19 +165,22 @@ function checkSquiggle(query)
 
 function checkExclamationMark(query)
 {
-  // NB: doesn't handle term1 ! term2 ! term3
-  matches = query.match(/^[^!]*$|^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#$%'=]+( ! )?[a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#$%'=]+[ ]*)+$/);
+  // foo! is not a query, but !foo is. hmmmm...
+  // NB: doesn't handle term1 ! term2 ! term3 or term1 !term2
+  matches = query.match(/^[^!]*$|^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#/$%'=]+( ! )?[a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#/$%'=]+[ ]*)+$/);
   if(matches == null || matches.length == 0)
   {
     if(alertUser) alert("Invalid search query! Queries containing the special character ! must be in the form: term1 ! term2. Please try again.")
     return false;
-  }    
+  }
+  
+  
   return true;
 }
 
 function checkQuestionMark(query)
 {
-  matches = query.match(/^(\?)|([^a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#$%'=]\?+)/);
+  matches = query.match(/^(\?)|([^a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#/$%'=]\?+)/);
   if(matches != null && matches.length > 0)
   {
       if(alertUser) alert("Invalid search query! The question mark (?) character must be preceded by at least one alphabet or number. Please try again.")
@@ -223,7 +226,7 @@ function checkParentheses(query)
 
 function checkPlusMinus(query)
 {
-  matches = query.match(/^[^\n+\-]*$|^([+-]?[a-zA-Z0-9_:.()\"*?&|!{}\[\]\^~\\@#$%'=]+[ ]?)+$/);
+  matches = query.match(/^[^\n+\-]*$|^([+-]?[a-zA-Z0-9_:.()\"*?&|!{}\[\]\^~\\@#/$%'=]+[ ]?)+$/);
   if(matches == null || matches.length == 0)
   {
     if(alertUser) alert("Invalid search query! '+' and '-' modifiers must be followed by at least one alphabet or number. Please try again.")
@@ -237,21 +240,20 @@ function checkANDORNOT(query)
   matches = query.match(/AND|OR|NOT/);
   if(matches != null && matches.length > 0)
   {
-    // I've no idea why the code below doesn't work since it's identical to the exclamation mark and && RE    
-    //matches = query.match(/^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#]+(?: AND )?(?: OR )?(?: NOT )?[a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#]+[ ]*)+$/);
-
-    // we'll notify the user that this query is not validated and an error may result
-    if(alertUser)
-    {
-      return confirm("Validation for queries containing AND/OR/NOT is currently not supported. If your query is not well-formed, an error may result.");
-    }
-    /*
+    matches = query.match(/^([a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@/#$%'=]+\s*((AND )|(OR )|(AND NOT )|(NOT ))?[a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@/#$%'=]+[ ]*)+$/);       
     if(matches == null || matches.length == 0)
     {
-      if(alertUser) alert("Invalid search query!  Queries containing AND/OR/NOT must be in the form: term1 AND|OR|NOT term2 Please try again.")
+      if(alertUser) alert("Invalid search query!  Queries containing AND/OR/NOT must be in the form: term1 AND|OR|NOT|AND NOT term2 Please try again.")
       return false;
     }
-    */
+    
+    // its difficult to distinguish AND/OR/... from the usual [a-zA-Z] because they're...words!
+    matches = query.match(/^((AND )|(OR )|(AND NOT )|(NOT ))|((AND)|(OR)|(AND NOT )|(NOT))[ ]*$/)
+    if(matches != null && matches.length > 0)
+    {
+      if(alertUser) alert("Invalid search query!  Queries containing AND/OR/NOT must be in the form: term1 AND|OR|NOT|AND NOT term2 Please try again.")
+      return false;
+    }
   }
   return true;
 }
