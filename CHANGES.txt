@@ -4,7 +4,9 @@ $Id$
 
 1.4 RC2
 
- 1. Fixed a few problems with GermanAnalyzer. (Otis, Erik)
+ 1. GermanAnalyzer now throws an exception if the stopword file
+    cannot be found (bug #27987). It now uses LowerCaseFilter
+    (bug #18410) (Daniel Naber via Otis, Erik)
 
  2. Fixed a few bugs in the file format documentation. (cutting)
 
