@@ -1,0 +1,1152 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<document>
+
+    <properties>
+        <author email="cmarschner at apache dot org">Clemens Marschner</author>
+        <title>LARM Webcrawler - Technical Overview</title>
+    </properties>
+
+    <meta name="keyword" content="jakarta, java, LARM, WebCrawler,
+          Crawler, Fetcher"/>
+
+    <body>
+
+        <section name="The LARM Web Crawler - Technical Overview">
+
+            <p align="center">Author: Clemens Marschner</p>
+
+            <p align="center">Revised: Oct. 28, 2002</p>
+
+            <p>
+                This document describes the configuration parameters and the inner
+                workings of the LARM web crawler.
+            </p>
+
+
+            <subsection name="Purpose and Intended Audience">
+
+                <p>
+                    This document was made for Lucene developers, not necessarily with any
+                    background knowledge on crawlers, to understand the inner workings of
+                    the LARM crawler, the current problems and some directions for future
+                    development. The aim is to keep the entry costs low for people who have
+                    an interest in developing this piece of software further.
+                </p>
+
+                <p>
+                    It may also serve for actual users of the Lucene engine, but beware,
+                    since there is a lot that will change in the near future, especially the
+                    configuration.
+                </p>
+
+            </subsection>
+
+            <subsection name="Quick Start">
+
+                <p>The crawler is only accessible via anonymous CVS at this time. See
+                    the <a href="http://jakarta.apache.org/site/cvsindex.html">Jakarta CVS
+                        instructions</a> for details if you're not familiar with CVS.</p>
+
+                <p>Too long? The following will give you a quick start: create a new
+                    directory, say, "jakarta", make it your current directory, and type</p>
+
+                <source><![CDATA[cvs -d :pserver:anoncvs@cvs.apache.org:/home/cvspublic
+                    login
+                    password: anoncvs
+                    cvs -d :pserver:anoncvs@cvs.apache.org:/home/cvspublic checkout
+                    jakarta-lucene-sandbox]]></source>
+
+                <p>
+                    The crawler will then be in
+                    jakarta-lucene-sandbox/contributions/webcrawler-LARM. To compile it you will also need
+                </p>
+
+                <ul>
+
+                    <li>this <a
+                                href="http://www.innovation.ch/java/HTTPClient/">HTTPClient</a>. Put the .zip file into the libs/ directory</li>
+
+                    <li>a working installation of <a
+                                                     href="http://jakarta.apache.org/ant">ANT</a> (1.5 or above recommended). ant.sh/.bat should be in your
+                        PATH</li>
+
+                </ul>
+
+                <p>
+                    Change to the webcrawler-LARM directory and type
+                </p>
+
+                <source>ant</source>
+
+                <p>
+                    You should then have a working copy of LARM in
+                    build/webcrawler-LARM-0.5.jar. See the section <a href="#syntax">Syntax</a> below on how to
+                    start the crawler.<br/>
+                </p>
+
+            </subsection>
+
+
+        </section>
+
+        <section name="Introduction">
+
+            <subsection name="Why web crawlers at all?">
+
+                <p>
+                    Web crawlers became necessary because the web standard protocols didn't
+                    contain any mechanisms to inform search engines that the data on a web
+                    server had been changed. If this were possible, a search engine could
+                    be notified in a "push" fashion, which would simplify the total process
+                    and would make indexes as current as possible.
+                </p>
+
+                <p>
+                    Imagine a web server that notifies another web server that a link was
+                    created from one of its pages to the other server. That other server
+                    could then send a message back if the page was removed.
+                </p>
+
+                <p>
+                    On the other hand, handling this system would be a lot more
+                    complicated. Keeping distributed information up to date is an erroneous task. Even
+                    in a single relational database it is often complicated to define and
+                    handle dependencies between relations. Should it be possible to allow
+                    inconsistencies for a short period of time? Should dependent data be
+                    deleted if a record is removed? Handling relationships between clusters of
+                    information well incorporates a new level of complexity.
+                </p>
+
+                <p>
+                    In order to keep the software (web servers and browsers) simple, the
+                    inventors of the web concentrated on just a few core elements - URLs for
+                    (more or less) uniquely identifying distributed information, HTTP for
+                    handling the information, and HTML for structuring it. That system was
+                    so simple that one could understand it in a very short time. This is
+                    probably one of the main reasons why the WWW became so popular. Well,
+                    another one would probably be coloured, moving graphics of naked people.
+                </p>
+
+                <p>
+                    But the WWW has some major disadvantages: There is no single index of
+                    all available pages. Information can change without notice. URLs can
+                    point to pages that no longer exist. There is no mechanism to get "all"
+                    pages from a web server. The whole system is in a constant process of
+                    change. And after all, the whole thing is growing at phenomenal rates.
+                    Building a search engine on top of that is not something you can do on a
+                    Saturday afternoon. Given the sheer size, it would take months to search
+                    through all the pages in order to answer a single query, even if we had
+                    a means to get from server to server, get the pages from there, and
+                    search them. But we don't even know how to do that, since we don't know
+                    all the web servers.
+                </p>
+
+                <p>
+                    That first problem was addressed by bookmark collections, which soon
+                    became very popular. The most popular probably was Yahoo, which evolved
+                    to one of the most popular pages in the web just a year after it emerged
+                    from a college dorm room.
+                    The second problem was how to get the information from all those pages
+                    laying around. This is where a web crawler comes in.
+                </p>
+
+                <p>
+                    Ok, those engineers said, we are not able to get a list of all the
+                    pages. But almost every page contains links to other pages. We can save a
+                    page, extract all the links, and load all of these pages these links
+                    point to. If we start at a popular location which contains a lot of links,
+                    like Yahoo for example, chances should be that we can get "all" pages
+                    on the web.
+                </p>
+
+                <p>
+                    A little more formal, the web can be seen as a directional graph, with
+                    pages as nodes and links as edges between them. A web crawler, also
+                    called "spider" or "fetcher", uses the graph structure of the web to get
+                    documents in order to be able to index them. Since there is no "push"
+                    mechanism for updating our index, we need to "pull" the information on
+                    our own, by repeatedly crawling the web.
+                </p>
+
+            </subsection>
+
+            <subsection name="Implementation - the first attempt">
+
+                <p>
+                    "Easy", you may think now, "just implement what he said in the
+                    paragraph before." So you start getting a page, extracting the links, following
+                    all the pages you have not already visited. In Perl that can be done in
+                    a few lines of code.
+                </p>
+
+                <p>
+                    But then, very soon (I can tell you), you end up in a lot of problems:
+                </p>
+
+                <ul>
+                    <li>a server doesn't respond. Your program always wait for it to time
+                        out
+                    </li><li>you get OutOfMemory errors soon after the beginning
+                    </li><li>your hard drive fills up
+                    </li><li>You notice that one page is loaded again time after time,
+                        because the URL changed a little
+                    </li><li>Some servers will behave very strange. They will respond after
+                        30 seconds, sometimes they time out, sometimes they are not accessible
+                        at all
+                    </li><li>some URLs will get longer and longer. Suddenly you will get
+                        URLs with a length of thousands of characters.
+                    </li><li>But the main problem will be: you notice that your network
+                        interface card (NIC) is waiting, and your CPU is waiting. What's going on?
+                        The overall process will take days
+                    </li>
+                </ul>
+
+            </subsection>
+
+
+            <subsection name="Features of the LARM crawler">
+
+                <p>
+                    The LARM web crawler is a result of experiences with the errors as
+                    mentioned above, connected with a lot of monitoring to get the maximum out
+                    of the given system ressources. It  was designed with several different
+                    aspects in mind:
+                </p>
+
+                <ul>
+
+                    <li>Speed. This involves balancing the resources to prevent
+                        bottlenecks. The crawler is multithreaded. A lot of work went in avoiding
+                        synchronization between threads, i.e. by rewriting or replacing the standard
+                        Java classes, which slows down multithreaded programs a lot
+                    </li>
+
+
+                    <li>Simplicity. The underlying scheme is quite modular and
+                        comprehensible. See the description of the pipeline below
+                    </li>
+
+                    <li>Power. The modular design and the ease of the Java language makes
+                        customisation simple
+                    </li>
+
+
+                    <li>Scalability. The crawler was supposed to be able to crawl <i>large
+                            intranets</i> with hundreds of servers and hundreds of thousands of
+                        documents within a reasonable amount of time. It was not ment to be
+                        scalable to the whole Internet.</li>
+
+                    <li>Java. Although there are many crawlers around at the time when I
+                        started to think about it (in Summer 2000), I couldn't find a good
+                        available implementation in Java. If this crawler would have to be integrated
+                        in a Java search engine, a homogenous system would be an advantage. And
+                        after all, I wanted to see if a fast implementation could be done in
+                        this language.
+                    </li>
+
+                </ul>
+
+            </subsection>
+
+            <subsection name="What the crawler can do for you, and what it cannot
+                        (yet)">
+
+                <p>
+                    What it can do for you:
+                </p>
+
+                <ul>
+                    <li>Crawl a distinct set of the web, only restricted by a given regular
+                        expression all pages have to match. The pages are saved into page files
+                        of max. 50 MB (look at FetcherMain.java for details) and an index file
+                        that contains the links between the URL and the position in the page
+                        file. Links are logged as well. This is part of the standard LogStorage.
+                        Other storages exist as well (see below)
+                    </li>
+
+                    <li>Crawling is done breadth first. Hosts are accessed in a round-robin
+                        manner, to prevent the situation that all threads access one host at
+                        once. However, at the moment there is no means to throttle access to a
+                        server - the crawler works as fast as it can. There are also some
+                        problems with this technique, as will be described below.
+                    </li>
+
+                    <li>The main part of the crawler is implemented as a pool of concurrent
+                        threads, which speeds up I/O access
+                    </li>
+
+                    <li>The HTML link extractor has been optimised for speed. It was made
+                        10 x faster than a generic SAX parser implementation
+                    </li>
+
+                    <li>A lot of logging and monitoring is done, to be able to track down
+                        the going-ons in the inside
+                    </li>
+
+                    <li>A lot of parts of the crawler have already been optimised to
+                        consume not more  memory then needed. A lot of the internal queues are cached
+                        on hard drive, for example. Only the HashMap of already crawled pages
+                        and the HostInfo structures still completely remain in memory, thus
+                        limiting the number of crawled hosts and the number of crawled pages. At
+                        the moment, OutOfMemory errors are not prevented, so beware.
+
+                    </li><li>URLs are passed through a pipeline of filters that limit, for
+                        example, the length of a URL, load robots.txt the first time a host is
+                        accessed, etc. This pipeline can be extended easily by adding a Java
+                        class to the pipeline.
+                    </li><li>The storage mechanism is also pluggable. One of the next
+                        issues would be to include this storage mechanism into the pipeline, to
+                        allow a seperation of logging, processing, and storage
+                    </li>
+                </ul>
+
+                <p>
+                    On the other hand, at the time of this writing, the crawler has not yet
+                    evolved into a production release. The reason is: until now, it just
+                    served me alone.</p>
+                <p>
+
+                    These issues remain:
+                </p>
+
+                <ul>
+                    <li>
+                        Still, there's a relatively high memory overhead <i>per server</i> and
+                        also some overhead <i>per page</i>, especially since a map of already
+                        crawled pages is held in memory at this time. Although some of the
+                        in-memory structures are already put on disc, memory consumption is still
+                        linear to the number of pages crawled. We have lots of ideas on how to
+                        move that out, but since then, as an example with 500 MB RAM, the crawler
+                        scales up to some 100.000 files on some 100s of hosts.
+
+                    </li><li>It's not polite. It sucks out the servers, which can impose
+                        DOS (Denial of Service) problems. We have plans to restrict concurrent
+                        server accesses to only one, but that's not yet implemented.
+
+                    </li><li>Only some of the configuration can be done with command line
+                        parameters. The pipeline is put together in the startup procedure.
+                        Configuration will be done from within an XML file in the future. We are
+                        planning to use the Avalon framework for that.
+
+                    </li><li>The ThreadMonitor is very experimental. It has evolved from a
+                        pure monitoring mechanism to a central part of the whole crawler. It
+                        should probably be refactored.
+
+                    </li><li>Speed could still be optimized. Synchronization takes place
+                        too often. At the moment URLs and documents are passed one after each
+                        other. Should be changed such that groups of messages are passed in one
+                        turn.
+
+                    </li><li>The Lucene integration is pretty experimental, and also pretty
+                        slow. It forms a major bottleneck if you use it.
+
+                    </li><li>No processing whatsoever is done on the documents (except
+                        extracting the links). It should be decided how much of this is supposed to
+                        be done within the crawler, and what should be done in a post
+                        processing step.
+
+                    </li><li>Unix is the favoured operating system. I used a SUSE Linux
+                        with 2.2 kernel. I remember that I ran into problems with the I/O routines
+                        on Windows machines. I haven't tried it for a long time now, though.
+
+                    </li><li>Only http is supported, no file server crawling with recurse
+                        directory options, etc.
+
+                    </li><li>
+                        I noticed on high bandwidth (100 MBit/s) systems that very slowly
+                        system sockets were eaten, although the Java code seemed to be ok.
+
+                    </li>
+                </ul>
+            </subsection>
+
+            <subsection name="Syntax and runtime behaviour">
+
+                <p>
+                    <a name="syntax"></a>
+
+                    The command line options are very simple:
+                </p>
+
+                <source><![CDATA[
+                    java [-server] [-Xmx[ZZ]mb] -classpath fetcher.jar
+                    de.lanlab.larm.fetcher.FetcherMain
+                    [-start STARTURL | @STARTURLFILE]+
+                    -restrictto REGEX
+                    [-threads[=10]]
+                    -hostresolver HOSTRES.PROPERTIES
+                    ]]></source>
+
+                <ul>
+
+                    <li><b>-start</b>	a start URL or, alternatively, a file with start URLs
+                        (one in each line). In the latter case the file name must be preceded
+                        by '@'. It must be a valid http-URL, including the http prefix </li>
+                    <li><b>-restrictto</b>	a (Perl5) regular expression that all URLs have
+                        to obey. These regexes are performed on the normalized version of a URL
+                        (see below). If you are not familiar with regular expressions, see
+                        <a href="http://www.perldoc.com/perl5.6.1/pod/perlre.html">The Perl Man
+                            Pages</a>.</li>
+
+                    <li><b>-threads</b>	the number of concurrent threads that crawl the
+                        pages. At this time, more than 25 threads don't provide any advantages
+                        because synchronization effects and (probably) the overhead of the
+                        scheduler slow the system down</li>
+                </ul>
+
+                <p>
+                    <b>Java runtime options:</b>
+                </p>
+
+                <ul>
+                    <li><b>-server</b>	starts the hot spot VM in server mode, which starts
+                        up a little slower, but is faster during the run. Recommended</li>
+                    <li><b>-Xmx&lt;ZZ&gt;mb</b>	sets the maximum size of the heap to
+                        &lt;ZZ&gt; mb. Should be a lot. Set it to what you have.</li>
+                </ul>
+
+                <p>
+                    You may also want to have a look at the source code, because some
+                    options cannot be dealt with from the outside at this time.<br/><br/>
+                </p>
+
+                <p>
+                    <b>Other options</b>
+                </p>
+
+                <p>
+                    Unfortunately, a lot of the options are still not configurable from the
+                    outside. Most of them are configured from within FetcherMain.java.
+                    However, others are still spread over some of the other classes. At this
+                    time, we tried to put a "FIXME" comment around all these options, so
+                    check out the source code. </p>
+
+                <p>
+                    <b>What happens now?</b>
+                </p>
+
+                <ol>
+
+                    <li>The filter pipeline is built. The ScopeFilter is initialised with
+                        the expression given by restrictto</li>
+                    <!--zz-->
+
+                    <li>The URL is put into the pipeline</li>
+
+                    <li>The documents are fetched. If the mime type is text/html, links are
+                        extracted and put back into the queue. The documents and URLs are
+                        forwarded to the storage, which saves them</li>
+                    <!--zz-->
+
+                    <li>Meanwhile, every 5 seconds, the ThreadMonitor gathers statistics,
+                        flushes log files, starts the garbage collection, and stops the fetcher
+                        when everything seems to be done: all threads are idle, and nothing is
+                        remaining in the queues</li>
+
+                </ol>
+                <!--zz-->
+            </subsection>
+            <!--zz !! -->
+
+            <subsection name="Normalized URLs">
+
+                <p>
+                    URLs are only supposed to make a web resource accessible. Unfortunately
+                    there can be more than one representation of a URL, which can cause a
+                    web crawler to save one file twice under different URLs. Two mechanisms
+                    are used to reduce this error, while at the same time trying to keep
+                    the second error (two URLs are regarded as pointing to the same file, but
+                    are in fact two different ones):</p>
+
+                <ul>
+                    <li>Common URL patterns are reduced to a known "canonical" form. I.
+                        e. The URLs <i>http://host</i> and <i>http://host/</i> point to the same
+                        file. The latter is defined as the canonical form of a root URL. For a
+                        complete listing of these actions, see below</li>
+                    <li>Host names can be edited through a set of rules manually passed
+                        to the <i>HostResolver</i>, which can be configured in a configuration
+                        file.</li>
+                </ul>
+
+                <p>
+                    The result is used like a <i>stemming</i> function in IR systems: The
+                    normalized form of a URL is used internally for comparisons, but to the
+                    outside (i.e. for accessing the file), the original form is applied.
+                </p>
+
+            </subsection>
+
+            <subsection name="URL patterns">
+
+                <p>
+                    These are the patterns applied by the <i>URLNormalizer</i>:
+                </p>
+                <ul>
+                    <li>Host and path names are changed to lowercase. We know that on
+                        Unix it may be possible to have two files in one directory that only
+                        differ in their cases, but we don't think this will be used very often. On
+                        the other hand, on Windows systems, case doesn't matter, so a lot of
+                        Links use URLs with mixed cases</li>
+                    <li>All characters except the ones marked 'safe' in the URL standard
+                        are escaped. Spaces are always escaped as "%20" and not "+"</li>
+                    <li>If Unicode characters are encountered, they are written as
+                        escaped UTF-8 characters.</li>
+                    <li>subsequent slashes '//' are removed. '/./' is reduced to '/'</li>
+                    <li>index.* and default.* file names are removed</li>
+                </ul>
+                <p>Todo: '/../' is not handled yet</p>
+                <p>
+                    Todo: Examples</p>
+
+            </subsection>
+
+            <subsection name="The Host Resolver">
+
+                <p>
+                    The host resolver is also applied when the URL normalization takes
+                    place. It knows three different types of rules:
+                </p>
+
+                <ul>
+                    <li>startsWith: replace the start of a URL with something else if a
+                        certain pattern is found at the start</li>
+                    <li>endsWith: same with the end</li>
+                    <li>synonym: treat a host name as a synonym to another</li>
+                </ul>
+
+                <p>
+                    These three rules are applied to each URL in that order. I. e. you
+                    can tell the host resolver to always remove the "www." of each host,
+                    therefore regarding "cnn.com" and "www.cnn.com" as equal, by defining the
+                    rule <i>setStartsWith("www.","")</i>
+                </p>
+
+                <p>
+                    <b>Configuring HostResolver in a config file</b>
+                </p>
+
+                <p>
+                    The HostResolver was one test on how config files could look like if
+                    they were implemented using standard Java procedures. We used the
+                    Jakarta BeanUtils for these matters (see
+                    <a href="http://jakarta.apache.org/commons/beanutils.html">The BeanUtils
+                        website</a> for details) and implemented the HostResolver as a JavaBean. The
+                    rules can then be stated as "mapped properties" in a
+                    hostResolver.properties file (see the start syntax above). The only difference between
+                    normal properties and the mapped properties as supported by BeanUtils is
+                    that a second argument can be passed to the latter.
+                </p>
+
+                <p>
+                    An example of such a properties file would look like this:
+                </p>
+
+                <source><![CDATA[
+                    #hostResolver.properties
+                    #format:
+                    # startsWith(part1) = part2
+                    #  if host starts with part1, this part will be replaced by part2
+                    # endsWith(part1) = part2
+                    #  if host ends with part1, this part will be replaced by part2.
+                    #  This is done after startsWith was processed
+                    # synonym(host1) = host2
+                    # the keywords startsWith, endsWith and synonym are case sensitive
+                    #  host1 will be replaced with host2. this is done _after_ startsWith
+                    #  and endsWith was processed
+
+                    startsWith(www.)=
+                    startsWith(www2.)=
+                    startsWith(w3.)=
+                    endsWith(.somehost.com)=.somhost2.com
+                    synonym(daedalus.apache.org)=apache.org
+
+                    ]]></source>
+
+                <p>
+                    As you can see, the file format itself is like the standard Java
+                    <a href="http://java.sun.com/j2se/1.3/docs/api/java/util/Properties.html">Properties</a>
+                    format (comments etc.). Keywords are case sensitive.
+                </p>
+
+
+                <p>
+                    At the time when the class was written, BeanUtils still had a bug
+                    that dots "." were not supported in mapped properties indexes. As with
+                    the new version (1.5 at the time of this writing) this is supposed to be
+                    removed, but I have not tried yet. Therefore, the comma "," was made a
+                    synonymon for dots. Since "," is not allowed in domain names, you can
+                    still use (and even mix) them if you want, or if you only have an older
+                    BeanUtils version available.
+                </p>
+
+            </subsection>
+
+            <section name="Lucene Integration">
+
+                <p>
+                    LARM currently provides a very simple LuceneStorage that allows for
+                    integrating the crawler with Lucene. It's ment to be a working example on
+                    how this can be accomplished, not a final implementation. If you like
+                    to volunteer on that part, contributions are welcome.</p>
+
+                <p>
+                    The current storage simply takes the input that comes from the crawler
+                    (a <i>WebDocument</i> which mainly consists of name/value pairs with
+                    the document's contents) and puts it into a Lucene index. Each name/value
+                    pair is put into one field. There's currently no incremental or update
+                    operation, or document caching via a RAMDirectory. Therefore the
+                    LuceneStorage becomes a bottleneck even with slow network connections.</p>
+
+                <p>
+                    see storage/LuceneStorage.java and fetcher/FetcherMain.java for
+                    details</p>
+
+            </section>
+
+
+        </section>
+
+        <section name="Architecture">
+
+            <p>I studied the <a href="http://research.compaq.com/SRC/mercator/research.html">Mercator</a> web
+                crawler but decided to implement a somewhat different architecture.
+                Here is a high level overview of the default configuration:
+            </p>
+
+            <img src="/images/larm_architecture.jpg" width="568" height="460"
+                 border="1" alt="Architecture Overview"/>
+
+            <p>
+                The message handler is an implementation of a simple <i>chain of
+                    responsibility</i>. Implementations of <i>Message</i> are passed down a
+                filter chain. Each of the filters can decide whether to send the message
+                along, change it, or even delete it. In this case, Messages of type
+                URLMessage are used. The message handler runs in its own thread. Thus, a call
+                of <i>putMessage()</i> or <i>putMessages()</i> resp. involve a
+                <i>producer-consumer</i>-like message transfer. The filters themselves run
+                within the message handler thread.
+                At the end of the pipeline the Fetcher distributes the incoming
+                messages to its worker threads. They are implemented as a <i>thread pool</i>:
+                Several <i>ServerThreads</i> are running concurrently and wait for
+                <i>Tasks</i> which include the procedure to be executed. If more tasks are
+                to be done than threads are available, they are kept in a queue, which
+                will be read whenever a task is finished.</p>
+
+            <p>
+                At this point the pipeline pattern is left . The <i>FetcherTask</i>
+                itself is still quite monolithic. It gets the document, parses it if
+                possible, and stores it into a storage. In the future one might think of
+                additional configurable processing steps within another processing
+                pipeline. I thought about incorporating it into the filter pipeline, but since
+                the filters are passive components and the <i>FetcherThreads</i> are
+                active, this didn't work.
+            </p>
+
+            <subsection name="Performance">
+
+                <p>
+                    The performance was improved about 10-15 times compared to the first
+                    naive attempts with a pre-built parser and Sun's network classes. And
+                    there is still room left. On a network with about 150 web servers, which
+                    the crawler server was connected to by a 100 MBit FDDS connection, I was
+                    able to crawl an average of 60 documents per second, or 3,7 MB, after
+                    10 minutes in the startup period. In this first period, crawling is
+                    slower because the number of servers is small, so the server output limits
+                    crawling. There may also be servers that don't respond. They are
+                    excluded from the crawl after a few attempts.
+                </p>
+
+                <p>
+                    Overall, performance is affected by a lot of factors: The operating
+                    system, the native interface, the Java libraries, the web servers, the
+                    number of threads, whether dynamic pages are included in the crawl, etc.
+                </p>
+
+                <p>
+                    From a development side, the speed is affected by the balance between
+                    I/O and CPU usage. Both has to be kept at 100%, otherwise one of them
+                    becomes the bottleneck. Managing these resources is the central part of a
+                    crawler.
+                    Imagine that only one thread is crawling. This is the worst case, as
+                    can be seen very fast:</p>
+
+                <br/>
+                <br/>
+                <img src="/images/larm_crawling-process.jpg" width="600" height="306"
+                     border="1" alt="Crawling Process"/>
+
+                <p>
+                    The diagram to the right resembles a UML sequence diagram, except that
+                    it stresses the time that a message needs to traverse the network.</p>
+
+                <ol>
+                    <li>The URL is processed somehow. That's the filter part as stated
+                        above</li>
+                    <li>The request is sent. It goes through the different network layers
+                        of the crawler server. A TCP/IP connection is established. Several
+                        packets are sent back and forth. Then the crawler waits until the web server
+                        processes the request, looks up the file or renders the page (which can
+                        take several seconds or even minutes), then sends the file to the
+                        crawler.</li>
+                    <li>The crawler receives packet after packet, combines them to a file.
+                        Probably it is copied through several buffers until it is complete.
+                        This will take some CPU time, but mostly it will wait for the next packet
+                        to arrive. The network transfer by itself is also affected by a lot of
+                        factors, i.e. the speed of the web server, acknowledgement messages,
+                        resent packages etc. so 100% network utilization will almost never be
+                        reached.</li>
+                    <li>The document is processed, which will take up the whole CPU. The
+                        network will be idle at that time.</li>
+                </ol>
+
+                <p>
+                    The storage process, which by itself uses CPU and disk I/O resources,
+                    was left out here. That process will be very similar, although the
+                    traversal will be faster.
+                </p>
+
+                <p>
+                    As you can see, both CPU and I/O are not used most of the time, and
+                    wait for the other one (or the network) to complete. This is the reason
+                    why single threaded web crawlers tend to be very slow (wget for example).
+                    The slowest component always becomes the bottleneck.</p>
+
+                <p>
+                    Two strategies can be followed to improve this situation:</p>
+
+                <ol>
+                    <li>use asynchronous I/O</li>
+                    <li>use several threads</li>
+                </ol>
+
+                <p>
+                    Asynchronous I/O means, I/O requests are sent, but then the crawler
+                    continues to process documents it has already crawled.</p>
+
+                <p>
+                    Actually I haven't seen an implementation of this technique.
+                    Asynchronous I/O was not available in Java until version 1.4. An advantage would
+                    be that thread handling is also an expensive process in terms of CPU
+                    and memory usage. Threads are resources and, thus, limited. I heard that
+                    application server developers wanted asynchronous I/O, to be able to
+                    cope with hundreds of simultaneous requests without spawning extra
+                    threads for each of them. Probably this can be a solution in the future. But
+                    from what I know about it today, it will not be necessary </p>
+
+                <p>
+                    The way this problem is solved usually in Java is with the use of
+                    several threads. If many threads are used, chances are good that at any
+                    given moment, at least one thread is in one of the states above, which
+                    means both CPU and I/O will be at a maximum.</p>
+                <p>
+                    The problem with this is that multi threaded programming is considered
+                    to be one of the most difficult areas in computer science. But given
+                    the simple linear structure of web crawlers, it is not very hard to avoid
+                    race conditions or dead lock problems. You always get into problems
+                    when threads are supposed to access shared resources, though. Don't touch
+                    this until you have read the standard literature and have made at least
+                    10 mistakes (and solved them!).</p>
+                <p>
+                    Multithreading doesn't come without a cost, however. First, there is
+                    the cost of thread scheduling. I don't have numbers for that in Java, but
+                    I suppose that this should not be very expensive. MutExes can affect
+                    the whole program a lot . I noticed that they should be avoided like
+                    hell. In a crawler, a MutEx is used, for example, when a new URL is passed
+                    to the thread, or when the fetched documents are supposed to be stored
+                    linearly, one after the other.</p>
+                <p>
+                    For example, the tasks used to insert a new URL into the global message
+                    handler each time when a new URL was found in the document. I was able
+                    to speed it up considerably when I changed this so that the URLs are
+                    collected locally and then inserted only once per document. Probably this
+                    can be augmented even further if each task is comprised of several
+                    documents which are fetched one after the other and then stored
+                    together.</p>
+                <p>
+                    Nonetheless, keeping the right balance between the two resources is a
+                    big concern. At the moment, the number of threads and the number of
+                    processing steps is static, and is only optimised by trial and error. Few
+                    hosts, slow network -> few threads. slow CPU -> few processing steps.
+                    many hosts, fast network -> many threads. Probably those heuristics will
+                    do well, but I wonder if these figures could also be fine-tuned
+                    dynamically during runtime.</p>
+                <p>
+                    Another issue that was optimised were very fine-grained method calls.
+                    For example, the original implementation of the HTML parser used to call
+                    the read()-method for each character. This call had probably to
+                    traverse several Decorators until it got to a - synchronized call. That's why
+                    the CharArrayReader was replaced by a SimpleCharArrayReader, because
+                    only one thread works on a document at a time.</p>
+                <p>
+                    These issues can only be traced down with special tools, i.e.
+                    profilers. The work is worth it, because it allows one to work on the 20% of the
+                    code that costs 80% of the time.
+                </p>
+
+            </subsection>
+
+            <subsection name="Memory Usage">
+
+                <p>
+                    One "web crawler law" could be defined as:</p>
+
+                <source>
+                    What can get infinite, will get infinite.
+                    What can go wrong, will go wrong.
+                    Eventually.
+                    Very soon.
+                </source>
+
+                <p>
+                    A major task during the development was to get memory usage low. But a
+                    lot of work still needs to be done here. Most of the optimizations
+                    incorporated now move the problem from main memory to the hard disk, which
+                    doesn't solve the problem.<br/>
+                </p>
+
+                <p>
+                    Here are some means that were used:
+                </p>
+
+                <ul>
+
+                    <li>CachingQueues: The message queue, the Fetcher queue, the robot
+                        exclusion queue (see below) - a lot of queues can fill up the whole main
+                        memory in a very short period of time. But since queues are only accessed
+                        at their ends, a very simple mechanism was implemented to keep memory
+                        usage low: The queue was divided into blocks of fixed size. Only the two
+                        blocks at its end are kept in RAM. The rest is serialized on disk. In
+                        the end, only a list of block references has to be managed
+                    </li>
+
+                    <li>Define a maximum value for everything, and keep an eye on it.
+                        Downloaded files can get "infinitely" large. URLs can get infinitely long.
+                        Servers may contain an infinite set of documents. A lot of these checks
+                        had to be included even in the university network mentioned. A special
+                        case were the URLs. Some .shtml pages on a web server pointed to a
+                        subdirectory that didn't exist but revealed the same page. If these errors
+                        are introduced at will, they are called crawler traps: An infinite URL
+                        space. The only way of dealing with this is manually excluding the
+                        hosts.
+                    </li>
+
+                    <li>Optimized HTML parser. Current parsers tend to create a huge amount
+                        of very small objects. Most of that work is unnecessary for the task to
+                        be done. This can only be optimised by stripping down the parser to do
+                        only what it is supposed to do in that special task.
+                        However, there still remains a problem: The HashMap of already visited
+                        URLs needs to be accessed randomly while reading and writing. I can
+                        imagine only two ways to overcome this:
+                    </li>
+
+                    <li>Limiting, in some way, the number of URLs in RAM. If the crawler
+                        were distributed, this could be done by assigning only a certain number
+                        of hosts to each crawler node, while at the same time limiting the
+                        number of pages read from one host. In the end this will only limit the
+                        number of hosts that can be crawled by the number of crawler nodes
+                        available. Another solution would be to store complete hosts on drive, together
+                        with the list of unresolved URLs. Again, this shifts the problem only
+                        from RAM to the hard drive
+                    </li>
+
+                    <li>Something worth while would be to compress the URLs. A lot of parts
+                        of URLs are the same between hundreds of URLs (i.e. the host name). And
+                        since only a limited number of characters are allowed in URLs, Huffman
+                        compression will lead to a good compression rate . A first attempt
+                        would be to incorporate the visited URLs hash into the HostInfo structure.
+                        After all, the VisitedFilter hash map turned out to be the data
+                        structure that will take up most of the RAM after some time.
+                    </li>
+
+                </ul>
+
+            </subsection>
+
+            <subsection name="The Filters">
+
+                <p>
+                    Most of the functionality of the different filters has already been
+                    described. Here's another, more detailed view :
+                </p>
+
+                <p>
+                    <b>RobotExclusionFilter</b>
+                </p>
+
+                <p>
+                    The first implementation of this filter just kept a list of hosts, and
+                    every time a new URLMessage with an unknown host came by, it attempted
+                    to read the robots.txt file first to determine whether the URL should
+                    be filtered.
+                    A major drawback of that was that when the server was not accessible
+                    somehow, the whole crawler was held until the connection timed out (well
+                    with Sun's classes that even didn't happen, causing the whole program
+                    to die).
+                    The second implementation has its own little ThreadPool, and keeps a
+                    state machine of each host in the HostInfo structure.
+                </p>
+
+                <p>
+                    If the host manager doesn't contain a HostInfo structure at all, the
+                    filter creates it and creates a task to get the robots.txt file. During
+                    this time, the host state is set to "isLoadingRobotsTxt", which means
+                    further requests to that host are put into a queue. When loading is
+                    finished, these URLs (and all subsequent ones) are put back to the beginning
+                    of the queue.
+                </p>
+
+                <p>
+                    After this initial step, every URL that enters the filter is compared
+                    to the disallow rules set (if present), and is filtered if necessary.
+                </p>
+
+                <p>
+                    Since the URLs are put back to the beginning of the queue, the filter
+                    has to be put in front of the VisitedFilter.
+                </p>
+
+                <p>
+                    In the host info structure, which is also used by the FetcherTasks,
+                    some information about the health of the hosts is stored as well. If the
+                    server is in a bad state several times, it is excluded from the crawl.
+                    Note that it is possible that a server will be accessed more than the
+                    (predefined) 5 times that it can time out, since a FetcherThread may
+                    already have started to get a document when another one marks it as bad.
+                </p>
+
+                <p>
+                    <b>URLLengthFilter</b>
+                </p>
+
+                <p>
+                    This very simple filter just filters a URL if a certain (total) length
+                    is exceeded
+                </p>
+
+                <p>
+                    <b>KnownPathsFilter</b>
+                </p>
+
+                <p>
+                    This one filters some very common URLs (i.e. different views of an
+                    Apache directory index), or hosts known to make problems. Should be more
+                    configurable from outside in the future
+                </p>
+
+                <p>
+                    <b>URLScopeFilter</b>
+                </p>
+
+                <p>
+                    The scope filter filters a URL if it doesn't match a given regular
+                    expression.
+                </p>
+
+                <p>
+                    <b>URLVisitedFilter</b>
+                </p>
+
+                <p>
+                    This filter keeps a HashMap of already visited URLs, and filters out
+                    what it already knows
+                </p>
+
+                <p>
+                    <b>Fetcher</b>
+                </p>
+
+                <p>
+                    The fetcher itself is also a filter that filters all URLs - they are
+                    passed along to the storage as WebDocuments, in a different manner. It
+                    contains a ThreadPool that runs in its own thread of control, which takes
+                    tasks from the queue an distributes them to the different
+                    FetcherThreads.
+                </p>
+
+                <p>
+                    In the first implementation the fetcher would simply distribute the
+                    incoming URLs to the threads. The thread pool would use a simple queue to
+                    store the remaining tasks. But this can lead to a very "unpolite"
+                    distribution of the tasks: Since ¾ of the links in a page point to the same
+                    server, and all links of a page are added to the message handler at
+                    once, groups of successive tasks would all try to access the same server,
+                    probably causing denial of service, while other hosts present in the
+                    queue are not accessed.
+                </p>
+
+                <p>
+                    To overcome this, the queue is divided into different  parts, one for
+                    each host. Each host contains its own (caching) queue. But the methods
+                    used to pull tasks from the "end" of this queue cycle through the hosts
+                    and always get a URL from a different host.
+                </p>
+
+                <p>
+                    One major problem still remains with this technique: If one host is
+                    very slow, it can still slow down everything. Since with n host every nth
+                    task will be accessed to this host, it can eat one thread after the
+                    other if loading a document takes longer than loading it from the (n-1)
+                    other servers. Then two concurrent requests will result on the same
+                    server, which slows down the response times even more, and so on. In
+                    reality, this will clog up the queue very fast. A little more work has to be
+                    done to avoid these situations, i.e. by limiting the number of threads
+                    that access one host at a time.
+                </p>
+
+                <p>
+                    <b>A Note on DNS</b>
+                </p>
+
+                <p>
+                    The Mercator crawler document stresses a lot on resolving host names.
+                    Because of that, a DNSResolver filter was implemented in the very first
+                    time. Two reasons prevented that it is used any more:
+                </p>
+
+                <ul>
+
+                    <li>newer versions of the JDK than the one Mercator used resolve the IP
+                        address of a host the first time it is accessed, and keep a cache of
+                        already resolved host names.</li>
+
+                    <li>the crawler itself was designed to crawl large local networks, and
+                        not the internet. Thus, the number of hosts is very limited.</li>
+
+                </ul>
+
+            </subsection>
+        </section>
+
+
+        <section name="Future Enhancements">
+
+            <subsection name="Politeness">
+
+                <p>
+                    A crawler should not cause a Denial of Service attack. So this has to
+                    be addressed.
+                </p>
+
+            </subsection>
+
+            <subsection name="The processing pipeline">
+
+                <p>
+                    The FetcherTask, as already stated, is very monolithic at this time.
+                    Probably some more processing should be done at this step (the problem
+                    with balanced CPU/IO usage taken into account). At least different
+                    handlers for different mime types should be provided, i.e. to extract links
+                    from PDF documents. The Storage should also be broken up. I only used
+                    the LogStorage within the last months, which now doesn't only writes to
+                    log files, but also stored the files on disk. This should probably be
+                    replaced by a storage chain where different stores could be appended.
+                </p>
+
+            </subsection>
+
+
+
+            <subsection name="LARM as a real server">
+
+                <p>
+                    The only way to start a crawl today is starting the crawler from the
+                    shell. But it could also remain idle and wait for commands from an RMI
+                    connection or expose a Web Service. Monitoring could be done by a simple
+                    included web server that provides current statistics via HTML
+                </p>
+
+                <ul>
+                    <li><b>Recommended Reading: </b> We plan on using the
+                    <a href="http://jakarta.apache.org/avalon">Avalon</a> Framework</li> for state
+                    management and configuration. A very early proposal can
+                    be found
+                    <a href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=399399">here</a>.
+                    We found out that Avalon provides a lot of the functionality described
+                    as necessary in that posting.
+                </ul>
+
+
+            </subsection>
+
+            <subsection name="Distribution">
+
+                <p>
+                    Distribution is a big issue. Some people say "Distribute your program
+                    late. And then later." But as others have implemented distributed
+                    crawlers, this should not be very hard.<br/>
+                    I see two possible architectures for that:
+                </p>
+
+                <ul>
+                    <li>Write a single dispatcher (a star network) that contains the whole
+                        MessageHandler except the Fetcher itself. The crawlers are run as
+                        servers (see above), and are configured with a URL source that gets their
+                        input from the dispatcher and a MessageHandler that stores URLs back to
+                        the dispatcher. The main drawback being that this can become a
+                        bottleneck.
+                    </li>
+                    <li>Partition the domain to be crawled into several parts. This could
+                        be done for example by dividing up different intervals of the hash value
+                        of the host names. Then plugging in another crawler could be done
+                        dynamically, even within a peer to peer network. Each node knows which node
+                        is responsible for which interval, and sends all URLs to the right
+                        node. This could even be implemented as a filter.
+                    </li>
+                </ul>
+
+                <p>
+                    One thing to keep in mind is that the number of URLs transferred to
+                    other nodes should be as large as possible. </p>
+
+                <p>
+                    The next thing to be distributed is the storage mechanism. Here, the
+                    number of pure crawling nodes and the number of storing (post processing)
+                    nodes could possibly diverge. An issue here is that the whole documents
+                    have to be transferred over the net. </p>
+
+
+                <ul>
+                    <li><b>Recommended Reading: </b> <i>Junghoo Cho and Hector
+                            Garcia-Molina (2002).
+                            <a href="http://citeseer.nj.nec.com/cho02parallel.html">Parallel crawlers</a>.
+                            In Proc. of the 11th International World--Wide Web Conference, 2002</i></li>
+                </ul>
+
+            </subsection>
+
+            <subsection name="URL Reordering">
+
+                <p>
+                    One paper discussed different types of reordering URLs while crawling .
+                    One of the most promising attempts was to take the calculated PageRank
+                    into account . Crawling pages with higher PageRanks first seemed to get
+                    important pages earlier. This is not rocket science, the research was
+                    already done years ago.
+                </p>
+
+                <ul>
+                    <li><b>Recommended Reading: </b> <i>J. Cho, H. Garcia-Molina &amp; L.
+                            Page (1998),
+                            <a
+                               href="http://citeseer.nj.nec.com/30730.html">Efficient Crawling Through URL Ordering</a>,
+                            Seventh International Web Conference, Brisbane, Australia, 14-18 April</i></li>
+                </ul>
+
+            </subsection>
+
+            <subsection name="Recovery">
+
+                <p>
+                    At the moment there is no way of stopping and restarting a crawl. There
+                    should be a mechanism to move the current state of the crawler to disk,
+                    and, in case of a failure, to recover and continue from the last saved
+                    state.
+                </p>
+
+            </subsection>
+
+        </section>
+
+    </body>
+
+</document>
