@@ -18,7 +18,7 @@
 
             <p>
                 You can access the Lucene Sandbox repository at
-                <a href="http://svn.apache.org/repos/asf/lucene/contrib/">http://svn.apache.org/repos/asf/lucene/contrib/</a>.
+                <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/">http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/</a>.
             </p>
 
             <subsection name="Snowball Stemmers for Lucene">
@@ -29,7 +29,7 @@
 
                 <p>
                     More information can be found
-                    <a href="http://lucene.apache.org/lucene-sandbox/snowball/">here</a>.
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/snowball">here</a>.
                 </p>
 
                 <p>
@@ -44,7 +44,7 @@
                 </p>
 
                 <p>
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/analyzers/">The
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/analyzers/">The
                         repository for the Analyzers contribution.</a>
                 </p>
             </subsection>
@@ -55,7 +55,7 @@
                     contains an example HTML parser that uses JTidy.
                 </p>
                 <p>
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/ant/">The
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/ant/">The
                         repository for the Ant contribution.</a>
                 </p>
             </subsection>
@@ -74,7 +74,7 @@
                     synonyms, definitions, and various relationships between synonym sets.
                 </p>
                 <p>
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/WordNet/">
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/WordNet/">
                         for the WordNet module.</a>
                 </p>
             </subsection>
@@ -87,7 +87,7 @@
                 </p>
                 <p>
 
-                    <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/XML-Indexing-Demo/">
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/sandbox/contributions/XML-Indexing-Demo/">
                         for the XML Indexing Demo.</a>
                 </p>
             </subsection>
@@ -99,7 +99,7 @@
                 </p>
 
                 <p>
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/lucli/">The
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/lucli/">The
                         repository for the Lucli contribution.</a>
                 </p>
             </subsection>
@@ -109,7 +109,7 @@
                   A small set of classes for highlighting matching terms in
                     search results.
                 </p>
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/highlighter/">The
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/highlighter/">The
                         repository for the Highlighter contribution.</a>
             </subsection>
 
@@ -120,7 +120,7 @@
                 </p>
                 <p>
 
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/javascript/queryConstructor/">
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/javascript/queryConstructor/">
                         for the files.</a>
                 </p>
             </subsection>
@@ -133,7 +133,7 @@
                 </p>
                 <p>
 
-                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/javascript/queryValidator/">
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/javascript/queryValidator/">
                         for files.</a>
                 </p>
             </subsection>
@@ -146,7 +146,7 @@
                 </p>
                 <p>
 
-                    <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/miscellaneous/src/java/org/apache/lucene/misc/">
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/sandbox/contributions/miscellaneous/">
                         for miscellaneous classes.</a>
                 </p>
             </subsection>
