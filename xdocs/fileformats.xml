@@ -694,11 +694,15 @@
                 </p>
 
                 <p>
-                    Segments    --&gt; SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
+                    Segments    --&gt; Format, Version, SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
                 </p>
 
                 <p>
-                    SegCount, SegSize    --&gt; UInt32
+                    Format, SegCount, SegSize    --&gt; UInt32
+                </p>
+
+                <p>
+                    Version --&gt; UInt64
                 </p>
 
                 <p>
@@ -706,9 +710,17 @@
                 </p>
 
                 <p>
+                    Format is -1 in Lucene 1.4.
+                </p>
+
+                <p>
+                    Version counts how often the index has been
+                    changed by adding or deleting documents.
+                </p>
+
+                <p>
                     SegName is the name of the segment, and is used as the file name prefix
-                    for
-                    all of the files that compose the segment's index.
+                    for all of the files that compose the segment's index.
                 </p>
 
                 <p>
@@ -940,7 +952,7 @@
                             term's text.
                         </p>
                         <p>TIVersion names the version of the format
-                            of this file and is -1 in Lucene 1.4.
+                            of this file and is -2 in Lucene 1.4.
                         </p>
                         <p>Term
                             text prefixes are shared.  The PrefixLength is the number of initial
