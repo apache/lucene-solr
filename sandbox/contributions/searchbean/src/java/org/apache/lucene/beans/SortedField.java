@@ -20,17 +20,18 @@ import java.io.IOException;
  * @author  carlson
  */
 public class SortedField {
-    
+
     private String fieldName;
-    
+
     private String[] fieldValues;
-    
+
     private static Hashtable fieldList = new Hashtable(); //keeps track of all fields
-    
+
     /** Creates a new instance of SortedField */
-    public SortedField() {
+    private SortedField(String fieldName) {
+      this.fieldName = fieldName;
     }
-    
+
     /** add a field so that is can be used to sort
      * @param fieldName the name of the field to add
      * @param indexPath path to Lucene index directory
@@ -39,7 +40,7 @@ public class SortedField {
         IndexReader ir = IndexReader.open(indexPath);
         addField(fieldName, ir);
     }
-    
+
     /** add a field so that is can be used to sort
      * @param fieldName the name of the field to add
      * @param indexFile File pointing to Lucene index directory
@@ -48,8 +49,8 @@ public class SortedField {
         IndexReader ir = IndexReader.open(indexFile);
         addField(fieldName, ir);
     }
-    
-    
+
+
     /** add a field so that is can be used to sort
      * @param fieldName the name of the field to add
      * @param directory Lucene Directory
@@ -58,15 +59,15 @@ public class SortedField {
         IndexReader ir = IndexReader.open(directory);
         addField(fieldName, ir);
     }
-    
+
     private static void addField(String fieldName, IndexReader ir) throws IOException{
-        SortedField sortedField = new SortedField();
+        SortedField sortedField = new SortedField(fieldName);
         sortedField.addSortedField(fieldName,ir);
         //long start = System.currentTimeMillis();
         fieldList.put(fieldName, sortedField);
         //logger.info("adding data from field "+fieldName+" took "+(System.currentTimeMillis()-start));
     }
-    
+
     /** adds the data from the index into a string array
      */
     private void addSortedField(String fieldName, IndexReader ir) throws IOException{
@@ -81,7 +82,7 @@ public class SortedField {
         }
         ir.close();
     }
-    
+
     /** returns the value of the field
      * @param globalID Lucene's global document ID
      * @return value of field
@@ -89,7 +90,7 @@ public class SortedField {
     public String getFieldValue(int globalID) {
         return fieldValues[globalID];
     }
-    
+
     /** provides way to retrieve a SortedField once you add it
      * @param fieldName name of field to lookup
      * @return SortedField field to use when sorting
@@ -97,7 +98,7 @@ public class SortedField {
     public static SortedField getSortedField(String fieldName){
         return  (SortedField) fieldList.get(fieldName);
     }
-    
+
     /** Getter for property fieldName.
      * @return Value of property fieldName.
      */
