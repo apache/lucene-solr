@@ -99,27 +99,32 @@ public class Block extends Object {
     protected void seek(long position)
         throws IOException
     {
-        position = position >>> DbOutputStream.BLOCK_SHIFT;
         byte[] data = key.getData();
-        int last = data.length - 1;
+        int index = data.length - 8;
 
-        for (int i = 0; i < 8; i++) {
-            data[last - i] = (byte) (position & 0xff);
-            position >>>= 8;
-        }
+        position >>>= DbOutputStream.BLOCK_SHIFT;
+
+        data[index + 0] = (byte) (0xff & (position >>> 56));
+        data[index + 1] = (byte) (0xff & (position >>> 48));
+        data[index + 2] = (byte) (0xff & (position >>> 40));
+        data[index + 3] = (byte) (0xff & (position >>> 32));
+        data[index + 4] = (byte) (0xff & (position >>> 24));
+        data[index + 5] = (byte) (0xff & (position >>> 16));
+        data[index + 6] = (byte) (0xff & (position >>>  8));
+        data[index + 7] = (byte) (0xff & (position >>>  0));
     }
 
-    protected void get(Db blocks, DbTxn txn)
+    protected void get(Db blocks, DbTxn txn, int flags)
         throws IOException
     {
         try {
-            blocks.get(txn, key, data, 0);
+            blocks.get(txn, key, data, flags);
         } catch (DbException e) {
             throw new IOException(e.getMessage());
         }
     }
 
-    protected void put(Db blocks, DbTxn txn)
+    protected void put(Db blocks, DbTxn txn, int flags)
         throws IOException
     {
         try {

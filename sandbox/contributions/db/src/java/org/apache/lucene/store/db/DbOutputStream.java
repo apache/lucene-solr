@@ -84,8 +84,9 @@ public class DbOutputStream extends OutputStream {
     protected Block block;
     protected DbTxn txn;
     protected Db files, blocks;
+    protected int flags;
 
-    protected DbOutputStream(Db files, Db blocks, DbTxn txn,
+    protected DbOutputStream(Db files, Db blocks, DbTxn txn, int flags,
                              String name, boolean create)
         throws IOException
     {
@@ -94,13 +95,14 @@ public class DbOutputStream extends OutputStream {
         this.files = files;
         this.blocks = blocks;
         this.txn = txn;
+        this.flags = flags;
 
-        file = new File(files, blocks, txn, name, create);
+        file = new File(files, blocks, txn, flags, name, create);
         block = new Block(file);
         length = file.getLength();
 
         seek(length);
-        block.get(blocks, txn);
+        block.get(blocks, txn, flags);
     }
 
     public void close()
@@ -108,9 +110,9 @@ public class DbOutputStream extends OutputStream {
     {
         flush();
         if (length > 0)
-            block.put(blocks, txn);
+            block.put(blocks, txn, flags);
 
-        file.modify(files, txn, length, System.currentTimeMillis());
+        file.modify(files, txn, flags, length, System.currentTimeMillis());
     }
 
     protected void flushBuffer(byte[] b, int len)
@@ -123,14 +125,14 @@ public class DbOutputStream extends OutputStream {
             int blockLen = BLOCK_LEN - blockPos;
 
             System.arraycopy(b, offset, block.getData(), blockPos, blockLen);
-            block.put(blocks, txn);
+            block.put(blocks, txn, flags);
 
             len -= blockLen;
             offset += blockLen;
             position += blockLen;
 
             block.seek(position);
-            block.get(blocks, txn);
+            block.get(blocks, txn, flags);
             blockPos = 0;
         }
 
@@ -167,9 +169,9 @@ public class DbOutputStream extends OutputStream {
             position = pos;
         else
         {
-            block.put(blocks, txn);
+            block.put(blocks, txn, flags);
             block.seek(pos);
-            block.get(blocks, txn);
+            block.get(blocks, txn, flags);
             position = pos;
         }
     }

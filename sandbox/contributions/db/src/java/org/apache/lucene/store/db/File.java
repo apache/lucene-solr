@@ -92,12 +92,13 @@ public class File extends Object {
         data.setFlags(Db.DB_DBT_USERMEM);
     }
 
-    protected File(Db files, Db blocks, DbTxn txn, String name, boolean create)
+    protected File(Db files, Db blocks, DbTxn txn, int flags,
+                   String name, boolean create)
         throws IOException
     {
         this(name);
 
-        if (!exists(files, txn))
+        if (!exists(files, txn, flags))
         {
             if (!create)
                 throw new IOException("File does not exist: " + name);
@@ -122,7 +123,8 @@ public class File extends Object {
                         uuid[8] = (byte) ((byte) 0x80 |
                                           (uuid[8] & (byte) 0x3f));
                         System.arraycopy(uuid, 0, key.getData(), 0, 16);
-                    } while (blocks.get(txn, key, data, 0) != Db.DB_NOTFOUND);
+                    } while (blocks.get(txn, key, data,
+                                        flags) != Db.DB_NOTFOUND);
                 } catch (DbException e) {
                     throw new IOException(e.getMessage());
                 }
@@ -172,11 +174,11 @@ public class File extends Object {
         return timeModified;
     }
 
-    protected boolean exists(Db files, DbTxn txn)
+    protected boolean exists(Db files, DbTxn txn, int flags)
         throws IOException
     {
         try {
-            if (files.get(txn, key, data, 0) == Db.DB_NOTFOUND)
+            if (files.get(txn, key, data, flags) == Db.DB_NOTFOUND)
                 return false;
         } catch (DbException e) {
             throw new IOException(e.getMessage());
@@ -196,7 +198,8 @@ public class File extends Object {
         return true;
     }
 
-    protected void modify(Db files, DbTxn txn, long length, long timeModified)
+    protected void modify(Db files, DbTxn txn, int flags,
+                          long length, long timeModified)
         throws IOException
     {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(32);
@@ -219,10 +222,10 @@ public class File extends Object {
         this.timeModified = timeModified;
     }
 
-    protected void delete(Db files, Db blocks, DbTxn txn)
+    protected void delete(Db files, Db blocks, DbTxn txn, int flags)
         throws IOException
     {
-        if (!exists(files, txn))
+        if (!exists(files, txn, flags))
             throw new IOException("File does not exist: " + getName());
 
         Dbc cursor = null;
@@ -241,15 +244,15 @@ public class File extends Object {
                 cursorData.setPartialLength(0);
                 cursorData.setFlags(Db.DB_DBT_PARTIAL);
 
-                cursor = blocks.cursor(txn, 0);
+                cursor = blocks.cursor(txn, flags);
 
                 if (cursor.get(cursorKey, cursorData,
-                               Db.DB_SET_RANGE) != Db.DB_NOTFOUND)
+                               Db.DB_SET_RANGE | flags) != Db.DB_NOTFOUND)
                 {
                     cursor.delete(0);
 
-                    while (cursor.get(cursorKey, cursorData, Db.DB_NEXT) !=
-                           Db.DB_NOTFOUND) {
+                    while (cursor.get(cursorKey, cursorData,
+                                      Db.DB_NEXT | flags) != Db.DB_NOTFOUND) {
                         for (int i = 0; i < bytes.length; i++)
                             if (bytes[i] != cursorBytes[i])
                                 return;
@@ -268,16 +271,17 @@ public class File extends Object {
         }
     }
 
-    protected void rename(Db files, Db blocks, DbTxn txn, String name)
+    protected void rename(Db files, Db blocks, DbTxn txn, int flags,
+                          String name)
         throws IOException
     {
-        if (!exists(files, txn))
+        if (!exists(files, txn, flags))
             throw new IOException("File does not exist: " + getName());
 
         File newFile = new File(name);
 
-        if (newFile.exists(files, txn))
-            newFile.delete(files, blocks, txn);
+        if (newFile.exists(files, txn, flags))
+            newFile.delete(files, blocks, txn, flags);
 
         try {
             files.delete(txn, key, 0);

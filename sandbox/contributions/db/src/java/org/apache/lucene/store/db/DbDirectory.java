@@ -87,6 +87,7 @@ public class DbDirectory extends Directory {
 
     protected Db files, blocks;
     protected DbTxn txn;
+    protected int flags;
 
     /**
      * Instantiate a DbDirectory. The same threading rules that apply to
@@ -97,13 +98,15 @@ public class DbDirectory extends Directory {
      * <code>null</code>.
      * @param files a db handle to store file records.
      * @param blocks a db handle to store file data blocks.
+     * @param flags flags used for db read operations.
      */
 
-    public DbDirectory(DbTxn txn, Db files, Db blocks)
+    public DbDirectory(DbTxn txn, Db files, Db blocks, int flags)
     {
         super();
 
         this.txn = txn;
+        this.flags = flags;
         this.files = files;
         this.blocks = blocks;
     }
@@ -116,19 +119,19 @@ public class DbDirectory extends Directory {
     public OutputStream createFile(String name)
         throws IOException
     {
-        return new DbOutputStream(files, blocks, txn, name, true);
+        return new DbOutputStream(files, blocks, txn, flags, name, true);
     }
 
     public void deleteFile(String name)
         throws IOException
     {
-        new File(name).delete(files, blocks, txn);
+        new File(name).delete(files, blocks, txn, flags);
     }
 
     public boolean fileExists(String name)
         throws IOException
     {
-        return new File(name).exists(files, txn);
+        return new File(name).exists(files, txn, flags);
     }
 
     public long fileLength(String name)
@@ -136,7 +139,7 @@ public class DbDirectory extends Directory {
     {
         File file = new File(name);
 
-        if (file.exists(files, txn))
+        if (file.exists(files, txn, flags))
             return file.getLength();
 
         throw new IOException("File does not exist: " + name);
@@ -147,7 +150,7 @@ public class DbDirectory extends Directory {
     {
         File file = new File(name);
 
-        if (file.exists(files, txn))
+        if (file.exists(files, txn, flags))
             return file.getTimeModified();
 
         throw new IOException("File does not exist: " + name);
@@ -167,9 +170,10 @@ public class DbDirectory extends Directory {
                 data.setPartialLength(0);
                 data.setFlags(Db.DB_DBT_PARTIAL);
 
-                cursor = files.cursor(txn, 0);
+                cursor = files.cursor(txn, flags);
 
-                if (cursor.get(key, data, Db.DB_SET_RANGE) != Db.DB_NOTFOUND)
+                if (cursor.get(key, data,
+                               Db.DB_SET_RANGE | flags) != Db.DB_NOTFOUND)
                 {
                     ByteArrayInputStream buffer =
                         new ByteArrayInputStream(key.getData());
@@ -179,7 +183,8 @@ public class DbDirectory extends Directory {
                     in.close();
                     list.add(name);
 
-                    while (cursor.get(key, data, Db.DB_NEXT) != Db.DB_NOTFOUND) {
+                    while (cursor.get(key, data,
+                                      Db.DB_NEXT | flags) != Db.DB_NOTFOUND) {
                         buffer = new ByteArrayInputStream(key.getData());
                         in = new DataInputStream(buffer);
                         name = in.readUTF();
@@ -202,7 +207,7 @@ public class DbDirectory extends Directory {
     public InputStream openFile(String name)
         throws IOException
     {
-        return new DbInputStream(files, blocks, txn, name);
+        return new DbInputStream(files, blocks, txn, flags, name);
     }
 
     public Lock makeLock(String name)
@@ -213,7 +218,7 @@ public class DbDirectory extends Directory {
     public void renameFile(String from, String to)
         throws IOException
     {
-        new File(from).rename(files, blocks, txn, to);
+        new File(from).rename(files, blocks, txn, flags, to);
     }
 
     public void touchFile(String name)
@@ -222,9 +227,9 @@ public class DbDirectory extends Directory {
         File file = new File(name);
         long length = 0L;
 
-        if (file.exists(files, txn))
+        if (file.exists(files, txn, flags))
             length = file.getLength();
 
-        file.modify(files, txn, length, System.currentTimeMillis());
+        file.modify(files, txn, flags, length, System.currentTimeMillis());
     }
 }

@@ -76,8 +76,10 @@ public class DbInputStream extends InputStream {
     protected Block block;
     protected DbTxn txn;
     protected Db files, blocks;
+    protected int flags;
 
-    protected DbInputStream(Db files, Db blocks, DbTxn txn, String name)
+    protected DbInputStream(Db files, Db blocks, DbTxn txn, int flags,
+                            String name)
         throws IOException
     {
         super();
@@ -85,15 +87,16 @@ public class DbInputStream extends InputStream {
         this.files = files;
         this.blocks = blocks;
         this.txn = txn;
+        this.flags = flags;
 
         this.file = new File(name);
-        if (!file.exists(files, txn))
+        if (!file.exists(files, txn, flags))
             throw new IOException("File does not exist: " + name);
 
         length = file.getLength();
 
         block = new Block(file);
-        block.get(blocks, txn);
+        block.get(blocks, txn, flags);
     }
 
     public Object clone()
@@ -103,7 +106,7 @@ public class DbInputStream extends InputStream {
 
             clone.block = new Block(file);
             clone.block.seek(position);
-            clone.block.get(blocks, txn);
+            clone.block.get(blocks, txn, flags);
 
             return clone;
         } catch (IOException e) {
@@ -134,7 +137,7 @@ public class DbInputStream extends InputStream {
             position += blockLen;
 
             block.seek(position);
-            block.get(blocks, txn);
+            block.get(blocks, txn, flags);
             blockPos = 0;
         }
 
@@ -155,7 +158,7 @@ public class DbInputStream extends InputStream {
             (position >>> DbOutputStream.BLOCK_SHIFT))
         {
             block.seek(pos);
-            block.get(blocks, txn);
+            block.get(blocks, txn, flags);
         }
 
         position = pos;
