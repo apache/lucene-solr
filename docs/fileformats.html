@@ -1104,7 +1104,10 @@
         <blockquote>
                                     <p>
                     Several files are used to indicate that another
-                    process is using an index.
+                    process is using an index.  Note that these files are not
+                    stored in the index directory itself, but rather in the
+                    system's temporary directory, as indicated in the Java
+                    system property "java.io.tmpdir".
                 </p>
                                                 <ul>
                     <li>
@@ -1123,8 +1126,7 @@
 
                     <li>
                         <p>
-                            When a file
-                            named "index.lock"
+                            When a file named "write.lock"
                             is present, a process is currently adding documents to an index, or
                             removing files from that index.  This lock file prevents several
                             processes from attempting to modify an index at the same time.
@@ -1138,24 +1140,24 @@
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
         <font color="#ffffff" face="arial,helvetica,sanserif">
-          <a name="Deleteable File"><strong>Deleteable File</strong></a>
+          <a name="Deletable File"><strong>Deletable File</strong></a>
         </font>
       </td></tr>
       <tr><td>
         <blockquote>
                                     <p>
-                    A file named "deletetable"
+                    A file named "deletable"
                     contains the names of files that are no longer used by the index, but
                     which could not be deleted.  This is only generated on Win32, where a
                     file may not be deleted while it is still open.
                 </p>
                                                 <p>
-                    Deleteable    --&gt; DelableCount,
-                    &lt;DelableName&gt;<sup>DelableCount</sup>
+                    Deletable    --&gt; DeletableCount,
+                    &lt;DelableName&gt;<sup>DeletableCount</sup>
                 </p>
-                                                <p>DelableCount    --&gt; UInt32
+                                                <p>DeletableCount    --&gt; UInt32
                 </p>
-                                                <p>DelableName    --&gt;
+                                                <p>DeletableName    --&gt;
                     String
                 </p>
                             </blockquote>
@@ -1508,12 +1510,12 @@
       <tr><td>
         <blockquote>
                                     <p>There's a norm file for each indexed field with a byte for
-                   each document.  The .n[0-9]* file contains,
+                   each document.  The .f[0-9]* file contains,
                     for each document, a byte that encodes a value that is multiplied
                     into the score for hits on that field:
                 </p>
                                                 <p>Norms
-                    (.n[0-9]*)    --&gt; &lt;Byte&gt;<sup>SegSize</sup>
+                    (.f[0-9]*)    --&gt; &lt;Byte&gt;<sup>SegSize</sup>
                 </p>
                                                 <p>Each
                     byte encodes a floating point value.  Bits 0-2 contain the 3-bit
