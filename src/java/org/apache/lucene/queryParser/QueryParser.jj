@@ -291,6 +291,19 @@ public class QueryParser {
     else
       throw new RuntimeException("Clause cannot be both required and prohibited");
   }
+  
+  /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyzer.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getFieldQuery(String, String)}
+   */
+  protected Query getFieldQuery(String field,
+                                                    Analyzer analyzer,
+                                                    String queryText)  throws ParseException {
+    return getFieldQuery(field, queryText);
+  }
 
   /**
    * @exception ParseException throw in overridden method to disallow
@@ -335,6 +348,20 @@ public class QueryParser {
       return q;
     }
   }
+  
+  /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyzer.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getFieldQuery(String, String, int)}
+   */
+  protected Query getFieldQuery(String field,
+                                                    Analyzer analyzer,
+                                                    String queryText,
+                                                    int slop) throws ParseException {
+    return getFieldQuery(field, queryText, slop);
+  }
 
   /**
    * Base implementation delegates to {@link #getFieldQuery(String,String)}.
@@ -352,6 +379,21 @@ public class QueryParser {
     }
 
     return query;
+  }
+  
+  /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyzer.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getRangeQuery(String, String, String, boolean)}
+   */
+  protected Query getRangeQuery(String field,
+      Analyzer analyzer,
+      String part1,
+      String part2,
+      boolean inclusive) throws ParseException {
+    return getRangeQuery(field, part1, part2, inclusive);
   }
 
   /**
@@ -459,6 +501,13 @@ public class QueryParser {
     }
     Term t = new Term(field, termStr);
     return new PrefixQuery(t);
+  }
+  
+ /**
+   * @deprecated use {@link #getFuzzyQuery(String, String, float)}
+   */
+  protected Query getFuzzyQuery(String field, String termStr) throws ParseException {
+    return getFuzzyQuery(field, termStr, fuzzyMinSim);
   }
   
    /**
@@ -706,9 +755,12 @@ Query Term(String field) : {
        	 if(fms < 0.0f || fms > 1.0f){
        	   throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
        	 }
-         q = getFuzzyQuery(field, termImage, fms);
+       	 if(fms == fuzzyMinSim)
+       	   q = getFuzzyQuery(field, termImage);
+       	 else
+           q = getFuzzyQuery(field, termImage, fms);
        } else {
-         q = getFieldQuery(field, termImage);
+         q = getFieldQuery(field, analyzer, termImage);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
@@ -726,7 +778,7 @@ Query Term(String field) : {
       } else {
         goop2.image = discardEscapeChar(goop2.image);
       }
-          q = getRangeQuery(field, goop1.image, goop2.image, true);
+          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
         }
      | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
          [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> )
@@ -744,7 +796,7 @@ Query Term(String field) : {
         goop2.image = discardEscapeChar(goop2.image);
       }
 
-          q = getRangeQuery(field, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
         }
      | term=<QUOTED>
        [ fuzzySlop=<FUZZY_SLOP> ]
@@ -758,7 +810,7 @@ Query Term(String field) : {
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
+         q = getFieldQuery(field, analyzer, term.image.substring(1, term.image.length()-1), s);
        }
   )
   {

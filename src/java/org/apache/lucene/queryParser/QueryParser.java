@@ -270,6 +270,19 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyzer.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getFieldQuery(String, String)}
+   */
+  protected Query getFieldQuery(String field,
+                                                    Analyzer analyzer,
+                                                    String queryText)  throws ParseException {
+    return getFieldQuery(field, queryText);
+  }
+
+  /**
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field, String queryText)  throws ParseException {
@@ -314,6 +327,20 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyzer.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getFieldQuery(String, String, int)}
+   */
+  protected Query getFieldQuery(String field,
+                                                    Analyzer analyzer,
+                                                    String queryText,
+                                                    int slop) throws ParseException {
+    return getFieldQuery(field, queryText, slop);
+  }
+
+  /**
    * Base implementation delegates to {@link #getFieldQuery(String,String)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
@@ -329,6 +356,21 @@ public class QueryParser implements QueryParserConstants {
     }
 
     return query;
+  }
+
+  /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyzer.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   * @deprecated use {@link #getRangeQuery(String, String, String, boolean)}
+   */
+  protected Query getRangeQuery(String field,
+      Analyzer analyzer,
+      String part1,
+      String part2,
+      boolean inclusive) throws ParseException {
+    return getRangeQuery(field, part1, part2, inclusive);
   }
 
   /**
@@ -438,6 +480,13 @@ public class QueryParser implements QueryParserConstants {
     return new PrefixQuery(t);
   }
 
+ /**
+   * @deprecated use {@link #getFuzzyQuery(String, String, float)}
+   */
+  protected Query getFuzzyQuery(String field, String termStr) throws ParseException {
+    return getFuzzyQuery(field, termStr, fuzzyMinSim);
+  }
+
    /**
    * Factory method for generating a query (similar to
    * ({@link #getWildcardQuery}). Called when parser parses
@@ -473,7 +522,7 @@ public class QueryParser implements QueryParserConstants {
 
   /**
    * Returns a String where those characters that QueryParser
-   * expects to be escaped are escaped, i.e. preceded by a <code>\</code>.
+   * expects to be escaped are escaped by a preceding <code>\</code>.
    */
   public static String escape(String s) {
     StringBuffer sb = new StringBuffer();
@@ -728,9 +777,12 @@ public class QueryParser implements QueryParserConstants {
          if(fms < 0.0f || fms > 1.0f){
            {if (true) throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");}
          }
-         q = getFuzzyQuery(field, termImage, fms);
+         if(fms == fuzzyMinSim)
+           q = getFuzzyQuery(field, termImage);
+         else
+           q = getFuzzyQuery(field, termImage, fms);
        } else {
-         q = getFieldQuery(field, termImage);
+         q = getFieldQuery(field, analyzer, termImage);
        }
       break;
     case RANGEIN_START:
@@ -787,7 +839,7 @@ public class QueryParser implements QueryParserConstants {
       } else {
         goop2.image = discardEscapeChar(goop2.image);
       }
-          q = getRangeQuery(field, goop1.image, goop2.image, true);
+          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
       break;
     case RANGEEX_START:
       jj_consume_token(RANGEEX_START);
@@ -844,7 +896,7 @@ public class QueryParser implements QueryParserConstants {
         goop2.image = discardEscapeChar(goop2.image);
       }
 
-          q = getRangeQuery(field, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
       break;
     case QUOTED:
       term = jj_consume_token(QUOTED);
@@ -873,7 +925,7 @@ public class QueryParser implements QueryParserConstants {
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
+         q = getFieldQuery(field, analyzer, term.image.substring(1, term.image.length()-1), s);
       break;
     default:
       jj_la1[21] = jj_gen;
