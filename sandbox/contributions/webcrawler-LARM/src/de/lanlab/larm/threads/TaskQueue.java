@@ -56,6 +56,9 @@ package de.lanlab.larm.threads;
 
 import de.lanlab.larm.util.Queue;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Iterator;
+
 
 /**
  * Title:        LARM Lanlab Retrieval Machine
@@ -63,28 +66,23 @@ import java.util.Collection;
  * Copyright:    Copyright (c)
  * Company:
  * @author
- * @version 1.0
+ * @version $Id$
  */
-
-import java.util.LinkedList;
-import java.util.Iterator;
-
 public class TaskQueue implements Queue
 {
-    LinkedList queue = new LinkedList();
+    private LinkedList queue = new LinkedList();
 
     /**
      *
      */
     public TaskQueue()
     {
-
     }
 
 
     public void insertMultiple(Collection c)
     {
-      throw new UnsupportedOperationException();
+	throw new UnsupportedOperationException();
     }
 
     /**
@@ -103,7 +101,7 @@ public class TaskQueue implements Queue
      */
     public Object remove()
     {
-       return queue.isEmpty() ? null : (InterruptableTask)queue.removeLast();
+	return queue.isEmpty() ? null : (InterruptableTask)queue.removeLast();
     }
 
     /**
@@ -132,4 +130,3 @@ public class TaskQueue implements Queue
         return queue.size();
     }
 }
-
