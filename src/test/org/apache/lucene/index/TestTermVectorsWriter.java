@@ -17,6 +17,10 @@ package org.apache.lucene.index;
  */
 
 import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -195,6 +199,23 @@ public class TestTermVectorsWriter extends TestCase {
         checkTermVector(reader, 2, testFields[2]);
       }
     } catch (IOException e) {
+      e.printStackTrace();
+      assertTrue(false);
+    }
+  }
+  
+  public void testBadSegment() {
+    try {
+      dir = new RAMDirectory();
+      IndexWriter ir = new IndexWriter(dir, new StandardAnalyzer(), true);
+      
+      Document document = new Document();
+      document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.TOKENIZED,
+          Field.TermVector.YES));    // throws exception, works with Field.TermVector.NO
+      ir.addDocument(document);
+      
+      ir.close();
+    } catch (Exception e) {
       e.printStackTrace();
       assertTrue(false);
     }
