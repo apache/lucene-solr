@@ -209,6 +209,28 @@
                     </tr>
                 </table>
             </subsection>
+            <subsection name="PDFTextStream -- PDF text and metadata extraction">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://snowtide.com">
+                                http://snowtide.com
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="PJ Classic &amp; PJ Professional - PDF Document Conversion">
                 <table>
                     <tr>
