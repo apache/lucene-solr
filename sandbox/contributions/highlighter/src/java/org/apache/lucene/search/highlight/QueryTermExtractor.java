@@ -39,7 +39,6 @@ public final class QueryTermExtractor
 	 *
 	 * @param query      Query to extract term texts from
 	 * @return an array of the terms used in a query, plus their weights.
-	 * @throws IOException
 	 */
 	public static final WeightedTerm[] getTerms(Query query) 
 	{
@@ -52,9 +51,8 @@ public final class QueryTermExtractor
 	 *
 	 * @param query      Query to extract term texts from
 	 * @param prohibited <code>true</code> to extract "prohibited" terms, too
-     * @return an array of the terms used in a query, plus their weights.
-     * @throws IOException
-     */
+   * @return an array of the terms used in a query, plus their weights.
+   */
 	public static final WeightedTerm[] getTerms(Query query, boolean prohibited) 
 	{
 		HashSet terms=new HashSet();
