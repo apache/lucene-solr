@@ -26,6 +26,10 @@ $Id$
  6. Added the ability to retrieve HTML documents' META tag values to HTMLParser.jj.
     (Mark Harwood via otis)
 
+ 7. Modified QueryParser to make it possible to programmatically specify the
+    default Boolean operator (OR or AND).
+    (Péter Halácsy via otis)
+
 1.2 RC6
 
  1. Changed QueryParser.jj to have "?" be a special character which
