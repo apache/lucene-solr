@@ -462,30 +462,29 @@ public class IndexWriter {
     for (int i = minSegment; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
       if (infoStream != null)
-	infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
+        infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
       IndexReader reader = new SegmentReader(si);
       merger.add(reader);
-      if ((reader.directory()==this.directory) || // if we own the directory
-          (reader.directory()==this.ramDirectory))
-	segmentsToDelete.addElement(reader);	  // queue segment for deletion
+      if ((reader.directory() == this.directory) || // if we own the directory
+          (reader.directory() == this.ramDirectory))
+        segmentsToDelete.addElement(reader);   // queue segment for deletion
     }
 
     int mergedDocCount = merger.merge();
 
     if (infoStream != null) {
-      infoStream.println();
       infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
     }
 
-    segmentInfos.setSize(minSegment);		  // pop old infos & add new
+    segmentInfos.setSize(minSegment);          // pop old infos & add new
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
                                             directory));
 
-    synchronized (directory) {			  // in- & inter-process sync
+    synchronized (directory) {                 // in- & inter-process sync
       new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
-            segmentInfos.write(directory);	  // commit before deleting
-            deleteSegments(segmentsToDelete);	  // delete now-unused segments
+            segmentInfos.write(directory);     // commit before deleting
+            deleteSegments(segmentsToDelete);  // delete now-unused segments
             return null;
           }
         }.run();
