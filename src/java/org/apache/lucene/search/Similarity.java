@@ -137,7 +137,7 @@ public abstract class Similarity {
    * stored in an index and multipled into scores for hits on each field by the
    * search code.
    *
-   * <p>Matches in longer fields are less precise, so implemenations of this
+   * <p>Matches in longer fields are less precise, so implementations of this
    * method usually return smaller values when <code>numTokens</code> is large,
    * and larger values when <code>numTokens</code> is small.
    *
@@ -257,7 +257,7 @@ public abstract class Similarity {
    * form the initial score for a document.
    *
    * <p>Terms and phrases repeated in a document indicate the topic of the
-   * document, so implemenations of this method usually return larger values
+   * document, so implementations of this method usually return larger values
    * when <code>freq</code> is large, and smaller values when <code>freq</code>
    * is small.
    *
@@ -309,7 +309,7 @@ public abstract class Similarity {
    * then summed to form the initial score for a document.
    *
    * <p>Terms that occur in fewer documents are better indicators of topic, so
-   * implemenations of this method usually return larger values for rare terms,
+   * implementations of this method usually return larger values for rare terms,
    * and smaller values for common terms.
    *
    * @param docFreq the number of documents which contain the term
@@ -322,7 +322,7 @@ public abstract class Similarity {
    * document contains.  This value is multiplied into scores.
    *
    * <p>The presence of a large portion of the query terms indicates a better
-   * match with the query, so implemenations of this method usually return
+   * match with the query, so implementations of this method usually return
    * larger values when the ratio between these parameters is large and smaller
    * values when the ratio between them is small.
    *
