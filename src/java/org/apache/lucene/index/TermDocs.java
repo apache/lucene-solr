@@ -69,15 +69,15 @@ import org.apache.lucene.document.Document;
 public interface TermDocs {
   /** Returns the current document number.  <p> This is invalid until {@link
       #next()} is called for the first time.*/
-  public int doc();
+  int doc();
 
   /** Returns the frequency of the term within the current document.  <p> This
     is invalid until {@link #next()} is called for the first time.*/
-  public int freq();
+  int freq();
 
   /** Moves to the next pair in the enumeration.  <p> Returns true iff there is
     such a next pair in the enumeration. */
-  public boolean next() throws IOException;
+  boolean next() throws IOException;
 
   /** Attempts to read multiple entries from the enumeration, up to length of
    * <i>docs</i>.  Document numbers are stored in <i>docs</i>, and term
@@ -86,7 +86,7 @@ public interface TermDocs {
    *
    * <p>Returns the number of entries read.  Zero is only returned when the
    * stream has been exhausted.  */
-  public int read(int[] docs, int[] freqs) throws IOException;
+  int read(int[] docs, int[] freqs) throws IOException;
 
   /** Skips entries to the first beyond the current whose document number is
    * greater than or equal to <i>target</i>. <p>Returns true iff there is such
@@ -101,10 +101,10 @@ public interface TermDocs {
    * </pre>
    * Some implementations are considerably more efficient than that.
    */
-  public boolean skipTo(int target) throws IOException;
+  boolean skipTo(int target) throws IOException;
 
   /** Frees associated resources. */
-  public void close() throws IOException;
+  void close() throws IOException;
 }
 
 

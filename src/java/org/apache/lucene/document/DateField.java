@@ -60,7 +60,7 @@ import java.util.Date;
    * strings are structured so that lexicographic sorting orders by date.  This
    * makes them suitable for use as field values and search terms.  */
 public class DateField {
-  private DateField() {};
+  private DateField() {}
 
   // make date strings long enough to last a millenium
   private static int DATE_LEN = Long.toString(1000L*365*24*60*60*1000,

@@ -71,5 +71,5 @@ public interface TermPositions extends TermDocs {
     without calling {@link #next()}<p> This is
     invalid until {@link #next()} is called for
     the first time.*/
-  public int nextPosition() throws IOException;
+  int nextPosition() throws IOException;
 }  

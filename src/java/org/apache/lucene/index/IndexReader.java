@@ -75,7 +75,7 @@ import org.apache.lucene.document.Document;
   rely on a given document having the same number between sessions. */
 
 abstract public class IndexReader {
-  protected IndexReader() {};
+  protected IndexReader() {}
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
   path. */
