@@ -2,17 +2,33 @@
 
 <project name="common">
 
+  <!-- default values, intended to be overridden-->
+  <property name="version" value="dev"/>
+  <property name="Name" value="${ant.project.name}"/>
+
+  <!-- not intended to be overridden-->
   <property name="src.dir" location="src/java"/>
   <property name="build.dir" location="build"/>
   <property name="build.classes.dir" location="${build.dir}/classes"/>
+  <property name="build.javadoc" value="${build.dir}/docs/api"/>
+  <property name="build.encoding" value="ISO-8859-1"/>
+
+  <property name="release.host" value="www.apache.org"/>
+  <property name="release.path" value="/www/cvs.apache.org/dist/jakarta/lucene/sandbox/${ant.project.name}"/>
+
+  <property name="web.host" value="www.apache.org"/>
+  <property name="web.path" value="/www/jakarta.apache.org/lucene/docs/lucene-sandbox/${ant.project.name}"/>
+
+  <property name="javadoc.link.java" value="http://java.sun.com/j2se/1.4.1/docs/api/"/>
+  <property name="javadoc.link.lucene" value="http://jakarta.apache.org/lucene/docs/api/"/>
 
   <property name="test.src.dir" location="src/test"/>
   <property name="test.output.dir" location="${build.dir}/test"/>
   <property name="test.classes.dir" location="${test.output.dir}/classes"/>
 
   <property name="dist.dir" location="dist"/>
-
-  <property name="dist.name" value="${ant.project.name}.jar"/>
+  <property name="dist.name" value="${ant.project.name}-${version}"/>
+  <property name="package.dir" location="dist/${dist.name}"/>
 
   <property name="junit.jar" location="${ant.home}/lib/junit.jar"/>
   <dirname file="${ant.file.common}" property="common.dir"/>
@@ -20,6 +36,17 @@
 
   <property name="build.debug" value="true"/>
   <property name="junit.fork" value="true"/>
+
+  <property name="jakarta.site2.home" location="../../../jakarta-site2"/>
+  <property name="project.name" value="site"/>
+  <property name="docs.src" location="xdocs"/>
+  <property name="docs.dest" location="docs"/>
+
+  <path id="anakia.classpath">
+    <fileset dir="${jakarta.site2.home}/lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
 
   <!-- ========================================================== -->
   <!-- Datatype declarations                                      -->
@@ -57,13 +84,14 @@
     <delete dir="${build.dir}"/>
     <delete dir="${build.classes.dir}"/>
     <delete dir="${dist.dir}"/>
+    <delete dir="${package.dir}"/>
 
     <delete dir="${test.output.dir}"/>
     <delete dir="${test.classes.dir}"/>
   </target>
 
   <target name="dist" depends="compile" description="Create JAR">
-    <jar jarfile="${dist.dir}/${dist.name}"
+    <jar jarfile="${dist.dir}/${dist.name}.jar"
          basedir="${build.classes.dir}"
     />
   </target>
@@ -119,6 +147,89 @@
 
   <target name="default" depends="test,dist"/>
 
-  <!-- TODO: Add javadoc and anakia document building here -->
+  <!-- ================================================================== -->
+  <!-- Documentation                                                      -->
+  <!-- ================================================================== -->
+  <target name="javadoc" depends="compile">
+    <mkdir dir="${build.javadoc}"/>
+    <javadoc
+      sourcepath="${src.dir}"
+      overview="${src.dir}/overview.html"
+      packagenames="*"
+      destdir="${build.javadoc}"
+      author="true"
+      version="true"
+      use="true"
+      windowtitle="${Name} ${version} API"
+      doctitle="${Name} ${version} API"
+      >
+      <link href="${javadoc.link.java}"/>
+      <link href="${javadoc.link.lucene}"/>
+      <classpath refid="compile.classpath"/>
+    </javadoc>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- D I S T R I B U T I O N                                            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package" depends="dist, javadoc">
+    <mkdir dir="${package.dir}"/>
+    <mkdir dir="${package.dir}/docs"/>
+    <mkdir dir="${package.dir}/docs/api"/>
+    <copy todir="${package.dir}/docs/api">
+      <fileset dir="${build.javadoc}"/>
+    </copy>
+
+    <copy todir="${package.dir}/docs">
+      <fileset dir="${docs.dest}/"/>
+    </copy>
+
+    <copy todir="${package.dir}">
+      <fileset dir=".">
+        <include name="*.txt"/>
+      </fileset>
+    </copy>
+
+    <copy todir="${package.dir}/src">
+      <fileset dir="src"/>
+    </copy>
+    <copy todir="${package.dir}/" file="build.xml"/>
+    <copy todir="${dist.dir}/" file="${common.dir}/common.xml"/>
+
+    <copy file="${dist.dir}/${dist.name}.jar" todir="${package.dir}"/>
+
+    <tar tarfile="${dist.dir}/${dist.name}.tar.gz" basedir="${dist.dir}/"
+         compression="gzip" includes="${dist.name}/**,common.xml"/>
+
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Copy release to server                                             -->
+  <!-- ================================================================== -->
+  <target name="release" depends="package">
+    <exec executable="ssh">
+      <arg value="${release.host}"/>
+      <arg value="mkdir"/>
+      <arg value="${release.path}/${dist.name}"/>
+    </exec>
+    <exec executable="scp">
+      <arg value="${dist.dir}/${dist.name}.jar"/>
+      <arg value="${dist.dir}/${dist.name}.tar.gz"/>
+      <arg value="${release.host}:${release.path}/${dist.name}"/>
+    </exec>
+    <exec executable="ssh">
+      <arg value="${web.host}"/>
+      <arg value="rm"/>
+      <arg value="-rf"/>
+      <arg value="${web.path}/api"/>
+    </exec>
+    <exec executable="scp">
+      <arg value="-r"/>
+      <arg value="${build.javadoc}"/>
+      <arg value="${web.host}:${web.path}/api"/>
+    </exec>
+  </target>
 
 </project>
