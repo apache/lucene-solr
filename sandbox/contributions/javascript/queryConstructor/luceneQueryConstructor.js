@@ -1,15 +1,15 @@
 // Lucene Search Query Constructor
-// Author:  Kelvin Tan  (kelvin@relevanz.com)
+// Author:  Kelvin Tan  (kelvin at relevanz.com)
 
 // Change this according to what you use to name the field modifiers in your form.
 // e.g. with the field "name", the modifier will be called "nameModifier"
 var modifierSuffix = 'Modifier';
 
 // Do you wish the query to be displayed as an alert box?
-var debug = true;
+var debug = false;
 
 // Do you wish the function to submit the form upon query construction?
-var submitOnConstruction = true;
+var submitOnConstruction = false;
 
 // prefix modifier for boolean AND queries
 var AND_MODIFIER = '+';
@@ -42,7 +42,31 @@ function doMakeQuery( query )
         var subElement = formElements[j];
         if(subElement.name == (elementName + modifierSuffix))
         {
-          var subElementValue = subElement.options[subElement.selectedIndex].value;
+          var subElementValue;
+          
+          // support drop-down select lists, radio buttons and text fields
+          if(subElement.type == "select")
+          {
+            subElementValue = subElement.options[subElement.selectedIndex].value;
+          }
+          else if(subElement.type == "radio")
+          {
+            // radio button elements often have the same element name, 
+            // so ensure we have the right one
+            if(subElement.checked)
+            {
+              subElementValue = subElement.value;              
+            }
+            else
+            {
+              continue;
+            }
+          }
+          else
+          {
+            subElementValue = subElement.value;
+          }
+          
           if(subElementValue == 'And')
           {
             addFieldWithModifier(query, AND_MODIFIER, elementName, elementValue);
