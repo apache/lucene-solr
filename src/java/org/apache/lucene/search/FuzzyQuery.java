@@ -46,8 +46,8 @@ public final class FuzzyQuery extends MultiTermQuery {
    *  as the query term is considered similar to the query term if the edit distance
    *  between both terms is less than <code>length(term)*0.5</code>
    * @param prefixLength length of common (non-fuzzy) prefix
-   * @throws IllegalArgumentException if minimumSimilarity is &gt; 1 or &lt; 0
-   * or if prefixLength &lt; 0 or &gt; <code>term.text().length()</code>.
+   * @throws IllegalArgumentException if minimumSimilarity is &gt;= 1 or &lt; 0
+   * or if prefixLength &lt; 0
    */
   public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) throws IllegalArgumentException {
     super(term);
@@ -56,10 +56,10 @@ public final class FuzzyQuery extends MultiTermQuery {
       throw new IllegalArgumentException("minimumSimilarity >= 1");
     else if (minimumSimilarity < 0.0f)
       throw new IllegalArgumentException("minimumSimilarity < 0");
+    if (prefixLength < 0)
+      throw new IllegalArgumentException("prefixLength < 0");
     
     this.minimumSimilarity = minimumSimilarity;
-    if(prefixLength < 0)
-        throw new IllegalArgumentException("prefixLength < 0");
     this.prefixLength = prefixLength;
   }
   
