@@ -34,7 +34,7 @@ $Id$
  8. Made many search methods and classes non-final, per requests.
     This includes IndexWriter and IndexSearcher, among others.
     (cutting)
-  
+
  9. Added class RemoteSearchable, providing support for remote
     searching via RMI.  The test class RemoteSearchableTest.java
     provides an example of how this can be used.  (cutting)
@@ -42,6 +42,11 @@ $Id$
  10. Added PhrasePrefixQuery (and supporting MultipleTermPositions).  The
      test class TestPhrasePrefixQuery provides the usage example.
      (Anders Nielsen via otis)
+
+ 11. Changed the stemming algorithm to ignore case while stripping. The
+     algorithm is faster and produces more equal stems from nouns and verbs
+     derived from the same word.
+     (gschwarz)
 
 1.2 RC6
 
