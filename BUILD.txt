@@ -3,7 +3,8 @@ Lucene Build Instructions
 $Id$
 
 Basic steps:
-  0) Install JDK 1.3, Ant 1.4, and the Ant 1.4 optional.jar.
+  0) Install JDK 1.2 (or greater), Ant 1.4 (or greater), and the Ant
+     optional.jar.
   1) Download Lucene from Apache and unpack it.
   2) Connect to the top-level of your Lucene installation.
   3) Run ant.
@@ -54,10 +55,25 @@ uncompress it into a directory of your choice.
 
 Step 2) Connect to the top-level of your Lucene installation
 
-Lucene's top-level directory contains the build.properties and
-build.xml files.  You don't need to change any of the settings in
-these files, but you do need to run ant from this location so it knows
-where to find them.
+Lucene's top-level directory contains the default.properties and
+build.xml files. By default, you do not need to change any of the
+settings in these files, but you do need to run ant from this location
+so it knows where to find them.
+
+If you would like to change the settings in the default.properties there
+is no need to edit the default.properties file, you can override the
+property settings by creating one or more of the following files and
+placing your own property settings in there:
+
+    ~/lucene.build.properties
+    ~/build.properties
+    jakarta-lucene/build.properties
+
+The first property which is found in the order with which the files are
+loaded becomes the property setting which is used by the Ant build
+system.
+
+NOTE: the ~ character represents your user account home directory.
 
 Step 3) Run ant.
 
@@ -67,14 +83,15 @@ and command prompt should run ant.  Ant will by default look for the
 "build.xml" file in your current directory, and compile Lucene.
 
 For further information on Lucene, go to:
-  http://jakarta.apache.org/lucene
+  http://jakarta.apache.org/lucene/
 
-Please join the Lucene-User mailing list by sending a message to:
-  lucene-user-subscribe@jakarta.apache.org
-
+Please join the Lucene-User mailing list by visiting this site:
+  http://jakarta.apache.org/site/mail.html
+  
 Please post suggestions, questions, corrections or additions to this
-document to the lucene-user mailing list.
+document to the Lucene-User mailing list.
 
 This file was originally written by Steven J. Owens <puff@darksleep.com>.
+This file was modified by Jon S. Stevens <jon@latchkey.com>.
 
-Copyright (c) 2001 The Apache Software Foundation.  All rights reserved.
+Copyright (c) 2001-2002 The Apache Software Foundation.  All rights reserved.

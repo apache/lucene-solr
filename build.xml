@@ -2,69 +2,12 @@
 
 <project name="Lucene" default="jar" basedir=".">
 
-  <property file="${user.home}/build.properties"/>
-  <property file="build.properties"/>
-
-  <property name="name" value="lucene"/>
-  <property name="Name" value="Lucene"/>
-  <property name="version" value="1.2-rc5-dev"/>
-  <property name="year" value="2000-2002"/>
-  <property name="final.name" value="${name}-${version}"/>
-  <property name="debug" value="off"/>
-
-  <property name="project.name" value="site"/>
-  <property name="docs.src" value="./xdocs"/>
-  <property name="docs.dest" value="./docs"/>
-
-  <property name="src.dir" value="./src/java"/>
-  <property name="demo.src" value="./src/demo"/>
-  <property name="demo.jsp" value="./src/jsp"/>
-  <property name="test.src" value="./src/test"/>
-  <property name="anttask.src" value="./src/ant"/>
-  <property name="docs.dir" value="./docs"/>
-  <property name="lib.dir" value="./lib"/>
-  <property name="dist.dir" value="${final.name}"/>
-  <property name="dist-src.dir" value="${final.name}-src"/>
-
-  <!-- javadoc packages -->
-  <property name="packages" value="org.apache.lucene.*"/>
-
-  <property name="javadoc.link" value="http://java.sun.com/products/jdk/1.3/docs/api/"/>
-
-  <property name="build.compiler.pedantic" value="false"/>
-
-  <property name="build.dir" value="./bin"/>
-  <property name="build.classes" value="${build.dir}/classes"/>
-  <property name="build.lib" value="${build.dir}/lib"/>
-  <property name="build.javadocs" value="${build.dir}/docs/api"/>
-  <property name="build.src" value="${build.dir}/src"/>
-
-  <property name="build.demo" value="${build.dir}/demo"/>
-  <property name="build.demo.src" value="${build.demo}/src"/>
-  <property name="build.demo.classes" value="${build.demo}/classes"/>
-  <property name="build.demo.name" value="${name}-demos-${version}"/>
-  <property name="build.demo.war.name" value="luceneweb"/>
-
-  <property name="build.anttask" value="${build.dir}/anttask"/>
-  <property name="build.anttask.classes" value="${build.anttask}/classes"/>
-
-  <property name="build.docweb" value="${build.dir}/docweb"/>
-  <property name="build.docweb.war.name" value="lucenedocweb"/>
-
-  <property name="build.test" value="${build.dir}/test"/>
-  <property name="build.test.src" value="${build.test}/src"/>
-  <property name="build.test.classes" value="${build.test}/classes"/>
-
-  <property name="junit.src" value="${basedir}/src/test"/>
-  <property name="junit.classes" value="${build.dir}/unit-classes"/>
-  <property name="junit.reports" value="${build.dir}/unit-reports"/>
-
-  <property name="javacc.home" value="."/>
-  <property name="javacc.zip.dir" value="${javacc.home}/lib"/>
-  <property name="javacc.zip" value="${javacc.zip.dir}/JavaCC.zip"/>
-
-  <property name="jakarta.site2.home" value="../jakarta-site2"/>
-
+    <!-- Give user a chance to override without editing this file
+        (and without typing -D each time it compiles it -->
+  <property file="${user.home}/lucene.build.properties" /> 
+  <property file="${user.home}/build.properties" />
+  <property file="${basedir}/build.properties" />
+  <property file="${basedir}/default.properties" />
 
   <!-- Build classpath -->
   <path id="classpath">

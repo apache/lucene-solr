@@ -4,8 +4,11 @@ $Id$
 
 1.2 RC5
 
- 1. ...
-
+ 1. Renamed build.properties to default.properties and updated
+    the BUILD.txt document to describe how to override the
+    default.property settings without having to edit the file. This
+    brings the build process closer to Scarab's build process.
+    (jon)
 
 1.2 RC4
 
