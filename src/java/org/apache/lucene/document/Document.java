@@ -55,6 +55,9 @@ package org.apache.lucene.document;
  */
 
 import java.util.Enumeration;
+import java.util.List;
+import java.util.ArrayList;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Hits;
 
@@ -135,6 +138,55 @@ public final class Document implements java.io.Serializable {
     return new DocumentFieldEnumeration(this);
   }
 
+  /**
+   * Returns an array of {@link Field}s with the given name.
+   *
+   * @param name the name of the field
+   * @return a <code>Field[]</code> array
+   */
+   public final Field[] getFields(String name)
+   {
+     List tempFieldList = new ArrayList();
+     for (DocumentFieldList list = fieldList; list != null; list = list.next)
+     {
+       if (list.field.name().equals(name))
+       {
+         tempFieldList.add(list.field);
+       }
+     }
+     int fieldCount = tempFieldList.size();
+     if (fieldCount == 0)
+       return null;
+     else
+     {
+       Field[] fields = new Field[fieldCount];
+       for (int i = 0; i < fieldCount; i++)
+       {
+         fields[i] = (Field) tempFieldList.get(i);
+       }
+       return fields;
+     }
+   }
+
+  /**
+   * Returns an array of values of the field specified as the method parameter.
+   *
+   * @param name the name of the field
+   * @return a <code>String[]</code> of field values
+   */
+  public final String[] getValues(String name)
+  {
+    Field[] namedFields = getFields(name);
+    if (namedFields == null)
+      return null;
+    String[] values = new String[namedFields.length];
+    for (int i = 0; i < namedFields.length; i++)
+    {
+      values[i] = namedFields[i].stringValue();
+    }
+    return values;
+  }
+
   /** Prints the fields of a document for human consumption. */
   public final String toString() {
     StringBuffer buffer = new StringBuffer();
@@ -147,7 +199,6 @@ public final class Document implements java.io.Serializable {
     buffer.append(">");
     return buffer.toString();
   }
-
 }
 
 final class DocumentFieldList implements java.io.Serializable {
