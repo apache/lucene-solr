@@ -174,7 +174,7 @@ public class ChainedFilter extends Filter
          */
         if (logic == AND)
         {
-            result = chain[i].bits(reader);
+            result = chain[i].bits(reader).clone();
             ++i;
         }
         else
@@ -209,7 +209,7 @@ public class ChainedFilter extends Filter
          */
         if (logic[0] == AND)
         {
-            result = chain[i].bits(reader);
+            result = chain[i].bits(reader).clone();
             ++i;
         }
         else
