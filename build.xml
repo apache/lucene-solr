@@ -120,17 +120,18 @@
   <!-- ================================================================== -->
   <target name="demo" depends="compile" if="javacc.present">
     <mkdir dir="${build.demo}"/>
-    <copy todir="${build.demo}">
-      <fileset dir="${src.dir}">
-        <include name="demo/**/*.java"/>
-        <include name="demo/**/*.jj"/>
+    
+    <copy todir="${build.demo}/src">
+      <fileset dir="${demo.src}">
+        <include name="**/*.java"/>
+        <include name="**/*.jj"/>
       </fileset>
     </copy>
     
     <javacc 
-      target="${demo.dir}/HTMLParser/HTMLParser.jj" 
+      target="${build.src.demo}/org/apache/lucene/HTMLParser/HTMLParser.jj" 
       javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.demo}/demo/HTMLParser"
+      outputdirectory="${build.src.demo}/org/apache/lucene/HTMLParser"
     />
         
     <javac 
