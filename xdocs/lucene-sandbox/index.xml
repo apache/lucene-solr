@@ -65,12 +65,8 @@ them into the HitsIterator class, which can be used for paging and sorting throu
 
 </p>
 <p>
-<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/searchBean/">The
+<a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/searchbean/">The
 CVS repository for the SearchBean contribution.</a>
-</p>
-<p>
-<a href="http://snowball.tartarus.org/">Background information on Snowball</a>,
-which is a language for stemmers developed by Martin Porter.
 </p>
 
 </subsection>
