@@ -164,8 +164,8 @@ InterruptedException {
     if (pipeIn == null) {
       pipeInStream = new MyPipedInputStream();
       pipeOutStream = new PipedOutputStream(pipeInStream);
-      pipeIn = new InputStreamReader(pipeInStream);
-      pipeOut = new OutputStreamWriter(pipeOutStream);
+      pipeIn = new InputStreamReader(pipeInStream, "UTF-16BE");
+      pipeOut = new OutputStreamWriter(pipeOutStream, "UTF-16BE");
 
       Thread thread = new ParserThread(this);
       thread.start();				  // start parsing
