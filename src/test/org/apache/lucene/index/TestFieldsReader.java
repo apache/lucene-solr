@@ -23,7 +23,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.search.Similarity;
 
-import java.util.Map;
 import java.io.IOException;
 
 public class TestFieldsReader extends TestCase {

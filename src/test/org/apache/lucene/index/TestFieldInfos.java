@@ -3,13 +3,10 @@ package org.apache.lucene.index;
 
 import junit.framework.TestCase;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.OutputStream;
 
 import java.io.IOException;
-import java.util.Map;
 
 //import org.cnlp.utils.properties.ResourceBundleHelper;
 
