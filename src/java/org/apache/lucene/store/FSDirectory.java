@@ -156,12 +156,23 @@ public final class FSDirectory extends Directory {
 
   private synchronized void create() throws IOException {
     if (!directory.exists())
-    if (!directory.mkdir())
-      throw new IOException("Cannot create directory: " + directory);
+      if (!directory.mkdir())
+        throw new IOException("Cannot create directory: " + directory);
 
     String[] files = directory.list();            // clear old files
     for (int i = 0; i < files.length; i++) {
       File file = new File(directory, files[i]);
+      if (!file.delete())
+        throw new IOException("couldn't delete " + files[i]);
+    }
+    
+    String lockPrefix = getLockPrefix().toString(); // clear old locks
+    File tmpdir = new File(System.getProperty("java.io.tmpdir"));
+    files = tmpdir.list();
+    for (int i = 0; i < files.length; i++) {      
+      if (!files[i].startsWith(lockPrefix))
+        continue;
+      File file = new File(tmpdir, files[i]);
       if (!file.delete())
         throw new IOException("couldn't delete " + files[i]);
     }
@@ -298,27 +309,9 @@ public final class FSDirectory extends Directory {
    * @return an instance of <code>Lock</code> holding the lock
    */
   public final Lock makeLock(String name) {
-    // the fully-qualified file name which uniquely identifies this lock 
-    String fullName;
-    try {
-      fullName = new File(directory, name).getCanonicalPath();
-    } catch (IOException e) {
-      throw new RuntimeException(e.toString());
-    }
-
-    // hash full name to create the tmp file name
-    byte digest[];
-    synchronized (DIGESTER) {
-      digest = DIGESTER.digest(fullName.getBytes());
-    }
-    StringBuffer buf = new StringBuffer();
-    buf.append("lucene-");
-    for (int i = 0; i < digest.length; i++) {
-      int b = digest[i];
-      buf.append(HEX_DIGITS[(b >> 4) & 0xf]);
-      buf.append(HEX_DIGITS[b & 0xf]);
-    }
-    buf.append(".lock");
+    StringBuffer buf = getLockPrefix();
+    buf.append("-");
+    buf.append(name);
 
     // make the lock file in tmp, where anyone can create files.
     final File lockFile = new File(System.getProperty("java.io.tmpdir"),
@@ -345,6 +338,29 @@ public final class FSDirectory extends Directory {
         return "Lock@" + lockFile;
       }
     };
+  }
+
+  private StringBuffer getLockPrefix() {
+    String dirName;                               // name to be hashed
+    try {
+      dirName = directory.getCanonicalPath();
+    } catch (IOException e) {
+      throw new RuntimeException(e.toString());
+    }
+    
+    byte digest[];
+    synchronized (DIGESTER) {
+      digest = DIGESTER.digest(dirName.getBytes());
+    }
+    StringBuffer buf = new StringBuffer();
+    buf.append("lucene-");
+    for (int i = 0; i < digest.length; i++) {
+      int b = digest[i];
+      buf.append(HEX_DIGITS[(b >> 4) & 0xf]);
+      buf.append(HEX_DIGITS[b & 0xf]);
+    }
+
+    return buf;
   }
 
   /** Closes the store to future operations. */
