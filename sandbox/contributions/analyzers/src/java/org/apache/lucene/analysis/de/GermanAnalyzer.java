@@ -42,10 +42,11 @@ import java.util.Set;
  * @version $Id$
  */
 public class GermanAnalyzer extends Analyzer {
+  
   /**
    * List of typical german stopwords.
    */
-  private String[] GERMAN_STOP_WORDS = {
+  public final static String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
     "der", "die", "das", "dass", "daß",
     "du", "er", "sie", "es",
@@ -71,7 +72,8 @@ public class GermanAnalyzer extends Analyzer {
   private Set exclusionSet = new HashSet();
 
   /**
-   * Builds an analyzer.
+   * Builds an analyzer with the default stop words
+   * (<code>GERMAN_STOP_WORDS</code>).
    */
   public GermanAnalyzer() {
     stopSet = StopFilter.makeStopSet(GERMAN_STOP_WORDS);
