@@ -166,6 +166,8 @@ public class TestPrecedenceQueryParser extends TestCase {
   }
 
   public void testSimple() throws Exception {
+    assertQueryEquals("", null, "");
+
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", null, "türm term term");
     assertQueryEquals("ümlaut", null, "ümlaut");
@@ -183,9 +185,6 @@ public class TestPrecedenceQueryParser extends TestCase {
 
     assertQueryEquals("a OR b", null, "a b");
     assertQueryEquals("a || b", null, "a b");
-    assertQueryEquals("a OR !b", null, "a -b");
-    assertQueryEquals("a OR ! b", null, "a -b");
-    assertQueryEquals("a OR -b", null, "a -b");
 
     assertQueryEquals("+term -term term", null, "+term -term term");
     assertQueryEquals("foo:term AND field:anotherTerm", null,
@@ -221,6 +220,10 @@ public class TestPrecedenceQueryParser extends TestCase {
     assertEquals(PrecedenceQueryParser.AND_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
     assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
+
+    assertQueryEquals("a OR !b", null, "a (-b)");
+    assertQueryEquals("a OR ! b", null, "a (-b)");
+    assertQueryEquals("a OR -b", null, "a (-b)");    
   }
 
   public void testPunct() throws Exception {
