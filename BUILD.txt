@@ -3,7 +3,7 @@ Lucene Build Instructions
 $Id$
 
 Basic steps:
-  0) Install JDK 1.2 (or greater), Ant 1.5 (or greater), and the Ant
+  0) Install JDK 1.2 (or greater), Ant 1.6 (or greater), and the Ant
      optional.jar
   1) Download Lucene from Apache and unpack it
   2) Connect to the top-level of your Lucene installation
@@ -11,7 +11,7 @@ Basic steps:
   4) Run ant
 
 Step 0) Set up your development environment (JDK 1.2 or greater,
-Ant 1.5 or greater)
+Ant 1.6 or greater)
 
 We'll assume that you know how to get and set up the JDK - if you
 don't, then we suggest starting at http://java.sun.com and learning
@@ -21,12 +21,10 @@ Lucene runs with JDK 1.2 and later.  However, if you're going to work
 with the development version of Lucene, we recommend you stick with
 the most current version of Java (at the time of this writing, JDK
 1.4).  Also, note that if you're working with the Lucene source,
-you'll need to use Ant (see below) and Ant requires at least JDK 1.1
-(and in the future will move to requiring JDK 1.2, according to
-the Ant install docs).
+you'll need to use Ant (see below) and Ant requires at least JDK 1.2.
 
 Like most of the Jakarta projects, Lucene uses Apache Ant for build
-control.  Specifically, you MUST use Ant version 1.5 or greater.
+control.  Specifically, you MUST use Ant version 1.6 or greater.
 
 Ant is "kind of like make without make's wrinkles".  Ant is
 implemented in java and uses XML-based configuration files.  You can
@@ -112,4 +110,4 @@ document to the lucene-user mailing list.
 This file was originally written by Steven J. Owens <puff@darksleep.com>.
 This file was modified by Jon S. Stevens <jon@latchkey.com>.
 
-Copyright (c) 2001-2003 The Apache Software Foundation.  All rights reserved.
+Copyright (c) 2001-2004 The Apache Software Foundation.  All rights reserved.
