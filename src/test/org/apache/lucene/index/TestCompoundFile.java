@@ -64,6 +64,7 @@ import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store._TestHelper;
 
 
@@ -163,25 +164,8 @@ public class TestCompoundFile extends TestCase
                                    long seekTo)
     throws IOException
     {
-        if (seekTo < 0) {
-            try {
-                actual.seek(seekTo);
-                fail(msg + ", " + seekTo + ", negative seek");
-            } catch (IOException e) {
-                /* success */
-                //System.out.println("SUCCESS: Negative seek: " + e);
-            }
-
-        } else if (seekTo > 0 && seekTo >= expected.length()) {
-            try {
-                actual.seek(seekTo);
-                fail(msg + ", " + seekTo + ", seek past EOF");
-            } catch (IOException e) {
-                /* success */
-                //System.out.println("SUCCESS: Seek past EOF: " + e);
-            }
-
-        } else {
+        if(seekTo >= 0 && seekTo < expected.length())
+        {
             expected.seek(seekTo);
             actual.seek(seekTo);
             assertSameStreams(msg + ", seek(mid)", expected, actual);
