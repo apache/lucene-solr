@@ -76,7 +76,7 @@ final class DocumentWriter {
   private Similarity similarity;
   private FieldInfos fieldInfos;
   private int maxFieldLength;
-  
+
   DocumentWriter(Directory directory, Analyzer analyzer,
                  Similarity similarity, int maxFieldLength) {
     this.directory = directory;
@@ -86,7 +86,7 @@ final class DocumentWriter {
   }
 
   final void addDocument(String segment, Document doc)
-       throws IOException {
+    throws IOException {
     // write field names
     fieldInfos = new FieldInfos();
     fieldInfos.add(doc);
@@ -142,42 +142,42 @@ final class DocumentWriter {
 
   // Tokenizes the fields of a document into Postings.
   private final void invertDocument(Document doc)
-       throws IOException {
-    Enumeration fields  = doc.fields();
+    throws IOException {
+    Enumeration fields = doc.fields();
     while (fields.hasMoreElements()) {
-      Field field = (Field)fields.nextElement();
+      Field field = (Field) fields.nextElement();
       String fieldName = field.name();
       int fieldNumber = fieldInfos.fieldNumber(fieldName);
 
       int position = fieldLengths[fieldNumber];	  // position in field
 
       if (field.isIndexed()) {
-	if (!field.isTokenized()) {		  // un-tokenized field
-	  addPosition(fieldName, field.stringValue(), position++);
-	} else {
-	  Reader reader;			  // find or make Reader
-	  if (field.readerValue() != null)
-	    reader = field.readerValue();
-	  else if (field.stringValue() != null)
-	    reader = new StringReader(field.stringValue());
-	  else
-	    throw new IllegalArgumentException
-	      ("field must have either String or Reader value");
+        if (!field.isTokenized()) {		  // un-tokenized field
+          addPosition(fieldName, field.stringValue(), position++);
+        } else {
+          Reader reader;			  // find or make Reader
+          if (field.readerValue() != null)
+            reader = field.readerValue();
+          else if (field.stringValue() != null)
+            reader = new StringReader(field.stringValue());
+          else
+            throw new IllegalArgumentException
+              ("field must have either String or Reader value");
 
-	  // Tokenize field and add to postingTable
-	  TokenStream stream = analyzer.tokenStream(fieldName, reader);
-	  try {
-	    for (Token t = stream.next(); t != null; t = stream.next()) {
+          // Tokenize field and add to postingTable
+          TokenStream stream = analyzer.tokenStream(fieldName, reader);
+          try {
+            for (Token t = stream.next(); t != null; t = stream.next()) {
               position += (t.getPositionIncrement() - 1);
-	      addPosition(fieldName, t.termText(), position++);
-	      if (position > maxFieldLength) break;
-	    }
-	  } finally {
-	    stream.close();
-	  }
-	}
+              addPosition(fieldName, t.termText(), position++);
+              if (position > maxFieldLength) break;
+            }
+          } finally {
+            stream.close();
+          }
+        }
 
-	fieldLengths[fieldNumber] = position;	  // save field length
+        fieldLengths[fieldNumber] = position;	  // save field length
         fieldBoosts[fieldNumber] *= field.getBoost();
       }
     }
@@ -187,20 +187,19 @@ final class DocumentWriter {
 
   private final void addPosition(String field, String text, int position) {
     termBuffer.set(field, text);
-    Posting ti = (Posting)postingTable.get(termBuffer);
+    Posting ti = (Posting) postingTable.get(termBuffer);
     if (ti != null) {				  // word seen before
       int freq = ti.freq;
       if (ti.positions.length == freq) {	  // positions array is full
-	int[] newPositions = new int[freq * 2];	  // double size
-	int[] positions = ti.positions;
-	for (int i = 0; i < freq; i++)		  // copy old positions to new
-	  newPositions[i] = positions[i];
-	ti.positions = newPositions;
+        int[] newPositions = new int[freq * 2];	  // double size
+        int[] positions = ti.positions;
+        for (int i = 0; i < freq; i++)		  // copy old positions to new
+          newPositions[i] = positions[i];
+        ti.positions = newPositions;
       }
       ti.positions[freq] = position;		  // add new position
       ti.freq = freq + 1;			  // update frequency
-    }
-    else {					  // word not seen before
+    } else {					  // word not seen before
       Term term = new Term(field, text, false);
       postingTable.put(term, new Posting(term, position));
     }
@@ -211,7 +210,7 @@ final class DocumentWriter {
     Posting[] array = new Posting[postingTable.size()];
     Enumeration postings = postingTable.elements();
     for (int i = 0; postings.hasMoreElements(); i++)
-      array[i] = (Posting)postings.nextElement();
+      array[i] = (Posting) postings.nextElement();
 
     // sort the array
     quickSort(array, 0, array.length - 1);
@@ -220,24 +219,24 @@ final class DocumentWriter {
   }
 
   private static final void quickSort(Posting[] postings, int lo, int hi) {
-    if(lo >= hi)
+    if (lo >= hi)
       return;
 
     int mid = (lo + hi) / 2;
 
-    if(postings[lo].term.compareTo(postings[mid].term) > 0) {
+    if (postings[lo].term.compareTo(postings[mid].term) > 0) {
       Posting tmp = postings[lo];
       postings[lo] = postings[mid];
       postings[mid] = tmp;
     }
 
-    if(postings[mid].term.compareTo(postings[hi].term) > 0) {
+    if (postings[mid].term.compareTo(postings[hi].term) > 0) {
       Posting tmp = postings[mid];
       postings[mid] = postings[hi];
       postings[hi] = tmp;
 
-      if(postings[lo].term.compareTo(postings[mid].term) > 0) {
-	Posting tmp2 = postings[lo];
+      if (postings[lo].term.compareTo(postings[mid].term) > 0) {
+        Posting tmp2 = postings[lo];
         postings[lo] = postings[mid];
         postings[mid] = tmp2;
       }
@@ -251,20 +250,20 @@ final class DocumentWriter {
 
     Term partition = postings[mid].term;
 
-    for( ;; ) {
-      while(postings[right].term.compareTo(partition) > 0)
-	--right;
+    for (; ;) {
+      while (postings[right].term.compareTo(partition) > 0)
+        --right;
 
-      while(left < right && postings[left].term.compareTo(partition) <= 0)
-	++left;
+      while (left < right && postings[left].term.compareTo(partition) <= 0)
+        ++left;
 
-      if(left < right) {
+      if (left < right) {
         Posting tmp = postings[left];
         postings[left] = postings[right];
         postings[right] = tmp;
         --right;
       } else {
-	break;
+        break;
       }
     }
 
@@ -273,7 +272,7 @@ final class DocumentWriter {
   }
 
   private final void writePostings(Posting[] postings, String segment)
-       throws IOException {
+    throws IOException {
     OutputStream freq = null, prox = null;
     TermInfosWriter tis = null;
 
@@ -284,52 +283,51 @@ final class DocumentWriter {
       TermInfo ti = new TermInfo();
 
       for (int i = 0; i < postings.length; i++) {
-	Posting posting = postings[i];
+        Posting posting = postings[i];
 
-	// add an entry to the dictionary with pointers to prox and freq files
-	ti.set(1, freq.getFilePointer(), prox.getFilePointer());
-	tis.add(posting.term, ti);
+        // add an entry to the dictionary with pointers to prox and freq files
+        ti.set(1, freq.getFilePointer(), prox.getFilePointer());
+        tis.add(posting.term, ti);
 
-	// add an entry to the freq file
-	int f = posting.freq;
-	if (f == 1)				  // optimize freq=1
-	  freq.writeVInt(1);			  // set low bit of doc num.
-	else {
-	  freq.writeVInt(0);			  // the document number
-	  freq.writeVInt(f);			  // frequency in doc
-	}
+        // add an entry to the freq file
+        int f = posting.freq;
+        if (f == 1)				  // optimize freq=1
+          freq.writeVInt(1);			  // set low bit of doc num.
+        else {
+          freq.writeVInt(0);			  // the document number
+          freq.writeVInt(f);			  // frequency in doc
+        }
 
-	int lastPosition = 0;			  // write positions
-	int[] positions = posting.positions;
-	for (int j = 0; j < f; j++) {		  // use delta-encoding
-	  int position = positions[j];
-	  prox.writeVInt(position - lastPosition);
-	  lastPosition = position;
-	}
+        int lastPosition = 0;			  // write positions
+        int[] positions = posting.positions;
+        for (int j = 0; j < f; j++) {		  // use delta-encoding
+          int position = positions[j];
+          prox.writeVInt(position - lastPosition);
+          lastPosition = position;
+        }
       }
-    }
-    finally {
+    } finally {
       if (freq != null) freq.close();
       if (prox != null) prox.close();
-      if (tis  != null)  tis.close();
+      if (tis != null) tis.close();
     }
   }
 
   private final void writeNorms(Document doc, String segment)
-       throws IOException {
-    Enumeration fields  = doc.fields();
+    throws IOException {
+    Enumeration fields = doc.fields();
     while (fields.hasMoreElements()) {
-      Field field = (Field)fields.nextElement();
+      Field field = (Field) fields.nextElement();
       if (field.isIndexed()) {
-	int n = fieldInfos.fieldNumber(field.name());
+        int n = fieldInfos.fieldNumber(field.name());
         float norm =
-          fieldBoosts[n] * similarity.lengthNorm(field.name(),fieldLengths[n]);
-	OutputStream norms = directory.createFile(segment + ".f" + n);
-	try {
-	  norms.writeByte(similarity.encodeNorm(norm));
-	} finally {
-	  norms.close();
-	}
+          fieldBoosts[n] * similarity.lengthNorm(field.name(), fieldLengths[n]);
+        OutputStream norms = directory.createFile(segment + ".f" + n);
+        try {
+          norms.writeByte(similarity.encodeNorm(norm));
+        } finally {
+          norms.close();
+        }
       }
     }
   }
