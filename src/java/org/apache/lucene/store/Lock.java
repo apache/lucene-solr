@@ -35,15 +35,7 @@ import java.io.IOException;
  */
 public abstract class Lock {
   public static long LOCK_POLL_INTERVAL = 1000;
-  private String lockName = null;
-  
-  public Lock(String lockName) {
-    this.lockName = lockName;
-  }
 
-  public Lock() {
-  }
-  
   /** Attempts to obtain exclusive access and immediately return
    *  upon success or failure.
    * @return true iff exclusive access is obtained
@@ -63,11 +55,7 @@ public abstract class Lock {
     int sleepCount = 0;
     while (!locked) {
       if (++sleepCount == maxSleepCount) {
-        String s = "Lock obtain timed out";
-        if (lockName != null) {
-            s += ", lock name =" + lockName;
-        }
-        throw new IOException(s);
+        throw new IOException("Lock obtain timed out: " + this.toString());
       }
       try {
         Thread.sleep(LOCK_POLL_INTERVAL);
