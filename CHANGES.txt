@@ -5,6 +5,9 @@ $Id$
 
 1.2 RC6
 
+ 1. Changed QueryParser.jj to have "?" be a special character which
+    allowed it to be used as a wildcard term. Updated TestWildcard 
+    unit test also. (Ralf Hettesheimer via carlson)
 
 1.2 RC5
 
