@@ -54,7 +54,6 @@ package org.apache.lucene.analysis.fr;
  * <http://www.apache.org/>.
  */
 
-import java.io.Reader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
@@ -93,7 +92,7 @@ public class TestFrenchAnalyzer extends TestCase {
 		// test null reader
 		boolean iaeFlag = false;
 		try {
-			TokenStream ts = fa.tokenStream("dummy", null);
+			fa.tokenStream("dummy", null);
 		} catch (IllegalArgumentException iae) {
 			iaeFlag = true;
 		}
@@ -102,7 +101,7 @@ public class TestFrenchAnalyzer extends TestCase {
 		// test null fieldname
 		iaeFlag = false;
 		try {
-			TokenStream ts = fa.tokenStream(null, new StringReader("dummy"));
+			fa.tokenStream(null, new StringReader("dummy"));
 		} catch (IllegalArgumentException iae) {
 			iaeFlag = true;
 		}
