@@ -13,7 +13,7 @@ Fragmenter, FragmentScorer and Formatter classes.
 		query=query.rewrite(reader); //required to expand search terms
 		Hits hits = searcher.search(query);
 
-		Highlighter highlighter =new Highlighter(this,new QueryScorer(query));
+		Highlighter highlighter =new Highlighter(new QueryScorer(query));
 		for (int i = 0; i < hits.length(); i++)
 		{
 			String text = hits.doc(i).get(FIELD_NAME);
