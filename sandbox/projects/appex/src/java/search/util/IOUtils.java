@@ -26,12 +26,12 @@ package search.util;
  *    if and wherever such third-party acknowledgments normally appear.
  *
  * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Turbine" must not be used to endorse or promote products
+ *    "Apache Lucene" must not be used to endorse or promote products
  *    derived from this software without prior written permission. For
  *    written permission, please contact apache@apache.org.
  *
  * 5. Products derived from this software may not be called "Apache",
- *    "Apache Turbine", nor may "Apache" appear in their name, without
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
  *    prior written permission of the Apache Software Foundation.
  *
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
@@ -55,6 +55,8 @@ package search.util;
  */
 
 //import com.ice.tar.TarArchive; -dunno where this lives -ACO
+
+import com.ice.tar.TarArchive;
 import org.apache.log4j.Category;
 
 import java.io.*;
@@ -72,7 +74,7 @@ public final class IOUtils
     /**
      * Log4j category.
      */
-    static Category cat = Category.getInstance(IOUtils.class.getName());
+    private static Category cat = Category.getInstance(IOUtils.class.getName());
 
     /**
      * Writes data from the inputstream to the outputstream.
@@ -89,125 +91,6 @@ public final class IOUtils
         while ((len = in.read(data)) != -1)
         {
             out.write(data, 0, len);
-        }
-    }
-
-    /** To copy the file. (from Java Examples in a Nutshell)
-     * @param from_name source file with full path.
-     * @param to_name target file with full path.
-     */
-    public static void copyFile(String from_name, String to_name)
-            throws IOException
-    {
-        File from_file = new File(from_name);
-        File to_file = new File(to_name);
-        copyFile(from_file, to_file);
-    }
-
-    /** To copy the file. (from Java Examples in a Nutshell)
-     * @param from_file source file with full path.
-     * @param to_file target file with full path.
-     */
-    public static void copyFile(File from_file, File to_file)
-            throws IOException
-    {
-        if (!from_file.exists())
-            throw new IOException("FileCopy: no such source file: " + from_file.getName());
-        if (!from_file.isFile())
-            throw new IOException("FileCopy: can't copy directory: " + from_file.getName());
-        if (!from_file.canRead())
-            throw new IOException("FileCopy: source file is unreadable: " + from_file.getName());
-
-        // If we've gotten this far, then everything is okay.
-        // So we copy the file, a buffer of bytes at a time.
-        FileInputStream from = null;  // Stream to read from source
-        FileOutputStream to = null;   // Stream to write to destination
-        try
-        {
-            from = new FileInputStream(from_file);  // Create input stream
-            to = new FileOutputStream(to_file);     // Create output stream
-            byte[] buffer = new byte[8192];         // A buffer to hold file contents
-            int bytes_read;                         // How many bytes in buffer
-            // Read a chunk of bytes into the buffer, then write them out,
-            // looping until we reach the end of the file (when read() returns -1).
-            // Note the combination of assignment and comparison in this while
-            // loop.  This is a common I/O programming idiom.
-            while ((bytes_read = from.read(buffer)) != -1) // Read bytes until EOF
-                to.write(buffer, 0, bytes_read);            //   write bytes
-        }
-
-                // Always close the streams, even if exceptions were thrown
-        finally
-        {
-            if (from != null)
-                try
-                {
-                    from.close();
-                }
-                catch (IOException e)
-                {
-                    ;
-                }
-            if (to != null)
-                try
-                {
-                    to.close();
-                }
-                catch (IOException e)
-                {
-                    ;
-                }
-        }
-    }
-
-    /**
-     * Moves files from one directory to another. The source directory is not moved.
-     * <br><br>
-     * Implementation note: Only files are moved. Directories within the source
-     * are not moved as well.
-     * @param File Source directory.
-     * @param File Destination directory.
-     */
-    public static void moveFiles(File source, File destination)
-            throws IOException
-    {
-        InputStream in = null;
-        OutputStream out = null;
-        if (!source.isDirectory())
-            throw new IOException("Expected a directory but "
-                                  + source.toString() + " is a file!");
-        if (!destination.isDirectory())
-            throw new IOException("Expected a directory but "
-                                  + destination.toString() + " is a file!");
-        File[] farray = source.listFiles();
-        try
-        {
-            for (int i = 0; i < farray.length; i++)
-            {
-                if (farray[i].isFile())
-                {
-                    File target = new File(destination, farray[i].getName());
-                    if (!target.exists() || target.canWrite())
-                    {
-                        in = new FileInputStream(farray[i]);
-                        out = new FileOutputStream(target);
-                        transferData(in, out);
-                        in.close();
-                        out.close();
-                        if (target.exists())
-                            farray[i].delete();
-                    }
-                }
-            }
-            in = null;
-            out = null;
-        }
-        finally
-        {
-            if (in != null)
-                in.close();
-            if (out != null)
-                out.close();
         }
     }
 
@@ -303,7 +186,6 @@ public final class IOUtils
     public static void extractTar(File tarFile, File destDir)
             throws IOException
     {
-/*
         FileInputStream fis = null;
         try
         {
@@ -317,9 +199,6 @@ public final class IOUtils
             if (fis != null)
                 fis.close();
         }
-*/
-	throw new RuntimeException("This method has been officially broken "+
-                                   "by andy who couldn't find TarArchive");
     }
 
     /**
