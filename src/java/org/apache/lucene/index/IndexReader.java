@@ -3,8 +3,8 @@ package org.apache.lucene.index;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,8 +75,8 @@ import org.apache.lucene.document.Field;          // for javadoc
   <i>document numbers</i>, non-negative integers which each name a unique
   document in the index.  These document numbers are ephemeral--they may change
   as documents are added to and deleted from an index.  Clients should thus not
-  rely on a given document having the same number between sessions. */
-
+  rely on a given document having the same number between sessions.
+*/
 public abstract class IndexReader {
   protected IndexReader(Directory directory) {
     this.directory = directory;
@@ -209,7 +209,8 @@ public abstract class IndexReader {
     Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq&gt;<sup>*</sup>
     </ul>
     <p>The enumeration is ordered by document number.  Each document number
-    is greater than all that precede it in the enumeration. */
+    is greater than all that precede it in the enumeration.
+  */
   public TermDocs termDocs(Term term) throws IOException {
     TermDocs termDocs = termDocs();
     termDocs.seek(term);
@@ -233,7 +234,8 @@ public abstract class IndexReader {
     </ul>
     <p> This positional information faciliates phrase and proximity searching.
     <p>The enumeration is ordered by document number.  Each document number is
-    greater than all that precede it in the enumeration. */
+    greater than all that precede it in the enumeration.
+  */
   public TermPositions termPositions(Term term) throws IOException {
     TermPositions termPositions = termPositions();
     termPositions.seek(term);
@@ -248,7 +250,8 @@ public abstract class IndexReader {
     Attempts to read its field with the {@link #document}
     method will result in an error.  The presence of this document may still be
     reflected in the {@link #docFreq} statistic, though
-    this will be corrected eventually as the index is further modified.  */
+    this will be corrected eventually as the index is further modified.
+  */
   public final synchronized void delete(int docNum) throws IOException {
     if (writeLock == null) {
       Lock writeLock = directory.makeLock("write.lock");
@@ -258,13 +261,15 @@ public abstract class IndexReader {
     }
     doDelete(docNum);
   }
+
   abstract void doDelete(int docNum) throws IOException;
 
   /** Deletes all documents containing <code>term</code>.
     This is useful if one uses a document field to hold a unique ID string for
     the document.  Then to delete such a document, one merely constructs a
     term with the appropriate field and the unique ID string as its text and
-    passes it to this method.  Returns the number of documents deleted. */
+    passes it to this method.  Returns the number of documents deleted.
+  */
   public final int delete(Term term) throws IOException {
     TermDocs docs = termDocs(term);
     if ( docs == null ) return 0;
@@ -304,13 +309,24 @@ public abstract class IndexReader {
     }
   }
 
-    /**
-     * Return a list of all unique field names which exist in the index pointed to by
-     * this IndexReader.
-     * @return Collection of Strings indicating the names of the fields
-     * @throws IOException if there is a problem with accessing the index
-     */
-    public abstract Collection getFieldNames() throws IOException;
+  /**
+   * Returns a list of all unique field names that exist in the index pointed to by
+   * this IndexReader.
+   * @return Collection of Strings indicating the names of the fields
+   * @throws IOException if there is a problem with accessing the index
+   */
+  public abstract Collection getFieldNames() throws IOException;
+
+  /**
+   * Returns a list of all unique field names that exist in the index pointed to by
+   * this IndexReader.  The boolean argument specifies whether the fields returned
+   * are indexed or not.
+   * @param indexed <code>true</code> if only indexed fields should be returned;
+   *                <code>false</code> if only unindexed fields should be returned.
+   * @return Collection of Strings indicating the names of the fields
+   * @throws IOException if there is a problem with accessing the index
+   */
+   public abstract Collection getFieldNames(boolean indexed) throws IOException;
 
   /**
    * Returns <code>true</code> iff the index in the named directory is
@@ -319,7 +335,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
     public static boolean isLocked(Directory directory) throws IOException {
-	return directory.fileExists("write.lock");
+      return directory.fileExists("write.lock");
     }
 
   /**
@@ -329,7 +345,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
     public static boolean isLocked(String directory) throws IOException {
-	return (new File(directory, "write.lock")).exists();
+      return (new File(directory, "write.lock")).exists();
     }
 
    /**
@@ -340,7 +356,7 @@ public abstract class IndexReader {
     * currently accessing this index.
     */
     public static void unlock(Directory directory) throws IOException {
-	directory.deleteFile("write.lock");
-	directory.deleteFile("commit.lock");
+      directory.deleteFile("write.lock");
+      directory.deleteFile("commit.lock");
     }
 }

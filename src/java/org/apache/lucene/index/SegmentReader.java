@@ -223,6 +223,33 @@ final class SegmentReader extends IndexReader {
     return fieldsReader.size();
   }
 
+  /**
+   * @see IndexReader#getFieldNames()
+   */
+  public Collection getFieldNames() throws IOException {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < fieldInfos.size(); i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      fieldSet.add(fi.name);
+    }
+    return fieldSet;
+  }
+    
+  /**
+   * @see IndexReader#getFieldNames(boolean)
+   */
+  public Collection getFieldNames(boolean indexed) throws IOException {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < fieldInfos.size(); i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      if (fi.isIndexed == indexed)
+        fieldSet.add(fi.name);
+      }
+      return fieldSet;
+    }
+
   public final byte[] norms(String field) throws IOException {
     Norm norm = (Norm)norms.get(field);
     if (norm == null)
@@ -273,15 +300,4 @@ final class SegmentReader extends IndexReader {
       }
     }
   }
-
-    // javadoc inherited
-    public Collection getFieldNames() throws IOException {
-        // maintain a unique set of field names
-        Set fieldSet = new HashSet();
-        for (int i = 0; i < fieldInfos.size(); i++) {
-            FieldInfo fi = fieldInfos.fieldInfo(i);
-            fieldSet.add(fi.name);
-        }
-        return fieldSet;
-    }
 }

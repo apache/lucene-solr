@@ -3,8 +3,8 @@ package org.apache.lucene.index;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -179,21 +179,37 @@ final class SegmentsReader extends IndexReader
       readers[i].close();
   }
 
-    // javadoc inherited
-    public Collection getFieldNames() throws IOException {
-        // maintain a unique set of field names
-        Set fieldSet = new HashSet();
-        for (int i = 0; i < readers.length; i++) {
-            SegmentReader reader = readers[i];
-            Collection names = reader.getFieldNames();
-            // iterate through the field names and add them to the set
-            for (Iterator iterator = names.iterator(); iterator.hasNext();) {
-                String s = (String) iterator.next();
-                fieldSet.add(s);
-            }
+  /**
+   * @see IndexReader#getFieldNames()
+   */
+  public Collection getFieldNames() throws IOException {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < readers.length; i++) {
+        SegmentReader reader = readers[i];
+        Collection names = reader.getFieldNames();
+        // iterate through the field names and add them to the set
+        for (Iterator iterator = names.iterator(); iterator.hasNext();) {
+            String s = (String) iterator.next();
+            fieldSet.add(s);
         }
-        return fieldSet;
     }
+    return fieldSet;
+  }
+
+  /**
+   * @see IndexReader#getFieldNames(boolean)
+   */
+  public Collection getFieldNames(boolean indexed) throws IOException {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < readers.length; i++) {
+        SegmentReader reader = readers[i];
+        Collection names = reader.getFieldNames(indexed);
+        fieldSet.addAll(names);
+    }
+    return fieldSet;
+  }
 }
 
 class SegmentsTermEnum extends TermEnum {
