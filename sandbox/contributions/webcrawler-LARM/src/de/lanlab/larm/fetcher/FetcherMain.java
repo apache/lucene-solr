@@ -62,6 +62,7 @@ import java.util.*;
 import de.lanlab.larm.gui.*;
 import de.lanlab.larm.util.*;
 import de.lanlab.larm.storage.*;
+import de.lanlab.larm.net.*;
 import javax.swing.UIManager;
 import HTTPClient.*;
 import org.apache.oro.text.regex.MalformedPatternException;
@@ -278,7 +279,7 @@ public class FetcherMain
     {
         try
         {
-            messageHandler.putMessage(new URLMessage(url, null, isFrame, null));
+            messageHandler.putMessage(new URLMessage(url, null, isFrame, null, this.hostManager));
         }
         catch (Exception e)
         {

@@ -56,6 +56,7 @@ package de.lanlab.larm.fetcher;
 
 import de.lanlab.larm.threads.ServerThread;
 import de.lanlab.larm.util.State;
+import de.lanlab.larm.net.HostManager;
 
 /**
  * a server thread for the thread pool that records the number

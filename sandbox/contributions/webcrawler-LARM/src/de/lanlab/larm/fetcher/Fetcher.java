@@ -65,6 +65,7 @@ import java.net.URL;
 import java.util.LinkedList;
 
 import de.lanlab.larm.fetcher.FetcherTask;
+import de.lanlab.larm.net.*;
 
 /**
  * filter class; the Fetcher is the main class which keeps the ThreadPool that

@@ -186,16 +186,17 @@ public class FetcherTaskQueue extends TaskQueue
     public static void main(String args[])
     {
         FetcherTaskQueue q = new FetcherTaskQueue();
+        de.lanlab.larm.net.HostManager hm = new de.lanlab.larm.net.HostManager(10);
         System.out.println("Test 1. put in 4 yahoos and 3 lmus. pull out LMU/Yahoo/LMU/Yahoo/LMU/Yahoo/Yahoo");
         try
         {
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, false, null)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, false, null, hm)));
         }
         catch (Throwable t)
         {
@@ -217,9 +218,9 @@ public class FetcherTaskQueue extends TaskQueue
         try
         {
             System.out.println("put 3 lmus.");
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, false, null)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/1"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/2"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.lmu.de/3"), null, false, null, hm)));
             System.out.print("pull out 1st element [lmu/1]: ");
             System.out.println(((FetcherTask) q.remove()).getInfo());
             System.out.println("size now [2]: " + q.size());
@@ -227,9 +228,9 @@ public class FetcherTaskQueue extends TaskQueue
             System.out.println(((FetcherTask) q.remove()).getInfo());
             System.out.println("size now [1]: " + q.size());
             System.out.println("put in 3 yahoos");
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, false, null)));
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, false, null)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/1"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/2"), null, false, null, hm)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/3"), null, false, null, hm)));
             System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
             System.out.println("Size now [3]: " + q.size());
             System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
@@ -237,7 +238,7 @@ public class FetcherTaskQueue extends TaskQueue
             System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
             System.out.println("Size now [1]: " + q.size());
             System.out.println("put in another Yahoo");
-            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, false, null)));
+            q.insert(new FetcherTask(new URLMessage(new URL("http://www.yahoo.de/4"), null, false, null, hm)));
             System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());
             System.out.println("Size now [1]: " + q.size());
             System.out.println("remove [?]: " + ((FetcherTask) q.remove()).getInfo());

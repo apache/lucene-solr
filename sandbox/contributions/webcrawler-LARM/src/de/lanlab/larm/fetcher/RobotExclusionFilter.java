@@ -63,6 +63,7 @@ import org.apache.oro.text.perl.Perl5Util;
 import de.lanlab.larm.util.*;
 import de.lanlab.larm.threads.*;
 import HTTPClient.*;
+import de.lanlab.larm.net.*;
 
 /**
  * this factory simply creates fetcher threads. It's gonna be passed to the
@@ -164,13 +165,13 @@ public class RobotExclusionFilter extends Filter implements MessageListener
             URLMessage urlMsg = ((URLMessage) message);
             URL url = urlMsg.getUrl();
             //assert url != null;
-            HostInfo h = hostManager.getHostInfo(url.getHost());
+            HostInfo h = hostManager.getHostInfo(url.getHost().toLowerCase());
             if (!h.isRobotTxtChecked() && !h.isLoadingRobotsTxt())
             {
                 log.logThreadSafe("handleRequest: starting to get robots.txt");
                 // probably this results in Race Conditions here
 
-                rePool.doTask(new RobotExclusionTask(h), new Integer(h.id));
+                rePool.doTask(new RobotExclusionTask(h), new Integer(h.getId()));
                 h.setLoadingRobotsTxt(true);
             }
 
@@ -182,7 +183,7 @@ public class RobotExclusionFilter extends Filter implements MessageListener
 
                     //log.logThreadSafe("handleRequest: other thread is loading");
                     // assert h.queuedRequests != null
-                    h.queuedRequests.insert(message);
+                    h.insertIntoQueue(message);
                     // not thread safe
                     log.logThreadSafe("handleRequest: queued file " + url);
                     return null;
@@ -273,14 +274,14 @@ public class RobotExclusionFilter extends Filter implements MessageListener
             // assert hostInfo != null;
             String threadName = Thread.currentThread().getName();
 
-            log.logThreadSafe("task " + threadName + ": starting to load " + hostInfo.hostName);
+            log.logThreadSafe("task " + threadName + ": starting to load " + hostInfo.getHostName());
             //hostInfo.setLoadingRobotsTxt(true);
             String[] disallows = null;
             boolean errorOccured = false;
             try
             {
                 log.logThreadSafe("task " + threadName + ": getting connection");
-                HTTPConnection conn = new HTTPConnection(hostInfo.hostName);
+                HTTPConnection conn = new HTTPConnection(hostInfo.getHostName());
                 conn.setTimeout(30000);
                 // wait at most 20 secs
 
@@ -348,8 +349,8 @@ public class RobotExclusionFilter extends Filter implements MessageListener
                         // crawl everything
                         hostInfo.setLoadingRobotsTxt(false);
                         log.logThreadSafe("task " + threadName + ": error occured");
-                        log.logThreadSafe("task " + threadName + ": now put " + hostInfo.queuedRequests.size() + " queueud requests back");
-                        hostInfo.isLoadingRobotsTxt = false;
+                        log.logThreadSafe("task " + threadName + ": now put " + hostInfo.getQueueSize() + " queueud requests back");
+                        hostInfo.setLoadingRobotsTxt(false);
                         putBackURLs();
                     }
                 }
@@ -359,8 +360,8 @@ public class RobotExclusionFilter extends Filter implements MessageListener
                     {
                         hostInfo.setRobotsChecked(true, disallows);
                         log.logThreadSafe("task " + threadName + ": done");
-                        log.logThreadSafe("task " + threadName + ": now put " + hostInfo.queuedRequests.size() + " queueud requests back");
-                        hostInfo.isLoadingRobotsTxt = false;
+                        log.logThreadSafe("task " + threadName + ": now put " + hostInfo.getQueueSize() + " queueud requests back");
+                        hostInfo.setLoadingRobotsTxt(false);
                         putBackURLs();
                     }
                 }
@@ -373,12 +374,12 @@ public class RobotExclusionFilter extends Filter implements MessageListener
          */
         private void putBackURLs()
         {
-            while (hostInfo.queuedRequests.size() > 0)
+            while (hostInfo.getQueueSize() > 0)
             {
-                messageHandler.putMessage((Message) hostInfo.queuedRequests.remove());
+                messageHandler.putMessage((Message) hostInfo.removeFromQueue());
             }
             log.logThreadSafe("task " + Thread.currentThread().getName() + ": finished");
-            hostInfo.queuedRequests = null;
+            hostInfo.removeQueue();
         }
 
 

@@ -123,7 +123,7 @@ public class URLVisitedFilter extends Filter implements MessageListener
         {
             URLMessage urlMessage = ((URLMessage) message);
             URL url = urlMessage.getUrl();
-            String urlString = urlMessage.getURLString();
+            String urlString = urlMessage.getNormalizedURLString();
             if (urlHash.contains(urlString))
             {
                 //System.out.println("URLVisitedFilter: " + urlString + " already present.");
