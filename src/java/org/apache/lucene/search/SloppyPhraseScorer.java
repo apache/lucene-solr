@@ -62,9 +62,9 @@ import org.apache.lucene.index.*;
 final class SloppyPhraseScorer extends PhraseScorer {
   private int slop;
 
-  SloppyPhraseScorer(TermPositions[] tps, Similarity similarity,
-                     int slop, byte[] norms, float weight) throws IOException {
-    super(tps, similarity, norms, weight);
+  SloppyPhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
+                     int slop, byte[] norms) throws IOException {
+    super(weight, tps, similarity, norms);
     this.slop = slop;
   }
 

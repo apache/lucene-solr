@@ -433,7 +433,7 @@ Query Query(String field) :
 
 Query Clause(String field) : {
   Query q;
-  Token fieldToken=null;
+  Token fieldToken=null, boost=null;
 }
 {
   [
@@ -443,9 +443,17 @@ Query Clause(String field) : {
 
   (
    q=Term(field)
-   | <LPAREN> q=Query(field) <RPAREN>
+   | <LPAREN> q=Query(field) <RPAREN> (<CARAT> boost=<NUMBER>)?
+
   )
     {
+      if (boost != null) {
+      	float f = (float)1.0;
+	try {
+	  f = Float.valueOf(boost.image).floatValue();
+          q.setBoost(f);
+	} catch (Exception ignored) { }
+      }
       return q;
     }
 }

@@ -102,6 +102,14 @@ public class RemoteSearchable
     return local.doc(i);
   }
 
+  public Query rewrite(Query original) throws IOException {
+    return local.rewrite(original);
+  }
+
+  public Explanation explain(Query query, int doc) throws IOException {
+    return local.explain(query, doc);
+  }
+
   /** Exports a searcher for the index in args[0] named
    * "//localhost/Searchable". */
   public static void main(String args[]) throws Exception {

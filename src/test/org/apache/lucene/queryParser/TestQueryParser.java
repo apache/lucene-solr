@@ -190,6 +190,8 @@ public class TestQueryParser extends TestCase {
 	assertTrue(getQuery("\"hello there\"", null) instanceof PhraseQuery);
 
 	assertQueryEquals("germ term^2.0", null, "germ term^2.0");
+	assertQueryEquals("(term)^2.0", null, "term^2.0");
+	assertQueryEquals("(germ term)^2.0", null, "(germ term)^2.0");
 	assertQueryEquals("term^2.0", null, "term^2.0");
 	assertQueryEquals("term^2", null, "term^2.0");
 	assertQueryEquals("\"germ term\"^2.0", null, "\"germ term\"^2.0");

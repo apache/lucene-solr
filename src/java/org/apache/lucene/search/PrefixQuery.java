@@ -63,63 +63,39 @@ import org.apache.lucene.index.IndexReader;
 /** A Query that matches documents containing terms with a specified prefix. */
 public class PrefixQuery extends Query {
   private Term prefix;
-  private IndexReader reader;
-  private BooleanQuery query;
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
     this.prefix = prefix;
-    this.reader = reader;
   }
 
-  final void prepare(IndexReader reader) {
-    this.query = null;
-    this.reader = reader;
-  }
-
-  final float sumOfSquaredWeights(Searcher searcher)
-    throws IOException {
-    return getQuery().sumOfSquaredWeights(searcher);
-  }
-
-  void normalize(float norm) {
+  public Query rewrite(IndexReader reader) throws IOException {
+    BooleanQuery query = new BooleanQuery();
+    TermEnum enum = reader.terms(prefix);
     try {
-      getQuery().normalize(norm);
-    } catch (IOException e) {
-      throw new RuntimeException(e.toString());
-    }
-  }
-
-  Scorer scorer(IndexReader reader, Similarity similarity) throws IOException {
-    return getQuery().scorer(reader, similarity);
-  }
-
-  private BooleanQuery getQuery() throws IOException {
-    if (query == null) {
-      BooleanQuery q = new BooleanQuery();
-      TermEnum enum = reader.terms(prefix);
-      try {
-	String prefixText = prefix.text();
-	String prefixField = prefix.field();
-	do {
-	  Term term = enum.term();
-	  if (term != null &&
-	      term.text().startsWith(prefixText) &&
-	      term.field() == prefixField) {
-	    TermQuery tq = new TermQuery(term);	  // found a match
-	    tq.setBoost(boost);			  // set the boost
-	    q.add(tq, false, false);		  // add to q
-	    //System.out.println("added " + term);
-	  } else {
-	    break;
-	  }
-	} while (enum.next());
-      } finally {
-	enum.close();
-      }
-      query = q;
+      String prefixText = prefix.text();
+      String prefixField = prefix.field();
+      do {
+        Term term = enum.term();
+        if (term != null &&
+            term.text().startsWith(prefixText) &&
+            term.field() == prefixField) {
+          TermQuery tq = new TermQuery(term);	  // found a match
+          tq.setBoost(getBoost());                // set the boost
+          query.add(tq, false, false);		  // add to query
+          //System.out.println("added " + term);
+        } else {
+          break;
+        }
+      } while (enum.next());
+    } finally {
+      enum.close();
     }
     return query;
+  }
+
+  public Query combine(Query[] queries) {
+    return Query.mergeBooleanQueries(queries);
   }
 
   /** Prints a user-readable version of this query. */
@@ -131,9 +107,9 @@ public class PrefixQuery extends Query {
     }
     buffer.append(prefix.text());
     buffer.append('*');
-    if (boost != 1.0f) {
+    if (getBoost() != 1.0f) {
       buffer.append("^");
-      buffer.append(Float.toString(boost));
+      buffer.append(Float.toString(getBoost()));
     }
     return buffer.toString();
   }

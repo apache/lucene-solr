@@ -104,6 +104,45 @@ $Id$
  21. Added getFields(String) and getValues(String) methods.
      (Rasik Pandey via otis)
 
+ 22. Revised internal search APIs.  Changes include:
+
+       a. Queries are no longer modified during a search.  This makes
+       it possible, e.g., to reuse the same query instance with
+       multiple indexes from multiple threads.
+
+       b. Term-expanding queries (e.g. PrefixQuery, WildcardQuery,
+       etc.)  now work correctly with MultiSearcher, fixing bugs 12619
+       and 12667.
+
+       c. Boosting BooleanQuery's now works, and is supported by the
+       query parser (problem reported by Lee Mallabone).  Thus a query
+       like "(+foo +bar)^2 +baz" is now supported and equivalent to
+       "(+foo^2 +bar^2) +baz".
+
+       d. New method: Query.rewrite(IndexReader).  This permits a
+       query to re-write itself as an alternate, more primitive query.
+       Most of the term-expanding query classes (PrefixQuery,
+       WildcardQuery, etc.) are now implemented using this method.
+
+       e. New method: Searchable.explain(Query q, int doc).  This
+       returns an Explanation instance that describes how a particular
+       document is scored against a query.  An explanation can be
+       displayed as either plain text, with the toString() method, or
+       as HTML, with the toHtml() method.  Note that computing an
+       explanation is as expensive as executing the query over the
+       entire index.  This is intended to be used in developing
+       Similarity implementations, and, for good performance, should
+       not be displayed with every hit.
+
+       f. Scorer and Weight are public, not package protected.  It now
+       possible for someone to write a Scorer implementation that is
+       not in the org.apache.lucene.search package.  This is still
+       fairly advanced programming, and I don't expect anyone to do
+       this anytime soon, but at least now it is possible.
+
+     Caution: These are extensive changes and they have not yet been
+     tested extensively.  Bug reports are appreciated.
+
 
   Contributed by Rasik Pandey on 2002-10-09
 1.2 RC6

@@ -117,10 +117,11 @@ final class BooleanScorer extends Scorer {
   private final void computeCoordFactors() throws IOException {
     coordFactors = new float[maxCoord];
     for (int i = 0; i < maxCoord; i++)
-      coordFactors[i] = getSimilarity().coord(i, maxCoord);
+      coordFactors[i] = getSimilarity().coord(i, maxCoord-1);
   }
 
-  final void score(HitCollector results, int maxDoc) throws IOException {
+  public final void score(HitCollector results, int maxDoc)
+    throws IOException {
     if (coordFactors == null)
       computeCoordFactors();
 
@@ -205,4 +206,43 @@ final class BooleanScorer extends Scorer {
       }
     }
   }
+
+  public Explanation explain(int doc) throws IOException {
+    Explanation sumExpl = new Explanation();
+    sumExpl.setDescription("sum of:");
+    int coord = 0;
+    float sum = 0.0f;
+    for (SubScorer s = scorers; s != null; s = s.next) {
+      Explanation e = s.scorer.explain(doc);
+      if (e.getValue() > 0) {
+        if (!s.prohibited) {
+          sumExpl.addDetail(e);
+          sum += e.getValue();
+          coord++;
+        } else {
+          return new Explanation(0.0f, "match prohibited");
+        }
+      } else if (s.required) {
+        return new Explanation(0.0f, "match required");
+      }
+    }
+    sumExpl.setValue(sum);
+
+    if (coord == 1)                               // only one clause matched
+      sumExpl = sumExpl.getDetails()[0];          // eliminate wrapper
+
+    float coordFactor = getSimilarity().coord(coord, maxCoord-1);
+    if (coordFactor == 1.0f)                      // coord is no-op
+      return sumExpl;                             // eliminate wrapper
+    else {
+      Explanation result = new Explanation();
+      result.setDescription("product of:");
+      result.addDetail(sumExpl);
+      result.addDetail(new Explanation(coordFactor,
+                                       "coord("+coord+"/"+(maxCoord-1)+")"));
+      result.setValue(sum*coordFactor);
+      return result;
+    }
+  }
+
 }

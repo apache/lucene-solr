@@ -60,17 +60,21 @@ import org.apache.lucene.util.*;
 import org.apache.lucene.index.*;
 
 abstract class PhraseScorer extends Scorer {
+  private Weight weight;
   protected byte[] norms;
-  protected float weight;
+  protected float value;
 
   protected PhraseQueue pq;
   protected PhrasePositions first, last;
 
-  PhraseScorer(TermPositions[] tps, Similarity similarity,
-               byte[] norms, float weight) throws IOException {
+  private float freq;
+
+  PhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
+               byte[] norms) throws IOException {
     super(similarity);
     this.norms = norms;
     this.weight = weight;
+    this.value = weight.getValue();
 
     // use PQ to build a sorted list of PhrasePositions
     pq = new PhraseQueue(tps.length);
@@ -79,7 +83,7 @@ abstract class PhraseScorer extends Scorer {
     pqToList();
   }
 
-  final void score(HitCollector results, int end) throws IOException {
+  public final void score(HitCollector results, int end) throws IOException {
     Similarity similarity = getSimilarity();
     while (last.doc < end) {			  // find doc w/ all the terms
       while (first.doc < last.doc) {		  // scan forward in first
@@ -92,10 +96,10 @@ abstract class PhraseScorer extends Scorer {
       }
 
       // found doc with all terms
-      float freq = phraseFreq();		  // check for phrase
+      freq = phraseFreq();                        // check for phrase
 
       if (freq > 0.0) {
-	float score = similarity.tf(freq)*weight; // compute score
+	float score = similarity.tf(freq)*value;  // compute score
 	score *= Similarity.decodeNorm(norms[first.doc]); // normalize
 	results.collect(first.doc, score);	  // add to results
       }
@@ -124,4 +128,37 @@ abstract class PhraseScorer extends Scorer {
     first = first.next;
     last.next = null;
   }
+
+  public Explanation explain(final int doc) throws IOException {
+    Explanation result = new Explanation();
+    PhraseQuery query = (PhraseQuery)weight.getQuery();
+
+    result.setDescription("phraseScore(" + query + "), product of:");
+    
+    Explanation weightExplanation = weight.explain();
+    result.addDetail(weightExplanation);
+
+    Explanation tfExplanation = new Explanation();
+    score(new HitCollector() {
+        public final void collect(int d, float score) {}
+      }, doc+1);
+
+    float phraseFreq = (first.doc == doc) ? freq : 0.0f;
+    tfExplanation.setValue(getSimilarity().tf(phraseFreq));
+    tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
+    result.addDetail(tfExplanation);
+    
+    Explanation normExplanation = new Explanation();
+    normExplanation.setValue(Similarity.decodeNorm(norms[doc]));
+    String field = query.getTerms()[0].field();
+    normExplanation.setDescription("norm(field="+field + ", doc="+doc + ")");
+    result.addDetail(normExplanation);
+
+    result.setValue(weightExplanation.getValue() *
+                    tfExplanation.getValue() *
+                    normExplanation.getValue());
+    
+    return result;
+  }
+
 }

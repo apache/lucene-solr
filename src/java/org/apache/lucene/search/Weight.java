@@ -3,7 +3,7 @@ package org.apache.lucene.search;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2003 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,74 +55,34 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Vector;
+
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 
-/**
- * A {@link Query} that matches documents containing a subset of terms provided
- * by a {@link FilteredTermEnum} enumeration.
- * <P>
- * <code>MultiTermQuery</code> is not designed to be used by itself.
- * <BR>
- * The reason being that it is not intialized with a {@link FilteredTermEnum}
- * enumeration. A {@link FilteredTermEnum} enumeration needs to be provided.
- * <P>
- * For example, {@link WildcardQuery} and {@link FuzzyQuery} extend
- * <code>MultiTermQuery</code> to provide {@link WildcardTermEnum} and
- * {@link FuzzyTermEnum}, respectively.
+/** Expert: Calculate query weights and build query scorers.
+ *
+ * <p>A Weight is constructed by a query, given a Searcher ({@link
+ * Query#createWeight(Searcher)}).  The {@link #sumOfSquaredWeights()} method
+ * is then called on the top-level query to compute the query normalization
+ * factor (@link Similarity#queryNorm(float)}).  This factor is then passed to
+ * {@link #normalize(float)}.  At this point the weighting is complete and a
+ * scorer may be constructed by calling {@link #scorer(IndexReader)}.
  */
-public abstract class MultiTermQuery extends Query {
-    private Term term;
-    
-    /** Constructs a query for terms matching <code>term</code>. */
-    public MultiTermQuery(Term term) {
-        this.term = term;
-    }
-    
-    /** Returns the pattern term. */
-    public Term getTerm() { return term; }
+public interface Weight extends java.io.Serializable {
+  /** The query that this concerns. */
+  Query getQuery();
 
-    /** Construct the enumeration to be used, expanding the pattern term. */
-    protected abstract FilteredTermEnum getEnum(IndexReader reader)
-      throws IOException;
-    
-    public Query rewrite(IndexReader reader) throws IOException {
-      FilteredTermEnum enum = getEnum(reader);
-      BooleanQuery query = new BooleanQuery();
-      try {
-        do {
-          Term t = enum.term();
-          if (t != null) {
-            TermQuery tq = new TermQuery(t);      // found a match
-            tq.setBoost(getBoost() * enum.difference()); // set the boost
-            query.add(tq, false, false);          // add to query
-          }
-        } while (enum.next());
-      } finally {
-        enum.close();
-      }
-      return query;
-    }
-    
-    public Query combine(Query[] queries) {
-      return Query.mergeBooleanQueries(queries);
-    }
+  /** The weight for this query. */
+  float getValue();
 
+  /** The sum of squared weights of contained query clauses. */
+  float sumOfSquaredWeights() throws IOException;
 
-    /** Prints a user-readable version of this query. */
-    public String toString(String field) {
-        StringBuffer buffer = new StringBuffer();
-        if (!term.field().equals(field)) {
-            buffer.append(term.field());
-            buffer.append(":");
-        }
-        buffer.append(term.text());
-        if (getBoost() != 1.0f) {
-            buffer.append("^");
-            buffer.append(Float.toString(getBoost()));
-        }
-        return buffer.toString();
-    }
+  /** Assigns the query normalization factor to this. */
+  void normalize(float norm);
+
+  /** Constructs a scorer for this. */
+  Scorer scorer(IndexReader reader) throws IOException;
+
+  /** An explanation of this weight computation. */
+  Explanation explain() throws IOException;
 }

@@ -203,4 +203,21 @@ public class MultiSearcher extends Searcher implements Searchable {
 
     }
   }
+  
+  /** */
+  public Query rewrite(Query original) throws IOException {
+    Query[] queries = new Query[searchables.length];
+    for (int i = 0; i < searchables.length; i++) {
+      queries[i] = searchables[i].rewrite(original);
+    }
+    return original.combine(queries);
+  }
+
+
+  /** */
+  public Explanation explain(Query query, int doc) throws IOException {
+    int i = subSearcher(doc);			  // find searcher index
+    return searchables[i].explain(query,doc-starts[i]); // dispatch to searcher
+  }
+
 }

@@ -60,20 +60,15 @@ import java.io.IOException;
 
 /** Implements the fuzzy search query */
 public final class FuzzyQuery extends MultiTermQuery {
-    private Term fuzzyTerm;
+  public FuzzyQuery(Term term) {
+    super(term);
+  }
     
-    public FuzzyQuery(Term term) {
-        super(term);
-        fuzzyTerm = term;
-    }
+  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
+    return new FuzzyTermEnum(reader, getTerm());
+  }
     
-    final void prepare(IndexReader reader) {
-        try {
-            setEnum(new FuzzyTermEnum(reader, fuzzyTerm));
-        } catch (IOException e) {}
-    }
-    
-    public String toString(String field) {
-        return super.toString(field) + '~';
-    }
+  public String toString(String field) {
+    return super.toString(field) + '~';
+  }
 }

@@ -88,60 +88,95 @@ public class BooleanQuery extends Query {
     clauses.addElement(clause);
   }
 
-  void prepare(IndexReader reader) {
-    for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      c.query.prepare(reader);
-    }
+  /** Returns the set of clauses in this query. */
+  public BooleanClause[] getClauses() {
+    return (BooleanClause[])clauses.toArray(new BooleanClause[0]);
   }
 
-  float sumOfSquaredWeights(Searcher searcher)
-       throws IOException {
-    float sum = 0.0f;
+  private class BooleanWeight implements Weight {
+    private Searcher searcher;
+    private float norm;
+    private Vector weights = new Vector();
 
-    for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      if (!c.prohibited)
-	sum += c.query.sumOfSquaredWeights(searcher); // sum sub-query weights
+    public BooleanWeight(Searcher searcher) {
+      this.searcher = searcher;
+      for (int i = 0 ; i < clauses.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        weights.add(c.query.createWeight(searcher));
+      }
     }
 
-    return sum;
+    public Query getQuery() { return BooleanQuery.this; }
+    public float getValue() { return getBoost(); }
+
+    public float sumOfSquaredWeights() throws IOException {
+      float sum = 0.0f;
+      for (int i = 0 ; i < weights.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        Weight w = (Weight)weights.elementAt(i);
+        if (!c.prohibited)
+          sum += w.sumOfSquaredWeights();         // sum sub weights
+      }
+      
+      sum *= getBoost() * getBoost();             // boost each sub-weight
+
+      return sum ;
+    }
+
+
+    public void normalize(float norm) {
+      norm *= getBoost();                         // incorporate boost
+      for (int i = 0 ; i < weights.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        Weight w = (Weight)weights.elementAt(i);
+        if (!c.prohibited)
+          w.normalize(norm);
+      }
+    }
+
+    public Scorer scorer(IndexReader reader) throws IOException {
+      if (weights.size() == 1) {                  // optimize 1-clause queries
+        BooleanClause c = (BooleanClause)clauses.elementAt(0);
+        Weight w = (Weight)weights.elementAt(0);
+        if (!c.prohibited)			  // just return clause scorer
+          return w.scorer(reader);
+      }
+
+      BooleanScorer result = new BooleanScorer(searcher.getSimilarity());
+
+      for (int i = 0 ; i < weights.size(); i++) {
+        BooleanClause c = (BooleanClause)clauses.elementAt(0);
+        Weight w = (Weight)weights.elementAt(i);
+        Scorer subScorer = w.scorer(reader);
+        if (subScorer != null)
+          result.add(subScorer, c.required, c.prohibited);
+        else if (c.required)
+          return null;
+      }
+
+      return result;
+    }
+
+    public Explanation explain() throws IOException {
+      Explanation result = new Explanation();
+      result.setDescription("boost(" + getQuery() + ")");
+      result.setValue(getBoost());
+      return result;
+    }
+
   }
 
-  void normalize(float norm) {
-    for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      if (!c.prohibited)
-	c.query.normalize(norm);
-    }
-  }
-
-  Scorer scorer(IndexReader reader, Similarity similarity)
-       throws IOException {
-
-    if (clauses.size() == 1) {			  // optimize 1-term queries
-      BooleanClause c = (BooleanClause)clauses.elementAt(0);
-      if (!c.prohibited)			  // just return term scorer
-	return c.query.scorer(reader, similarity);
-    }
-
-    BooleanScorer result = new BooleanScorer(similarity);
-
-    for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      Scorer subScorer = c.query.scorer(reader, similarity);
-      if (subScorer != null)
-	result.add(subScorer, c.required, c.prohibited);
-      else if (c.required)
-	return null;
-    }
-
-    return result;
+  protected Weight createWeight(Searcher searcher) {
+    return new BooleanWeight(searcher);
   }
 
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
+    if (getBoost() > 1.0) {
+      buffer.append("(");
+    }
+
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
       if (c.prohibited)
@@ -160,7 +195,27 @@ public class BooleanQuery extends Query {
       if (i != clauses.size()-1)
 	buffer.append(" ");
     }
+
+    if (getBoost() > 1.0) {
+      buffer.append(")^");
+      buffer.append(getBoost());
+    }
+
     return buffer.toString();
+  }
+
+  /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (!(o instanceof BooleanQuery))
+      return false;
+    BooleanQuery other = (BooleanQuery)o;
+    return (this.getBoost() == other.getBoost())
+      &&  this.clauses.equals(other.clauses);
+  }
+
+  /** Returns a hash code value for this object.*/
+  public int hashCode() {
+    return Float.floatToIntBits(getBoost()) ^ clauses.hashCode();
   }
 
 }

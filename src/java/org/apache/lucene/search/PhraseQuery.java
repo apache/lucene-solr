@@ -68,15 +68,10 @@ import org.apache.lucene.index.IndexReader;
 public class PhraseQuery extends Query {
   private String field;
   private Vector terms = new Vector();
-  private float idf = 0.0f;
-  private float weight = 0.0f;
-
   private int slop = 0;
 
-
   /** Constructs an empty phrase query. */
-  public PhraseQuery() {
-  }
+  public PhraseQuery() {}
 
   /** Sets the number of other words permitted between words in query phrase.
     If zero, then this is an exact phrase search.  For larger values this works
@@ -107,47 +102,102 @@ public class PhraseQuery extends Query {
     terms.addElement(term);
   }
 
-  final float sumOfSquaredWeights(Searcher searcher) throws IOException {
-    idf = searcher.getSimilarity().idf(terms, searcher);
-    weight = idf * boost;
-    return weight * weight;			  // square term weights
+  /** Returns the set of terms in this phrase. */
+  public Term[] getTerms() {
+    return (Term[])terms.toArray(new Term[0]);
   }
 
-  final void normalize(float norm) {
-    weight *= norm;				  // normalize for query
-    weight *= idf;				  // factor from document
-  }
+  private class PhraseWeight implements Weight {
+    private Searcher searcher;
+    private float value;
+    private float idf;
+    private float queryNorm;
 
-  final Scorer scorer(IndexReader reader, Similarity similarity)
-    throws IOException {
-    if (terms.size() == 0)			  // optimize zero-term case
-      return null;
-    if (terms.size() == 1) {			  // optimize one-term case
-      Term term = (Term)terms.elementAt(0);
-      TermDocs docs = reader.termDocs(term);
-      if (docs == null)
-	return null;
-      return new TermScorer(docs, similarity,
-                            reader.norms(term.field()), weight);
+    public PhraseWeight(Searcher searcher) {
+      this.searcher = searcher;
     }
 
-    TermPositions[] tps = new TermPositions[terms.size()];
-    for (int i = 0; i < terms.size(); i++) {
-      TermPositions p = reader.termPositions((Term)terms.elementAt(i));
-      if (p == null)
-	return null;
-      tps[i] = p;
+    public Query getQuery() { return PhraseQuery.this; }
+    public float getValue() { return value; }
+
+    public float sumOfSquaredWeights() throws IOException {
+      idf = searcher.getSimilarity().idf(terms, searcher);
+      value = idf * getBoost();
+      return value * value;			  // square term weights
     }
 
-    if (slop == 0)				  // optimize exact case
-      return new ExactPhraseScorer(tps, similarity,
-                                   reader.norms(field), weight);
-    else
-      return
-	new SloppyPhraseScorer(tps, similarity, slop,
-                               reader.norms(field), weight);
+    public void normalize(float norm) {
+      queryNorm = norm;
+      queryNorm *= idf;                           // factor from document
+      value *= queryNorm;                         // normalize for query
+    }
 
+    public Scorer scorer(IndexReader reader) throws IOException {
+      if (terms.size() == 0)			  // optimize zero-term case
+        return null;
+      if (terms.size() == 1) {			  // optimize one-term case
+        Term term = (Term)terms.elementAt(0);
+        TermDocs docs = reader.termDocs(term);
+        if (docs == null)
+          return null;
+        return new TermScorer(this, docs, searcher.getSimilarity(),
+                              reader.norms(term.field()));
+      }
+
+      TermPositions[] tps = new TermPositions[terms.size()];
+      for (int i = 0; i < terms.size(); i++) {
+        TermPositions p = reader.termPositions((Term)terms.elementAt(i));
+        if (p == null)
+          return null;
+        tps[i] = p;
+      }
+
+      if (slop == 0)				  // optimize exact case
+        return new ExactPhraseScorer(this, tps, searcher.getSimilarity(),
+                                     reader.norms(field));
+      else
+        return
+          new SloppyPhraseScorer(this, tps, searcher.getSimilarity(), slop,
+                                 reader.norms(field));
+      
+    }
+
+    public Explanation explain() throws IOException {
+      Query q = getQuery();
+
+      Explanation result = new Explanation();
+      result.setDescription("weight(" + getQuery() + "), product of:");
+
+      Explanation boostExpl = new Explanation(getBoost(), "boost");
+      if (getBoost() != 1.0f)
+        result.addDetail(boostExpl);
+      
+      StringBuffer docFreqs = new StringBuffer();
+      for (int i = 0; i < terms.size(); i++) {
+        if (i != 0) docFreqs.append(" ");
+        docFreqs.append(((Term)terms.elementAt(i)).text());
+        docFreqs.append("=");
+        docFreqs.append(searcher.docFreq((Term)terms.elementAt(i)));
+      }
+      Explanation idfExpl =
+        new Explanation(idf, "idf(" + field + ": " + docFreqs + ")");
+      result.addDetail(idfExpl);
+      
+      Explanation normExpl = new Explanation(queryNorm, "queryNorm");
+      result.addDetail(normExpl);
+
+      result.setValue(boostExpl.getValue() *
+                      idfExpl.getValue() *
+                      normExpl.getValue());
+
+      return result;
+    }
   }
+
+  protected Weight createWeight(Searcher searcher) {
+    return new PhraseWeight(searcher);
+  }
+
 
   /** Prints a user-readable version of this query. */
   public String toString(String f) {
@@ -170,11 +220,29 @@ public class PhraseQuery extends Query {
       buffer.append(slop);
     }
 
-    if (boost != 1.0f) {
+    if (getBoost() != 1.0f) {
       buffer.append("^");
-      buffer.append(Float.toString(boost));
+      buffer.append(Float.toString(getBoost()));
     }
 
     return buffer.toString();
   }
+
+  /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (!(o instanceof PhraseQuery))
+      return false;
+    PhraseQuery other = (PhraseQuery)o;
+    return (this.getBoost() == other.getBoost())
+      && (this.slop == other.slop)
+      &&  this.terms.equals(other.terms);
+  }
+
+  /** Returns a hash code value for this object.*/
+  public int hashCode() {
+    return Float.floatToIntBits(getBoost())
+      ^ Float.floatToIntBits(slop)
+      ^ terms.hashCode();
+  }
+
 }

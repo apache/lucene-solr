@@ -56,16 +56,27 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-abstract class Scorer {
+/** Expert: Implements scoring for a class of queries. */
+public abstract class Scorer {
   private Similarity similarity;
 
+  /** Constructs a Scorer. */
   protected Scorer(Similarity similarity) {
     this.similarity = similarity;
   }
 
+  /** Returns the Similarity implementation used by this scorer. */
   public Similarity getSimilarity() {
     return this.similarity;
   }
 
-  abstract void score(HitCollector hc, int maxDoc) throws IOException;
+  /** Scores hits and passes them to a collector.  Stops at the last document
+   * before <code>maxDoc</code>.  If called repeatedly, will restart at point
+   * where it last left off.
+   */
+  public abstract void score(HitCollector hc, int maxDoc) throws IOException;
+
+  /** Returns an explanation of the score for <code>doc</code>. */
+  public abstract Explanation explain(int doc) throws IOException;
+
 }

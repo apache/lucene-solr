@@ -112,4 +112,12 @@ public interface Searchable extends java.rmi.Remote {
    * @see IndexReader#document(int).
    */
   Document doc(int i) throws IOException;
+
+  /** */
+  Query rewrite(Query query) throws IOException;
+
+  /** */
+  Explanation explain(Query query, int doc) throws IOException;
+
+
 }

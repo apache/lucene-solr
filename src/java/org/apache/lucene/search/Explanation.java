@@ -3,7 +3,7 @@ package org.apache.lucene.search;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2003 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,75 +54,92 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
-import java.util.Vector;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import java.util.ArrayList;
 
-/**
- * A {@link Query} that matches documents containing a subset of terms provided
- * by a {@link FilteredTermEnum} enumeration.
- * <P>
- * <code>MultiTermQuery</code> is not designed to be used by itself.
- * <BR>
- * The reason being that it is not intialized with a {@link FilteredTermEnum}
- * enumeration. A {@link FilteredTermEnum} enumeration needs to be provided.
- * <P>
- * For example, {@link WildcardQuery} and {@link FuzzyQuery} extend
- * <code>MultiTermQuery</code> to provide {@link WildcardTermEnum} and
- * {@link FuzzyTermEnum}, respectively.
- */
-public abstract class MultiTermQuery extends Query {
-    private Term term;
-    
-    /** Constructs a query for terms matching <code>term</code>. */
-    public MultiTermQuery(Term term) {
-        this.term = term;
+/** Expert: Describes the score computation for document and query. */
+public class Explanation implements java.io.Serializable {
+  private float value;                            // the value of this node
+  private String description;                     // what it represents
+  private ArrayList details;                      // sub-explanations
+
+  public Explanation() {}
+
+  public Explanation(float value, String description) {
+    this.value = value;
+    this.description = description;
+  }
+
+  /** The value assigned to this explanation node. */
+  public float getValue() { return value; }
+  /** Sets the value assigned to this explanation node. */
+  public void setValue(float value) { this.value = value; }
+
+  /** A description of this explanation node. */
+  public String getDescription() { return description; }
+  /** Sets the description of this explanation node. */
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  /** The sub-nodes of this explanation node. */
+  public Explanation[] getDetails() {
+    if (details == null)
+      return null;
+    return (Explanation[])details.toArray(new Explanation[0]);
+  }
+
+  /** Adds a sub-node to this explanation node. */
+  public void addDetail(Explanation detail) {
+    if (details == null)
+      details = new ArrayList();
+    details.add(detail);
+  }
+
+  /** Render an explanation as HTML. */
+  public String toString() {
+    return toString(0);
+  }
+  private String toString(int depth) {
+    StringBuffer buffer = new StringBuffer();
+    for (int i = 0; i < depth; i++) {
+      buffer.append("  ");
     }
-    
-    /** Returns the pattern term. */
-    public Term getTerm() { return term; }
+    buffer.append(getValue());
+    buffer.append(" = ");
+    buffer.append(getDescription());
+    buffer.append("\n");
 
-    /** Construct the enumeration to be used, expanding the pattern term. */
-    protected abstract FilteredTermEnum getEnum(IndexReader reader)
-      throws IOException;
-    
-    public Query rewrite(IndexReader reader) throws IOException {
-      FilteredTermEnum enum = getEnum(reader);
-      BooleanQuery query = new BooleanQuery();
-      try {
-        do {
-          Term t = enum.term();
-          if (t != null) {
-            TermQuery tq = new TermQuery(t);      // found a match
-            tq.setBoost(getBoost() * enum.difference()); // set the boost
-            query.add(tq, false, false);          // add to query
-          }
-        } while (enum.next());
-      } finally {
-        enum.close();
+    Explanation[] details = getDetails();
+    if (details != null) {
+      for (int i = 0 ; i < details.length; i++) {
+        buffer.append(details[i].toString(depth+1));
       }
-      return query;
-    }
-    
-    public Query combine(Query[] queries) {
-      return Query.mergeBooleanQueries(queries);
     }
 
+    return buffer.toString();
+  }
 
-    /** Prints a user-readable version of this query. */
-    public String toString(String field) {
-        StringBuffer buffer = new StringBuffer();
-        if (!term.field().equals(field)) {
-            buffer.append(term.field());
-            buffer.append(":");
-        }
-        buffer.append(term.text());
-        if (getBoost() != 1.0f) {
-            buffer.append("^");
-            buffer.append(Float.toString(getBoost()));
-        }
-        return buffer.toString();
+
+  /** Render an explanation as HTML. */
+  public String toHtml() {
+    StringBuffer buffer = new StringBuffer();
+    buffer.append("<ul>\n");
+
+    buffer.append("<li>");
+    buffer.append(getValue());
+    buffer.append(" = ");
+    buffer.append(getDescription());
+    buffer.append("</li>\n");
+
+    Explanation[] details = getDetails();
+    if (details != null) {
+      for (int i = 0 ; i < details.length; i++) {
+        buffer.append(details[i].toHtml());
+      }
     }
+
+    buffer.append("</ul>\n");
+
+    return buffer.toString();
+  }
 }

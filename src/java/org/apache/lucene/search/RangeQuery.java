@@ -66,8 +66,6 @@ public class RangeQuery extends Query
     private Term lowerTerm;
     private Term upperTerm;
     private boolean inclusive;
-    private IndexReader reader;
-    private BooleanQuery query;
     
     /** Constructs a query selecting all terms greater than 
      * <code>lowerTerm</code> but less than <code>upperTerm</code>.
@@ -89,99 +87,59 @@ public class RangeQuery extends Query
         this.upperTerm = upperTerm;
         this.inclusive = inclusive;
     }
-    
-    final void prepare(IndexReader reader)
-    {
-        this.query = null;
-        this.reader = reader;
-    }
-    
-    final float sumOfSquaredWeights(Searcher searcher) throws IOException
-    {
-        return getQuery().sumOfSquaredWeights(searcher);
-    }
-    
-    void normalize(float norm)
-    {
-        try
-        {
-            getQuery().normalize(norm);
-        } 
-        catch (IOException e)
-        {
-            throw new RuntimeException(e.toString());
-        }
-    }
-    
-    Scorer scorer(IndexReader reader, Similarity similarity) throws IOException
-    {
-        return getQuery().scorer(reader, similarity);
-    }
-    
-    private BooleanQuery getQuery() throws IOException
-    {
-        if (query == null)
-        {
-            BooleanQuery q = new BooleanQuery();
-            // if we have a lowerTerm, start there. otherwise, start at beginning
-            if (lowerTerm == null) lowerTerm = new Term(getField(), "");
-            TermEnum enum = reader.terms(lowerTerm);
-            try
-            {
-                String lowerText = null;
-                String field;
-                boolean checkLower = false;
-                if (!inclusive) // make adjustments to set to exclusive
-                {
-                    if (lowerTerm != null)
-                    {
-                        lowerText = lowerTerm.text();
-                        checkLower = true;
-                    }
-                    if (upperTerm != null)
-                    {
-                        // set upperTerm to an actual term in the index
-                        TermEnum uppEnum = reader.terms(upperTerm);
-                        upperTerm = uppEnum.term();
-                    }
-                }
-                String testField = getField();
-                do
-                {
-                    Term term = enum.term();
-                    if (term != null && term.field() == testField)
-                    {
-                        if (!checkLower || term.text().compareTo(lowerText) > 0) 
-                        {
-                            checkLower = false;
-                            if (upperTerm != null)
-                            {
-                                int compare = upperTerm.compareTo(term);
-                                /* if beyond the upper term, or is exclusive and
-                                 * this is equal to the upper term, break out */
-                                if ((compare < 0) || (!inclusive && compare == 0)) break;
-                            }
-                            TermQuery tq = new TermQuery(term);	  // found a match
-                            tq.setBoost(boost);               // set the boost
-                            q.add(tq, false, false);		  // add to q
-                        }
-                    } 
-                    else
-                    {
-                        break;
-                    }
-                }
-                while (enum.next());
-            } 
-            finally
-            {
-                enum.close();
+
+    public Query rewrite(IndexReader reader) throws IOException {
+      BooleanQuery query = new BooleanQuery();
+      // if we have a lowerTerm, start there. otherwise, start at beginning
+      if (lowerTerm == null) lowerTerm = new Term(getField(), "");
+      TermEnum enum = reader.terms(lowerTerm);
+      try {
+        String lowerText = null;
+        String field;
+        boolean checkLower = false;
+          if (!inclusive) {             // make adjustments to set to exclusive
+            if (lowerTerm != null) {
+              lowerText = lowerTerm.text();
+              checkLower = true;
             }
-            query = q;
-        }
-        return query;
+            if (upperTerm != null) {
+              // set upperTerm to an actual term in the index
+              TermEnum uppEnum = reader.terms(upperTerm);
+              upperTerm = uppEnum.term();
+            }
+          }
+          String testField = getField();
+          do {
+            Term term = enum.term();
+            if (term != null && term.field() == testField) {
+              if (!checkLower || term.text().compareTo(lowerText) > 0) {
+                checkLower = false;
+                if (upperTerm != null) {
+                  int compare = upperTerm.compareTo(term);
+                  /* if beyond the upper term, or is exclusive and
+                   * this is equal to the upper term, break out */
+                  if ((compare < 0) || (!inclusive && compare == 0)) break;
+                }
+                TermQuery tq = new TermQuery(term); // found a match
+                tq.setBoost(getBoost());          // set the boost
+                query.add(tq, false, false); // add to query
+              }
+            } 
+            else {
+              break;
+            }
+          }
+          while (enum.next());
+      } finally {
+        enum.close();
+      }
+      return query;
     }
     
+    public Query combine(Query[] queries) {
+      return Query.mergeBooleanQueries(queries);
+    }
+
     private String getField()
     {
         return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
@@ -201,10 +159,10 @@ public class RangeQuery extends Query
         buffer.append("-");
         buffer.append(upperTerm != null ? upperTerm.text() : "null");
         buffer.append(inclusive ? "]" : "}");
-        if (boost != 1.0f)
+        if (getBoost() != 1.0f)
         {
             buffer.append("^");
-            buffer.append(Float.toString(boost));
+            buffer.append(Float.toString(getBoost()));
         }
         return buffer.toString();
     }

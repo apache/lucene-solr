@@ -60,17 +60,12 @@ import java.io.IOException;
 
 /** Implements the wildcard search query */
 public class WildcardQuery extends MultiTermQuery {
-    private Term wildcardTerm;
+  public WildcardQuery(Term term) {
+    super(term);
+  }
 
-    public WildcardQuery(Term term) {
-        super(term);
-        wildcardTerm = term;
-    }
-
-    final void prepare(IndexReader reader) {
-        try {
-            setEnum(new WildcardTermEnum(reader, wildcardTerm));
-        } catch (IOException e) {}
-    }
+  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
+    return new WildcardTermEnum(reader, getTerm());
+  }
     
 }

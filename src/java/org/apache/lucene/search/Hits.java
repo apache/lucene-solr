@@ -93,8 +93,8 @@ public final class Hits {
     ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 
     float scoreNorm = 1.0f;
-    if (length > 0 && scoreDocs[0].score > 1.0f)
-      scoreNorm = 1.0f / scoreDocs[0].score;
+//     if (length > 0 && scoreDocs[0].score > 1.0f)
+//       scoreNorm = 1.0f / scoreDocs[0].score;
 
     int end = scoreDocs.length < length ? scoreDocs.length : length;
     for (int i = hitDocs.size(); i < end; i++)

@@ -62,6 +62,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultipleTermPositions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.Query;
 
 /**
@@ -75,180 +76,177 @@ import org.apache.lucene.search.Query;
  * @author Anders Nielsen
  * @version 1.0
  */
-public class PhrasePrefixQuery
-    extends Query
-{
-    private String _field;
-    private ArrayList _termArrays = new ArrayList();
+public class PhrasePrefixQuery extends Query {
+  private String field;
+  private ArrayList termArrays = new ArrayList();
 
-    private float _idf = 0.0f;
-    private float _weight = 0.0f;
+  private float idf = 0.0f;
+  private float weight = 0.0f;
 
-    private int _slop = 0;
+  private int slop = 0;
 
-    /**
-     * Creates a new <code>PhrasePrefixQuery</code> instance.
-     *
-     */
-    public PhrasePrefixQuery()
-    {
+  /* Sets the phrase slop for this query.
+   * @see PhraseQuery#setSlop(int)
+   */
+  public void setSlop(int s) { slop = s; }
+
+  /* Sets the phrase slop for this query.
+   * @see PhraseQuery#getSlop()
+   */
+  public int getSlop() { return slop; }
+
+  /* Add a single term at the next position in the phrase.
+   * @see PhraseQuery#add(Term)
+   */
+  public void add(Term term) { add(new Term[]{term}); }
+
+  /* Add multiple terms at the next position in the phrase.  Any of the terms
+   * may match.
+   *
+   * @see PhraseQuery#add(Term)
+   */
+  public void add(Term[] terms) {
+    if (termArrays.size() == 0)
+      field = terms[0].field();
+    
+    for (int i=0; i<terms.length; i++) {
+      if (terms[i].field() != field) {
+        throw new IllegalArgumentException
+          ("All phrase terms must be in the same field (" + field + "): "
+           + terms[i]);
+      }
     }
 
-    /**
-     * Describe <code>setSlop</code> method here.
-     *
-     * @param s an <code>int</code> value
-     */
-    public void setSlop(int s)
-    {
-	_slop = s;
+    termArrays.add(terms);
+  }
+
+  private class PhrasePrefixWeight implements Weight {
+    private Searcher searcher;
+    private float value;
+    private float idf;
+    private float queryNorm;
+
+    public PhrasePrefixWeight(Searcher searcher) {
+      this.searcher = searcher;
     }
 
-    /**
-     * Describe <code>getSlop</code> method here.
-     *
-     * @return an <code>int</code> value
-     */
-    public int getSlop()
-    {
-	return _slop;
+    public Query getQuery() { return PhrasePrefixQuery.this; }
+    public float getValue() { return value; }
+
+    public float sumOfSquaredWeights() throws IOException {
+      Iterator i = termArrays.iterator();
+      while (i.hasNext()) {
+        Term[] terms = (Term[])i.next();
+        for (int j=0; j<terms.length; j++)
+          idf += searcher.getSimilarity().idf(terms[j], searcher);
+      }
+
+      value = idf * getBoost();
+      return value * value;
     }
 
-    /**
-     * Describe <code>add</code> method here.
-     *
-     * @param term a <code>Term</code> value
-     */
-    public void add(Term term)
-    {
-	add(new Term[]{term});
+    public void normalize(float norm) {
+      queryNorm = norm;
+      queryNorm *= idf;                           // factor from document
+      value *= queryNorm;                         // normalize for query
     }
 
-    /**
-     * Describe <code>add</code> method here.
-     *
-     * @param terms a <code>Term[]</code> value
-     */
-    public void add(Term[] terms)
-    {
-	if (_termArrays.size() == 0)
-	    _field = terms[0].field();
+    public Scorer scorer(IndexReader reader) throws IOException {
+      if (termArrays.size() == 0)                  // optimize zero-term case
+        return null;
+    
+      if (termArrays.size() == 1) {                // optimize one-term case
+        Term[] terms = (Term[])termArrays.get(0);
+      
+        BooleanScorer bos = new BooleanScorer(searcher.getSimilarity());
+        for (int i=0; i<terms.length; i++) {
+          TermDocs docs = reader.termDocs(terms[i]);
+          if (docs != null)
+            bos.add(new TermScorer(this, docs, searcher.getSimilarity(),
+                                   reader.norms(field)), false, false);
+        }
+      
+        return bos;
+      }
 
-      	for (int i=0; i<terms.length; i++)
-	{
-	    if (terms[i].field() != _field)
-	    {
-		throw new IllegalArgumentException(
-		    "All phrase terms must be in the same field (" + _field + "): "
-		    + terms[i]);
-	    }
-	}
+      TermPositions[] tps = new TermPositions[termArrays.size()];
+      for (int i=0; i<tps.length; i++) {
+        Term[] terms = (Term[])termArrays.get(i);
+      
+        TermPositions p;
+        if (terms.length > 1)
+          p = new MultipleTermPositions(reader, terms);
+        else
+          p = reader.termPositions(terms[0]);
+      
+        if (p == null)
+          return null;
+      
+        tps[i] = p;
+      }
+    
+      if (slop == 0)
+        return new ExactPhraseScorer(this, tps, searcher.getSimilarity(),
+                                     reader.norms(field));
+      else
+        return new SloppyPhraseScorer(this, tps, searcher.getSimilarity(),
+                                      slop, reader.norms(field));
+    }
+    
+    public Explanation explain() throws IOException {
+      Query q = getQuery();
 
-	_termArrays.add(terms);
+      Explanation result = new Explanation();
+      result.setDescription("weight(" + getQuery() + "), product of:");
+
+      Explanation boostExpl = new Explanation(getBoost(), "boost");
+      if (getBoost() != 1.0f)
+        result.addDetail(boostExpl);
+      
+      Explanation idfExpl = new Explanation(idf, "idf");
+      result.addDetail(idfExpl);
+      
+      Explanation normExpl = new Explanation(queryNorm, "queryNorm");
+      result.addDetail(normExpl);
+
+      result.setValue(boostExpl.getValue() *
+                      idfExpl.getValue() *
+                      normExpl.getValue());
+
+      return result;
+    }
+  }
+
+  protected Weight createWeight(Searcher searcher) {
+    return new PhrasePrefixWeight(searcher);
+  }
+
+  /** Prints a user-readable version of this query. */
+  public final String toString(String f) {
+    StringBuffer buffer = new StringBuffer();
+    if (!field.equals(f)) {
+      buffer.append(field);
+      buffer.append(":");
     }
 
-    Scorer scorer(IndexReader reader, Similarity similarity)
-	throws IOException
-    {
-    	if (_termArrays.size() == 0)  // optimize zero-term case
-	    return null;
+    buffer.append("\"");
+    Iterator i = termArrays.iterator();
+    while (i.hasNext()) {
+      Term[] terms = (Term[])i.next();
+      buffer.append(terms[0].text() + (terms.length > 0 ? "*" : ""));
+    }
+    buffer.append("\"");
 
-	if (_termArrays.size() == 1)  // optimize one-term case
-	{
-	    Term[] terms = (Term[])_termArrays.get(0);
-
-	    BooleanQuery boq = new BooleanQuery();
-	    for (int i=0; i<terms.length; i++)
-		boq.add(new TermQuery(terms[i]), false, false);
-
-	    return boq.scorer(reader, similarity);
-    	}
-
-    	TermPositions[] tps = new TermPositions[_termArrays.size()];
-	for (int i=0; i<tps.length; i++)
-	{
-	    Term[] terms = (Term[])_termArrays.get(i);
-
-	    TermPositions p;
-	    if (terms.length > 1)
-		p = new MultipleTermPositions(reader, terms);
-	    else
-		p = reader.termPositions(terms[0]);
-
-	    if (p == null)
-		return null;
-
-	    tps[i] = p;
-	}
-
-	if (_slop == 0)
-	    return new ExactPhraseScorer(tps, similarity,
-                                         reader.norms(_field), _weight);
-	else
-	    return new SloppyPhraseScorer(tps, similarity, _slop,
-                                          reader.norms(_field), _weight);
+    if (slop != 0) {
+      buffer.append("~");
+      buffer.append(slop);
     }
 
-    float sumOfSquaredWeights(Searcher searcher)
-	throws IOException
-    {
-	Iterator i = _termArrays.iterator();
-	while (i.hasNext())
-	{
-	    Term[] terms = (Term[])i.next();
-	    for (int j=0; j<terms.length; j++)
-		_idf += searcher.getSimilarity().idf(terms[j], searcher);
-	}
-
-	_weight = _idf * boost;
-	return _weight * _weight;
+    if (getBoost() != 1.0f) {
+      buffer.append("^");
+      buffer.append(Float.toString(getBoost()));
     }
 
-    void normalize(float norm)
-    {
-	_weight *= norm;
-	_weight *= _idf;
-    }
-
-    /**
-     * Describe <code>toString</code> method here.
-     *
-     * This method assumes that the first term in a array of terms is the
-     * prefix for the whole array. That might not necessarily be so.
-     *
-     * @param f a <code>String</code> value
-     * @return a <code>String</code> value
-     */
-    public final String toString(String f)
-    {
-	StringBuffer buffer = new StringBuffer();
-	if (!_field.equals(f))
-	{
-	    buffer.append(_field);
-	    buffer.append(":");
-	}
-
-	buffer.append("\"");
-	Iterator i = _termArrays.iterator();
-	while (i.hasNext())
-	{
-	    Term[] terms = (Term[])i.next();
-	    buffer.append(terms[0].text() + (terms.length > 0 ? "*" : ""));
-	}
-	buffer.append("\"");
-
-	if (_slop != 0)
-	{
-	    buffer.append("~");
-	    buffer.append(_slop);
-	}
-
-	if (boost != 1.0f)
-	{
-	    buffer.append("^");
-	    buffer.append(Float.toString(boost));
-	}
-
-	return buffer.toString();
-    }
+    return buffer.toString();
+  }
 }

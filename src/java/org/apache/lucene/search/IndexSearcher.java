@@ -122,7 +122,7 @@ public class IndexSearcher extends Searcher implements Searchable {
    */
   public TopDocs search(Query query, Filter filter, final int nDocs)
        throws IOException {
-    Scorer scorer = Query.scorer(query, this, reader);
+    Scorer scorer = query.weight(this).scorer(reader);
     if (scorer == null)
       return new TopDocs(0, new ScoreDoc[0]);
 
@@ -181,10 +181,25 @@ public class IndexSearcher extends Searcher implements Searchable {
 	};
     }
 
-    Scorer scorer = Query.scorer(query, this, reader);
+    Scorer scorer = query.weight(this).scorer(reader);
     if (scorer == null)
       return;
     scorer.score(collector, reader.maxDoc());
+  }
+
+  /** */
+  public Query rewrite(Query original) throws IOException {
+    Query query = original;
+    for (Query rewrittenQuery = query.rewrite(reader); rewrittenQuery != query;
+         rewrittenQuery = query.rewrite(reader)) {
+      query = rewrittenQuery;
+    }
+    return query;
+  }
+
+  /** */
+  public Explanation explain(Query query, int doc) throws IOException {
+    return query.weight(this).scorer(reader).explain(doc);
   }
 
 }

@@ -64,34 +64,77 @@ import org.apache.lucene.index.IndexReader;
   */
 public class TermQuery extends Query {
   private Term term;
-  private float idf = 0.0f;
-  private float weight = 0.0f;
+
+  private class TermWeight implements Weight {
+    private Searcher searcher;
+    private float value;
+    private float idf;
+    private float queryNorm;
+
+    public TermWeight(Searcher searcher) {
+      this.searcher = searcher;
+    }
+
+    public Query getQuery() { return TermQuery.this; }
+    public float getValue() { return value; }
+
+    public float sumOfSquaredWeights() throws IOException {
+      idf = searcher.getSimilarity().idf(term, searcher);
+      value = idf * getBoost();
+      return value * value;			  // square term weights
+    }
+
+    public void normalize(float norm) {
+      queryNorm = norm;
+      queryNorm *= idf;                           // factor from document
+      value *= queryNorm;                         // normalize for query
+    }
+
+    public Scorer scorer(IndexReader reader) throws IOException {
+      TermDocs termDocs = reader.termDocs(term);
+      
+      if (termDocs == null)
+        return null;
+      
+      return new TermScorer(this, termDocs, searcher.getSimilarity(),
+                            reader.norms(term.field()));
+    }
+
+    public Explanation explain() throws IOException {
+      Query q = getQuery();
+
+      Explanation result = new Explanation();
+      result.setDescription("weight(" + getQuery() + "), product of:");
+
+      Explanation boostExpl = new Explanation(getBoost(), "boost");
+      if (getBoost() != 1.0f)
+        result.addDetail(boostExpl);
+      
+      Explanation idfExpl =
+        new Explanation(idf, "idf(docFreq=" + searcher.docFreq(term) + ")");
+      result.addDetail(idfExpl);
+      
+      Explanation normExpl = new Explanation(queryNorm,"queryNorm");
+      result.addDetail(normExpl);
+
+      result.setValue(boostExpl.getValue() *
+                      idfExpl.getValue() *
+                      normExpl.getValue());
+
+      return result;
+    }
+  }
 
   /** Constructs a query for the term <code>t</code>. */
   public TermQuery(Term t) {
     term = t;
   }
 
-  final float sumOfSquaredWeights(Searcher searcher) throws IOException {
-    idf = searcher.getSimilarity().idf(term, searcher);
-    weight = idf * boost;
-    return weight * weight;			  // square term weights
-  }
+  /** Returns the term of this query. */
+  public Term getTerm() { return term; };
 
-  final void normalize(float norm) {
-    weight *= norm;				  // normalize for query
-    weight *= idf;				  // factor from document
-  }
-
-  Scorer scorer(IndexReader reader, Similarity similarity)
-       throws IOException {
-    TermDocs termDocs = reader.termDocs(term);
-
-    if (termDocs == null)
-      return null;
-    
-    return new TermScorer(termDocs, similarity,
-                          reader.norms(term.field()), weight);
+  protected Weight createWeight(Searcher searcher) {
+    return new TermWeight(searcher);
   }
 
   /** Prints a user-readable version of this query. */
@@ -102,10 +145,25 @@ public class TermQuery extends Query {
       buffer.append(":");
     }
     buffer.append(term.text());
-    if (boost != 1.0f) {
+    if (getBoost() != 1.0f) {
       buffer.append("^");
-      buffer.append(Float.toString(boost));
+      buffer.append(Float.toString(getBoost()));
     }
     return buffer.toString();
   }
+
+  /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (!(o instanceof TermQuery))
+      return false;
+    TermQuery other = (TermQuery)o;
+    return (this.getBoost() == other.getBoost())
+      && this.term.equals(other.term);
+  }
+
+  /** Returns a hash code value for this object.*/
+  public int hashCode() {
+    return Float.floatToIntBits(getBoost()) ^ term.hashCode();
+  }
+
 }
