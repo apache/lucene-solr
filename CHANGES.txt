@@ -2,6 +2,11 @@ Lucene Change Log
 
 $Id$
 
+1.4 RC2
+
+ 1. Fixed a few problems with GermanAnalyzer. (Otis, Erik)
+
+
 1.4 RC1
 
  1. Changed the format of the .tis file, so that:
