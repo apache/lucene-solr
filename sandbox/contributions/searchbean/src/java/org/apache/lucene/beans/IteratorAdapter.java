@@ -1,6 +1,7 @@
 package org.apache.lucene.beans;
 
 import java.util.Iterator;
+import java.io.IOException;
 
 /**
  * Acts as an adapter for HitsIterator to comply with the Collections
@@ -25,7 +26,13 @@ public final class IteratorAdapter implements Iterator
 
     public Object next()
     {
-        return hitsIterator.next();
+        Object obj = null;
+        try {
+            obj = hitsIterator.next();
+        } catch (IOException e) {
+            // ignore for now, returning null might be good enough?
+        }
+        return obj;
     }
 
     public void remove()

@@ -6,15 +6,14 @@
         (and without typing -D each time it compiles it -->
   <property file="${user.home}/lucene.build.properties" /> 
   <property file="${user.home}/build.properties" />
-  <property file="${basedir}/build.properties" />
-  <property file="${basedir}/default.properties" />
+  <property file="build.properties" />
+  <property file="default.properties" />
+  <property name="lib.dir" location="lib"/>
 
   <!-- Build classpath -->
   <path id="classpath">
-    <pathelement location="${build.classes}"/>
-    <pathelement location="${build.test.classes}"/>
     <pathelement location="."/>
-    <fileset dir="lib.dir">
+    <fileset dir="${lib.dir}">
       <include name="*.jar" />
     </fileset>
   </path>
@@ -22,9 +21,8 @@
   <path id="junit.classpath">
     <pathelement location="${junit.classes}" />
     <pathelement location="${build.classes}"/>
-    <fileset dir="lib.dir">
-      <include name="*.jar" />
-    </fileset>
+    <pathelement location="${build.test.classes}"/>
+    <path refid="classpath"/>
     <pathelement path="${java.class.path}" />
   </path>
 
@@ -35,7 +33,6 @@
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${build.classes}"/>
     <mkdir dir="${build.src}"/>
-    <mkdir dir="lib.dir"/>
     
     <available
       property="junit.present"
@@ -109,7 +106,7 @@
       includes="**/*.java"
       destdir="${build.test.classes}"
       debug="${debug}">
-      <classpath refid="classpath"/>
+      <classpath refid="junit.classpath"/>
     </javac>
   </target>
 
@@ -133,7 +130,7 @@
       includes="**/*.java"
       destdir="${junit.classes}"
       debug="${debug}">
-      <classpath refid="classpath"/>
+      <classpath refid="junit.classpath"/>
     </javac>
 
     <junit printsummary="yes" haltonfailure="no" >
