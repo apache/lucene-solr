@@ -722,7 +722,8 @@ Query Query(String field) :
   modifier=Modifier() q=andExpression(field)
   {
     addClause(clauses, CONJ_NONE, modifier, q);
-    firstQuery=q;
+    if (modifier == MOD_NONE)
+      firstQuery=q;
   }
   (
     [<OR> { orPresent=true; }] modifier=Modifier() q=andExpression(field)

@@ -663,7 +663,8 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     modifier = Modifier();
     q = andExpression(field);
     addClause(clauses, CONJ_NONE, modifier, q);
-    firstQuery=q;
+    if (modifier == MOD_NONE)
+      firstQuery=q;
     label_1:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
