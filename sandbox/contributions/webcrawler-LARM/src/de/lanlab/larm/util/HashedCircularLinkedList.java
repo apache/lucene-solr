@@ -93,6 +93,13 @@ public class HashedCircularLinkedList
         }
     }
 
+    public Object getCurrentKey()
+    {
+
+        return current != null ?  current.key : null;
+
+    }
+
     /**
      * the list. contains objects
      */
