@@ -16,6 +16,8 @@
         <p>A Single Term is a single word such as "test" or "hello".</p>
         <p>A Phrase is a group of words surrounded by double quotes such as "hello dolly".</p>
         <p>Multiple terms can be combined together with Boolean operators to form a more complex query (see below).</p>
+        <p>Note: The analyzer used to create the index will be used on the terms and phrases in the query string.
+        So it is important to choose an analyzer that will not interfere with the terms used in the query string.</p>
         </section>
         
         <section name="Fields">
@@ -54,24 +56,32 @@
          
          
         <subsection name="Fuzzy Searches">
-        <p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
+        <p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
 
         <source>roam~</source>
         <p>This search will find terms like foam and roams</p>
         <p>Note:Terms found by the fuzzy search will automatically get a boost factor of 0.2</p>
         </subsection>
          
+        <subsection name="Proximity Searches">
+        <p>Lucene supports finding words are a within a specific distance away. To do a proximity search use the tilde, "~", symbol at the end of a Phrase. For example to search for a "apache" and "jakarta" within 10 words of each other in a document use the search: </p>
+
+        <source>"jakarta apache"~10</source>
+
+        </subsection>
+        
          
         <subsection name="Boosting a Term">
         <p>Lucene provides the relevance level of matching documents based on the terms found. To boost a term use the caret, "^", symbol with a boost factor (a number) at the end of the term you are searching. The higher the boost factor, the more relevant the term will be.</p>
         <p>Boosting allows you to control the relevance of a document by boosting its term. For example, if you are searching for</p>
 
-        <source>IBM Microsoft</source>
-        <p>and you want the term "IBM" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. You would type:</p>
-        <source>IBM^4 Microsoft</source>
+        <source>jakarta apache</source>
+        <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. 
+        You would type:</p>
+        <source>jakarta^4 apache</source>
         <p>This will make documents with the term IBM appear more relevant. You can also boost Phrase Terms as in the example: </p>
 
-        <source>"Microsoft Word"^4 "Microsoft Excel"</source>
+        <source>"jakarta apache"^4 "jakarta lucene"</source>
         <p>By default, the boost factor is 1.</p>
         </subsection>
         </section>
@@ -83,50 +93,63 @@
         <subsection name="OR">
         <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. 
         The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets.
-        For example to search for documents that contain either "Microsoft Word" or just "Microsoft": </p>
+        The symbol || can be used in place of the word OR.</p>
+        <p>To search for documents that contain either "jakarta apache" or just "jakarta" use the query:</p>
 
-        <source>"Microsoft Word" Microsoft</source>
+        <source>"jakarta apache" jakarta</source>
 
         <p>or</p>
 
-        <source>"Microsoft Word" OR Microsoft</source>
+        <source>"jakarta apache" OR jakarta</source>
 
         </subsection>
         <subsection name="AND">
         <p>The AND operator matches documents where both terms exist anywhere in the text of a single document. 
-        This is equivalent to an intersection using sets.
-        For example to search for documents that contain "Microsoft Word" and "Microsoft Excel": </p>
+        This is equivalent to an intersection using sets. The symbol &amp;&amp; can be used in place of the word AND.</p>
+        <p>To search for documents that contain "jakarta apache" and "jakarta lucene" use the query: </p>
 
-        <source>"Microsoft Word" AND "Microsoft Excel"</source>
+        <source>"jakarta apache" AND "jakarta lucene"</source>
         </subsection>
         
         <subsection name="+">
-        <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document. For example, to search for documents that contain jakarta or lucene:</p>
+        <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document.</p>
+        <p>To search for documents that must contain "jakarta" and may contain "lucene" use the query:</p>
 
         <source>+jakarta apache</source>
         </subsection>
 
         <subsection name="NOT">
         <p>The NOT operator excludes documents that contain the term after NOT.
-        This is equivalent to a difference using sets.
-        For example to search for documents that contain "Microsoft Word" but not "Microsoft Excel": </p>
+        This is equivalent to a difference using sets. The symbol ! can be used in place of the word NOT.</p>
+        <p>To search for documents that contain "jakarta apache" but not "jakarta lucene" use the query: </p>
 
-        <source>"Microsoft Word" NOT "Microsoft Excel"</source>
+        <source>"jakarta apache" NOT "jakarta lucene"</source>
+        <p>Note: The NOT operator cannot be used with just one term. For example, the following search will return no results:</p>
+        
+        <source>NOT "jakarta apache"</source>
         </subsection>
         
         <subsection name="-">
-        <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol. For example to search for documents that contain "Microsoft Word" but not "Microsoft Excel": </p>
+        <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol.</p> 
+        <p>To search for documents that contain "jakarta apache" but not "jakarta lucene" use the query: </p>
 
-        <source>"Microsoft Word" -"Microsoft Excel"</source>
+        <source>"jakarta apache" -"jakarta lucene"</source>
         </subsection>
         
         </section>
         
         <section name="Grouping">
-        <p>Lucene supports using parentheses to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query.
-        For example, to search for either "jakarta" or "apache" and "website":</p>
+        <p>Lucene supports using parentheses to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query.</p>
+        <p>To search for either "jakarta" or "apache" and "website" use the query:</p>
         <source>(jakarta OR apache) AND website</source>
         <p>This eliminates any confusion and makes sure you that website must exist and either term jakarta or apache may exist.</p>
+        </section>
+        
+        <section name="Escaping Special Characters">
+        <p>Lucene supports escaping special characters that are part of the query syntax. The current list special characters are</p>
+        <p>+ - &amp;&amp; || ! ( ) { } [ ] ^ " ~ * ? : \</p>
+        <p>To escape these character use the \ before the character. For example to search for (1+1):2 use the query:</p>
+        <source>\(1\+1\)\:2</source>
         </section>
         
    </body>

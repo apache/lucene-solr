@@ -125,6 +125,8 @@
                                                 <p>A Single Term is a single word such as "test" or "hello".</p>
                                                 <p>A Phrase is a group of words surrounded by double quotes such as "hello dolly".</p>
                                                 <p>Multiple terms can be combined together with Boolean operators to form a more complex query (see below).</p>
+                                                <p>Note: The analyzer used to create the index will be used on the terms and phrases in the query string.
+        So it is important to choose an analyzer that will not interfere with the terms used in the query string.</p>
                             </blockquote>
         </p>
       </td></tr>
@@ -301,7 +303,7 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
+                                    <p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -330,6 +332,38 @@
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
         <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Proximity Searches"><strong>Proximity Searches</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>Lucene supports finding words are a within a specific distance away. To do a proximity search use the tilde, "~", symbol at the end of a Phrase. For example to search for a "apache" and "jakarta" within 10 words of each other in a document use the search: </p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot;~10</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
           <a name="Boosting a Term"><strong>Boosting a Term</strong></a>
         </font>
       </td></tr>
@@ -346,7 +380,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>IBM Microsoft</pre></td>
+      <td bgcolor="#ffffff"><pre>jakarta apache</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -356,7 +390,8 @@
     </tr>
     </table>
     </div>
-                                                <p>and you want the term "IBM" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. You would type:</p>
+                                                <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. 
+        You would type:</p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -366,7 +401,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>IBM^4 Microsoft</pre></td>
+      <td bgcolor="#ffffff"><pre>jakarta^4 apache</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -386,7 +421,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>&quot;Microsoft Word&quot;^4 &quot;Microsoft Excel&quot;</pre></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot;^4 &quot;jakarta lucene&quot;</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -426,7 +461,8 @@
         <blockquote>
                                     <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. 
         The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets.
-        For example to search for documents that contain either "Microsoft Word" or just "Microsoft": </p>
+        The symbol || can be used in place of the word OR.</p>
+                                                <p>To search for documents that contain either "jakarta apache" or just "jakarta" use the query:</p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -436,7 +472,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>&quot;Microsoft Word&quot; Microsoft</pre></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot; jakarta</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -456,7 +492,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>&quot;Microsoft Word&quot; OR Microsoft</pre></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot; OR jakarta</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -479,8 +515,8 @@
       <tr><td>
         <blockquote>
                                     <p>The AND operator matches documents where both terms exist anywhere in the text of a single document. 
-        This is equivalent to an intersection using sets.
-        For example to search for documents that contain "Microsoft Word" and "Microsoft Excel": </p>
+        This is equivalent to an intersection using sets. The symbol &amp;&amp; can be used in place of the word AND.</p>
+                                                <p>To search for documents that contain "jakarta apache" and "jakarta lucene" use the query: </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -490,7 +526,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>&quot;Microsoft Word&quot; AND &quot;Microsoft Excel&quot;</pre></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot; AND &quot;jakarta lucene&quot;</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -512,7 +548,8 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document. For example, to search for documents that contain jakarta or lucene:</p>
+                                    <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document.</p>
+                                                <p>To search for documents that must contain "jakarta" and may contain "lucene" use the query:</p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -545,8 +582,8 @@
       <tr><td>
         <blockquote>
                                     <p>The NOT operator excludes documents that contain the term after NOT.
-        This is equivalent to a difference using sets.
-        For example to search for documents that contain "Microsoft Word" but not "Microsoft Excel": </p>
+        This is equivalent to a difference using sets. The symbol ! can be used in place of the word NOT.</p>
+                                                <p>To search for documents that contain "jakarta apache" but not "jakarta lucene" use the query: </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -556,7 +593,27 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>&quot;Microsoft Word&quot; NOT &quot;Microsoft Excel&quot;</pre></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot; NOT &quot;jakarta lucene&quot;</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>Note: The NOT operator cannot be used with just one term. For example, the following search will return no results:</p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>NOT &quot;jakarta apache&quot;</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -578,7 +635,8 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol. For example to search for documents that contain "Microsoft Word" but not "Microsoft Excel": </p>
+                                    <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol.</p>
+                                                <p>To search for documents that contain "jakarta apache" but not "jakarta lucene" use the query: </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -588,7 +646,7 @@
     </tr>
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>&quot;Microsoft Word&quot; -&quot;Microsoft Excel&quot;</pre></td>
+      <td bgcolor="#ffffff"><pre>&quot;jakarta apache&quot; -&quot;jakarta lucene&quot;</pre></td>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
     </tr>
     <tr>
@@ -615,8 +673,8 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>Lucene supports using parentheses to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query.
-        For example, to search for either "jakarta" or "apache" and "website":</p>
+                                    <p>Lucene supports using parentheses to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query.</p>
+                                                <p>To search for either "jakarta" or "apache" and "website" use the query:</p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
     <tr>
@@ -637,6 +695,41 @@
     </table>
     </div>
                                                 <p>This eliminates any confusion and makes sure you that website must exist and either term jakarta or apache may exist.</p>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Escaping Special Characters"><strong>Escaping Special Characters</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>Lucene supports escaping special characters that are part of the query syntax. The current list special characters are</p>
+                                                <p>+ - &amp;&amp; || ! ( ) { } [ ] ^ " ~ * ? : \</p>
+                                                <p>To escape these character use the \ before the character. For example to search for (1+1):2 use the query:</p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>\(1\+1\)\:2</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
                             </blockquote>
         </p>
       </td></tr>
