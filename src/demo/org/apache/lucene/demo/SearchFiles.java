@@ -19,11 +19,14 @@ package org.apache.lucene.demo;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Date;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -31,9 +34,28 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.queryParser.QueryParser;
 
 class SearchFiles {
+
+  /** Use the norms from one field for all fields.  Norms are read into memory,
+   * using a byte of memory per document per searched field.  This can cause
+   * search of large collections with a large number of fields to run out of
+   * memory.  If all of the fields contain only a single token, then the norms
+   * are all identical, then single norm vector may be shared. */
+  private static class OneNormsReader extends FilterIndexReader {
+    private String field;
+
+    public OneNormsReader(IndexReader in, String field) {
+      super(in);
+      this.field = field;
+    }
+
+    public byte[] norms(String field) throws IOException {
+      return in.norms(this.field);
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     String usage =
-      "Usage: java org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] ";
+      "Usage: java org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] [-norms field]";
     if (args.length > 0 && ("-h".equals(args[0]) || "-help".equals(args[0]))) {
       System.out.println(usage);
       System.exit(0);
@@ -44,6 +66,7 @@ class SearchFiles {
     String queries = null;
     int repeat = 0;
     boolean raw = false;
+    String normsField = null;
     
     for (int i = 0; i < args.length; i++) {
       if ("-index".equals(args[i])) {
@@ -60,10 +83,18 @@ class SearchFiles {
         i++;
       } else if ("-raw".equals(args[i])) {
         raw = true;
+      } else if ("-norms".equals(args[i])) {
+        normsField = args[i+1];
+        i++;
       }
     }
     
-    Searcher searcher = new IndexSearcher(index);
+    IndexReader reader = IndexReader.open(index);
+
+    if (normsField != null)
+      reader = new OneNormsReader(reader, normsField);
+
+    Searcher searcher = new IndexSearcher(reader);
     Analyzer analyzer = new StandardAnalyzer();
 
     BufferedReader in = null;
@@ -132,6 +163,6 @@ class SearchFiles {
         }
       }
     }
-    searcher.close();
+    reader.close();
   }
 }
