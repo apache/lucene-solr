@@ -1,4 +1,4 @@
-Lucene-Sandbox README file
+Jakarta-Lucene-Sandbox README file
 
 
 
@@ -12,11 +12,11 @@ applications.
 The Lucene Sanbox is a place for contributions that are not part of
 the core Lucene distribution. These contributions will not be part of
 Lucene distribution.
-The Lucene Sandbox is also for creating new sub-projects in Lucene that 
+The Lucene Sandbox is also for creating new sub-projects in Lucene that
 may require restructuring of Lucene code.
 
-NOTE: All contributions must be under the APL license to be part of this
-repository.
+NOTE: All contributions must be under the APL-style license to be part of
+this repository.
 
 The basic structure for the repository is
 
@@ -47,6 +47,3 @@ Where [contribution] is the name of the contribution and
 
 The Lucene web site is at:
   http://jakarta.apache.org/lucene
-
-Please join the Lucene-User mailing list by sending a message to:
-  lucene-user-subscribe@jakarta.apache.org
