@@ -153,6 +153,11 @@ $Id$
      arguments, for easy FSDirectory to RAMDirectory conversion.
      (otis)
 
+ 24. Added code for manual renaming of files in FSDirectory, since it
+     has been reported that java.io.File's renameTo(File) method sometimes
+     fails on Windows JVMs.
+     (Matt Tucker via otis)
+
 
 1.2 RC6
 
