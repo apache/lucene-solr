@@ -40,6 +40,38 @@ import java.io.IOException;
  */
 public class TestDocument extends TestCase
 {
+
+  /**
+   * Tests {@link Document#remove()} method for a brand new Document
+   * that has not been indexed yet.
+   *
+   * @throws Exception on error
+   */
+  public void testRemoveForNewDocument() throws Exception
+  {
+    Document doc = makeDocumentWithFields();
+    assertEquals(8, doc.fields.size());
+    doc.removeFields("keyword");
+    assertEquals(6, doc.fields.size());
+    doc.removeFields("doesnotexists");      // removing non-existing fields is siltenlty ignored
+    doc.removeFields("keyword");		// removing a field more than once
+    assertEquals(6, doc.fields.size());
+    doc.removeField("text");
+    assertEquals(5, doc.fields.size());
+    doc.removeField("text");
+    assertEquals(4, doc.fields.size());
+    doc.removeField("text");
+    assertEquals(4, doc.fields.size());
+    doc.removeField("doesnotexists");       // removing non-existing fields is siltenlty ignored
+    assertEquals(4, doc.fields.size());
+    doc.removeFields("unindexed");
+    assertEquals(2, doc.fields.size());
+    doc.removeFields("unstored");
+    assertEquals(0, doc.fields.size());
+    doc.removeFields("doesnotexists");	// removing non-existing fields is siltenlty ignored
+    assertEquals(0, doc.fields.size());
+  }
+
     /**
      * Tests {@link Document#getValues()} method for a brand new Document
      * that has not been indexed yet.

@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  */
 
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Vector;
@@ -79,6 +80,36 @@ public final class Document implements java.io.Serializable {
    * treated as though appended for the purposes of search. */
   public final void add(Field field) {
     fields.add(field);
+  }
+  
+  /**
+   * Removes field with the given name from the document.
+   * If multiple fields exist with this name, this method returns the first value added.
+   * If there is no field with the specified name, the document remains unchanged.
+   */
+  public final void removeField(String name) {
+    Iterator it = fields.iterator();
+    while (it.hasNext()) {
+      Field field = (Field)it.next();
+      if (field.name().equals(name)) {
+        it.remove();
+        return;
+      }
+    }
+  }
+  
+  /**
+   * Removes all fields with the given name from the document.
+   * If there is no field with the specified name, the document remains unchanged.
+   */
+  public final void removeFields(String name) {
+    Iterator it = fields.iterator();
+    while (it.hasNext()) {
+      Field field = (Field)it.next();
+      if (field.name().equals(name)) {
+        it.remove();
+      }
+    }
   }
 
   /** Returns a field with the given name if any exist in this document, or
