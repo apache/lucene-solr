@@ -80,11 +80,15 @@ import org.apache.lucene.document.Field;          // for javadoc
 public abstract class IndexReader {
   protected IndexReader(Directory directory) {
     this.directory = directory;
+    segmentInfosAge = Long.MAX_VALUE;
   }
 
   Directory directory;
   private Lock writeLock;
 
+  //used to determine whether index has chaged since reader was opened
+  private long segmentInfosAge;
+  
   /** Returns an IndexReader reading the index in an FSDirectory in the named
   path. */
   public static IndexReader open(String path) throws IOException {
@@ -101,18 +105,24 @@ public abstract class IndexReader {
   public static IndexReader open(final Directory directory) throws IOException{
     synchronized (directory) {			  // in- & inter-process sync
       return (IndexReader)new Lock.With(directory.makeLock("commit.lock"), IndexWriter.COMMIT_LOCK_TIMEOUT) {
-	  public Object doBody() throws IOException {
-	    SegmentInfos infos = new SegmentInfos();
-	    infos.read(directory);
-	    if (infos.size() == 1)		  // index is optimized
-	      return new SegmentReader(infos.info(0), true);
-
-	    SegmentReader[] readers = new SegmentReader[infos.size()];
-	    for (int i = 0; i < infos.size(); i++)
-	      readers[i] = new SegmentReader(infos.info(i), i==infos.size()-1);
-	    return new SegmentsReader(directory, readers);
-	  }
-	}.run();
+          public Object doBody() throws IOException {
+            IndexReader result = null;
+            
+            SegmentInfos infos = new SegmentInfos();
+            infos.read(directory);
+            if (infos.size() == 1) {		  // index is optimized
+                result = new SegmentReader(infos.info(0), true);
+            } else {
+                SegmentReader[] readers = new SegmentReader[infos.size()];
+                for (int i = 0; i < infos.size(); i++)
+                  readers[i] = new SegmentReader(infos.info(i), i==infos.size()-1);
+                result =  new SegmentsReader(directory, readers);
+            }
+        
+            result.segmentInfosAge = lastModified(directory);
+            return result;
+          }
+        }.run();
     }
   }
 
@@ -229,8 +239,8 @@ public abstract class IndexReader {
     <p><ul>
     Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq,
           &lt;pos<sub>1</sub>, pos<sub>2</sub>, ...
-	  pos<sub>freq-1</sub>&gt;
-	&gt;<sup>*</sup>
+          pos<sub>freq-1</sub>&gt;
+        &gt;<sup>*</sup>
     </ul>
     <p> This positional information faciliates phrase and proximity searching.
     <p>The enumeration is ordered by document number.  Each document number is
@@ -258,6 +268,15 @@ public abstract class IndexReader {
       if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;
+
+      // we have to check whether index has changed since this reader was opened.
+      // if so, this reader is no longer valid for deletion
+      if(lastModified(directory) > segmentInfosAge){
+          this.writeLock.release();
+          this.writeLock = null;
+          throw new IOException(
+            "IndexReader out of date and no longer valid for deletion");
+      }
     }
     doDelete(docNum);
   }
@@ -276,8 +295,8 @@ public abstract class IndexReader {
     int n = 0;
     try {
       while (docs.next()) {
-	delete(docs.doc());
-	n++;
+        delete(docs.doc());
+        n++;
       }
     } finally {
       docs.close();
