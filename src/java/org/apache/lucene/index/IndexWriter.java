@@ -156,6 +156,12 @@ public class IndexWriter {
     }
   }
 
+  /** Returns the analyzer used by this index. */
+  public Analyzer getAnalyzer() {
+      return analyzer;
+  }
+
+
   /** Returns the number of documents currently in this index. */
   public synchronized int docCount() {
     int count = 0;

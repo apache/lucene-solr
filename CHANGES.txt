@@ -84,6 +84,9 @@ $Id$
      within the last week.  The QueryFilter and RangeQuery would only
      need to be reconstructed once per day. (cutting)
 
+ 15. Added a new IndexWriter method, getAnalyzer().  This returns the
+     analyzer used when adding documents to this index.
+
 
 1.2 RC6
 
