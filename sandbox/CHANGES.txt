@@ -1,0 +1,7 @@
+Lucene-Sandbox Change Log
+
+$Id$
+
+2002/04/19
+
+Sandbox Repoistory Created
