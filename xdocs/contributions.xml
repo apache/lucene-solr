@@ -261,6 +261,28 @@
                     </tr>
                 </table>
             </subsection>
+            <subsection name="Arabic Analyzer for Java">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://savannah.nongnu.org/projects/aramorph">
+                                http://savannah.nongnu.org/projects/aramorph
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Pierrick Brihaye
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="Phonetix">
                 <table>
                     <tr>
