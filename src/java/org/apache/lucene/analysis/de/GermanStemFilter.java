@@ -40,22 +40,21 @@ public final class GermanStemFilter extends TokenFilter
     private Token token = null;
     private GermanStemmer stemmer = null;
     private Set exclusionSet = null;
-    
+
     public GermanStemFilter( TokenStream in )
     {
-        super(in);
-	stemmer = new GermanStemmer();
+      super(in);
+      stemmer = new GermanStemmer();
     }
-    
+
     /**
      * Builds a GermanStemFilter that uses an exclusiontable.
      * @deprecated Use {@link #GermanStemFilter(org.apache.lucene.analysis.TokenStream, java.util.Set)} instead.
      */
     public GermanStemFilter( TokenStream in, Hashtable exclusiontable )
     {
-	this( in );
-	exclusionSet = new HashSet(exclusiontable.keySet());
-
+      this( in );
+      exclusionSet = new HashSet(exclusiontable.keySet());
     }
 
     /**
@@ -63,32 +62,32 @@ public final class GermanStemFilter extends TokenFilter
      */
     public GermanStemFilter( TokenStream in, Set exclusionSet )
     {
-	this( in );
-	this.exclusionSet = exclusionSet;
+      this( in );
+      this.exclusionSet = exclusionSet;
     }
 
     /**
      * @return  Returns the next token in the stream, or null at EOS
      */
     public final Token next()
-	throws IOException
+      throws IOException
     {
-	if ( ( token = input.next() ) == null ) {
-	    return null;
-	}
-	// Check the exclusiontable
-	else if ( exclusionSet != null && exclusionSet.contains( token.termText() ) ) {
-	    return token;
-	}
-	else {
-	    String s = stemmer.stem( token.termText() );
-	    // If not stemmed, dont waste the time creating a new token
-	    if ( !s.equals( token.termText() ) ) {
-		return new Token( s, token.startOffset(),
-		    token.endOffset(), token.type() );
-	    }
-	    return token;
-	}
+      if ( ( token = input.next() ) == null ) {
+        return null;
+      }
+      // Check the exclusiontable
+      else if ( exclusionSet != null && exclusionSet.contains( token.termText() ) ) {
+        return token;
+      }
+      else {
+        String s = stemmer.stem( token.termText() );
+        // If not stemmed, dont waste the time creating a new token
+        if ( !s.equals( token.termText() ) ) {
+          return new Token( s, token.startOffset(),
+            token.endOffset(), token.type() );
+        }
+        return token;
+      }
     }
 
     /**
@@ -96,9 +95,9 @@ public final class GermanStemFilter extends TokenFilter
      */
     public void setStemmer( GermanStemmer stemmer )
     {
-	if ( stemmer != null ) {
-	    this.stemmer = stemmer;
-	}
+      if ( stemmer != null ) {
+        this.stemmer = stemmer;
+      }
     }
 
     /**
@@ -107,7 +106,7 @@ public final class GermanStemFilter extends TokenFilter
      */
     public void setExclusionTable( Hashtable exclusiontable )
     {
-	exclusionSet = new HashSet(exclusiontable.keySet());
+      exclusionSet = new HashSet(exclusiontable.keySet());
     }
 
     /**
@@ -115,6 +114,6 @@ public final class GermanStemFilter extends TokenFilter
      */
     public void setExclusionSet( Set exclusionSet )
     {
-	this.exclusionSet = exclusionSet;
+      this.exclusionSet = exclusionSet;
     }
 }

@@ -53,8 +53,8 @@ public class WordlistLoader {
       String word = null;
       while ((word = lnr.readLine()) != null) {
         result.add(word.trim());
-        }
       }
+    }
     finally {
       if (lnr != null)
         lnr.close();
