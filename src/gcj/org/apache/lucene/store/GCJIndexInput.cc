@@ -39,11 +39,13 @@ void GCJIndexInput::open() {
   fileLength = sb.st_size;
 
   // mmap the file
-  data = RAW(::mmap(0, fileLength, PROT_READ, MAP_SHARED, fd, 0));
-  if (data < 0)
+  // cout << "mmapping " << buf << "\n";
+  void* address = ::mmap(0, fileLength, PROT_READ, MAP_SHARED, fd, 0);
+  if (address == MAP_FAILED)
     throw new IOException(JvNewStringLatin1(strerror(errno)));
 
   // initialize pointer to the start of the file
+  data = RAW(address);
   pointer = data;
 }
 
