@@ -59,24 +59,47 @@ import java.util.*;
 import java.text.*;
 
 /**
- * this class is only used for SPEED. Its log function is not thread safe by
+ * This class is only used for SPEED. Its log function is not thread safe by
  * default.
  * It uses a BufferdWriter.
  * It registers with a logger manager, which can be used to flush several loggers
- * at once
+ * at once.
  * @todo: including the date slows down a lot
- *
+ * @version $Id$
  */
 public class SimpleLogger
 {
-    private SimpleDateFormat formatter = new SimpleDateFormat ("HH:mm:ss:SSSS");
+    private final SimpleDateFormat formatter = new SimpleDateFormat ("HH:mm:ss:SSSS");
 
-    Writer logFile;
+    private Writer logFile;
 
-    StringBuffer buffer = new StringBuffer(1000);
+    private StringBuffer buffer = new StringBuffer(1000);
 
-    long startTime = System.currentTimeMillis();
-    boolean includeDate;
+    private long startTime = System.currentTimeMillis();
+    private boolean includeDate;
+    private boolean flushAtOnce = false;
+
+
+    /**
+     * Creates a new <code>SimpleLogger</code> instance.
+     *
+     * @param name a <code>String</code> value
+     */
+    public SimpleLogger(String name)
+    {
+        init(name, true);
+    }
+
+    /**
+     * Creates a new <code>SimpleLogger</code> instance.
+     *
+     * @param name a <code>String</code> value
+     * @param includeDate a <code>boolean</code> value
+     */
+    public SimpleLogger(String name, boolean includeDate)
+    {
+        init(name, includeDate);
+    }
 
     public void setStartTime(long startTime)
     {
@@ -98,13 +121,13 @@ public class SimpleLogger
         try
         {
             buffer.setLength(0);
-            if(includeDate)
+            if (includeDate)
             {
                 buffer.append(formatter.format(new Date())).append(": ").append(System.currentTimeMillis()-startTime).append(" ms: ");
             }
             buffer.append(text).append("\n");
             logFile.write(buffer.toString());
-            if(flushAtOnce)
+            if (flushAtOnce)
             {
                 logFile.flush();
             }
@@ -120,21 +143,9 @@ public class SimpleLogger
         t.printStackTrace(new PrintWriter(logFile));
     }
 
-    boolean flushAtOnce = false;
-
     public void setFlushAtOnce(boolean flush)
     {
         this.flushAtOnce = flush;
-    }
-
-    public SimpleLogger(String name)
-    {
-        init(name, true);
-    }
-
-    public SimpleLogger(String name, boolean includeDate)
-    {
-        init(name, includeDate);
     }
 
     public void flush() throws IOException
@@ -146,13 +157,14 @@ public class SimpleLogger
     {
         try
         {
-           logFile = new BufferedWriter(new FileWriter("logs/" + name + ".log"));
-           SimpleLoggerManager.getInstance().register(this);
+	    // FIXME: the logs directory needs to be configurable
+	    logFile = new BufferedWriter(new FileWriter("logs/" + name + ".log"));
+	    SimpleLoggerManager.getInstance().register(this);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-           System.out.println("IOException while creating logfile " + name + ":");
-           e.printStackTrace();
+	    System.out.println("IOException while creating logfile " + name + ":");
+	    e.printStackTrace();
         }
     }
 }
