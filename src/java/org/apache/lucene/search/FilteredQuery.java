@@ -112,6 +112,10 @@ extends Query {
     }
   }
 
+  public Query getQuery() {
+    return query;
+  }
+
   /** Prints a user-readable version of this query. */
   public String toString (String s) {
     return "filtered("+query.toString(s)+")->"+filter;
