@@ -59,6 +59,7 @@ import java.io.*;
 import de.lanlab.larm.util.URLUtils;
 import de.lanlab.larm.net.URLNormalizer;
 import de.lanlab.larm.net.HostManager;
+import de.lanlab.larm.net.*;
 
 /**
  * represents a URL which is passed around in the messageHandler
@@ -75,6 +76,11 @@ public class URLMessage implements Message, Serializable
     protected URL url;
 
     /**
+     * docID or 0 (used with repository)
+     */
+    long docId;
+
+    /**
      * Description of the Field
      */
     protected volatile String urlString;
@@ -85,39 +91,72 @@ public class URLMessage implements Message, Serializable
     protected URL referer;
 
     /**
-     * externalized referer URL, to prevent multiple calls to url.toExternalForm()
+     * externalized referer URL, to prevent multiple calls to
+     * url.toExternalForm()
      */
     protected volatile String refererString;
 
     /**
-     * externalized referer URL, to prevent multiple calls to url.toExternalForm()
+     * externalized referer URL, to prevent multiple calls to
+     * url.toExternalForm()
      */
     protected volatile String refererNormalizedString;
 
     /**
      * normalized URL, as defined by {@link de.lanlab.larm.net.URLNormalizer}
-     * (lower case, index.* removed, all characters except alphanumeric ones escaped)
+     * (lower case, index.* removed, all characters except alphanumeric ones
+     * escaped)
      */
     protected String normalizedURLString;
 
+    /**
+     * ANCHOR: an ordinary link like &lt;a href="..."&gt; (or AREA or IMG)<br>
+     * FRAME: a &lt;FRAME src="..."&gt; tag<br>
+     * REDIRECT: the link between two pages after a 301/302/307 result code
+     */
+    byte linkType;
 
-    boolean isFrame;
+    public final static byte LINKTYPE_ANCHOR=0;
+    public final static byte LINKTYPE_FRAME=1;
+    public final static byte LINKTYPE_REDIRECT=2;
+    protected final static String LINKTYPE_STRING[] = { "A/IMG/AREA", "FRAME", "Redirect" };
 
+
+    public int getLinkType()
+    {
+        return linkType;
+    }
+
+    public String getLinkTypeString()
+    {
+        return LINKTYPE_STRING[linkType];
+    }
     /**
      * anchor text, as in &lt;a href="..."&gt;Anchor&lt;/a&gt;
      */
     protected String anchor;
 
 
+    public void setDocId(long docId)
+    {
+        this.docId = docId;
+    }
+
+    public long getDocId()
+    {
+        return docId;
+    }
+
     /**
      * Constructor for the URLMessage object
      *
-     * @param url      Description of the Parameter
-     * @param referer  Description of the Parameter
-     * @param isFrame  Description of the Parameter
-     * @param anchor   Description of the Parameter
+     * @param url          Description of the Parameter
+     * @param referer      Description of the Parameter
+     * @param isFrame      Description of the Parameter
+     * @param anchor       Description of the Parameter
+     * @param hostManager  Description of the Parameter
      */
-    public URLMessage(URL url, URL referer, boolean isFrame, String anchor, HostManager hostManager)
+    public URLMessage(URL url, URL referer, byte linkType, String anchor, HostResolver hostResolver)
     {
         //super();
         this.url = url;
@@ -125,18 +164,56 @@ public class URLMessage implements Message, Serializable
 
         this.referer = referer;
         this.refererString = referer != null ? URLUtils.toExternalFormNoRef(referer) : null;
-        this.refererNormalizedString = referer != null ? URLUtils.toExternalFormNoRef(URLNormalizer.normalize(referer, hostManager)) : null;
-        this.isFrame = isFrame;
+        this.refererNormalizedString = referer != null ? URLUtils.toExternalFormNoRef(URLNormalizer.normalize(referer, hostResolver)) : null;
+        this.linkType = linkType;
         this.anchor = anchor != null ? anchor : "";
-        this.normalizedURLString = URLUtils.toExternalFormNoRef(URLNormalizer.normalize(url, hostManager));
+        this.normalizedURLString = url != null ? URLUtils.toExternalFormNoRef(URLNormalizer.normalize(url, hostResolver)) : null;
         //this.normalizedURLString = URLNormalizer.
         //System.out.println("" + refererString + " -> " + urlString);
+        this.docId = 0;
     }
 
+    public URLMessage(URL url, String normalizedURL, URL referer, String normalizedReferer, byte linkType, String anchor)
+    {
+        //super();
+        this.url = url;
+        this.urlString = url != null ? URLUtils.toExternalFormNoRef(url) : null;
+
+        this.referer = referer;
+        this.refererString = referer != null ? URLUtils.toExternalFormNoRef(referer) : null;
+        this.refererNormalizedString = normalizedReferer;
+        this.linkType = linkType;
+        this.anchor = anchor != null ? anchor : "";
+        this.normalizedURLString = normalizedURL;
+        //this.normalizedURLString = URLNormalizer.
+        //System.out.println("" + refererString + " -> " + urlString);
+        this.docId = 0;
+    }
+
+    public URLMessage(URLMessage other)
+    {
+        this.url = other.url;
+        this.urlString = other.urlString;
+        this.referer = other.referer;
+        this.refererString = other.refererString;
+        this.refererNormalizedString = other.refererNormalizedString;
+        this.linkType = other.linkType;
+        this.anchor = other.anchor;
+        this.normalizedURLString = other.normalizedURLString;
+        this.docId = other.docId;
+    }
+
+    /**
+     * Gets the normalizedURLString attribute of the URLMessage object
+     *
+     * @return   The normalizedURLString value
+
+     */
     public String getNormalizedURLString()
     {
         return this.normalizedURLString;
     }
+
 
     /**
      * Gets the url attribute of the URLMessage object
@@ -194,6 +271,17 @@ public class URLMessage implements Message, Serializable
 
 
     /**
+     * Gets the normalizedRefererString attribute of the URLMessage object
+     *
+     * @return   The normalizedRefererString value
+     */
+    public String getNormalizedRefererString()
+    {
+        return this.refererNormalizedString;
+    }
+
+
+    /**
      * Gets the anchor attribute of the URLMessage object
      *
      * @return   The anchor value
@@ -226,10 +314,12 @@ public class URLMessage implements Message, Serializable
     {
         out.writeObject(url);
         out.writeObject(referer);
-        out.writeBoolean(isFrame);
-        out.writeUTF(anchor);
-        out.writeUTF(refererNormalizedString);
-        out.writeUTF(normalizedURLString);
+        out.writeByte(linkType);
+        out.writeUTF(anchor != null ? anchor : "");
+        out.writeUTF(refererNormalizedString != null ? refererNormalizedString : "");
+        out.writeUTF(normalizedURLString != null ? normalizedURLString : "");
+        out.write((int)((docId >> 32) & 0xffffffff) );
+        out.write((int)(docId & 0xffffffff));
 
     }
 
@@ -247,11 +337,13 @@ public class URLMessage implements Message, Serializable
         url = (URL) in.readObject();
         referer = (URL) in.readObject();
         urlString = url.toExternalForm();
-        refererString = referer.toExternalForm();
-        isFrame = in.readBoolean();
+        refererString = referer != null ? referer.toExternalForm() : "";
+        linkType = in.readByte();
         anchor = in.readUTF();
         refererNormalizedString = in.readUTF();
         normalizedURLString = in.readUTF();
+        docId = in.read() << 32;
+        docId |= in.read();
     }
 
 
@@ -262,7 +354,7 @@ public class URLMessage implements Message, Serializable
      */
     public String getInfo()
     {
-        return (referer != null ? refererString : "<start>") + "\t" + urlString + "\t" + this.getNormalizedURLString() + "\t" + (isFrame ? "1" : "0") + "\t" + anchor;
+        return (referer != null ? refererString : "<start>") + "\t" + urlString + "\t" + this.getNormalizedURLString() + "\t" + linkType + "\t" + anchor;
     }
 
 }
