@@ -355,6 +355,27 @@
     </javadoc>
   </target>
 
+  <target name="javadocs-internal">
+    <mkdir dir="${build.dir}/docs/api-internal"/>
+    <javadoc
+      sourcepath="src/java"
+      overview="src/java/overview.html"
+      packagenames="org.apache.lucene.*"
+      access="package"
+      destdir="${build.dir}/docs/api-internal"
+      encoding="${build.encoding}"
+      author="true"
+      version="true"
+      use="true"
+      link="${javadoc.link}"
+      windowtitle="${Name} ${version} public and internal API"
+      doctitle="${Name} ${version} public and internal API"
+      bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
+      >
+      <tag name="todo" description="To Do:"/>
+    </javadoc>
+  </target>
+
   <!-- ================================================================== -->
   <!-- D I S T R I B U T I O N                                            -->
   <!-- ================================================================== -->

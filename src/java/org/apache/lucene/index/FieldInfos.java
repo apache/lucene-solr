@@ -46,8 +46,6 @@ final class FieldInfos {
    * @param d The directory to open the InputStream from
    * @param name The name of the file to open the InputStream from in the Directory
    * @throws IOException
-   * 
-   * @see #read
    */
   FieldInfos(Directory d, String name) throws IOException {
     InputStream input = d.openFile(name);

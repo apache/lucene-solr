@@ -20,6 +20,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.TermDocs;
 
+/** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
+ */
 final class TermScorer extends Scorer {
   private Weight weight;
   private TermDocs termDocs;
@@ -35,6 +37,12 @@ final class TermScorer extends Scorer {
   private static final int SCORE_CACHE_SIZE = 32;
   private float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
+  /** Construct a <code>TermScorer</code>.
+   * @param weight The weight of the <code>Term</code> in the query.
+   * @param td An iterator over the documents matching the <code>Term</code>.
+   * @param similarity The </code>Similarity</code> implementation to be used for score computations.
+   * @param norms The field norms of the document fields for the <code>Term</code>.
+   */
   TermScorer(Weight weight, TermDocs td, Similarity similarity,
              byte[] norms) {
     super(similarity);
@@ -47,8 +55,16 @@ final class TermScorer extends Scorer {
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
   }
 
+  /** Returns the current document number matching the query.
+   * Initially invalid, until {@link #next()} is called the first time.
+   */
   public int doc() { return doc; }
 
+  /** Advances to the next document matching the query.
+   * <br>The iterator over the matching documents is buffered using
+   * {@link TermDocs#read(int[],int[])}.
+   * @return true iff there is another document matching the query.
+   */
   public boolean next() throws IOException {
     pointer++;
     if (pointer >= pointerMax) {
@@ -75,6 +91,12 @@ final class TermScorer extends Scorer {
     return raw * Similarity.decodeNorm(norms[doc]); // normalize for field
   }
 
+  /** Skips to the first match beyond the current whose document number is
+   * greater than or equal to a given target. 
+   * <br>The implementation uses {@link TermDocs#skipTo(int)}.
+   * @param target The target document number.
+   * @return true iff there is such a match.
+   */
   public boolean skipTo(int target) throws IOException {
     // first scan in cache
     for (pointer++; pointer < pointerMax; pointer++) {
@@ -97,6 +119,12 @@ final class TermScorer extends Scorer {
     return result;
   }
 
+  /** Returns an explanation of the score for a document.
+   * <br>When this method is used, the {@link #next()} method
+   * and the {@link #score(HitCollector)} method should not be used.
+   * @param doc The document number for the explanation.
+   * @todo Modify to make use of {@link TermDocs#skipTo(int)}.
+   */
   public Explanation explain(int doc) throws IOException {
     TermQuery query = (TermQuery)weight.getQuery();
     Explanation tfExplanation = new Explanation();
@@ -120,6 +148,6 @@ final class TermScorer extends Scorer {
     return tfExplanation;
   }
 
+  /** Returns a string representation of this <code>TermScorer</code>. */
   public String toString() { return "scorer(" + weight + ")"; }
-
 }

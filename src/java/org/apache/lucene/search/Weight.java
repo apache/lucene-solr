@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
  * <p>A Weight is constructed by a query, given a Searcher ({@link
  * Query#createWeight(Searcher)}).  The {@link #sumOfSquaredWeights()} method
  * is then called on the top-level query to compute the query normalization
- * factor (@link Similarity#queryNorm(float)}).  This factor is then passed to
+ * factor {@link Similarity#queryNorm(float)}.  This factor is then passed to
  * {@link #normalize(float)}.  At this point the weighting is complete and a
  * scorer may be constructed by calling {@link #scorer(IndexReader)}.
  */

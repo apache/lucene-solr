@@ -24,6 +24,9 @@ $Id$
   5. Disk usage (peak requirements during indexing and optimization)
      in case of compound file format has been improved. 
      (Bernhard, Dmitry, and Christoph)
+
+  6. Added javadoc-internal to build.xml - bug #30360
+     (Paul Elschot via Otis)
  
 1.4.1
 

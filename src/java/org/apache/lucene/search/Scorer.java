@@ -18,11 +18,17 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-/** Expert: Implements scoring for a class of queries. */
+/** Expert: Common scoring functionality for different types of queries.
+ * <br>A <code>Scorer</code> iterates over all documents matching a query,
+ * or provides an explanation of the score for a query for a given document.
+ * <br>Scores are computed using a given <code>Similarity</code> implementation.
+ */
 public abstract class Scorer {
   private Similarity similarity;
 
-  /** Constructs a Scorer. */
+  /** Constructs a Scorer.
+   * @param similarity The <code>Similarity</code> implementation used by this scorer.
+   */
   protected Scorer(Similarity similarity) {
     this.similarity = similarity;
   }
@@ -32,28 +38,36 @@ public abstract class Scorer {
     return this.similarity;
   }
 
-  /** Scores all documents and passes them to a collector. */
+  /** Scores and collects all matching documents.
+   * @param hc The collector to which all matching documents are passed through
+   * {@link HitCollector#collect(int, float)}.
+   */
   public void score(HitCollector hc) throws IOException {
     while (next()) {
       hc.collect(doc(), score());
     }
   }
 
-  /** Advance to the next document matching the query.  Returns true iff there
-   * is another match. */
+  /** Advances to the next document matching the query.
+   * @return true iff there is another document matching the query.
+   */
   public abstract boolean next() throws IOException;
 
-  /** Returns the current document number.  Initially invalid, until {@link
-   * #next()} is called the first time. */
+  /** Returns the current document number matching the query.
+   * Initially invalid, until {@link #next()} is called the first time.
+   */
   public abstract int doc();
 
-  /** Returns the score of the current document.  Initially invalid, until
-   * {@link #next()} is called the first time. */
+  /** Returns the score of the current document matching the query.
+   * Initially invalid, until {@link #next()} is called the first time.
+   */
   public abstract float score() throws IOException;
 
   /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
+   * greater than or equal to a given target. 
+   * @param target The target document number.
+   * @return true iff there is such a match.
+   * <p>Behaves as if written: <pre>
    *   boolean skipTo(int target) {
    *     do {
    *       if (!next())
@@ -66,7 +80,11 @@ public abstract class Scorer {
    */
   public abstract boolean skipTo(int target) throws IOException;
 
-  /** Returns an explanation of the score for <code>doc</code>. */
+  /** Returns an explanation of the score for a document.
+   * <br>When this method is used, the {@link #next()} method
+   * and the {@link #score(HitCollector)} method should not be used.
+   * @param doc The document number for the explanation.
+   */
   public abstract Explanation explain(int doc) throws IOException;
 
 }
