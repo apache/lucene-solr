@@ -267,7 +267,8 @@
   <target name="javadocs" depends="compile" if="javacc.present">
     <mkdir dir="${build.javadocs}"/>
     <javadoc
-      sourcepath="${src.dir}:${build.src}" 
+      sourcepath="${src.dir}:${build.src}"
+      overview="${src.dir}/overview.html"
       packagenames="${packages}"
       destdir="${build.javadocs}"
       author="true"

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="Jakarta Lucene"
-        href="http://jakarta.apache.org/lucene/docs/">
+<project name="Jakarta Lucene" href="http://jakarta.apache.org/lucene/">
 
     <title>Jakarta Lucene</title>
     <logo href="/images/lucene_green_300.gif">Jakarta Lucene</logo>
@@ -17,7 +16,7 @@
     <menu name="Documentation">
         <item name="FAQ"               href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
         <item name="Articles"          href="/resources.html"/>
-        <item name="Javadoc"            href="./api/overview.html"/>
+        <item name="Javadoc"            href="/api/index.html"/>
     </menu>
 
     <menu name="Download">
