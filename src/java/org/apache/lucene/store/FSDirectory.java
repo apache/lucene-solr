@@ -206,6 +206,24 @@ final public class FSDirectory extends Directory {
     return new FSInputStream(new File(directory, name));
   }
 
+  /** Construct a {@link Lock}.
+   * @param name the name of the lock file
+   */
+  public final Lock makeLock(String name) {
+    final File lockFile = new File(directory, name);
+    return new Lock() {
+	public boolean obtain() throws IOException {
+	  return lockFile.createNewFile();
+	}
+	public void release() {
+	  lockFile.delete();
+	}
+	public String toString() {
+	  return "Lock@" + lockFile;
+	}
+      };
+  }
+
   /** Closes the store to future operations. */
   public final synchronized void close() throws IOException {
     if (--refCount <= 0) {
@@ -213,6 +231,11 @@ final public class FSDirectory extends Directory {
 	DIRECTORIES.remove(directory);
       }
     }
+  }
+
+  /** For debug output. */
+  public String toString() {
+    return "FSDirectory@" + directory;
   }
 }
 
@@ -278,8 +301,6 @@ final class FSOutputStream extends OutputStream {
   RandomAccessFile file = null;
 
   public FSOutputStream(File path) throws IOException {
-    if (path.isFile())
-      throw new IOException(path + " already exists");
     file = new RandomAccessFile(path, "rw");
   }
 

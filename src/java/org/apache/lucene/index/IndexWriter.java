@@ -62,6 +62,7 @@ import java.util.Vector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.document.Document;
@@ -112,16 +113,25 @@ public final class IndexWriter {
     analyzed with <code>a</code>.  If <code>create</code> is true, then a new,
     empty index will be created in <code>d</code>, replacing the index already
     there, if any. */
-  public IndexWriter(Directory d, Analyzer a, boolean create)
+  public IndexWriter(Directory d, Analyzer a, final boolean create)
        throws IOException {
     directory = d;
     analyzer = a;
 
-    synchronized (directory) {
-      if (create)
-	segmentInfos.write(directory);
-      else
-	segmentInfos.read(directory);
+    Lock writeLock = directory.makeLock("write.lock");
+    if (!writeLock.obtain())			  // obtain write lock
+      throw new IOException("Index locked for write: " + writeLock);
+
+    synchronized (directory) {			  // in- & inter-process sync
+      new Lock.With(directory.makeLock("commit.lock")) {
+	  public Object doBody() throws IOException {
+	    if (create)
+	      segmentInfos.write(directory);
+	    else
+	      segmentInfos.read(directory);
+	    return null;
+	  }
+	}.run();
     }
   }
 
@@ -130,6 +140,7 @@ public final class IndexWriter {
   public final synchronized void close() throws IOException {
     flushRamSegments();
     ramDirectory.close();
+    directory.makeLock("write.lock").release();  // release write lock
     directory.close();
   }
 
@@ -286,7 +297,7 @@ public final class IndexWriter {
     int mergedDocCount = 0;
     if (infoStream != null) infoStream.print("merging segments");
     SegmentMerger merger = new SegmentMerger(directory, mergedName);
-    Vector segmentsToDelete = new Vector();
+    final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
       if (infoStream != null)
@@ -307,9 +318,14 @@ public final class IndexWriter {
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
 					    directory));
     
-    synchronized (directory) {
-      segmentInfos.write(directory);		  // commit before deleting
-      deleteSegments(segmentsToDelete);		  // delete now-unused segments
+    synchronized (directory) {			  // in- & inter-process sync
+      new Lock.With(directory.makeLock("commit.lock")) {
+	  public Object doBody() throws IOException {
+	    segmentInfos.write(directory);	  // commit before deleting
+	    deleteSegments(segmentsToDelete);	  // delete now-unused segments
+	    return null;
+	  }
+	}.run();
     }
   }
 
