@@ -109,6 +109,8 @@ final public class FSDirectory extends Directory {
       if (dir == null) {
 	dir = new FSDirectory(file, create);
 	DIRECTORIES.put(file, dir);
+      } else if (create) {
+        dir.create();
       }
     }
     synchronized (dir) {
@@ -122,20 +124,24 @@ final public class FSDirectory extends Directory {
 
   private FSDirectory(File path, boolean create) throws IOException {
     directory = path;
-    if (!directory.exists() && create)
-      directory.mkdir();
+
+    if (create)
+      create();
+
     if (!directory.isDirectory())
       throw new IOException(path + " not a directory");
+  }
 
-    if (create) {				  // clear old files
-      String[] files = directory.list();
-      for (int i = 0; i < files.length; i++) {
-	File file = new File(directory, files[i]);
-	if (!file.delete())
-	  throw new IOException("couldn't delete " + files[i]);
-      }
+  private synchronized void create() throws IOException {
+    if (!directory.exists())
+      directory.mkdir();
+
+    String[] files = directory.list();            // clear old files
+    for (int i = 0; i < files.length; i++) {
+      File file = new File(directory, files[i]);
+      if (!file.delete())
+        throw new IOException("couldn't delete " + files[i]);
     }
-
   }
 
   /** Returns an array of strings, one for each file in the directory. */
