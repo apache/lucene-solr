@@ -72,6 +72,9 @@
                 <li><a href="http://www.divmod.org/Lupy/">Lupy</a>
                     <br/> - Python implementation of Lucene
                 </li>
+                <li><a href="http://search.cpan.org/dist/Plucene/">Plucene</a>
+                    <br/> - Perl implementation of Lucene
+                </li>
                 <li><a href="http://search.cpan.org/author/SIMON/Lucene-QueryParser-1.01/">Lucene::QueryParser</a>
                     <br/> - Perl implementation of Lucene QueryParser
                 </li>
