@@ -22,6 +22,11 @@
     <path refid="classpath"/>
   </path>
 
+  <path id="anakia.classpath">
+    <fileset dir="${jakarta.site2.home}/lib">
+      <include name="*.jar" />
+    </fileset>
+  </path>
 
   <!-- ====================================================== -->
   <!-- Stuff needed by all targets                            -->
@@ -146,6 +151,28 @@
     </javadoc>
   </target>
 
+  <target name="docs">
+    <taskdef
+      name="anakia"
+      classname="org.apache.velocity.anakia.AnakiaTask"
+      >
+      <classpath refid="anakia.classpath"/>
+    </taskdef>
+
+    <anakia
+      basedir="${docs.src}"
+      destdir="${docs.dest}/"
+      extension=".html" style="./site.vsl"
+      projectFile="stylesheets/project.xml"
+      excludes="**/stylesheets/** empty.xml"
+      includes="**/*.xml"
+      lastModifiedCheck="true"
+      templatePath="${jakarta.site2.home}/xdocs/stylesheets"
+    >
+    </anakia>
+
+  </target>
+
   <!-- ================================================================== -->
   <!-- D I S T R I B U T I O N                                            -->
   <!-- ================================================================== -->
@@ -159,6 +186,10 @@
 
     <copy todir="${dist.dir}/docs/api">
       <fileset dir="${build.javadoc}"/>
+    </copy>
+
+    <copy todir="${dist.dir}/docs">
+      <fileset dir="${docs.dest}/"/>
     </copy>
 
     <copy todir="${dist.dir}">
