@@ -4,6 +4,7 @@
 <author email="jon@latchkey.com">Jon S. Stevens</author>
 <author email="husted@apache.org">Ted Husted</author>
 <author email="cutting@apache.org">Doug Cutting</author>
+<author email="carlson@apache.org">Peer Carlson</author>
 <title>Overview - Jakarta Lucene</title>
 </properties>
 <body>
@@ -22,6 +23,10 @@ Please use the links on the left to access Lucene.
 </section>
 
 <section name="Lucene News">
+<p>
+<b>Lucene v1.2-RC5 release</b> - This release is the latest release from the Lucene team.
+Download it <a href="http://jakarta.apache.org/builds/jakarta-lucene/release/v1.2-rc5/"> here</a>.
+</p>
 <p>
 <b>Lucene v1.02 released</b> - This release repackages Lucene as a product 
 of the Apache Software Foundation. Download it 
