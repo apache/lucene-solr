@@ -60,6 +60,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
   index.  Search of an index is done entirely through this abstract interface,
@@ -177,9 +178,10 @@ abstract public class IndexReader {
   abstract public boolean isDeleted(int n);
 
   /** Returns the byte-encoded normalization factor for the named field of
-    every document.  This is used by the search code to score documents.
-    @see org.apache.lucene.search.Similarity#norm
-    */
+   * every document.  This is used by the search code to score documents.
+   *
+   * @see Field#setBoost(float)
+   */
   abstract public byte[] norms(String field) throws IOException;
 
   /** Returns an enumeration of all the terms in the index.

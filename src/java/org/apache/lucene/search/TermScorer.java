@@ -98,7 +98,7 @@ final class TermScorer extends Scorer {
 	 ? scoreCache[f]			  // cache hit
 	 : Similarity.tf(f)*weight;		  // cache miss
 
-      score *= Similarity.norm(norms[d]);	  // normalize for field
+      score *= Similarity.decodeNorm(norms[d]);	  // normalize for field
 
       c.collect(d, score);			  // collect score
 

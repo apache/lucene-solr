@@ -66,7 +66,7 @@ import org.apache.lucene.search.Query;
 
 /**
  * PhrasePrefixQuery is a generalized version of PhraseQuery, with an added
- * method {@link add(Term[])}.
+ * method {@link #add(Term[])}.
  * To use this class, to search for the phrase "Microsoft app*" first use
  * add(Term) on the term "Microsoft", then find all terms that has "app" as
  * prefix using IndexReader.terms(Term), and use PhrasePrefixQuery.add(Term[]

@@ -56,6 +56,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.document.Field;
 
 /** Internal class used for scoring.
  * <p>Public only so that the indexing code can compute and store the
@@ -63,32 +64,80 @@ import org.apache.lucene.index.Term;
 public final class Similarity {
   private Similarity() {}			  // no public constructor
 
-  /** Computes the normalization byte for a document given the total number of
-   * terms contained in the document.  These values are stored in an index and
-   * used by the search code. */
-  public static final byte norm(int numTerms) {
-    // Scales 1/sqrt(numTerms) into a byte, i.e. 256/sqrt(numTerms).
-    // Math.ceil is used to ensure that even very long documents don't get a
-    // zero norm byte, as that is reserved for zero-lengthed documents and
-    // deleted documents.
-    return (byte) Math.ceil(255.0 / Math.sqrt(numTerms));
-  }
+  static final float[] NORM_TABLE = new float[256];
 
-
-  private static final float[] makeNormTable() {
-    float[] result = new float[256];
+  static {
     for (int i = 0; i < 256; i++)
-      result[i] = i / 255.0F;
-    return result;
+      NORM_TABLE[i] = byteToFloat((byte)i);
   }
 
-  static final float[] NORM_TABLE = makeNormTable();
-    
-  static final float norm(byte normByte) {
-    // Un-scales from the byte encoding of a norm into a float, i.e.,
-    // approximately 1/sqrt(numTerms).
-    return NORM_TABLE[normByte & 0xFF];
+  /** Computes the normalization value for a document given the total number of
+   * terms contained in a field.  These values are stored in an index and used
+   * by the search code.
+   *
+   * <p>The formula used is: <code>1.0f / Math.sqrt(numTerms)</code>
+   *
+   * @see Field#setBoost(float)
+   */
+  public static float normalizeLength(int numTerms) {
+    return (float)(1.0 / Math.sqrt(numTerms));
   }
+  
+  /** Decodes a normalization factor stored in an index.
+   * @see #encodeNorm(float)
+   */
+  public static float decodeNorm(byte b) {
+    return NORM_TABLE[b & 0xFF];
+  }
+
+  /** Encodes a normalization factor for storage in an index.  
+   *
+   * <p>The encoding uses a five-bit exponent and three-bit mantissa, thus
+   * representing values from around 7x10^9 to 2x10^-9 with about one
+   * significant decimal digit of accuracy.  Zero is also represented.
+   * Negative numbers are rounded up to zero.  Values too large to represent
+   * are rounded down to the largest representable value.  Positive values too
+   * small to represent are rounded up to the smallest positive representable
+   * value.
+   *
+   * @see Field#setBoost(float)
+   */
+  public static byte encodeNorm(float f) {
+    return floatToByte(f);
+  }
+
+  private static float byteToFloat(byte b) {
+    if (b == 0)                                   // zero is a special case
+      return 0.0f;
+    int mantissa = b & 7;
+    int exponent = (b >> 3) & 31;
+    int bits = ((exponent+(63-15)) << 24) | (mantissa << 21);
+    return Float.intBitsToFloat(bits);
+  }
+   
+  private static byte floatToByte(float f) {
+    if (f < 0.0f)                                 // round negatives up to zero
+      f = 0.0f;
+
+    if (f == 0.0f)                                // zero is a special case
+      return 0;
+
+    int bits = Float.floatToIntBits(f);           // parse float into parts
+    int mantissa = (bits & 0xffffff) >> 21;
+    int exponent = (((bits >> 24) & 0x7f) - 63) + 15;
+
+    if (exponent > 31) {                          // overflow: use max value
+      exponent = 31;
+      mantissa = 7;
+    }
+
+    if (exponent < 1) {                           // underflow: use min value
+      exponent = 1;
+      mantissa = 0;
+    }
+
+    return (byte)((exponent << 3) | mantissa);    // pack into a byte
+   }
 
   static final float tf(int freq) {
     return (float)Math.sqrt(freq);

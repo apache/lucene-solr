@@ -55,6 +55,8 @@ package org.apache.lucene.document;
  */
 
 import java.util.Enumeration;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Hits;
 
 /** Documents are the unit of indexing and search.
  *
@@ -66,9 +68,39 @@ import java.util.Enumeration;
 
 public final class Document implements java.io.Serializable {
   DocumentFieldList fieldList = null;
+  private float boost = 1.0f;
 
   /** Constructs a new document with no fields. */
   public Document() {}
+
+
+  /** Sets a boost factor for hits on any field of this document.  This value
+   * will be multiplied into the score of all hits on this document.
+   *
+   * <p>Values are multiplied into the value of {@link Field#getBoost()} of
+   * each field in this document.  Thus, this method in effect sets a default
+   * boost for the fields of this document.
+   *
+   * @see Field#setBoost(float)
+   */
+  public void setBoost(float boost) {
+    this.boost = boost;
+  }
+
+  /** Returns the boost factor for hits on any field of this document.
+   *
+   * <p>The default value is 1.0.
+   *
+   * <p>Note: This value is not stored directly with the document in the index.
+   * Documents returned from {@link IndexReader#document(int)} and {@link
+   * Hits#doc(int)} may thus not have the same value present as when this
+   * document was indexed.
+   *
+   * @see #setBoost(float)
+   */
+  public float getBoost() {
+    return boost;
+  }
 
   /** Adds a field to a document.  Several fields may be added with
    * the same name.  In this case, if the fields are indexed, their text is

@@ -59,6 +59,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Hashtable;
 import java.util.Enumeration;
+import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -100,6 +101,10 @@ final class DocumentWriter {
     // invert doc into postingTable
     postingTable.clear();			  // clear postingTable
     fieldLengths = new int[fieldInfos.size()];	  // init fieldLengths
+
+    fieldBoosts = new float[fieldInfos.size()];	  // init fieldBoosts
+    Arrays.fill(fieldBoosts, doc.getBoost());
+
     invertDocument(doc);
 
     // sort postingTable into an array
@@ -130,6 +135,7 @@ final class DocumentWriter {
   // Used to buffer a document before it is written to the index.
   private final Hashtable postingTable = new Hashtable();
   private int[] fieldLengths;
+  private float[] fieldBoosts;
 
   // Tokenizes the fields of a document into Postings.
   private final void invertDocument(Document doc)
@@ -168,6 +174,7 @@ final class DocumentWriter {
 	}
 
 	fieldLengths[fieldNumber] = position;	  // save field length
+        fieldBoosts[fieldNumber] *= field.getBoost();
       }
     }
   }
@@ -310,12 +317,14 @@ final class DocumentWriter {
     while (fields.hasMoreElements()) {
       Field field = (Field)fields.nextElement();
       if (field.isIndexed()) {
-	int fieldNumber = fieldInfos.fieldNumber(field.name());
-	OutputStream norm = directory.createFile(segment + ".f" + fieldNumber);
+	int n = fieldInfos.fieldNumber(field.name());
+        float norm =
+          fieldBoosts[n] * Similarity.normalizeLength(fieldLengths[n]);
+	OutputStream norms = directory.createFile(segment + ".f" + n);
 	try {
-	  norm.writeByte(Similarity.norm(fieldLengths[fieldNumber]));
+	  norms.writeByte(Similarity.encodeNorm(norm));
 	} finally {
-	  norm.close();
+	  norms.close();
 	}
       }
     }

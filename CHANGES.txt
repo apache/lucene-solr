@@ -48,6 +48,17 @@ $Id$
      stems from nouns and verbs derived from the same word.
      (gschwarz)
 
+ 12. Added support for boosting the score of documents and fields via
+     the new methods Document.setBoost(float) and Field.setBoost(float).
+
+     Note: This changes the encoding of an indexed value.  Indexes
+     should be re-created from scratch in order for search scores to
+     be correct.  With the new code and an old index, searches will
+     yield very large scores for shorter fields, and very small scores
+     for longer fields.  Once the index is re-created, scores will be
+     as before. (cutting)
+
+
 1.2 RC6
 
  1. Changed QueryParser.jj to have "?" be a special character which
