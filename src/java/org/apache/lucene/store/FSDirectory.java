@@ -86,8 +86,12 @@ public final class FSDirectory extends Directory {
   private static final boolean DISABLE_LOCKS =
       Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
 
+   private static final String LOCK_DIR =
+     System.getProperty("org.apache.lucene.lockdir",
+       System.getProperty("java.io.tmpdir"));
+
   private static MessageDigest DIGESTER;
- 
+
   static {
     try {
       DIGESTER = MessageDigest.getInstance("MD5");
@@ -143,10 +147,15 @@ public final class FSDirectory extends Directory {
 
   private File directory = null;
   private int refCount;
+  private File lockDir;
 
   private FSDirectory(File path, boolean create) throws IOException {
     directory = path;
 
+   lockDir = new File(LOCK_DIR);
+   if (!lockDir.isAbsolute()) {
+     lockDir = new File(directory, LOCK_DIR);
+   }
     if (create)
       create();
 
@@ -165,15 +174,14 @@ public final class FSDirectory extends Directory {
       if (!file.delete())
         throw new IOException("couldn't delete " + files[i]);
     }
-    
+
     String lockPrefix = getLockPrefix().toString(); // clear old locks
-    File tmpdir = new File(System.getProperty("java.io.tmpdir"));
-    files = tmpdir.list();
-    for (int i = 0; i < files.length; i++) {      
+    files = lockDir.list();
+    for (int i = 0; i < files.length; i++) {
       if (!files[i].startsWith(lockPrefix))
         continue;
-      File file = new File(tmpdir, files[i]);
-      if (!file.delete())
+      File lockFile = new File(lockDir, files[i]);
+      if (!lockFile.delete())
         throw new IOException("couldn't delete " + files[i]);
     }
   }
@@ -313,9 +321,8 @@ public final class FSDirectory extends Directory {
     buf.append("-");
     buf.append(name);
 
-    // make the lock file in tmp, where anyone can create files.
-    final File lockFile = new File(System.getProperty("java.io.tmpdir"),
-                                   buf.toString());
+    // create a lock file
+    final File lockFile = new File(lockDir, buf.toString());
 
     return new Lock() {
       public boolean obtain() throws IOException {
@@ -347,7 +354,7 @@ public final class FSDirectory extends Directory {
     } catch (IOException e) {
       throw new RuntimeException(e.toString());
     }
-    
+
     byte digest[];
     synchronized (DIGESTER) {
       digest = DIGESTER.digest(dirName.getBytes());
@@ -396,7 +403,7 @@ final class FSInputStream extends InputStream {
       //debug_printInfo("OPEN");
       /* DEBUG */
     }
-    
+
     /* DEBUG */
     //public void close() throws IOException {
     //  debug_printInfo("CLOSE");
@@ -404,7 +411,7 @@ final class FSInputStream extends InputStream {
     //}
     //
     //private void debug_printInfo(String op) {
-    //  try { throw new Exception(op + " <" + name + ">"); 
+    //  try { throw new Exception(op + " <" + name + ">");
     //  } catch (Exception e) {
     //    java.io.StringWriter sw = new java.io.StringWriter();
     //    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
@@ -461,7 +468,7 @@ final class FSInputStream extends InputStream {
     clone.isClone = true;
     return clone;
   }
-  
+
   /** Method used for testing. Returns true if the underlying
    *  file descriptor is valid.
    */
