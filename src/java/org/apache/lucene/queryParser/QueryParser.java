@@ -142,7 +142,7 @@ public class QueryParser implements QueryParserConstants {
 
   /**
    * Gets implicit operator setting, which will be either DEFAULT_OPERATOR_AND
-   * or DEFAULT_OPERATOR_AND.
+   * or DEFAULT_OPERATOR_OR.
    */
   public int getOperator() {
     return operator;
