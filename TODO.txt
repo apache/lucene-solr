@@ -47,11 +47,14 @@ $Revision$
   programmatically specify a default operator (OR or AND).
   c.f.
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=115677
+  Status: COMPLETED
 
 - The recenly submitted code that allows for queries such as
   "Microsoft suc*" to match "Microsoft success" and "Microsoft sucks".
   c.f.
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=333275
+  Status: Asked Anders Nielsen to send some usage/test code, so that I can
+	  test his contribution and also add tests to the repository.
 
 - Make package protected abstract methods of org.apache.lucene.search.Searcher
   public (I'd like to be able to make subclasses of Searcher, IndexWriter, InderReader).
