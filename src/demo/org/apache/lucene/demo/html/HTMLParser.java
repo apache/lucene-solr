@@ -480,7 +480,7 @@ null)
       jj_la1_0();
    }
    private static void jj_la1_0() {
-      jj_la1_0 = new int[] {0x167e,0x167e,0x8000,0x1c0000,0x10000,0x40000,0x80000,0x100000,0x1d8000,0x1d8000,0x4000000,0x10000000,0x30,0x2000,};
+      jj_la1_0 = new int[] {0x2c7e,0x2c7e,0x10000,0x380000,0x20000,0x80000,0x100000,0x200000,0x3b0000,0x3b0000,0x8000000,0x20000000,0x30,0x4000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[2];
   private boolean jj_rescan = false;
@@ -651,8 +651,8 @@ null)
 
   public ParseException generateParseException() {
     jj_expentries.removeAllElements();
-    boolean[] la1tokens = new boolean[30];
-    for (int i = 0; i < 30; i++) {
+    boolean[] la1tokens = new boolean[31];
+    for (int i = 0; i < 31; i++) {
       la1tokens[i] = false;
     }
     if (jj_kind >= 0) {
@@ -668,7 +668,7 @@ null)
         }
       }
     }
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < 31; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

@@ -12,26 +12,27 @@ public interface HTMLParserConstants {
   int Word = 6;
   int LET = 7;
   int NUM = 8;
-  int Entity = 9;
-  int Space = 10;
-  int SP = 11;
-  int Punct = 12;
-  int ScriptText = 13;
-  int ScriptEnd = 14;
-  int ArgName = 15;
-  int ArgEquals = 16;
-  int TagEnd = 17;
-  int ArgValue = 18;
-  int ArgQuote1 = 19;
-  int ArgQuote2 = 20;
-  int Quote1Text = 22;
-  int CloseQuote1 = 23;
-  int Quote2Text = 24;
-  int CloseQuote2 = 25;
-  int CommentText1 = 26;
-  int CommentEnd1 = 27;
-  int CommentText2 = 28;
-  int CommentEnd2 = 29;
+  int HEX = 9;
+  int Entity = 10;
+  int Space = 11;
+  int SP = 12;
+  int Punct = 13;
+  int ScriptText = 14;
+  int ScriptEnd = 15;
+  int ArgName = 16;
+  int ArgEquals = 17;
+  int TagEnd = 18;
+  int ArgValue = 19;
+  int ArgQuote1 = 20;
+  int ArgQuote2 = 21;
+  int Quote1Text = 23;
+  int CloseQuote1 = 24;
+  int Quote2Text = 25;
+  int CloseQuote2 = 26;
+  int CommentText1 = 27;
+  int CommentEnd1 = 28;
+  int CommentText2 = 29;
+  int CommentEnd2 = 30;
 
   int DEFAULT = 0;
   int WithinScript = 1;
@@ -52,6 +53,7 @@ public interface HTMLParserConstants {
     "<Word>",
     "<LET>",
     "<NUM>",
+    "<HEX>",
     "<Entity>",
     "<Space>",
     "<SP>",
@@ -64,7 +66,7 @@ public interface HTMLParserConstants {
     "<ArgValue>",
     "\"\\\'\"",
     "\"\\\"\"",
-    "<token of kind 21>",
+    "<token of kind 22>",
     "<Quote1Text>",
     "<CloseQuote1>",
     "<Quote2Text>",
