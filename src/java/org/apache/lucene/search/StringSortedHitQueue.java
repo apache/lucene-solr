@@ -26,8 +26,9 @@ import java.io.IOException;
 /**
  * Expert: A sorted hit queue for fields that contain string values.
  * Hits are sorted into the queue by the values in the field and then by document number.
- * The internal cache contains integers - the strings are sorted and
- * then only their sequence number cached.
+ * Warning: The internal cache could be quite large, depending on the number of terms
+ * in the field!  All the terms are kept in memory, as well as a sorted array of
+ * integers representing their relative position.
  *
  * <p>Created: Feb 2, 2004 9:26:33 AM
  *
@@ -68,21 +69,24 @@ extends FieldSortedHitQueue {
 	/**
 	 * Returns a comparator for sorting hits according to a field containing strings.
 	 * @param reader  Index to use.
-	 * @param field  Field containg string values.
+	 * @param fieldname  Field containg string values.
 	 * @return  Comparator for sorting hits.
 	 * @throws IOException If an error occurs reading the index.
 	 */
-	static ScoreDocLookupComparator comparator (final IndexReader reader, final String field)
+	static ScoreDocLookupComparator comparator (final IndexReader reader, final String fieldname)
 	throws IOException {
+		final String field = fieldname.intern();
 		return new ScoreDocLookupComparator() {
 
 			/** The sort information being used by this instance */
 			protected final int[] fieldOrder = generateSortIndex();
+			protected String[] terms;
 
 			private final int[] generateSortIndex()
 			throws IOException {
 
 				final int[] retArray = new int[reader.maxDoc()];
+				final String[] mterms = new String[reader.maxDoc()];   // guess length
 
 				TermEnum enumerator = reader.terms (new Term (field, ""));
 				TermDocs termDocs = reader.termDocs();
@@ -98,20 +102,41 @@ extends FieldSortedHitQueue {
 				// following loop will automatically sort the
 				// terms in the correct order.
 
+				// if a given document has more than one term
+				// in the field, only the last one will be used.
+
+				int t = 0;  // current term number
 				try {
-					int t = 0;  // current term number
 					do {
 						Term term = enumerator.term();
 						if (term.field() != field) break;
-						t++;
+
+						// store term text
+						// we expect that there is at most one term per document
+						if (t >= mterms.length) throw new RuntimeException ("there are more terms than documents in field \""+field+"\"");
+						mterms[t] = term.text();
+
+						// store which documents use this term
 						termDocs.seek (enumerator);
 						while (termDocs.next()) {
 							retArray[termDocs.doc()] = t;
 						}
+
+						t++;
 					} while (enumerator.next());
+
 				} finally {
 					enumerator.close();
 					termDocs.close();
+				}
+
+				// if there are less terms than documents,
+				// trim off the dead array space
+				if (t < mterms.length) {
+					terms = new String[t];
+					System.arraycopy (mterms, 0, terms, 0, t);
+				} else {
+					terms = mterms;
 				}
 
 				return retArray;
@@ -138,11 +163,11 @@ extends FieldSortedHitQueue {
 			}
 
 			public Object sortValue (final ScoreDoc i) {
-				return new Integer(fieldOrder[i.doc]);
+				return terms[fieldOrder[i.doc]];
 			}
 
 			public int sortType() {
-				return SortField.INT;
+				return SortField.STRING;
 			}
 		};
 	}
@@ -152,20 +177,23 @@ extends FieldSortedHitQueue {
 	 * Returns a comparator for sorting hits according to a field containing strings using the given enumerator
 	 * to collect term values.
 	 * @param reader  Index to use.
-	 * @param field  Field containg string values.
+	 * @param fieldname  Field containg string values.
 	 * @return  Comparator for sorting hits.
 	 * @throws IOException If an error occurs reading the index.
 	 */
-	static ScoreDocLookupComparator comparator (final IndexReader reader, final TermEnum enumerator, final String field)
+	static ScoreDocLookupComparator comparator (final IndexReader reader, final TermEnum enumerator, final String fieldname)
 	throws IOException {
+		final String field = fieldname.intern();
 		return new ScoreDocLookupComparator() {
 
 			protected final int[] fieldOrder = generateSortIndex();
+			protected String[] terms;
 
 			private final int[] generateSortIndex()
 			throws IOException {
 
 				final int[] retArray = new int[reader.maxDoc()];
+				final String[] mterms = new String[reader.maxDoc()];  // guess length
 
 				// NOTE: the contract for TermEnum says the
 				// terms will be in natural order (which is
@@ -175,20 +203,40 @@ extends FieldSortedHitQueue {
 				// following loop will automatically sort the
 				// terms in the correct order.
 
+				// if a given document has more than one term
+				// in the field, only the last one will be used.
+
 				TermDocs termDocs = reader.termDocs();
+				int t = 0;  // current term number
 				try {
-					int t = 0;  // current term number
 					do {
 						Term term = enumerator.term();
 						if (term.field() != field) break;
-						t++;
+
+						// store term text
+						// we expect that there is at most one term per document
+						if (t >= mterms.length) throw new RuntimeException ("there are more terms than documents in field \""+field+"\"");
+						mterms[t] = term.text();
+
+						// store which documents use this term
 						termDocs.seek (enumerator);
 						while (termDocs.next()) {
 							retArray[termDocs.doc()] = t;
 						}
+
+						t++;
 					} while (enumerator.next());
 				} finally {
 					termDocs.close();
+				}
+
+				// if there are less terms than documents,
+				// trim off the dead array space
+				if (t < mterms.length) {
+					terms = new String[t];
+					System.arraycopy (mterms, 0, terms, 0, t);
+				} else {
+					terms = mterms;
 				}
 
 				return retArray;
@@ -215,11 +263,11 @@ extends FieldSortedHitQueue {
 			}
 
 			public Object sortValue (final ScoreDoc i) {
-				return new Integer(fieldOrder[i.doc]);
+				return terms[fieldOrder[i.doc]];
 			}
 
 			public int sortType() {
-				return SortField.INT;
+				return SortField.STRING;
 			}
 		};
 	}
