@@ -341,6 +341,7 @@ Implementation-Vendor: Lucene
       bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
       >
       <classpath refid="classpath"/>
+      <tag name="todo" description="To Do:"/>
     </javadoc>
   </target>
 
