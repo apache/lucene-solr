@@ -123,15 +123,11 @@ public class IndexSearcher extends Searcher {
       new FieldSortedHitQueue(reader, sort.fields, nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
-        private float minScore = 0.0f;
         public final void collect(int doc, float score) {
-          if (score > 0.0f &&                     // ignore zeroed buckets
-              (bits==null || bits.get(doc))) {    // skip docs not in bits
+          if (score > 0.0f &&			  // ignore zeroed buckets
+              (bits==null || bits.get(doc))) {	  // skip docs not in bits
             totalHits[0]++;
-            if (hq.size() < nDocs || score >= minScore) {
-              hq.insert(new FieldDoc(doc, score));
-              minScore = ((FieldDoc)hq.top()).score; // maintain minScore
-            }
+            hq.insert(new FieldDoc(doc, score));
           }
         }
       });
