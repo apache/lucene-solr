@@ -26,7 +26,13 @@ import java.io.File;
 public class GCJDirectory extends FSDirectory {
 
   public IndexInput openInput(String name) throws IOException {
-    return new GCJIndexInput(new File(getFile(), name).getPath());
+    // conserve address space by only mmapping the one index file that most
+    // impacts performance
+    if (name.endsWith(".frq")) {
+      return new GCJIndexInput(new File(getFile(), name).getPath());
+    } else {
+      return super.openInput(name);
+    }
   }
 }
 
