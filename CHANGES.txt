@@ -2,7 +2,7 @@ Lucene Change Log
 
 $Id$
 
-1.3 <FINAL?>
+1.3 final
 
  1. Added catch of BooleanQuery$TooManyClauses in QueryParser to
     throw ParseException instead. (Erik Hatcher)
