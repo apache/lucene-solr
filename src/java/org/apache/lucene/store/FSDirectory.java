@@ -65,7 +65,7 @@ public class FSDirectory extends Directory {
                            FSDirectory.class.getName());
       IMPL = Class.forName(name);
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("cannot load FSDirectory class: " + e.getMessage());
     }
   }
 
@@ -115,7 +115,7 @@ public class FSDirectory extends Directory {
         try {
           dir = (FSDirectory)IMPL.newInstance();
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          throw new RuntimeException("cannot load FSDirectory class: " + e.getMessage());
         }
         dir.init(file, create);
         DIRECTORIES.put(file, dir);
