@@ -182,7 +182,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="test-unit" depends="compile" if="junit.present">
+  <target name="test-unit" depends="compile,test" if="junit.present">
     <!-- Import JUnit task -->
     <taskdef 
       name="junit" 

@@ -85,7 +85,7 @@ class StoreTest {
     if (ram)
       store = new RAMDirectory();
     else
-      store = new FSDirectory("test.store", true);
+      store = FSDirectory.getDirectory("test.store", true);
 
     final int LENGTH_MASK = 0xFFF;
 
@@ -114,7 +114,7 @@ class StoreTest {
     start = new Date();
 
     if (!ram)
-      store = new FSDirectory("test.store", false);
+      store = FSDirectory.getDirectory("test.store", false);
 
     for (i = 0; i < count; i++) {
       String name = i + ".dat";

@@ -111,7 +111,7 @@ class SearchTest {
       //DateFilter filter = DateFilter.Before("modified", Time(1997,00,01));
       //System.out.println(filter);
 
-	hits = searcher.search(query, null);
+	hits = searcher.search(query);
 
 	System.out.println(hits.length() + " total results");
 	for (int i = 0 ; i < hits.length() && i < 10; i++) {

@@ -120,7 +120,7 @@ class TermInfosTest {
 
     start = new Date();
 
-    Directory store = new FSDirectory("test.store", true);
+    Directory store = FSDirectory.getDirectory("test.store", true);
     FieldInfos fis = new FieldInfos();
 
     TermInfosWriter writer = new TermInfosWriter(store, "words", fis);

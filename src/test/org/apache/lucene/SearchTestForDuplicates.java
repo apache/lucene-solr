@@ -98,7 +98,7 @@ class SearchTestForDuplicates {
       Query query = parser.parse(HIGH_PRIORITY);
       System.out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(query, null);
+      hits = searcher.search(query);
       printHits(hits);
 
       searcher.close();
@@ -112,7 +112,7 @@ class SearchTestForDuplicates {
       query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
       System.out.println("Query: " + query.toString(PRIORITY_FIELD));
 
-      hits = searcher.search(query, null);
+      hits = searcher.search(query);
       printHits(hits);
 
       searcher.close();

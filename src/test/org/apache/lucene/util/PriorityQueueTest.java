@@ -62,8 +62,19 @@ class PriorityQueueTest {
     test(10000);
   }
 
+  private static class IntegerQueue extends PriorityQueue {
+    public IntegerQueue(int count) { 
+      super();
+      initialize(count);
+    }
+
+    protected boolean lessThan(Object a, Object b) {
+      return ((Integer) a).intValue() < ((Integer) b).intValue();
+    }
+  }
+
   public static void test(int count) {
-    PriorityQueue pq = new PriorityQueue(count);
+    PriorityQueue pq = new IntegerQueue(count);
     Random gen = new Random();
     int i;
     

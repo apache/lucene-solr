@@ -100,7 +100,7 @@ final class FieldInfos {
     }
   }
 
-  private final void add(String name, boolean isIndexed) {
+  final void add(String name, boolean isIndexed) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null)
       addInternal(name, isIndexed);
