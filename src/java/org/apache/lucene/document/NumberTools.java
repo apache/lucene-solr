@@ -55,7 +55,7 @@ public class NumberTools {
             + "1y2p0ij32e8e7";
 
     /**
-     * the length of (all) strings returned by {@link #longToString}
+     * The length of (all) strings returned by {@link #longToString}
      */
     public static final int STR_SIZE = MIN_STRING_VALUE.length();
 
@@ -89,7 +89,7 @@ public class NumberTools {
     }
 
     /**
-     * Converts a String that was returned by {@link #longToString}back to a
+     * Converts a String that was returned by {@link #longToString} back to a
      * long.
      * 
      * @throws IllegalArgumentException
@@ -100,7 +100,7 @@ public class NumberTools {
      */
     public static long stringToLong(String str) {
         if (str == null) {
-            throw new IllegalArgumentException("string cannot be null");
+            throw new NullPointerException("string cannot be null");
         }
         if (str.length() != STR_SIZE) {
             throw new NumberFormatException("string is the wrong size");
