@@ -116,7 +116,6 @@ public class MMapDirectory extends FSDirectory {
         int bufSize = (length > (bufferStart + maxBufSize))
           ? maxBufSize
           : (int) (length - bufferStart);
-        //System.out.println("mapping from: "+bufferStart+", size: "+bufSize);
         this.buffers[bufNr] = rafc.map(MapMode.READ_ONLY,bufferStart,bufSize);
         this.bufSizes[bufNr] = bufSize;
         bufferStart += bufSize;
@@ -129,8 +128,8 @@ public class MMapDirectory extends FSDirectory {
       // eg. 128 bytes and readByte() from there.
       if (curAvail == 0) {
         curBufIndex++;
-        curBuf = buffers[curBufIndex];
-        curBuf.position(0);      // index out of bounds when too many requested
+        curBuf = buffers[curBufIndex]; // index out of bounds when too many bytes requested
+        curBuf.position(0);
         curAvail = bufSizes[curBufIndex];
       }
       curAvail--;
@@ -143,8 +142,8 @@ public class MMapDirectory extends FSDirectory {
         len -= curAvail;
         offset += curAvail;
         curBufIndex++;
-        curBuf = buffers[curBufIndex];
-        curBuf.position(0);      // index out of bounds when too many requested
+        curBuf = buffers[curBufIndex]; // index out of bounds when too many bytes requested
+        curBuf.position(0);
         curAvail = bufSizes[curBufIndex];
       }
       curBuf.get(b, offset, len);
