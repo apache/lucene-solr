@@ -12,6 +12,10 @@ $Id$
     Fix for bug 9015, http://nagoya.apache.org/bugzilla/show_bug.cgi?id=9015
     (Dale Anson via otis)
 
+ 3. Added the ability to disable lock creation by using disableLocks system
+    property.  This is useful for read-only media, such as CD-ROMs.
+    (otis)
+
 1.2 RC6
 
  1. Changed QueryParser.jj to have "?" be a special character which
