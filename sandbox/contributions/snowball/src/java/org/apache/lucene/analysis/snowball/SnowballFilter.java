@@ -84,7 +84,7 @@ public class SnowballFilter extends TokenFilter {
    * @param in the name of a stemmer
    */
   public SnowballFilter(TokenStream in, String name) {
-    this.input = in;
+    super(in);
     try {
       Class stemClass =
         Class.forName("net.sf.snowball.ext." + name + "Stemmer");
