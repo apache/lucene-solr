@@ -203,7 +203,7 @@ class CompoundFileReader extends Directory {
          *  position in the input.
          * @param b the array to read bytes into
          * @param offset the offset in the array to start storing bytes
-         * @param length the number of bytes to read
+         * @param len the number of bytes to read
          */
         protected void readInternal(byte[] b, int offset, int len)
         throws IOException
