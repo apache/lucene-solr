@@ -8,7 +8,7 @@
 
 
   <path id="additional.dependencies">
-    <pathelement location="lib/libreadline-java.jar"/>
+    <pathelement location="lib/jline.jar"/>
   </path>
 
   <pathconvert property="project.classpath"
