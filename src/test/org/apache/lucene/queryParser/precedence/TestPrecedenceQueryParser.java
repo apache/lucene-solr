@@ -170,6 +170,8 @@ public class TestPrecedenceQueryParser extends TestCase {
     assertQueryEquals("türm term term", null, "türm term term");
     assertQueryEquals("ümlaut", null, "ümlaut");
 
+    assertQueryEquals("+a", null, "+a");
+    assertQueryEquals("-a", null, "-a");
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
     assertQueryEquals("c OR (a AND b)", null, "c (+a +b)");
@@ -325,6 +327,7 @@ public class TestPrecedenceQueryParser extends TestCase {
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
                       "(+term -\"phrase1 phrase2\") term");
     assertQueryEquals("stop", qpAnalyzer, "");
+    assertQueryEquals("stop OR stop AND stop", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }
@@ -530,11 +533,9 @@ public class TestPrecedenceQueryParser extends TestCase {
     Query query1 = PrecedenceQueryParser.parse("A AND B OR C AND D", "field", new WhitespaceAnalyzer());
     Query query2 = PrecedenceQueryParser.parse("(A AND B) OR (C AND D)", "field", new WhitespaceAnalyzer());
     assertEquals(query1, query2);
-  }
 
-  public void testPrecedenceWithNot() throws Exception {
-    Query query1 = PrecedenceQueryParser.parse("A OR B C", "field", new WhitespaceAnalyzer());
-    Query query2 = PrecedenceQueryParser.parse("A B C", "field", new WhitespaceAnalyzer());
+    query1 = PrecedenceQueryParser.parse("A OR B C", "field", new WhitespaceAnalyzer());
+    query2 = PrecedenceQueryParser.parse("A B C", "field", new WhitespaceAnalyzer());
     assertEquals(query1, query2);
 
     query1 = PrecedenceQueryParser.parse("A AND B C", "field", new WhitespaceAnalyzer());
@@ -548,8 +549,11 @@ public class TestPrecedenceQueryParser extends TestCase {
     query1 = PrecedenceQueryParser.parse("A OR NOT B", "field", new WhitespaceAnalyzer());
     query2 = PrecedenceQueryParser.parse("A -B", "field", new WhitespaceAnalyzer());
     assertEquals(query1, query2);
-  }
 
+    query1 = PrecedenceQueryParser.parse("A OR NOT B AND C", "field", new WhitespaceAnalyzer());
+    query2 = PrecedenceQueryParser.parse("A (-B +C)", "field", new WhitespaceAnalyzer());
+    assertEquals(query1, query2);
+  }
 
 
   public void tearDown() {

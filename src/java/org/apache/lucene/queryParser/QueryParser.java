@@ -524,6 +524,7 @@ public class QueryParser implements QueryParserConstants {
   protected Query getBooleanQuery(Vector clauses) throws ParseException {
     return getBooleanQuery(clauses, false);
   }
+
   /**
    * Factory method for generating query, given a set of clauses.
    * By default creates a boolean query composed of clauses passed in.

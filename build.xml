@@ -97,7 +97,6 @@
       <srcfiles dir="src" includes="**/*.jj" />
       <mapper type="glob" from="*.jj" to="*.java"/>
     </uptodate>
-    <echo>${javacc.files.uptodate}</echo>
   </target>
 
   <target name="javacc-notice" unless="javacc.files.uptodate">

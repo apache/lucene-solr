@@ -545,8 +545,9 @@ public class QueryParser {
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getBooleanQuery(Vector clauses) throws ParseException {
-    getBooleanQuery(clauses, false);
+    return getBooleanQuery(clauses, false);
   }
+
   /**
    * Factory method for generating query, given a set of clauses.
    * By default creates a boolean query composed of clauses passed in.
