@@ -134,7 +134,7 @@ public final class Hits {
   }
   
  /** Returns the id for the nth document in this set. */ 
-  public final float id(int n) throws IOException {
+  public final int id(int n) throws IOException {
     return hitDoc(n).id;
   }
 
