@@ -356,6 +356,7 @@
       overview="${src.dir}/overview.html"
       packagenames="${packages}"
       destdir="${build.javadocs}"
+      encoding="${build.encoding}"
       author="true"
       version="true"
       use="true"
