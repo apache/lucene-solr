@@ -316,15 +316,11 @@ final class DocumentWriter {
     }
   }
 
-  private final void writeNorms(Document doc, String segment)
-          throws IOException {
-    Enumeration fields = doc.fields();
-    while (fields.hasMoreElements()) {
-      Field field = (Field) fields.nextElement();
-      if (field.isIndexed()) {
-        int n = fieldInfos.fieldNumber(field.name());
-        float norm =
-                fieldBoosts[n] * similarity.lengthNorm(field.name(), fieldLengths[n]);
+  private final void writeNorms(Document doc, String segment) throws IOException { 
+    for(int n = 0; n < fieldInfos.size(); n++){
+      FieldInfo fi = fieldInfos.fieldInfo(n);
+      if(fi.isIndexed){
+        float norm = fieldBoosts[n] * similarity.lengthNorm(fi.name, fieldLengths[n]);
         OutputStream norms = directory.createFile(segment + ".f" + n);
         try {
           norms.writeByte(similarity.encodeNorm(norm));
