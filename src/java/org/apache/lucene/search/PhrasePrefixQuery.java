@@ -45,22 +45,22 @@ public class PhrasePrefixQuery extends Query {
 
   private int slop = 0;
 
-  /* Sets the phrase slop for this query.
+  /** Sets the phrase slop for this query.
    * @see PhraseQuery#setSlop(int)
    */
   public void setSlop(int s) { slop = s; }
 
-  /* Sets the phrase slop for this query.
+  /** Sets the phrase slop for this query.
    * @see PhraseQuery#getSlop()
    */
   public int getSlop() { return slop; }
 
-  /* Add a single term at the next position in the phrase.
+  /** Add a single term at the next position in the phrase.
    * @see PhraseQuery#add(Term)
    */
   public void add(Term term) { add(new Term[]{term}); }
 
-  /* Add multiple terms at the next position in the phrase.  Any of the terms
+  /** Add multiple terms at the next position in the phrase.  Any of the terms
    * may match.
    *
    * @see PhraseQuery#add(Term)
@@ -250,7 +250,9 @@ public class PhrasePrefixQuery extends Query {
     Iterator i = termArrays.iterator();
     while (i.hasNext()) {
       Term[] terms = (Term[])i.next();
-      buffer.append(terms[0].text() + (terms.length > 0 ? "*" : ""));
+      buffer.append(terms[0].text() + (terms.length > 1 ? "*" : ""));
+      if (i.hasNext())
+        buffer.append(" ");
     }
     buffer.append("\"");
 
