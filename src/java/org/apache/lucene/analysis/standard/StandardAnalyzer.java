@@ -60,36 +60,49 @@ import java.util.Hashtable;
 
 /** Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
  * LowerCaseFilter} and {@link StopFilter}. */
-public final class StandardAnalyzer extends Analyzer {
-  private Hashtable stopTable;
+public class StandardAnalyzer extends Analyzer {
+    private Hashtable stopTable;
 
-  /** An array containing some common English words that are not usually useful
-    for searching. */
-  public static final String[] STOP_WORDS = {
-    "a", "and", "are", "as", "at", "be", "but", "by",
-    "for", "if", "in", "into", "is", "it",
-    "no", "not", "of", "on", "or", "s", "such",
-    "t", "that", "the", "their", "then", "there", "these",
-    "they", "this", "to", "was", "will", "with"
-  };
+    /** An array containing some common English words that are usually not
+	useful for searching. */
+    public static final String[] STOP_WORDS = {
+	"0","1","2","3","4","5","6","7","8","9",
+	"$",
+	"about",  "after",  "all", "also",  "an",  "and",
+	"another", "any", "are", "as", "at", "be", "because",
+	"been", "before", "being", "between", "both", "but",
+	"by","came","can","come","could","did","do","does",
+	"each","else","for","from","get","got","has","had",
+	"he","have","her","here","him","himself","his","how",
+	"if","in","into","is","it","its","just","like","make",
+	"many","me","might","more","most","much","must","my",
+	"never","now","of","on","only","or","other","our","out",
+	"over","re","said","same","see","should","since","so",
+	"some","still","such","take","than","that","the","their",
+	"them","then","there","these","they","this","those","through",
+	"to","too","under","up","use","very","want","was","way","we",
+	"well","were","what","when","where","which","while","who","will",
+	"with","would","you","your", "a","b","c","d","e","f","g","h","i",
+	"j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"
+    };
 
-  /** Builds an analyzer. */
-  public StandardAnalyzer() {
-    this(STOP_WORDS);
-  }
+    /** Builds an analyzer. */
+    public StandardAnalyzer() {
+	this(STOP_WORDS);
+    }
 
-  /** Builds an analyzer with the given stop words. */
-  public StandardAnalyzer(String[] stopWords) {
-    stopTable = StopFilter.makeStopTable(stopWords);
-  }
+    /** Builds an analyzer with the given stop words. */
+    public StandardAnalyzer(String[] stopWords) {
+	stopTable = StopFilter.makeStopTable(stopWords);
+    }
 
-  /** Constructs a {@link StandardTokenizer} filtered by a {@link
-   * StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
-  public final TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader);
-    result = new StandardFilter(result);
-    result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopTable);
-    return result;
-  }
+    /** Constructs a {@link StandardTokenizer} filtered by a {@link
+     * StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
+    public final TokenStream tokenStream(String fieldName, Reader reader) {
+	TokenStream result = new StandardTokenizer(reader);
+	result = new StandardFilter(result);
+	result = new LowerCaseFilter(result);
+	result = new StopFilter(result, stopTable);
+	return result;
+    }
 }
