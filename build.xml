@@ -117,6 +117,7 @@
     <jar 
       jarfile="${build.dir}/${final.name}.jar" 
       basedir="${build.classes}"
+      excludes="**/*.java"
     />
   </target>
 
@@ -125,10 +126,24 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="jar-src" depends="compile" if="javacc.present">
+  <target name="jar-src" depends="init,javacc_check" if="javacc.present">
+    <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
+    <javacc 
+      target="${src.dir}/org/apache/lucene/analysis/standard/StandardTokenizer.jj" 
+      javacchome="${javacc.zip.dir}"
+      outputdirectory="${build.src}/org/apache/lucene/analysis/standard"
+    />
+    
+    <delete file="${build.src}/org/apache/lucene/analysis/standard/ParseException.java"/>
+    <mkdir dir="${build.src}/org/apache/lucene/queryParser"/>
+    <javacc 
+      target="${src.dir}/org/apache/lucene/queryParser/QueryParser.jj"
+      javacchome="${javacc.zip.dir}"
+      outputdirectory="${build.src}/org/apache/lucene/queryParser"
+    />
+
     <jar jarfile="${build.dir}/${final.name}-src.jar"> 
-      <fileset dir="${src.dir}" includes="**/*.java"/>
-      <fileset dir="${build.dir}/src" includes="**/*.java"/>
+      <fileset dir="${build.dir}" includes="**/*.java"/>
     </jar>
   </target>
 
@@ -341,12 +356,12 @@
   </target>
 
   <!-- ================================================================== -->
-  <!-- Packages the distribution with ZIP                                 -->
+  <!-- Packages the distribution with zip                                 -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-zip" depends="package"
-    description="--> generates the Lucene distribution as .zip">
+	  description="--> Generates the Lucene distribution as .zip">
     
     <delete file="${basedir}/${final.name}.zip"/>
     <zip 
@@ -357,12 +372,12 @@
   </target>
 
   <!-- ================================================================== -->
-  <!-- Packages the distribution with TAR-GZIP                            -->
+  <!-- packages the distribution with tar-gzip                            -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-tgz" depends="package"
-    description="--> generates the Lucene distribution as .tar.gz">
+    description="--> generates the lucene distribution as .tar.gz">
     
     <delete file="${basedir}/${final.name}.tar"/>
     <delete file="${basedir}/${final.name}.tar.gz"/>
@@ -379,7 +394,7 @@
   </target>
 
   <!-- ================================================================== -->
-  <!-- Packages the distribution with ZIP and TAG-GZIP                    -->
+  <!-- packages the distribution with zip and tar-gzip                    -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
@@ -388,11 +403,89 @@
   </target>
 
   <!-- ================================================================== -->
-  <!-- Same as package-all. It is just here for compatibility.            -->
+  <!-- same as package-all. it is just here for compatibility.            -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="dist" depends="package-all">
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- S O U R C E  D I S T R I B U T I O N                               -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-src" depends="jar-src">
+    <mkdir dir="${dist-src.dir}"/>
+    <copy todir="${dist-src.dir}/src">
+      <fileset dir="src"/>
+    </copy>
+    <copy todir="${dist-src.dir}/lib">
+      <fileset dir="lib"/>
+    </copy>
+    <copy todir="${dist-src.dir}/" file="build.xml"/>
+    <copy todir="${dist-src.dir}/" file="build.properties"/>
+    <copy todir="${dist-src.dir}">
+      <fileset dir=".">
+        <include name="*.txt" />
+      </fileset>
+    </copy>
+    <copy file="${build.dir}/${final.name}-src.jar" todir="${dist-src.dir}"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the sources with zip                                      -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-zip-src" depends="package-src"
+	  description="--> Generates the Lucene sources as .zip">
+    
+    <delete file="${basedir}/${final.name}-src.zip"/>
+    <zip
+      zipfile="${basedir}/${final.name}-src.zip" 
+      basedir="${basedir}/" 
+      includes="**/${final.name}-src/**"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the sources with tar-gzip                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-tgz-src" depends="package-src"
+	  description="--> Generates the Lucene distribution as .tar.gz">
+    
+    <delete file="${basedir}/${final.name}-src.tar"/>
+    <delete file="${basedir}/${final.name}-src.tar.gz"/>
+    <tar 
+      tarfile="${basedir}/${final.name}-src.tar"
+      basedir="${basedir}/"
+      includes="**/${final.name}-src/**"
+    />
+    
+    <gzip 
+      zipfile="${basedir}/${final.name}-src.tar.gz" 
+      src="${basedir}/${final.name}-src.tar"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the sources with zip and tar-gzip                         -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-all-src" depends="package-zip-src, package-tgz-src"
+    description="--> Generates the .tar.gz and .zip source distributions">
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- same as package-all-src. it is just here for compatibility.        -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="dist-src" depends="package-all-src">
   </target>
 
   <!-- ================================================================== -->
