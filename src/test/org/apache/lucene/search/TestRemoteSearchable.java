@@ -66,6 +66,9 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
+/**
+ * @version $Id$
+ */
 public class TestRemoteSearchable extends TestCase {
   public TestRemoteSearchable(String name) {
     super(name);
