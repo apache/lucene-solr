@@ -60,21 +60,23 @@ public class TestMultiSearcher extends TestCase
 
         // creating a document to store
         Document lDoc = new Document();
-        lDoc.add(Field.Text("fulltext", "Once upon a time....."));
-        lDoc.add(Field.Keyword("id", "doc1"));
-        lDoc.add(Field.Keyword("handle", "1"));
+        lDoc.add(new Field("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.TOKENIZED));
+        lDoc.add(new Field("id", "doc1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        lDoc.add(new Field("handle", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
 
         // creating a document to store
         Document lDoc2 = new Document();
-        lDoc2.add(Field.Text("fulltext", "in a galaxy far far away....."));
-        lDoc2.add(Field.Keyword("id", "doc2"));
-        lDoc2.add(Field.Keyword("handle", "1"));
+        lDoc2.add(new Field("fulltext", "in a galaxy far far away.....",
+            Field.Store.YES, Field.Index.TOKENIZED));
+        lDoc2.add(new Field("id", "doc2", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        lDoc2.add(new Field("handle", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
 
         // creating a document to store
         Document lDoc3 = new Document();
-        lDoc3.add(Field.Text("fulltext", "a bizarre bug manifested itself...."));
-        lDoc3.add(Field.Keyword("id", "doc3"));
-        lDoc3.add(Field.Keyword("handle", "1"));
+        lDoc3.add(new Field("fulltext", "a bizarre bug manifested itself....",
+            Field.Store.YES, Field.Index.TOKENIZED));
+        lDoc3.add(new Field("id", "doc3", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
 
         // creating an index writer for the first index
         IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(), true);

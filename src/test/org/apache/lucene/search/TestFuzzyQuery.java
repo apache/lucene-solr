@@ -148,7 +148,7 @@ public class TestFuzzyQuery extends TestCase {
   
   private void addDoc(String text, IndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(Field.Text("field", text));
+    doc.add(new Field("field", text, Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
   }
 

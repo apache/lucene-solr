@@ -51,23 +51,23 @@ extends TestCase {
     IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(), true);
 
     Document doc = new Document();
-    doc.add (Field.Text ("field", "one two three four five"));
-    doc.add (Field.Text ("sorter", "b"));
+    doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("sorter", "b", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (Field.Text ("field", "one two three four"));
-    doc.add (Field.Text ("sorter", "d"));
+    doc.add (new Field("field", "one two three four", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("sorter", "d", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (Field.Text ("field", "one two three y"));
-    doc.add (Field.Text ("sorter", "a"));
+    doc.add (new Field("field", "one two three y", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("sorter", "a", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (Field.Text ("field", "one two x"));
-    doc.add (Field.Text ("sorter", "c"));
+    doc.add (new Field("field", "one two x", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument (doc);
 
     writer.optimize ();

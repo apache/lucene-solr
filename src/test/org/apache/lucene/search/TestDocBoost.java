@@ -40,8 +40,8 @@ public class TestDocBoost extends TestCase {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
     
-    Field f1 = Field.Text("field", "word");
-    Field f2 = Field.Text("field", "word");
+    Field f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
+    Field f2 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
     f2.setBoost(2.0f);
     
     Document d1 = new Document();
