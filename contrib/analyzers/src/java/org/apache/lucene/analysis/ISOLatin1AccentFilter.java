@@ -20,7 +20,7 @@ package org.apache.lucene.analysis;
  * A filter that replace accented characters in the ISO Latin 1 character set by
  * their unaccented equivalent. The case will not be altered.
  * <p>
- * For instance, 'à' will be replaced by 'a'.
+ * For instance, 'Ã ' will be replaced by 'a'.
  * <p>
  */
 public class ISOLatin1AccentFilter extends TokenFilter {
@@ -46,119 +46,119 @@ public class ISOLatin1AccentFilter extends TokenFilter {
 		final StringBuffer output = new StringBuffer();
 		for (int i = 0; i < input.length(); i++) {
 			switch (input.charAt(i)) {
-				case '\u00C0' : // À
-				case '\u00C1' : // Á
-				case '\u00C2' : // Â
-				case '\u00C3' : // Ã
-				case '\u00C4' : // Ä
-				case '\u00C5' : // Å
+				case '\u00C0' : // Ã€
+				case '\u00C1' : // Ã
+				case '\u00C2' : // Ã‚
+				case '\u00C3' : // Ãƒ
+				case '\u00C4' : // Ã„
+				case '\u00C5' : // Ã…
 					output.append("A");
 					break;
-				case '\u00C6' : // Æ
+				case '\u00C6' : // Ã†
 					output.append("AE");
 					break;
-				case '\u00C7' : // Ç
+				case '\u00C7' : // Ã‡
 					output.append("C");
 					break;
-				case '\u00C8' : // È
-				case '\u00C9' : // É
-				case '\u00CA' : // Ê
-				case '\u00CB' : // Ë
+				case '\u00C8' : // Ãˆ
+				case '\u00C9' : // Ã‰
+				case '\u00CA' : // ÃŠ
+				case '\u00CB' : // Ã‹
 					output.append("E");
 					break;
-				case '\u00CC' : // Ì
-				case '\u00CD' : // Í
-				case '\u00CE' : // Î
-				case '\u00CF' : // Ï
+				case '\u00CC' : // ÃŒ
+				case '\u00CD' : // Ã
+				case '\u00CE' : // ÃŽ
+				case '\u00CF' : // Ã
 					output.append("I");
 					break;
-				case '\u00D0' : // Ð
+				case '\u00D0' : // Ã
 					output.append("D");
 					break;
-				case '\u00D1' : // Ñ
+				case '\u00D1' : // Ã‘
 					output.append("N");
 					break;
-				case '\u00D2' : // Ò
-				case '\u00D3' : // Ó
-				case '\u00D4' : // Ô
-				case '\u00D5' : // Õ
-				case '\u00D6' : // Ö
-				case '\u00D8' : // Ø
+				case '\u00D2' : // Ã’
+				case '\u00D3' : // Ã“
+				case '\u00D4' : // Ã”
+				case '\u00D5' : // Ã•
+				case '\u00D6' : // Ã–
+				case '\u00D8' : // Ã˜
 					output.append("O");
 					break;
-				case '\u0152' : // Œ
+				case '\u0152' : // Å’
 					output.append("OE");
 					break;
-				case '\u00DE' : // Þ
+				case '\u00DE' : // Ãž
 					output.append("TH");
 					break;
-				case '\u00D9' : // Ù
-				case '\u00DA' : // Ú
-				case '\u00DB' : // Û
-				case '\u00DC' : // Ü
+				case '\u00D9' : // Ã™
+				case '\u00DA' : // Ãš
+				case '\u00DB' : // Ã›
+				case '\u00DC' : // Ãœ
 					output.append("U");
 					break;
-				case '\u00DD' : // Ý
-				case '\u0178' : // Ÿ
+				case '\u00DD' : // Ã
+				case '\u0178' : // Å¸
 					output.append("Y");
 					break;
-				case '\u00E0' : // à
-				case '\u00E1' : // á
-				case '\u00E2' : // â
-				case '\u00E3' : // ã
-				case '\u00E4' : // ä
-				case '\u00E5' : // å
+				case '\u00E0' : // Ã 
+				case '\u00E1' : // Ã¡
+				case '\u00E2' : // Ã¢
+				case '\u00E3' : // Ã£
+				case '\u00E4' : // Ã¤
+				case '\u00E5' : // Ã¥
 					output.append("a");
 					break;
-				case '\u00E6' : // æ
+				case '\u00E6' : // Ã¦
 					output.append("ae");
 					break;
-				case '\u00E7' : // ç
+				case '\u00E7' : // Ã§
 					output.append("c");
 					break;
-				case '\u00E8' : // è
-				case '\u00E9' : // é
-				case '\u00EA' : // ê
-				case '\u00EB' : // ë
+				case '\u00E8' : // Ã¨
+				case '\u00E9' : // Ã©
+				case '\u00EA' : // Ãª
+				case '\u00EB' : // Ã«
 					output.append("e");
 					break;
-				case '\u00EC' : // ì
-				case '\u00ED' : // í
-				case '\u00EE' : // î
-				case '\u00EF' : // ï
+				case '\u00EC' : // Ã¬
+				case '\u00ED' : // Ã­
+				case '\u00EE' : // Ã®
+				case '\u00EF' : // Ã¯
 					output.append("i");
 					break;
-				case '\u00F0' : // ð
+				case '\u00F0' : // Ã°
 					output.append("d");
 					break;
-				case '\u00F1' : // ñ
+				case '\u00F1' : // Ã±
 					output.append("n");
 					break;
-				case '\u00F2' : // ò
-				case '\u00F3' : // ó
-				case '\u00F4' : // ô
-				case '\u00F5' : // õ
-				case '\u00F6' : // ö
-				case '\u00F8' : // ø
+				case '\u00F2' : // Ã²
+				case '\u00F3' : // Ã³
+				case '\u00F4' : // Ã´
+				case '\u00F5' : // Ãµ
+				case '\u00F6' : // Ã¶
+				case '\u00F8' : // Ã¸
 					output.append("o");
 					break;
-				case '\u0153' : // œ
+				case '\u0153' : // Å“
 					output.append("oe");
 					break;
-				case '\u00DF' : // ß
+				case '\u00DF' : // ÃŸ
 					output.append("ss");
 					break;
-				case '\u00FE' : // þ
+				case '\u00FE' : // Ã¾
 					output.append("th");
 					break;
-				case '\u00F9' : // ù
-				case '\u00FA' : // ú
-				case '\u00FB' : // û
-				case '\u00FC' : // Ÿ
+				case '\u00F9' : // Ã¹
+				case '\u00FA' : // Ãº
+				case '\u00FB' : // Ã»
+				case '\u00FC' : // Ã¼
 					output.append("u");
 					break;
-				case '\u00FD' : // ý
-				case '\u00FF' : // ÿ
+				case '\u00FD' : // Ã½
+				case '\u00FF' : // Ã¿
 					output.append("y");
 					break;
 				default :
