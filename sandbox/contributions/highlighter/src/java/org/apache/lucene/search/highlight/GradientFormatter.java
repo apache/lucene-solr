@@ -23,7 +23,7 @@ package org.apache.lucene.search.highlight;
  */
 public class GradientFormatter implements Formatter
 {
-    private int maxScore;
+    private float maxScore;
 
     int fgRMin, fgGMin, fgBMin;
 
@@ -41,7 +41,8 @@ public class GradientFormatter implements Formatter
      * Sets the color range for the IDF scores
      * 
      * @param maxScore
-     *            The score (and above) displayed as maxColor
+     *            The score (and above) displayed as maxColor (See QueryScorer.getMaxWeight 
+     * 			  which can be used to callibrate scoring scale)
      * @param minForegroundColor
      *            The hex color used for representing IDF scores of zero eg
      *            #FFFFFF (white) or null if no foreground color required
@@ -55,7 +56,7 @@ public class GradientFormatter implements Formatter
      *            The largest hex color used for representing IDF scores eg
      *            #000000 (black) or null if no background color required
      */
-    public GradientFormatter(int maxScore, String minForegroundColor,
+    public GradientFormatter(float maxScore, String minForegroundColor,
             String maxForegroundColor, String minBackgroundColor,
             String maxBackgroundColor)
     {

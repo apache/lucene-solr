@@ -35,6 +35,7 @@ public class QueryScorer implements Scorer
 	TextFragment currentTextFragment=null;
 	HashSet uniqueTermsInFragment;
 	float totalScore=0;
+	float maxTermWeight=0;
 	private HashMap termsToFind;
 	
 
@@ -67,6 +68,7 @@ public class QueryScorer implements Scorer
 		for (int i = 0; i < weightedTerms.length; i++)
 		{
 			termsToFind.put(weightedTerms[i].term,weightedTerms[i]);
+			maxTermWeight=Math.max(maxTermWeight,weightedTerms[i].getWeight());
 		}
 	}
 	
@@ -122,4 +124,13 @@ public class QueryScorer implements Scorer
 		//this class has no special operations to perform at end of processing
 	}
 
+	/**
+	 * 
+	 * @return The highest weighted term (useful for passing to GradientFormatter to set
+	 * top end of coloring scale.  
+	 */
+    public float getMaxTermWeight()
+    {
+        return maxTermWeight;
+    }
 }
