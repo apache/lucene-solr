@@ -28,7 +28,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     private Term currentTerm = null;
     private TermEnum actualEnum = null;
     
-    public FilteredTermEnum() throws IOException {}
+    public FilteredTermEnum() {}
 
     /** Equality compare on the term */
     protected abstract boolean termCompare(Term term);

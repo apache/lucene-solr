@@ -24,7 +24,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
 
     SloppyPhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
-                       int slop, byte[] norms) throws IOException {
+                       int slop, byte[] norms) {
         super(weight, tps, similarity, norms);
         this.slop = slop;
     }

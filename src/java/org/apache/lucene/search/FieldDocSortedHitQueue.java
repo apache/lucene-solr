@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.PriorityQueue;
 
-import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
 
@@ -48,10 +47,8 @@ extends PriorityQueue {
 	 * Creates a hit queue sorted by the given list of fields.
 	 * @param fields Field names, in priority order (highest priority first).
 	 * @param size  The number of hits to retain.  Must be greater than zero.
-	 * @throws IOException
 	 */
-	FieldDocSortedHitQueue (SortField[] fields, int size)
-	throws IOException {
+	FieldDocSortedHitQueue (SortField[] fields, int size) {
 		this.fields = fields;
 		this.collators = hasCollators (fields);
 		initialize (size);

@@ -77,7 +77,7 @@ final class BooleanScorer extends Scorer {
 			    bucketTable.newCollector(mask), scorers);
   }
 
-  private final void computeCoordFactors() throws IOException {
+  private final void computeCoordFactors() {
     coordFactors = new float[maxCoord];
     for (int i = 0; i < maxCoord; i++)
       coordFactors[i] = getSimilarity().coord(i, maxCoord-1);
@@ -120,7 +120,7 @@ final class BooleanScorer extends Scorer {
     return false;
   }
 
-  public float score() throws IOException {
+  public float score() {
     if (coordFactors == null)
       computeCoordFactors();
     return current.score * coordFactors[current.coord];
@@ -185,11 +185,11 @@ final class BooleanScorer extends Scorer {
     }
   }
 
-  public boolean skipTo(int target) throws IOException {
+  public boolean skipTo(int target) {
     throw new UnsupportedOperationException();
   }
 
-  public Explanation explain(int doc) throws IOException {
+  public Explanation explain(int doc) {
     throw new UnsupportedOperationException();
   }
 

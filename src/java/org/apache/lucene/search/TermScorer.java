@@ -36,7 +36,7 @@ final class TermScorer extends Scorer {
   private float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
   TermScorer(Weight weight, TermDocs td, Similarity similarity,
-             byte[] norms) throws IOException {
+             byte[] norms) {
     super(similarity);
     this.weight = weight;
     this.termDocs = td;
@@ -65,7 +65,7 @@ final class TermScorer extends Scorer {
     return true;
   }
 
-  public float score() throws IOException {
+  public float score() {
     int f = freqs[pointer];
     float raw =                                   // compute tf(f)*weight
       f < SCORE_CACHE_SIZE			  // check cache

@@ -30,7 +30,7 @@ final class ConjunctionScorer extends Scorer {
     super(similarity);
   }
 
-  final void add(Scorer scorer) throws IOException {
+  final void add(Scorer scorer) {
     scorers.addLast(scorer);
   }
 
@@ -92,7 +92,7 @@ final class ConjunctionScorer extends Scorer {
     firstTime = false;
   }
 
-  private void sortScorers() throws IOException {
+  private void sortScorers() {
     // move scorers to an array
     Scorer[] array = (Scorer[])scorers.toArray(new Scorer[scorers.size()]);
     scorers.clear();                              // empty the list
@@ -112,7 +112,7 @@ final class ConjunctionScorer extends Scorer {
     }
   }
 
-  public Explanation explain(int doc) throws IOException {
+  public Explanation explain(int doc) {
     throw new UnsupportedOperationException();
   }
 

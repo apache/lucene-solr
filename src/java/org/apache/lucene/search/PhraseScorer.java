@@ -33,7 +33,7 @@ abstract class PhraseScorer extends Scorer {
   private float freq;
 
   PhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
-               byte[] norms) throws IOException {
+               byte[] norms) {
     super(similarity);
     this.norms = norms;
     this.weight = weight;
