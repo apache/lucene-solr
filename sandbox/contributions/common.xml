@@ -169,6 +169,7 @@
       >
       <link href="${javadoc.link.java}"/>
       <link href="${javadoc.link.lucene}"/>
+      <tag name="todo" description="To Do:"/>
       <classpath refid="compile.classpath"/>
     </javadoc>
   </target>
@@ -182,6 +183,7 @@
     <mkdir dir="${package.dir}"/>
     <mkdir dir="${package.dir}/docs"/>
     <mkdir dir="${package.dir}/docs/api"/>
+    <mkdir dir="${docs.dest}"/>
     <copy todir="${package.dir}/docs/api">
       <fileset dir="${build.javadoc}"/>
     </copy>
