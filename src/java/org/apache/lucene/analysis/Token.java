@@ -54,6 +54,8 @@ package org.apache.lucene.analysis;
  * <http://www.apache.org/>.
  */
 
+import org.apache.lucene.index.TermPositions;
+
 /** A Token is an occurence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
@@ -98,19 +100,21 @@ public final class Token {
    *
    * <p>The default value is one.
    *
-   * <p>Two common uses for this are:<ul>
+   * <p>Some common uses for this are:<ul>
    *
    * <li>Set it to zero to put multiple terms in the same position.  This is
-   * useful if, e.g., when a word has multiple stems.  This way searches for
-   * phrases including either stem will match this occurence.  In this case,
-   * all but the first stem's increment should be set to zero: the increment of
-   * the first instance should be one.
+   * useful if, e.g., a word has multiple stems.  Searches for phrases
+   * including either stem will match.  In this case, all but the first stem's
+   * increment should be set to zero: the increment of the first instance
+   * should be one.  Repeating a token with an increment of zero can also be
+   * used to boost the scores of matches on that token.
    *
    * <li>Set it to values greater than one to inhibit exact phrase matches.
-   * If, for example, one does not want phrases to match across stop words,
-   * then one could build a stop word filter that removes stop words and also
-   * sets the increment to the number of stop words removed before each
-   * non-stop word.
+   * If, for example, one does not want phrases to match across removed stop
+   * words, then one could build a stop word filter that removes stop words and
+   * also sets the increment to the number of stop words removed before each
+   * non-stop word.  Then exact phrase queries will only match when the terms
+   * occur with no intervening stop words.
    *
    * </ul>
    * @see TermPositions

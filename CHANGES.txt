@@ -58,6 +58,21 @@ $Id$
      for longer fields.  Once the index is re-created, scores will be
      as before. (cutting)
 
+ 13. Added new method Token.setPositionIncrement().
+
+     This permits, for the purpose of phrase searching, placing
+     multiple terms in a single position.  This is useful with
+     stemmers that produce multiple possible stems for a word.
+
+     This also permits the introduction of gaps between terms, so that
+     terms which are adjacent in a token stream will not be matched by
+     and exact phrase query.  This makes it possible, e.g., to build
+     an analyzer where phrases are not matched over stop words which
+     have been removed.
+
+     Finally, repeating a token with an increment of zero can also be
+     used to boost scores of matches on that token.
+
 
 1.2 RC6
 
