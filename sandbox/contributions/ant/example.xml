@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<project name="ant-example" default="index">
+
+  <description>
+    Lucene Ant index example
+  </description>
+
+  <property name="index.base.dir" location="build"/>
+  <property name="files.dir" location="src/test"/>
+
+  <target name="index">
+    <mkdir dir="${index.base.dir}"/>
+
+    <index index="${index.base.dir}/index"
+           xmlns="antlib:org.apache.lucene.ant">
+      <fileset dir="${files.dir}"/>
+    </index>
+  </target>
+
+</project>
