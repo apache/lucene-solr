@@ -1,13 +1,13 @@
 <html>
 
 <head>
-<script language="JavaScript" src="f:/jsunit/app/jsUnitCore.js"></script>
+<script language="JavaScript" src="c:/market/jsunit/app/jsUnitCore.js"></script>
 <script language="JavaScript" src="luceneQueryValidator.js"></script>
 </head>
 <body>
 <script>
 setAlertUser(false);
-
+testCheckParentheses()
 // additions to jsUnit
 function assertTrue(comment, value)
 {
@@ -31,7 +31,90 @@ function testRemoveEscapes()
 
 function testCheckAllowedCharacters()
 {
-fail("");
+  var query ="a-zA-Z0-9_+\-:.()\"*?&|!{}\[\]\^~\\@#/$%'= ";
+  assertTrue(query, checkAllowedCharacters(query));
+  
+  query = "foobar";
+  assertFalse(query, checkAllowedCharacters(query));
+}
+
+function testQueryParser()
+{
+  // taken from TestQueryParser.java
+  query = "a AND b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "(a AND b)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+a +b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "c OR (a AND b)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "c (+a +b)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a AND NOT b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+a -b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a AND -b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  //query = "a AND !b"; 
+  //assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a && b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  //query = "a && ! b";
+  //assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a OR b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a || b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  //query = "a OR !b";
+  //assertTrue(query, doCheckLuceneQueryValue(query));
+  //query = "a OR ! b";
+  //assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "a OR -b";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+term -term term";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "foo:term AND field:anotherTerm";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "term AND \"phrase phrase\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "\"hello there\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "germ term^2.0";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "(term)^2.0";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "term^2.0";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "(germ term)^2.0";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "term^2.0";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "term^2";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "\"germ term\"^2.0";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "\"term germ\"^2";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "(foo OR bar) AND (baz OR boo)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+(foo bar) +(baz boo)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "((a OR b) AND NOT c) OR d";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "(+(a b) -c) d";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+(apple \"steve jobs\") -(foo bar baz)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+(apple \"steve jobs\") -(foo bar baz)";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+title:(dog OR cat) -author:\"bob dole\"";
+  assertTrue(query, doCheckLuceneQueryValue(query));
+  query = "+(title:dog title:cat) -author:\"bob dole\"";    
+  assertTrue(query, doCheckLuceneQueryValue(query));
 }
 
 function testCheckAsterisk()
@@ -91,6 +174,9 @@ function testCheckAmpersands()
   assertTrue(query, checkAmpersands(query));
 
   query = "foo && bar12isok";
+  assertTrue(query, checkAmpersands(query));
+
+  query = "foo && ! bar";
   assertTrue(query, checkAmpersands(query));
 
   query = "bar12 &&";
@@ -197,6 +283,12 @@ function testCheckExclamationMark()
 
   query = "foo!";
   assertTrue(query, checkExclamationMark(query));
+  
+  query = "foo && ! bar";
+  assertTrue(query, checkExclamationMark(query));  
+
+  query = "foo && !bar";
+  assertTrue(query, checkExclamationMark(query));  
 
   query = "! bar";
   assertFalse(query, checkExclamationMark(query));
@@ -359,7 +451,59 @@ function testCheckPlusMinus()
 
 function testCheckANDORNOT()
 {
-fail("");
+  var query = "foo bar is ok";
+  assertTrue(query, checkANDORNOT(query));
+  
+  query = "foo AND bar";
+  assertTrue(query, checkANDORNOT(query));
+  
+  query = "foo OR bar";
+  assertTrue(query, checkANDORNOT(query));
+  
+  query = "foo NOT bar";
+  assertTrue(query, checkANDORNOT(query));
+
+  query = "foo AND NOT bar";
+  assertTrue(query, checkANDORNOT(query));
+
+  query = "foo NOT bar -foobar";
+  assertTrue(query, checkANDORNOT(query));
+
+  query = "foo AND bar dog AND NOT fox";
+  assertTrue(query, checkANDORNOT(query));
+
+  query = "foo and";
+  assertTrue(query, checkANDORNOT(query));
+
+  query = "and bar";
+  assertTrue(query, checkANDORNOT(query)); 
+
+  query = "fooAND bar";
+  assertTrue(query, checkANDORNOT(query)); 
+
+  query = "foo ANDbar";
+  assertTrue(query, checkANDORNOT(query)); 
+
+  query = "AND bar";
+  assertFalse(query, checkANDORNOT(query));
+
+  query = "OR bar";
+  assertFalse(query, checkANDORNOT(query));  
+
+  query = "NOT bar";
+  assertFalse(query, checkANDORNOT(query));  
+
+  query = "foo AND";
+  assertFalse(query, checkANDORNOT(query));  
+
+  query = "foo AND "; // note the space
+  assertFalse(query, checkANDORNOT(query));  
+
+  query = "AND AND";
+  assertFalse(query, checkANDORNOT(query));
+
+  query = "AND";
+  assertFalse(query, checkANDORNOT(query));
 }
 
 function testCheckQuotes()
