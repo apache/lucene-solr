@@ -15,3 +15,7 @@ $Id$
 2002-05-08
 
 - Added javascript query validator and query constructor.
+
+2004-08-16
+
+- Moved Russian and German analyzers from Lucene core to the sandbox
