@@ -103,7 +103,7 @@ public class MultiFieldQueryParser extends QueryParser
      * @param query Query string to parse
      * @param fields Fields to search on
      * @param analyzer Analyzer to use
-     * @throws ParserException if query parsing fails
+     * @throws ParseException if query parsing fails
      * @throws TokenMgrError if query parsing fails
      */
     public static Query parse(String query, String[] fields, Analyzer analyzer)
@@ -145,7 +145,7 @@ public class MultiFieldQueryParser extends QueryParser
      * @param fields Fields to search on
      * @param flags Flags describing the fields
      * @param analyzer Analyzer to use
-     * @throws ParserException if query parsing fails
+     * @throws ParseException if query parsing fails
      * @throws TokenMgrError if query parsing fails
      */
     public static Query parse(String query, String[] fields, int[] flags,

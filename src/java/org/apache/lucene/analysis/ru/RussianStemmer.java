@@ -347,9 +347,6 @@ class RussianStemmer
     /**
      * Finds ending among given ending class and returns the length of ending found(0, if not found).
      * Creation date: (17/03/2002 8:18:34 PM)
-     * @return int
-     * @param word java.lang.StringBuffer
-     * @param theEnding char[]
      */
     private int findEnding(StringBuffer stemmingZone, int startIndex, char[][] theEndingClass)
     {
@@ -390,9 +387,6 @@ class RussianStemmer
     /**
      * Finds the ending among the given class of endings and removes it from stemming zone.
      * Creation date: (17/03/2002 8:18:34 PM)
-     * @return boolean
-     * @param word java.lang.StringBuffer
-     * @param theEnding char[]
      */
     private boolean findAndRemoveEnding(StringBuffer stemmingZone, char[][] theEndingClass)
     {
@@ -411,9 +405,6 @@ class RussianStemmer
      * Finds the ending among the given class of endings, then checks if this ending was
      * preceded by any of given predessors, and if so, removes it from stemming zone.
      * Creation date: (17/03/2002 8:18:34 PM)
-     * @return boolean
-     * @param word java.lang.StringBuffer
-     * @param theEnding char[]
      */
     private boolean findAndRemoveEnding(StringBuffer stemmingZone,
         char[][] theEndingClass, char[][] thePredessors)
@@ -442,8 +433,6 @@ class RussianStemmer
     /**
      * Marks positions of RV, R1 and R2 in a given word.
      * Creation date: (16/03/2002 3:40:11 PM)
-     * @return int
-     * @param word java.lang.String
      */
     private void markPositions(String word)
     {
