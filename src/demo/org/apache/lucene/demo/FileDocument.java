@@ -47,23 +47,22 @@ public class FileDocument {
     // make a new, empty document
     Document doc = new Document();
 
-    // Add the path of the file as a field named "path".  Use a
-    // Keyword field, so that it's searchable, but so that no attempt is made
-    // to tokenize the field into words.
-    doc.add(Field.Keyword("path", f.getPath()));
+    // Add the path of the file as a field named "path".  Use a field that is 
+    // indexed (i.e. searchable), but don't tokenize the field into words.
+    doc.add(new Field("path", f.getPath(), Field.Store.YES, Field.Index.UN_TOKENIZED));
 
-    // Add the last modified date of the file a field named "modified".  Use a
-    // Keyword field, so that it's searchable, but so that no attempt is made
-    // to tokenize the field into words.
-    doc.add(Field.Keyword("modified",
-			  DateField.timeToString(f.lastModified())));
+    // Add the last modified date of the file a field named "modified".  Use 
+    // a field that is indexed (i.e. searchable), but don't tokenize the field
+    // into words.
+    doc.add(new Field("modified", DateField.timeToString(f.lastModified()),
+        Field.Store.YES, Field.Index.UN_TOKENIZED));
 
-    // Add the contents of the file a field named "contents".  Use a Text
-    // field, specifying a Reader, so that the text of the file is tokenized.
+    // Add the contents of the file to a field named "contents".  Specify a Reader,
+    // so that the text of the file is tokenized and indexed, but not stored.
     // ?? why doesn't FileReader work here ??
     FileInputStream is = new FileInputStream(f);
     Reader reader = new BufferedReader(new InputStreamReader(is));
-    doc.add(Field.Text("contents", reader));
+    doc.add(new Field("contents", reader));
 
     // return the document
     return doc;
