@@ -20,11 +20,19 @@ import java.io.Reader;
  */
 
 public class KeywordTokenizer extends Tokenizer {
+  private static final int DEFAULT_BUFFER_SIZE=256;
+
   private boolean done;
-  private final char[] buffer = new char[1024];
+  private final char[] buffer;
 
   public KeywordTokenizer(Reader input) {
+    this(input, DEFAULT_BUFFER_SIZE);
+  }
+
+  public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
+    this.buffer=new char[bufferSize];
+    this.done=false;
   }
 
   public Token next() throws IOException {
