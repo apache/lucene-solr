@@ -94,7 +94,7 @@ import org.apache.lucene.search.*;
  * Thus, in BNF, the query grammar is:
  * <pre>
  *   Query  ::= ( Clause )*
- *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
+ *   Clause ::= ["+", "-"] [&lt;TERM&gt; ":"] ( &lt;TERM&gt; | "(" Query ")" )
  * </pre>
  *
  * @author Brian Goetz

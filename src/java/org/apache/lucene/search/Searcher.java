@@ -80,7 +80,7 @@ public abstract class Searcher {
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
    * scoring document.
    *
-   * <p>Applications should only use this if they need <it>all</it> of the
+   * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
    * Searcher#search(Query)}) is usually more efficient, as it skips
    * non-high-scoring hits.  */
@@ -94,7 +94,7 @@ public abstract class Searcher {
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
    * scoring document.
    *
-   * <p>Applications should only use this if they need <it>all</it> of the
+   * <p>Applications should only use this if they need <i>all</i> of the
    * matching documents.  The high-level search API ({@link
    * Searcher#search(Query)}) is usually more efficient, as it skips
    * non-high-scoring hits.

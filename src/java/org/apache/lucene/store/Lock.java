@@ -60,7 +60,7 @@ import java.io.IOException;
  * <p>Typical use might look like:<pre>
  * new Lock.With(directory.makeLock("my.lock")) {
  *     public Object doBody() {
- *       <it>... code to execute while locked ...</it>
+ *       <i>... code to execute while locked ...</i>
  *     }
  *   }.run();
  * </pre>
@@ -93,7 +93,7 @@ public abstract class Lock {
     /** Code to execute with exclusive access. */
     protected abstract Object doBody() throws IOException;
 
-    /** Calls {@link #doBody} while <it>lock</it> is obtained.  Blocks if lock
+    /** Calls {@link #doBody} while <i>lock</i> is obtained.  Blocks if lock
      * cannot be obtained immediately.  Retries to obtain lock once per second
      * until it is obtained, or until it has tried ten times. */
     public Object run() throws IOException {

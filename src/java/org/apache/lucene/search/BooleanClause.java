@@ -59,10 +59,10 @@ public final class BooleanClause {
   /** The query whose matching documents are combined by the boolean query. */
   public Query query;
   /** If true, documents documents which <i>do not</i>
-    match this sub-query will <it>not</it> match the boolean query. */
+    match this sub-query will <i>not</i> match the boolean query. */
   public boolean required = false;
   /** If true, documents documents which <i>do</i>
-    match this sub-query will <it>not</it> match the boolean query. */
+    match this sub-query will <i>not</i> match the boolean query. */
   public boolean prohibited = false;
   
   /** Constructs a BooleanClause with query <code>q</code>, required

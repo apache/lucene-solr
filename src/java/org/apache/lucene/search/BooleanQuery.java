@@ -70,9 +70,9 @@ final public class BooleanQuery extends Query {
   /** Adds a clause to a boolean query.  Clauses may be:
     <ul>
     <li><code>required</code> which means that documents which <i>do not</i>
-    match this sub-query will <it>not</it> match the boolean query;
+    match this sub-query will <i>not</i> match the boolean query;
     <li><code>prohibited</code> which means that documents which <i>do</i>
-    match this sub-query will <it>not</it> match the boolean query; or
+    match this sub-query will <i>not</i> match the boolean query; or
     <li>neither, in which case matched documents are neither prohibited from
     nor required to match the sub-query.
     </ul>

@@ -69,7 +69,7 @@ import org.apache.lucene.document.Document;
   the static method {@link #open}.
 
   <p> For efficiency, in this API documents are often referred to via
-  <it>document numbers</it>, non-negative integers which each name a unique
+  <i>document numbers</i>, non-negative integers which each name a unique
   document in the index.  These document numbers are ephemeral--they may change
   as documents are added to and deleted from an index.  Clients should thus not
   rely on a given document having the same number between sessions. */
