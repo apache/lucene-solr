@@ -82,6 +82,37 @@ public class MultiFieldQueryParser extends QueryParser
 
     /**
      * <p>
+     * Parses a query which searches on the fields specified.
+     * <p>
+     * If x fields are specified, this effectively constructs:
+     * <pre>
+     * <code>
+     * (field1:query1) (field2:query2) (field3:query3)...(fieldx:queryx)
+     * </code>
+     * </pre>
+     * @param queries Queries strings to parse
+     * @param fields Fields to search on
+     * @param analyzer Analyzer to use
+     * @throws ParseException if query parsing fails
+     * @throws TokenMgrError if query parsing fails
+     */
+    public static Query parse(String[] queries, String[] fields,
+        Analyzer analyzer) throws ParseException
+    {
+        if (queries.length != fields.length)
+            // TODO Exception handling
+            throw new ParseException("queries.length != fields.length");
+        BooleanQuery bQuery = new BooleanQuery();
+        for (int i = 0; i < fields.length; i++)
+        {
+            Query q = parse(queries[i], fields[i], analyzer);
+            bQuery.add(q, false, false);
+        }
+        return bQuery;
+    }
+
+    /**
+     * <p>
      * Parses a query, searching on the fields specified.
      * Use this if you need to specify certain fields as required,
      * and others as prohibited.
@@ -118,6 +149,63 @@ public class MultiFieldQueryParser extends QueryParser
         for (int i = 0; i < fields.length; i++)
         {
             Query q = parse(query, fields[i], analyzer);
+            int flag = flags[i];
+            switch (flag)
+            {
+                case REQUIRED_FIELD:
+                    bQuery.add(q, true, false);
+                    break;
+                case PROHIBITED_FIELD:
+                    bQuery.add(q, false, true);
+                    break;
+                default:
+                    bQuery.add(q, false, false);
+                    break;
+            }
+        }
+        return bQuery;
+    }
+
+    /**
+     * <p>
+     * Parses a query, searching on the fields specified.
+     * Use this if you need to specify certain fields as required,
+     * and others as prohibited.
+     * <p><pre>
+     * Usage:
+     * <code>
+     * String[] fields = {"filename", "contents", "description"};
+     * int[] flags = {MultiFieldQueryParser.NORMAL FIELD,
+     *                MultiFieldQueryParser.REQUIRED FIELD,
+     *                MultiFieldQueryParser.PROHIBITED FIELD,};
+     * parse(query, fields, flags, analyzer);
+     * </code>
+     * </pre>
+     *<p>
+     * The code above would construct a query:
+     * <pre>
+     * <code>
+     * (filename:query1) +(contents:query2) -(description:query3)
+     * </code>
+     * </pre>
+     *
+     * @param queries Queries string to parse
+     * @param fields Fields to search on
+     * @param flags Flags describing the fields
+     * @param analyzer Analyzer to use
+     * @throws ParseException if query parsing fails
+     * @throws TokenMgrError if query parsing fails
+     */
+    public static Query parse(String[] queries, String[] fields, int[] flags,
+        Analyzer analyzer) throws ParseException
+    {
+        if (queries.length != fields.length)
+            // TODO Exception handling
+            throw new ParseException("queries.length != fields.length");
+        BooleanQuery bQuery = new BooleanQuery();
+        for (int i = 0; i < fields.length; i++)
+        {
+            Query q = parse(queries[i], fields[i], analyzer);
             int flag = flags[i];
             switch (flag)
             {
