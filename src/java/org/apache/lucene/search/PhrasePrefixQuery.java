@@ -79,9 +79,6 @@ public class PhrasePrefixQuery extends Query {
   private String field;
   private ArrayList termArrays = new ArrayList();
 
-  private float idf = 0.0f;
-  private float weight = 0.0f;
-
   private int slop = 0;
 
   /* Sets the phrase slop for this query.
