@@ -26,6 +26,8 @@ import java.util.Date;
 
 class IndexFiles {
   
+  static final File INDEX_DIR = new File("index");
+  
   public static void main(String[] args) {
     String usage = "java org.apache.lucene.demo.IndexFiles <root_directory>";
     if (args.length == 0) {
@@ -33,16 +35,22 @@ class IndexFiles {
       System.exit(1);
     }
 
+    if (INDEX_DIR.exists()) {
+      System.out.println("Cannot save index to '" +INDEX_DIR+ "' directory, please delete it first");
+      System.exit(1);
+    }
+    
     Date start = new Date();
     try {
-      IndexWriter writer = new IndexWriter("index", new StandardAnalyzer(), true);
+      IndexWriter writer = new IndexWriter(INDEX_DIR, new StandardAnalyzer(), true);
+      System.out.println("Indexing to directory '" +INDEX_DIR+ "'...");
       indexDocs(writer, new File(args[0]));
+      System.out.println("Optimizing...");
       writer.optimize();
       writer.close();
 
       Date end = new Date();
-      System.out.print(end.getTime() - start.getTime());
-      System.out.println(" total milliseconds");
+      System.out.println(end.getTime() - start.getTime() + " total milliseconds");
 
     } catch (IOException e) {
       System.out.println(" caught a " + e.getClass() +
