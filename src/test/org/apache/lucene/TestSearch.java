@@ -82,13 +82,13 @@ public class TestSearch extends TestCase {
 
     /** This test performs a number of searches. It also compares output
      *  of searches using multi-file index segments with single-file
-     *  index segments. 
-     *  
+     *  index segments.
+     *
      *  TODO: someone should check that the results of the searches are
      *        still correct by adding assert statements. Right now, the test
      *        passes if the results are the same between multi-file and
      *        single-file formats, even if the results are wrong.
-     */    
+     */
     public void testSearch() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
@@ -96,28 +96,28 @@ public class TestSearch extends TestCase {
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
-      System.out.println(multiFileOutput);
-      
+      //System.out.println(multiFileOutput);
+
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
       doTestSearch(pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
-      
+
       assertEquals(multiFileOutput, singleFileOutput);
     }
-    
-    
+
+
     private void doTestSearch(PrintWriter out, boolean useCompoundFile)
     throws Exception
     {
-      Directory directory = new RAMDirectory();  
+      Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer();
       IndexWriter writer = new IndexWriter(directory, analyzer, true);
 
       writer.setUseCompoundFile(useCompoundFile);
-      
+
       String[] docs = {
         "a b c d e",
         "a b c d e a b c d e",
@@ -135,7 +135,7 @@ public class TestSearch extends TestCase {
       writer.close();
 
       Searcher searcher = new IndexSearcher(directory);
-      
+
       String[] queries = {
         "a b",
         "\"a b\"",

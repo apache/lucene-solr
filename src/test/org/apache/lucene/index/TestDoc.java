@@ -163,7 +163,7 @@ public class TestDoc extends TestCase {
       out.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
-      System.out.println(multiFileOutput);
+      //System.out.println(multiFileOutput);
 
       sw = new StringWriter();
       out = new PrintWriter(sw, true);

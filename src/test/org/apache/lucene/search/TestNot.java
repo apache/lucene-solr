@@ -79,18 +79,18 @@ public class TestNot extends TestCase {
   public void testNot() throws Exception {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
-    
+
     Document d1 = new Document();
     d1.add(Field.Text("field", "a b"));
-    
+
     writer.addDocument(d1);
     writer.optimize();
     writer.close();
 
     Searcher searcher = new IndexSearcher(store);
     Query query = QueryParser.parse("a NOT b", "field", new SimpleAnalyzer());
-    System.out.println(query);
-    Hits hits = searcher.search(query); 
+    //System.out.println(query);
+    Hits hits = searcher.search(query);
     assertEquals(0, hits.length());
   }
 }

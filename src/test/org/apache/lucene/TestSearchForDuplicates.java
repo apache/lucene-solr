@@ -80,7 +80,7 @@ public class TestSearchForDuplicates extends TestCase {
     public static void main(String args[]) {
         TestRunner.run (new TestSuite(TestSearchForDuplicates.class));
     }
-    
+
 
 
   static final String PRIORITY_FIELD ="priority";
@@ -89,10 +89,10 @@ public class TestSearchForDuplicates extends TestCase {
   static final String MED_PRIORITY ="medium";
   static final String LOW_PRIORITY ="low";
 
-  
+
   /** This test compares search results when using and not using compound
-   *  files. 
-   *  
+   *  files.
+   *
    *  TODO: There is rudimentary search result validation as well, but it is
    *        simply based on asserting the output observed in the old test case,
    *        without really knowing if the output is correct. Someone needs to
@@ -105,26 +105,26 @@ public class TestSearchForDuplicates extends TestCase {
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
-      System.out.println(multiFileOutput);
-      
+      //System.out.println(multiFileOutput);
+
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
       doTest(pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
-      
+
       assertEquals(multiFileOutput, singleFileOutput);
   }
-  
-  
+
+
   private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
       Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer();
       IndexWriter writer = new IndexWriter(directory, analyzer, true);
 
       writer.setUseCompoundFile(useCompoundFiles);
-      
+
       final int MAX_DOCS = 225;
 
       for (int j = 0; j < MAX_DOCS; j++) {
@@ -166,7 +166,7 @@ public class TestSearchForDuplicates extends TestCase {
       searcher.close();
   }
 
-  
+
   private void printHits(PrintWriter out, Hits hits ) throws IOException {
     out.println(hits.length() + " total results\n");
     for (int i = 0 ; i < hits.length(); i++) {
@@ -176,7 +176,7 @@ public class TestSearchForDuplicates extends TestCase {
       }
     }
   }
-  
+
   private void checkHits(Hits hits, int expectedCount) throws IOException {
     assertEquals("total results", expectedCount, hits.length());
     for (int i = 0 ; i < hits.length(); i++) {
