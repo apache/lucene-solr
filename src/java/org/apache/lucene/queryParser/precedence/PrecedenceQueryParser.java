@@ -86,15 +86,15 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query  the query string to be parsed.
+   *  @param expression  the query expression to be parsed.
    *  @param field  the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
    */
-  static public Query parse(String query, String field, Analyzer analyzer)
+  static public Query parse(String expression, String field, Analyzer analyzer)
        throws ParseException {
     PrecedenceQueryParser parser = new PrecedenceQueryParser(field, analyzer);
-    return parser.parse(query);
+    return parser.parse(expression);
   }
 
   /** Constructs a query parser.
@@ -108,10 +108,15 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query  the query string to be parsed.
+   *  @param expression  the query string to be parsed.
    *  @throws ParseException if the parsing fails
    */
   public Query parse(String expression) throws ParseException {
+    // optimize empty query to be empty BooleanQuery
+    if (expression == null || expression.trim().length() == 0) {
+      return new BooleanQuery();
+    }
+
     ReInit(new FastCharStream(new StringReader(expression)));
     try {
       Query query = Query(field);
@@ -657,14 +662,14 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
 
   final public Query Query(String field) throws ParseException {
   Vector clauses = new Vector();
-  int modifier;
   Query q, firstQuery=null;
   boolean orPresent = false;
+  int modifier;
     modifier = Modifier();
     q = andExpression(field);
     addClause(clauses, CONJ_NONE, modifier, q);
     if (modifier == MOD_NONE)
-      firstQuery=q;
+      firstQuery = q;
     label_1:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -707,39 +712,13 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-/*
-Query orExpression(String field) :
-{
-  Vector clauses = new Vector();
-  Query q, firstQuery=null;
-  int modifier;
-}
-{
-  q=andExpression(field)
-  {
-    addClause(clauses, CONJ_NONE, MOD_NONE, q);
-    firstQuery=q;
-  }
-  (
-    <OR> modifier=Modifier() q=andExpression(field)
-    { addClause(clauses, CONJ_OR, modifier, q); }
-  )*
-    {
-      if (clauses.size() == 1 && firstQuery != null)
-        return firstQuery;
-      else {
-        return getBooleanQuery(clauses);
-      }
-    }
-}
-*/
   final public Query andExpression(String field) throws ParseException {
   Vector clauses = new Vector();
   Query q, firstQuery=null;
   int modifier;
     q = Clause(field);
     addClause(clauses, CONJ_NONE, MOD_NONE, q);
-    firstQuery=q;
+    firstQuery = q;
     label_2:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -818,7 +797,6 @@ Query orExpression(String field) :
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
-  boolean rangein = false;
   Query q;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:

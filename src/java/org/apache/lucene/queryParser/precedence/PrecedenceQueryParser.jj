@@ -109,15 +109,15 @@ public class PrecedenceQueryParser {
   }
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query  the query string to be parsed.
+   *  @param expression  the query expression to be parsed.
    *  @param field  the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
    */
-  static public Query parse(String query, String field, Analyzer analyzer)
+  static public Query parse(String expression, String field, Analyzer analyzer)
        throws ParseException {
     PrecedenceQueryParser parser = new PrecedenceQueryParser(field, analyzer);
-    return parser.parse(query);
+    return parser.parse(expression);
   }
 
   /** Constructs a query parser.
@@ -131,10 +131,15 @@ public class PrecedenceQueryParser {
   }
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query  the query string to be parsed.
+   *  @param expression  the query string to be parsed.
    *  @throws ParseException if the parsing fails
    */
   public Query parse(String expression) throws ParseException {
+    // optimize empty query to be empty BooleanQuery
+    if (expression == null || expression.trim().length() == 0) {
+      return new BooleanQuery();
+    }
+
     ReInit(new FastCharStream(new StringReader(expression)));
     try {
       Query query = Query(field);
@@ -714,16 +719,16 @@ int Modifier() : {
 Query Query(String field) :
 {
   Vector clauses = new Vector();
-  int modifier;
   Query q, firstQuery=null;
   boolean orPresent = false;
+  int modifier;
 }
 {
   modifier=Modifier() q=andExpression(field)
   {
     addClause(clauses, CONJ_NONE, modifier, q);
     if (modifier == MOD_NONE)
-      firstQuery=q;
+      firstQuery = q;
   }
   (
     [<OR> { orPresent=true; }] modifier=Modifier() q=andExpression(field)
@@ -738,33 +743,6 @@ Query Query(String field) :
     }
 }
 
-/*
-Query orExpression(String field) :
-{
-  Vector clauses = new Vector();
-  Query q, firstQuery=null;
-  int modifier;
-}
-{
-  q=andExpression(field)
-  {
-    addClause(clauses, CONJ_NONE, MOD_NONE, q);
-    firstQuery=q;
-  }
-  (
-    <OR> modifier=Modifier() q=andExpression(field)
-    { addClause(clauses, CONJ_OR, modifier, q); }
-  )*
-    {
-      if (clauses.size() == 1 && firstQuery != null)
-        return firstQuery;
-      else {
-        return getBooleanQuery(clauses);
-      }
-    }
-}
-*/
-
 Query andExpression(String field) :
 {
   Vector clauses = new Vector();
@@ -775,7 +753,7 @@ Query andExpression(String field) :
   q=Clause(field)
   {
     addClause(clauses, CONJ_NONE, MOD_NONE, q);
-    firstQuery=q;
+    firstQuery = q;
   }
   (
     <AND> modifier=Modifier() q=Clause(field)
@@ -825,7 +803,6 @@ Query Term(String field) : {
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
-  boolean rangein = false;
   Query q;
 }
 {
