@@ -42,6 +42,11 @@ $Id$
 
 11. Fixed bugs in GermanAnalyzer (gschwarz)
 
+12. Updated contributions section of website 
+    Add XML Document #3 implementation to Document Section
+    Also added Term Highlighting to Misc Section
+
+
 
 1.2 RC2, 19 October 2001:
  - added sources to distribution
