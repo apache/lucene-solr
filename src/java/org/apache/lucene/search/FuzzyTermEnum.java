@@ -175,7 +175,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
    *
    * <p>To calculate the maximum distance threshold we use the following formula:
    * <pre>
-   *     (1 - minimumSimilarity) / length</pre>
+   *     (1 - minimumSimilarity) * length</pre>
    * where length is the shortest term including any prefix that is not part of the
    * similarity comparision.  This formula was derived by solving for what maximum value
    * of distance returns false for the following statements:
