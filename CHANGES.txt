@@ -18,6 +18,9 @@ $Id$
 
  5. Added a new SortField type for custom comparators.  (Tim Jones)
 
+ 6. Lock obtain timed out message now displays the full path to the lock
+    file. (Daniel Naber via Erik)
+
 
 1.4 RC2
 
