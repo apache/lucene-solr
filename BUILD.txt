@@ -4,18 +4,20 @@ $Id$
 
 Basic steps:
   0) Install JDK 1.2 (or greater), Ant 1.4 (or greater), and the Ant
-     optional.jar.
-  1) Download Lucene from Apache and unpack it.
-  2) Connect to the top-level of your Lucene installation.
-  3) Run ant.
+     optional.jar
+  1) Download Lucene from Apache and unpack it
+  2) Connect to the top-level of your Lucene installation
+  3) Install JavaCC
+  4) Run ant
 
-Step 0) Set up your development environment (JDK 1.3/1.4, Ant 1.4)
+Step 0) Set up your development environment (JDK 1.2 or greater,
+Ant 1.4 or greater)
 
 We'll assume that you know how to get and set up the JDK - if you
 don't, then we suggest starting at http://java.sun.com and learning
 more about Java, before returning to this README.
 
-Lucene runs with JDK 1.1 and later.  However, if you're going to work
+Lucene runs with JDK 1.2 and later.  However, if you're going to work
 with the development version of Lucene, we recommend you stick with
 the most current version of Java (at the time of this writing, JDK
 1.4).  Also, note that if you're working with the Lucene source,
@@ -30,7 +32,7 @@ Ant is "kind of like make without make's wrinkles".  Ant is
 implemented in java and uses XML-based configuration files.  You can
 get it at:
 
-  http://jakarta.apache.org/ant/index.html
+  http://jakarta.apache.org/ant
 
 Specifically, you can get the binary distributions at:
 
@@ -39,7 +41,7 @@ Specifically, you can get the binary distributions at:
 You'll need to download both the Ant binary distribution and the
 "optional" jar file.  Install these according to the instructions at:
 
-  http://jakarta.apache.org/ant/manual/index.html
+  http://jakarta.apache.org/ant/manual
 
 Step 1) Download Lucene from Apache
 
@@ -75,7 +77,31 @@ system.
 
 NOTE: the ~ character represents your user account home directory.
 
-Step 3) Run ant.
+Step 3) Install JavaCC
+
+Building the Lucene distribution from the source requires the JavaCC
+parser generator from WebGain, Inc.  This software has
+a separate license agreement that must be agreed to before you can use
+it.  The web page for JavaCC is here:
+
+  http://www.webgain.com/products/java_cc/
+
+Follow the download links and download the zip file to a temporary
+location on your file system. Unzip the file and run the large class file
+in the directory. On windows, use this command from the temp directory:
+
+  java -cp . JavaCC2_1
+
+This will launch a Java GUI installer.  There is also a command line
+installer available, and the installation class will give you those
+directions.  After JavaCC is installed, edit your build properties
+(as in step 2), and add the line
+
+  javacc.home=/javacc/bin
+
+where this points to the bin directory of your javacc installation.
+
+Step 4) Run ant
 
 Assuming you have ant in your PATH and have set ANT_HOME to the
 location of your ant installation, typing "ant" at the shell prompt
@@ -94,4 +120,4 @@ document to the Lucene-User mailing list.
 This file was originally written by Steven J. Owens <puff@darksleep.com>.
 This file was modified by Jon S. Stevens <jon@latchkey.com>.
 
-Copyright (c) 2001-2002 The Apache Software Foundation.  All rights reserved.
+Copyright (c) 2001-2003 The Apache Software Foundation.  All rights reserved.
