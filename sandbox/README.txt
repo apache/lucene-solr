@@ -29,7 +29,7 @@ jakarta-lucene-sandbox/contributions/CHANGES.txt
 jakarta-lucene-sandbox/contributions/build/build.xml
 jakarta-lucene-sandbox/contributions/docs/...
 jakarta-lucene-sandbox/contributions/[contribution]/src/...
-jakarta-lucene-sandbox/contributions/[contribution]/xdocs/about[contribution].xml
+jakarta-lucene-sandbox/contributions/[contribution]/xdocs/about-[contribution].xml
 jakarta-lucene-sandbox/contributions/[contribution]/build.xml
 jakarta-lucene-sandbox/contributions/[contribution]/README.txt
 
