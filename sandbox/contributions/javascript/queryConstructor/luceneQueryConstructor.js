@@ -119,7 +119,7 @@ function trim(inputString) {
    var temp = inputString;
    
    // Replace whitespace with a single space
-   var pattern = /\s/ig;
+   var pattern = /\s+/ig;
    temp = temp.replace(pattern, " ");
   
    // Trim 
