@@ -28,9 +28,9 @@ import org.apache.lucene.store.IndexOutput;
 
 final class FieldsWriter
 {
-  static final short FIELD_IS_TOKENIZED = 1;
-  static final short FIELD_IS_BINARY = 2;
-  static final short FIELD_IS_COMPRESSED = 4;
+  static final byte FIELD_IS_TOKENIZED = 0x1;
+  static final byte FIELD_IS_BINARY = 0x2;
+  static final byte FIELD_IS_COMPRESSED = 0x4;
   
     private FieldInfos fieldInfos;
 
