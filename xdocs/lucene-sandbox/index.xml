@@ -17,8 +17,8 @@
             </p>
 
             <p>
-                You can access the Lucene Sandbox CVS repository at
-                <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/">http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/</a>.
+                You can access the Lucene Sandbox repository at
+                <a href="http://svn.apache.org/repos/asf/lucene/contrib/">http://svn.apache.org/repos/asf/lucene/contrib/</a>.
             </p>
 
             <subsection name="Snowball Stemmers for Lucene">
@@ -29,7 +29,7 @@
 
                 <p>
                     More information can be found
-                    <a href="http://jakarta.apache.org/lucene/docs/lucene-sandbox/snowball/">here</a>.
+                    <a href="http://lucene.apache.org/lucene-sandbox/snowball/">here</a>.
                 </p>
 
                 <p>
@@ -44,21 +44,8 @@
                 </p>
 
                 <p>
-                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/analyzers/">The
-                        CVS repository for the Analyzers contribution.</a>
-                </p>
-            </subsection>
-
-            <subsection name="SearchBean">
-                <p>
-                    SearchBean is a UI component that can be used to browse through the results of a Lucene search.
-                    The SearchBean searches the index for a given query string, retrieves the hits, and then brings
-                    them into the HitsIterator class, which can be used for paging and sorting through search results.
-
-                </p>
-                <p>
-                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/searchbean/">The
-                        CVS repository for the SearchBean contribution.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/analyzers/">The
+                        repository for the Analyzers contribution.</a>
                 </p>
             </subsection>
 
@@ -68,8 +55,8 @@
                     contains an example HTML parser that uses JTidy.
                 </p>
                 <p>
-                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/ant/">The
-                        CVS repository for the Ant contribution.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/ant/">The
+                        repository for the Ant contribution.</a>
                 </p>
             </subsection>
 
@@ -87,8 +74,8 @@
                     synonyms, definitions, and various relationships between synonym sets.
                 </p>
                 <p>
-                    <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/WordNet/">
-                        CVS for the WordNet module.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/WordNet/">
+                        for the WordNet module.</a>
                 </p>
             </subsection>
 
@@ -101,7 +88,7 @@
                 <p>
 
                     <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/XML-Indexing-Demo/">
-                        CVS for the XML Indexing Demo.</a>
+                        for the XML Indexing Demo.</a>
                 </p>
             </subsection>
 
@@ -112,8 +99,8 @@
                 </p>
 
                 <p>
-                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/lucli/">The
-                        CVS repository for the Lucli contribution.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/lucli/">The
+                        repository for the Lucli contribution.</a>
                 </p>
             </subsection>
 
@@ -122,8 +109,8 @@
                   A small set of classes for highlighting matching terms in
                     search results.
                 </p>
-                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/highlighter/">The
-                        CVS repository for the Highlighter contribution.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/highlighter/">The
+                        repository for the Highlighter contribution.</a>
             </subsection>
 
             <subsection name="Javascript Query Constructor">
@@ -133,8 +120,8 @@
                 </p>
                 <p>
 
-                    <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/javascript/queryConstructor/">
-                        CVS for the files.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/javascript/queryConstructor/">
+                        for the files.</a>
                 </p>
             </subsection>
 
@@ -146,8 +133,8 @@
                 </p>
                 <p>
 
-                    <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/javascript/queryValidator/">
-                        CVS for files.</a>
+                    <a href="http://svn.apache.org/repos/asf/lucene/contrib/javascript/queryValidator/">
+                        for files.</a>
                 </p>
             </subsection>
 
@@ -160,7 +147,7 @@
                 <p>
 
                     <a href="http://cvs.apache.org/viewcvs.cgi/jakarta-lucene-sandbox/contributions/miscellaneous/src/java/org/apache/lucene/misc/">
-                        CVS for miscellaneous classes.</a>
+                        for miscellaneous classes.</a>
                 </p>
             </subsection>
 

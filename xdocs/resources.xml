@@ -2,7 +2,7 @@
 <document>
     <properties>
         <author email="cutting@apache.org">Doug Cutting</author>
-        <title>Resources - Jakarta Lucene</title>
+        <title>Resources - Apache Lucene</title>
     </properties>
     <body>
 
@@ -33,7 +33,7 @@
               </li>
               <li>
                 <a
-                  href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Jakarta Lucene</a>
+                  href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Apache Lucene</a>
                 <br/> - Onjava.com, January 2003
               </li>
               <li><a

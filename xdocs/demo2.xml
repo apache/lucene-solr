@@ -2,7 +2,7 @@
 <document>
 <properties>
 <author email="acoliver@apache.org">Andrew C. Oliver</author>
-<title>Jakarta Lucene - Basic Demo Sources Walkthrough</title>
+<title>Apache Lucene - Basic Demo Sources Walkthrough</title>
 </properties>
 <body>
 
@@ -10,14 +10,14 @@
 <p>
 In this section we walk through the sources behind the basic Lucene demo such as where to 
 find it, its parts and their function.  This section is intended for Java developers
-wishing to understand how to use Jakarta Lucene in their applications.
+wishing to understand how to use Apache Lucene in their applications.
 </p>
 </section>
 
 
 <section name="Location of the source">
 <p>
-Relative to the directory created when you extracted Lucene or retreived it from CVS, you 
+Relative to the directory created when you extracted Lucene or retreived it from Subversion, you
 should see a directory called "src" which in turn contains a directory called "demo".
 This is the root for all of the Lucene demos.  Under this directory is org/apache/lucene/demo,
 this is where all the Java sources live.  

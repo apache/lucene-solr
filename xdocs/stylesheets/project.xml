@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="Jakarta Lucene" href="http://jakarta.apache.org/lucene/">
+<project name="Apache Lucene" href="http://lucene.apache.org/">
 
-    <title>Jakarta Lucene</title>
-    <logo href="/images/lucene_green_300.gif">Jakarta Lucene</logo>
+    <title>Apache Lucene</title>
+    <logo href="/images/lucene_green_300.gif">Apache Lucene</logo>
 
     <body>
     <menu name="About">
@@ -34,14 +34,8 @@
     <menu name="Download">
         <item name="Binaries"           href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/binaries/"/>
         <item name="Source Code"        href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/source/"/>
-        <item name="CVS Repositories"   href="/site/cvsindex.html"/>
+        <item name="Source Repository"   href="http://svn.apache.org/repos/asf/lucene"/>
     </menu>
 
-    <menu name="Jakarta">
-        <item name="Get Involved"          href="/site/getinvolved.html"/>
-        <item name="Acknowledgements"      href="/site/acknowledgements.html"/>
-        <item name="Contact"               href="/site/contact.html"/>
-        <item name="Legal"                 href="/site/legal.html"/>
-    </menu>
     </body>
 </project>

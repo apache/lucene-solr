@@ -3,7 +3,7 @@
     <properties>
         <author email="carlson@apache.org">Peter Carlson</author>
         <title>
-            Query Parser Syntax - Jakarta Lucene
+            Query Parser Syntax - Apache Lucene
         </title>
     </properties>
     <body>
@@ -128,7 +128,7 @@
         <source>jakarta^4 apache</source>
         <p>This will make documents with the term jakarta appear more relevant. You can also boost Phrase Terms as in the example: </p>
 
-        <source>"jakarta apache"^4 "jakarta lucene"</source>
+        <source>"jakarta apache"^4 "Apache Lucene"</source>
         <p>By default, the boost factor is 1. Although the boost factor must be positive, it can be less than 1 (e.g. 0.2)</p>
         </subsection>
 
@@ -156,9 +156,9 @@
         <subsection name="AND">
         <p>The AND operator matches documents where both terms exist anywhere in the text of a single document.
         This is equivalent to an intersection using sets. The symbol &amp;&amp; can be used in place of the word AND.</p>
-        <p>To search for documents that contain "jakarta apache" and "jakarta lucene" use the query: </p>
+        <p>To search for documents that contain "jakarta apache" and "Apache Lucene" use the query: </p>
 
-        <source>"jakarta apache" AND "jakarta lucene"</source>
+        <source>"jakarta apache" AND "Apache Lucene"</source>
         </subsection>
 
         <subsection name="+">
@@ -171,9 +171,9 @@
         <subsection name="NOT">
         <p>The NOT operator excludes documents that contain the term after NOT.
         This is equivalent to a difference using sets. The symbol ! can be used in place of the word NOT.</p>
-        <p>To search for documents that contain "jakarta apache" but not "jakarta lucene" use the query: </p>
+        <p>To search for documents that contain "jakarta apache" but not "Apache Lucene" use the query: </p>
 
-        <source>"jakarta apache" NOT "jakarta lucene"</source>
+        <source>"jakarta apache" NOT "Apache Lucene"</source>
         <p>Note: The NOT operator cannot be used with just one term. For example, the following search will return no results:</p>
 
         <source>NOT "jakarta apache"</source>
@@ -181,9 +181,9 @@
 
         <subsection name="-">
         <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol.</p>
-        <p>To search for documents that contain "jakarta apache" but not "jakarta lucene" use the query: </p>
+        <p>To search for documents that contain "jakarta apache" but not "Apache Lucene" use the query: </p>
 
-        <source>"jakarta apache" -"jakarta lucene"</source>
+        <source>"jakarta apache" -"Apache Lucene"</source>
         </subsection>
 
         </section>

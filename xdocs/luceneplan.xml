@@ -13,7 +13,7 @@
                 <p>
                         The purpose of this document is to outline plans for
                         making <a href="http://jakarta.apache.org/lucene">
-                        Jakarta Lucene</a> work as a more general drop-in
+                        Apache Lucene</a> work as a more general drop-in
                         component.  It makes the assumption that this is an
                         objective for the Lucene user and development community.
                 </p>

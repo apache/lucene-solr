@@ -2,19 +2,19 @@
 <document>
 <properties>
 <author email="acoliver@apache.org">Andrew C. Oliver</author>
-<title>Jakarta Lucene - Getting Started Guide</title>
+<title>Apache Lucene - Getting Started Guide</title>
 </properties>
 <body>
 
 <section name="Getting Started">
 <p>
 This document is intended as a "getting started" guide.  It has three basic 
-audiences: novices looking to install Jakarta Lucene on their application or 
+audiences: novices looking to install Apache Lucene on their application or
 web server, developers looking to modify or base the applications they develop
 on Lucene, and developers looking to become involved in and contribute to the
 development of Lucene.  This document is written in tutorial and walkthrough 
 format.  It intends to help you in "getting started", but does not go into great
-depth into some of the conceptual or inner details of Jakarta Lucene.
+depth into some of the conceptual or inner details of Apache Lucene.
 </p>
 
 <p>

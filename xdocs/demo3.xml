@@ -3,14 +3,14 @@
 <document>
 <properties>
 <author email="acoliver@apache.org">Andrew C. Oliver</author>
-<title>Jakarta Lucene - Building and Installing the Basic Demo</title>
+<title>Apache Lucene - Building and Installing the Basic Demo</title>
 </properties>
 <body>
 
 <section name="About this Document">
 <p>
 This document is intended as a "getting started" guide to installing and running the
-Jakarta Lucene web application demo.  This guide assumes that you have read the
+Apache Lucene web application demo.  This guide assumes that you have read the
 information in the previous two examples or already know it anyhow.  We'll use 
 Tomcat 4.0.1 as our reference web container.  These demos should work with nearly
 any container, but it is up to you to adapt them appropriately.

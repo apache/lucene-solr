@@ -2,14 +2,14 @@
 <document>
 <properties>
 <author email="acoliver@apache.org">Andrew C. Oliver</author>
-<title>Jakarta Lucene - Building and Installing the Basic Demo</title>
+<title>Apache Lucene - Building and Installing the Basic Demo</title>
 </properties>
 <body>
 
 <section name="About this Document">
 <p>
 This document is intended as a "getting started" guide to using and running the
-Jakarta Lucene demos.  It walks you through some basic installation and configuration.
+Apache Lucene demos.  It walks you through some basic installation and configuration.
 </p>
 </section>
 
@@ -27,7 +27,7 @@ applications.
 First, extract the latest Lucene distribution.  
 </p>
 <p>
-You should see the Jakarta Lucene jar file in the directory you created 
+You should see the Apache Lucene jar file in the directory you created 
 when you extracted the archive.  It should be named something like
 <b>lucene-{version}.jar</b>.  
 </p>
