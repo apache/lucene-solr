@@ -2,12 +2,13 @@
 <document>
 <properties>
 <author email="husted@apache.org">Ted Husted</author>
-<title>Who We Are - Jakarta Lucene</title>
+<author email="cutting@apache.org">Doug Cutting</author>
+<title>Resources - Jakarta Lucene</title>
 </properties>
 <body>
 
-<section name="RESOURCES">
-<h3>Further reading</h3>
+<section name="Articles">
+<p>Articles about Lucene:</p>
 <ul>
 <li><a href="http://www.javaworld.com/javaworld/jw-09-2000/jw-0915-lucene.html">The Lucene search engine Powerful flexible and free</a><br/> - JavaWorld September 2000</li> 
 <li><a href="http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-cooltools.html">Build your own languages with JavaCC</a><br/> - JavaWorld December 2000</li>

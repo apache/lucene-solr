@@ -2,18 +2,32 @@
 <document>
 <properties>
 <author email="husted@apache.org">Ted Husted</author>
-<title>Who We Are - Jakarta Lucene</title>
+<author email="cutting@apache.org">Doug Cutting</author>
+<title>Powered by Lucene - Jakarta Lucene</title>
 </properties>
 <body>
 
-<section name="POWERED BY LUCENE">
-<h3>Several public applications are using Lucene</h3>
+<section name="Powered by Lucene">
+
+<p>Applications using Lucene include:
 <ul>
+<li><a href="http://www.bobdylan.com/">Bob Dylan</a></li>
 <li><a href="http://eyebrowse.tigris.org/">Eyebrowse</a></li>
 <li><a href="http://www.jivesoftware.com/">Jive Forums</a></li>
 <li><a href="http://www.i2a.com/websearch/"> Web Search</a></li>
-<li><a href="http://www.bobdylan.com/">Bob Dylan</a></li>
 </ul>
+</p>
+
+<p>If you wish to have your site listed on this page, send <a
+href="mailto:lucene-dev@jakarta.apache.org">us</a> a note.</p>
+
+<p>Please include something like the following with your search results:</p>
+
+<center><font size="-1"><i>search powered by</i></font> <a
+href="http://jakarta.apache.org/lucene"><img
+src="images/lucene_green_100.gif" alt="Lucene" border="0"
+/></a></center>
+
 </section>
 
 </body>

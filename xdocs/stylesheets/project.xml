@@ -8,13 +8,15 @@
     <body>
     <menu name="About">
         <item name="Overview"           href="/index.html"/>
-        <item name="Features"           href="/features.html"/>
-        <item name="Applications"       href="/applications.html"/>
-        <item name="Background"         href="/background.html"/>
+        <item name="Powered by Lucene"  href="/powered.html"/>
+        <item name="Who We Are"         href="/whoweare.html"/>
+        <item name="Mailing Lists"      href="/site/mail.html"/>
+        <item name="Bugs"               href="/site/bugs.html"/>
     </menu>
 
     <menu name="Documentation">
-        <item name="FAQs"               href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
+        <item name="FAQ"               href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
+        <item name="Articles"          href="/resources.html"/>
         <item name="Javadoc"            href="./api/overview.html"/>
     </menu>
 
@@ -24,16 +26,8 @@
         <item name="CVS Repositories"   href="/site/cvsindex.html"/>
     </menu>
 
-    <menu name="Community">
-        <item name="Who We Are"         href="/whoweare.html"/>
-        <item name="Powered by Lucene"  href="/powered.html"/>
-        <item name="Resources"          href="/resources.html"/>
-        <item name="Mailing Lists"      href="/site/mail.html"/>
-        <item name="Bugs"               href="/site/bugs.html"/>
-        <item name="Get Involved"       href="/site/getinvolved.html"/>
-    </menu>
-  
     <menu name="Jakarta">
+        <item name="Get Involved"          href="/site/getinvolved.html"/>
         <item name="Acknowledgements"      href="/site/acknowledgements.html"/>
         <item name="Contact"               href="/site/contact.html"/>
         <item name="Legal"                 href="/site/legal.html"/>

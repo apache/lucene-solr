@@ -2,17 +2,33 @@
 <document>
 <properties>
 <author email="husted@apache.org">Ted Husted</author>
+<author email="cutting@apache.org">Doug Cutting</author>
 <title>Who We Are - Jakarta Lucene</title>
 </properties>
 <body>
 
-<section name="WHO WE ARE">
-<h3>Lucene is maintained by a team of volunteer developers</h3>
+<section name="Who We Are">
+<p>Lucene is maintained by a team of volunteer developers.</p>
 </section>
 
 <section name="Committers">
 <ul>
-<li><b>Doug Cutting</b> (cutting at apache.org)</li>
+<li><b>Doug Cutting</b> (cutting at apache.org)
+
+<p>Lucene was originally written in Doug's spare time during late 1997
+and early 1998.  Doug had previously written search engines at Xerox's
+Palo Alto Research Center (PARC), Apple, and Excite@Home, and authored
+several information retrieval <a
+href="http://www.lucene.com/publications.html">papers and
+patents</a>.</p>
+
+<p>Doug currently works for <a href="http://www.grandcentral.com/">Grand
+Central</a>.</p>
+
+<p>Please do not email Doug directly about Lucene. Instead use
+the <a href="http://jakarta.apache.org/site/mail.html">Jakarta-Lucene mailing lists</a>.</p>
+
+</li>
 <li><b>Otis Gospodnetic</b> (otis at apache.org)</li>
 <li><b>Brian Goetz</b> (briangoetz at apache.org)</li>
 <li><b>Scott Ganyo</b> (scottganyo at apache.org)</li>
