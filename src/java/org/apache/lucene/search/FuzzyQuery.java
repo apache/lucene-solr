@@ -40,8 +40,8 @@ public final class FuzzyQuery extends MultiTermQuery {
    *  between the query term and the matching terms. For example, for a
    *  <code>minimumSimilarity</code> of <code>0.5</code> a term of the same length
    *  as the query term is considered similar to the query term if the edit distance
-   *  between both terms is less than <code>length(term)*0.5</code>.
-   * @param prefixLength length of common prefix.
+   *  between both terms is less than <code>length(term)*0.5</code>
+   * @param prefixLength length of common (non-fuzzy) prefix
    * @throws IllegalArgumentException if minimumSimilarity is &gt; 1 or &lt; 0
    * or if prefixLength &lt; 0 or &gt; <code>term.text().length()</code>.
    */
@@ -74,7 +74,24 @@ public final class FuzzyQuery extends MultiTermQuery {
   public FuzzyQuery(Term term) {
     this(term, defaultMinSimilarity, 0);
   }
+  
+  /**
+   * Returns the minimum similarity that is required for this query to match.
+   * @return float value between 0.0 and 1.0
+   */
+  public float getMinSimilarity() {
+    return minimumSimilarity;
+  }
     
+  /**
+   * Returns the prefix length, i.e. the number of characters at the start
+   * of a term that must be identical (not fuzzy) to the query term if the query
+   * is to match that term. 
+   */
+  public int getPrefixLength() {
+    return prefixLength;
+  }
+
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new FuzzyTermEnum(reader, getTerm(), minimumSimilarity, prefixLength);
   }
