@@ -139,7 +139,10 @@ public class TermQuery extends Query {
       fieldExpl.addDetail(idfExpl);
 
       Explanation fieldNormExpl = new Explanation();
-      fieldNormExpl.setValue(Similarity.decodeNorm(reader.norms(field)[doc]));
+      byte[] fieldNorms = reader.norms(field);
+      float fieldNorm =
+        fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 0.0f;
+      fieldNormExpl.setValue(fieldNorm);
       fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
       fieldExpl.addDetail(fieldNormExpl);
 
