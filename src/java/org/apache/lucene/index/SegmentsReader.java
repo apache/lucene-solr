@@ -105,7 +105,7 @@ final class SegmentsReader extends IndexReader {
   synchronized final void doDelete(int n) throws IOException {
     numDocs = -1;				  // invalidate cache
     int i = readerIndex(n);			  // find segment num
-    readers[i].delete(n - starts[i]);		  // dispatch to segment reader
+    readers[i].doDelete(n - starts[i]);		  // dispatch to segment reader
   }
 
   private final int readerIndex(int n) {	  // find reader for doc n:
