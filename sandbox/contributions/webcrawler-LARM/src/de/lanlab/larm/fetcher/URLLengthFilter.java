@@ -54,6 +54,8 @@
 
 package de.lanlab.larm.fetcher;
 
+import de.lanlab.larm.util.*;
+
 /**
  * kills URLs longer than X characters. Used to prevent endless loops where
  * the page contains the current URL + some extension
@@ -80,13 +82,24 @@ public class URLLengthFilter extends Filter implements MessageListener
 
     int maxLength;
 
+//    URLLengthFilter()
+//    {
+//        maxLength = 0;
+//    }
+    SimpleLogger log;
 
     /**
      * Constructor for the URLLengthFilter object
      *
      * @param maxLength  max length of the _total_ URL (protocol+host+port+path)
      */
-    public URLLengthFilter(int maxLength)
+    public URLLengthFilter(int maxLength, SimpleLogger log)
+    {
+        this.maxLength = maxLength;
+        this.log = log;
+    }
+
+    public void setMaxLength(int maxLength)
     {
         this.maxLength = maxLength;
     }
@@ -105,6 +118,8 @@ public class URLLengthFilter extends Filter implements MessageListener
         if (file != null && file.length() > maxLength) // path + query
         {
             filtered++;
+            //log.log("URLLengthFilter: URL " + m.getUrl() + " exceeds maxLength " + this.maxLength);
+            log.log(message.toString());
             return null;
         }
         return message;

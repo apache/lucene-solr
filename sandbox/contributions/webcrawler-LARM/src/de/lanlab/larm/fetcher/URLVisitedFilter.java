@@ -95,11 +95,13 @@ public class URLVisitedFilter extends Filter implements MessageListener
      *
      * @param initialHashCapacity  Description of the Parameter
      */
-    public URLVisitedFilter(int initialHashCapacity)
+    public URLVisitedFilter(SimpleLogger log, int initialHashCapacity)
     {
         urlHash = new HashSet(initialHashCapacity);
         //urlVector = new Vector(initialHashCapacity);
+        this.log = log;
     }
+    SimpleLogger log;
 
 
     /**
@@ -113,7 +115,7 @@ public class URLVisitedFilter extends Filter implements MessageListener
 
 
 
-    /**
+    /**q
      * @param message  Description of the Parameter
      * @return         Description of the Return Value
      */
@@ -126,8 +128,10 @@ public class URLVisitedFilter extends Filter implements MessageListener
             String urlString = urlMessage.getNormalizedURLString();
             if (urlHash.contains(urlString))
             {
-                //System.out.println("URLVisitedFilter: " + urlString + " already present.");
+                //log.log("URLVisitedFilter: " + urlString + " already present.");
+                log.log(message.toString());
                 filtered++;
+
                 return null;
             }
             else

@@ -55,6 +55,9 @@
 package de.lanlab.larm.fetcher;
 
 import java.net.*;
+import java.util.ArrayList;
+import java.io.*;
+import de.lanlab.larm.util.*;
 
 /**
  * this can be considered a hack
@@ -68,14 +71,12 @@ public class KnownPathsFilter extends Filter implements MessageListener
 
     String[] pathsToFilter =
     {
-        "/robots.txt"
+        "/robots.txt",
+        "/lmu-32321800/"
     };
 
-    String[] hostFilter =
-    {
-        "www.nm.informatik.uni-muenchen.de",
-        "cgi.cip.informatik.uni-muenchen.de"
-    };
+    ArrayList hosts = new ArrayList();
+    Object[] hostsToFilter = null;
 
     String[] filesToFilter =
     {
@@ -93,18 +94,27 @@ public class KnownPathsFilter extends Filter implements MessageListener
     int pathLength;
     int fileLength;
     int hostLength;
-
+    SimpleLogger log;
 
     /**
      * Constructor for the KnownPathsFilter object
      */
-    public KnownPathsFilter()
+    public KnownPathsFilter(SimpleLogger log)
     {
         pathLength = pathsToFilter.length;
+        this.log = log;
         fileLength = filesToFilter.length;
-        hostLength = hostFilter.length;
     }
 
+    /**
+     * add "forbidden" host name
+     * note: this has no effect after the filter has been added to the message handler
+     * @param hostname
+     */
+    public void addHostToFilter(String hostname)
+    {
+        this.hosts.add(hostname);
+    }
 
     /**
      * Description of the Method
@@ -114,33 +124,46 @@ public class KnownPathsFilter extends Filter implements MessageListener
      */
     public Message handleRequest(Message message)
     {
-        URL url = ((URLMessage)message).getUrl();
-        String file = url.getFile();
-        String host = url.getHost();
-        int i;
-        for (i = 0; i < pathLength; i++)
+        try
         {
-            if (file.startsWith(pathsToFilter[i]))
+            URL url = new URL(((URLMessage)message).getNormalizedURLString());
+            String file = url.getFile();
+            String host = url.getHost();
+            int i;
+            for (i = 0; i < pathLength; i++)
             {
-                filtered++;
-                return null;
+                if (file.startsWith(pathsToFilter[i]))
+                {
+                    filtered++;
+                    //log.log("KnownPathsFilter: filtered file '" + url + "' - file starts with " + pathsToFilter[i]);
+                    log.log(message.toString());
+                    return null;
+                }
+            }
+            for (i = 0; i < fileLength; i++)
+            {
+                if (file.endsWith(filesToFilter[i]))
+                {
+                    filtered++;
+                    //log.log("KnownPathsFilter: filtered file '" + url + "' - file ends with " + filesToFilter[i]);
+                    log.log(message.toString());
+                    return null;
+                }
+            }
+            for (i = 0; i<hostLength; i++)
+            {
+                if(hostsToFilter[i].equals(host))
+                {
+                    filtered++;
+                    //log.log("KnownPathsFilter: filtered file '" + url + "' - host equals " + host);
+                    log.log(message.toString());
+                    return null;
+                }
             }
         }
-        for (i = 0; i < fileLength; i++)
+        catch(MalformedURLException e)
         {
-            if (file.endsWith(filesToFilter[i]))
-            {
-                filtered++;
-                return null;
-            }
-        }
-        for (i = 0; i<hostLength; i++)
-        {
-            if(hostFilter[i].equals(host))
-            {
-                filtered++;
-                return null;
-            }
+            e.printStackTrace();
         }
         return message;
     }
@@ -154,5 +177,7 @@ public class KnownPathsFilter extends Filter implements MessageListener
     public void notifyAddedToMessageHandler(MessageHandler handler)
     {
         this.messageHandler = messageHandler;
+        this.hostsToFilter = hosts.toArray();
+        this.hostLength = hostsToFilter.length;
     }
 }
