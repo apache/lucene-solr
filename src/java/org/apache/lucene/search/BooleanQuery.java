@@ -127,24 +127,14 @@ final public class BooleanQuery extends Query {
 
     BooleanScorer result = new BooleanScorer();
 
-    int theMask = 1, thisMask;
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      if (c.required || c.prohibited) {
-	thisMask = theMask;
-	theMask = theMask << 1;
-      } else
-	thisMask = 0;
-      
       Scorer subScorer = c.query.scorer(reader);
       if (subScorer != null)
 	result.add(subScorer, c.required, c.prohibited);
       else if (c.required)
 	return null;
     }
-    if (theMask == 0)
-      throw new IndexOutOfBoundsException
-	("More than 32 required/prohibited clauses in query.");
 
     return result;
   }
