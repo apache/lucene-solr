@@ -140,14 +140,14 @@ public class TestDocument extends TestCase
     private Document makeDocumentWithFields()
     {
         Document doc = new Document();
-        doc.add(Field.Keyword(  "keyword",   "test1"));
-        doc.add(Field.Keyword(  "keyword",   "test2"));
+        doc.add(new Field(  "keyword",   "test1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field(  "keyword",   "test2", Field.Store.YES, Field.Index.UN_TOKENIZED));
         doc.add(new Field(     "text",      "test1", Field.Store.YES, Field.Index.TOKENIZED));
         doc.add(new Field(     "text",      "test2", Field.Store.YES, Field.Index.TOKENIZED));
-        doc.add(Field.UnIndexed("unindexed", "test1"));
-        doc.add(Field.UnIndexed("unindexed", "test2"));
-        doc.add(Field.UnStored( "unstored",  "test1"));
-        doc.add(Field.UnStored( "unstored",  "test2"));
+        doc.add(new Field("unindexed", "test1", Field.Store.YES, Field.Index.NO));
+        doc.add(new Field("unindexed", "test2", Field.Store.YES, Field.Index.NO));
+        doc.add(new Field( "unstored",  "test1", Field.Store.NO, Field.Index.TOKENIZED));
+        doc.add(new Field( "unstored",  "test2", Field.Store.NO, Field.Index.TOKENIZED));
         return doc;
     }
 
