@@ -6,5 +6,47 @@
     WordNet
   </description>
 
+  <property name="prolog.file" location="prologwn/wn_s.pl"/>
+  <property name="synindex.dir" location="index"/>
+
+  <available property="synindex.exists" file="${synindex.dir}" type="dir"/>
+
   <import file="../common.xml"/>
+
+  <target name="index" depends="compile">
+    <fail if="synindex.exists">
+      Index already exists - must remove first.
+    </fail>
+
+    <java classname="org.apache.lucene.wordnet.Syns2Index">
+      <classpath>
+        <path refid="compile.classpath"/>
+        <pathelement location="${build.classes.dir}"/>
+      </classpath>
+
+      <arg file="${prolog.file}"/>
+      <arg file="${synindex.dir}"/>
+    </java>
+  </target>
+
+  <target name="synonym">
+    <fail unless="synindex.exists">
+      Index does not exist.
+    </fail>
+
+    <fail unless="word">
+      Must specify 'word' property.
+    </fail>
+    
+    <java classname="org.apache.lucene.wordnet.SynLookup">
+      <classpath>
+        <path refid="compile.classpath"/>
+        <pathelement location="${build.classes.dir}"/>
+      </classpath>
+
+      <arg file="${synindex.dir}"/>
+      <arg value="${word}"/>
+    </java>
+  </target>
+
 </project>
