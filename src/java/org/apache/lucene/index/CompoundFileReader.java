@@ -87,7 +87,7 @@ class CompoundFileReader extends Directory {
             success = true;
 
         } finally {
-            if (! success) {
+            if (! success && (stream != null)) {
                 try {
                     stream.close();
                 } catch (IOException e) { }
