@@ -11,6 +11,13 @@ $Id$
  2. Added new class FieldCache to manage in-memory caches of field term
     values.  (Tim Jones)
 
+ 3. Added overloaded getFieldQuery method to QueryParser which
+    accepts the slop factor specified for the phrase (or the default
+    phrase slop for the QueryParser instance).  This allows overriding
+    methods to replace a PhraseQuery with a SpanNearQuery instead,
+    keeping the proper slop factor. (Erik Hatcher)
+
+
 1.4 RC3
 
  1. Fixed several search bugs introduced by the skipTo() changes in
@@ -265,7 +272,7 @@ $Id$
 
  7. Modified QueryParser to make it possible to programmatically specify the
     default Boolean operator (OR or AND).
-    (Péter Halácsy via otis)
+    (Pï¿½ter Halï¿½csy via otis)
 
  8. Made many search methods and classes non-final, per requests.
     This includes IndexWriter and IndexSearcher, among others.

@@ -285,6 +285,26 @@ public class QueryParser {
   }
 
   /**
+   * Base implementation delegates to {@link #getFieldQuery(String,Analyzer,String)}.
+   * This method may be overridden, for example, to return
+   * a SpanNearQuery instead of a PhraseQuery.
+   *
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getFieldQuery(String field,
+                                Analyzer analyzer,
+                                String queryText,
+                                int slop)  throws ParseException {
+    Query query = getFieldQuery(field, analyzer, queryText);
+
+    if (query instanceof PhraseQuery) {
+      ((PhraseQuery) query).setSlop(slop);
+    }
+
+    return query;
+  }
+
+  /**
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getRangeQuery(String field,
@@ -655,15 +675,17 @@ Query Term(String field) : {
        [ slop=<SLOP> ]
        [ <CARAT> boost=<NUMBER> ]
        {
-         q = getFieldQuery(field, analyzer,
-                           term.image.substring(1, term.image.length()-1));
-         if (slop != null && q instanceof PhraseQuery) {
+         int s = phraseSlop;
+
+         if (slop != null) {
            try {
-             int s = Float.valueOf(slop.image.substring(1)).intValue();
-             ((PhraseQuery) q).setSlop(s);
+             s = Float.valueOf(slop.image.substring(1)).intValue();
            }
            catch (Exception ignored) { }
          }
+         q = getFieldQuery(field, analyzer,
+                           term.image.substring(1, term.image.length()-1),
+                           s);
        }
   )
   {
