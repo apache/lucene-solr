@@ -67,13 +67,14 @@ public class Highlighter
 	 * @param analyzer   the analyzer that will be used to split <code>text</code>
 	 * into chunks  
 	 * @param text text to highlight terms in
+	 * @param fieldName Name of field used to influence analyzer's tokenization policy 
 	 *
 	 * @return highlighted text fragment or null if no terms found
 	 */
-	public final String getBestFragment(Analyzer analyzer, String text)
+	public final String getBestFragment(Analyzer analyzer, String fieldName,String text)
 		throws IOException
 	{
-		TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
+		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragment(tokenStream, text);
 	}
   
