@@ -54,25 +54,23 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
+import junit.framework.TestCase;
+
+import java.util.Vector;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
-import junit.framework.TestCase;
-
-import java.util.Vector;
-
- /** Similarity unit test.
-  *
-  * @author Doug Cutting
-  * @version $Revision$
-  */
+/** Similarity unit test.
+ *
+ * @author Doug Cutting
+ * @version $Revision$
+ */
 public class TestSimilarity extends TestCase {
   public TestSimilarity(String name) {
     super(name);

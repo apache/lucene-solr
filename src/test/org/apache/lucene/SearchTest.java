@@ -54,8 +54,6 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
-import java.util.Date;
 import java.util.GregorianCalendar;
 
 import org.apache.lucene.store.*;

@@ -63,9 +63,8 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.File;
-import java.util.Date;
 
-
+// FIXME: OG: remove hard-coded file names
 class DocTest {
   public static void main(String[] args) {
     try {
@@ -76,7 +75,7 @@ class DocTest {
       printSegment("one");
       indexDoc("two", "test2.txt");
       printSegment("two");
-      
+
       merge("one", "two", "merge");
       printSegment("merge");
 
@@ -130,12 +129,12 @@ class DocTest {
 
     for (int i = 0; i < reader.numDocs(); i++)
       System.out.println(reader.document(i));
-    
+
     TermEnum tis = reader.terms();
     while (tis.next()) {
       System.out.print(tis.term());
       System.out.println(" DF=" + tis.docFreq());
-      
+
       TermPositions positions = reader.termPositions(tis.term());
       try {
 	while (positions.next()) {

@@ -54,12 +54,10 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.rmi.Naming;
-import java.rmi.RemoteException;
-import java.rmi.NotBoundException;
-import java.rmi.registry.LocateRegistry;
-
 import junit.framework.TestCase;
+
+import java.rmi.Naming;
+import java.rmi.registry.LocateRegistry;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;

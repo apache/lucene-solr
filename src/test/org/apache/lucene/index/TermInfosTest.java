@@ -75,9 +75,10 @@ class TermInfosTest {
     }
   }
 
+  // FIXME: OG: remove hard-coded file names
   public static void test()
        throws Exception {
-    
+
     File file = new File("words.txt");
     System.out.println(" reading word file containing " +
 		       file.length() + " bytes");

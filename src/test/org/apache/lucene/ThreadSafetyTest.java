@@ -61,7 +61,6 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
 
-import java.io.File;
 import java.util.Random;
 
 class ThreadSafetyTest {

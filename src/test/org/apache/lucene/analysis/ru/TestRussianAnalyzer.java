@@ -55,21 +55,15 @@ package org.apache.lucene.analysis.ru;
  */
 
 import junit.framework.TestCase;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+
 import java.io.FileReader;
-import java.io.FileWriter;
 
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 /**
  * Test case for RussianAnalyzer.
