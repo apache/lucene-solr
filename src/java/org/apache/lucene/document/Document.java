@@ -140,6 +140,7 @@ public final class Document implements java.io.Serializable {
 
   /**
    * Returns an array of {@link Field}s with the given name.
+   * This method can return <code>null</code>.
    *
    * @param name the name of the field
    * @return a <code>Field[]</code> array
@@ -165,6 +166,8 @@ public final class Document implements java.io.Serializable {
 
   /**
    * Returns an array of values of the field specified as the method parameter.
+   * This method can return <code>null</code>.
+   * UnStored fields' values cannot be returned by this method.
    *
    * @param name the name of the field
    * @return a <code>String[]</code> of field values
