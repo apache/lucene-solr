@@ -4,7 +4,7 @@
 
     <!-- Give user a chance to override without editing this file
         (and without typing -D each time it compiles it -->
-  <property file="${user.home}/lucene.build.properties" /> 
+  <property file="${user.home}/lucene.build.properties" />
   <property file="${user.home}/build.properties" />
   <property file="${basedir}/build.properties" />
   <property file="${basedir}/default.properties" />
@@ -295,7 +295,7 @@
     />
   </target>
 
-  <target depends="docs-prepare" name="prepare-error" unless="AnakiaTask.present">
+  <target name="prepare-error" depends="docs-prepare" unless="AnakiaTask.present">
     <echo>
       AnakiaTask is not present! Please check to make sure that
       you have jakarta.site2.home set correctly.
@@ -423,7 +423,7 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-tgz" depends="package"
-    description="--> generates the lucene distribution as .tar.gz">
+    description="--> Generates the lucene distribution as .tar.gz">
 
     <delete file="${basedir}/${final.name}.tar"/>
     <delete file="${basedir}/${final.name}.tar.gz"/>
@@ -445,7 +445,7 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package-all" depends="package-zip, package-tgz"
-    description="--> generates the .tar.gz and .zip distributions">
+    description="--> Generates the .tar.gz and .zip distributions">
   </target>
 
   <!-- ================================================================== -->
