@@ -59,6 +59,11 @@ import java.util.Vector;
 
 import org.apache.lucene.index.Term;
 
+import org.apache.lucene.index.IndexWriter;       // for javadoc
+import org.apache.lucene.index.IndexReader;       // for javadoc
+import org.apache.lucene.document.Field;          // for javadoc
+
+
 /** Expert: Scoring API.
  * <p>Subclasses implement search scoring.
  *

@@ -62,6 +62,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;          // for javadoc
 
 /** IndexReader is an abstract class, providing an interface for accessing an
   index.  Search of an index is done entirely through this abstract interface,

@@ -115,7 +115,7 @@ public final class Token {
    * occur with no intervening stop words.
    *
    * </ul>
-   * @see TermPositions
+   * @see org.apache.lucene.index.TermPositions
    */
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0)

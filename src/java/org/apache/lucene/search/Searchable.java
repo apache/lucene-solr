@@ -58,6 +58,7 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;       // for javadoc
 
 /** The interface for search implementations.
  *

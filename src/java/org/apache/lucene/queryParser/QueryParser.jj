@@ -373,7 +373,7 @@ public class QueryParser {
 
   /**
    * Factory method for generating a query (similar to
-   * ({@link getWildcardQuery}). Called when parser parses an input term
+   * ({@link #getWildcardQuery}). Called when parser parses an input term
    * token that uses prefix notation; that is, contains a single '*' wildcard
    * character as its last character. Since this is a special case
    * of generic wildcard term, and such a query can be optimized easily,
@@ -404,7 +404,7 @@ public class QueryParser {
 
   /**
    * Factory method for generating a query (similar to
-   * ({@link getWildcardQuery}). Called when parser parses
+   * ({@link #getWildcardQuery}). Called when parser parses
    * an input term token that has the fuzzy suffix (~) appended.
    *
    * @param field Name of the field query will use.
