@@ -213,12 +213,20 @@ public final class Field implements java.io.Serializable {
     is used.  Exactly one of stringValue() and readerValue() must be set. */
   public Reader readerValue()	{ return readerValue; }
 
-
-  /** Create a field by specifying all parameters except for <code>termVector</code>,
-   *  which is set to <code>TermVector.NO</code>.
+  /**
+   * Create a field by specifying its name, value and how it will
+   * be saved in the index. Term vectors will not be stored in the index.
+   * 
+   * @param name The name of the field
+   * @param value The string to process
+   * @param store Whether <code>value</code> should be stored in the index
+   * @param index Whether the field should be indexed, and if so, if it should
+   *  be tokenized before indexing 
+   * @throws NullPointerException if name or value is <code>null</code>
+   * @throws IllegalArgumentException if the field is neither stored nor indexed 
    */
-  public Field(String name, String string, Store store, Index index) {
-    this(name, string, store, index, TermVector.NO);
+  public Field(String name, String value, Store store, Index index) {
+    this(name, value, store, index, TermVector.NO);
   }
 
   /**
@@ -227,10 +235,11 @@ public final class Field implements java.io.Serializable {
    * 
    * @param name The name of the field
    * @param value The string to process
-   * @param store whether <code>value</code> should be stored in the index
-   * @param index whether the field should be indexed, and if so, if it should
+   * @param store Whether <code>value</code> should be stored in the index
+   * @param index Whether the field should be indexed, and if so, if it should
    *  be tokenized before indexing 
-   * @param termVector whether Term Vector info should be stored
+   * @param termVector Whether term vector should be stored
+   * @throws NullPointerException if name or value is <code>null</code>
    * @throws IllegalArgumentException in any of the following situations:
    * <ul> 
    *  <li>the field is neither stored nor indexed</li> 
@@ -238,50 +247,80 @@ public final class Field implements java.io.Serializable {
    * </ul> 
    */ 
   public Field(String name, String value, Store store, Index index, TermVector termVector) {
-      if (name == null)
-         throw new NullPointerException("name cannot be null");
-      if (value == null)
-        throw new NullPointerException("value cannot be null");
-      if (index == Index.NO && store == Store.NO)
-        throw new IllegalArgumentException("it doesn't make sense to have a field that "
-            + "is neither indexed nor stored");
-      if (index == Index.NO && termVector != TermVector.NO)
-        throw new IllegalArgumentException("cannot store term vector information "
-            + "for a field that is not indexed");
+    if (name == null)
+      throw new NullPointerException("name cannot be null");
+    if (value == null)
+      throw new NullPointerException("value cannot be null");
+    if (index == Index.NO && store == Store.NO)
+      throw new IllegalArgumentException("it doesn't make sense to have a field that "
+         + "is neither indexed nor stored");
+    if (index == Index.NO && termVector != TermVector.NO)
+      throw new IllegalArgumentException("cannot store term vector information "
+         + "for a field that is not indexed");
 
-      this.name = name.intern();        // field names are interned
-      this.stringValue = value;
-      if (store == Store.YES)
-        this.isStored = true;
-      else if (store == Store.NO)
-        this.isStored = false;
-      else
-        throw new IllegalArgumentException("unknown store parameter " + store);
-      
-      if (index == Index.NO) {
-        this.isIndexed = false;
-        this.isTokenized = false;
-      } else if (index == Index.TOKENIZED) {
-        this.isIndexed = true;
-        this.isTokenized = true;
-      } else if (index == Index.UN_TOKENIZED) {
-        this.isIndexed = true;
-        this.isTokenized = false;
-      } else {
-        throw new IllegalArgumentException("unknown index parameter " + index);
-      }
+    this.name = name.intern();        // field names are interned
+    this.stringValue = value;
 
-      if (termVector == TermVector.NO) {
-        this.storeTermVector = false;
-      } else if (termVector == TermVector.YES) {
-        this.storeTermVector = true;
-      } else {
-        throw new IllegalArgumentException("unknown termVector parameter " + termVector);
-      }
-}
+    if (store == Store.YES)
+      this.isStored = true;
+    else if (store == Store.NO)
+      this.isStored = false;
+    else
+      throw new IllegalArgumentException("unknown store parameter " + store);
+   
+    if (index == Index.NO) {
+      this.isIndexed = false;
+      this.isTokenized = false;
+    } else if (index == Index.TOKENIZED) {
+      this.isIndexed = true;
+      this.isTokenized = true;
+    } else if (index == Index.UN_TOKENIZED) {
+      this.isIndexed = true;
+      this.isTokenized = false;
+    } else {
+      throw new IllegalArgumentException("unknown index parameter " + index);
+    }
+
+    setStoreTermVector(termVector);
+  }
+
+  /**
+   * Create a tokenized and indexed field that is not stored. Term vectors will
+   * not be stored.
+   * 
+   * @param name The name of the field
+   * @param reader The reader with the content
+   * @throws NullPointerException if name or reader is <code>null</code>
+   */
+  public Field(String name, Reader reader) {
+    this(name, reader, TermVector.NO);
+  }
+
+  /**
+   * Create a tokenized and indexed field that is not stored, optionally with 
+   * storing term vectors.
+   * 
+   * @param name The name of the field
+   * @param reader The reader with the content
+   * @param termVector Whether term vector should be stored
+   * @throws NullPointerException if name or reader is <code>null</code>
+   */ 
+  public Field(String name, Reader reader, TermVector termVector) {
+    if (name == null)
+      throw new NullPointerException("name cannot be null");
+    if (reader == null)
+      throw new NullPointerException("reader cannot be null");
+    this.name = name.intern();        // field names are interned
+    this.readerValue = reader;
+    this.isStored = false;
+    this.isIndexed = true;
+    this.isTokenized = true;
+    setStoreTermVector(termVector);
+  }
 
   /** Create a field by specifying all parameters except for <code>storeTermVector</code>,
    *  which is set to <code>false</code>.
+   * 
    * @deprecated use {@link #Field(String, String, Field.Store, Field.Index)} instead
    */
   public Field(String name, String string,
@@ -297,6 +336,7 @@ public final class Field implements java.io.Serializable {
    * @param index true if the field should be indexed
    * @param token true if the field should be tokenized
    * @param storeTermVector true if we should store the Term Vector info
+   * 
    * @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)} instead
    */ 
   public Field(String name, String string,
@@ -316,16 +356,16 @@ public final class Field implements java.io.Serializable {
     this.storeTermVector = storeTermVector;
   }
 
-  Field(String name, Reader reader) {
-    if (name == null)
-      throw new NullPointerException("name cannot be null");
-    if (reader == null)
-      throw new NullPointerException("value cannot be null");
-
-    this.name = name.intern();			  // field names are interned
-    this.readerValue = reader;
+  private void setStoreTermVector(TermVector termVector) {
+    if (termVector == TermVector.NO) {
+      this.storeTermVector = false;
+    } else if (termVector == TermVector.YES) {
+      this.storeTermVector = true;
+    } else {
+      throw new IllegalArgumentException("unknown termVector parameter " + termVector);
+    }
   }
-
+  
   /** True iff the value of the field is to be stored in the index for return
     with search hits.  It is an error for this to be true if a field is
     Reader-valued. */
