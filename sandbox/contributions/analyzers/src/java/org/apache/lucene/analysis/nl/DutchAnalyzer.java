@@ -45,7 +45,7 @@ public class DutchAnalyzer extends Analyzer {
   /**
    * List of typical Dutch stopwords.
    */
-  private String[] DUTCH_STOP_WORDS =
+  public final static String[] DUTCH_STOP_WORDS =
       {
         "de", "en", "van", "ik", "te", "dat", "die", "in", "een",
         "hij", "het", "niet", "zijn", "is", "was", "op", "aan", "met", "als", "voor", "had",
@@ -74,7 +74,7 @@ public class DutchAnalyzer extends Analyzer {
 
 
   /**
-   * Builds an analyzer.
+   * Builds an analyzer with the default stop words ({@link #DUTCH_STOP_WORDS}).
    */
   public DutchAnalyzer() {
     stoptable = StopFilter.makeStopSet(DUTCH_STOP_WORDS);

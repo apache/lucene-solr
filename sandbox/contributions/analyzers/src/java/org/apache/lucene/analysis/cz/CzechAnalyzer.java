@@ -80,7 +80,7 @@ public final class CzechAnalyzer extends Analyzer {
 	/**
 	 * List of typical stopwords.
 	 */
-	private static String[] STOP_WORDS = {
+	public final static String[] CZECH_STOP_WORDS = {
         "a","s","k","o","i","u","v","z","dnes","cz","t\u00edmto","bude\u0161","budem",
         "byli","jse\u0161","m\u016fj","sv\u00fdm","ta","tomto","tohle","tuto","tyto",
         "jej","zda","pro\u010d","m\u00e1te","tato","kam","tohoto","kdo","kte\u0159\u00ed",
@@ -107,10 +107,10 @@ public final class CzechAnalyzer extends Analyzer {
 	private Set stoptable;
 
 	/**
-	 * Builds an analyzer.
+	 * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
 	 */
 	public CzechAnalyzer() {
-		stoptable = StopFilter.makeStopSet( STOP_WORDS );
+		stoptable = StopFilter.makeStopSet( CZECH_STOP_WORDS );
 	}
 
 	/**

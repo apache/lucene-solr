@@ -76,7 +76,7 @@ public class CJKAnalyzer extends Analyzer {
    * An array containing some common English words that are not usually
    * useful for searching. and some double-byte interpunctions.....
    */
-  private static String[] stopWords = {
+  public final static String[] STOP_WORDS = {
     "a", "and", "are", "as", "at", "be",
     "but", "by", "for", "if", "in",
     "into", "is", "it", "no", "not",
@@ -97,10 +97,10 @@ public class CJKAnalyzer extends Analyzer {
   //~ Constructors -----------------------------------------------------------
 
   /**
-   * Builds an analyzer which removes words in STOP_WORDS.
+   * Builds an analyzer which removes words in {@link #STOP_WORDS}.
    */
   public CJKAnalyzer() {
-    stopTable = StopFilter.makeStopSet(stopWords);
+    stopTable = StopFilter.makeStopSet(STOP_WORDS);
   }
 
   /**

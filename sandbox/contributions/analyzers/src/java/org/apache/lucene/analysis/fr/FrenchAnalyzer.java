@@ -84,7 +84,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Extended list of typical french stopwords.
    */
-  private String[] FRENCH_STOP_WORDS = {
+  public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
     "autre", "autres", "aux", "auxquelles", "auxquels", "avait", "avant", "avec", "avoir",
     "c", "car", "ce", "ceci", "cela", "celle", "celles", "celui", "cependant", "certain",
@@ -119,7 +119,7 @@ public final class FrenchAnalyzer extends Analyzer {
   private Set excltable = new HashSet();
 
   /**
-   * Builds an analyzer.
+   * Builds an analyzer with the default stop words ({@link #FRENCH_STOP_WORDS}).
    */
   public FrenchAnalyzer() {
     stoptable = StopFilter.makeStopSet(FRENCH_STOP_WORDS);

@@ -73,14 +73,14 @@ import java.util.Set;
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
  *
- * @author    João Kramer
+ * @author    Joï¿½o Kramer
  */
 public final class BrazilianAnalyzer extends Analyzer {
 
 	/**
 	 * List of typical german stopwords.
 	 */
-	private String[] BRAZILIAN_STOP_WORDS = {
+	public final static String[] BRAZILIAN_STOP_WORDS = {
       "a","ainda","alem","ambas","ambos","antes",
       "ao","aonde","aos","apos","aquele","aqueles",
       "as","assim","com","como","contra","contudo",
@@ -112,7 +112,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	private Set excltable = new HashSet();
 
 	/**
-	 * Builds an analyzer.
+	 * Builds an analyzer with the default stop words ({@link #BRAZILIAN_STOP_WORDS}).
 	 */
 	public BrazilianAnalyzer() {
 		stoptable = StopFilter.makeStopSet( BRAZILIAN_STOP_WORDS );
