@@ -199,7 +199,7 @@ class SegmentTermDocs implements TermDocs {
         if (skipDoc != 0 && skipDoc >= doc)
           numSkipped += skipInterval;
 
-        if ((count + numSkipped + skipInterval) > df)
+        if ((count + numSkipped + skipInterval) >= df)
           break;                                  // no more skips
 
         skipDoc += skipStream.readVInt();
