@@ -58,7 +58,7 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.FileDocument;
+import org.apache.lucene.demo.FileDocument;
 
 import java.io.File;
 import java.util.Date;

@@ -1,4 +1,4 @@
-package org.apache.lucene.HTMLParser;
+package org.apache.lucene.demo.html;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
@@ -56,31 +56,26 @@ package org.apache.lucene.HTMLParser;
 
 import java.io.*;
 
-class ParserThread extends Thread {		  
-  HTMLParser parser;
-
-  ParserThread(HTMLParser p) {
-    parser = p;
+class Test {
+  public static void main(String[] argv) throws Exception {
+    if ("-dir".equals(argv[0])) {
+      String[] files = new File(argv[1]).list();
+      java.util.Arrays.sort(files);
+      for (int i = 0; i < files.length; i++) {
+	System.err.println(files[i]);
+	File file = new File(argv[1], files[i]);
+	parse(file);
+      }
+    } else
+      parse(new File(argv[0]));
   }
 
-  public void run() {				  // convert pipeOut to pipeIn
-    try {
-      try {					  // parse document to pipeOut
-	parser.HTMLDocument(); 
-      } catch (ParseException e) {
-	System.out.println("Parse Aborted: " + e.getMessage());
-      } catch (TokenMgrError e) {
-	System.out.println("Parse Aborted: " + e.getMessage());
-      } finally {
-	parser.pipeOut.close();
-	synchronized (parser) {
-	  parser.summary.setLength(parser.SUMMARY_LENGTH);
-	  parser.titleComplete = true;
-	  parser.notifyAll();
-	}
-      }
-    } catch (IOException e) {
-	e.printStackTrace();
-    }
+  public static void parse(File file) throws Exception {
+    HTMLParser parser = new HTMLParser(file);
+    System.out.println("Title: " + Entities.encode(parser.getTitle()));
+    System.out.println("Summary: " + Entities.encode(parser.getSummary()));
+    LineNumberReader reader = new LineNumberReader(parser.getReader());
+    for (String l = reader.readLine(); l != null; l = reader.readLine())
+      System.out.println(l);
   }
 }

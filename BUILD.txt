@@ -52,14 +52,14 @@ releases are available for download at:
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
 
-Step 3) Connect to the top-level of your Lucene installation
+Step 2) Connect to the top-level of your Lucene installation
 
 Lucene's top-level directory contains the build.properties and
 build.xml files.  You don't need to change any of the settings in
 these files, but you do need to run ant from this location so it knows
 where to find them.
 
-Step 4) Run ant.
+Step 3) Run ant.
 
 Assuming you have ant in your PATH and have set ANT_HOME to the
 location of your ant installation, typing "ant" at the shell prompt

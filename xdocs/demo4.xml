@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<document>
+<properties>
+<author email="acoliver@apache.org">Andrew C. Oliver</author>
+<title>Jakarta Lucene - Basic Demo Sources Walkthrough</title>
+</properties>
+<body>
+
+<section name="About the Code">
+<p>
+In this section we walk through the sources behind the basic Lucene Web Application demo.  
+Where to find it, its parts, and their function.  This section is intended for Java developers
+wishing to understand how to use Jakarta Lucene in their applications or for those involved
+in deploying web applications based on Lucene.
+</p>
+</section>
+
+
+<section name="Location of the source (developers/deployers)">
+<p>
+Relative the directory created when you extracted Lucene or retreived it from CVS, you 
+should see a directory called "src" which in turn contains a directory called "jsp".
+This is the root for all of the Lucene web demo. 
+</p>
+<p>
+Within this directory you should see the index.jsp class.  Bring this up in vi or your 
+editor of choice.
+</p>
+</section>
+
+<section name="index.jsp (developers/deployers)">
+<p>
+This jsp page is pretty boring by itself.  All it does is include a header, display a form and 
+include a footer.  If you look at the form, it has two fields: query (where you enter your 
+search criteria) and maxresults where you specify the number of results per page.  If you look
+at the form tag, you'll notice it uses the get method as opposed to the post.  While this is 
+considered deprecated functionality by the latest w3c specs, its unlikely to go away due to the
+usefulness of being able to bookmark things like searches.  By the structure of this JSP it should
+be easy to customize it without even editing this particular file.  You could simply change the 
+header and footer.  Let's look at the header.jsp (located in the same directory) next.
+</p>
+</section>
+
+<section name="header.jsp (developers/deployers)">
+<p>
+The header is also very simple by itself.  The only thing it does is include the configuration.jsp
+(which you looked at in the last section of this guide) and set the title and a brief header.  This
+would be a good place to put your own custom HTML to "pretty" things up a bit.  We won't cover the 
+footer because all it does is display the footer and close your tags.  Let's look at the results.jsp,
+the meat of this application next.
+</p>
+</section>
+
+<section name="results.jsp (developers)">
+<p>
+The results.jsp had a lot more functionality.  Much of it is for paging the search results we'll not
+cover this as its commented well enough.  It does not peform any optimizations such as caching results, 
+etc. as that would make this a more complex example.  The first thing in this page is the actual imports
+for the Lucene classes and Lucene demo classes.  These classes are loaded from the jars included in the 
+WEB-INF/lib directory in the final war file.  
+</p>
+<p>
+You'll notice that this file includes the same header and footer as the "index.jsp".  From there the jsp
+constructs an IndexSearcher with the "indexLocation" that was specified in the "configuration.jsp".  If there
+is an error of any kind in opening the index, it is diplayed ot the user and a boolean flag is set to tell 
+the rest of the sections of the jsp not to continue.
+</p>
+<p>
+From there, this jsp attempts to get the search criteria, the start index (used for paging) and the maximum
+number of results per page.  If the maximum results per page is not set or not valid then it and the 
+start index are set to default values.  If only the start index is invalid it is set to a default value.  If 
+the criteria isn't provided then a servlet error is thrown (it is assumed that this is the result of url tampering
+or some form of browser malfunction).
+</p>
+<p>
+The jsp moves on to construct a StandardAnalyzer just as in the simple demo, to analyze the search critieria, it 
+is passed to the QueryParser along with the criteria to construct a Query object.  You'll also notice the 
+string literal "contents" included.  This is to specify the search should include the  the contents and not 
+the title, url or some other field in the indexed documents.  If there is any error in constructing a Query 
+object an error is displayed to the user.
+</p>
+<p>
+In the next section of the jsp the IndexSearcher is asked to search given the query object.  the results are
+returned in a collection called "hits".  If the length property of the hits collection is 0 then an error 
+is displayed to the user and the error flag is set.
+</p>
+<p>
+Finally the jsp iterates through the hits collection and displayed properties of the "Document" objects we talked
+about in the first walkthrough.  These objects contain "known" fields specific to their indexer (in this case 
+"IndexHTML" constructs a document with "url", "title" and "contents").  You'll notice that these results are paged
+but the search is repeated every time.  This is an area where optimization could improve performance for large 
+result sets.
+</p>
+</section>
+
+<section name="More sources (developers)">
+<p>
+There are additional sources used by the web app that were not specifically covered by either walkthrough.  For 
+example the HTML parser, the IndexHTML class and HTMLDocument class.  These are very similar to the classes 
+covered in the first example, however they have properties sepecific to parsing and indexing HTML.  This is 
+beyond our scope; however, by now you should feel like you're "getting started" with Lucene.
+</p>
+</section>
+
+<section name="Where to go from here? (Everyone!)">
+<p>
+There are a number of things this demo doesn't do or doesn't do quite right.  For instance, you may 
+have noticed that documents in the root context are unreachable (unless you reconfigure Tomcat to
+support that context or redirect to it), anywhere where the directory doesn't quite match the context mapping,
+you'll have a broken link in your results.  If you want to index non-local files or have some other 
+needs this isn't supported, plus there may be security issues with running the indexing application from
+your webapps directory.  There are a number of things left for you the implementor or developer to do.
+</p>
+<p>
+In time some of these things may be added to Lucene as features (if you've got a good idea we'd love to hear it!),
+but for now: this is where you begin and the search engine/indexer ends.  Lastly, one would assume you'd
+want to follow the above advice and customize the application to look a little more fancy than black on 
+white with "Lucene Template" at the top.  We'll see you on the Lucene Users' or Developers' mailing lists!
+</p>
+</section>
+
+<section name="When to contact the Author">
+<p>
+Please resist the urge to contact the authors of this document (without bribes of fame and fortune attached).  First
+contact the <a href="http://jakarta.apache.org/site/mail.html">mailing lists</a>.  That being said feedback, 
+and modifications to this document and samples are ever so greatly appreciatedThey are just best sent to the 
+lists so that everyone can share in them.  Certainly you'll get the most help there as well.  
+Thanks for understanding.  
+</p>
+</section>
+
+</body>
+</document>
+

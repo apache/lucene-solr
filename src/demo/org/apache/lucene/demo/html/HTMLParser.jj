@@ -63,7 +63,7 @@ options {
 
 PARSER_BEGIN(HTMLParser)
 
-package org.apache.lucene.HTMLParser;
+package org.apache.lucene.demo.html;
 
 import java.io.*;
 

@@ -15,6 +15,7 @@
 
     <menu name="Documentation">
         <item name="FAQ"               href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
+	<item name="Getting Started"   href="/gettingstarted.html"/>
         <item name="Articles"          href="/resources.html"/>
         <item name="Javadoc"            href="/api/index.html"/>
     </menu>

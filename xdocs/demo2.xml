@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<document>
+<properties>
+<author email="acoliver@apache.org">Andrew C. Oliver</author>
+<title>Jakarta Lucene - Basic Demo Sources Walkthrough</title>
+</properties>
+<body>
+
+<section name="About the Code">
+<p>
+In this section we walk through the sources behind the basic Lucene demo such as where to 
+find it, its parts and their function.  This section is intended for Java developers
+wishing to understand how to use Jakarta Lucene in their applications.
+</p>
+</section>
+
+
+<section name="Location of the source">
+<p>
+Relative to the directory created when you extracted Lucene or retreived it from CVS, you 
+should see a directory called "src" which in turn contains a directory called "demo".
+This is the root for all of the Lucene demos.  Under this directory is org/apache/lucene/demo,
+this is where all the Java sources live.  
+</p>
+<p>
+Within this directory you should see the IndexFiles class we executed earlier.  Bring that
+up in vi or your alternative text editor and lets take a look at it.
+</p>
+</section>
+
+<section name="IndexFiles">
+<p>
+As we discussed in the previous walkthrough, the IndexFiles class creates a Lucene Index.
+Lets take a look at how it does this.  
+</p>
+<p>
+The first substantial thing the main function does is instantiate an instance
+of IndexWriter.  It passes a string called "index" and a new instance of a class called
+"StandardAnalyzer".  The "index" string is the name of the directory that all index information
+should be stored in.  Because we're not passing any path information, one must assume this
+will be created as a subdirectory of the current directory (if does not already exist). On
+some platforms this may actually result in it being created in other directories (such as 
+the user's home directory). 
+</p>
+<p>
+The <b>IndexWriter</b> is the main class responsible for creating indicies. To use it you
+must instantiate it with a path that it can write the index into, if this path does not 
+exist it will create it, otherwise it will refresh the index living at that path.  You 
+must a also pass an instance of <b>org.apache.analysis.Analyzer</b>. 
+</p>
+<p>
+The <b>Analyzer</b>, in this case, the <b>Stop Analyzer</b> is little more than a standard Java
+Tokenizer, converting all strings to lowercase and filtering out useless words from the index.
+By useless words I mean common language words such as articles (a,an,the) and other words that
+would be useless for searching.  It should be noted that there are different rules for every 
+language, and you should use the proper analyzer for each.  Lucene currently provides Analyzers
+for English and German.
+</p>
+<p>
+Looking down further in the file, you should see the indexDocs() code.  This recursive function 
+simply crawls the directories and uses FileDocument to create Document objects.  The Document
+is simply a data object to represent the content in the file as well as its creation time and 
+location.  These instances are added to the indexWriter.  Take a look inside FileDocument.  Its
+not particularly complicated, it just adds fields to the Document.
+</p>
+<p>
+As you can see there isn't much to creating an index.  The devil is in the details.  You may also
+wish to examine the other samples in this directory, particularly the IndexHTML class.  It is 
+a bit more complex but builds upon this example.
+</p>
+</section>
+
+<section name="Searching Files">
+<p>
+The SearchFiles class is quite simple.  It primarily collaborates with an IndexSearcher, StandardAnalyzer
+(which is used in the IndexFiles class as well) and a QueryParser.  The query parser is constructed
+with an analyzer used to interperate your query in the same way the Index was interperated: finding 
+the end of words and removing useless words like 'a', 'an' and 'the'.  The Query object contains the 
+results from the QueryParser which is passed to the searcher.  The searcher results are returned in 
+a collection of Documents called "Hits" which is then iterated through and displayed to the user.
+</p>
+</section>
+
+<section name="The Web example...">
+<p>
+<a href="demo3.html">read on&gt;&gt;&gt;</a>
+</p>
+</section>
+
+</body>
+</document>
+

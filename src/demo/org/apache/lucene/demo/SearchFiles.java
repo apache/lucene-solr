@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.demo;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
@@ -59,7 +59,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.IndexSearcher;
@@ -71,7 +71,7 @@ class SearchFiles {
   public static void main(String[] args) {
     try {
       Searcher searcher = new IndexSearcher("index");
-      Analyzer analyzer = new StopAnalyzer();
+      Analyzer analyzer = new StandardAnalyzer();
 
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       while (true) {

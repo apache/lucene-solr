@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.demo;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
@@ -54,58 +54,34 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import java.io.File;
-import java.io.Reader;
-import java.io.FileInputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DateField;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 
-/** A utility for making Lucene Documents from a File. */
+class DeleteFiles {
+  public static void main(String[] args) {
+    try {
+      Directory directory = FSDirectory.getDirectory("demo index", false);
+      IndexReader reader = IndexReader.open(directory);
 
-public class FileDocument {
-  /** Makes a document for a File.
-    <p>
-    The document has three fields:
-    <ul>
-    <li><code>path</code>--containing the pathname of the file, as a stored,
-    tokenized field;
-    <li><code>modified</code>--containing the last modified date of the file as
-    a keyword field as encoded by <a
-    href="lucene.document.DateField.html">DateField</a>; and
-    <li><code>contents</code>--containing the full contents of the file, as a
-    Reader field;
-    */
-  public static Document Document(File f)
-       throws java.io.FileNotFoundException {
-	 
-    // make a new, empty document
-    Document doc = new Document();
+//       Term term = new Term("path", "pizza");
+//       int deleted = reader.delete(term);
 
-    // Add the path of the file as a field named "path".  Use a Text field, so
-    // that the index stores the path, and so that the path is searchable
-    doc.add(Field.Text("path", f.getPath()));
+//       System.out.println("deleted " + deleted +
+// 			 " documents containing " + term);
 
-    // Add the last modified date of the file a field named "modified".  Use a
-    // Keyword field, so that it's searchable, but so that no attempt is made
-    // to tokenize the field into words.
-    doc.add(Field.Keyword("modified",
-			  DateField.timeToString(f.lastModified())));
+      for (int i = 0; i < reader.maxDoc(); i++)
+	reader.delete(i);
 
-    // Add the contents of the file a field named "contents".  Use a Text
-    // field, specifying a Reader, so that the text of the file is tokenized.
-    // ?? why doesn't FileReader work here ??
-    FileInputStream is = new FileInputStream(f);
-    Reader reader = new BufferedReader(new InputStreamReader(is));
-    doc.add(Field.Text("contents", reader));
+      reader.close();
+      directory.close();
 
-    // return the document
-    return doc;
+    } catch (Exception e) {
+      System.out.println(" caught a " + e.getClass() +
+			 "\n with message: " + e.getMessage());
+    }
   }
-
-  private FileDocument() {}
 }
-    

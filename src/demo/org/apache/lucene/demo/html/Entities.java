@@ -1,4 +1,4 @@
-package org.apache.lucene.HTMLParser;
+package org.apache.lucene.demo.html;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1

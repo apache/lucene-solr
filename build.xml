@@ -121,6 +121,45 @@
     />
   </target>
 
+  <target name="jardemo" depends="compile,demo" if="javacc.present">
+    <jar 
+      jarfile="${build.demo}/${build.demo.name}.jar" 
+      basedir="${build.demo.classes}"
+      excludes="**/*.java"
+    />
+  </target>
+
+  <target name="wardemo" depends="compile,demo,jar,jardemo" if="javacc.present">
+    <mkdir dir="${build.demo}/${build.war.name}"/>
+    <mkdir dir="${build.demo}/${build.war.name}/WEB-INF"/>
+    <mkdir dir="${build.demo}/${build.war.name}/WEB-INF/lib"/>
+    
+    <copy todir="${build.demo}/${build.war.name}">
+      <fileset dir="${demo.jsp}">
+        <include name="**/*.jsp"/>
+        <include name="**/*.xml"/>
+      </fileset>
+    </copy>
+
+    <copy todir="${build.demo}/${build.war.name}/WEB-INF/lib">
+      <fileset dir="${build.dir}">
+        <include name="*.jar"/>
+      </fileset>
+    </copy>
+
+    <copy todir="${build.demo}/${build.war.name}/WEB-INF/lib">
+      <fileset dir="${build.demo}">
+        <include name="*.jar"/>
+      </fileset>
+    </copy>
+
+   <jar
+	jarfile="${build.demo}/${build.war.name}.war"
+	basedir="${build.demo}/${build.war.name}"
+	excludes="**/*.java"
+   />
+  </target>
+
   <!-- ================================================================== -->
   <!-- J A R  S O U R C E                                                 -->
   <!-- ================================================================== -->
@@ -163,9 +202,9 @@
     </copy>
     
     <javacc 
-      target="${build.demo.src}/org/apache/lucene/HTMLParser/HTMLParser.jj" 
+      target="${build.demo.src}/org/apache/lucene/demo/html/HTMLParser.jj" 
       javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.demo.src}/org/apache/lucene/HTMLParser"
+      outputdirectory="${build.demo.src}/org/apache/lucene/demo/html"
     />
     
     <mkdir dir="${build.demo.classes}"/>
@@ -321,7 +360,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar, javadocs, demo">
+  <target name="package" depends="jar, javadocs, demo, wardemo">
     <mkdir dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
@@ -339,6 +378,7 @@
       <fileset dir="${build.demo.classes}"/>
     </copy>
 
+
     <copy todir="${dist.dir}/src">
       <fileset dir="src"/>
     </copy>
@@ -353,6 +393,8 @@
       </fileset>
     </copy>
     <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
+    <copy file="${build.demo}/${build.demo.name}.jar" todir="${dist.dir}"/>
+    <copy file="${build.demo}/${build.war.name}.war" todir="${dist.dir}"/>
   </target>
 
   <!-- ================================================================== -->

@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.demo;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
@@ -54,11 +54,11 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.Arrays;
-import org.apache.lucene.HTMLParser.HTMLParser;
+import org.apache.lucene.demo.html.HTMLParser;
 
 import java.io.File;
 import java.util.Date;
@@ -101,8 +101,7 @@ class IndexHTML {
 	indexDocs(root, index, create);
       }
 
-      writer = new IndexWriter(index, new StopAnalyzer(), create);
-      writer.mergeFactor = 20;
+      writer = new IndexWriter(index, new StandardAnalyzer(), create);
       writer.maxFieldLength = 1000000;
 
       indexDocs(root, index, create);		  // add new docs

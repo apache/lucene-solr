@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.demo;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
@@ -54,34 +54,43 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.IndexWriter;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
+import java.io.File;
+import java.util.Date;
 
-class DeleteFiles {
+class IndexFiles {
   public static void main(String[] args) {
     try {
-      Directory directory = FSDirectory.getDirectory("demo index", false);
-      IndexReader reader = IndexReader.open(directory);
+      Date start = new Date();
 
-//       Term term = new Term("path", "pizza");
-//       int deleted = reader.delete(term);
+      IndexWriter writer = new IndexWriter("index", new StandardAnalyzer(), true);
+      indexDocs(writer, new File(args[0]));
 
-//       System.out.println("deleted " + deleted +
-// 			 " documents containing " + term);
+      writer.optimize();
+      writer.close();
 
-      for (int i = 0; i < reader.maxDoc(); i++)
-	reader.delete(i);
+      Date end = new Date();
 
-      reader.close();
-      directory.close();
+      System.out.print(end.getTime() - start.getTime());
+      System.out.println(" total milliseconds");
 
     } catch (Exception e) {
       System.out.println(" caught a " + e.getClass() +
 			 "\n with message: " + e.getMessage());
+    }
+  }
+
+  public static void indexDocs(IndexWriter writer, File file)
+       throws Exception {
+    if (file.isDirectory()) {
+      String[] files = file.list();
+      for (int i = 0; i < files.length; i++)
+	indexDocs(writer, new File(file, files[i]));
+    } else {
+      System.out.println("adding " + file);
+      writer.addDocument(FileDocument.Document(file));
     }
   }
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<document>
+<properties>
+<author email="acoliver@apache.org">Andrew C. Oliver</author>
+<title>Jakarta Lucene - Building and Installing the Basic Demo</title>
+</properties>
+<body>
+
+<section name="About this Document">
+<p>
+This document is intended as a "getting started" guide to using and running the
+Jakarta Lucene demos.  It walks you through some basic installation and configuration.
+</p>
+</section>
+
+
+<section name="About the Demos">
+<p>
+The Lucene Demo code is a set of command line example applications that demonstrate various 
+functionality of Lucene and how one should go about adding it to their 
+applications.
+</p>
+</section>
+
+<section name="Setting your classpath">
+<p>
+First, extract the latest Lucene distribution.  
+</p>
+<p>
+You should see the Jakarta Lucene jar file in the directory you created 
+when you extracted the archive.  It should be named something like
+<b>lucene-{version}.jar</b>.  
+</p>
+<p>
+You should also see a file called called <b>lucene-demos-{version}.jar</b>.  
+Put both of these files in your Java CLASSPATH.
+</p>
+</section>
+
+<section name="Indexing Files">
+<p>
+Once you've gotten this far you're probably itching to go.  Let's <b> build an index!</b>
+Assuming you've set your classpath correctly, just type 
+"java org.apache.lucene.demo.IndexFiles {full-path-to-lucene}/src". This will produce 
+a subdirectory called "index" which will contain an index of all of the Lucene 
+sourcecode. 
+</p>
+<p>
+<b> To search the index </b> type "java org.apache.lucene.demo.SearchFiles".  You'll be prompted
+for a query.  Type in a swear word and press the enter key.  You'll see that the Lucene 
+developers are very well mannered and get no results. Now try entering the word "vector".
+That should return a whole bunch of documents.  The results will page at every tenth
+result and ask you whether you want more results.
+</p>
+</section>
+
+<section name="About the code...">
+<p>
+<a href="demo2.html">read on&gt;&gt;&gt;</a>
+</p>
+</section>
+
+</body>
+</document>
+

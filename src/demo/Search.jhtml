@@ -6,12 +6,13 @@
   javax.servlet.*
   javax.servlet.http.*
   java.io.*
-  com.lucene.analysis.*
-  com.lucene.document.*
-  com.lucene.index.*
-  com.lucene.search.*
-  com.lucene.queryParser.*
-  demo.HTMLParser.Entities
+  org.apache.lucene.analysis.*
+  org.apache.lucene.document.*
+  org.apache.lucene.index.*
+  org.apache.lucene.search.*
+  org.apache.lucene.queryParser.*
+  org.apache.lucene.demo.*
+  org.apache.lucene.demo.html.Entities
 </java>
 
 <java>
