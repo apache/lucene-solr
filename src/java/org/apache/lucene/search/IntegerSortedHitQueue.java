@@ -83,28 +83,27 @@ extends FieldSortedHitQueue {
 			throws IOException {
 
 				final int[] retArray = new int[reader.maxDoc()];
-
-				TermEnum enumerator = reader.terms (new Term (field, ""));
-				TermDocs termDocs = reader.termDocs();
-				if (enumerator.term() == null) {
-					throw new RuntimeException ("no terms in field "+field);
-				}
-
-				try {
-					do {
-						Term term = enumerator.term();
-						if (term.field() != field) break;
-						int termval = Integer.parseInt (term.text());
-						termDocs.seek (enumerator);
-						while (termDocs.next()) {
-							retArray[termDocs.doc()] = termval;
+				if (retArray.length > 0) {
+					TermEnum enumerator = reader.terms (new Term (field, ""));
+					TermDocs termDocs = reader.termDocs();
+					try {
+						if (enumerator.term() == null) {
+							throw new RuntimeException ("no terms in field "+field);
 						}
-					} while (enumerator.next());
-				} finally {
-					enumerator.close();
-					termDocs.close();
+						do {
+							Term term = enumerator.term();
+							if (term.field() != field) break;
+							int termval = Integer.parseInt (term.text());
+							termDocs.seek (enumerator);
+							while (termDocs.next()) {
+								retArray[termDocs.doc()] = termval;
+							}
+						} while (enumerator.next());
+					} finally {
+						enumerator.close();
+						termDocs.close();
+					}
 				}
-
 				return retArray;
 			}
 
@@ -158,22 +157,25 @@ extends FieldSortedHitQueue {
 			throws IOException {
 
 				final int[] retArray = new int[reader.maxDoc()];
-
-				TermDocs termDocs = reader.termDocs();
-				try {
-					do {
-						Term term = enumerator.term();
-						if (term.field() != field) break;
-						int termval = Integer.parseInt (term.text());
-						termDocs.seek (enumerator);
-						while (termDocs.next()) {
-							retArray[termDocs.doc()] = termval;
+				if (retArray.length > 0) {
+					TermDocs termDocs = reader.termDocs();
+					try {
+						if (enumerator.term() == null) {
+							throw new RuntimeException ("no terms in field "+field);
 						}
-					} while (enumerator.next());
-				} finally {
-					termDocs.close();
+						do {
+							Term term = enumerator.term();
+							if (term.field() != field) break;
+							int termval = Integer.parseInt (term.text());
+							termDocs.seek (enumerator);
+							while (termDocs.next()) {
+								retArray[termDocs.doc()] = termval;
+							}
+						} while (enumerator.next());
+					} finally {
+						termDocs.close();
+					}
 				}
-
 				return retArray;
 			}
 

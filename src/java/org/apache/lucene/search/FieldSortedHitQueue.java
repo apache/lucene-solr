@@ -185,7 +185,7 @@ extends PriorityQueue {
 		try {
 			Term term = enumerator.term();
 			if (term == null) {
-				throw new RuntimeException ("no terms in field "+field);
+				throw new RuntimeException ("no terms in field "+field+" - cannot determine sort type");
 			}
 			if (term.field() == field) {
 				String termtext = term.text().trim();

@@ -87,58 +87,59 @@ extends FieldSortedHitQueue {
 
 				final int[] retArray = new int[reader.maxDoc()];
 				final String[] mterms = new String[reader.maxDoc()];   // guess length
+				if (retArray.length > 0) {
+					TermEnum enumerator = reader.terms (new Term (field, ""));
+					TermDocs termDocs = reader.termDocs();
 
-				TermEnum enumerator = reader.terms (new Term (field, ""));
-				TermDocs termDocs = reader.termDocs();
-				if (enumerator.term() == null) {
-					throw new RuntimeException ("no terms in field " + field);
-				}
-
-				// NOTE: the contract for TermEnum says the
-				// terms will be in natural order (which is
-				// ordering by field name, term text).  The
-				// contract for TermDocs says the docs will
-				// be ordered by document number.  So the
-				// following loop will automatically sort the
-				// terms in the correct order.
-
-				// if a given document has more than one term
-				// in the field, only the last one will be used.
-
-				int t = 0;  // current term number
-				try {
-					do {
-						Term term = enumerator.term();
-						if (term.field() != field) break;
-
-						// store term text
-						// we expect that there is at most one term per document
-						if (t >= mterms.length) throw new RuntimeException ("there are more terms than documents in field \""+field+"\"");
-						mterms[t] = term.text();
-
-						// store which documents use this term
-						termDocs.seek (enumerator);
-						while (termDocs.next()) {
-							retArray[termDocs.doc()] = t;
+					int t = 0;  // current term number
+					try {
+						if (enumerator.term() == null) {
+							throw new RuntimeException ("no terms in field " + field);
 						}
 
-						t++;
-					} while (enumerator.next());
+						// NOTE: the contract for TermEnum says the
+						// terms will be in natural order (which is
+						// ordering by field name, term text).  The
+						// contract for TermDocs says the docs will
+						// be ordered by document number.  So the
+						// following loop will automatically sort the
+						// terms in the correct order.
 
-				} finally {
-					enumerator.close();
-					termDocs.close();
+						// if a given document has more than one term
+						// in the field, only the last one will be used.
+
+						do {
+							Term term = enumerator.term();
+							if (term.field() != field) break;
+
+							// store term text
+							// we expect that there is at most one term per document
+							if (t >= mterms.length) throw new RuntimeException ("there are more terms than documents in field \""+field+"\"");
+							mterms[t] = term.text();
+
+							// store which documents use this term
+							termDocs.seek (enumerator);
+							while (termDocs.next()) {
+								retArray[termDocs.doc()] = t;
+							}
+
+							t++;
+						} while (enumerator.next());
+
+					} finally {
+						enumerator.close();
+						termDocs.close();
+					}
+
+					// if there are less terms than documents,
+					// trim off the dead array space
+					if (t < mterms.length) {
+						terms = new String[t];
+						System.arraycopy (mterms, 0, terms, 0, t);
+					} else {
+						terms = mterms;
+					}
 				}
-
-				// if there are less terms than documents,
-				// trim off the dead array space
-				if (t < mterms.length) {
-					terms = new String[t];
-					System.arraycopy (mterms, 0, terms, 0, t);
-				} else {
-					terms = mterms;
-				}
-
 				return retArray;
 			}
 
@@ -194,51 +195,55 @@ extends FieldSortedHitQueue {
 
 				final int[] retArray = new int[reader.maxDoc()];
 				final String[] mterms = new String[reader.maxDoc()];  // guess length
-
-				// NOTE: the contract for TermEnum says the
-				// terms will be in natural order (which is
-				// ordering by field name, term text).  The
-				// contract for TermDocs says the docs will
-				// be ordered by document number.  So the
-				// following loop will automatically sort the
-				// terms in the correct order.
-
-				// if a given document has more than one term
-				// in the field, only the last one will be used.
-
-				TermDocs termDocs = reader.termDocs();
-				int t = 0;  // current term number
-				try {
-					do {
-						Term term = enumerator.term();
-						if (term.field() != field) break;
-
-						// store term text
-						// we expect that there is at most one term per document
-						if (t >= mterms.length) throw new RuntimeException ("there are more terms than documents in field \""+field+"\"");
-						mterms[t] = term.text();
-
-						// store which documents use this term
-						termDocs.seek (enumerator);
-						while (termDocs.next()) {
-							retArray[termDocs.doc()] = t;
+				if (retArray.length > 0) {
+					TermDocs termDocs = reader.termDocs();
+					int t = 0;  // current term number
+					try {
+						if (enumerator.term() == null) {
+							throw new RuntimeException ("no terms in field " + field);
 						}
 
-						t++;
-					} while (enumerator.next());
-				} finally {
-					termDocs.close();
-				}
+						// NOTE: the contract for TermEnum says the
+						// terms will be in natural order (which is
+						// ordering by field name, term text).  The
+						// contract for TermDocs says the docs will
+						// be ordered by document number.  So the
+						// following loop will automatically sort the
+						// terms in the correct order.
 
-				// if there are less terms than documents,
-				// trim off the dead array space
-				if (t < mterms.length) {
-					terms = new String[t];
-					System.arraycopy (mterms, 0, terms, 0, t);
-				} else {
-					terms = mterms;
-				}
+						// if a given document has more than one term
+						// in the field, only the last one will be used.
 
+						do {
+							Term term = enumerator.term();
+							if (term.field() != field) break;
+
+							// store term text
+							// we expect that there is at most one term per document
+							if (t >= mterms.length) throw new RuntimeException ("there are more terms than documents in field \""+field+"\"");
+							mterms[t] = term.text();
+
+							// store which documents use this term
+							termDocs.seek (enumerator);
+							while (termDocs.next()) {
+								retArray[termDocs.doc()] = t;
+							}
+
+							t++;
+						} while (enumerator.next());
+					} finally {
+						termDocs.close();
+					}
+
+					// if there are less terms than documents,
+					// trim off the dead array space
+					if (t < mterms.length) {
+						terms = new String[t];
+						System.arraycopy (mterms, 0, terms, 0, t);
+					} else {
+						terms = mterms;
+					}
+				}
 				return retArray;
 			}
 

@@ -138,6 +138,11 @@ extends TestCase {
 		return getIndex (false, true);
 	}
 
+	private Searcher getEmptyIndex()
+	throws IOException {
+		return getIndex (false, false);
+	}
+
 	public void setUp() throws Exception {
 		full = getFullIndex();
 		searchX = getXIndex();
@@ -172,6 +177,26 @@ extends TestCase {
 		sort.setSort (new SortField[] { new SortField ("string", SortField.STRING), SortField.FIELD_DOC });
 		assertMatches (full, queryX, sort, "AIGEC");
 		assertMatches (full, queryY, sort, "DJHFB");
+	}
+
+	// test sorts when there's nothing in the index
+	public void testEmptyIndex() throws Exception {
+		Searcher empty = getEmptyIndex();
+
+		sort = new Sort();
+		assertMatches (empty, queryX, sort, "");
+
+		sort.setSort(SortField.FIELD_DOC);
+		assertMatches (empty, queryX, sort, "");
+
+		sort.setSort (new SortField[] { new SortField ("int", SortField.INT), SortField.FIELD_DOC });
+		assertMatches (empty, queryX, sort, "");
+
+		sort.setSort (new SortField[] { new SortField ("string", SortField.STRING, true), SortField.FIELD_DOC });
+		assertMatches (empty, queryX, sort, "");
+
+		sort.setSort (new SortField[] { new SortField ("float", SortField.FLOAT), new SortField ("string", SortField.STRING) });
+		assertMatches (empty, queryX, sort, "");
 	}
 
 	// test sorts where the type of field is determined dynamically
