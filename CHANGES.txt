@@ -2,6 +2,23 @@ Lucene Change Log
 
 $Id$
 
+1.4 RC3
+
+ 1. Fixed several search bugs introduced by the skipTo() changes in
+    release 1.4RC1.  (Christoph Goller)
+
+ 2. Added new Document methods, removeField() and removeFields().
+    (Christoph Goller)
+
+ 3. Fixed inconsistencies with index closing.  Indexes and directories
+    are now only closed automatically by Lucene when Lucene opened
+    them automatically.  (Christoph Goller)
+
+ 4. Added new class: FilteredQuery.  (Tim Jones)
+
+ 5. Added a new SortField type for custom comparators.  (Tim Jones)
+
+
 1.4 RC2
 
  1. GermanAnalyzer now throws an exception if the stopword file
