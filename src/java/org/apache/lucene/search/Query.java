@@ -60,55 +60,67 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
 /** The abstract base class for queries.
-  <p>Instantiable subclasses are:
-  <ul>
-  <li> {@link TermQuery}
-  <li> {@link PhraseQuery}
-  <li> {@link BooleanQuery}
-  </ul>
-  <p>A parser for queries is contained in:
-  <ul>
-  <li>{@link org.apache.lucene.queryParser.QueryParser}
-  </ul>
-  */
-abstract public class Query implements java.io.Serializable {
+    <p>Instantiable subclasses are:
+    <ul>
+    <li> {@link TermQuery}
+    <li> {@link MultiTermQuery}
+    <li> {@link PhraseQuery}
+    <li> {@link BooleanQuery}
+    <li> {@link WildcardQuery}
+    <li> {@link PrefixQuery}
+    <li> {@link FuzzyQuery}
+    <li> {@link RangeQuery}
+    </ul>
+    <p>A parser for queries is contained in:
+    <ul>
+    <li>{@link org.apache.lucene.queryParser.QueryParser QueryParser}
+    </ul>
+*/
+abstract public class Query implements java.io.Serializable
+{
+    // query boost factor
+    protected float boost = 1.0f;
 
-  // query boost factor
-  protected float boost = 1.0f;
+    // query weighting
+    abstract float sumOfSquaredWeights(Searcher searcher) throws IOException;
+    abstract void normalize(float norm);
 
-  // query weighting
-  abstract float sumOfSquaredWeights(Searcher searcher) throws IOException;
-  abstract void normalize(float norm);
+    // query evaluation
+    abstract Scorer scorer(IndexReader reader) throws IOException;
 
-  // query evaluation
-  abstract Scorer scorer(IndexReader reader) throws IOException;
+    void prepare(IndexReader reader) {}
 
-  void prepare(IndexReader reader) {}
+    static Scorer scorer(Query query, Searcher searcher, IndexReader reader)
+	throws IOException
+    {
+	query.prepare(reader);
+	float sum = query.sumOfSquaredWeights(searcher);
+	float norm = 1.0f / (float)Math.sqrt(sum);
+	query.normalize(norm);
+	return query.scorer(reader);
+    }
 
-  static Scorer scorer(Query query, Searcher searcher, IndexReader reader)
-    throws IOException {
-    query.prepare(reader);
-    float sum = query.sumOfSquaredWeights(searcher);
-    float norm = 1.0f / (float)Math.sqrt(sum);
-    query.normalize(norm);
-    return query.scorer(reader);
-  }
+    /**
+     * Sets the boost for this term to <code>b</code>.  Documents containing
+     * this term will (in addition to the normal weightings) have their score
+     * multiplied by <code>b</code>.
+     */
+    public void setBoost(float b) { boost = b; }
 
-  /** Sets the boost for this term to <code>b</code>.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>b</code>. */
-  public void setBoost(float b) { boost = b; }
+    /**
+     * Gets the boost for this term.  Documents containing
+     * this term will (in addition to the normal weightings) have their score
+     * multiplied by <code>b</code>.   The boost is 1.0 by default.
+     */
+    public float getBoost() { return boost; }
 
-  /** Gets the boost for this term.  Documents containing
-    this term will (in addition to the normal weightings) have their score
-    multiplied by <code>b</code>.   The boost is 1.0 by default.  */
-  public float getBoost() { return boost; }
-
-  /** Prints a query to a string, with <code>field</code> as the default field
-    for terms.
-    <p>The representation used is one that is readable by
-    <a href="doc/lucene.queryParser.QueryParser.html">QueryParser</a>
-    (although, if the query was created by the parser, the printed
-    representation may not be exactly what was parsed). */
-  abstract public String toString(String field);
+    /**
+     * Prints a query to a string, with <code>field</code> as the default field
+     * for terms.
+     * <p>The representation used is one that is readable by
+     * {@link org.apache.lucene.queryParser.QueryParser QueryParser}
+     * (although, if the query was created by the parser, the printed
+     * representation may not be exactly what was parsed).
+     */
+    abstract public String toString(String field);
 }
