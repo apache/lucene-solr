@@ -60,9 +60,9 @@ import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import com.lucene.document.Document;
-import com.lucene.document.Field;
-import com.lucene.document.DateField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.DateField;
 
 /** A utility for making Lucene Documents from a File. */
 

@@ -7,8 +7,8 @@
 
   <!-- Build classpath -->
   <path id="classpath">
-    <pathelement location="${build.demo}"/>
     <pathelement location="${build.classes}"/>
+    <pathelement location="${build.demo.classes}"/>
     <pathelement location="."/>
     <fileset dir="lib">
       <include name="*.jar" />
@@ -133,11 +133,13 @@
       javacchome="${javacc.zip.dir}"
       outputdirectory="${build.src.demo}/org/apache/lucene/HTMLParser"
     />
-        
+    
+    <mkdir dir="${build.classes.demo}"/>
+    
     <javac 
-      srcdir="${build.demo}"
-      includes="demo/**/*.java"
-      destdir="${build.demo}"
+      srcdir="${build.src.demo}"
+      includes="**/*.java"
+      destdir="${build.classes.demo}"
       debug="${debug}">
       <classpath refid="classpath"/>
     </javac>

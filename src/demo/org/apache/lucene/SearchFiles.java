@@ -58,14 +58,14 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import com.lucene.analysis.Analyzer;
-import com.lucene.analysis.StopAnalyzer;
-import com.lucene.document.Document;
-import com.lucene.search.Searcher;
-import com.lucene.search.IndexSearcher;
-import com.lucene.search.Query;
-import com.lucene.search.Hits;
-import com.lucene.queryParser.QueryParser;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.queryParser.QueryParser;
 
 class SearchFiles {
   public static void main(String[] args) {
