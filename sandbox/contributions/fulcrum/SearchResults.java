@@ -42,7 +42,7 @@ public class SearchResults
         }
         for (int i = from; i < to; i++)
         {
-            hitsDocuments[i] = hits.doc(i));
+            hitsDocuments[i] = hits.doc(i);
         }
     }
 
