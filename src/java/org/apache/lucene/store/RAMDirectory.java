@@ -49,6 +49,10 @@ public final class RAMDirectory extends Directory {
    * @exception IOException if an error occurs
    */
   public RAMDirectory(Directory dir) throws IOException {
+    this(dir, false);
+  }
+  
+  private RAMDirectory(Directory dir, boolean closeDir) throws IOException {
     final String[] files = dir.list();
     for (int i = 0; i < files.length; i++) {
       // make place on ram disk
@@ -64,6 +68,8 @@ public final class RAMDirectory extends Directory {
       is.close();
       os.close();
     }
+    if(closeDir)
+      dir.close();
   }
 
   /**
@@ -72,7 +78,7 @@ public final class RAMDirectory extends Directory {
    * @param dir a <code>File</code> specifying the index directory
    */
   public RAMDirectory(File dir) throws IOException {
-    this(FSDirectory.getDirectory(dir, false));
+    this(FSDirectory.getDirectory(dir, false), true);
   }
 
   /**
@@ -81,7 +87,7 @@ public final class RAMDirectory extends Directory {
    * @param dir a <code>String</code> specifying the full index directory path
    */
   public RAMDirectory(String dir) throws IOException {
-    this(FSDirectory.getDirectory(dir, false));
+    this(FSDirectory.getDirectory(dir, false), true);
   }
 
   /** Returns an array of strings, one for each file in the directory. */
