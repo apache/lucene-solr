@@ -40,14 +40,15 @@ import org.apache.lucene.document.Field;          // for javadoc
  *    <td valign="middle" align="center">
  *    <big><big><big><big><big>&Sigma;</big></big></big></big></big></td>
  *    <td valign="middle"><small>
- *    {@link #tf(int) tf}(t in d) *
- *    {@link #idf(Term,Searcher) idf}(t) *
+ *    ( {@link #tf(int) tf}(t in d) *
+ *    {@link #idf(Term,Searcher) idf}(t)^2 *
+ *    {@link Query#getBoost getBoost}(t in q) *
  *    {@link Field#getBoost getBoost}(t.field in d) *
- *    {@link #lengthNorm(String,int) lengthNorm}(t.field in d)
+ *    {@link #lengthNorm(String,int) lengthNorm}(t.field in d) )
  *    </small></td>
  *    <td valign="middle" rowspan="2">&nbsp;*
  *    {@link #coord(int,int) coord}(q,d) *
- *    {@link #queryNorm(float) queryNorm}(q)
+ *    {@link #queryNorm(float) queryNorm}(sumOfSqaredWeights)
  *    </td>
  *  </tr>
  *  <tr>
@@ -56,6 +57,28 @@ import org.apache.lucene.document.Field;          // for javadoc
  *    </td>
  *  </tr>
  * </table>
+ * 
+ * <p> where
+ * 
+ * <table cellpadding="0" cellspacing="0" border="0">
+ *  <tr>
+ *    <td valign="middle" align="right" rowspan="2">sumOfSqaredWeights =<br></td>
+ *    <td valign="middle" align="center">
+ *    <big><big><big><big><big>&Sigma;</big></big></big></big></big></td>
+ *    <td valign="middle"><small>
+ *    ( {@link #idf(Term,Searcher) idf}(t) *
+ *    {@link Query#getBoost getBoost}(t in q) )^2
+ *    </small></td>
+ *  </tr>
+ *  <tr>
+ *   <td valign="top" align="right">
+ *    <small>t in q</small>
+ *    </td>
+ *  </tr>
+ * </table>
+ * 
+ * <p> Note that the above formula is motivated by the cosine-distance or dot-product
+ * between document and query vector, which is implemented by {@link DefaultSimilarity}.
  *
  * @see #setDefault(Similarity)
  * @see IndexWriter#setSimilarity(Similarity)
