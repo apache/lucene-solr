@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//APACHE//DTD Cocoon Documentation Book V1.0//EN" "dtd/book-cocoon-v10.dtd">
+
+<book software="Lucene Application Extensions" 
+      title="Lucene Application Extensions" 
+      copyright="@year@ Apache Software Foundation"
+      xmlns:xlink="http://www.w3.org/1999/xlink">
+  
+  <menu label="Overview">
+    <menu-item label="Introduction" href="index.html"/>
+    <menu-item label="Lucene" href="http://jakarta.apache.org/lucene"/>
+  </menu>
+
+  <menu label="Specifications">
+    <menu-item label="Proposal"           
+                 href="http://jakarta.apache.org/lucene/docs/luceneplan.html"/>   
+  </menu>
+  
+</book>

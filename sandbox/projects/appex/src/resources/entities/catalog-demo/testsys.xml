@@ -1,0 +1,5 @@
+<para>&note; This paragraph is automatically included from the
+ testsys.xml external file.
+ The declared SYSTEM identifier was resolved by the catalog to a
+ specific location on the local filesystem.
+</para>

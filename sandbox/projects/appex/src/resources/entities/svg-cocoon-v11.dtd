@@ -1,0 +1,82 @@
+<!--
+
+PURPOSE:
+This is a minimal SVG DTD intended solely for Apache Cocoon internal use.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE svg PUBLIC
+       "-//APACHE//DTD Cocoon SVG minimal Vx.yz//EN"
+       "http://xml.apache.org/DTD/svg-cocoon-vxyz.dtd">
+
+  where 
+  
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+
+NOTES:
+The Official SVG DTD is using some entities that cannot yet be resolved
+so this is a hack DTD to get us started. We are only using this DTD to
+enable validation during "build docs" because every XML instance must
+declare its ruleset.
+
+This initial minimal DTD has been reverse-engineered from the structure
+of the current documents at documentation/svg/*.xml
+
+See:
+http://www.w3.org/TR/2001/REC-SVG-20010904/
+http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd
+
+CHANGE HISTORY:
+  20011031 1.0 Initial version (DC)
+  20011102 1.1 Added more elements for new svg/*.xml from Klaus (DC)
+-->
+
+<!ELEMENT svg (defs|image|g|rect|text)*>
+<!ELEMENT defs (filter)*>
+<!ELEMENT filter (feGaussianBlur)*>
+<!ELEMENT feGaussianBlur EMPTY>
+<!ELEMENT g (path)*>
+<!ELEMENT path EMPTY>
+<!ELEMENT image EMPTY>
+<!ELEMENT rect EMPTY>
+<!ELEMENT text (label?)>
+<!ELEMENT label EMPTY>
+
+<!ATTLIST svg height CDATA #REQUIRED
+              width CDATA #REQUIRED
+              xmlns:xlink CDATA #IMPLIED
+>
+ <!--  yikes ... this breaks build docs                            -->
+ <!--            just like hacking the official DTD to add <label> -->
+ <!--            see email 2001-11-08                              -->
+ <!--              xmlns CDATA #FIXED "http://www.w3.org/2000/svg" -->
+
+<!ATTLIST filter id ID #IMPLIED
+>
+<!ATTLIST feGaussianBlur in CDATA #IMPLIED
+              stdDeviation CDATA #IMPLIED
+>
+<!ATTLIST g transform CDATA #IMPLIED
+>
+<!ATTLIST path style CDATA #REQUIRED
+              d CDATA #REQUIRED
+>
+<!ATTLIST image width CDATA #REQUIRED
+              height CDATA #REQUIRED
+              xlink:href CDATA #IMPLIED
+>
+<!ATTLIST rect width CDATA #REQUIRED
+              height CDATA #REQUIRED
+              x CDATA #IMPLIED
+              y CDATA #IMPLIED
+              fill CDATA #IMPLIED
+              style CDATA #IMPLIED
+>
+<!ATTLIST text style CDATA #REQUIRED
+              x CDATA #REQUIRED
+              y CDATA #REQUIRED
+              text-anchor CDATA #IMPLIED
+              fill CDATA #IMPLIED
+>

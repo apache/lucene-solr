@@ -1,0 +1,85 @@
+<!-- ===================================================================
+     
+     Apache Specification DTD (Version 1.0)
+
+PURPOSE:
+  This DTD was developed to create a simple yet powerful document 
+  type for software specifications for use with the Apache projects.  
+  It is an XML-compliant DTD and it's maintained by the Apache XML 
+  project.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE document PUBLIC
+       "-//APACHE//DTD Specification Vx.yz//EN"
+       "http://xml.apache.org/DTD/specification-vxyz.dtd">
+
+  where 
+  
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+      
+NOTES:  
+
+AUTHORS:
+  Stefano Mazzocchi <stefano@apache.org>
+  
+FIXME:
+
+CHANGE HISTORY:
+  19991129 Initial version. (SM)
+    
+COPYRIGHT:
+  Copyright (c) @year@ The Apache Software Foundation.
+  
+  Permission to copy in any form is granted provided this notice is 
+  included in all copies. Permission to redistribute is granted 
+  provided this file is distributed untouched in all its parts and 
+  included files.
+  
+==================================================================== -->
+
+<!-- =============================================================== -->
+<!-- Extend the Documentation DTD -->
+<!-- =============================================================== -->
+
+<!-- extend the local.xxx entities -->
+<!ENTITY % local.lists "|bl">
+
+<!-- FIXME (SM): this is hardcoding. Find a better way of doing this
+     possibly using public identifiers -->
+<!ENTITY % document-dtd SYSTEM "document-v10.dtd">
+%document-dtd;
+
+<!-- =============================================================== -->
+<!-- Document Type Definition -->
+<!-- =============================================================== -->
+
+<!ELEMENT specification (header?, body, appendices?, footer?)>
+<!ATTLIST specification %common.att;>
+
+    <!ELEMENT appendices (%sections;)+>
+    <!ATTLIST appendices %common.att;>
+
+<!-- =============================================================== -->
+<!-- Bibliography List -->
+<!-- =============================================================== -->
+
+    <!-- Bibliography list -->
+    <!ELEMENT bl (bi)+>
+    <!ATTLIST bl %common.att;>
+
+        <!-- Book item -->
+        <!ELEMENT bi EMPTY>
+        <!ATTLIST bi %common.att;
+                     %name.att;
+                     %title.att;
+                     %xlink-simple.att;
+                     %xlink-user-new.att;
+                     authors CDATA #REQUIRED
+                     date    CDATA #IMPLIED>
+
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->

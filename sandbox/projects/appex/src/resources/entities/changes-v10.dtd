@@ -1,0 +1,91 @@
+<!-- ===================================================================
+
+     Apache Changes DTD (Version 1.0)
+
+PURPOSE:
+  This DTD was developed to create a simple yet powerful document
+  type for software development changes for use with the Apache projects.
+  It is an XML-compliant DTD and it's maintained by the Apache XML
+  project.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE document PUBLIC
+       "-//APACHE//DTD Changes Vx.yz//EN"
+       "http://xml.apache.org/DTD/changes-vxyz.dtd">
+
+  where
+
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+
+NOTES:
+  It is important, expecially in open developped software projects, to keep
+  track of software changes both to give users indications of bugs that might
+  have been resolved, as well, and not less important, to provide credits
+  for the support given to the project. It is considered vital to provide
+  adequate payback using recognition and credits to let users and developers
+  feel part of the community, thus increasing development power.
+
+AUTHORS:
+  Stefano Mazzocchi <stefano@apache.org>
+
+FIXME:
+
+CHANGE HISTORY:
+  19991129 Initial version. (SM)
+  20000316 Added bugfixing attribute. (SM)
+
+COPYRIGHT:
+  Copyright (c) @year@ The Apache Software Foundation.
+
+  Permission to copy in any form is granted provided this notice is
+  included in all copies. Permission to redistribute is granted
+  provided this file is distributed untouched in all its parts and
+  included files.
+
+==================================================================== -->
+
+<!-- =============================================================== -->
+<!-- Extend the Documentation DTD -->
+<!-- =============================================================== -->
+
+<!-- FIXME (SM): this is hardcoding. Find a better way of doing this
+     possibly using public identifiers -->
+<!ENTITY % document-dtd SYSTEM "document-v10.dtd">
+%document-dtd;
+
+<!-- =============================================================== -->
+<!-- Common entities -->
+<!-- =============================================================== -->
+
+<!ENTITY % types "add|remove|update|fix">
+
+<!-- =============================================================== -->
+<!-- Document Type Definition -->
+<!-- =============================================================== -->
+
+<!ELEMENT changes (devs, release*)>
+<!ATTLIST changes %common.att;
+                  %title.att;>
+
+    <!ELEMENT devs (person+)>
+    <!ATTLIST devs %common.att;>
+
+    <!ELEMENT release (action+)>
+    <!ATTLIST release %common.att;
+                      version  CDATA  #REQUIRED
+                      date     CDATA  #REQUIRED>
+
+        <!ELEMENT action (%content.mix;)*>
+        <!ATTLIST action %common.att;
+                         dev  IDREF  #REQUIRED
+                         type (%types;)  #IMPLIED
+                         due-to CDATA #IMPLIED
+                         due-to-email CDATA #IMPLIED
+                         fixes-bug CDATA #IMPLIED>
+
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->

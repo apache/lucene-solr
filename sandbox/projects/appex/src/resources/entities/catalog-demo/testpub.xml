@@ -1,0 +1,7 @@
+<para>&note; This paragraph is automatically included from the
+ testpub.xml external file.
+ The entity declaration deliberately used a non-existent file
+ as the system identifier. The catalog then used the declared
+ public identifer to resolve to a specific location on the local
+ filesystem.
+</para>

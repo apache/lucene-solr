@@ -1,0 +1,110 @@
+<!-- (C) International Organization for Standardization 1986
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+-->
+<!-- Character entity set. Typical invocation:
+     <!ENTITY % ISOpub PUBLIC
+       "ISO 8879:1986//ENTITIES Publishing//EN//XML">
+     %ISOpub;
+-->
+<!-- This version of the entity set can be used with any SGML document
+     which uses ISO 10646 as its document character set. 
+     This includes XML documents and ISO HTML documents.
+     This entity set uses hexadecimal numeric character references. 
+          
+     Creator: Rick Jelliffe, Allette Systems
+     
+     Version: 1997-07-07
+-->
+<!ENTITY emsp   "&#x2003;" ><!--=em space-->
+<!ENTITY ensp   "&#x2002;" ><!--=en space (1/2-em)-->
+<!ENTITY emsp13 "&#x2004;" ><!--=1/3-em space-->
+<!ENTITY emsp14 "&#x2005;" ><!--=1/4-em space-->
+<!ENTITY numsp  "&#x2007;" ><!--=digit space (width of a number)-->
+<!ENTITY puncsp "&#x2008;" ><!--=punctuation space (width of comma)-->
+<!ENTITY thinsp "&#x2009;" ><!--=thin space (1/6-em)-->
+<!ENTITY hairsp "&#x200A;" ><!--=hair space-->
+<!ENTITY mdash  "&#x2014;" ><!--=em dash-->
+<!ENTITY ndash  "&#x2013;" ><!--=en dash-->
+<!ENTITY dash   "&#x2010;" ><!--=hyphen (true graphic)-->
+<!ENTITY blank  "&#x2423;" ><!--=significant blank symbol-->
+<!ENTITY hellip "&#x2026;" ><!--=ellipsis (horizontal)-->
+<!ENTITY nldr   "&#x2025;" ><!--=double baseline dot (en leader)-->
+<!ENTITY frac13 "&#x2153;" ><!--=fraction one-third-->
+<!ENTITY frac23 "&#x2154;" ><!--=fraction two-thirds-->
+<!ENTITY frac15 "&#x2155;" ><!--=fraction one-fifth-->
+<!ENTITY frac25 "&#x2156;" ><!--=fraction two-fifths-->
+<!ENTITY frac35 "&#x2157;" ><!--=fraction three-fifths-->
+<!ENTITY frac45 "&#x2158;" ><!--=fraction four-fifths-->
+<!ENTITY frac16 "&#x2159;" ><!--=fraction one-sixth-->
+<!ENTITY frac56 "&#x215a;" ><!--=fraction five-sixths-->
+<!ENTITY incare "&#x2105;" ><!--=in-care-of symbol-->
+<!ENTITY block  "&#x2588;" ><!--=full block-->
+<!ENTITY uhblk  "&#x2580;" ><!--=upper half block-->
+<!ENTITY lhblk  "&#x2584;" ><!--=lower half block-->
+<!ENTITY blk14  "&#x2591;" ><!--=25% shaded block-->
+<!ENTITY blk12  "&#x2592;" ><!--=50% shaded block-->
+<!ENTITY blk34  "&#x2593;" ><!--=75% shaded block-->
+<!ENTITY marker "&#x25AE;" ><!--=histogram marker-->
+<!ENTITY cir    "&#x25CB;" ><!--/circ B: =circle, open-->
+<!ENTITY squ    "&#x25A1;" ><!--=square, open-->
+<!ENTITY rect   "&#x25AD;" ><!--=rectangle, open-->
+<!ENTITY utri   "&#x25B5;" ><!--/triangle =up triangle, open-->
+<!ENTITY dtri   "&#x25BF;" ><!--/triangledown =down triangle, open-->
+<!ENTITY star   "&#x2606;" ><!--=star, open-->
+<!ENTITY bull   "&#x2022;" ><!--/bullet B: =round bullet, filled-->
+<!ENTITY squf   "&#x25AA;" ><!--/blacksquare =sq bullet, filled-->
+<!ENTITY utrif  "&#x25B4;" ><!--/blacktriangle =up tri, filled-->
+<!ENTITY dtrif  "&#x25BE;" ><!--/blacktriangledown =dn tri, filled-->
+<!ENTITY ltrif  "&#x25C2;" ><!--/blacktriangleleft R: =l tri, filled-->
+<!ENTITY rtrif  "&#x25B8;" ><!--/blacktriangleright R: =r tri, filled-->
+<!ENTITY clubs  "&#x2663;" ><!--/clubsuit =club suit symbol-->
+<!ENTITY diams  "&#x2662;" ><!--/diamondsuit =diamond suit symbol-->
+<!ENTITY hearts "&#x2661;" ><!--/heartsuit =heart suit symbol-->
+<!ENTITY spades "&#x2660;" ><!--/spadesuit =spades suit symbol-->
+<!ENTITY malt   "&#x2720;" ><!--/maltese =maltese cross-->
+<!ENTITY dagger "&#x2020;" ><!--/dagger B: =dagger-->
+<!ENTITY Dagger "&#x2021;" ><!--/ddagger B: =double dagger-->
+<!ENTITY check  "&#x2713;" ><!--/checkmark =tick, check mark-->
+<!ENTITY cross  "&#x2717;" ><!--=ballot cross-->
+<!ENTITY sharp  "&#x266F;" ><!--/sharp =musical sharp-->
+<!ENTITY flat   "&#x266D;" ><!--/flat =musical flat-->
+<!ENTITY male   "&#x2642;" ><!--=male symbol-->
+<!ENTITY female "&#x2640;" ><!--=female symbol-->
+<!ENTITY phone  "&#x26E0;" ><!--=telephone symbol-->
+<!ENTITY telrec "&#x2315;" ><!--=telephone recorder symbol-->
+<!ENTITY copysr "&#x2117;" ><!--=sound recording copyright sign-->
+<!ENTITY caret  "&#x2041;" ><!--=caret (insertion mark)-->
+<!ENTITY lsquor "&#x201A;" ><!--=rising single quote, left (low)-->
+<!ENTITY ldquor "&#x201E;" ><!--=rising dbl quote, left (low)-->
+
+<!ENTITY fflig  "&#xFB00;" ><!--small ff ligature-->
+<!ENTITY filig  "&#xFB01;" ><!--small fi ligature-->
+<!ENTITY fjlig  "fj" ><!--small fj ligature-->
+<!ENTITY ffilig "&#xFB03;" ><!--small ffi ligature-->
+<!ENTITY ffllig "&#xFB04;" ><!--small ffl ligature-->
+<!ENTITY fllig  "&#xFB02;" ><!--small fl ligature-->
+
+<!ENTITY mldr   "&#x2025;" ><!--em leader-->
+<!ENTITY rdquor "&#x201D;" ><!--rising dbl quote, right (high)-->
+<!ENTITY rsquor "&#x2019;" ><!--rising single quote, right (high)-->
+<!ENTITY vellip "&#x22EE;" ><!--vertical ellipsis-->
+
+<!ENTITY hybull "&#x2043;" ><!--rectangle, filled (hyphen bullet)-->
+<!ENTITY loz    "&#x2727;" ><!--/lozenge - lozenge or total mark-->
+<!ENTITY lozf   "&#x2726;" ><!--/blacklozenge - lozenge, filled-->
+<!ENTITY ltri   "&#x25C3;" ><!--/triangleleft B: l triangle, open-->
+<!ENTITY rtri   "&#x25B9;" ><!--/triangleright B: r triangle, open-->
+<!ENTITY starf  "&#x2605;" ><!--/bigstar - star, filled-->
+
+<!ENTITY natur  "&#x266E;" ><!--/natural - music natural-->
+<!ENTITY rx     "&#x211E;" ><!--pharmaceutical prescription (Rx)-->
+<!ENTITY sext   "&#x2736;" ><!--sextile (6-pointed star)-->
+
+<!ENTITY target "&#x2316;" ><!--register mark or target-->
+<!ENTITY dlcrop "&#x230D;" ><!--downward left crop mark -->
+<!ENTITY drcrop "&#x230C;" ><!--downward right crop mark -->
+<!ENTITY ulcrop "&#x230F;" ><!--upward left crop mark -->
+<!ENTITY urcrop "&#x230E;" ><!--upward right crop mark -->
+

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="tools/antipede/resources/stylesheets/status.xsl"?>
+<status>
+
+  <developers>
+    <!-- in strict id alphabetical order -->
+    <person name="Andrew C. Oliver"   id="acoliver"  email="acoliver@apache.org"/>
+    <person name="Glen Stampoultzis"  id="glens"     email="glens@apache.org"/>
+    <person name="Marc Johnson"       id="mjohnson"  email="mjohnson@apache.org"/>
+    <person name="Nicola Ken Barozzi" id="nicolaken" email="nicolaken@apache.org"/>
+    <person name="Rainer Klute"       id="rainer"    email="rainer@apache.org"/>
+  </developers>
+  
+  <todo>
+   <actions priority="high">
+    <action context="docs" assigned-to="nicolaken">
+      Finish writing documentation, by simply answering these questions (Leo Simmons):- what is centipede?; how does it work?; what features does it provide? (how, how stable, ...)
+      ; which features will it provide? (when, how); which projects does it use? (how, which version, why, ...); what is the project structure?; what is the project architecture?
+      ; where's the latest download?; how do I build?; how do I install?; how do I run the sample?; how do I integrate?; which XML files are used?; what are their DTDs and purposes?
+      ; what is the relationship between centipede and gump, forrest, ant, maven, ...?
+    </action>   
+   </actions>   
+  </todo>
+  
+    <changes>
+   <release version="1.0" date="20020430">
+    <action dev="nicolaken" type="add">
+       Commited first version of 1.0 codebase
+    </action>
+   </release>
+  </changes>  
+  
+</status>

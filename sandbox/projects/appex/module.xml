@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="tools/antipede/resources/stylesheets/module.xsl"?>
+<?xml-stylesheet type="text/css" href="tools/antipede/resources/stylesheets/module.css"?>
+<module name="krysalis-site">
+
+  <url href="http://www.krysalis.org/"/>
+  
+  <cvs repository="sourceforge" 
+       host-prefix="cvs.krysalis" 
+       dir="krysalis" 
+       module="krysalis-site"/>
+
+  <mailing-lists> 
+    <mailing-list user="user" 
+                  mail="forrest-dev@xml.apache.org" 
+                  subscribe="http://lists.sourceforge.net/lists/listinfo/Krysalis-general-user" 
+                  unsubscribe="http://lists.sourceforge.net/lists/listinfo/Krysalis-general-user"/>    
+    <mailing-list user="developer" 
+                  mail="forrest-dev@xml.apache.org" 
+                  subscribe="http://lists.sourceforge.net/lists/listinfo/krysalis-devel" 
+                  unsubscribe="http://lists.sourceforge.net/lists/listinfo/krysalis-devel"/>    
+  </mailing-lists>    
+   
+  <description>
+     Krysalis Centipede is the main Krysalis site module.
+  </description>
+
+  <detailed>
+     Krysalis Centipede is the main Krysalis site module.
+  </detailed>
+
+  <what>
+    <goal>just do it</goal>
+  </what>
+    
+  <why>
+    Why not?
+  </why>
+  
+  <vendor>Apache Software Foundation</vendor>
+
+  <licence>This software is released under the Apache Software License 1.1. 
+           For detailed legal and licensing issues, please read the LICENSE.* files
+           in the /legal directory.
+  </licence>
+  
+  <credits>
+    <credit>This software includes software developed by the Krysalis Community Project
+            (http://krysalis.sourceforge.net/).
+    </credit>
+  </credits>
+
+  <project name="LuceneAppExtensions">
+  
+     <version major="0"
+             minor="0"   
+             fix  ="1"   
+             tag="0"/> 
+             
+    <package>search</package>
+
+    <ant target="gump" vm="1.2"/>
+    
+    <!-- script name="build"/> -->
+    
+    <depend project="jakarta-ant"/>
+    <depend project="xml-xerces"/>
+    <depend project="xml-xalan2"/>
+    <depend project="xml-cocoon2"/>
+    <depend project="jtidy"/>
+    <depend project="junit"/>
+    <depend project="IzPress"/>
+
+ 
+    <!-- Work dirs to be included in classpath  -->          
+    <work nested="build/classes"/>
+    <work nested="build/testcases"/>
+
+    <home nested="build"/>
+         
+    <nag to="lucene-dev@jakarta.apache.org"
+         from="Sam Ruby &lt;rubys@us.ibm.com&gt;"/>
+  </project>
+
+</module>

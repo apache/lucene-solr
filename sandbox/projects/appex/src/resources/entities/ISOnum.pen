@@ -1,0 +1,109 @@
+<!-- (C) International Organization for Standardization 1986
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+-->
+<!-- Character entity set. Typical invocation:
+     <!ENTITY % ISOnum PUBLIC
+       "ISO 8879:1986//ENTITIES Numeric and Special Graphic//EN//XML">
+     %ISOnum;
+-->
+<!-- This version of the entity set can be used with any SGML document
+     which uses ISO 10646 as its document character set. 
+     This includes XML documents and ISO HTML documents.
+     This entity set uses hexadecimal numeric character references. 
+          
+     Creator: Rick Jelliffe, Allette Systems
+     
+     Version: 1997-07-07
+-->
+
+<!ENTITY half   "&#189;" ><!--=fraction one-half-->
+<!ENTITY frac12 "&#189;" ><!--=fraction one-half-->
+<!ENTITY frac14 "&#188;" ><!--=fraction one-quarter-->
+<!ENTITY frac34 "&#190;" ><!--=fraction three-quarters-->
+<!ENTITY frac18 "&#x215B;" > 
+    <!-- or "&#xB1;&#x202;&#x2044;&#x2088;" --><!--=fraction one-eighth-->
+<!ENTITY frac38 "&#x215C;" >
+    <!-- or "&#xB3;&#x2044;&#x2088;" --><!--=fraction three-eighths-->
+<!ENTITY frac58 "&#x215D;" >
+    <!-- or "&#x2075;&#x2044;&#x2088;" --><!--=fraction five-eighths-->
+<!ENTITY frac78 "&#x215E;" >
+    <!-- or "&#x2077;&#x2044;&#x2088;" --><!--=fraction seven-eighths-->
+
+<!ENTITY sup1   "&#185;" ><!--=superscript one-->
+<!ENTITY sup2   "&#178;" ><!--=superscript two-->
+<!ENTITY sup3   "&#179;" ><!--=superscript three-->
+
+<!ENTITY plus   "+" ><!--=plus sign B:-->
+<!ENTITY plusmn "&#xB1;" ><!--/pm B: =plus-or-minus sign-->
+<!ENTITY lt     "&#38;#60;"      ><!--=less-than sign R:-->
+<!ENTITY equals "="      ><!--=equals sign R:-->
+<!ENTITY gt     ">"      ><!--=greater-than sign R:-->
+<!ENTITY divide "&#247;" ><!--/div B: =divide sign-->
+<!ENTITY times  "&#215;" ><!--/times B: =multiply sign-->
+
+<!ENTITY curren "&#164;" ><!--=general currency sign-->
+<!ENTITY pound  "&#163;" ><!--=pound sign-->
+<!ENTITY dollar "$"      ><!--=dollar sign-->
+<!ENTITY cent   "&#162;" ><!--=cent sign-->
+<!ENTITY yen    "&#165;" ><!--/yen =yen sign-->
+
+<!ENTITY num    "#" ><!--=number sign-->
+<!ENTITY percnt "&#37;" ><!--=percent sign-->
+<!ENTITY amp    "&#38;#38;" ><!--=ampersand-->
+<!ENTITY ast    "*" ><!--/ast B: =asterisk-->
+<!ENTITY commat "@" ><!--=commercial at-->
+<!ENTITY lsqb   "[" ><!--/lbrack O: =left square bracket-->
+<!ENTITY bsol   "\" ><!--/backslash =reverse solidus-->
+<!ENTITY rsqb   "]" ><!--/rbrack C: =right square bracket-->
+<!ENTITY lcub   "{" ><!--/lbrace O: =left curly bracket-->
+<!ENTITY horbar "&#x2015;" ><!--=horizontal bar-->
+<!ENTITY verbar "|" ><!--/vert =vertical bar-->
+<!ENTITY rcub   "}" ><!--/rbrace C: =right curly bracket-->
+<!ENTITY micro  "&#181;" ><!--=micro sign-->
+<!ENTITY ohm    "&#2126;" ><!--=ohm sign-->
+<!ENTITY deg    "&#176;" ><!--=degree sign-->
+<!ENTITY ordm   "&#186;" ><!--=ordinal indicator, masculine-->
+<!ENTITY ordf   "&#170;" ><!--=ordinal indicator, feminine-->
+<!ENTITY sect   "&#167;" ><!--=section sign-->
+<!ENTITY para   "&#182;" ><!--=pilcrow (paragraph sign)-->
+<!ENTITY middot "&#183;" ><!--/centerdot B: =middle dot-->
+<!ENTITY larr   "&#x2190;" ><!--/leftarrow /gets A: =leftward arrow-->
+<!ENTITY rarr   "&#x2192;" ><!--/rightarrow /to A: =rightward arrow-->
+<!ENTITY uarr   "&#x2191;" ><!--/uparrow A: =upward arrow-->
+<!ENTITY darr   "&#x2193;" ><!--/downarrow A: =downward arrow-->
+<!ENTITY copy   "&#169;" ><!--=copyright sign-->
+<!ENTITY reg    "&#174;" ><!--/circledR =registered sign-->
+<!ENTITY trade  "&#8482;" ><!--=trade mark sign-->
+<!ENTITY brvbar "&#xA6;" ><!--=bren (vertical) bar-->
+<!ENTITY not    "&#xAC;" ><!--/neg /lnot =not sign-->
+<!ENTITY sung   "&#x266A;" ><!--=music note (sung text sign)-->
+
+<!ENTITY excl   "!" ><!--=exclamation mark-->
+<!ENTITY iexcl  "&#xA1;" ><!--=inverted exclamation mark-->
+<!ENTITY quot   '"' ><!--=quotation mark-->
+<!ENTITY apos   "'" ><!--=apostrophe-->
+<!ENTITY lpar   "(" ><!--O: =left parenthesis-->
+<!ENTITY rpar   ")" ><!--C: =right parenthesis-->
+<!ENTITY comma  "," ><!--P: =comma-->
+<!ENTITY lowbar "_" ><!--=low line-->
+<!ENTITY hyphen "&#x2010;" ><!--=hyphen-->
+<!ENTITY period "." ><!--=full stop, period-->
+<!ENTITY sol    "/" ><!--=solidus-->
+<!ENTITY colon  ":" ><!--/colon P:-->
+<!ENTITY semi   ";" ><!--=semicolon P:-->
+<!ENTITY quest  "?" ><!--=question mark-->
+<!ENTITY iquest "&#xBF;" ><!--=inverted question mark-->
+<!ENTITY laquo  "&#x2039;" ><!--=angle quotation mark, left
+ But note that Unicode 1 & Maler & el Andaloussi give &#xAB; -->
+<!ENTITY raquo  "&#x203A;" ><!--=angle quotation mark, right
+ But note that Unicode 1 & Maler & el Andaloussi give &#xBB; -->
+<!ENTITY lsquo  "&#x2018;" ><!--=single quotation mark, left-->
+<!ENTITY rsquo  "&#x2019;" ><!--=single quotation mark, right-->
+<!ENTITY ldquo  "&#x201C;" ><!--=double quotation mark, left-->
+<!ENTITY rdquo  "&#x201D;" ><!--=double quotation mark, right-->
+<!ENTITY nbsp   "&#160;" ><!--=no break (required) space-->
+<!ENTITY shy    "&#173;" ><!--=soft hyphen-->
+
+

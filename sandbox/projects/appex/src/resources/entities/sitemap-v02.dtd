@@ -1,0 +1,341 @@
+<!-- ===================================================================
+
+     Apache Cocoon Sitemap DTD (Version 0.2)
+
+PURPOSE:
+  INITIAL DRAFT DTD for the Cocoon2 sitemap.xmap files.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE map:sitemap PUBLIC
+       "-//APACHE//DTD Cocoon Sitemap Vx.yz//EN"
+       "sitemap-vxyz.dtd">
+
+  where
+
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+
+NOTES:
+* ATTENTION: This initial DTD was reverse-engineered from the various
+  sitemap.xmap instances included in the current distribution. This is
+  just an attempt to document the existing rules for sitemap structure.
+  In many cases a very lax content model is used, simply to get around
+  validation issues.
+  A proper design process is still required.
+* Needed by XML editing tools for creation of reliable documents.
+* Can generate XSD once DTD is locked down.
+* We need to synchronise this DTD with the relax-ng work
+  by <Bruno.Dumon@the-ecorp.com> ... cocoon-dev 2001-07-18
+  http://marc.theaimsgroup.com/?l=xml-cocoon-dev&m=99545886226916&w=2
+* This DTD has been tested with various XML validating parsers.
+* The big questions (still) are: 
+  "What possibilities were not included in the examples?" and 
+  "What in the example sitemap.xmap files is mandatory versus optional?"
+
+AUTHORS:
+  Jeffrey Ricker NG (Usonia Holdings) <rickerng@usonia.net>
+  David Crossley <crossley@indexgeo.com.au>
+
+FIXME:
+  - map:act is used in various contexts, so it has a loose definition
+  - Completely rewrite this DTD looking from the application
+    point-of-view (do not rely on this temporary initial DTD)
+  - map:when and map:otherwise are shown in xdocs/sitemap.xml but are
+    not used in the sitemap.xmap files
+  - align elements and attributes with sitemap*.xsl
+  - review all xdocs/userdocs/generators/*.xml etc. and sync with this DTD
+
+CHANGE HISTORY:
+  20010715 V0.1 Initial version. (RNG)
+  20011106 V0.2 Reviewed all */sitemap.xmap and added definitions (DC)
+  20011106 V0.2 All elements now have "map:" prefix. (DC)
+  20011106 V0.2 Incorporated comments Bruno Dumon cocoon-dev 20010718 (DC)
+  20011116 V0.2 Changes from label/view discussion cocoon-dev 20011115 (DC)
+  20011219 V0.2 Deprecated 'redirect-to resource'. Added 'map:call resource'(CH)
+
+==================================================================== -->
+
+<!ELEMENT map:sitemap (map:components, map:views?, map:resources?,
+                       map:action-sets?, map:pipelines)>
+<!ATTLIST map:sitemap
+        xmlns:map CDATA #FIXED "http://apache.org/cocoon/sitemap/1.0"
+>
+
+<!-- =============================================================== -->
+<!-- Components -->
+<!-- =============================================================== -->
+
+<!ELEMENT map:components (map:generators, map:transformers, map:readers,
+                          map:serializers, map:selectors?, map:matchers?,
+                          map:actions?)>
+<!-- RNG: must they appear in this order?
+          must they all appear, even if they are empty? -->
+<!-- DC: it seems that some sitemaps do not contain all components
+         e.g. documentation/sitemap.xmap does not have map:selectors -->
+
+  <!-- Generators ======================================== -->
+<!ELEMENT map:generators (map:generator*)>
+<!ATTLIST map:generators
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:generator EMPTY>
+<!ATTLIST map:generator
+        name CDATA #REQUIRED
+        src CDATA #REQUIRED
+        label CDATA #IMPLIED
+        pool-max CDATA #IMPLIED
+        pool-min CDATA #IMPLIED
+        pool-grow CDATA #IMPLIED
+>
+
+<!-- RNG: with all attributes, which are required and which are implied? -->
+
+  <!-- Transformers ====================================== -->
+<!ELEMENT map:transformers (map:transformer*)>
+<!ATTLIST map:transformers
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:transformer ANY>
+<!-- RNG: surely the content is not ANY. However, there were so many
+          children here that I did not know where to begin -->
+<!-- DC: here are some that are currently used -->
+<!ELEMENT use-store (#PCDATA)>
+<!ELEMENT use-request-parameters (#PCDATA)>
+<!ELEMENT use-browser-capabilities-db (#PCDATA)>
+<!ELEMENT catalogue-name (#PCDATA)>
+<!ELEMENT catalogue-location (#PCDATA)>
+<!ATTLIST map:transformer
+        name CDATA #REQUIRED
+        src CDATA #REQUIRED
+        label CDATA #IMPLIED
+        pool-max CDATA #IMPLIED
+        pool-min CDATA #IMPLIED
+        pool-grow CDATA #IMPLIED
+>
+
+  <!-- Readers =========================================== -->
+<!ELEMENT map:readers (map:reader*)>
+<!ATTLIST map:readers
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:reader EMPTY>
+<!-- RNG: does reader ever have children? Its peers do. -->
+<!ATTLIST map:reader
+        name CDATA #REQUIRED
+        src CDATA #REQUIRED
+>
+
+  <!-- Serializers ======================================= -->
+<!ELEMENT map:serializers (map:serializer*)>
+<!ATTLIST map:serializers
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:serializer (doctype-public|doctype-system|encoding|
+                          omit-xml-declaration|parameter)*>
+<!-- RNG: are these the only children of serializer? -->
+<!ATTLIST map:serializer
+        name CDATA #REQUIRED
+        mime-type CDATA #REQUIRED
+        src CDATA #REQUIRED
+        pool-max CDATA #IMPLIED
+        pool-min CDATA #IMPLIED
+        pool-grow CDATA #IMPLIED
+>
+<!ELEMENT doctype-public (#PCDATA)>
+<!ELEMENT doctype-system (#PCDATA)>
+<!ELEMENT encoding (#PCDATA)>
+<!ELEMENT omit-xml-declaration (#PCDATA)>
+<!ELEMENT parameter EMPTY>
+<!ATTLIST parameter
+        name CDATA #REQUIRED
+        value CDATA #REQUIRED
+        type CDATA #IMPLIED
+>
+
+  <!-- Selectors ========================================= -->
+<!ELEMENT map:selectors (map:selector*)>
+<!ATTLIST map:selectors
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:selector (browser*)>
+<!ATTLIST map:selector
+        name CDATA #REQUIRED
+        src CDATA #REQUIRED
+>
+<!ELEMENT browser EMPTY>
+<!ATTLIST browser
+        name CDATA #REQUIRED
+        useragent CDATA #REQUIRED
+>
+
+  <!-- Matchers ========================================== -->
+<!ELEMENT map:matchers (map:matcher*)>
+<!ATTLIST map:matchers
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:matcher (attribute-name|parameter-name|header-name)*>
+<!ATTLIST map:matcher
+        name CDATA #REQUIRED
+        src CDATA #REQUIRED
+>
+<!ELEMENT attribute-name (#PCDATA)>
+<!ELEMENT parameter-name (#PCDATA)>
+<!ELEMENT header-name (#PCDATA)>
+
+  <!-- Actions =========================================== -->
+<!ELEMENT map:actions (map:action*)>
+<!ATTLIST map:actions
+        default CDATA #IMPLIED
+>
+<!ELEMENT map:action EMPTY>
+<!ATTLIST map:action
+        name CDATA #REQUIRED
+        src CDATA #REQUIRED
+>
+
+<!-- =============================================================== -->
+<!-- Views -->
+<!-- =============================================================== -->
+
+<!ELEMENT map:views (map:view*)>
+<!ELEMENT map:view (map:transform*,map:serialize)>
+<!ATTLIST map:view
+        name CDATA #REQUIRED
+        from-label CDATA #IMPLIED
+        from-position (first|last) "last"
+>
+<!ELEMENT map:serialize (map:parameter*)>
+<!ATTLIST map:serialize
+        type CDATA #REQUIRED
+        mime-type CDATA #IMPLIED
+        status-code CDATA #IMPLIED
+>
+
+<!-- =============================================================== -->
+<!-- Resources -->
+<!-- =============================================================== -->
+
+<!ELEMENT map:resources (map:resource*)>
+<!ELEMENT map:resource ((map:generate,map:transform+,map:serialize) | map:act)>
+<!ATTLIST map:resource
+        name CDATA #REQUIRED
+>
+<!-- generate and transform defined in PIPELINE section -->
+
+<!-- =============================================================== -->
+<!-- Action Sets -->
+<!-- =============================================================== -->
+
+<!ELEMENT map:action-sets (map:action-set*)>
+<!ELEMENT map:action-set (map:act+)>
+<!ATTLIST map:action-set
+        name CDATA #REQUIRED
+>
+<!ELEMENT map:act (map:parameter|map:redirect-to|map:call|map:generate|
+                   map:transform|map:serialize|map:act|map:match)*>
+<!ATTLIST map:act
+        type CDATA #IMPLIED
+        action CDATA #IMPLIED
+        set CDATA #IMPLIED
+>
+
+<!-- =============================================================== -->
+<!-- Pipelines -->
+<!-- =============================================================== -->
+
+<!ELEMENT map:pipelines (map:pipeline*)>
+<!ELEMENT map:pipeline (map:match*, map:handle-errors?)>
+
+<!ELEMENT map:match (map:mount | map:redirect-to | map:call | map:generate |
+                     map:transform | map:serialize | map:read |
+                     map:aggregate | map:act | map:match)*>
+<!-- RNG: It seemed from the example that match should be defined as
+  match (map:mount*|map:redirect-to*|(map:generate*,map:transform*,map:serialize*)*|map:read*|map:aggregate*)
+  but I have no way of knowing.
+-->
+<!-- DC: Now map:act complicates the content model even further -->
+<!ATTLIST map:match
+        type CDATA #IMPLIED
+        pattern CDATA #REQUIRED
+>
+
+<!-- map:act is already defined in the Action Sets section -->
+
+<!ELEMENT map:mount EMPTY>
+<!ATTLIST map:mount
+        uri-prefix CDATA #REQUIRED
+        src CDATA #REQUIRED
+        reload-method (synchron|asynchron) "asynchron"
+        check-reload (true|false|yes|no) "no"
+>
+
+<!ELEMENT map:redirect-to EMPTY>
+<!ATTLIST map:redirect-to
+        uri CDATA #IMPLIED
+        session (true|false|yes|no) "no"
+>
+<!-- CH: redirects to resources are now deprecated
+<!ATTLIST map:redirect-to
+        uri CDATA #IMPLIED
+        resource CDATA #IMPLIED
+        target CDATA #IMPLIED
+        session (true|false|yes|no) "no"
+>
+-->
+
+<!ELEMENT map:call (map:parameter*)>
+<!ATTLIST map:call
+        resource CDATA #REQUIRED
+>
+
+<!ELEMENT map:generate (map:parameter*)>
+<!ATTLIST map:generate
+        type CDATA #IMPLIED
+        src CDATA #IMPLIED
+        label CDATA #IMPLIED
+>
+<!ELEMENT map:parameter EMPTY>
+<!ATTLIST map:parameter
+        name CDATA #REQUIRED
+        value CDATA #REQUIRED
+>
+
+<!ELEMENT map:transform (map:parameter*)>
+<!ATTLIST map:transform
+        type CDATA #IMPLIED
+        src CDATA #IMPLIED
+        label CDATA #IMPLIED
+>
+
+<!-- map:serialize is already defined in VIEWS section -->
+
+<!ELEMENT map:read EMPTY>
+<!ATTLIST map:read
+        src CDATA #REQUIRED
+        mime-type CDATA #REQUIRED
+        type CDATA #IMPLIED
+>
+
+<!ELEMENT map:aggregate (map:part*)>
+<!ATTLIST map:aggregate
+        element CDATA #IMPLIED
+        prefix CDATA #IMPLIED
+        ns CDATA #IMPLIED
+        label CDATA #IMPLIED
+>
+<!ELEMENT map:part EMPTY>
+<!ATTLIST map:part
+        src CDATA #IMPLIED
+        element CDATA #IMPLIED
+        ns CDATA #IMPLIED
+        strip-root CDATA #IMPLIED
+        label CDATA #IMPLIED
+>
+
+<!ELEMENT map:handle-errors (map:generate*,map:transform*,map:serialize*)>
+
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->

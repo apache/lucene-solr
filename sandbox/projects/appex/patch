@@ -1,0 +1,83 @@
+--- build.xml	Sat May  4 09:53:42 2002
++++ /tmp/krysalis-centipede/build.xml	Fri May  3 19:51:37 2002
+@@ -256,20 +256,73 @@
+   </target>     
+ 
+   
+-  <!-- ================================== -->
+-  <!--    Generates the maven documentation     -->
+-  <!-- ================================== -->
+-  <!-- alpha - testing Maven integration -->
+-  <target  name="maven"   depends="-init"
+-           description="Compile java source code">
++  <!-- ================================================ -->
++  <!--    Generates the documentation with maven too    -->
++  <!-- ================================================ -->
++       
++       <!-- alpha - testing Maven integration -->
++  
++  <target  name="mavendocs"   depends="-init"
++           description="Generates the documentation to the maven lf">
+ 
+     <antcall target="call-cent">
+       <param name="cent-name"   value="maven"/> 
+-      <param name="cent-target" value="docs"/> 
++      <param name="cent-target" value="cross-ref"/> 
++    </antcall>
++    
++    <antcall target="call-cent">
++      <param name="cent-name"   value="centipede"/> 
++      <param name="cent-target" value="descriptor-docs"/> 
++    </antcall>
++
++    <antcall target="call-cent">
++      <param name="cent-name"   value="umldoclet"/> 
++      <param name="cent-target" value="javadocs"/> 
++    </antcall>
++    
++    <antcall target="call-cent">
++      <param name="cent-name"   value="junit"/> 
++      <param name="cent-target" value="failsafe-test"/> 
++    </antcall>
++    
++    <antcall target="call-cent">
++      <param name="cent-name"   value="junit"/> 
++      <param name="cent-target" value="report"/> 
++    </antcall>
++    
++    <antcall target="call-cent">
++      <param name="cent-name"   value="jdepend"/>
++      <param name="cent-target" value="jdepend-html"/> 
+     </antcall>
+  
++    <antcall target="call-cent">
++      <param name="cent-name"   value="checkstyle"/> 
++      <param name="cent-target" value="check"/> 
++    </antcall>
++
++    <antcall target="call-cent">
++      <param name="cent-name"   value="umldoclet"/> 
++      <param name="cent-target" value="javadocs"/> 
++    </antcall>
++
++    <antcall target="call-cent">
++      <param name="cent-name"   value="umldoclet"/> 
++      <param name="cent-target" value="doclet"/> 
++    </antcall>
++
++    <antcall target="call-cent">
++      <param name="cent-name"   value="javasrc"/> 
++      <param name="cent-target" value="javasrc"/> 
++    </antcall>
++    
++     <antcall target="call-cent">
++      <param name="cent-name"   value="maven"/> 
++      <param name="cent-target" value="docs"/> 
++    </antcall>
++    
+   </target>     
+ 
++ 
+   <!-- ================================== -->
+   <!--    Generates the site              -->
+   <!-- ================================== -->

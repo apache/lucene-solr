@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Search>
+    <WordList>wlist.txt</WordList>
+    <Index>/usr/local/index</Index>
+    <TempFolder>/usr/local/temp</TempFolder>
+    <HitsPerPage>10</HitsPerPage> 
+    <ContentHandlers>
+      <ContentHandler name="Zip" extension="zip" handler="search.ZIPHandler"/>
+      <ContentHandler name="Jar" extension="jar" handler="search.ZIPHandler"/>
+      <ContentHandler name="GZip" extension="gz" handler="search.GZipHandler"/>
+      <ContentHandler name="Tar" extension="tar" handler="search.TARHandler"/>
+      <ContentHandler name="Pdf" extension="pdf" handler="search.PDFHandler"/>
+      <ContentHandler name="Htm" extension="htm" handler="search.HTMLHandler"/>
+      <ContentHandler name="Html" extension="html" handler="search.HTMLHandler"/>
+      <ContentHandler name="Text" extension="txt" handler="search.TextHandler"/>
+      <ContentHandler name="MSWord" extension="doc" handler="search.TextHandler"/>
+      <ContentHandler name="MSPowerpoint" extension="ppt" handler="search.TextHandler"/>
+      <ContentHandler name="MSExcel" extension="xls" handler="search.TextHandler"/>
+    </ContentHandlers>
+    <Fields>
+      <Field name="id" type="unindexed"/>
+      <Field name="category" type="text"/>
+      <Field name="description" type="text"/>
+      <Field name="comments" type="text"/>
+    </Fields>
+    <DefaultSearchFields>fileName,fileFormat,fileContents,category,description,comments</DefaultSearchFields>
+  </Search>
+</Configuration>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//APACHE//DTD Cocoon Documentation Book V1.0//EN" "dtd/book-cocoon-v10.dtd">
+
+<book software="Krysalis Centipede" 
+      title="Krysalis Centipede" 
+      copyright="@year@ Krysalis Project"
+      xmlns:xlink="http://www.w3.org/1999/xlink">
+  
+  <menu label="Centipede Descriptors">
+    <menu-item label="status.xml"     href="status.html"/>  
+    <menu-item label="module.xml"     href="module.html"/>  
+    <menu-item label="build.xml"     href="build.html"/>  
+    <menu-item label="layout.xml"     href="layout.html"/>  
+    <menu-item label="properties.xml"     href="properties.html"/>  
+  </menu>
+</book>

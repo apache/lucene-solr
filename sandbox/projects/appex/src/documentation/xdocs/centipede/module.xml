@@ -1,0 +1,51 @@
+<document>
+<header>
+<title>Mailing lists of 
+            krysalis-site</title>
+</header>
+<body>
+<section title="Mailing lists">
+<p>
+<table>
+<tr>
+<th>user type</th><th>mailing list</th><th>subscribe</th><th>unsubscribe</th>
+</tr>
+<tr>
+<td>user</td><td><a href="mailto:%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20forrest-dev@xml.apache.org">forrest-dev@xml.apache.org</a></td><td><a href="mailto:%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20http://lists.sourceforge.net/lists/listinfo/Krysalis-general-user">
+
+                              subscribe</a></td><td><a href="mailto:%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20http://lists.sourceforge.net/lists/listinfo/Krysalis-general-user">
+
+                              unsubscribe</a></td>
+</tr>
+<tr>
+<td>developer</td><td><a href="mailto:%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20forrest-dev@xml.apache.org">forrest-dev@xml.apache.org</a></td><td><a href="mailto:%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20http://lists.sourceforge.net/lists/listinfo/krysalis-devel">
+
+                              subscribe</a></td><td><a href="mailto:%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20http://lists.sourceforge.net/lists/listinfo/krysalis-devel">
+
+                              unsubscribe</a></td>
+</tr>
+</table>
+</p>
+</section>
+<section title="Dependencies">
+<section title="required">
+<p>
+<ul>
+<li>jakarta-ant</li>
+<li>xml-xerces</li>
+<li>xml-xalan2</li>
+<li>xml-cocoon2</li>
+<li>jtidy</li>
+<li>junit</li>
+<li>IzPress</li>
+</ul>
+</p>
+</section>
+<section title="optional">
+<p>
+<ul></ul>
+</p>
+</section>
+</section>
+</body>
+</document>

@@ -1,0 +1,555 @@
+<!-- ===================================================================
+
+     Apache Documentation DTD (Version 1.0)
+
+PURPOSE:
+  This DTD was developed to create a simple yet powerful document
+  type for software documentation for use with the Apache projects.
+  It is an XML-compliant DTD and it's maintained by the Apache XML
+  project.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE document PUBLIC
+       "-//APACHE//DTD Documentation Vx.yz//EN"
+       "http://xml.apache.org/DTD/document-vxyz.dtd">
+
+  where
+
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+
+NOTES:
+  Many of the design patterns used in this DTD were take from the
+  W3C XML Specification DTD edited by Eve Maler <elm@arbortext.com>.
+
+  Where possible, great care has been used to reutilize HTML tag
+  names to reduce learning efforts and to allow HTML editors to be
+  used for complex authorings like tables and lists.
+
+AUTHORS:
+  Stefano Mazzocchi <stefano@apache.org>
+
+FIXME:
+  - how can we include char entities without hardwiring them?
+  - should "form" tags be included?
+  - should all style-free HTML 4.0 markup tags be included?
+  - how do we handle the idea of "soft" xlinks?
+  - should we add "soft" links to images?
+
+CHANGE HISTORY:
+  19991121 Initial version. (SM)
+  19991123 Replaced "res" with more standard "strong" for emphasis. (SM)
+  19991124 Added "fork" element for window forking behavior. (SM)
+  19991124 Added "img-inline" element to separate from "img". (SM)
+  19991129 Removed "affiliation" from "author". (SM)
+  19991129 Made "author" empty and moved "name|email" as attributes. (SM)
+  19991215 Simplified table section. (SM)
+  19991215 Changed "img-block" in more friendly "figure". (SM)
+  20000125 Added the "icon" image. (SM)
+  20000126 Allowed "anchor" in all levels. (SM)
+  20000404 Removed the "role" attribute from common-xxx.att. (SM)
+  20000815 Allowed "code" inside "strong" and "em". (SM)
+
+COPYRIGHT:
+  Copyright (c) 1999-2000 The Apache Software Foundation.
+
+  Permission to copy in any form is granted provided this notice is
+  included in all copies. Permission to redistribute is granted
+  provided this file is distributed untouched in all its parts and
+  included files.
+
+==================================================================== -->
+
+
+
+
+<!-- =============================================================== -->
+<!-- Common character entities (included from external file) -->
+<!-- =============================================================== -->
+
+<!-- FIXME (SM): this is hardcoding. Find a better way of doing this
+     possibly using public identifiers of ISO latin char sets -->
+<!ENTITY % charEntity SYSTEM "characters.ent">
+%charEntity;
+
+
+
+
+<!-- =============================================================== -->
+<!-- Userful entitieis for increased DTD readability -->
+<!-- =============================================================== -->
+
+<!ENTITY % text "#PCDATA">
+
+
+<!-- =============================================================== -->
+<!-- Entities for general XML compliance -->
+<!-- =============================================================== -->
+
+<!-- Common attributes
+        Every element has an ID attribute (sometimes required,
+        but usually optional) for links. %common.att;
+        is for common attributes where the ID is optional, and
+        %common-idreq.att; is for common attributes where the
+        ID is required.
+-->
+<!ENTITY % common.att
+        'id                     ID              #IMPLIED
+         xml:lang               NMTOKEN         #IMPLIED'>
+<!ENTITY % common-idreq.att
+        'id                     ID              #REQUIRED
+         xml:lang               NMTOKEN         #IMPLIED'>
+
+
+<!-- xml:space attribute ===============================================
+        Indicates that the element contains white space
+        that the formatter or other application should retain,
+        as appropriate to its function.
+==================================================================== -->
+<!ENTITY % xmlspace.att
+        'xml:space (default|preserve) #FIXED "preserve"'>
+
+
+<!-- def attribute =====================================================
+        Points to the element where the relevant definition can be
+        found, using the IDREF mechanism.  %def.att; is for optional
+        def attributes, and %def-req.att; is for required def
+        attributes.
+==================================================================== -->
+<!ENTITY % def.att
+        'def                    IDREF           #IMPLIED'>
+<!ENTITY % def-req.att
+        'def                    IDREF           #REQUIRED'>
+
+
+
+<!-- ref attribute =====================================================
+        Points to the element where more information can be found,
+        using the IDREF mechanism.  %ref.att; is for optional
+        ref attributes, and %ref-req.att; is for required ref
+        attributes.
+================================================================== -->
+<!ENTITY % ref.att
+        'ref                    IDREF           #IMPLIED'>
+<!ENTITY % ref-req.att
+        'ref                    IDREF           #REQUIRED'>
+
+
+<!-- =============================================================== -->
+<!-- Entities for XLink compliance -->
+<!-- =============================================================== -->
+
+<!ENTITY % xlink-simple.att
+        'type      (simple|extended|locator|arc) #FIXED "simple"
+         href      CDATA                         #IMPLIED
+         role      CDATA                         #IMPLIED
+         title     CDATA                         #IMPLIED '>
+<!--    'xmlns     CDATA                         #FIXED "http://www.w3.org/XML/XLink/0.9" -->
+<!-- FIXME: brain-dead IE5 has broken support for
+     namespace validation and since I use it for editing
+     I remove this for now -->
+
+<!ENTITY % xlink-user-replace.att
+        'show      (new|parsed|replace)   #FIXED "replace"
+         actuate   (user|auto)            #FIXED "user" '>
+
+<!ENTITY % xlink-user-new.att
+        'show      (new|parsed|replace)   #FIXED "new"
+         actuate   (user|auto)            #FIXED "user" '>
+
+<!ENTITY % xlink-auto-parsed.att
+        'show      (new|parsed|replace)   #FIXED "parsed"
+         actuate   (user|auto)            #FIXED "auto" '>
+
+<!-- FIXME (SM): XLink doesn't yet cover the idea of soft links so
+     introducing it here using the same namespace is _somewhat_
+     illegal. Should we create it own namespace?
+-->
+<!ENTITY % xlink-soft.att
+        'mode      (hard|soft)            #FIXED "soft" '>
+
+
+<!-- =============================================================== -->
+<!-- Entities for general usage -->
+<!-- =============================================================== -->
+
+
+<!-- Key attribute =====================================================
+        Optionally provides a sorting or indexing key, for cases when
+        the element content is inappropriate for this purpose.
+==================================================================== -->
+<!ENTITY % key.att
+        'key                    CDATA           #IMPLIED'>
+
+
+
+<!-- Title attributes ==================================================
+        Indicates that the element requires to have a title.
+==================================================================== -->
+<!ENTITY % title.att
+        'title                  CDATA           #REQUIRED'>
+
+
+
+<!-- Name attributes ==================================================
+        Indicates that the element requires to have a name.
+==================================================================== -->
+<!ENTITY % name.att
+        'name                   CDATA           #REQUIRED'>
+
+
+
+<!-- Email attributes ==================================================
+        Indicates that the element requires to have an email.
+==================================================================== -->
+<!ENTITY % email.att
+        'email                  CDATA           #REQUIRED'>
+
+
+
+
+
+<!-- =============================================================== -->
+<!-- General definitions -->
+<!-- =============================================================== -->
+
+<!-- A person is a general human entity -->
+<!ELEMENT person EMPTY>
+<!ATTLIST person %common.att;
+                 %name.att;
+                 %email.att;>
+
+
+
+
+<!-- =============================================================== -->
+<!-- Content definitions -->
+<!-- =============================================================== -->
+
+<!ENTITY % local.content.mix "">
+
+<!ENTITY % markup "strong|em|code|sub|sup">
+
+<!ENTITY % links "link|connect|jump|fork|anchor">
+
+<!ENTITY % special "br|img|icon">
+
+<!ENTITY % link-content.mix "%text;|%markup;|%special;%local.content.mix;">
+
+<!ENTITY % content.mix "%link-content.mix;|%links;">
+
+    <!-- ==================================================== -->
+    <!-- Phrase Markup -->
+    <!-- ==================================================== -->
+
+    <!-- Code (typically monospaced) -->
+    <!ELEMENT code (%text;)>
+    <!ATTLIST code %common.att;>
+
+    <!-- Strong (typically bold) -->
+    <!ELEMENT strong (%text;|code)*>
+    <!ATTLIST strong %common.att;>
+
+    <!-- Emphasis (typically italic) -->
+    <!ELEMENT em (%text;|code)*>
+    <!ATTLIST em %common.att;>
+
+    <!-- Superscript (typically smaller and higher) -->
+    <!ELEMENT sup (%text;)>
+    <!ATTLIST sup %common.att;>
+
+    <!-- Subscript (typically smaller and lower) -->
+    <!ELEMENT sub (%text;)>
+    <!ATTLIST sub %common.att;>
+
+    <!-- FIXME (SM): should we add these HTML 4.0 markups
+         which are style-free?
+
+          -dfn
+          -samp
+          -kbd
+          -var
+          -cite
+          -abbr
+          -acronym
+
+     -->
+
+    <!-- ==================================================== -->
+    <!-- Hypertextual Links -->
+    <!-- ==================================================== -->
+
+    <!-- hard replacing link (equivalent of <a ...>) -->
+    <!ELEMENT link (%link-content.mix;)*>
+    <!ATTLIST link %common.att;
+                   %xlink-simple.att;
+                   %xlink-user-replace.att;>
+
+    <!-- Hard window replacing link (equivalent of <a ... target="_top">) -->
+    <!ELEMENT jump (%link-content.mix;)*>
+    <!ATTLIST jump %common.att;
+                   %xlink-simple.att;
+                   %xlink-user-new.att;>
+
+    <!-- Hard window forking link (equivalent of <a ... target="_new">) -->
+    <!ELEMENT fork (%link-content.mix;)*>
+    <!ATTLIST fork %common.att;
+                   %xlink-simple.att;
+                   %xlink-user-new.att;>
+
+    <!-- Anchor point (equivalent of <a name="...">) -->
+    <!ELEMENT anchor EMPTY>
+    <!ATTLIST anchor %common-idreq.att;>
+
+    <!-- Soft link between processed pages (no equivalent in HTML) -->
+    <!ELEMENT connect (%link-content.mix;)*>
+    <!ATTLIST connect %common.att;
+                      %xlink-simple.att;
+                      %xlink-user-replace.att;
+                      %xlink-soft.att;>
+
+    <!-- ==================================================== -->
+    <!-- Specials -->
+    <!-- ==================================================== -->
+
+    <!-- Breakline Object (typically forces line break) -->
+    <!ELEMENT br EMPTY>
+    <!ATTLIST br %common.att;>
+
+    <!-- Image Object (typically an inlined image) -->
+    <!-- FIXME (SM): should we have the notion of soft links even here
+         for inlined objects? -->
+    <!ELEMENT img EMPTY>
+    <!ATTLIST img src    CDATA  #REQUIRED
+                  alt    CDATA  #REQUIRED
+                  height CDATA  #IMPLIED
+                  width  CDATA  #IMPLIED
+                  usemap CDATA  #IMPLIED
+                  ismap  (ismap) #IMPLIED
+                  %common.att;>
+
+    <!-- Image Icon (typically an inlined image placed as graphical item) -->
+    <!-- FIXME (SM): should we have the notion of soft links even here
+         for inlined objects? -->
+    <!ELEMENT icon EMPTY>
+    <!ATTLIST icon src    CDATA  #REQUIRED
+                   alt    CDATA  #REQUIRED
+                   height CDATA  #IMPLIED
+                   width  CDATA  #IMPLIED
+                   %common.att;>
+
+
+
+
+<!-- =============================================================== -->
+<!-- Blocks definitions -->
+<!-- =============================================================== -->
+
+<!ENTITY % local.blocks "">
+
+<!ENTITY % local.lists "">
+
+<!ENTITY % paragraphs "p|source|note|fixme|figure">
+
+<!ENTITY % tables "table">
+
+<!ENTITY % lists "ol|ul|sl|dl %local.lists;">
+
+<!ENTITY % blocks "anchor|%paragraphs;|%tables;|%lists; %local.blocks;">
+
+    <!-- ==================================================== -->
+    <!-- Paragraphs -->
+    <!-- ==================================================== -->
+
+    <!-- Text Paragraph (normally vertically space delimited) -->
+    <!ELEMENT p (%content.mix;)*>
+    <!ATTLIST p %common.att;>
+
+    <!-- Source Paragraph (normally space is preserved) -->
+    <!ELEMENT source (%content.mix;)*>
+    <!ATTLIST source %common.att;
+                     %xmlspace.att;>
+
+    <!-- Note Paragraph (normally shown encapsulated) -->
+    <!ELEMENT note (%content.mix;)*>
+    <!ATTLIST note %common.att;>
+
+    <!-- Fixme Paragraph (normally not shown) -->
+    <!ELEMENT fixme (%content.mix;)*>
+    <!-- the "author" attribute should match the "key" attribute of the
+         <author> element -->
+    <!ATTLIST fixme author CDATA #REQUIRED
+                    %common.att;>
+
+    <!-- ==================================================== -->
+    <!-- Tables -->
+    <!-- ==================================================== -->
+
+    <!-- Attributes that indicate the spanning of the table cell -->
+    <!ENTITY % cell.span 
+        'colspan CDATA "1"
+         rowspan CDATA "1"'>
+
+    <!-- Table element -->
+    <!ELEMENT table (caption?, tr+)>
+    <!ATTLIST table %common.att;>
+
+        <!-- The table title -->
+        <!ELEMENT caption (%content.mix;)*>
+        <!ATTLIST caption %common.att;>
+
+        <!-- The table row element -->
+        <!ELEMENT tr (th|td)+>
+        <!ATTLIST tr %common.att;>
+
+            <!-- The table row header element -->
+            <!ELEMENT th (%content.mix;)*>
+            <!ATTLIST th %common.att;
+                         %cell.span;>
+
+            <!-- The table row description element -->
+            <!ELEMENT td (%content.mix;)*>
+            <!ATTLIST td %common.att;
+                         %cell.span;>
+
+    <!-- ==================================================== -->
+    <!-- Lists -->
+    <!-- ==================================================== -->
+
+    <!-- Unordered list (typically bulleted) -->
+    <!ELEMENT ul (li|%lists;)+>
+    <!--    spacing attribute:
+            Use "normal" to get normal vertical spacing for items;
+            use "compact" to get less spacing.  The default is dependent
+            on the stylesheet. -->
+    <!ATTLIST ul
+            %common.att;
+            spacing         (normal|compact)        #IMPLIED>
+
+    <!-- Ordered list (typically numbered) -->
+    <!ELEMENT ol (li|%lists;)+>
+    <!--    spacing attribute:
+            Use "normal" to get normal vertical spacing for items;
+            use "compact" to get less spacing.  The default is dependent
+            on the stylesheet. -->
+    <!ATTLIST ol
+            %common.att;
+            spacing         (normal|compact)        #IMPLIED>
+
+    <!-- Simple list (typically with no mark) -->
+    <!ELEMENT sl (li|%lists;)+>
+    <!ATTLIST sl %common.att;>
+
+        <!-- List item -->
+        <!ELEMENT li (%content.mix;|%lists;)*>
+        <!ATTLIST li %common.att;>
+
+    <!-- Definition list (typically two-column) -->
+    <!ELEMENT dl (dt,dd)+>
+    <!ATTLIST dl %common.att;>
+
+        <!-- Definition term -->
+        <!ELEMENT dt (%content.mix;)*>
+        <!ATTLIST dt %common.att;>
+
+        <!-- Definition description -->
+        <!ELEMENT dd (%content.mix;)*>
+        <!ATTLIST dd %common.att;>
+
+    <!-- ==================================================== -->
+    <!-- Special Blocks -->
+    <!-- ==================================================== -->
+
+    <!-- Image Block (typically a separated and centered image) -->
+    <!-- FIXME (SM): should we have the notion of soft links even here
+         for inlined objects? -->
+    <!ELEMENT figure EMPTY>
+    <!ATTLIST figure src    CDATA  #REQUIRED
+                     alt    CDATA  #REQUIRED
+                     height CDATA  #IMPLIED
+                     width  CDATA  #IMPLIED
+                     usemap CDATA  #IMPLIED
+                     ismap  (ismap) #IMPLIED
+                     %common.att;>
+
+
+
+
+
+<!-- =============================================================== -->
+<!-- Document -->
+<!-- =============================================================== -->
+
+<!ELEMENT document (header?, body, footer?)>
+<!ATTLIST document %common.att;>
+
+    <!-- ==================================================== -->
+    <!-- Header -->
+    <!-- ==================================================== -->
+
+    <!ENTITY % local.headers "">
+
+    <!ELEMENT header (title, subtitle?, version?, type?, authors,
+                      notice*, abstract? %local.headers;)>
+    <!ATTLIST header %common.att;>
+
+    <!ELEMENT title (%text;)>
+    <!ATTLIST title %common.att;>
+
+    <!ELEMENT subtitle (%text;)>
+    <!ATTLIST subtitle %common.att;>
+
+    <!ELEMENT version (%text;)>
+    <!ATTLIST version %common.att;>
+
+    <!ELEMENT type (%text;)>
+    <!ATTLIST type %common.att;>
+
+    <!ELEMENT authors (person+)>
+    <!ATTLIST authors %common.att;>
+
+    <!ELEMENT notice (%content.mix;)*>
+    <!ATTLIST notice %common.att;>
+
+    <!ELEMENT abstract (%content.mix;)*>
+    <!ATTLIST abstract %common.att;>
+
+    <!-- ==================================================== -->
+    <!-- Body -->
+    <!-- ==================================================== -->
+
+    <!ENTITY % local.sections "">
+
+    <!ENTITY % sections "s1|anchor %local.sections;">
+
+    <!ELEMENT body (%sections;)+>
+    <!ATTLIST body %common.att;>
+
+        <!ELEMENT s1 (s2|%blocks;)*>
+        <!ATTLIST s1 %title.att; %common.att;>
+
+            <!ELEMENT s2 (s3|%blocks;)*>
+            <!ATTLIST s2 %title.att; %common.att;>
+
+                <!ELEMENT s3 (s4|%blocks;)*>
+                <!ATTLIST s3 %title.att; %common.att;>
+
+                    <!ELEMENT s4 (%blocks;)*>
+                    <!ATTLIST s4 %title.att; %common.att;>
+
+    <!-- ==================================================== -->
+    <!-- Footer -->
+    <!-- ==================================================== -->
+
+    <!ENTITY % local.footers "">
+
+    <!ELEMENT footer (legal %local.footers;)>
+
+        <!ELEMENT legal (%content.mix;)*>
+        <!ATTLIST legal %common.att;>
+
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->

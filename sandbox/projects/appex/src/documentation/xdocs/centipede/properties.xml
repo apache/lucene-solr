@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document><header><title>Project Properties</title></header><body><section title="Project properties"><p><table><tr><td><table><tr><td class="comment"><pre> Build properties - these override any property specified in the build </pre></td></tr></table><table><tr><td class="block">properties</td></tr></table><table><tr><td/><td>
+
+   <table><tr><td class="comment"><pre> Properties of the build </pre></td></tr></table>
+   <table><tr><td class="block">build</td></tr></table><table><tr><td/><td>
+      <table><tr><td class="comment"><pre> What to tell the compiler </pre></td></tr></table>
+      <table><tr><td class="block">compiler<table><tr><td class="name">emacs</td><td class="value">=on</td></tr><tr><td class="name">warnings</td><td class="value">=true</td></tr><tr><td class="name">pedantic</td><td class="value">=false</td></tr><tr><td class="name">depend</td><td class="value">=true</td></tr><tr><td class="name">fulldepend</td><td class="value">=true</td></tr><tr><td class="name">debug</td><td class="value">=on</td></tr><tr><td class="name">optimize</td><td class="value">=off</td></tr><tr><td class="name">deprecation</td><td class="value">=on</td></tr><tr><td class="name">nowarn</td><td class="value">=off</td></tr><tr><td class="name">type</td><td class="value">=classic</td></tr><tr><td class="name">vm</td><td class="value">=1.2</td></tr></table></td></tr></table>
+   </td></tr></table>
+
+   <br/>centipede
+      
+         
+                  
+            
+             
+              
+                
+                  
+                
+              
+            
+            
+            
+            
+            
+            
+            
+              
+               
+                  
+                     apache
+
+                     jakarta
+
+                     lucene
+ 
+                     sandbox
+                     application extensions
+                  
+
+                  
+                     
+
+                     
+                  
+               
+            
+         
+      
+   
+</td></tr></table></td></tr></table></p></section></body></document>

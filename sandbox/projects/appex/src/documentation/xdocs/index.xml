@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V1.1//EN" "./dtd/document-v11.dtd">
+
+<document>
+  <header>
+    <title>Lucene Application Extensions</title>
+    <authors>
+      <person id="ACO" name="Andrew C. Oliver" email="acoliver@apache.org"/>      
+    </authors>
+  </header>
+  
+  <body>
+    <section title="Introduction">
+      <p>
+        The Lucene application extensions project aims to provide a template
+        for creating Lucene based web applications, and a set of libraries for
+        easily using Lucene in your application.  Eventually these extensions
+        will move over to the Lucene proper along with full documentation.
+        For more information on these goals please read this <link
+        href="http://jakarta.apache.org/lucene/docs/luceneplan.html">Proposal
+        </link>.  TODO: go into more depth here.  (does this incompleteness
+        bother you?  Well contribute your words here!
+      </p>                  
+      </section>
+      
+  </body>
+</document>

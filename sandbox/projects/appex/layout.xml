@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="tools/antipede/resources/stylesheets/layout.xsl"?>
+<layout dir=".">
+  <legal dir="./legal"/>     
+  <library dir="./lib">
+   <endorsed dir="./lib/endorsed"/>
+   <core dir="./lib/core"/>
+   <optional dir="./lib/optional"/>
+  </library>
+  <source dir="./src">
+   <targets dir="./src/targets"/>
+   <java dir="./src/java"/>
+   <test dir="./src/testcases"/>
+   <documentation dir="./src/documentation">
+     <content dir="./src/documentation/xdocs">
+      <xdocs dir="./src/documentation/xdocs"/>
+     </content>  
+     <resources dir="./src/documentation/images">
+      <images dir="./src/documentation/images"/>
+     </resources>  
+   </documentation>
+   <scratchpad dir="./src/scratchpad">
+     <targets dir="./src/scratchpad/targets"/>   
+     <java dir="./src/scratchpad/src"/>
+     <library dir="./src/scratchpad/lib"/>
+   </scratchpad>  
+   <contributions dir="./src/contrib">
+     <targets dir="./src/contrib/targets"/>   
+     <java dir="./src/contrib/src"/>
+     <library dir="./src/contrib/lib"/>
+   </contributions>      
+   <examples dir="./src/examples">
+     <targets dir="./src/examples/targets"/>
+     <java dir="./src/examples/src"/>
+     <library dir="./src/examples/lib"/>
+   </examples>           
+  </source>   
+  <build dir="./build">
+   <java dir="./build/java"/>
+   <classes dir="./build/classes"/>
+   <test dir="./build/testcases"/>
+   <work dir="./build/work"/>
+   <documentation dir="./build/docs">
+     <javadocs dir="./build/docs/javadocs"/>
+     <test dir="./build/docs/tests"/>
+     <metrics dir="./build/docs/metrics"/>
+   </documentation>
+   <scratchpad dir="./build/scratchpad">
+     <java dir="./build/scratchpad/java"/>
+     <classes dir="./build/scratchpad/classes"/>          
+     <library dir="./build/scratchpad/lib"/>     
+   </scratchpad>  
+   <contributions dir="./build/contrib">
+     <java dir="./build/contrib/java"/>
+     <classes dir="./build/contrib/classes"/>
+     <library dir="./build/contrib/lib"/>
+   </contributions>      
+   <examples dir="./build/examples">
+     <java dir="./build/examples/java"/>
+     <classes dir="./build/examples/classes"/>
+     <library dir="./build/examples/lib"/>
+   </examples>           
+  </build>   
+  <distributions dir="./dist">
+   <source dir="./dist/src"/>
+   <bin dir="./dist/bin">
+     <library dir="./dist/bin/lib">
+       <core dir="./dist/bin/lib"/>
+       <optional dir="./dist/bin/lib/optional"/>     
+     </library>
+     <documentation dir="./dist/bin/build/docs"/>
+     <info dir="./dist/bin"/>
+     <build dir="./dist/bin/build"/>
+     <legal dir="./dist/bin/legal"/>     
+   </bin>
+  </distributions>   
+</layout>

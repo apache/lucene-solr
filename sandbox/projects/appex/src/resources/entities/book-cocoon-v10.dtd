@@ -1,0 +1,70 @@
+<!-- ===================================================================
+     
+     Apache Cocoon Documentation Book DTD (Version 1.0)
+
+PURPOSE:
+This DTD defines the */book.xml documentation configuration files.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE book PUBLIC
+       "-//APACHE//DTD Cocoon Documentation Book Vx.yz//EN"
+       "http://xml.apache.org/DTD/book-cocoon-vxyz.dtd">
+
+  where 
+  
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+      
+NOTES:
+We need to replace this DTD with the proper one.
+We are only using this DTD to enable validation during "build docs"
+because every XML instance must declare its ruleset.
+
+This initial minimal DTD has been reverse-engineered from the structure
+of the current documents, e.g. 
+ docuemntation/xdocs/book.xml
+  
+AUTHORS:
+  David Crossley <crossley@apache.org>
+  
+FIXME:
+  - find the proper DTD for book.xml
+
+CHANGE HISTORY:
+  20011031 Initial version. (DC)
+    
+COPYRIGHT:
+  Copyright (c) @year@ The Apache Software Foundation.
+  
+  Permission to copy in any form is granted provided this notice is 
+  included in all copies. Permission to redistribute is granted 
+  provided this file is distributed untouched in all its parts and 
+  included files.
+  
+==================================================================== -->
+
+<!ELEMENT book (menu+)> 
+<!ELEMENT menu (menu-item|external)*>
+<!ELEMENT menu-item EMPTY>
+<!ELEMENT external EMPTY>
+<!ATTLIST book software CDATA #REQUIRED
+               title CDATA #REQUIRED
+               copyright CDATA #REQUIRED
+               xmlns:xlink CDATA #IMPLIED
+>
+<!ATTLIST menu label CDATA #REQUIRED
+>
+<!ATTLIST menu-item label CDATA #REQUIRED
+                    href CDATA #REQUIRED
+                    type (visible|hidden) "visible"
+>
+<!ATTLIST external  label CDATA #REQUIRED
+                    href CDATA #REQUIRED
+                    type (visible|hidden) "visible"
+>
+
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->

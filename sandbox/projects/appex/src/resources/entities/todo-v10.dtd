@@ -1,0 +1,90 @@
+<!-- ===================================================================
+     
+     Apache Todos DTD (Version 1.0)
+
+PURPOSE:
+  This DTD was developed to create a simple yet powerful document 
+  type for software development todo lists for use with the Apache projects.  
+  It is an XML-compliant DTD and it's maintained by the Apache XML 
+  project.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE document PUBLIC
+       "-//APACHE//DTD Todo Vx.yz//EN"
+       "http://xml.apache.org/DTD/todo-vxyz.dtd">
+
+  where 
+  
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+      
+NOTES:  
+  It is important, expecially in open developped software projects, to keep
+  track of software changes that need to be done, planned features, development
+  assignment, etc. in order to allow better work parallelization and create
+  an entry point for people that want to help. This DTD wants to provide
+  a solid foundation to provide such information and to allow it to be
+  published as well as distributed in a common format.
+
+AUTHORS:
+  Stefano Mazzocchi <stefano@apache.org>
+  
+FIXME:
+  - do we need anymore working contexts? (SM)
+
+CHANGE HISTORY:
+  19991129 Initial version. (SM)
+  19991225 Added actions element for better structure (SM)
+    
+COPYRIGHT:
+  Copyright (c) @year@ The Apache Software Foundation.
+  
+  Permission to copy in any form is granted provided this notice is 
+  included in all copies. Permission to redistribute is granted 
+  provided this file is distributed untouched in all its parts and 
+  included files.
+  
+==================================================================== -->
+
+<!-- =============================================================== -->
+<!-- Extend the Documentation DTD -->
+<!-- =============================================================== -->
+
+<!-- FIXME (SM): this is hardcoding. Find a better way of doing this
+     possibly using public identifiers -->
+<!ENTITY % document-dtd SYSTEM "document-v10.dtd">
+%document-dtd;
+
+<!-- =============================================================== -->
+<!-- Common entities -->
+<!-- =============================================================== -->
+
+<!ENTITY % priorities "showstopper|high|medium|low|wish|dream">
+
+<!ENTITY % contexts "build|docs|code|admin|design">
+
+<!-- =============================================================== -->
+<!-- Document Type Definition -->
+<!-- =============================================================== -->
+
+<!ELEMENT todo (devs, actions*)>
+<!ATTLIST todo %common.att; 
+               %title.att;>
+
+    <!ELEMENT devs (person+)>
+    <!ATTLIST devs %common.att;>
+
+    <!ELEMENT actions (action+)>
+    <!ATTLIST actions %common.att;
+                     priority     (%priorities;)  #IMPLIED>
+
+        <!ELEMENT action (%content.mix;)*>
+        <!ATTLIST action %common.att;
+                         assigned-to  IDREF           #IMPLIED
+                         context      (%contexts;)    #REQUIRED>
+    
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->

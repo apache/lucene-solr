@@ -1,0 +1,77 @@
+<!-- ===================================================================
+     
+     Apache FAQ DTD (Version 1.0)
+
+PURPOSE:
+  This DTD was developed to create a simple yet powerful document 
+  type for software FAQ's for use with the Apache projects.  
+  It is an XML-compliant DTD and it's maintained by the Apache XML 
+  project.
+
+TYPICAL INVOCATION:
+
+  <!DOCTYPE document PUBLIC
+       "-//APACHE//DTD FAQ Vx.yz//EN"
+       "http://xml.apache.org/DTD/faq-vxyz.dtd">
+
+  where 
+  
+    x := major version
+    y := minor version
+    z := status identifier (optional)
+      
+NOTES:  
+  FAQs represent a powerful knowledge base and a very good way of solving
+  common user problems reducing messages on mail lists and reducing the effort
+  required for software installation and usage. Thid DTD want to be a common
+  format for FAQ interchange to allow FAQ-O-Matic-type workgroup services to 
+  be published in other formats as well as enhancing data interchange.
+  
+AUTHORS:
+  Stefano Mazzocchi <stefano@apache.org>
+  
+FIXME:
+
+CHANGE HISTORY:
+  19991129 Initial version. (SM)
+    
+COPYRIGHT:
+  Copyright (c) @year@ The Apache Software Foundation.
+  
+  Permission to copy in any form is granted provided this notice is 
+  included in all copies. Permission to redistribute is granted 
+  provided this file is distributed untouched in all its parts and 
+  included files.
+  
+==================================================================== -->
+
+<!-- =============================================================== -->
+<!-- Extend the Documentation DTD -->
+<!-- =============================================================== -->
+
+<!-- FIXME (SM): this is hardcoding. Find a better way of doing this
+     possibly using public identifiers -->
+<!ENTITY % document-dtd SYSTEM "document-v10.dtd">
+%document-dtd;
+
+
+<!-- =============================================================== -->
+<!-- Document Type Definition -->
+<!-- =============================================================== -->
+
+<!ELEMENT faqs (authors?, faq)+>
+<!ATTLIST faqs %common.att; 
+               %title.att;>
+
+    <!ELEMENT faq (question, answer)>
+    <!ATTLIST faq %common.att;>
+    
+        <!ELEMENT question (%content.mix;)*>
+        <!ATTLIST question %common.att;>
+            
+        <!ELEMENT answer (%blocks;)*>
+        <!ATTLIST answer author IDREF #IMPLIED>
+
+<!-- =============================================================== -->
+<!-- End of DTD -->
+<!-- =============================================================== -->
