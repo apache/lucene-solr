@@ -54,58 +54,37 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.document.Document;
 
-/** A Query that matches documents containing a term.
-  This may be combined with other terms with a {@link BooleanQuery}.
-  */
-public class TermQuery extends Query {
-  private Term term;
-  private float idf = 0.0f;
-  private float weight = 0.0f;
-
-  /** Constructs a query for the term <code>t</code>. */
-  public TermQuery(Term t) {
-    term = t;
+/** Expert: Default scoring implementation. */
+public class DefaultSimilarity extends Similarity {
+  /** Implemented as <code>1/sqrt(numTerms)</code>. */
+  public float lengthNorm(String fieldName, int numTerms) {
+    return (float)(1.0 / Math.sqrt(numTerms));
+  }
+  
+  /** Implemented as <code>1/sqrt(sumOfSquaredWeights)</code>. */
+  public float queryNorm(float sumOfSquaredWeights) {
+    return (float)(1.0 / Math.sqrt(sumOfSquaredWeights));
   }
 
-  final float sumOfSquaredWeights(Searcher searcher) throws IOException {
-    idf = searcher.getSimilarity().idf(term, searcher);
-    weight = idf * boost;
-    return weight * weight;			  // square term weights
+  /** Implemented as <code>sqrt(freq)</code>. */
+  public float tf(float freq) {
+    return (float)Math.sqrt(freq);
   }
-
-  final void normalize(float norm) {
-    weight *= norm;				  // normalize for query
-    weight *= idf;				  // factor from document
-  }
-
-  Scorer scorer(IndexReader reader, Similarity similarity)
-       throws IOException {
-    TermDocs termDocs = reader.termDocs(term);
-
-    if (termDocs == null)
-      return null;
     
-    return new TermScorer(termDocs, similarity,
-                          reader.norms(term.field()), weight);
+  /** Implemented as <code>1 / (distance + 1)</code>. */
+  public float sloppyFreq(int distance) {
+    return 1.0f / (distance + 1);
   }
-
-  /** Prints a user-readable version of this query. */
-  public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
-    if (!term.field().equals(field)) {
-      buffer.append(term.field());
-      buffer.append(":");
-    }
-    buffer.append(term.text());
-    if (boost != 1.0f) {
-      buffer.append("^");
-      buffer.append(Float.toString(boost));
-    }
-    return buffer.toString();
+    
+  /** Implemented as <code>log(numDocs/(docFreq+1)) + 1</code>. */
+  public float idf(int docFreq, int numDocs) {
+    return (float)(Math.log(numDocs/(double)(docFreq+1)) + 1.0);
+  }
+    
+  /** Implemented as <code>overlap / maxOverlap</code>. */
+  public float coord(int overlap, int maxOverlap) {
+    return overlap / (float)maxOverlap;
   }
 }

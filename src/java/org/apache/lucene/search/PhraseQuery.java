@@ -108,10 +108,7 @@ public class PhraseQuery extends Query {
   }
 
   final float sumOfSquaredWeights(Searcher searcher) throws IOException {
-    idf = 0.0f;
-    for (int i = 0; i < terms.size(); i++)	  // sum term IDFs
-      idf += Similarity.idf((Term)terms.elementAt(i), searcher);
-
+    idf = searcher.getSimilarity().idf(terms, searcher);
     weight = idf * boost;
     return weight * weight;			  // square term weights
   }
@@ -121,7 +118,8 @@ public class PhraseQuery extends Query {
     weight *= idf;				  // factor from document
   }
 
-  final Scorer scorer(IndexReader reader) throws IOException {
+  final Scorer scorer(IndexReader reader, Similarity similarity)
+    throws IOException {
     if (terms.size() == 0)			  // optimize zero-term case
       return null;
     if (terms.size() == 1) {			  // optimize one-term case
@@ -129,7 +127,8 @@ public class PhraseQuery extends Query {
       TermDocs docs = reader.termDocs(term);
       if (docs == null)
 	return null;
-      return new TermScorer(docs, reader.norms(term.field()), weight);
+      return new TermScorer(docs, similarity,
+                            reader.norms(term.field()), weight);
     }
 
     TermPositions[] tps = new TermPositions[terms.size()];
@@ -141,10 +140,12 @@ public class PhraseQuery extends Query {
     }
 
     if (slop == 0)				  // optimize exact case
-      return new ExactPhraseScorer(tps, reader.norms(field), weight);
+      return new ExactPhraseScorer(tps, similarity,
+                                   reader.norms(field), weight);
     else
       return
-	new SloppyPhraseScorer(tps, slop, reader.norms(field), weight);
+	new SloppyPhraseScorer(tps, similarity, slop,
+                               reader.norms(field), weight);
 
   }
 

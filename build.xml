@@ -12,12 +12,19 @@
   <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.classes}"/>
-    <pathelement location="${build.demo.classes}"/>
-    <pathelement location="${build.test.classes}"/>
-    <pathelement location="."/>
     <fileset dir="lib">
       <include name="*.jar" />
     </fileset>
+  </path>
+
+  <path id="demo.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.demo.classes}"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="demo.classpath"/>
+    <pathelement location="${build.test.classes}"/>
   </path>
 
   <path id="junit.classpath">
@@ -245,7 +252,7 @@ Implementation-Vendor: Lucene
       includes="**/*.java"
       destdir="${build.demo.classes}"
       debug="${debug}">
-      <classpath refid="classpath"/>
+      <classpath refid="demo.classpath"/>
     </javac>
   </target>
 
@@ -255,23 +262,14 @@ Implementation-Vendor: Lucene
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="test" depends="compile,demo">
-    <mkdir dir="${build.test}"/>
-
-    <copy todir="${build.test.src}">
-      <fileset dir="${test.src}">
-        <include name="**/*.java"/>
-      </fileset>
-    </copy>
-
     <mkdir dir="${build.test.classes}"/>
-
     <javac
       encoding="${build.encoding}"
-      srcdir="${build.test.src}"
+      srcdir="${test.src}"
       includes="**/*.java"
       destdir="${build.test.classes}"
       debug="${debug}">
-      <classpath refid="classpath"/>
+      <classpath refid="test.classpath"/>
     </javac>
   </target>
 
@@ -295,7 +293,7 @@ Implementation-Vendor: Lucene
       includes="**/*.java"
       destdir="${junit.classes}"
       debug="${debug}">
-      <classpath refid="classpath"/>
+      <classpath refid="test.classpath"/>
     </javac>
 
     <junit printsummary="yes" haltonfailure="no" >
@@ -565,7 +563,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="clean" depends="init">
+  <target name="clean">
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
     <delete file="${basedir}/${final.name}.tar"/>

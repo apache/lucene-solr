@@ -116,20 +116,20 @@ public class BooleanQuery extends Query {
     }
   }
 
-  Scorer scorer(IndexReader reader)
+  Scorer scorer(IndexReader reader, Similarity similarity)
        throws IOException {
 
     if (clauses.size() == 1) {			  // optimize 1-term queries
       BooleanClause c = (BooleanClause)clauses.elementAt(0);
       if (!c.prohibited)			  // just return term scorer
-	return c.query.scorer(reader);
+	return c.query.scorer(reader, similarity);
     }
 
-    BooleanScorer result = new BooleanScorer();
+    BooleanScorer result = new BooleanScorer(similarity);
 
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      Scorer subScorer = c.query.scorer(reader);
+      Scorer subScorer = c.query.scorer(reader, similarity);
       if (subScorer != null)
 	result.add(subScorer, c.required, c.prohibited);
       else if (c.required)

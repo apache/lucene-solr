@@ -66,58 +66,96 @@ import org.apache.lucene.document.Field;
 
 import junit.framework.TestCase;
 
- /** Document boost unit test.
+import java.util.Vector;
+
+ /** Similarity unit test.
   *
   * @author Doug Cutting
   * @version $Revision$
   */
-public class TestDocBoost extends TestCase {
-  public TestDocBoost(String name) {
+public class TestSimilarity extends TestCase {
+  public TestSimilarity(String name) {
     super(name);
   }
   
-  public void testDocBoost() throws Exception {
+  public static class SimpleSimilarity extends Similarity {
+    public float lengthNorm(String field, int numTerms) { return 1.0f; }
+    public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
+    public float tf(float freq) { return freq; }
+    public float sloppyFreq(int distance) { return 2.0f; }
+    public float idf(Vector terms, Searcher searcher) { return 1.0f; }
+    public float idf(int docFreq, int numDocs) { return 1.0f; }
+    public float coord(int overlap, int maxOverlap) { return 1.0f; }
+  }
+
+  public void testSimilarity() throws Exception {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
-    
-    Field f1 = Field.Text("field", "word");
-    Field f2 = Field.Text("field", "word");
-    f2.setBoost(2.0f);
+    writer.setSimilarity(new SimpleSimilarity());
     
     Document d1 = new Document();
+    d1.add(Field.Text("field", "a c"));
+
     Document d2 = new Document();
-    Document d3 = new Document();
-    Document d4 = new Document();
-    d3.setBoost(3.0f);
-    d4.setBoost(2.0f);
-    
-    d1.add(f1);                                 // boost = 1
-    d2.add(f2);                                 // boost = 2
-    d3.add(f1);                                 // boost = 3
-    d4.add(f2);                                 // boost = 4
+    d2.add(Field.Text("field", "a b c"));
     
     writer.addDocument(d1);
     writer.addDocument(d2);
-    writer.addDocument(d3);
-    writer.addDocument(d4);
     writer.optimize();
     writer.close();
 
     final float[] scores = new float[4];
 
-    new IndexSearcher(store).search
-      (new TermQuery(new Term("field", "word")),
+    Searcher searcher = new IndexSearcher(store);
+    searcher.setSimilarity(new SimpleSimilarity());
+
+    Term a = new Term("field", "a");
+    Term b = new Term("field", "b");
+    Term c = new Term("field", "c");
+
+    searcher.search
+      (new TermQuery(b),
        new HitCollector() {
          public final void collect(int doc, float score) {
-           scores[doc] = score;
+           assertTrue(score == 1.0f);
          }
        });
-    
-    float lastScore = 0.0f;
 
-    for (int i = 0; i < 4; i++) {
-      assertTrue(scores[i] > lastScore);
-      lastScore = scores[i];
-    }
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(a), false, false);
+    bq.add(new TermQuery(b), false, false);
+    //System.out.println(bq.toString("field"));
+    searcher.search
+      (bq,
+       new HitCollector() {
+         public final void collect(int doc, float score) {
+           //System.out.println("Doc=" + doc + " score=" + score);
+           assertTrue(score == (float)doc+1);
+         }
+       });
+
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(a);
+    pq.add(c);
+    //System.out.println(pq.toString("field"));
+    searcher.search
+      (pq,
+       new HitCollector() {
+         public final void collect(int doc, float score) {
+           //System.out.println("Doc=" + doc + " score=" + score);
+           assertTrue(score == 1.0f);
+         }
+       });
+
+    pq.setSlop(2);
+    //System.out.println(pq.toString("field"));
+    searcher.search
+      (pq,
+       new HitCollector() {
+         public final void collect(int doc, float score) {
+           //System.out.println("Doc=" + doc + " score=" + score);
+           assertTrue(score == 2.0f);
+         }
+       });
   }
 }

@@ -66,9 +66,11 @@ abstract class PhraseScorer extends Scorer {
   protected PhraseQueue pq;
   protected PhrasePositions first, last;
 
-  PhraseScorer(TermPositions[] tps, byte[] n, float w) throws IOException {
-    norms = n;
-    weight = w;
+  PhraseScorer(TermPositions[] tps, Similarity similarity,
+               byte[] norms, float weight) throws IOException {
+    super(similarity);
+    this.norms = norms;
+    this.weight = weight;
 
     // use PQ to build a sorted list of PhrasePositions
     pq = new PhraseQueue(tps.length);
@@ -78,6 +80,7 @@ abstract class PhraseScorer extends Scorer {
   }
 
   final void score(HitCollector results, int end) throws IOException {
+    Similarity similarity = getSimilarity();
     while (last.doc < end) {			  // find doc w/ all the terms
       while (first.doc < last.doc) {		  // scan forward in first
 	do {
@@ -92,7 +95,7 @@ abstract class PhraseScorer extends Scorer {
       float freq = phraseFreq();		  // check for phrase
 
       if (freq > 0.0) {
-	float score = Similarity.tf(freq)*weight; // compute score
+	float score = similarity.tf(freq)*weight; // compute score
 	score *= Similarity.decodeNorm(norms[first.doc]); // normalize
 	results.collect(first.doc, score);	  // add to results
       }

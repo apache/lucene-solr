@@ -113,9 +113,9 @@ public class RangeQuery extends Query
         }
     }
     
-    Scorer scorer(IndexReader reader) throws IOException
+    Scorer scorer(IndexReader reader, Similarity similarity) throws IOException
     {
-        return getQuery().scorer(reader);
+        return getQuery().scorer(reader, similarity);
     }
     
     private BooleanQuery getQuery() throws IOException

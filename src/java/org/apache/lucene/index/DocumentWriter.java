@@ -73,13 +73,16 @@ import org.apache.lucene.search.Similarity;
 final class DocumentWriter {
   private Analyzer analyzer;
   private Directory directory;
+  private Similarity similarity;
   private FieldInfos fieldInfos;
   private int maxFieldLength;
-
-  DocumentWriter(Directory d, Analyzer a, int mfl) {
-    directory = d;
-    analyzer = a;
-    maxFieldLength = mfl;
+  
+  DocumentWriter(Directory directory, Analyzer analyzer,
+                 Similarity similarity, int maxFieldLength) {
+    this.directory = directory;
+    this.analyzer = analyzer;
+    this.similarity = similarity;
+    this.maxFieldLength = maxFieldLength;
   }
 
   final void addDocument(String segment, Document doc)
@@ -320,10 +323,10 @@ final class DocumentWriter {
       if (field.isIndexed()) {
 	int n = fieldInfos.fieldNumber(field.name());
         float norm =
-          fieldBoosts[n] * Similarity.normalizeLength(fieldLengths[n]);
+          fieldBoosts[n] * similarity.lengthNorm(field.name(),fieldLengths[n]);
 	OutputStream norms = directory.createFile(segment + ".f" + n);
 	try {
-	  norms.writeByte(Similarity.encodeNorm(norm));
+	  norms.writeByte(similarity.encodeNorm(norm));
 	} finally {
 	  norms.close();
 	}

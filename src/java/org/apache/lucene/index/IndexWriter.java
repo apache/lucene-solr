@@ -68,6 +68,8 @@ import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.search.Similarity;
+
 
 /**
   An IndexWriter creates and maintains an index.
@@ -89,12 +91,28 @@ public class IndexWriter {
   private Directory directory;			  // where this index resides
   private Analyzer analyzer;			  // how to analyze text
 
+  private Similarity similarity = Similarity.getDefault(); // how to normalize
+
   private SegmentInfos segmentInfos = new SegmentInfos(); // the segments
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
 
   private Lock writeLock;
 
-  private Similarity similarity;
+  /** Expert: Set the Similarity implementation used by this IndexWriter.
+   *
+   * @see Similarity#setDefault(Similarity)
+   */
+  public void setSimilarity(Similarity similarity) {
+    this.similarity = similarity;
+  }
+
+  /** Expert: Return the Similarity implementation used by this IndexWriter.
+   *
+   * <p>This defaults to the current value of {@link Similarity#getDefault()}.
+   */
+  public Similarity getSimilarity() {
+    return this.similarity;
+  }
 
   /** Constructs an IndexWriter for the index in <code>path</code>.  Text will
     be analyzed with <code>a</code>.  If <code>create</code> is true, then a
@@ -186,7 +204,7 @@ public class IndexWriter {
   /** Adds a document to this index.*/
   public void addDocument(Document doc) throws IOException {
     DocumentWriter dw =
-      new DocumentWriter(ramDirectory, analyzer, maxFieldLength);
+      new DocumentWriter(ramDirectory, analyzer, similarity, maxFieldLength);
     String segmentName = newSegmentName();
     dw.addDocument(segmentName, doc);
     synchronized (this) {
@@ -406,14 +424,5 @@ public class IndexWriter {
       output.close();
     }
     directory.renameFile("deleteable.new", "deletable");
-  }
-
-  /**
-   * Sets the <code>Similarity</code> implementation to use.
-   *
-   * @param sim an instance of a class that implements  <code>Similarity</code
-   */
-  public void setSimilarity(Similarity sim) {
-    similarity = sim;
   }
 }

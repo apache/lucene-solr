@@ -63,21 +63,23 @@ final class TermScorer extends Scorer {
   private float weight;
   private int doc;
 
-  private final int[] docs = new int[128];	  // buffered doc numbers
-  private final int[] freqs = new int[128];	  // buffered term freqs
+  private final int[] docs = new int[32];	  // buffered doc numbers
+  private final int[] freqs = new int[32];	  // buffered term freqs
   private int pointer;
   private int pointerMax;
 
   private static final int SCORE_CACHE_SIZE = 32;
   private float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
-  TermScorer(TermDocs td, byte[] n, float w) throws IOException {
-    termDocs = td;
-    norms = n;
-    weight = w;
+  TermScorer(TermDocs td, Similarity similarity, byte[] norms, float weight)
+    throws IOException {
+    super(similarity);
+    this.termDocs = td;
+    this.norms = norms;
+    this.weight = weight;
 
     for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-      scoreCache[i] = Similarity.tf(i) * weight;
+      scoreCache[i] = getSimilarity().tf(i) * weight;
 
     pointerMax = termDocs.read(docs, freqs);	  // fill buffers
 
@@ -91,12 +93,13 @@ final class TermScorer extends Scorer {
 
   final void score(HitCollector c, final int end) throws IOException {
     int d = doc;				  // cache doc in local
+    Similarity similarity = getSimilarity();      // cache sim in local
     while (d < end) {				  // for docs in window
       final int f = freqs[pointer];
       float score =				  // compute tf(f)*weight
 	f < SCORE_CACHE_SIZE			  // check cache
 	 ? scoreCache[f]			  // cache hit
-	 : Similarity.tf(f)*weight;		  // cache miss
+	 : similarity.tf(f)*weight;		  // cache miss
 
       score *= Similarity.decodeNorm(norms[d]);	  // normalize for field
 

@@ -57,5 +57,15 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 abstract class Scorer {
+  private Similarity similarity;
+
+  protected Scorer(Similarity similarity) {
+    this.similarity = similarity;
+  }
+
+  public Similarity getSimilarity() {
+    return this.similarity;
+  }
+
   abstract void score(HitCollector hc, int maxDoc) throws IOException;
 }

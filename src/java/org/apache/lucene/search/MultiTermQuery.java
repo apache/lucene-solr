@@ -85,7 +85,6 @@ public class MultiTermQuery extends Query {
     /** Constructs a query for terms matching <code>term</code>. */
     public MultiTermQuery(Term term) {
         this.term = term;
-        this.query = query;
     }
     
     /** Set the TermEnum to be used */
@@ -105,8 +104,9 @@ public class MultiTermQuery extends Query {
         }
     }
     
-    final Scorer scorer(IndexReader reader) throws IOException {
-        return getQuery().scorer(reader);
+    final Scorer scorer(IndexReader reader, Similarity similarity)
+      throws IOException {
+      return getQuery().scorer(reader, similarity);
     }
     
     private final BooleanQuery getQuery() throws IOException {

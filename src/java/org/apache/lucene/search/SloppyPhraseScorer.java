@@ -62,10 +62,10 @@ import org.apache.lucene.index.*;
 final class SloppyPhraseScorer extends PhraseScorer {
   private int slop;
 
-  SloppyPhraseScorer(TermPositions[] tps, int s, byte[] n, float w)
-       throws IOException {
-    super(tps, n, w);
-    slop = s;
+  SloppyPhraseScorer(TermPositions[] tps, Similarity similarity,
+                     int slop, byte[] norms, float weight) throws IOException {
+    super(tps, similarity, norms, weight);
+    this.slop = slop;
   }
 
   protected final float phraseFreq() throws IOException {
@@ -94,7 +94,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
       int matchLength = end - start;
       if (matchLength <= slop)
-	freq += 1.0 / (matchLength + 1);	  // penalize longer matches
+	freq += getSimilarity().sloppyFreq(matchLength); // score match
 
       if (pp.position > end)
 	end = pp.position;

@@ -90,8 +90,8 @@ public class PrefixQuery extends Query {
     }
   }
 
-  Scorer scorer(IndexReader reader) throws IOException {
-    return getQuery().scorer(reader);
+  Scorer scorer(IndexReader reader, Similarity similarity) throws IOException {
+    return getQuery().scorer(reader, similarity);
   }
 
   private BooleanQuery getQuery() throws IOException {

@@ -147,7 +147,7 @@ public class PhrasePrefixQuery
 	_termArrays.add(terms);
     }
 
-    Scorer scorer(IndexReader reader)
+    Scorer scorer(IndexReader reader, Similarity similarity)
 	throws IOException
     {
     	if (_termArrays.size() == 0)  // optimize zero-term case
@@ -161,7 +161,7 @@ public class PhrasePrefixQuery
 	    for (int i=0; i<terms.length; i++)
 		boq.add(new TermQuery(terms[i]), false, false);
 
-	    return boq.scorer(reader);
+	    return boq.scorer(reader, similarity);
     	}
 
     	TermPositions[] tps = new TermPositions[_termArrays.size()];
@@ -182,9 +182,11 @@ public class PhrasePrefixQuery
 	}
 
 	if (_slop == 0)
-	    return new ExactPhraseScorer(tps, reader.norms(_field), _weight);
+	    return new ExactPhraseScorer(tps, similarity,
+                                         reader.norms(_field), _weight);
 	else
-	    return new SloppyPhraseScorer(tps, _slop, reader.norms(_field), _weight);
+	    return new SloppyPhraseScorer(tps, similarity, _slop,
+                                          reader.norms(_field), _weight);
     }
 
     float sumOfSquaredWeights(Searcher searcher)
@@ -195,7 +197,7 @@ public class PhrasePrefixQuery
 	{
 	    Term[] terms = (Term[])i.next();
 	    for (int j=0; j<terms.length; j++)
-		_idf += Similarity.idf(terms[j], searcher);
+		_idf += searcher.getSimilarity().idf(terms[j], searcher);
 	}
 
 	_weight = _idf * boost;

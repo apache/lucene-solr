@@ -86,18 +86,19 @@ public abstract class Query implements java.io.Serializable
     abstract void normalize(float norm);
 
     // query evaluation
-    abstract Scorer scorer(IndexReader reader) throws IOException;
+    abstract Scorer scorer(IndexReader reader, Similarity similarity)
+      throws IOException;
 
     void prepare(IndexReader reader) {}
 
     static Scorer scorer(Query query, Searcher searcher, IndexReader reader)
-	throws IOException
-    {
-	query.prepare(reader);
-	float sum = query.sumOfSquaredWeights(searcher);
-	float norm = 1.0f / (float)Math.sqrt(sum);
-	query.normalize(norm);
-	return query.scorer(reader);
+      throws IOException {
+      Similarity similarity = searcher.getSimilarity();
+      query.prepare(reader);
+      float sum = query.sumOfSquaredWeights(searcher);
+      float norm = similarity.queryNorm(sum);
+      query.normalize(norm);
+      return query.scorer(reader, similarity);
     }
 
     /**

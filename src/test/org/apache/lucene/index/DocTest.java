@@ -59,6 +59,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.File;
@@ -95,7 +96,8 @@ class DocTest {
        throws Exception {
     Directory directory = FSDirectory.getDirectory("test", false);
     Analyzer analyzer = new SimpleAnalyzer();
-    DocumentWriter writer = new DocumentWriter(directory, analyzer, 1000);
+    DocumentWriter writer =
+      new DocumentWriter(directory, analyzer, Similarity.getDefault(), 1000);
 
     File file = new File(fileName);
     Document doc = FileDocument.Document(file);

@@ -63,9 +63,6 @@ import org.apache.lucene.index.IndexReader;
  * Implements some common utility methods.
  */
 public abstract class Searcher implements Searchable {
-
-  protected Similarity similarity;
-
   /** Returns the documents matching <code>query</code>. */
   public final Hits search(Query query) throws IOException {
     return search(query, (Filter)null);
@@ -91,12 +88,22 @@ public abstract class Searcher implements Searchable {
     search(query, (Filter)null, results);
   }    
 
-  /**
-   * Sets the <code>Similarity</code> implementation to use.
+  /** The Similarity implementation used by this searcher. */
+  private Similarity similarity = Similarity.getDefault();
+
+  /** Expert: Set the Similarity implementation used by this Searcher.
    *
-   * @param sim an instance of a class that implements  <code>Similarity</code
+   * @see Similarity#setDefault(Similarity)
    */
-  public void setSimilarity(Similarity sim) {
-    similarity = sim;
+  public void setSimilarity(Similarity similarity) {
+    this.similarity = similarity;
+  }
+
+  /** Expert: Return the Similarity implementation used by this Searcher.
+   *
+   * <p>This defaults to the current value of {@link Similarity#getDefault()}.
+   */
+  public Similarity getSimilarity() {
+    return this.similarity;
   }
 }

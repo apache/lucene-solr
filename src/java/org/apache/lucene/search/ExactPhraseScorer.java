@@ -61,9 +61,9 @@ import org.apache.lucene.index.*;
 
 final class ExactPhraseScorer extends PhraseScorer {
 
-  ExactPhraseScorer(TermPositions[] tps, byte[] n, float w)
-       throws IOException {
-    super(tps, n, w);
+  ExactPhraseScorer(TermPositions[] tps, Similarity similarity,
+                    byte[] norms, float weight) throws IOException {
+    super(tps, similarity, norms, weight);
   }
 
   protected final float phraseFreq() throws IOException {
