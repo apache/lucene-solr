@@ -208,7 +208,7 @@ public final class Field implements java.io.Serializable {
   public final boolean 	isTokenized() 	{ return isTokenized; }
 
   /** True iff the term or terms used to index this field are stored as a term
-   *  vector, avaliable from {@link IndexReader#getTermFreqVector(int,String)}.
+   *  vector, available from {@link IndexReader#getTermFreqVector(int,String)}.
    *  These methods do not provide access to the original content of the field,
    *  only to terms used to index it. If the original content must be
    *  preserved, use the <code>stored</code> attribute instead.
