@@ -173,8 +173,15 @@ public class TestIndexReader extends TestCase
     }
 
 
+    public void testDeleteReaderWriterConflictUnoptimized() throws IOException{
+      deleteReaderWriterConflict(false);
+    }
+    
+    public void testDeleteReaderWriterConflictOptimized() throws IOException{
+        deleteReaderWriterConflict(true);
+    }
 
-    public void testDeleteReaderWriterConflict() throws IOException
+    private void deleteReaderWriterConflict(boolean optimize) throws IOException
     {
         //Directory dir = new RAMDirectory();
         Directory dir = getDirectory(true);
@@ -210,7 +217,8 @@ public class TestIndexReader extends TestCase
         // searchers. Because of this, deletions made via a previously open
         // reader, which would be applied to that reader's segment, are lost
         // for subsequent searchers/readers
-        writer.optimize();
+        if(optimize)
+          writer.optimize();
         writer.close();
 
         // The reader should not see the new data
@@ -288,8 +296,15 @@ public class TestIndexReader extends TestCase
         dir = getDirectory(true);
     }
 
-
-    public void testDeleteReaderReaderConflict() throws IOException
+    public void testDeleteReaderReaderConflictUnoptimized() throws IOException{
+      deleteReaderReaderConflict(false);
+    }
+    
+    public void testDeleteReaderReaderConflictOptimized() throws IOException{
+      deleteReaderReaderConflict(true);
+    }
+    
+    private void deleteReaderReaderConflict(boolean optimize) throws IOException
     {
         Directory dir = getDirectory(true);
 
@@ -307,7 +322,8 @@ public class TestIndexReader extends TestCase
             addDoc(writer, searchTerm2.text());
             addDoc(writer, searchTerm3.text());
         }
-        writer.optimize();
+        if(optimize)
+          writer.optimize();
         writer.close();
 
         // OPEN TWO READERS

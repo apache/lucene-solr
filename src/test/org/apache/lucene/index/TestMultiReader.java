@@ -70,7 +70,7 @@ public class TestMultiReader extends TestCase {
   public void testDocument() {
     try {    
       sis.read(dir);
-      MultiReader reader = new MultiReader(dir, readers);
+      MultiReader reader = new MultiReader(dir, sis, false, readers);
       assertTrue(reader != null);
       Document newDoc1 = reader.document(0);
       assertTrue(newDoc1 != null);
@@ -88,7 +88,7 @@ public class TestMultiReader extends TestCase {
   
   public void testTermVectors() {
     try {
-      MultiReader reader = new MultiReader(dir, readers);
+      MultiReader reader = new MultiReader(dir, sis, false, readers);
       assertTrue(reader != null);
     } catch (IOException e) {
       e.printStackTrace();

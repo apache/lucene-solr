@@ -73,61 +73,68 @@ public class FilterIndexReader extends IndexReader {
     public void close() throws IOException { in.close(); }
   }
 
-  protected IndexReader in;
+  protected IndexReader baseReader;
 
-  public FilterIndexReader(IndexReader in) {
-    super(in.directory());
-    segmentInfos = in.segmentInfos;
-    this.in = in;
+  /**
+   * <p>Construct a FilterIndexReader based on the specified base reader.
+   * Directory locking for delete, undeleteAll, and setNorm operations is
+   * left to the base reader.</p>
+   * <p>Note that base reader is closed if this FilterIndexReader is closed.</p>
+   * @param in specified base reader.
+   */
+  public FilterIndexReader(IndexReader baseReader) {
+    super(baseReader.directory());
+    this.baseReader = baseReader;
   }
 
   public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException {
-    return in.getTermFreqVectors(docNumber);
+    return baseReader.getTermFreqVectors(docNumber);
   }
 
   public TermFreqVector getTermFreqVector(int docNumber, String field)
           throws IOException {
-    return in.getTermFreqVector(docNumber, field);
+    return baseReader.getTermFreqVector(docNumber, field);
   }
 
-  public int numDocs() { return in.numDocs(); }
-  public int maxDoc() { return in.maxDoc(); }
+  public int numDocs() { return baseReader.numDocs(); }
+  public int maxDoc() { return baseReader.maxDoc(); }
 
-  public Document document(int n) throws IOException { return in.document(n); }
+  public Document document(int n) throws IOException { return baseReader.document(n); }
 
-  public boolean isDeleted(int n) { return in.isDeleted(n); }
-  public boolean hasDeletions() { return in.hasDeletions(); }
-  public void undeleteAll() throws IOException { in.undeleteAll(); }
+  public boolean isDeleted(int n) { return baseReader.isDeleted(n); }
+  public boolean hasDeletions() { return baseReader.hasDeletions(); }
+  protected void doUndeleteAll() throws IOException { baseReader.undeleteAll(); }
 
-  public byte[] norms(String f) throws IOException { return in.norms(f); }
+  public byte[] norms(String f) throws IOException { return baseReader.norms(f); }
   public void norms(String f, byte[] bytes, int offset) throws IOException {
-    in.norms(f, bytes, offset);
+    baseReader.norms(f, bytes, offset);
   }
-  public void setNorm(int d, String f, byte b) throws IOException {
-    in.setNorm(d, f, b);
+  protected void doSetNorm(int d, String f, byte b) throws IOException {
+    baseReader.setNorm(d, f, b);
   }
 
-  public TermEnum terms() throws IOException { return in.terms(); }
-  public TermEnum terms(Term t) throws IOException { return in.terms(t); }
+  public TermEnum terms() throws IOException { return baseReader.terms(); }
+  public TermEnum terms(Term t) throws IOException { return baseReader.terms(t); }
 
-  public int docFreq(Term t) throws IOException { return in.docFreq(t); }
+  public int docFreq(Term t) throws IOException { return baseReader.docFreq(t); }
 
-  public TermDocs termDocs() throws IOException { return in.termDocs(); }
+  public TermDocs termDocs() throws IOException { return baseReader.termDocs(); }
 
   public TermPositions termPositions() throws IOException {
-    return in.termPositions();
+    return baseReader.termPositions();
   }
 
-  protected void doDelete(int n) throws IOException { in.doDelete(n); }
-  protected void doClose() throws IOException { in.doClose(); }
+  protected void doDelete(int n) throws IOException { baseReader.delete(n); }
+  protected void doCommit() throws IOException { baseReader.commit(); }
+  protected void doClose() throws IOException { baseReader.close(); }
 
   public Collection getFieldNames() throws IOException {
-    return in.getFieldNames();
+    return baseReader.getFieldNames();
   }
 
   public Collection getFieldNames(boolean indexed) throws IOException {
-    return in.getFieldNames(indexed);
+    return baseReader.getFieldNames(indexed);
   }
 
   /**
@@ -137,6 +144,6 @@ public class FilterIndexReader extends IndexReader {
    * @return Collection of Strings indicating the names of the fields
    */
   public Collection getIndexedFieldNames(boolean storedTermVector) {
-    return in.getIndexedFieldNames(storedTermVector);
+    return baseReader.getIndexedFieldNames(storedTermVector);
   }
 }

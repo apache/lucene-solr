@@ -31,32 +31,44 @@ import org.apache.lucene.store.Directory;
  * @version $Id$
  */
 public class MultiReader extends IndexReader {
-  private IndexReader[] readers;
+  private IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private Hashtable normsCache = new Hashtable();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
 
-  /** Construct reading the named set of readers. */
-  public MultiReader(IndexReader[] readers) throws IOException {
-    this(readers.length == 0 ? null : readers[0].directory(), readers);
+ /**
+  * <p>Construct a MultiReader aggregating the named set of (sub)readers.
+  * Directory locking for delete, undeleteAll, and setNorm operations is
+  * left to the subreaders. </p>
+  * <p>Note that all subreaders are closed if this Multireader is closed.</p>
+  * @param readers set of (sub)readers
+  * @throws IOException
+  */
+  public MultiReader(IndexReader[] subReaders) throws IOException {
+    super(subReaders.length == 0 ? null : subReaders[0].directory());
+    initialize(subReaders);
   }
 
   /** Construct reading the named set of readers. */
-  public MultiReader(Directory directory, IndexReader[] readers)
+  MultiReader(Directory directory, SegmentInfos sis, boolean closeDirectory, IndexReader[] subReaders)
     throws IOException {
-    super(directory);
-    this.readers = readers;
-    starts = new int[readers.length + 1];	  // build starts array
-    for (int i = 0; i < readers.length; i++) {
+    super(directory, sis, closeDirectory);
+    initialize(subReaders);
+  }
+    
+  private void initialize(IndexReader[] subReaders) throws IOException{
+    this.subReaders = subReaders;
+    starts = new int[subReaders.length + 1];	  // build starts array
+    for (int i = 0; i < subReaders.length; i++) { 
       starts[i] = maxDoc;
-      maxDoc += readers[i].maxDoc();		  // compute maxDocs
+      maxDoc += subReaders[i].maxDoc();		  // compute maxDocs
 
-      if (readers[i].hasDeletions())
+      if (subReaders[i].hasDeletions())
         hasDeletions = true;
     }
-    starts[readers.length] = maxDoc;
+    starts[subReaders.length] = maxDoc;
   }
 
 
@@ -69,20 +81,20 @@ public class MultiReader extends IndexReader {
   public TermFreqVector[] getTermFreqVectors(int n)
           throws IOException {
     int i = readerIndex(n);			  // find segment num
-    return readers[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
+    return subReaders[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
   }
 
   public TermFreqVector getTermFreqVector(int n, String field)
           throws IOException {
     int i = readerIndex(n);			  // find segment num
-    return readers[i].getTermFreqVector(n - starts[i], field);
+    return subReaders[i].getTermFreqVector(n - starts[i], field);
   }
 
   public synchronized int numDocs() {
     if (numDocs == -1) {			  // check cache
       int n = 0;				  // cache miss--recompute
-      for (int i = 0; i < readers.length; i++)
-	n += readers[i].numDocs();		  // sum from readers
+      for (int i = 0; i < subReaders.length; i++)
+	n += subReaders[i].numDocs();		  // sum from readers
       numDocs = n;
     }
     return numDocs;
@@ -94,32 +106,32 @@ public class MultiReader extends IndexReader {
 
   public Document document(int n) throws IOException {
     int i = readerIndex(n);			  // find segment num
-    return readers[i].document(n - starts[i]);	  // dispatch to segment reader
+    return subReaders[i].document(n - starts[i]);	  // dispatch to segment reader
   }
 
   public boolean isDeleted(int n) {
     int i = readerIndex(n);			  // find segment num
-    return readers[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
+    return subReaders[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
   }
 
   public boolean hasDeletions() { return hasDeletions; }
 
-  protected synchronized void doDelete(int n) throws IOException {
+  protected void doDelete(int n) throws IOException {
     numDocs = -1;				  // invalidate cache
     int i = readerIndex(n);			  // find segment num
-    readers[i].doDelete(n - starts[i]);		  // dispatch to segment reader
+    subReaders[i].delete(n - starts[i]);		  // dispatch to segment reader
     hasDeletions = true;
   }
 
-  public void undeleteAll() throws IOException {
-    for (int i = 0; i < readers.length; i++)
-      readers[i].undeleteAll();
+  protected void doUndeleteAll() throws IOException {
+    for (int i = 0; i < subReaders.length; i++)
+      subReaders[i].undeleteAll();
     hasDeletions = false;
   }
 
   private int readerIndex(int n) {	  // find reader for doc n:
     int lo = 0;					  // search starts array
-    int hi = readers.length - 1;                  // for first element less
+    int hi = subReaders.length - 1;                  // for first element less
 
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
@@ -129,7 +141,7 @@ public class MultiReader extends IndexReader {
       else if (n > midValue)
 	lo = mid + 1;
       else {                                      // found a match
-        while (mid+1 < readers.length && starts[mid+1] == midValue) {
+        while (mid+1 < subReaders.length && starts[mid+1] == midValue) {
           mid++;                                  // scan to last match
         }
 	return mid;
@@ -144,8 +156,8 @@ public class MultiReader extends IndexReader {
       return bytes;				  // cache hit
 
     bytes = new byte[maxDoc()];
-    for (int i = 0; i < readers.length; i++)
-      readers[i].norms(field, bytes, starts[i]);
+    for (int i = 0; i < subReaders.length; i++)
+      subReaders[i].norms(field, bytes, starts[i]);
     normsCache.put(field, bytes);		  // update cache
     return bytes;
   }
@@ -156,43 +168,48 @@ public class MultiReader extends IndexReader {
     if (bytes != null)                            // cache hit
       System.arraycopy(bytes, 0, result, offset, maxDoc());
 
-    for (int i = 0; i < readers.length; i++)      // read from segments
-      readers[i].norms(field, result, offset + starts[i]);
+    for (int i = 0; i < subReaders.length; i++)      // read from segments
+      subReaders[i].norms(field, result, offset + starts[i]);
   }
 
-  public synchronized void setNorm(int n, String field, byte value)
+  protected void doSetNorm(int n, String field, byte value)
     throws IOException {
     normsCache.remove(field);                     // clear cache
     int i = readerIndex(n);			  // find segment num
-    readers[i].setNorm(n-starts[i], field, value); // dispatch
+    subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }
 
   public TermEnum terms() throws IOException {
-    return new MultiTermEnum(readers, starts, null);
+    return new MultiTermEnum(subReaders, starts, null);
   }
 
   public TermEnum terms(Term term) throws IOException {
-    return new MultiTermEnum(readers, starts, term);
+    return new MultiTermEnum(subReaders, starts, term);
   }
 
   public int docFreq(Term t) throws IOException {
     int total = 0;				  // sum freqs in segments
-    for (int i = 0; i < readers.length; i++)
-      total += readers[i].docFreq(t);
+    for (int i = 0; i < subReaders.length; i++)
+      total += subReaders[i].docFreq(t);
     return total;
   }
 
   public TermDocs termDocs() throws IOException {
-    return new MultiTermDocs(readers, starts);
+    return new MultiTermDocs(subReaders, starts);
   }
 
   public TermPositions termPositions() throws IOException {
-    return new MultiTermPositions(readers, starts);
+    return new MultiTermPositions(subReaders, starts);
+  }
+  
+  protected void doCommit() throws IOException {
+    for (int i = 0; i < subReaders.length; i++)
+      subReaders[i].commit();
   }
 
   protected synchronized void doClose() throws IOException {
-    for (int i = 0; i < readers.length; i++)
-      readers[i].close();
+    for (int i = 0; i < subReaders.length; i++)
+      subReaders[i].close();
   }
 
   /**
@@ -201,8 +218,8 @@ public class MultiReader extends IndexReader {
   public Collection getFieldNames() throws IOException {
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.length; i++) {
-      IndexReader reader = readers[i];
+    for (int i = 0; i < subReaders.length; i++) {
+      IndexReader reader = subReaders[i];
       Collection names = reader.getFieldNames();
       // iterate through the field names and add them to the set
       for (Iterator iterator = names.iterator(); iterator.hasNext();) {
@@ -219,8 +236,8 @@ public class MultiReader extends IndexReader {
   public Collection getFieldNames(boolean indexed) throws IOException {
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.length; i++) {
-      IndexReader reader = readers[i];
+    for (int i = 0; i < subReaders.length; i++) {
+      IndexReader reader = subReaders[i];
       Collection names = reader.getFieldNames(indexed);
       fieldSet.addAll(names);
     }
@@ -230,8 +247,8 @@ public class MultiReader extends IndexReader {
   public Collection getIndexedFieldNames(boolean storedTermVector) {
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.length; i++) {
-        IndexReader reader = readers[i];
+    for (int i = 0; i < subReaders.length; i++) {
+        IndexReader reader = subReaders[i];
         Collection names = reader.getIndexedFieldNames(storedTermVector);
         fieldSet.addAll(names);
     }
