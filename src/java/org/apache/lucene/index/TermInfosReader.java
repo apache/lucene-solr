@@ -33,6 +33,12 @@ final class TermInfosReader {
   private SegmentTermEnum origEnum;
   private long size;
 
+  private Term[] indexTerms = null;
+  private TermInfo[] indexInfos;
+  private long[] indexPointers;
+  
+  private SegmentTermEnum indexEnum;
+
   TermInfosReader(Directory dir, String seg, FieldInfos fis)
        throws IOException {
     directory = dir;
@@ -42,7 +48,10 @@ final class TermInfosReader {
     origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis"),
                                    fieldInfos, false);
     size = origEnum.size;
-    readIndex();
+
+    indexEnum =
+      new SegmentTermEnum(directory.openInput(segment + ".tii"),
+			  fieldInfos, true);
   }
 
   protected void finalize() {
@@ -73,28 +82,24 @@ final class TermInfosReader {
     return termEnum;
   }
 
-  Term[] indexTerms = null;
-  TermInfo[] indexInfos;
-  long[] indexPointers;
-
-  private final void readIndex() throws IOException {
-    SegmentTermEnum indexEnum =
-      new SegmentTermEnum(directory.openInput(segment + ".tii"),
-			  fieldInfos, true);
+  private final void ensureIndexIsRead() throws IOException {
+    if (indexTerms != null)                       // index already read
+      return;                                     // do nothing
     try {
-      int indexSize = (int)indexEnum.size;
+      int indexSize = (int)indexEnum.size;        // otherwise read index
 
       indexTerms = new Term[indexSize];
       indexInfos = new TermInfo[indexSize];
       indexPointers = new long[indexSize];
-
+        
       for (int i = 0; indexEnum.next(); i++) {
-	indexTerms[i] = indexEnum.term();
-	indexInfos[i] = indexEnum.termInfo();
-	indexPointers[i] = indexEnum.indexPointer;
+        indexTerms[i] = indexEnum.term();
+        indexInfos[i] = indexEnum.termInfo();
+        indexPointers[i] = indexEnum.indexPointer;
       }
     } finally {
-      indexEnum.close();
+        indexEnum.close();
+        indexEnum = null;
     }
   }
 
@@ -125,6 +130,8 @@ final class TermInfosReader {
   /** Returns the TermInfo for a Term in the set, or null. */
   TermInfo get(Term term) throws IOException {
     if (size == 0) return null;
+
+    ensureIndexIsRead();
 
     // optimize sequential access: first try scanning cached enum w/o seeking
     SegmentTermEnum enumerator = getEnum();
@@ -179,6 +186,7 @@ final class TermInfosReader {
   final long getPosition(Term term) throws IOException {
     if (size == 0) return -1;
 
+    ensureIndexIsRead();
     int indexOffset = getIndexOffset(term);
     seekEnum(indexOffset);
 

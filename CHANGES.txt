@@ -159,6 +159,13 @@ Optimizations
  7. Use uncached access to norms when merging to reduce RAM usage.
     (Bug #32847).  (Doug Cutting)
 
+ 8. Don't read term index when random-access is not required.  This
+    reduces time to open IndexReaders and they use less memory when
+    random access is not required, e.g., when merging segments.  The
+    term index is now read into memory lazily at the first
+    random-access.  (Doug Cutting)
+
+
  Infrastructure
 
  1. Lucene's source code repository has converted from CVS to
