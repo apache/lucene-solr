@@ -16,8 +16,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 /** @deprecated Use {@link IndexOutput} or {@link BufferedIndexOutput}
  * instead.*/
 public abstract class OutputStream extends BufferedIndexOutput {
