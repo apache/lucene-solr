@@ -71,7 +71,7 @@ import org.apache.lucene.index.IndexReader;
   <li><a href="doc/lucene.queryParser.QueryParser.html">QueryParser</a>
   </ul>
   */
-abstract public class Query {
+abstract public class Query implements java.io.Serializable {
 
   // query boost factor
   protected float boost = 1.0f;
