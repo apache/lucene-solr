@@ -89,7 +89,7 @@ public class TestQueryParser extends TestCase {
       super(f, a);
     }
 
-    protected Query getFuzzyQuery(String field, String termStr) throws ParseException {
+    protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException {
       throw new ParseException("Fuzzy queries not allowed");
     }
 
@@ -235,15 +235,29 @@ public class TestQueryParser extends TestCase {
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~");
-    assertQueryEquals("term~^2", null, "term^2.0~");
-    assertQueryEquals("term^2~", null, "term^2.0~");
+    assertQueryEquals("term~", null, "term~0.5");
+    assertQueryEquals("term~0.7", null, "term~0.7");
+    assertQueryEquals("term~^2", null, "term^2.0~0.5");
+    assertQueryEquals("term^2~", null, "term^2.0~0.5");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
     assertTrue(getQuery("term*", null) instanceof PrefixQuery);
     assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
     assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
+    assertTrue(getQuery("term~0.7", null) instanceof FuzzyQuery);
+    FuzzyQuery fq = (FuzzyQuery)getQuery("term~0.7", null);
+    assertEquals(0.7f, fq.getMinSimilarity(), 0.1f);
+    assertEquals(0, fq.getPrefixLength());
+    fq = (FuzzyQuery)getQuery("term~", null);
+    assertEquals(0.5f, fq.getMinSimilarity(), 0.1f);
+    assertEquals(0, fq.getPrefixLength());
+    try {
+      getQuery("term~1.1", null);   // value > 1, throws exception
+      fail();
+    } catch(ParseException pe) {
+      // expected exception
+    }
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
 /* Tests to see that wild card terms are (or are not) properly
@@ -317,7 +331,8 @@ public class TestQueryParser extends TestCase {
 
   public void testEscaped() throws Exception {
     Analyzer a = new WhitespaceAnalyzer();
- /*   assertQueryEquals("\\[brackets", a, "\\[brackets");
+    
+    /*assertQueryEquals("\\[brackets", a, "\\[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
     assertQueryEquals("\\\\", a, "\\\\");
     assertQueryEquals("\\+blah", a, "\\+blah");
@@ -337,38 +352,40 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("\\~blah", a, "\\~blah");
     assertQueryEquals("\\*blah", a, "\\*blah");
     assertQueryEquals("\\?blah", a, "\\?blah");
-    assertQueryEquals("foo \\&& bar", a, "foo \\&& bar");
-    assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
-    assertQueryEquals("foo \\AND bar", a, "foo \\AND bar"); */
+    //assertQueryEquals("foo \\&\\& bar", a, "foo \\&\\& bar");
+    //assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
+    //assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");*/
 
-	assertQueryEquals("a\\-b:c",a,"a-b:c");
-	assertQueryEquals("a\\+b:c",a,"a+b:c");
-	assertQueryEquals("a\\:b:c",a,"a:b:c");
-	assertQueryEquals("a\\\\b:c",a,"a\\b:c");
+    assertQueryEquals("a\\-b:c", a, "a-b:c");
+    assertQueryEquals("a\\+b:c", a, "a+b:c");
+    assertQueryEquals("a\\:b:c", a, "a:b:c");
+    assertQueryEquals("a\\\\b:c", a, "a\\b:c");
 
-	assertQueryEquals("a:b\\-c",a,"a:b-c");
-	assertQueryEquals("a:b\\+c",a,"a:b+c");
-	assertQueryEquals("a:b\\:c",a,"a:b:c");
-	assertQueryEquals("a:b\\\\c",a,"a:b\\c");
+    assertQueryEquals("a:b\\-c", a, "a:b-c");
+    assertQueryEquals("a:b\\+c", a, "a:b+c");
+    assertQueryEquals("a:b\\:c", a, "a:b:c");
+    assertQueryEquals("a:b\\\\c", a, "a:b\\c");
 
-	assertQueryEquals("a:b\\-c*",a,"a:b-c*");
-	assertQueryEquals("a:b\\+c*",a,"a:b+c*");
-	assertQueryEquals("a:b\\:c*",a,"a:b:c*");
-	assertQueryEquals("a:b\\\\c*",a,"a:b\\c*");
+    assertQueryEquals("a:b\\-c*", a, "a:b-c*");
+    assertQueryEquals("a:b\\+c*", a, "a:b+c*");
+    assertQueryEquals("a:b\\:c*", a, "a:b:c*");
 
-	assertQueryEquals("a:b\\-?c",a,"a:b-?c");
-	assertQueryEquals("a:b\\+?c",a,"a:b+?c");
-	assertQueryEquals("a:b\\:?c",a,"a:b:?c");
-	assertQueryEquals("a:b\\\\?c",a,"a:b\\?c");
+    assertQueryEquals("a:b\\\\c*", a, "a:b\\c*");
 
-	assertQueryEquals("a:b\\-c~",a,"a:b-c~");
-	assertQueryEquals("a:b\\+c~",a,"a:b+c~");
-	assertQueryEquals("a:b\\:c~",a,"a:b:c~");
-	assertQueryEquals("a:b\\\\c~",a,"a:b\\c~");
+    assertQueryEquals("a:b\\-?c", a, "a:b-?c");
+    assertQueryEquals("a:b\\+?c", a, "a:b+?c");
+    assertQueryEquals("a:b\\:?c", a, "a:b:?c");
 
-	assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
-	assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
-	assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
+    assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
+
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~0.5");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~0.5");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~0.5");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~0.5");
+
+    assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
+    assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
+    assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
   }
 
   public void testTabNewlineCarriageReturn()

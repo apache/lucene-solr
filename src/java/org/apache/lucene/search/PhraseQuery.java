@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexReader;
 public class PhraseQuery extends Query {
   private String field;
   private Vector terms = new Vector();
+  private Vector positions = new Vector();
   private int slop = 0;
 
   /** Constructs an empty phrase query. */
@@ -52,20 +53,50 @@ public class PhraseQuery extends Query {
   /** Returns the slop.  See setSlop(). */
   public int getSlop() { return slop; }
 
-  /** Adds a term to the end of the query phrase. */
+  /**
+   * Adds a term to the end of the query phrase.
+   * The relative position of the term is the one immediately after the last term added.
+   */
   public void add(Term term) {
-    if (terms.size() == 0)
-      field = term.field();
-    else if (term.field() != field)
-      throw new IllegalArgumentException
-	("All phrase terms must be in the same field: " + term);
-
-    terms.addElement(term);
+    int position = 0;
+    if(positions.size() > 0)
+        position = ((Integer) positions.lastElement()).intValue() + 1;
+    
+    add(term, position);
+  }
+  
+  /**
+   * Adds a term to the end of the query phrase.
+   * The relative position of the term within the phrase is specified explicitly.
+   * This allows e.g. phrases with more than one term at the same position
+   * or phrases with gaps (e.g. in connection with stopwords).
+   * 
+   * @param term
+   * @param position
+   */
+  public void add(Term term, int position) {
+      if (terms.size() == 0)
+          field = term.field();
+      else if (term.field() != field)
+          throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
+      
+      terms.addElement(term);
+      positions.addElement(new Integer(position));
   }
 
   /** Returns the set of terms in this phrase. */
   public Term[] getTerms() {
     return (Term[])terms.toArray(new Term[0]);
+  }
+  
+  /**
+   * Returns the relative positions of terms in this phrase.
+   */
+  public int[] getPositions() {
+      int[] result = new int[positions.size()];
+      for(int i = 0; i < positions.size(); i++)
+          result[i] = ((Integer) positions.elementAt(i)).intValue();
+      return result;
   }
 
   private class PhraseWeight implements Weight {
@@ -109,11 +140,11 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0)				  // optimize exact case
-        return new ExactPhraseScorer(this, tps, getSimilarity(searcher),
+        return new ExactPhraseScorer(this, tps, getPositions(), getSimilarity(searcher),
                                      reader.norms(field));
       else
         return
-          new SloppyPhraseScorer(this, tps, getSimilarity(searcher), slop,
+          new SloppyPhraseScorer(this, tps, getPositions(), getSimilarity(searcher), slop,
                                  reader.norms(field));
       
     }
@@ -244,14 +275,16 @@ public class PhraseQuery extends Query {
     PhraseQuery other = (PhraseQuery)o;
     return (this.getBoost() == other.getBoost())
       && (this.slop == other.slop)
-      &&  this.terms.equals(other.terms);
+      &&  this.terms.equals(other.terms)
+      && this.positions.equals(other.positions);
   }
 
   /** Returns a hash code value for this object.*/
   public int hashCode() {
     return Float.floatToIntBits(getBoost())
       ^ Float.floatToIntBits(slop)
-      ^ terms.hashCode();
+      ^ terms.hashCode()
+      ^ positions.hashCode();
   }
 
 }

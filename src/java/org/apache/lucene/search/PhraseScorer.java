@@ -32,8 +32,9 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq;
 
-  PhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
-               byte[] norms) throws IOException {
+
+  PhraseScorer(Weight weight, TermPositions[] tps, int[] positions, Similarity similarity,
+               byte[] norms) {
     super(similarity);
     this.norms = norms;
     this.weight = weight;
@@ -41,7 +42,7 @@ abstract class PhraseScorer extends Scorer {
 
     // convert tps to a list
     for (int i = 0; i < tps.length; i++) {
-      PhrasePositions pp = new PhrasePositions(tps[i], i);
+      PhrasePositions pp = new PhrasePositions(tps[i], positions[i]);
       if (last != null) {			  // add next to end of list
         last.next = pp;
       } else

@@ -90,11 +90,15 @@ public class IndexSearcher extends Searcher {
     final HitQueue hq = new HitQueue(nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
+        private float minScore = 0.0f;
 	public final void collect(int doc, float score) {
 	  if (score > 0.0f &&			  // ignore zeroed buckets
 	      (bits==null || bits.get(doc))) {	  // skip docs not in bits
 	    totalHits[0]++;
-            hq.insert(new ScoreDoc(doc, score));
+            if (hq.size() < nDocs || score >= minScore) {
+              hq.insert(new ScoreDoc(doc, score));
+              minScore = ((ScoreDoc)hq.top()).score; // maintain minScore
+            }
 	  }
 	}
       });

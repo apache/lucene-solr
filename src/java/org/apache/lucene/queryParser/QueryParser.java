@@ -73,6 +73,7 @@ public class QueryParser implements QueryParserConstants {
   Analyzer analyzer;
   String field;
   int phraseSlop = 0;
+  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
@@ -113,6 +114,33 @@ public class QueryParser implements QueryParserConstants {
     catch (BooleanQuery.TooManyClauses tmc) {
       throw new ParseException("Too many boolean clauses");
     }
+  }
+
+   /**
+   * @return Returns the analyzer.
+   */
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
+
+  /**
+   * @return Returns the field.
+   */
+  public String getField() {
+    return field;
+  }
+
+   /**
+   * Get the default minimal similarity for fuzzy queries.
+   */
+  public float getFuzzyMinSim() {
+      return fuzzyMinSim;
+  }
+  /**
+   *Set the default minimum similarity for fuzzy queries.
+   */
+  public void setFuzzyMinSim(float fuzzyMinSim) {
+      this.fuzzyMinSim = fuzzyMinSim;
   }
 
   /**
@@ -172,18 +200,18 @@ public class QueryParser implements QueryParserConstants {
     return locale;
   }
 
-  protected void addClause(Vector clauses, int conj, int mods, Query q) {
+   protected void addClause(Vector clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
     // If this term is introduced by AND, make the preceding term required,
     // unless it's already prohibited
-    if (conj == CONJ_AND) {
+    if (clauses.size() > 0 && conj == CONJ_AND) {
       BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
       if (!c.prohibited)
         c.required = true;
     }
 
-    if (operator == DEFAULT_OPERATOR_AND && conj == CONJ_OR) {
+    if (clauses.size() > 0 && operator == DEFAULT_OPERATOR_AND && conj == CONJ_OR) {
       // If this term is introduced by OR, make the preceding term optional,
       // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
       // notice if the input is a OR b, first term is parsed as required; without
@@ -216,11 +244,23 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyser. This method will be deprecated and substituted
+   * by {@link #getFieldQuery(String, String)} in future versions of Lucene.
+   * Currently overwriting either of these methods works.
+   *
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getFieldQuery(String field,
-                                Analyzer analyzer,
-                                String queryText)  throws ParseException {
+                                                    Analyzer analyzer,
+                                                    String queryText)  throws ParseException {
+    return getFieldQuery(field, queryText);
+  }
+
+  /**
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -262,17 +302,34 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,Analyzer,String)}.
+   * Base implementation delegates to {@link #getFieldQuery(String, Analyzer, String)}.
+   * This method may be overwritten, for example, to return
+   * a SpanNearQuery instead of a PhraseQuery.
+   *  
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyser. This method will be deprecated and substituted
+   * by {@link #getFieldQuery(String, String, int)} in future versions of Lucene.
+   * Currently overwriting either of these methods works.
+   *
+   *  @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getFieldQuery(String field,
+                                                    Analyzer analyzer,
+                                                    String queryText,
+                                                    int slop) throws ParseException {
+    return getFieldQuery(field, queryText, slop);
+  }
+
+  /**
+   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field,
-                                Analyzer analyzer,
-                                String queryText,
-                                int slop)  throws ParseException {
-    Query query = getFieldQuery(field, analyzer, queryText);
+  protected Query getFieldQuery(String field, String queryText, int slop)
+        throws ParseException {
+    Query query = getFieldQuery(field, queryText);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -282,10 +339,25 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
+   * Note that parameter analyzer is ignored. Calls inside the parser always
+   * use class member analyser. This method will be deprecated and substituted
+   * by {@link #getRangeQuery(String, String, String, boolean)} in future versions of Lucene.
+   * Currently overwriting either of these methods works.
+   *
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getRangeQuery(String field,
-                                Analyzer analyzer,
+      Analyzer analyzer,
+      String part1,
+      String part2,
+      boolean inclusive) throws ParseException {
+    return getRangeQuery(field, part1, part2, inclusive);
+  }
+
+  /**
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getRangeQuery(String field,
                                 String part1,
                                 String part2,
                                 boolean inclusive) throws ParseException
@@ -400,10 +472,26 @@ public class QueryParser implements QueryParserConstants {
    * @return Resulting {@link Query} built for the term
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFuzzyQuery(String field, String termStr) throws ParseException
+  protected Query getFuzzyQuery(String field, String termStr) throws ParseException {
+    return getFuzzyQuery(field, termStr, fuzzyMinSim);
+  }
+
+  /**
+   * Factory method for generating a query (similar to
+   * ({@link #getWildcardQuery}). Called when parser parses
+   * an input term token that has the fuzzy suffix (~floatNumber) appended.
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token to use for building term for the query
+   * @param minSimilarity the minimum similarity required for a fuzzy match
+   *
+   * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     Term t = new Term(field, termStr);
-    return new FuzzyQuery(t);
+    return new FuzzyQuery(t, minSimilarity);
   }
 
   /**
@@ -420,6 +508,25 @@ public class QueryParser implements QueryParserConstants {
       }
     }
     return new String(caDest, 0, j);
+  }
+
+  /**
+   * Returns a String where those characters that QueryParser
+   * expects to be escaped are escaped, i.e. preceded by a <code>\</code>.
+   */
+  public static String escape(String s) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      // NOTE: keep this in sync with _ESCAPED_CHAR below!
+      if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+        || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+        || c == '*' || c == '?') {
+        sb.append('\\');
+      }
+      sb.append(c);
+    }
+    return sb.toString();
   }
 
   public static void main(String[] args) throws Exception {
@@ -587,7 +694,7 @@ public class QueryParser implements QueryParserConstants {
   }
 
   final public Query Term(String field) throws ParseException {
-  Token term, boost=null, slop=null, goop1, goop2;
+  Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
@@ -619,9 +726,9 @@ public class QueryParser implements QueryParserConstants {
         throw new ParseException();
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case FUZZY:
-        jj_consume_token(FUZZY);
-                 fuzzy=true;
+      case FUZZY_SLOP:
+        fuzzySlop = jj_consume_token(FUZZY_SLOP);
+                                fuzzy=true;
         break;
       default:
         jj_la1[8] = jj_gen;
@@ -632,9 +739,9 @@ public class QueryParser implements QueryParserConstants {
         jj_consume_token(CARAT);
         boost = jj_consume_token(NUMBER);
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-        case FUZZY:
-          jj_consume_token(FUZZY);
-                                          fuzzy=true;
+        case FUZZY_SLOP:
+          fuzzySlop = jj_consume_token(FUZZY_SLOP);
+                                                         fuzzy=true;
           break;
         default:
           jj_la1[9] = jj_gen;
@@ -653,7 +760,17 @@ public class QueryParser implements QueryParserConstants {
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
        } else if (fuzzy) {
-         q = getFuzzyQuery(field, termImage);
+          float fms = fuzzyMinSim;
+          try {
+            fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+          } catch (Exception ignored) { }
+         if(fms < 0.0f || fms > 1.0f){
+           {if (true) throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");}
+         }
+         if(fms == fuzzyMinSim)
+           q = getFuzzyQuery(field, termImage);
+         else
+           q = getFuzzyQuery(field, termImage, fms);
        } else {
          q = getFieldQuery(field, analyzer, termImage);
        }
@@ -774,8 +891,8 @@ public class QueryParser implements QueryParserConstants {
     case QUOTED:
       term = jj_consume_token(QUOTED);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case SLOP:
-        slop = jj_consume_token(SLOP);
+      case FUZZY_SLOP:
+        fuzzySlop = jj_consume_token(FUZZY_SLOP);
         break;
       default:
         jj_la1[19] = jj_gen;
@@ -792,15 +909,13 @@ public class QueryParser implements QueryParserConstants {
       }
          int s = phraseSlop;
 
-         if (slop != null) {
+         if (fuzzySlop != null) {
            try {
-             s = Float.valueOf(slop.image.substring(1)).intValue();
+             s = Float.valueOf(fuzzySlop.image.substring(1)).intValue();
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, analyzer,
-                           term.image.substring(1, term.image.length()-1),
-                           s);
+         q = getFieldQuery(field, analyzer, term.image.substring(1, term.image.length()-1), s);
       break;
     default:
       jj_la1[21] = jj_gen;
@@ -850,16 +965,11 @@ public class QueryParser implements QueryParserConstants {
   private int jj_gen;
   final private int[] jj_la1 = new int[22];
   static private int[] jj_la1_0;
-  static private int[] jj_la1_1;
   static {
       jj_la1_0();
-      jj_la1_1();
    }
    private static void jj_la1_0() {
-      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0x1f31f80,0x8000,0x1f31000,0x1320000,0x40000,0x40000,0x8000,0x18000000,0x2000000,0x18000000,0x8000,0x80000000,0x20000000,0x80000000,0x8000,0x80000,0x8000,0x1f30000,};
-   }
-   private static void jj_la1_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x0,0x0,0x0,};
+      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0xfb1f80,0x8000,0xfb1000,0x9a0000,0x40000,0x40000,0x8000,0xc000000,0x1000000,0xc000000,0x8000,0xc0000000,0x10000000,0xc0000000,0x8000,0x40000,0x8000,0xfb0000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -1008,8 +1118,8 @@ public class QueryParser implements QueryParserConstants {
 
   public ParseException generateParseException() {
     jj_expentries.removeAllElements();
-    boolean[] la1tokens = new boolean[33];
-    for (int i = 0; i < 33; i++) {
+    boolean[] la1tokens = new boolean[32];
+    for (int i = 0; i < 32; i++) {
       la1tokens[i] = false;
     }
     if (jj_kind >= 0) {
@@ -1022,13 +1132,10 @@ public class QueryParser implements QueryParserConstants {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
             la1tokens[j] = true;
           }
-          if ((jj_la1_1[i] & (1<<j)) != 0) {
-            la1tokens[32+j] = true;
-          }
         }
       }
     }
-    for (int i = 0; i < 33; i++) {
+    for (int i = 0; i < 32; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

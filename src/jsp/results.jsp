@@ -1,19 +1,29 @@
-<%@ page import = "  javax.servlet.*, javax.servlet.http.*, java.io.*, org.apache.lucene.analysis.*, org.apache.lucene.document.*, org.apache.lucene.index.*, org.apache.lucene.search.*, org.apache.lucene.queryParser.*, org.apache.lucene.demo.*, org.apache.lucene.demo.html.Entities" %>
+<%@ page import = "  javax.servlet.*, javax.servlet.http.*, java.io.*, org.apache.lucene.analysis.*, org.apache.lucene.document.*, org.apache.lucene.index.*, org.apache.lucene.search.*, org.apache.lucene.queryParser.*, org.apache.lucene.demo.*, org.apache.lucene.demo.html.Entities, java.net.URLEncoder" %>
 
 <%
 /*
         Author: Andrew C. Oliver, SuperLink Software, Inc. (acoliver2@users.sourceforge.net)
 
-        This jsp page is deliberatly written in the horrble java directly embedded 
-        in the page style for an easy and conceise demonstration of Lucene.
+        This jsp page is deliberatly written in the horrible java directly embedded 
+        in the page style for an easy and concise demonstration of Lucene.
         Due note...if you write pages that look like this...sooner or later
-        you'll have a maintenance nightmere.  If you use jsps...use taglibs
+        you'll have a maintenance nightmare.  If you use jsps...use taglibs
         and beans!  That being said, this should be acceptable for a small
         page demonstrating how one uses Lucene in a web app. 
 
         This is also deliberately overcommented. ;-)
 
 */
+%>
+<%!
+public String escapeHTML(String s) {
+  s = s.replaceAll("&", "&amp;");
+  s = s.replaceAll("<", "&lt;");
+  s = s.replaceAll(">", "&gt;");
+  s = s.replaceAll("\"", "&quot;");
+  s = s.replaceAll("'", "&apos;");
+  return s;
+}
 %>
 <%@include file="header.jsp"%>
 <%
@@ -40,7 +50,7 @@
                                                         //or otherwise corrupt index
 %>
                 <p>ERROR opening the Index - contact sysadmin!</p>
-                <p>While parsing query: <%=e.getMessage()%></p>   
+                <p>Error message: <%=escapeHTML(e.getMessage())%></p>   
 <%                error = true;                                  //don't do anything up to the footer
         }
 %>
@@ -68,11 +78,11 @@
                         query = QueryParser.parse(queryString, "contents", analyzer); //parse the 
                 } catch (ParseException e) {                          //query and construct the Query
                                                                       //object
-                                                                      //if its just "operator error"
+                                                                      //if it's just "operator error"
                                                                       //send them a nice error HTML
                                                                       
 %>
-                        <p>Error While parsing query: <%=e.getMessage()%></p>
+                        <p>Error while parsing query: <%=escapeHTML(e.getMessage())%></p>
 <%
                         error = true;                                 //don't bother with the rest of
                                                                       //the page
@@ -126,9 +136,10 @@
 <%                if ( (startindex + maxpage) < hits.length()) {   //if there are more results...display 
                                                                    //the more link
 
-                        String moreurl="results.jsp?query=" + queryString +  //construct the "more" link
-                                       "&maxresults=" + maxpage + 
-                                       "&startat=" + (startindex + maxpage);
+                        String moreurl="results.jsp?query=" + 
+                                       URLEncoder.encode(queryString) +  //construct the "more" link
+                                       "&amp;maxresults=" + maxpage + 
+                                       "&amp;startat=" + (startindex + maxpage);
 %>
                 <tr>
                         <td></td><td><a href="<%=moreurl%>">More Results>></a></td>
