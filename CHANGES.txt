@@ -102,6 +102,12 @@ $Id$
     low-frequency terms, where the cost of dictionary lookup can be
     significant. (cutting)
 
+23. The JSP demo page (src/jsp/results.jsp) now properly escapes error
+    messages which might contain user input (e.g. error messages about 
+    query parsing). If you used that page as a starting point for your
+    own code please make sure your code also properly escapes HTML
+    characters from user input in order to avoid so-called cross site
+    scripting attacks. (Daniel Naber)
 
 1.4.1
 
