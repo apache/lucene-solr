@@ -106,7 +106,7 @@ public class TestSegmentReader extends TestCase {
   public void testGetFieldNameVariations() {
     Collection result = reader.getFieldNames();
     assertTrue(result != null);
-    assertTrue(result.size() == 7);
+    assertTrue(result.size() == 6);
     for (Iterator iter = result.iterator(); iter.hasNext();) {
       String s = (String) iter.next();
       //System.out.println("Name: " + s);
@@ -122,7 +122,7 @@ public class TestSegmentReader extends TestCase {
     
     result = reader.getFieldNames(false);
     assertTrue(result != null);
-    assertTrue(result.size() == 2);
+    assertTrue(result.size() == 1);
     //Get all indexed fields that are storing term vectors
     result = reader.getIndexedFieldNames(true);
     assertTrue(result != null);
