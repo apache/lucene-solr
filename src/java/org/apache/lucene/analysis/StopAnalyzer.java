@@ -27,7 +27,7 @@ public final class StopAnalyzer extends Analyzer {
   /** An array containing some common English words that are not usually useful
     for searching. */
   public static final String[] ENGLISH_STOP_WORDS = {
-    "a", "and", "are", "as", "at", "be", "but", "by",
+    "a", "an", "and", "are", "as", "at", "be", "but", "by",
     "for", "if", "in", "into", "is", "it",
     "no", "not", "of", "on", "or", "s", "such",
     "t", "that", "the", "their", "then", "there", "these",

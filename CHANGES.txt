@@ -2,6 +2,12 @@ Lucene Change Log
 
 $Id$
 
+1.4 RC4
+
+ 1. Added "an" to the list of stop words in StopAnalyzer, to complement
+    the existing "a" there.  Fix for bug 28960
+     (http://issues.apache.org/bugzilla/show_bug.cgi?id=28960). (Otis)
+
 1.4 RC3
 
  1. Fixed several search bugs introduced by the skipTo() changes in
