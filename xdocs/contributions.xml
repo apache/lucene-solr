@@ -328,6 +328,28 @@
                     </tr>
                 </table>
             </subsection>
+             <subsection name="Phonetix">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html">
+                                http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            tangentum technologies
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
         </section>
     </body>
 </document>
