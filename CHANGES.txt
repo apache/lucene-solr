@@ -21,6 +21,10 @@ $Id$
     UTF-8 and changed the build encoding to UTF-8, to make changed files
     compile. (Otis Gospodnetic)
 
+ 5. Removed synchronization from term lookup under IndexReader methods
+    termFreq(), termDocs() or termPositions() to improve
+    multi-threaded performance.  (cutting)
+
 
 1.4 RC3
 
