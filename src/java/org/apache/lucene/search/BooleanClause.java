@@ -1,5 +1,8 @@
 package org.apache.lucene.search;
 
+import java.io.ObjectStreamException;
+import java.io.StreamCorruptedException;
+
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -21,14 +24,19 @@ public class BooleanClause implements java.io.Serializable {
   
   public static final class Occur implements java.io.Serializable {
     
+    private int id;
     private String name;
+    private static final int MUST_ID = 0;
+    private static final int MUST_NOT_ID = 1;
+    private static final int SHOULD_ID = 2;
     
     private Occur() {
       // typesafe enum pattern, no public constructor
     }
     
-    private Occur(String name) {
+    private Occur(int id, String name) {
       // typesafe enum pattern, no public constructor
+      this.id = id;
       this.name = name;
     }
     
@@ -37,15 +45,36 @@ public class BooleanClause implements java.io.Serializable {
     }
 
     /** Use this operator for terms that <i>must</i> appear in the matching documents. */
-    public static final Occur MUST = new Occur("MUST");
+    public static final Occur MUST = new Occur(MUST_ID, "MUST");
     /** Use this operator for terms of which <i>should</i> appear in the 
      * matching documents. For a BooleanQuery with two <code>SHOULD</code> 
      * subqueries, at least one of the queries must appear in the matching documents. */
-    public static final Occur SHOULD = new Occur("SHOULD");
+    public static final Occur SHOULD = new Occur(SHOULD_ID, "SHOULD");
     /** Use this operator for terms that <i>must not</i> appear in the matching documents.
      * Note that it is not possible to search for queries that only consist
      * of a <code>MUST_NOT</code> query. */
-    public static final Occur MUST_NOT = new Occur("MUST_NOT");
+    public static final Occur MUST_NOT = new Occur(MUST_NOT_ID, "MUST_NOT");
+    
+    /**
+     * Resolves the deserialized instance to the local reference for accurate
+     * equals() and == comparisons.
+     * 
+     * @return a reference to Occur as resolved in the local VM
+     * @throws ObjectStreamException
+     */
+    private Object readResolve() throws ObjectStreamException {
+      int id = ((Occur) this).id;
+      switch (id) {
+        case MUST_ID :
+          return Occur.MUST;
+        case MUST_NOT_ID :
+          return Occur.MUST_NOT;
+        case SHOULD_ID:
+          return Occur.SHOULD;
+        default :
+          throw new StreamCorruptedException("Unknown id " + id);
+      }
+    }
     
   }
 
