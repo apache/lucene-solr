@@ -259,9 +259,11 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <target name="test" depends="compile-test" if="junit.present">
     <mkdir dir="${junit.reports}"/>
-    <junit printsummary="off" haltonfailure="no">
+    <junit printsummary="off" haltonfailure="no"
+      errorProperty="tests.failed" failureProperty="tests.failed">
       <classpath refid="junit.classpath"/>
       <formatter type="plain"/>
+      <formatter type="xml"/>
       <formatter type="brief" usefile="false"/>
       <batchtest fork="yes" todir="${junit.reports}" unless="testcase">
         <fileset dir="${junit.src}" includes="**/Test*.java"/>
@@ -270,10 +272,22 @@ Implementation-Vendor: Lucene
         <fileset dir="${junit.src}" includes="**/${testcase}.java"/>
       </batchtest>
     </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
   </target>
 
   <!-- backwards compatible target - may be removed -->
   <target name="test-unit" depends="test"/>
+
+  <target name="generate-test-reports" description="Generate test reports">
+    <mkdir dir="${junit.reports}/html"/>
+    <junitreport todir="${junit.reports}">
+      <fileset dir="${junit.reports}">
+        <include name="TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${junit.reports}/html"/>
+    </junitreport>
+  </target>
 
   <!-- ================================================================== -->
   <!-- D O C U M E N T A T I O N                                          -->
