@@ -70,12 +70,12 @@ public class TestIndexReader extends TestCase
         // add more documents
         writer = new IndexWriter(d, new StandardAnalyzer(), false);
         // want to get some more segments here
-        for (int i = 0; i < 5*writer.mergeFactor; i++)
+        for (int i = 0; i < 5*writer.getMergeFactor(); i++)
         {
             addDocumentWithFields(writer);
         }
         // new fields are in some different segments (we hope)
-        for (int i = 0; i < 5*writer.mergeFactor; i++)
+        for (int i = 0; i < 5*writer.getMergeFactor(); i++)
         {
             addDocumentWithDifferentFields(writer);
         }
