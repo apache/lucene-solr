@@ -69,6 +69,8 @@
                 <li><a href="http://sourceforge.net/projects/lucenedotnet">Lucene.net</a>
                     <br/> - .NET implementation of Lucene
                 </li>
+                <li><a href="http://pylucene.osafoundation.org">pylucene</a><br/> - Python implementation of Lucene
+                </li>
                 <li><a href="http://www.divmod.org/Lupy/">Lupy</a>
                     <br/> - Python implementation of Lucene
                 </li>
