@@ -100,7 +100,7 @@ class SegmentReader extends IndexReader {
                            SegmentReader.class.getName());
       IMPL = Class.forName(name);
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e.getMessage());
+      throw new RuntimeException("cannot load SegmentReader class: " + e.toString());
     }
   }
 
@@ -123,7 +123,7 @@ class SegmentReader extends IndexReader {
     try {
       instance = (SegmentReader)IMPL.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e.getMessage());
+      throw new RuntimeException("cannot load SegmentReader class: " + e.toString());
     }
     instance.init(dir, sis, closeDir, ownDir);
     instance.initialize(si);
