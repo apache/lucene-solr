@@ -76,6 +76,8 @@ public class TermQuery extends Query {
       this.searcher = searcher;
     }
 
+    public String toString() { return "weight(" + TermQuery.this + ")"; }
+
     public Query getQuery() { return TermQuery.this; }
     public float getValue() { return value; }
 

@@ -130,7 +130,7 @@ final class BooleanScorer extends Scorer {
   public int doc() { return current.doc; }
 
   public boolean next() throws IOException {
-    boolean more = false;
+    boolean more;
     do {
       while (bucketTable.first != null) {         // more queued
         current = bucketTable.first;
@@ -144,6 +144,7 @@ final class BooleanScorer extends Scorer {
       }
 
       // refill the queue
+      more = false;
       end += BucketTable.SIZE;
       for (SubScorer sub = scorers; sub != null; sub = sub.next) {
         Scorer scorer = sub.scorer;
@@ -152,10 +153,11 @@ final class BooleanScorer extends Scorer {
           sub.done = !scorer.next();
         }
         if (!sub.done) {
-          more  = true;
+          more = true;
         }
       }
     } while (bucketTable.first != null | more);
+
     return false;
   }
 
@@ -246,5 +248,17 @@ final class BooleanScorer extends Scorer {
   public Explanation explain(int doc) throws IOException {
     throw new UnsupportedOperationException();
   }
+
+  public String toString() {
+    StringBuffer buffer = new StringBuffer();
+    buffer.append("boolean(");
+    for (SubScorer sub = scorers; sub != null; sub = sub.next) {
+      buffer.append(sub.scorer.toString());
+      buffer.append(" ");
+    }
+    buffer.append(")");
+    return buffer.toString();
+  }
+
 
 }

@@ -157,4 +157,7 @@ final class TermScorer extends Scorer {
     
     return tfExplanation;
   }
+
+  public String toString() { return "scorer(" + weight + ")"; }
+
 }

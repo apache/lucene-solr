@@ -117,6 +117,8 @@ public class PhraseQuery extends Query {
       this.searcher = searcher;
     }
 
+    public String toString() { return "weight(" + PhraseQuery.this + ")"; }
+
     public Query getQuery() { return PhraseQuery.this; }
     public float getValue() { return value; }
 

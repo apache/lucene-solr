@@ -183,4 +183,6 @@ abstract class PhraseScorer extends Scorer {
     return tfExplanation;
   }
 
+  public String toString() { return "scorer(" + weight + ")"; }
+
 }
