@@ -74,6 +74,9 @@ import java.io.IOException;
 public abstract class Lock {
   public static long LOCK_POLL_INTERVAL = 1000;
     
+  private static final String LOCK_DIR =
+    System.getProperty("org.apache.lucene.lockdir",
+      System.getProperty("java.io.tmpdir"));
 
   /** Attempts to obtain exclusive access and immediately return
    *  upon success or failure.

@@ -49,14 +49,31 @@ import org.apache.lucene.analysis.Analyzer;
   */
 
 public class IndexWriter {
-  public static long WRITE_LOCK_TIMEOUT = 1000;
-  public static long COMMIT_LOCK_TIMEOUT = 10000;
+  public static long WRITE_LOCK_TIMEOUT =
+    Integer.parseInt(System.getProperty("org.apache.lucene.writeLockTimeout",
+      "1000"));
+  public static long COMMIT_LOCK_TIMEOUT =
+    Integer.parseInt(System.getProperty("org.apache.lucene.commitLockTimeout",
+      "10000"));
 
   public static final String WRITE_LOCK_NAME = "write.lock";
   public static final String COMMIT_LOCK_NAME = "commit.lock";
 
-  private Directory directory;			  // where this index resides
-  private Analyzer analyzer;			  // how to analyze text
+  private static final int DEFAULT_MERGE_FACTOR =
+    Integer.parseInt(System.getProperty("org.apache.lucene.mergeFactor",
+      "10"));
+  private static final int DEFAULT_MIN_MERGE_DOCS =
+    Integer.parseInt(System.getProperty("org.apache.lucene.minMergeDocs",
+      "10"));
+  private static final int DEFAULT_MAX_FIELD_LENGTH =
+    Integer.parseInt(System.getProperty("org.apache.lucene.maxFieldLength",
+      "10000"));
+  private static final int DEFAULT_MAX_MERGE_DOCS =
+    Integer.parseInt(System.getProperty("org.apache.lucene.maxMergeDocs",
+      String.valueOf(Integer.MAX_VALUE)));
+
+  private Directory directory;  // where this index resides
+  private Analyzer analyzer;    // how to analyze text
 
   private Similarity similarity = Similarity.getDefault(); // how to normalize
 
@@ -228,7 +245,7 @@ public class IndexWriter {
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
    * By default, no more than 10,000 terms will be indexed for a field.
   */
-  public int maxFieldLength = 10000;
+  public int maxFieldLength = DEFAULT_MAX_FIELD_LENGTH;
 
   /**
    * Adds a document to this index.  If the document contains more than
@@ -269,7 +286,7 @@ public class IndexWriter {
    * interactively maintained.
    *
    * <p>This must never be less than 2.  The default value is 10.*/
-  public int mergeFactor = 10;
+  public int mergeFactor = DEFAULT_MERGE_FACTOR;
 
   /** Determines the minimal number of documents required before the buffered
    * in-memory documents are merging and a new Segment is created.
@@ -278,7 +295,7 @@ public class IndexWriter {
    * the number of files open in a FSDirectory.
    *
    * <p> The default value is 10.*/
-  public int minMergeDocs = 10;
+  public int minMergeDocs = DEFAULT_MIN_MERGE_DOCS;
 
 
   /** Determines the largest number of documents ever merged by addDocument().
@@ -287,7 +304,7 @@ public class IndexWriter {
    * Larger values are best for batched indexing and speedier searches.
    *
    * <p>The default value is {@link Integer#MAX_VALUE}. */
-  public int maxMergeDocs = Integer.MAX_VALUE;
+  public int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
   /** If non-null, information about merges will be printed to this. */
   public PrintStream infoStream = null;

@@ -62,7 +62,9 @@ import org.apache.lucene.index.IndexReader;
   queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
   */
 public class BooleanQuery extends Query {
-  private static int maxClauseCount = 1024;
+  private static int maxClauseCount =
+    Integer.parseInt(System.getProperty("org.apache.lucene.maxClauseCount",
+      "1024"));
 
   /** Thrown when an attempt is made to add more than {@link
    * #getMaxClauseCount()} clauses. */
@@ -107,7 +109,7 @@ public class BooleanQuery extends Query {
   public void add(BooleanClause clause) {
     if (clauses.size() >= maxClauseCount)
       throw new TooManyClauses();
-    
+
     clauses.addElement(clause);
   }
 
@@ -140,7 +142,7 @@ public class BooleanQuery extends Query {
         if (!c.prohibited)
           sum += w.sumOfSquaredWeights();         // sum sub weights
       }
-      
+
       sum *= getBoost() * getBoost();             // boost each sub-weight
 
       return sum ;
@@ -164,7 +166,7 @@ public class BooleanQuery extends Query {
       // from a BooleanScorer are not always sorted by document number (sigh)
       // and hence BooleanScorer cannot implement skipTo() correctly, which is
       // required by ConjunctionScorer.
-      boolean allRequired = true;      
+      boolean allRequired = true;
       boolean noneBoolean = true;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
