@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Vector;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultipleTermPositions;
@@ -40,6 +41,7 @@ import org.apache.lucene.search.Query;
 public class PhrasePrefixQuery extends Query {
   private String field;
   private ArrayList termArrays = new ArrayList();
+  private Vector positions = new Vector();
 
   private int slop = 0;
 
@@ -64,18 +66,45 @@ public class PhrasePrefixQuery extends Query {
    * @see PhraseQuery#add(Term)
    */
   public void add(Term[] terms) {
-    if (termArrays.size() == 0)
-      field = terms[0].field();
-    
-    for (int i=0; i<terms.length; i++) {
-      if (terms[i].field() != field) {
-        throw new IllegalArgumentException
-          ("All phrase terms must be in the same field (" + field + "): "
-           + terms[i]);
-      }
-    }
+      int position = 0;
+      if(positions.size() > 0)
+          position = ((Integer) positions.lastElement()).intValue() + 1;
+      
+      add(terms, position);
+  }
+  
+  /**
+   * Allows to specify the relative position of terms within the phrase.
+   * 
+   * @ see PhraseQuery#add(Term, int)
+   * @param terms
+   * @param position
+   */
+  public void add(Term[] terms, int position) {
+      if (termArrays.size() == 0)
+          field = terms[0].field();
+        
+        for (int i=0; i<terms.length; i++) {
+          if (terms[i].field() != field) {
+            throw new IllegalArgumentException
+              ("All phrase terms must be in the same field (" + field + "): "
+               + terms[i]);
+          }
+        }
 
-    termArrays.add(terms);
+        termArrays.add(terms);
+        positions.addElement(new Integer(position));
+  }
+  
+  /**
+   * Returns the relative positions of terms in this phrase.
+   * @return
+   */
+  public int[] getPositions() {
+      int[] result = new int[positions.size()];
+      for(int i = 0; i < positions.size(); i++)
+          result[i] = ((Integer) positions.elementAt(i)).intValue();
+      return result;
   }
 
   private class PhrasePrefixWeight implements Weight {
@@ -131,10 +160,10 @@ public class PhrasePrefixQuery extends Query {
       }
     
       if (slop == 0)
-        return new ExactPhraseScorer(this, tps, getSimilarity(searcher),
+        return new ExactPhraseScorer(this, tps, getPositions(), getSimilarity(searcher),
                                      reader.norms(field));
       else
-        return new SloppyPhraseScorer(this, tps, getSimilarity(searcher),
+        return new SloppyPhraseScorer(this, tps, getPositions(), getSimilarity(searcher),
                                       slop, reader.norms(field));
     }
     

@@ -23,9 +23,9 @@ import java.io.IOException;
 final class SloppyPhraseScorer extends PhraseScorer {
     private int slop;
 
-    SloppyPhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
+    SloppyPhraseScorer(Weight weight, TermPositions[] tps, int[] positions, Similarity similarity,
                        int slop, byte[] norms) {
-        super(weight, tps, similarity, norms);
+        super(weight, tps, positions, similarity, norms);
         this.slop = slop;
     }
 
