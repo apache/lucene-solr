@@ -42,7 +42,7 @@ import java.io.IOException;
  *
  * The fileCount integer indicates how many files are contained in this compound
  * file. The {directory} that follows has that many entries. Each directory entry
- * contains an encoding identifier, an long pointer to the start of this file's
+ * contains an encoding identifier, a long pointer to the start of this file's
  * data section, and a UTF String with that file's extension.
  *
  * @author Dmitry Serebrennikov
@@ -71,12 +71,13 @@ final class CompoundFileWriter {
 
     /** Create the compound stream in the specified file. The file name is the
      *  entire name (no extensions are added).
+     *  @throws NullPointerException if <code>dir</code> or <code>name</code> is null
      */
     public CompoundFileWriter(Directory dir, String name) {
         if (dir == null)
-            throw new IllegalArgumentException("Missing directory");
+            throw new NullPointerException("directory cannot be null");
         if (name == null)
-            throw new IllegalArgumentException("Missing name");
+            throw new NullPointerException("name cannot be null");
 
         directory = dir;
         fileName = name;
@@ -98,8 +99,9 @@ final class CompoundFileWriter {
      *  sub-stream will be known in the compound stream.
      * 
      *  @throws IllegalStateException if this writer is closed
-     *  @throws IllegalArgumentException if <code>file</code> is null
-     *   or if a file with the same name has been added already
+     *  @throws NullPointerException if <code>file</code> is null
+     *  @throws IllegalArgumentException if a file with the same name
+     *   has been added already
      */
     public void addFile(String file) {
         if (merged)
@@ -107,8 +109,8 @@ final class CompoundFileWriter {
                 "Can't add extensions after merge has been called");
 
         if (file == null)
-            throw new IllegalArgumentException(
-                "Missing source file");
+            throw new NullPointerException(
+                "file cannot be null");
 
         if (! ids.add(file))
             throw new IllegalArgumentException(
@@ -123,6 +125,8 @@ final class CompoundFileWriter {
      *  All files with these extensions are combined sequentially into the
      *  compound stream. After successful merge, the source files
      *  are deleted.
+     *  @throws IllegalStateException if close() had been called before or
+     *   if no file has been added to this object
      */
     public void close() throws IOException {
         if (merged)
