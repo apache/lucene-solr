@@ -129,7 +129,7 @@ final class TermInfosReader {
     // optimize sequential access: first try scanning cached enum w/o seeking
     SegmentTermEnum enumerator = getEnum();
     if (enumerator.term() != null                 // term is at or past current
-	&& ((enumerator.prev != null && term.compareTo(enumerator.prev) > 0)
+	&& ((enumerator.prev() != null && term.compareTo(enumerator.prev())> 0)
 	    || term.compareTo(enumerator.term()) >= 0)) {
       int enumOffset = (int)(enumerator.position/enumerator.indexInterval)+1;
       if (indexTerms.length == enumOffset	  // but before end of block
@@ -145,7 +145,7 @@ final class TermInfosReader {
   /** Scans within block for matching term. */
   private final TermInfo scanEnum(Term term) throws IOException {
     SegmentTermEnum enumerator = getEnum();
-    while (term.compareTo(enumerator.term()) > 0 && enumerator.next()) {}
+    enumerator.scanTo(term);
     if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0)
       return enumerator.termInfo();
     else

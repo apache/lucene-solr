@@ -25,7 +25,10 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   long size;
   long position = -1;
 
-  private Term term = new Term("", "");
+  private TermBuffer termBuffer = new TermBuffer();
+  private TermBuffer prevBuffer = new TermBuffer();
+  private TermBuffer scratch;                     // used for scanning
+
   private TermInfo termInfo = new TermInfo();
 
   private int format;
@@ -34,9 +37,6 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   int indexInterval;
   int skipInterval;
   private int formatM1SkipInterval;
-  Term prev;
-
-  private char[] buffer = {};
 
   SegmentTermEnum(IndexInput i, FieldInfos fis, boolean isi)
           throws IOException {
@@ -89,7 +89,10 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
     clone.input = (IndexInput) input.clone();
     clone.termInfo = new TermInfo(termInfo);
-    if (term != null) clone.growBuffer(term.text.length());
+
+    clone.termBuffer = (TermBuffer)termBuffer.clone();
+    clone.prevBuffer = (TermBuffer)prevBuffer.clone();
+    clone.scratch = null;
 
     return clone;
   }
@@ -98,21 +101,20 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
           throws IOException {
     input.seek(pointer);
     position = p;
-    term = t;
-    prev = null;
+    termBuffer.set(t);
+    prevBuffer.reset();
     termInfo.set(ti);
-    growBuffer(term.text.length());		  // copy term text into buffer
   }
 
   /** Increments the enumeration to the next element.  True if one exists.*/
   public final boolean next() throws IOException {
     if (position++ >= size - 1) {
-      term = null;
+      termBuffer.reset();
       return false;
     }
 
-    prev = term;
-    term = readTerm();
+    prevBuffer.set(termBuffer);
+    termBuffer.read(input, fieldInfos);
 
     termInfo.docFreq = input.readVInt();	  // read doc freq
     termInfo.freqPointer += input.readVLong();	  // read freq pointer
@@ -138,28 +140,23 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     return true;
   }
 
-  private final Term readTerm() throws IOException {
-    int start = input.readVInt();
-    int length = input.readVInt();
-    int totalLength = start + length;
-    if (buffer.length < totalLength)
-      growBuffer(totalLength);
-
-    input.readChars(buffer, start, length);
-    return new Term(fieldInfos.fieldName(input.readVInt()),
-            new String(buffer, 0, totalLength), false);
-  }
-
-  private final void growBuffer(int length) {
-    buffer = new char[length];
-    for (int i = 0; i < term.text.length(); i++)  // copy contents
-      buffer[i] = term.text.charAt(i);
+  /** Optimized scan, without allocating new terms. */
+  final void scanTo(Term term) throws IOException {
+    if (scratch == null)
+      scratch = new TermBuffer();
+    scratch.set(term);
+    while (scratch.compareTo(termBuffer) > 0 && next()) {}
   }
 
   /** Returns the current Term in the enumeration.
    Initially invalid, valid after next() called for the first time.*/
   public final Term term() {
-    return term;
+    return termBuffer.toTerm();
+  }
+
+  /** Returns the previous Term enumerated. Initially null.*/
+  final Term prev() {
+    return prevBuffer.toTerm();
   }
 
   /** Returns the current TermInfo in the enumeration.

@@ -97,6 +97,11 @@ $Id$
 21. Add a serializable Parameter Class to standardize parameter enum
     classes in BooleanClause and Field. (Christoph)
 
+22. Optimize term-dictionary lookup to allocate far fewer terms when
+    scanning for the matching term.  This speeds searches involving
+    low-frequency terms, where the cost of dictionary lookup can be
+    significant. (cutting)
+
 
 1.4.1
 
