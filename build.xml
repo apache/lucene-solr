@@ -135,9 +135,12 @@
 Created-By: Apache Jakarta
 
 Name: org/apache/lucene
+Specification-Title: Lucene Search Engine
+Specification-Version: ${version}
+Specification-Vendor: Lucene
 Implementation-Title: org.apache.lucene
 Implementation-Version: build ${DSTAMP} ${TSTAMP}
-Implementation-Vendor: Apache Jakarta
+Implementation-Vendor: Lucene
 </echo>
 
     <jar
