@@ -65,8 +65,6 @@ PARSER_BEGIN(StandardTokenizer)
 
 package org.apache.lucene.analysis.standard;
 
-import java.io.*;
-
 /** A grammar-based tokenizer constructed with JavaCC.
  *
  * <p> This should be a good tokenizer for most European-language documents.

@@ -1,12 +1,8 @@
 package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 /**
  * Abstract base class for sorting hits returned by a Query.

@@ -19,10 +19,8 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.io.IOException;
 
 

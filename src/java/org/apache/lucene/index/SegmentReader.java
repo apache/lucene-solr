@@ -27,7 +27,6 @@ import java.util.Vector;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
-import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 

@@ -323,7 +323,7 @@ final class DocumentWriter {
         float norm = fieldBoosts[n] * similarity.lengthNorm(fi.name, fieldLengths[n]);
         OutputStream norms = directory.createFile(segment + ".f" + n);
         try {
-          norms.writeByte(similarity.encodeNorm(norm));
+          norms.writeByte(Similarity.encodeNorm(norm));
         } finally {
           norms.close();
         }

@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
