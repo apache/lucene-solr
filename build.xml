@@ -438,6 +438,7 @@ Implementation-Vendor: Lucene
       zipfile="${basedir}/${final.name}.zip"
       basedir="${basedir}/"
       includes="**/${final.name}/**"
+      excludes="**/junit*jar"
     />
   </target>
 
@@ -455,6 +456,7 @@ Implementation-Vendor: Lucene
       tarfile="${basedir}/${final.name}.tar"
       basedir="${basedir}/"
       includes="**/${final.name}/**"
+      excludes="**/junit*jar"
     />
 
     <gzip
