@@ -1,8 +1,8 @@
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.  All
+ * rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -129,6 +129,11 @@ public class QueryParser {
   Analyzer analyzer;
   String field;
   int phraseSlop = 0;
+  /**
+   * Whether terms of wildcard and prefix queries are to be automatically
+   * lower-cased or not.  Default is <code>true</code>.
+   */
+  boolean lowercaseWildcardTerms = true;
 
   /** Constructs a query parser.
    *  @param field	the default field for query terms.
@@ -164,7 +169,7 @@ public class QueryParser {
   private int operator = DEFAULT_OPERATOR_OR;
 
   /**
-   * Set the boolean operator of the QueryParser.
+   * Sets the boolean operator of the QueryParser.
    * In classic mode (<code>DEFAULT_OPERATOR_OR</mode>) terms without any modifiers
    * are considered optional: for example <code>capital of Hungary</code> is equal to
    * <code>capital OR of OR Hungary</code>.<br/>
@@ -177,6 +182,14 @@ public class QueryParser {
 
   public int getOperator() {
     return this.operator;
+  }
+
+  public void setLowercaseWildcardTerms(boolean b) {
+    owercaseWildcardTerms = b;
+  }
+
+  public boolean getLowercaseWildcardTerms() {
+    return lowercaseWildcardTerms;
   }
 
   private void addClause(Vector clauses, int conj, int mods, Query q) {
@@ -286,6 +299,103 @@ public class QueryParser {
     return new RangeQuery(new Term(field, part1),
                           new Term(field, part2),
                           inclusive);
+  }
+
+  /**
+   * Factory method for generating query, given set of clauses.
+   * By default creates a boolean query composed of clauses passed in.
+   *
+   * Can be overridden by extending classes, to modify query being
+   * returned.
+   *
+   * @param clauses Vector that contains {@link BooleanClause} instances
+   *    to join.
+   *
+   * @return Resulting {@link Query} object.
+   */
+  protected Query getBooleanQuery(Vector clauses)
+  {
+    BooleanQuery query = new BooleanQuery();
+    for (int i = 0; i < clauses.size(); i++) {
+	query.add((BooleanClause)clauses.elementAt(i));
+    }
+    return query;
+  }
+
+  /**
+   * Factory method for generating a query. Called when parser
+   * parses an input term token that contains one or more wildcard
+   * characters (? and *), but is not a prefix term token (one
+   * that has just a single * character at the end)
+   *<p>
+   * Depending on settings, prefix term may be lower-cased
+   * automatically. It will not go through the default analyzer,
+   * however, since normal analyzers are unlikely to work properly
+   * with wildcard templates.
+   *<p>
+   * Can be overridden by extending classes, to provide custom handling for
+   * wild card queries (which may be necessary due to missing analyzer calls)
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token that contains one or more wild card
+   *   characters (? or *), but is not simple prefix term
+   *
+   * @return Resulting query build for the term
+   */
+  protected Query getWildcardQuery(String field, String termStr)
+  {
+    if (lowercaseWildcardTerms) {
+	termStr = termStr.toLowerCase();
+    }
+    Term t = new Term(field, termStr);
+    return new WildcardQuery(t);
+  }
+
+  /**
+   * Factory method for generating a query (similar to
+   * (@link getWildcardQuery}). Called when parser parses an input term
+   * token that uses prefix notation; that is, contains a single '*' wild
+   * char character as it's last character. Since this is a special case
+   * of generic wild card term, and such a query can be optimized easily,
+   * this usually results in different query object.
+   *<p>
+   * Depending on settings, prefix term may be lower-cased
+   * automatically. It will not go through the default analyzer,
+   * however, since normal analyzers are unlikely to work properly
+   * with wildcard templates.
+   *<p>
+   * Can be overridden by extending classes, to provide custom handling for
+   * wild card queries (which may be necessary due to missing analyzer calls)
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token to use for building term for the query
+   *    (<b>without</b> trailing '*' character!)
+   *
+   * @return Resulting query build for the term
+   */
+  protected Query getPrefixQuery(String field, String termStr)
+  {
+    if (lowercaseWildcardTerms) {
+	termStr = termStr.toLowerCase();
+    }
+    Term t = new Term(field, termStr);
+    return new PrefixQuery(t);
+  }
+
+  /**
+   * Factory method for generating a query (similar to
+   * (@link getWildcardQuery}). Called when parser parses
+   * an input term token that has the fuzzy suffix (~) appended.
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token to use for building term for the query
+   *
+   * @return Resulting query build for the term
+   */
+  protected Query getFuzzyQuery(String field, String termStr)
+  {
+    Term t = new Term(field, termStr);
+    return new FuzzyQuery(t);
   }
 
   public static void main(String[] args) throws Exception {
@@ -420,10 +530,7 @@ Query Query(String field) :
       if (clauses.size() == 1 && firstQuery != null)
         return firstQuery;
       else {
-        BooleanQuery query = new BooleanQuery();
-        for (int i = 0; i < clauses.size(); i++)
-  	  query.add((BooleanClause)clauses.elementAt(i));
-        return query;
+	return getBooleanQuery(clauses);
       }
     }
 }
@@ -475,15 +582,16 @@ Query Term(String field) : {
      [ <FUZZY> { fuzzy=true; } ]
      [ <CARAT> boost=<NUMBER> [ <FUZZY> { fuzzy=true; } ] ]
      {
-       if (wildcard)
-         q = new WildcardQuery(new Term(field, term.image));
-       else if (prefix)
-         q = new PrefixQuery(new Term(field, term.image.substring
-                                      (0, term.image.length()-1)));
-       else if (fuzzy)
-         q = new FuzzyQuery(new Term(field, term.image));
-       else
+       if (wildcard) {
+	 q = getWildcardQuery(field, term.image);
+       } else if (prefix) {
+         q = getPrefixQuery(field, term.image.substring
+			    (0, term.image.length()-1));
+       } else if (fuzzy) {
+         q = getFuzzyQuery(field, term.image);
+       } else {
          q = getFieldQuery(field, analyzer, term.image);
+       }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
          [ <RANGEIN_TO> ] ( goop2=<RANGEIN_GOOP>|goop2=<RANGEIN_QUOTED> )
@@ -530,7 +638,11 @@ Query Term(String field) : {
       try {
         f = Float.valueOf(boost.image).floatValue();
       }
-      catch (Exception ignored) { }
+      catch (Exception ignored) {
+	  /* Should this be handled somehow? (defaults to "no boost", if
+	   * boost number is invalid)
+	   */
+      }
 
       // avoid boosting null queries, such as those caused by stop words
       if (q != null) {
