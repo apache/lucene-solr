@@ -58,9 +58,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 
@@ -85,6 +87,41 @@ public class TestSearchBean extends TestCase{
      *
      */
     public void testSearchBean() throws IOException, ParseException {
+        Directory indexStore = createIndex();
+        SortedField.addField("text",indexStore);
+        //IndexSearcher searcher = new IndexSearcher(indexStore);
+        
+        SearchBean sb = new SearchBean(indexStore);
+        HitsIterator hi = sb.search("metal");
+        
+        assertEquals(1, hi.getTotalHits());
+        
+        assertEquals(1, hi.getPageCount());
+        
+        assertEquals("metal",hi.next().get("text"));
+    }
+    
+    public void testUnoptimizedSearchBean() throws IOException, ParseException {
+        Directory indexStore = createIndex();
+        IndexReader reader = IndexReader.open(indexStore);
+        reader.delete(0);
+        //
+        reader.close();
+        
+        SortedField.addField("text",indexStore);
+        //IndexSearcher searcher = new IndexSearcher(indexStore);
+        
+        SearchBean sb = new SearchBean(indexStore);
+        HitsIterator hi = sb.search("metal");
+        
+        assertEquals(0, hi.getTotalHits());
+        
+        assertEquals(0, hi.getPageCount());
+        
+        //assertEquals("metal",hi.next().get("text"));
+    }
+    
+    public Directory createIndex() throws IOException{
         RAMDirectory indexStore = new RAMDirectory();
         IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(), true);
         Document doc1 = new Document();
@@ -94,20 +131,8 @@ public class TestSearchBean extends TestCase{
         writer.addDocument(doc1);
         writer.addDocument(doc2);
         writer.optimize();
-        
-        SortedField.addField("text",indexStore);
-        //IndexSearcher searcher = new IndexSearcher(indexStore);
-        
-        SearchBean sb = new SearchBean(indexStore);
-        HitsIterator hi = sb.search("metal");
-        
-        assertEquals(1, hi.getTotalHits());
-
-        assertEquals(1, hi.getPageCount());
-        
-        assertEquals("metal",hi.next().get("text"));
-        
         writer.close();
+        return (Directory) indexStore;
     }
 }
 
