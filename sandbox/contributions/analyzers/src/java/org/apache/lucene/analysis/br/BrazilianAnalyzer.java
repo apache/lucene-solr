@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.de.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.File;
@@ -100,7 +101,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	public void setStemExclusionTable( File exclusionlist ) {
 		excltable = WordlistLoader.getWordtable( exclusionlist );
 	}
-	
+
 	/**
 	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
 	 *
