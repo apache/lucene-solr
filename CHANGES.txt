@@ -85,7 +85,10 @@ $Id$
     faster.  (cutting)
     
 17. Memory leak in Sort code (Bug# 31240) eliminated.
-(Rafal Krzewski via Christoph and Daniel)
+    (Rafal Krzewski via Christoph and Daniel)
+    
+18. Add support for stored compressed fields (Bug#31149).
+    (Bernhard Messer via Christoph)
 
 
 1.4.1
