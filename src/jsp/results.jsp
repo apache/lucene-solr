@@ -42,8 +42,7 @@ public String escapeHTML(String s) {
                                                 //less
 
         try {
-        searcher = new IndexSearcher(
-                        IndexReader.open(indexName));   //create an indexSearcher for our page
+          searcher = new IndexSearcher(indexName);      //create an indexSearcher for our page
                                                         //NOTE: this operation is slow for large
                                                         //indices (much slower than the search itself)
                                                         //so you might want to keep an IndexSearcher 
