@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<document>
+    <properties>
+        <author email="carlson@apache.org">Peter Carlson</author>
+        <title>
+            Query Parser Syntax - Jakarta Lucene 
+        </title>
+    </properties>
+    <body>
+        <section name="Overview">
+            <p>Although Lucene provides the ability to create your own query's though its API, it also provides a rich query language through the QueryParser.</p>
+            <p>This page provides syntax of Lucene's Query Parser, a lexer which interprets a string into a Lucene Query using JavaCC.</p>
+        </section>
+        <section name="Terms">
+        <p>A query is broken up into terms and operators. There are two types of terms: Single Terms and Phrases.</p>
+        <p>A Single Term is a single word such as "test" or "hello".</p>
+        <p>A Phrase is a group of words surrounded by double quotes such as "hello dolly".</p>
+        <p>Multiple terms can be combined together with Boolean operators to form a more complex query (see below).</p>
+        </section>
+        
+        <section name="Fields">
+        <p>Lucene supports fielded data. When performing a search you can either specify a field, or use the default field. The field names and default field is implementation specific.</p>
+        <p>You can search any field by typing the field name followed by a colon ":" and then the term you are looking for. </p>
+        <p>As an example, let's assume a Lucene index contains two fields, title and text and text is the default field. 
+        If you want to find the document entitled "The Right Way" which contains the text "don't go this way", you can enter: </p>
+                 
+        <source>title:"The Right Way" AND text:go</source>
+        <p>or</p> 
+        <source>title:"Do it right" AND right</source>
+        <p>Since text is the default field, the field indicator is not required.</p>
+
+        <p>Note: The field is only valid for the term that it directly precedes, so the query</p>
+        <source>title:Do it right</source>
+        <p>Will only find "Do" in the title field. It will find "it" and "right" in the default field (in this case the text field). </p>
+        </section>
+        
+        <section name="Term Modifiers">
+        <p>Lucene supports modifying query terms to provide a wide range of searching options.</p>
+        
+        <subsection name="Wildcard Searches">
+        <p>Lucene supports single and multiple character wildcard searches.</p>
+        <p>To perform a single character wildcard search use the "?" symbol.</p>
+        <p>To perform a multiple character wildcard search use the "*" symbol.</p>
+        <p>The single character wildcard search looks for terms that match that with the single character replaced. For example, to search for "text" or "test" you can use the search:</p>
+
+        <source>te?t</source>
+
+        <p>Multiple character wildcard searches looks for 0 or more characters. For example, to search for test, tests or tester, you can use the search: </p>
+        <source>test*</source>
+        <p>You can also use the wildcard searches in the middle of a term.</p>
+        <source>te*t</source>
+        <p>Note: You cannot use a * or ? symbol as the first character of a search.</p>
+        </subsection>
+         
+         
+        <subsection name="Fuzzy Searches">
+        <p>Lucene supports fuzzy searches based on the Levenshtein Distance, or Edit Distance algorithm. To do a fuzzy search use the tilde, "~", symbol at the end of a term. For example to search for a term similar in spelling to "roam" use the fuzzy search: </p>
+
+        <source>roam~</source>
+        <p>This search will find terms like foam and roams</p>
+        <p>Note:Terms found by the fuzzy search will automatically get a boost factor of 0.2</p>
+        </subsection>
+         
+         
+        <subsection name="Boosting a Term">
+        <p>Lucene provides the relevance level of matching documents based on the terms found. To boost a term use the caret, "^", symbol with a boost factor (a number) at the end of the term you are searching. The higher the boost factor, the more relevant the term will be.</p>
+        <p>Boosting allows you to control the relevance of a document by boosting its term. For example, if you are searching for</p>
+
+        <source>IBM Microsoft</source>
+        <p>and you want the term "IBM" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. You would type:</p>
+        <source>IBM^4 Microsoft</source>
+        <p>This will make documents with the term IBM appear more relevant. You can also boost Phrase Terms as in the example: </p>
+
+        <source>"Microsoft Word"^4 "Microsoft Excel"</source>
+        <p>By default, the boost factor is 1.</p>
+        </subsection>
+        </section>
+
+        <section name="Boolean operators">
+        <p>Boolean operators allow terms to be combined through logic operators.
+        Lucene supports AND, "+", OR, NOT and "-" as Boolean operators(Note: Boolean operators must be ALL CAPS).</p>
+
+        <subsection name="OR">
+        <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. 
+        The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets.
+        For example to search for documents that contain either "Microsoft Word" or just "Microsoft": </p>
+
+        <source>"Microsoft Word" Microsoft</source>
+
+        <p>or</p>
+
+        <source>"Microsoft Word" OR Microsoft</source>
+
+        </subsection>
+        <subsection name="AND">
+        <p>The AND operator matches documents where both terms exist anywhere in the text of a single document. 
+        This is equivalent to an intersection using sets.
+        For example to search for documents that contain "Microsoft Word" and "Microsoft Excel": </p>
+
+        <source>"Microsoft Word" AND "Microsoft Excel"</source>
+        </subsection>
+        
+        <subsection name="+">
+        <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document. For example, to search for documents that contain jakarta or lucene:</p>
+
+        <source>+jakarta apache</source>
+        </subsection>
+
+        <subsection name="NOT">
+        <p>The NOT operator excludes documents that contain the term after NOT.
+        This is equivalent to a difference using sets.
+        For example to search for documents that contain "Microsoft Word" but not "Microsoft Excel": </p>
+
+        <source>"Microsoft Word" NOT "Microsoft Excel"</source>
+        </subsection>
+        
+        <subsection name="-">
+        <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol. For example to search for documents that contain "Microsoft Word" but not "Microsoft Excel": </p>
+
+        <source>"Microsoft Word" -"Microsoft Excel"</source>
+        </subsection>
+        
+        </section>
+        
+        <section name="Grouping">
+        <p>Lucene supports using parentheses to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query.
+        For example, to search for either "jakarta" or "apache" and "website":</p>
+        <source>(jakarta OR apache) AND website</source>
+        <p>This eliminates any confusion and makes sure you that website must exist and either term jakarta or apache may exist.</p>
+        </section>
+        
+   </body>
+</document>
