@@ -8,7 +8,11 @@ $Id$
     but that never did this. These declarations have been removed. If 
     your code tries to catch these exceptions you might need to remove
     those catch clauses to avoid compile errors. (Daniel Naber)
- 
+
+ 2. FuzzyQuery now takes an additional parameter that specifies the
+    minimum similarity that is required for a term to match the query.
+    Note that this isn't supported by QueryParser yet.
+  
  
 1.4.1
 
