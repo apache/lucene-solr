@@ -176,7 +176,7 @@ final class BooleanScorer extends Scorer {
 
   /** A simple hash table of document scores within a range. */
   static final class BucketTable {
-    public static final int SIZE = 1 << 8;
+    public static final int SIZE = 1 << 11;
     public static final int MASK = SIZE - 1;
 
     final Bucket[] buckets = new Bucket[SIZE];
