@@ -446,7 +446,7 @@ PARSER_END(QueryParser)
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "+", "-", "!", "(", ")", ":", "^",
                            "[", "]", "\"", "{", "}", "~", "*", "?" ]
                        | <_ESCAPED_CHAR> ) >
-| <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> ) >
+| <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | "-" | "+" ) >
 | <#_WHITESPACE: ( " " | "\t" | "\n" | "\r") >
 }
 

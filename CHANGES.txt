@@ -71,6 +71,10 @@ $Id$
       - default write lock timeout
     (Otis)
 
+13. Changed QueryParser.jj to allow '-' and '+' within tokens:
+    http://issues.apache.org/bugzilla/show_bug.cgi?id=27491
+    (Morus Walter via Otis)
+
 
 1.3 final
 
