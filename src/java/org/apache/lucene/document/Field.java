@@ -56,9 +56,6 @@ package org.apache.lucene.document;
 
 import java.io.Reader;
 import java.util.Date;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.Hits;
 
 /**
   A field is a section of a Document.  Each field has two parts, a name and a

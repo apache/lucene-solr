@@ -58,7 +58,6 @@ import java.io.IOException;
 import java.util.Vector;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.IndexReader;
 

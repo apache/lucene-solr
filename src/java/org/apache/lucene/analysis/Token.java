@@ -54,8 +54,6 @@ package org.apache.lucene.analysis;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.index.TermPositions;
-
 /** A Token is an occurence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.

@@ -58,7 +58,6 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import java.io.IOException;
-import java.util.Hashtable;
 
 /**
  * A filter that stems Russian words. The implementation was inspired by GermanStemFilter.

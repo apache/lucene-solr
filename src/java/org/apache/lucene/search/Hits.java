@@ -56,9 +56,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Vector;
-import java.util.BitSet;
+
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 
 /** A ranked list of documents, used to hold search results. */
 public final class Hits {

@@ -55,7 +55,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Vector;
 import org.apache.lucene.util.*;
 import org.apache.lucene.index.*;
 

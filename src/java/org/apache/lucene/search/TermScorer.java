@@ -55,7 +55,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import org.apache.lucene.index.Term;
+
 import org.apache.lucene.index.TermDocs;
 
 final class TermScorer extends Scorer {

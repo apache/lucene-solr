@@ -55,7 +55,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.document.Document;
 
 /** TermDocs provides an interface for enumerating &lt;document, frequency&gt;
   pairs for a term.  <p> The document portion names each document containing

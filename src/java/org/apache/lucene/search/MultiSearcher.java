@@ -55,11 +55,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Vector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.PriorityQueue;
 
 /** Implements search over a set of <code>Searchables</code>.
  *

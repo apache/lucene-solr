@@ -55,9 +55,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents within an exclusive range. */

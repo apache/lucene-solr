@@ -55,7 +55,6 @@ package org.apache.lucene.analysis.de;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -164,7 +163,7 @@ public class GermanAnalyzer extends Analyzer
      * Creates a TokenStream which tokenizes all the text in the provided Reader.
      *
      * @return  A TokenStream build from a StandardTokenizer filtered with
-     *		StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter
+     *		StandardFilter, StopFilter, GermanStemFilter
      */
     public TokenStream tokenStream( String fieldName, Reader reader )
     {

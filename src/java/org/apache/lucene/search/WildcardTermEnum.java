@@ -55,9 +55,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 
 /**
  * Subclass of FilteredTermEnum for enumerating all terms that match the

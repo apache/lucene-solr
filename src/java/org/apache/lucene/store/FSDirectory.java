@@ -57,7 +57,6 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.io.FileNotFoundException;
 import java.util.Hashtable;
 
 import org.apache.lucene.util.Constants;

@@ -54,8 +54,6 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.document.Document;
-
 /** Expert: Default scoring implementation. */
 public class DefaultSimilarity extends Similarity {
   /** Implemented as <code>1/sqrt(numTerms)</code>. */

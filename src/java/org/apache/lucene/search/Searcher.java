@@ -55,9 +55,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
 
 /** An abstract base class for search implementations.
  * Implements some common utility methods.

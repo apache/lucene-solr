@@ -55,14 +55,14 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.RMISecurityManager;
 import java.rmi.server.UnicastRemoteObject;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
 
 /** A remote searchable implementation. */
 public class RemoteSearchable

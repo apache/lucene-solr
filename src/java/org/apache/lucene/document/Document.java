@@ -58,9 +58,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Hits;
-
 /** Documents are the unit of indexing and search.
  *
  * A Document is a set of fields.  Each field has a name and a textual value.

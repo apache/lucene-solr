@@ -68,7 +68,6 @@ import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.search.Similarity;
 
 
 /**

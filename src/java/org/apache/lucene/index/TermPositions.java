@@ -55,8 +55,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.document.Document;
-
 
 /**
  * TermPositions provides an interface for enumerating the &lt;document,

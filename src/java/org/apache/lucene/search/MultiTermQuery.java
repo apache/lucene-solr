@@ -55,10 +55,9 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Vector;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 
 /**
  * A {@link Query} that matches documents containing a subset of terms provided
