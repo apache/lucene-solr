@@ -1,0 +1,1666 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<!-- Content Stylesheet for Site -->
+
+        
+<!-- start the processing -->
+    <!-- ====================================================================== -->
+    <!-- Main Page Section -->
+    <!-- ====================================================================== -->
+    <html>
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+
+                        
+           
+                                    
+            <title>Jakarta Lucene - $root.getChild("properties").getChild("title").getText()</title>
+        </head>
+
+        <body bgcolor="#ffffff" text="#000000" link="#525D76">        
+            <table border="0" width="100%" cellspacing="0">
+                <!-- TOP IMAGE -->
+                <tr>
+                    <td align="left">
+<a href="http://jakarta.apache.org"><img src="http://jakarta.apache.org/images/jakarta-logo.gif" border="0"/></a>
+</td>
+<td align="right">
+<a href="http://jakarta.apache.org/lucene/"><img src="./images/lucene_green_300.gif" alt="Jakarta Lucene" border="0"/></a>
+</td>
+                </tr>
+            </table>
+            <table border="0" width="100%" cellspacing="4">
+                <tr><td colspan="2">
+                    <hr noshade="" size="1"/>
+                </td></tr>
+                
+                <tr>
+                    <!-- LEFT SIDE NAVIGATION -->
+                    <td width="20%" valign="top" nowrap="true">
+                                <p><strong>About</strong></p>
+        <ul>
+                    <li>    <a href="./index.html">Overview</a>
+</li>
+                    <li>    <a href="./powered.html">Powered by Lucene</a>
+</li>
+                    <li>    <a href="./whoweare.html">Who We Are</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/mail.html">Mailing Lists</a>
+</li>
+                </ul>
+            <p><strong>Resources</strong></p>
+        <ul>
+                    <li>    <a href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi">FAQ (Official)</a>
+</li>
+                    <li>    <a href="http://www.jguru.com/faq/Lucene">JGuru FAQ</a>
+</li>
+                    <li>    <a href="./gettingstarted.html">Getting Started</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/bugs.html">Bugs</a>
+</li>
+                    <li>    <a href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&bugidtype=include&bug_id=&changedin=&votes=&chfieldfrom=&chfieldto=Now&chfieldvalue=&product=Lucene&short_desc=&short_desc_type=allwordssubstr&long_desc=&long_desc_type=allwordssubstr&bug_file_loc=&bug_file_loc_type=allwordssubstr&keywords=&keywords_type=anywords&field0-0-0=noop&type0-0-0=noop&value0-0-0=&cmdtype=doit&order=%27Importance%27">Lucene Bugs</a>
+</li>
+                    <li>    <a href="./queryparsersyntax.html">Query Syntax</a>
+</li>
+                    <li>    <a href="./fileformats.html">File Formats</a>
+</li>
+                    <li>    <a href="./api/index.html">Javadoc</a>
+</li>
+                    <li>    <a href="./contributions.html">Contributions</a>
+</li>
+                    <li>    <a href="./lucene-sandbox/">Lucene Sandbox</a>
+</li>
+                    <li>    <a href="./resources.html">Articles, etc.</a>
+</li>
+                </ul>
+            <p><strong>Plans</strong></p>
+        <ul>
+                    <li>    <a href="./luceneplan.html">Application Extensions</a>
+</li>
+                </ul>
+            <p><strong>Download</strong></p>
+        <ul>
+                    <li>    <a href="http://jakarta.apache.org/site/binindex.html">Binaries</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/sourceindex.html">Source Code</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/cvsindex.html">CVS Repositories</a>
+</li>
+                </ul>
+            <p><strong>Jakarta</strong></p>
+        <ul>
+                    <li>    <a href="http://jakarta.apache.org/site/getinvolved.html">Get Involved</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/acknowledgements.html">Acknowledgements</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/contact.html">Contact</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/legal.html">Legal</a>
+</li>
+                </ul>
+                        </td>
+                    <td width="80%" align="left" valign="top">
+                                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Index File Formats"><strong>Index File Formats</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                This document defines the index file formats used
+                in Lucene version 1.3.
+            </p>
+                                                <p>
+                Jakarta Lucene is written in Java, but several
+                efforts are underway to write versions of Lucene in other programming
+                languages.  If these versions are to remain compatible with Jakarta
+                Lucene, then a language-independent definition of the Lucene index
+                format is required.  This document thus attempts to provide a
+                complete and independent definition of the Jakarta Lucene 1.3 file
+                formats.
+            </p>
+                                                <p>
+                As Lucene's evolves, this document should evolve.
+                Versions of Lucene in different programming languages should endeavor
+                to agree on file formats, and generate new versions of this document.
+            </p>
+                                                <p>
+                Compatibility notes are provided in this document,
+                describing how file formats have changed from prior versions.
+            </p>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Definitions"><strong>Definitions</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                The fundamental concepts in Lucene are index,
+                document, field and term.
+            </p>
+                                                <p>
+                An index contains a sequence of documents.
+            </p>
+                                                <ul>
+                <li>
+                    <p>
+                        A document is a sequence of fields.
+                    </p>
+                </li>
+
+                <li>
+                    <p>
+                        A field is a named sequence of terms.
+                    </p>
+                </li>
+
+                <li>
+                    A term is a string.
+                </li>
+            </ul>
+                                                <p>
+                The same string in two different fields is
+                considered a different term.  Thus terms are represented as a pair of
+                strings, the first naming the field, and the second naming text
+                within the field.
+            </p>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Inverted Indexing"><strong>Inverted Indexing</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    The index stores statistics about terms in order
+                    to make term-based search more efficient.  Lucene's
+                    index falls into the family of indexes known as an <i>inverted
+                        index.</i> This is because it can list, for a term, the documents that contain
+                    it.  This is the inverse of the natural relationship, in which
+                    documents list terms.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Types of Fields"><strong>Types of Fields</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    In Lucene, fields may be <i>stored</i>, in which
+                    case their text is stored in the index literally, in a non-inverted
+                    manner.  Fields that are inverted are called <i>indexed</i>. A field
+                    may be both stored and indexed.</p>
+                                                <p>The text of a field may be <i>tokenized</i> into terms to be
+                    indexed, or the text of a field may be used literally as a term to be indexed.
+                    Most fields are
+                    tokenized, but sometimes it is useful for certain identifier fields
+                    to be indexed literally.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Segments"><strong>Segments</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    Lucene indexes may be composed of multiple sub-indexes, or<i>
+                        segments</i>. Each segment is a fully independent index, which could be searched
+                    separately. Indexes evolve by:
+                </p>
+                                                <ol>
+                    <li><p>Creating new segments for newly added documents.</p>
+                    </li>
+                    <li><p>Merging existing segments.</p>
+                    </li>
+                </ol>
+                                                <p>
+                    Searches may involve multiple segments and/or multiple indexes, each
+                    index potentially composed of a set of segments.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Document Numbers"><strong>Document Numbers</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    Internally, Lucene refers to documents by an integer <i>document
+                        number</i>. The first document added to an index is numbered zero, and each
+                    subsequent document added gets a number one greater than the previous.
+                </p>
+                                                <p>
+                    <br />
+                </p>
+                                                <p>
+                    Note that a document's number may change, so caution should be taken
+                    when storing these numbers outside of Lucene.  In particular, numbers may
+                    change in the following situations:
+                </p>
+                                                <ul>
+                    <li>
+                        <p>
+                            The
+                            numbers stored in each segment are unique only within the segment,
+                            and must be converted before they can be used in a larger context.
+                            The standard technique is to allocate each segment a range of
+                            values, based on the range of numbers used in that segment.  To
+                            convert a document number from a segment to an external value, the
+                            segment's <i>base</i> document
+                            number is added.  To convert an external value back to a
+                            segment-specific value, the  segment is identified by the range that
+                            the external value is in, and the segment's base value is
+                            subtracted.  For example two five document segments might be
+                            combined, so that the first segment has a base value of zero, and
+                            the second of five.  Document three from the second segment would
+                            have an external value of eight.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            When documents are deleted, gaps are created
+                            in the numbering.  These are eventually removed as the index evolves
+                            through merging.  Deleted documents are dropped when segments are
+                            merged.  A freshly-merged segment thus has no gaps in its numbering.
+                        </p>
+                    </li>
+                </ul>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Overview"><strong>Overview</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                Each segment index maintains the following:
+            </p>
+                                                <ul>
+                <li><p>Field names.  This
+                        contains the set of field names used in the index.
+
+                    </p>
+                </li>
+                <li><p>Stored Field
+                        values.  This contains, for each document, a list of attribute-value
+                        pairs, where the attributes are field names.  These are used to
+                        store auxiliary information about the document, such as its title,
+                        url, or an identifier to access a
+                        database. The set of stored fields are what is returned for each hit
+                        when searching.  This is keyed by document number.
+                    </p>
+                </li>
+                <li><p>Term dictionary.
+                        A dictionary containing all of the terms used in all of the indexed
+                        fields of all of the documents.  The dictionary also contains the
+                        number of documents which contain the term, and pointers to the
+                        term's frequency and proximity data.
+                    </p>
+                </li>
+
+                <li><p>Term Frequency
+                        data.  For each term in the dictionary, the numbers of all the
+                        documents that contain that term, and the frequency of the term in
+                        that document.
+                    </p>
+                </li>
+
+                <li><p>Term Proximity
+                        data.  For each term in the dictionary, the positions that the term
+                        occurs in each document.
+                    </p>
+                </li>
+
+                <li><p>Normalization
+                        factors.  For each field in each document, a value is stored that is
+                        multiplied into the score for hits on that field.
+                    </p>
+                </li>
+
+                <li><p>Deleted documents.
+                        An optional file indicating which documents are deleted.
+                    </p>
+                </li>
+            </ul>
+                                                <p>Details on each of these are provided in subsequent sections.
+            </p>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="File Naming"><strong>File Naming</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                All files belonging to a segment have the same name with varying
+                extensions.  The extensions correspond to the different file formats
+                described below.
+            </p>
+                                                <p>
+                Typically, all segments
+                in an index are stored in a single directory, although this is not
+                required.
+            </p>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Primitive Types"><strong>Primitive Types</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                        <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Byte"><strong>Byte</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    The most primitive type
+                    is an eight-bit byte.  Files are accessed as sequences of bytes.  All
+                    other data types are defined as sequences
+                    of bytes, so file formats are byte-order independent.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="UInt32"><strong>UInt32</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    32-bit unsigned integers are written as four
+                    bytes, high-order bytes first.
+                </p>
+                                                <p>
+                    UInt32	--&gt; &lt;Byte&gt;<sup>4</sup>
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Uint64"><strong>Uint64</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    64-bit unsigned integers are written as eight
+                    bytes, high-order bytes first.
+                </p>
+                                                <p>UInt32	--&gt; &lt;Byte&gt;<sup>8</sup>
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="VInt"><strong>VInt</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    A variable-length format for positive integers is
+                    defined where the high-order bit of each byte indicates whether more
+                    bytes remain to be read.  The low-order seven bits are appended as
+                    increasingly more significant bits in the resulting integer value.
+                    Thus values from zero to 127 may be stored in a single byte, values
+                    from 128 to 16,383 may be stored in two bytes, and so on.
+                </p>
+                                                <p><b>VInt Encoding Example</b></p>
+                                                <table>
+                                                                        <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT"><b>Value</b>
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT"><b>First byte</b>
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT"><b>Second byte</b>
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT"><b>Third byte</b>
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">0
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                00000000
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">1
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                00000001
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">2
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                00000010
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">...
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: 0.11cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">127
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                01111111
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">128
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                10000000
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                00000001
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">129
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                10000001
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                00000001
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">130
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                10000010
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                00000001
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">...
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: 0.11cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">16,383
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                11111111
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                01111111
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm"><br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">16,384
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                10000000
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                10000000
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.47cm;                                margin-right: 0.01cm">
+                                00000001
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">16,385
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                10000001
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                10000000
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.47cm;                                margin-right: 0.01cm">
+                                00000001
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+                                <tr>
+                        <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p align="RIGHT">...
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: 0.11cm;                                margin-right: 0.01cm">
+                                <br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.07cm;                                margin-right: 0.01cm">
+                                <br />
+
+                            </p>
+                        
+            </font>
+</td>
+                                <td bgcolor="#a0ddf0" colspan="" rowspan="" valign="top" align="left">
+    <font color="#000000" size="-1" face="arial,helvetica,sanserif">
+                
+                            <p class="western" align="RIGHT" style="margin-left: -0.47cm;                                margin-right: 0.01cm">
+                                <br />
+
+                            </p>
+                        
+            </font>
+</td>
+            </tr>
+            </table>
+                                                <p>
+                    This provides compression while still being
+                    efficient to decode.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Chars"><strong>Chars</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    Lucene writes unicode
+                    character sequences using the standard UTF-8 encoding.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="String"><strong>String</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    Lucene writes strings as a VInt representing the length, followed by
+                    the character data.
+                </p>
+                                                <p>
+                    String --&gt; VInt, Chars
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Per-Index Files"><strong>Per-Index Files</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                The files in this section exist one-per-index.
+            </p>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Segments File"><strong>Segments File</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    The active segments in the index are stored in the
+                    segment info file.  An index only has
+                    a single file in this format, and it is named "segments".
+                    This lists each segment by name, and also contains the size of each
+                    segment.
+                </p>
+                                                <p>
+                    Segments	--&gt; SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
+                </p>
+                                                <p>
+                    SegCount, SegSize	--&gt; UInt32
+                </p>
+                                                <p>
+                    SegName	--&gt; String
+                </p>
+                                                <p>
+                    SegName is the name of the segment, and is used as the file name prefix
+                    for
+                    all of the files that compose the segment's index.
+                </p>
+                                                <p>
+                    SegSize is the number of documents contained in the segment index.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Lock Files"><strong>Lock Files</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    Several files are used to indicate that another
+                    process is using an index.
+                </p>
+                                                <ul>
+                    <li>
+                        <p>
+                            When a file named "commit.lock"
+                            is present, a process is currently re-writing the "segments"
+                            file and deleting outdated segment index files, or a process is
+                            reading the "segments"
+                            file and opening the files of the segments it names.  This lock file
+                            prevents files from being deleted by another process after a process
+                            has read the "segments"
+                            file but before it has managed to open all of the files of the
+                            segments named therein.
+                        </p>
+                    </li>
+
+                    <li>
+                        <p>
+                            When a file
+                            named "index.lock"
+                            is present, a process is currently adding documents to an index, or
+                            removing files from that index.  This lock file prevents several
+                            processes from attempting to modify an index at the same time.
+                        </p>
+                    </li>
+                </ul>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Deleteable File"><strong>Deleteable File</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    A file named "deletetable"
+                    contains the names of files that are no longer used by the index, but
+                    which could not be deleted.  This is only generated on Win32, where a
+                    file may not be deleted while it is still open.
+                </p>
+                                                <p>
+                    Deleteable	--&gt; DelableCount,
+                    &lt;DelableName&gt;<sup>DelableCount</sup>
+                </p>
+                                                <p>DelableCount	--&gt; UInt32
+                </p>
+                                                <p>DelableName	--&gt;
+                    String
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Per-Segment Files"><strong>Per-Segment Files</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                The remaining files are all per-segment, and are
+                thus defined by suffix.
+            </p>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Fields"><strong>Fields</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p><br /><b>Field Info</b><br /></p>
+                                                <p>
+                    Field names are
+                    stored in the field info file, with suffix .fnm.
+                </p>
+                                                <p>
+                    FieldInfos
+                    (.fnm)	--&gt; FieldsCount, &lt;FieldName,
+                    FieldBits&gt;<sup>FieldsCount</sup>
+                </p>
+                                                <p>
+                    FieldsCount	--&gt; VInt
+                </p>
+                                                <p>
+                    FieldName	--&gt; String
+                </p>
+                                                <p>
+                    FieldBits	--&gt; Byte
+                </p>
+                                                <p>
+                    Currently only the low-order bit is used of FieldBits is used.  It is
+                    one for
+                    indexed fields, and zero for non-indexed fields.
+                </p>
+                                                <p>
+                    Fields are numbered by their order in this file.  Thus field zero is
+                    the
+                    first field in the file, field one the next, and so on.  Note that,
+                    like document numbers, field numbers are segment relative.
+                </p>
+                                                <p><br /><b>Stored Fields</b><br /></p>
+                                                <p>
+                    Stored fields are represented by two files:
+                </p>
+                                                <ol>
+                    <li>
+                        <p>
+                            The field index, or .fdx file.
+                        </p>
+
+                        <p>
+                            This contains, for each document, a pointer to
+                            its field data, as follows:
+                        </p>
+
+                        <p>
+                            FieldIndex
+                            (.fdx)	--&gt;
+                            &lt;FieldValuesPosition&gt;<sup>SegSize</sup>
+                        </p>
+                        <p>FieldValuesPosition
+                            --&gt; Uint64
+                        </p>
+                        <p>This
+                            is used to find the location within the field data file of the
+                            fields of a particular document.  Because it contains fixed-length
+                            data, this file may be easily randomly accessed.  The position of
+                            document<i> n</i>'s<i> </i>field data is the Uint64 at <i>n*8</i> in
+                            this file.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            The field data, or .fdt file.
+
+                        </p>
+
+                        <p>
+                            This contains the stored fields of each document,
+                            as follows:
+                        </p>
+
+                        <p>
+                            FieldData (.fdt)	--&gt;
+                            &lt;DocFieldData&gt;<sup>SegSize</sup>
+                        </p>
+                        <p>DocFieldData	--&gt;
+                            FieldCount, &lt;FieldNum, Bits, Value&gt;<sup>FieldCount</sup>
+                        </p>
+                        <p>Count		--&gt;
+                            VInt
+                        </p>
+                        <p>FieldNum	--&gt;
+                            VInt
+                        </p>
+                        <p>Bits		--&gt;
+                            Byte
+                        </p>
+                        <p>Value		--&gt;
+                            String
+                        </p>
+                        <p>Currently
+                            only the low-order bit is used of Bits is used.  It is one for
+                            tokenized fields, and zero for non-tokenized fields.
+                        </p>
+                    </li>
+                </ol>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Term Dictionary"><strong>Term Dictionary</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    The term dictionary is represented as two files:
+                </p>
+                                                <ol>
+                    <li>
+                        <p>
+                            The term infos, or tis file.
+                        </p>
+
+                        <p>
+                            TermInfoFile (.tis)--&gt;
+                            TermCount, TermInfos
+                        </p>
+                        <p>TermCount	--&gt;
+                            UInt32
+                        </p>
+                        <p>TermInfos	--&gt;
+                            &lt;TermInfo&gt;<sup>TermCount</sup>
+                        </p>
+                        <p>TermInfo	--&gt;
+                            &lt;Term, DocFreq, FreqDelta, ProxDelta&gt;
+                        </p>
+                        <p>Term		--&gt;
+                            &lt;PrefixLength, Suffix, FieldNum&gt;
+                        </p>
+                        <p>Suffix		--&gt;
+                            String
+                        </p>
+                        <p>PrefixLength,
+                            DocFreq, FreqDelta, ProxDelta<br />		--&gt; VInt
+                        </p>
+                        <p>This
+                            file is sorted by Term.  Terms are ordered first lexicographically
+                            by the term's field name, and within that lexicographically by the
+                            term's text.
+                        </p>
+                        <p>Term
+                            text prefixes are shared.  The PrefixLength is the number of initial
+                            characters from the previous term which must be pre-pended to a
+                            term's suffix in order to form the term's text.  Thus, if the
+                            previous term's text was "bone" and the term is "boy",
+                            the PrefixLength is two and the suffix is "y".
+                        </p>
+                        <p>FieldNumber
+                            determines the term's field, whose name is stored in the .fdt file.
+                        </p>
+                        <p>DocFreq
+                            is the count of documents which contain the term.
+                        </p>
+                        <p>FreqDelta
+                            determines the position of this term's TermFreqs within the .frq
+                            file.  In particular, it is the difference between the position of
+                            this term's data in that file and the position of the previous
+                            term's data (or zero, for the first term in the file).
+                        </p>
+                        <p>ProxDelta
+                            determines the position of this term's TermPositions within the .prx
+                            file.  In particular, it is the difference between the position of
+                            this term's data in that file and the position of the previous
+                            term's data (or zero, for the first term in the file.
+                        </p>
+                    </li>
+                    <li>
+                        <p>
+                            The term info index, or .tii file.
+                        </p>
+
+                        <p>
+                            This contains every 128th entry from the .tis
+                            file, along with its location in the "tis" file.  This is
+                            designed to be read entirely into memory and used to provide random
+                            access to the "tis" file.
+                        </p>
+
+                        <p>
+                            The structure of this file is very similar to the
+                            .tis file, with the addition of one item per record, the IndexDelta.
+                        </p>
+
+                        <p>
+                            TermInfoIndex (.tii)--&gt;
+                            IndexTermCount, TermIndices
+                        </p>
+                        <p>IndexTermCount	--&gt;
+                            UInt32
+                        </p>
+                        <p>TermIndices	--&gt;
+                            &lt;TermInfo, IndexDelta&gt;<sup>IndexTermCount</sup>
+                        </p>
+                        <p>IndexDelta	--&gt;
+                            VInt
+                        </p>
+                        <p>IndexDelta
+                            determines the position of this term's TermInfo the .tis file.  In
+                            particular, it is the difference between the position of this term's
+                            entry in that file and the position of the previous term's entry (or
+                            zero for the first term in the file).
+                        </p>
+                    </li>
+                </ol>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Frequencies"><strong>Frequencies</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    The .frq file contains the lists of documents
+                    which contain each term, along with the frequency of the term in that
+                    document.
+                </p>
+                                                <p>FreqFile (.frq)	--&gt;
+                    &lt;TermFreqs&gt;<sup>TermCount</sup>
+                </p>
+                                                <p>TermFreqs	--&gt;
+                    &lt;TermFreq&gt;<sup>DocFreq</sup>
+                </p>
+                                                <p>TermFreq		--&gt;
+                    DocDelta, Freq?
+                </p>
+                                                <p>DocDelta,Freq	--&gt;
+                    VInt
+                </p>
+                                                <p>TermFreqs
+                    are ordered by term (the term is implicit, from the .tis file).
+                </p>
+                                                <p>TermFreq
+                    entries are ordered by increasing document number.
+                </p>
+                                                <p>DocDelta
+                    determines both the document number and the frequency.  In
+                    particular, DocDelta/2 is the difference between this document number
+                    and the previous document number (or zero when this is the first
+                    document in a TermFreqs).  When DocDelta is odd, the frequency is
+                    one.  When DocDelta is even, the frequency is read as another VInt.
+                </p>
+                                                <p>For
+                    example, the TermFreqs for a term which occurs once in document seven
+                    and three times in document eleven would be the following sequence of
+                    VInts:
+                </p>
+                                                <p>	15,
+                    22, 3
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Positions"><strong>Positions</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    The .prx file contains the lists of positions that
+                    each term occurs at within documents.
+                </p>
+                                                <p>ProxFile (.prx)	--&gt;
+                    &lt;TermPositions&gt;<sup>TermCount</sup>
+                </p>
+                                                <p>TermPositions	--&gt;
+                    &lt;Positions&gt;<sup>DocFreq</sup>
+                </p>
+                                                <p>Positions		--&gt;
+                    &lt;PositionDelta&gt;<sup>Freq</sup>
+                </p>
+                                                <p>PositionDelta	--&gt;
+                    VInt
+                </p>
+                                                <p>TermPositions
+                    are ordered by term (the term is implicit, from the .tis file).
+                </p>
+                                                <p>Positions
+                    entries are ordered by increasing document number (the document
+                    number is implicit from the .frq file).
+                </p>
+                                                <p>PositionDelta
+                    is the difference between the position of the current occurrence in
+                    the document and the previous occurrence (or zero, if this is the
+                    first occurrence in this document).
+                </p>
+                                                <p>
+                    For example, the TermPositions for a
+                    term which occurs as the fourth term in one document, and as the
+                    fifth and ninth term in a subsequent document, would be the following
+                    sequence of VInts:
+                </p>
+                                                <p>	4,
+                    5, 4
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Normalization Factors"><strong>Normalization Factors</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>The .nrm file contains,
+                    for each document, a byte that encodes a value that is multiplied
+                    into the score for hits on that field:
+                </p>
+                                                <p>Norms
+                    (.nrm)	--&gt; &lt;Byte&gt;<sup>SegSize</sup>
+                </p>
+                                                <p>Each
+                    byte encodes a floating point value.  Bits 0-2 contain the 3-bit
+                    mantissa, and bits 3-8 contain the 5-bit exponent.
+                </p>
+                                                <p>These
+                    are converted to an IEEE single float value as follows:
+                </p>
+                                                <ol>
+                    <li><p>If
+                            the byte is zero, use a zero float.
+                        </p>
+                    </li>
+                    <li><p>Otherwise,
+                            set the sign bit of the float to zero;
+                        </p>
+                    </li>
+                    <li><p>add
+                            48 to the exponent and use this as the float's exponent;
+                        </p>
+                    </li>
+                    <li><p>map
+                            the mantissa to the high-order 3 bits of the float's mantissa; and
+
+                        </p>
+                    </li>
+                    <li><p>set
+                            the low-order 21 bits of the float's mantissa to zero.
+                        </p>
+                    </li>
+                </ol>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Deleted Documents"><strong>Deleted Documents</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>The .del file is
+                    optional, and only exists when a segment contains deletions:
+                </p>
+                                                <p>Deletions
+                    (.del)	--&gt; ByteCount,BitCount,Bits
+                </p>
+                                                <p>ByteSize,BitCount	--&gt;
+                    Uint32
+                </p>
+                                                <p>Bits		--&gt;
+                    &lt;Byte&gt;<sup>ByteCount</sup>
+                </p>
+                                                <p>ByteCount
+                    indicates the number of bytes in Bits.  It is typically
+                    (SegSize/8)+1.
+                </p>
+                                                <p>
+                    BitCount
+                    indicates the number of bits that are currently set in Bits.
+                </p>
+                                                <p>Bits
+                    contains one bit for each document indexed.  When the bit
+                    corresponding to a document number is set, that document is marked as
+                    deleted.  Bit ordering is from least to most significant.  Thus, if
+                    Bits contains two bytes, 0x00 and 0x02, then document 9 is marked as
+                    deleted.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Limitations"><strong>Limitations</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>There
+                are a few places where these file formats limit the maximum number of
+                terms and documents to a 32-bit quantity, or to approximately 4
+                billion.  This is not today a problem, but, in the long term,
+                probably will be.  These should therefore be replaced with either
+                UInt64 values, or better yet, with VInt values which have no limit.
+            </p>
+                                                <p>There
+                are only two places where the code requires that a value be fixed
+                size.  These are:
+            </p>
+                                                <ol>
+                <li><p>
+                        The FieldValuesPosition (in the stored field index file, .fdx).
+                        This already uses a UInt64, and so is not a problem.
+                    </p></li>
+                <li><p>The
+                        TermCount (in the term info file, .tis).  This is written last but
+                        is read when the file is first opened, and so is stored at the
+                        front.  The indexing code first writes an zero here, then overwrites
+                        it after the rest of the file has been written.  So unless this is
+                        stored elsewhere, it must be fixed size and should be changed to a
+                        UInt64.
+                    </p>
+                </li>
+            </ol>
+                                                <p>Other
+                than these, all UInt values could be converted to VInt to remove
+                limitations.
+            </p>
+                                                <p><br /><br />
+
+            </p>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                        </td>
+                </tr>
+
+                <!-- FOOTER -->
+                <tr><td colspan="2">
+                    <hr noshade="" size="1"/>
+                </td></tr>
+                <tr><td colspan="2">
+                    <div align="center"><font color="#525D76" size="-1"><em>
+                    Copyright &#169; 1999-2002, Apache Software Foundation
+                    </em></font></div>
+                </td></tr>
+            </table>
+        </body>
+    </html>
+<!-- end the processing -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
