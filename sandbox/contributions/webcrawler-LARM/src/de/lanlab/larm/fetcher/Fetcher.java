@@ -119,7 +119,7 @@ public class Fetcher implements MessageListener
         FetcherTask.setDocStorage(docStorage);
         FetcherTask.setLinkStorage(linkStorage);
         fetcherPool = new ThreadPool(maxThreads, new FetcherThreadFactory(hostManager));
-        fetcherPool.setQueue(new FetcherTaskQueue());
+        fetcherPool.setQueue(new FetcherTaskQueue(hostManager));
         docsRead = 0;
         this.hostManager = hostManager;
     }
