@@ -82,6 +82,7 @@ final class SegmentReader extends IndexReader {
   private FieldsReader fieldsReader;
 
   TermInfosReader tis;
+  TermVectorsReader termVectorsReader;
 
   BitVector deletedDocs = null;
   private boolean deletedDocsDirty = false;
@@ -109,21 +110,22 @@ final class SegmentReader extends IndexReader {
         out.close();
       }
       String fileName = segment + ".f" + fieldInfos.fieldNumber(name);
-      directory().renameFile(segment + ".tmp",  fileName);
+      directory().renameFile(segment + ".tmp", fileName);
       this.dirty = false;
     }
   }
+
   private Hashtable norms = new Hashtable();
 
   SegmentReader(SegmentInfos sis, SegmentInfo si, boolean closeDir)
-    throws IOException {
+          throws IOException {
     this(si);
     closeDirectory = closeDir;
     segmentInfos = sis;
   }
 
   SegmentReader(SegmentInfo si)
-    throws IOException {
+          throws IOException {
     super(si.dir);
     segment = si.name;
 
@@ -149,13 +151,17 @@ final class SegmentReader extends IndexReader {
     freqStream = cfsDir.openFile(segment + ".frq");
     proxStream = cfsDir.openFile(segment + ".prx");
     openNorms(cfsDir);
+
+    if (fieldInfos.hasVectors()) { // open term vector files only as needed
+      termVectorsReader = new TermVectorsReader(cfsDir, segment, fieldInfos);
+    }
   }
 
   protected final synchronized void doClose() throws IOException {
     if (deletedDocsDirty || normsDirty) {
       synchronized (directory()) {		  // in- & inter-process sync
         new Lock.With(directory().makeLock(IndexWriter.COMMIT_LOCK_NAME),
-          IndexWriter.COMMIT_LOCK_TIMEOUT) {
+                IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
 
             if (deletedDocsDirty) {               // re-write deleted 
@@ -164,18 +170,18 @@ final class SegmentReader extends IndexReader {
             }
 
             if (normsDirty) {               // re-write norms 
-              Enumeration keys  = norms.keys();
-              Enumeration values  = norms.elements();
+              Enumeration keys = norms.keys();
+              Enumeration values = norms.elements();
               while (values.hasMoreElements()) {
-                String field = (String)keys.nextElement();
-                Norm norm = (Norm)values.nextElement();
+                String field = (String) keys.nextElement();
+                Norm norm = (Norm) values.nextElement();
                 if (norm.dirty) {
                   norm.reWrite(field);
                 }
               }
             }
 
-            if(segmentInfos != null)
+            if (segmentInfos != null)
               segmentInfos.write(directory());
             else
               directory().touchFile("segments");
@@ -196,6 +202,7 @@ final class SegmentReader extends IndexReader {
       proxStream.close();
 
     closeNorms();
+    if (termVectorsReader != null) termVectorsReader.close();
 
     if (cfsReader != null)
       cfsReader.close();
@@ -212,6 +219,7 @@ final class SegmentReader extends IndexReader {
     return deletedDocs != null;
   }
 
+
   static final boolean usesCompoundFile(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".cfs");
   }
@@ -226,7 +234,7 @@ final class SegmentReader extends IndexReader {
   public synchronized void undeleteAll() throws IOException {
     synchronized (directory()) {		  // in- & inter-process sync
       new Lock.With(directory().makeLock(IndexWriter.COMMIT_LOCK_NAME),
-                    IndexWriter.COMMIT_LOCK_TIMEOUT) {
+              IndexWriter.COMMIT_LOCK_TIMEOUT) {
         public Object doBody() throws IOException {
           if (directory().fileExists(segment + ".del")) {
             directory().deleteFile(segment + ".del");
@@ -242,11 +250,11 @@ final class SegmentReader extends IndexReader {
 
   final Vector files() throws IOException {
     Vector files = new Vector(16);
-    final String ext[] = new String[] {
-      "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del"
-    };
+    final String ext[] = new String[]{
+      "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
+      "tvx", "tvd", "tvf", "tvp" };
 
-    for (int i=0; i<ext.length; i++) {
+    for (int i = 0; i < ext.length; i++) {
       String name = segment + "." + ext[i];
       if (directory().fileExists(name))
         files.addElement(name);
@@ -271,7 +279,7 @@ final class SegmentReader extends IndexReader {
   public final synchronized Document document(int n) throws IOException {
     if (isDeleted(n))
       throw new IllegalArgumentException
-        ("attempt to access a deleted document");
+              ("attempt to access a deleted document");
     return fieldsReader.doc(n);
   }
 
@@ -329,12 +337,31 @@ final class SegmentReader extends IndexReader {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed == indexed)
         fieldSet.add(fi.name);
-      }
-      return fieldSet;
     }
+    return fieldSet;
+  }
+
+  /**
+   * 
+   * @param storedTermVector if true, returns only Indexed fields that have term vector info, 
+   *                        else only indexed fields without term vector info 
+   * @return Collection of Strings indicating the names of the fields
+   */
+  public Collection getIndexedFieldNames(boolean storedTermVector) {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < fieldInfos.size(); i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      if (fi.isIndexed == true && fi.storeTermVector == storedTermVector){
+        fieldSet.add(fi.name);
+      }
+    }
+    return fieldSet;
+
+  }
 
   public synchronized byte[] norms(String field) throws IOException {
-    Norm norm = (Norm)norms.get(field);
+    Norm norm = (Norm) norms.get(field);
     if (norm == null)                             // not an indexed field
       return null;
     if (norm.bytes == null) {                     // value not yet read
@@ -346,8 +373,8 @@ final class SegmentReader extends IndexReader {
   }
 
   public synchronized void setNorm(int doc, String field, byte value)
-    throws IOException {
-    Norm norm = (Norm)norms.get(field);
+          throws IOException {
+    Norm norm = (Norm) norms.get(field);
     if (norm == null)                             // not an indexed field
       return;
     norm.dirty = true;                            // mark it dirty
@@ -360,7 +387,7 @@ final class SegmentReader extends IndexReader {
   public synchronized void norms(String field, byte[] bytes, int offset)
     throws IOException {
 
-    Norm norm = (Norm)norms.get(field);
+    Norm norm = (Norm) norms.get(field);
     if (norm == null)
       return;					  // use zeros in array
 
@@ -369,7 +396,7 @@ final class SegmentReader extends IndexReader {
       return;
     }
 
-    InputStream normStream = (InputStream)norm.in.clone();
+    InputStream normStream = (InputStream) norm.in.clone();
     try {                                         // read from disk
       normStream.seek(0);
       normStream.readBytes(bytes, offset, maxDoc());
@@ -392,11 +419,40 @@ final class SegmentReader extends IndexReader {
 
   private final void closeNorms() throws IOException {
     synchronized (norms) {
-      Enumeration enumerator  = norms.elements();
+      Enumeration enumerator = norms.elements();
       while (enumerator.hasMoreElements()) {
-        Norm norm = (Norm)enumerator.nextElement();
+        Norm norm = (Norm) enumerator.nextElement();
         norm.in.close();
       }
     }
+  }
+  
+  /** Return a term frequency vector for the specified document and field. The
+   *  vector returned contains term numbers and frequencies for all terms in
+   *  the specified field of this document, if the field had storeTermVector
+   *  flag set.  If the flag was not set, the method returns null.
+   */
+  public TermFreqVector getTermFreqVector(int docNumber, String field)
+          throws IOException {
+    // Check if this field is invalid or has no stored term vector
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null || !fi.storeTermVector) return null;
+
+    return termVectorsReader.get(docNumber, field);
+  }
+
+
+  /** Return an array of term frequency vectors for the specified document.
+   *  The array contains a vector for each vectorized field in the document.
+   *  Each vector vector contains term numbers and frequencies for all terms
+   *  in a given vectorized field.
+   *  If no such fields existed, the method returns null.
+   */
+  public TermFreqVector[] getTermFreqVectors(int docNumber)
+          throws IOException {
+    if (termVectorsReader == null)
+      return null;
+
+    return termVectorsReader.get(docNumber);
   }
 }

@@ -54,46 +54,68 @@ package org.apache.lucene.index;
  * <http://www.apache.org/>.
  */
 
+import junit.framework.TestCase;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+
 import java.io.IOException;
 
-/** Abstract class for enumerating terms.
+public class TestDocumentWriter extends TestCase {
+  private RAMDirectory dir = new RAMDirectory();
+  private Document testDoc = new Document();
 
-  <p>Term enumerations are always ordered by Term.compareTo().  Each term in
-  the enumeration is greater than all that precede it.  */
 
-public abstract class TermEnum {
-  /** Increments the enumeration to the next element.  True if one exists.*/
-  public abstract boolean next() throws IOException;
+  public TestDocumentWriter(String s) {
+    super(s);
+  }
 
-  /** Returns the current Term in the enumeration.*/
-  public abstract Term term();
+  protected void setUp() {
+    DocHelper.setupDoc(testDoc);
+  }
 
-  /** Returns the docFreq of the current Term in the enumeration.*/
-  public abstract int docFreq();
+  protected void tearDown() {
 
-  /** Closes the enumeration to further activity, freeing resources. */
-  public abstract void close() throws IOException;
-  
-// Term Vector support
-  
-  /** Skips terms to the first beyond the current whose value is
-   * greater or equal to <i>target</i>. <p>Returns true iff there is such
-   * an entry.  <p>Behaves as if written: <pre>
-   *   public boolean skipTo(Term target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > term());
-   *     return true;
-   *   }
-   * </pre>
-   * Some implementations are considerably more efficient than that.
-   */
-  public boolean skipTo(Term target) throws IOException {
-     do {
-        if (!next())
-  	        return false;
-     } while (target.compareTo(term()) > 0);
-     return true;
+  }
+
+  public void test() {
+    assertTrue(dir != null);
+
+  }
+
+  public void testAddDocument() {
+    Analyzer analyzer = new WhitespaceAnalyzer();
+    Similarity similarity = Similarity.getDefault();
+    DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
+    assertTrue(writer != null);
+    try {
+      writer.addDocument("test", testDoc);
+      //After adding the document, we should be able to read it back in
+      SegmentReader reader = new SegmentReader(new SegmentInfo("test", 1, dir));
+      assertTrue(reader != null);
+      Document doc = reader.document(0);
+      assertTrue(doc != null);
+      
+      //System.out.println("Document: " + doc);
+      Field [] fields = doc.getFields("textField2");
+      assertTrue(fields != null && fields.length == 1);
+      assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
+      assertTrue(fields[0].isTermVectorStored() == true);
+      
+      fields = doc.getFields("textField1");
+      assertTrue(fields != null && fields.length == 1);
+      assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_1_TEXT));
+      assertTrue(fields[0].isTermVectorStored() == false);
+      
+      fields = doc.getFields("keyField");
+      assertTrue(fields != null && fields.length == 1);
+      assertTrue(fields[0].stringValue().equals(DocHelper.KEYWORD_TEXT));
+    } catch (IOException e) {
+      e.printStackTrace();
+      assertTrue(false);
+    }
   }
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.search;
 
 /* ====================================================================
  * The Apache Software License, Version 1.1
@@ -54,46 +54,51 @@ package org.apache.lucene.index;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
+import junit.framework.TestCase;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 
-/** Abstract class for enumerating terms.
+public class TestQueryTermVector extends TestCase {
 
-  <p>Term enumerations are always ordered by Term.compareTo().  Each term in
-  the enumeration is greater than all that precede it.  */
 
-public abstract class TermEnum {
-  /** Increments the enumeration to the next element.  True if one exists.*/
-  public abstract boolean next() throws IOException;
+  public TestQueryTermVector(String s) {
+    super(s);
+  }
 
-  /** Returns the current Term in the enumeration.*/
-  public abstract Term term();
+  protected void setUp() {
+  }
 
-  /** Returns the docFreq of the current Term in the enumeration.*/
-  public abstract int docFreq();
+  protected void tearDown() {
 
-  /** Closes the enumeration to further activity, freeing resources. */
-  public abstract void close() throws IOException;
-  
-// Term Vector support
-  
-  /** Skips terms to the first beyond the current whose value is
-   * greater or equal to <i>target</i>. <p>Returns true iff there is such
-   * an entry.  <p>Behaves as if written: <pre>
-   *   public boolean skipTo(Term target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > term());
-   *     return true;
-   *   }
-   * </pre>
-   * Some implementations are considerably more efficient than that.
-   */
-  public boolean skipTo(Term target) throws IOException {
-     do {
-        if (!next())
-  	        return false;
-     } while (target.compareTo(term()) > 0);
-     return true;
+  }
+
+  public void testConstructor() {
+    String [] queryTerm = {"foo", "bar", "foo", "again", "foo", "bar", "go", "go", "go"};
+    //Items are sorted lexicographically
+    String [] gold = {"again", "bar", "foo", "go"};
+    int [] goldFreqs = {1, 2, 3, 3};
+    QueryTermVector result = new QueryTermVector(queryTerm);
+    assertTrue(result != null);
+    String [] terms = result.getTerms();
+    assertTrue(terms.length == 4);
+    int [] freq = result.getTermFrequencies();
+    assertTrue(freq.length == 4);
+    checkGold(terms, gold, freq, goldFreqs);
+    result = new QueryTermVector(null);
+    assertTrue(result.getTerms().length == 0);
+    
+    result = new QueryTermVector("foo bar foo again foo bar go go go", new WhitespaceAnalyzer());
+    assertTrue(result != null);
+    terms = result.getTerms();
+    assertTrue(terms.length == 4);
+    freq = result.getTermFrequencies();
+    assertTrue(freq.length == 4);
+    checkGold(terms, gold, freq, goldFreqs);
+  }
+
+  private void checkGold(String[] terms, String[] gold, int[] freq, int[] goldFreqs) {
+    for (int i = 0; i < terms.length; i++) {
+      assertTrue(terms[i].equals(gold[i]));
+      assertTrue(freq[i] == goldFreqs[i]);
+    }
   }
 }

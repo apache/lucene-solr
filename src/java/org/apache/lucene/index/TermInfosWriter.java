@@ -57,6 +57,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.StringHelper;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
   Directory.  A TermInfos can be written once, in order.  */
@@ -156,10 +157,10 @@ final class TermInfosWriter {
     lastTi.set(ti);
     size++;
   }
-
+  
   private final void writeTerm(Term term)
        throws IOException {
-    int start = stringDifference(lastTerm.text, term.text);
+    int start = StringHelper.stringDifference(lastTerm.text, term.text);
     int length = term.text.length() - start;
 
     output.writeVInt(start);			  // write shared prefix length
@@ -171,15 +172,7 @@ final class TermInfosWriter {
     lastTerm = term;
   }
 
-  private static final int stringDifference(String s1, String s2) {
-    int len1 = s1.length();
-    int len2 = s2.length();
-    int len = len1 < len2 ? len1 : len2;
-    for (int i = 0; i < len; i++)
-      if (s1.charAt(i) != s2.charAt(i))
-	return i;
-    return len;
-  }
+  
 
   /** Called to complete TermInfos creation. */
   final void close() throws IOException {
@@ -190,4 +183,5 @@ final class TermInfosWriter {
     if (!isIndex)
       other.close();
   }
+
 }

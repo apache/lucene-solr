@@ -77,6 +77,13 @@ final class DocumentWriter {
   private FieldInfos fieldInfos;
   private int maxFieldLength;
 
+  /**
+   * 
+   * @param directory The directory to write the document information to
+   * @param analyzer The analyzer to use for the document
+   * @param similarity The Similarity function
+   * @param maxFieldLength The maximum number of tokens a field may have
+   */ 
   DocumentWriter(Directory directory, Analyzer analyzer,
                  Similarity similarity, int maxFieldLength) {
     this.directory = directory;
@@ -86,7 +93,7 @@ final class DocumentWriter {
   }
 
   final void addDocument(String segment, Document doc)
-    throws IOException {
+          throws IOException {
     // write field names
     fieldInfos = new FieldInfos();
     fieldInfos.add(doc);
@@ -94,7 +101,7 @@ final class DocumentWriter {
 
     // write field values
     FieldsWriter fieldsWriter =
-      new FieldsWriter(directory, segment, fieldInfos);
+            new FieldsWriter(directory, segment, fieldInfos);
     try {
       fieldsWriter.addDocument(doc);
     } finally {
@@ -144,7 +151,7 @@ final class DocumentWriter {
 
   // Tokenizes the fields of a document into Postings.
   private final void invertDocument(Document doc)
-    throws IOException {
+          throws IOException {
     Enumeration fields = doc.fields();
     while (fields.hasMoreElements()) {
       Field field = (Field) fields.nextElement();
@@ -166,7 +173,7 @@ final class DocumentWriter {
             reader = new StringReader(field.stringValue());
           else
             throw new IllegalArgumentException
-              ("field must have either String or Reader value");
+                    ("field must have either String or Reader value");
 
           // Tokenize field and add to postingTable
           TokenStream stream = analyzer.tokenStream(fieldName, reader);
@@ -277,15 +284,17 @@ final class DocumentWriter {
   }
 
   private final void writePostings(Posting[] postings, String segment)
-    throws IOException {
+          throws IOException {
     OutputStream freq = null, prox = null;
     TermInfosWriter tis = null;
-
+    TermVectorsWriter termVectorWriter = null;
     try {
+      //open files for inverse index storage
       freq = directory.createFile(segment + ".frq");
       prox = directory.createFile(segment + ".prx");
       tis = new TermInfosWriter(directory, segment, fieldInfos);
       TermInfo ti = new TermInfo();
+      String currentField = null;
 
       for (int i = 0; i < postings.length; i++) {
         Posting posting = postings[i];
@@ -295,38 +304,65 @@ final class DocumentWriter {
         tis.add(posting.term, ti);
 
         // add an entry to the freq file
-        int f = posting.freq;
-        if (f == 1)				  // optimize freq=1
+        int postingFreq = posting.freq;
+        if (postingFreq == 1)				  // optimize freq=1
           freq.writeVInt(1);			  // set low bit of doc num.
         else {
           freq.writeVInt(0);			  // the document number
-          freq.writeVInt(f);			  // frequency in doc
+          freq.writeVInt(postingFreq);			  // frequency in doc
         }
 
         int lastPosition = 0;			  // write positions
         int[] positions = posting.positions;
-        for (int j = 0; j < f; j++) {		  // use delta-encoding
+        for (int j = 0; j < postingFreq; j++) {		  // use delta-encoding
           int position = positions[j];
           prox.writeVInt(position - lastPosition);
           lastPosition = position;
         }
+        // check to see if we switched to a new field
+        String termField = posting.term.field();
+        if (currentField != termField) {
+          // changing field - see if there is something to save
+          currentField = termField;
+          FieldInfo fi = fieldInfos.fieldInfo(currentField);
+          if (fi.storeTermVector) {
+            if (termVectorWriter == null) {
+              termVectorWriter =
+                new TermVectorsWriter(directory, segment, fieldInfos);
+              termVectorWriter.openDocument();
+            }
+            termVectorWriter.openField(currentField);
+          } else if (termVectorWriter != null) {
+            termVectorWriter.closeField();
+          }
+        }
+        if (termVectorWriter != null && termVectorWriter.isFieldOpen()) {
+          termVectorWriter.addTerm(posting.term.text(), postingFreq);
+        }
       }
+      if (termVectorWriter != null)
+        termVectorWriter.closeDocument();
     } finally {
-      if (freq != null) freq.close();
-      if (prox != null) prox.close();
-      if (tis != null) tis.close();
+      // make an effort to close all streams we can but remember and re-throw
+      // the first exception encountered in this process
+      IOException keep = null;
+      if (freq != null) try { freq.close(); } catch (IOException e) { if (keep == null) keep = e; }
+      if (prox != null) try { prox.close(); } catch (IOException e) { if (keep == null) keep = e; }
+      if (tis  != null) try {  tis.close(); } catch (IOException e) { if (keep == null) keep = e; }
+      if (termVectorWriter  != null) try {  termVectorWriter.close(); } catch (IOException e) { if (keep == null) keep = e; }
+      if (keep != null) throw (IOException) keep.fillInStackTrace();
     }
   }
 
   private final void writeNorms(Document doc, String segment)
-    throws IOException {
+          throws IOException {
     Enumeration fields = doc.fields();
     while (fields.hasMoreElements()) {
       Field field = (Field) fields.nextElement();
       if (field.isIndexed()) {
         int n = fieldInfos.fieldNumber(field.name());
         float norm =
-          fieldBoosts[n] * similarity.lengthNorm(field.name(),fieldLengths[n]);
+                fieldBoosts[n] * similarity.lengthNorm(field.name(), fieldLengths[n]);
         OutputStream norms = directory.createFile(segment + ".f" + n);
         try {
           norms.writeByte(similarity.encodeNorm(norm));

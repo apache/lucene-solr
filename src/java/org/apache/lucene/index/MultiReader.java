@@ -75,7 +75,7 @@ public class MultiReader extends IndexReader {
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
-  
+
   /** Construct reading the named set of readers. */
   public MultiReader(IndexReader[] readers) throws IOException {
     this(readers.length == 0 ? null : readers[0].directory(), readers);
@@ -95,6 +95,25 @@ public class MultiReader extends IndexReader {
         hasDeletions = true;
     }
     starts[readers.length] = maxDoc;
+  }
+
+
+  /** Return an array of term frequency vectors for the specified document.
+   *  The array contains a vector for each vectorized field in the document.
+   *  Each vector vector contains term numbers and frequencies for all terms
+   *  in a given vectorized field.
+   *  If no such fields existed, the method returns null.
+   */
+  public TermFreqVector[] getTermFreqVectors(int n)
+          throws IOException {
+    int i = readerIndex(n);			  // find segment num
+    return readers[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
+  }
+
+  public TermFreqVector getTermFreqVector(int n, String field)
+          throws IOException {
+    int i = readerIndex(n);			  // find segment num
+    return readers[i].getTermFreqVector(n - starts[i], field);
   }
 
   public synchronized int numDocs() {
@@ -245,6 +264,18 @@ public class MultiReader extends IndexReader {
     }
     return fieldSet;
   }
+
+  public Collection getIndexedFieldNames(boolean storedTermVector) {
+    // maintain a unique set of field names
+    Set fieldSet = new HashSet();
+    for (int i = 0; i < readers.length; i++) {
+        IndexReader reader = readers[i];
+        Collection names = reader.getIndexedFieldNames(storedTermVector);
+        fieldSet.addAll(names);
+    }
+    return fieldSet;
+  }
+
 }
 
 class MultiTermEnum extends TermEnum {

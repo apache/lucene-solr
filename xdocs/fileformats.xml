@@ -14,7 +14,7 @@
 
             <p>
                 This document defines the index file formats used
-                in Lucene version 1.3.
+                in Lucene version 1.4.
             </p>
 
             <p>
@@ -224,7 +224,11 @@
                         multiplied into the score for hits on that field.
                     </p>
                 </li>
-
+                <li><p>Term Vectors.  For each field in each document, the term vector
+                       (sometimes called document vector) is stored.  A term vector consists
+                       of the term text, term frequency and term position.
+                    </p>
+                </li>              
                 <li><p>Deleted documents.
                         An optional file indicating which documents are deleted.
                     </p>
@@ -804,9 +808,10 @@
                 </p>
 
                 <p>
-                    Currently only the low-order bit is used of FieldBits is used.  It is
-                    one for
-                    indexed fields, and zero for non-indexed fields.
+                    The low-order bit is one for
+                    indexed fields, and zero for non-indexed fields.  The second lowest-order
+                    bit is one for fields that have term vectors stored, and zero for fields
+                    without term vectors.
                 </p>
 
                 <p>
@@ -1112,6 +1117,52 @@
                     </li>
                 </ol>
 
+            </subsection>
+            <subsection name="Term Vectors">
+              Term Vector support is an optional on a field by field basis.  It consists of 4
+              files.
+              <ol>
+                <li>
+                  <p>The Document Index or .tvx file.</p>
+                  <p>This contains, for each document, a pointer to the document data in the Document 
+                    (.tvd) file.
+                  </p>
+                  <p>DocumentIndex (.tvx) --&gt; FormatVersion&lt;DocumentPosition&gt;<sup>NumDocs</sup></p>
+                  <p>FormatVersion --&gt; Int</p>
+                  <p>DocumentPosition   --&gt; UInt64</p>
+                  <p>This is used to find the position of the Document in the .tvd file.</p>
+                </li>
+                <li>
+                  <p>The Document or .tvd file.</p>
+                  <p>This contains, for each document, the number of fields, a list of the fields with
+                  term vector info and finally a list of pointers to the field information in the .tvf 
+                  (Term Vector Fields) file.</p>
+                  <p>
+                    Document (.tvd) --&gt; FormatVersion&lt;NumFields, FieldNums, FieldPositions,&gt;<sup>NumDocs</sup>
+                  </p>
+                  <p>FormatVersion --&gt; Int</p>
+                  <p>NumFields --&gt; VInt</p>
+                  <p>FieldNums --&gt; &lt;FieldNumDelta&gt;<sup>NumFields</sup></p>
+                  <p>FieldNumDelta --&gt; VInt</p>
+                  <p>FieldPositions --&gt; &lt;FieldPosition&gt;<sup>NumFields</sup></p>
+                  <p>FieldPosition --&gt; VLong</p>
+                  <p>The .tvd file is used to map out the fields that have term vectors stored and
+                  where the field information is in the .tvf file.</p>
+                </li>
+                <li>
+                  <p>The Field or .tvf file.</p>
+                  <p>This file contains, for each field that has a term vector stored, a list of
+                  the terms and their frequencies.</p>
+                  <p>Field (.tvf) --&gt; FormatVersion&lt;NumTerms, NumDistinct, TermFreqs&gt;<sup>NumFields</sup></p>
+                  <p>FormatVersion --&gt; Int</p>
+                  <p>NumTerms --&gt; VInt</p>
+                  <p>NumDistinct --&gt; VInt -- Future Use</p>
+                  <p>TermFreqs --&gt; &lt;TermText, TermFreq&gt;<sup>NumTerms</sup></p>
+                  <p>TermText --&gt; String</p>
+                  <p>TermFreq --&gt; VInt</p>
+                  <p></p>
+                </li>
+              </ol>
             </subsection>
 
             <subsection name="Deleted Documents">

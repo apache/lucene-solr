@@ -72,7 +72,7 @@ import java.io.IOException;
  * @author Dmitry Serebrennikov
  * @version $Id$
  */
-public class CompoundFileReader extends Directory {
+class CompoundFileReader extends Directory {
 
     private static final class FileEntry {
         long offset;

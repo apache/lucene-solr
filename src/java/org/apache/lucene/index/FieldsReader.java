@@ -63,6 +63,7 @@ import org.apache.lucene.document.Field;
 
 /**
  * Class responsible for access to stored document fields.
+ *
  * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
  *
  * @version $Id$
@@ -108,7 +109,7 @@ final class FieldsReader {
 			fieldsStream.readString(), // read value
 			true,			  // stored
 			fi.isIndexed,		  // indexed
-			(bits & 1) != 0));	  // tokenized
+			(bits & 1) != 0, fi.storeTermVector)); // vector
     }
 
     return doc;

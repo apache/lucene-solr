@@ -79,7 +79,7 @@ public class TestFilterIndexReader extends TestCase {
 
   private static class TestReader extends FilterIndexReader {
 
-    /** Filter that only permits terms containing 'e'.*/
+     /** Filter that only permits terms containing 'e'.*/
     private static class TestTermEnum extends FilterTermEnum {
       public TestTermEnum(TermEnum enum)
         throws IOException {

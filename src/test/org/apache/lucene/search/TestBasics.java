@@ -103,7 +103,7 @@ public class TestBasics extends TestCase {
 
     searcher = new IndexSearcher(directory);
   }
-
+  
   public void testTerm() throws Exception {
     Query query = new TermQuery(new Term("field", "seventy"));
     checkHits(query, new int[]

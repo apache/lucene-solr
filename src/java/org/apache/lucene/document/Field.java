@@ -71,6 +71,7 @@ import org.apache.lucene.search.Hits;             // for javadoc
 public final class Field implements java.io.Serializable {
   private String name = "body";
   private String stringValue = null;
+  private boolean storeTermVector = false;
   private Reader readerValue = null;
   private boolean isStored = false;
   private boolean isIndexed = true;
@@ -114,7 +115,8 @@ public final class Field implements java.io.Serializable {
   }
 
   /** Constructs a String-valued Field that is not tokenized, but is indexed
-    and stored.  Useful for non-text fields, e.g. date or url.  */
+    and stored.  Useful for non-text fields, e.g. date or url.  
+   */
   public static final Field Keyword(String name, String value) {
     return new Field(name, value, true, true, false);
   }
@@ -127,9 +129,9 @@ public final class Field implements java.io.Serializable {
 
   /** Constructs a String-valued Field that is tokenized and indexed,
     and is stored in the index, for return with hits.  Useful for short text
-    fields, like "title" or "subject". */
+    fields, like "title" or "subject". Term vector will not be stored for this field. */
   public static final Field Text(String name, String value) {
-    return new Field(name, value, true, true, true);
+    return Text(name, value, false);
   }
 
   /** Constructs a Date-valued Field that is not tokenized and is indexed,
@@ -139,16 +141,38 @@ public final class Field implements java.io.Serializable {
   }
 
   /** Constructs a String-valued Field that is tokenized and indexed,
-    but that is not stored in the index. */
+    and is stored in the index, for return with hits.  Useful for short text
+    fields, like "title" or "subject". */
+  public static final Field Text(String name, String value, boolean storeTermVector) {
+    return new Field(name, value, true, true, true, storeTermVector);
+  }
+
+  /** Constructs a String-valued Field that is tokenized and indexed,
+    but that is not stored in the index.  Term vector will not be stored for this field. */
   public static final Field UnStored(String name, String value) {
-    return new Field(name, value, false, true, true);
+    return UnStored(name, value, false);
+  }
+
+  /** Constructs a String-valued Field that is tokenized and indexed,
+    but that is not stored in the index. */
+  public static final Field UnStored(String name, String value, boolean storeTermVector) {
+    return new Field(name, value, false, true, true, storeTermVector);
+  }
+
+  /** Constructs a Reader-valued Field that is tokenized and indexed, but is
+    not stored in the index verbatim.  Useful for longer text fields, like
+    "body". Term vector will not be stored for this field. */
+  public static final Field Text(String name, Reader value) {
+    return Text(name, value, false);
   }
 
   /** Constructs a Reader-valued Field that is tokenized and indexed, but is
     not stored in the index verbatim.  Useful for longer text fields, like
     "body". */
-  public static final Field Text(String name, Reader value) {
-    return new Field(name, value);
+  public static final Field Text(String name, Reader value, boolean storeTermVector) {
+    Field f = new Field(name, value);
+    f.storeTermVector = storeTermVector;
+    return f;
   }
 
   /** The name of the field (e.g., "date", "subject", "title", or "body")
@@ -162,19 +186,41 @@ public final class Field implements java.io.Serializable {
     is used.  Exactly one of stringValue() and readerValue() must be set. */
   public Reader readerValue()	{ return readerValue; }
 
+
+  /** Create a field by specifying all parameters except for <code>storeTermVector</code>,
+   *  which is set to <code>false</code>.
+   */
   public Field(String name, String string,
 	       boolean store, boolean index, boolean token) {
+    this(name, string, store, index, token, false);
+  }
+
+  /**
+   * 
+   * @param name The name of the field
+   * @param string The string to process
+   * @param store true if the field should store the string
+   * @param index true if the field should be indexed
+   * @param token true if the field should be tokenized
+   * @param storeTermVector true if we should store the Term Vector info
+   */ 
+  public Field(String name, String string,
+	       boolean store, boolean index, boolean token, boolean storeTermVector) {
     if (name == null)
       throw new IllegalArgumentException("name cannot be null");
     if (string == null)
       throw new IllegalArgumentException("value cannot be null");
+    if (!index && storeTermVector)
+      throw new IllegalArgumentException("cannot store a term vector for fields that are not indexed.");
 
     this.name = name.intern();			  // field names are interned
     this.stringValue = string;
     this.isStored = store;
     this.isIndexed = index;
     this.isTokenized = token;
+    this.storeTermVector = storeTermVector;
   }
+
   Field(String name, Reader reader) {
     if (name == null)
       throw new IllegalArgumentException("name cannot be null");
@@ -199,6 +245,16 @@ public final class Field implements java.io.Serializable {
     Reader-valued. */
   public final boolean 	isTokenized() 	{ return isTokenized; }
 
+  /** True iff the term or terms used to index this field are stored as a term
+   *  vector, avaliable from {@link IndexReader#getTermFreqVector(int,String)}.
+   *  These methods do not provide access to the original content of the field,
+   *  only to terms used to index it. If the original content must be
+   *  preserved, use the <code>stored</code> attribute instead.
+   *
+   * @see IndexReader#getTermFreqVector(int, String)
+   */
+  public final boolean isTermVectorStored() { return storeTermVector; }
+
   /** Prints a Field for human consumption. */
   public final String toString() {
     if (isStored && isIndexed && !isTokenized)
@@ -209,8 +265,14 @@ public final class Field implements java.io.Serializable {
       return "Text<" + name + ":" + stringValue + ">";
     else if (!isStored && isIndexed && isTokenized && readerValue!=null)
       return "Text<" + name + ":" + readerValue + ">";
+    else if (!isStored && isIndexed && isTokenized)
+    {
+      return "UnStored<" + name + ">";
+    }
     else
+    {
       return super.toString();
+    }
   }
 
 }

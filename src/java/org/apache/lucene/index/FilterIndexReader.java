@@ -66,7 +66,7 @@ import org.apache.lucene.document.Document;
  * contained index reader. Subclasses of <code>FilterIndexReader</code> may
  * further override some of these methods and may also provide additional
  * methods and fields.
-*/
+ */
 public class FilterIndexReader extends IndexReader {
 
   /** Base class for filtering {@link TermDocs} implementations. */
@@ -89,7 +89,7 @@ public class FilterIndexReader extends IndexReader {
 
   /** Base class for filtering {@link TermPositions} implementations. */
   public static class FilterTermPositions
-     extends FilterTermDocs implements TermPositions {
+          extends FilterTermDocs implements TermPositions {
 
     public FilterTermPositions(TermPositions in) { super(in); }
 
@@ -118,10 +118,20 @@ public class FilterIndexReader extends IndexReader {
     this.in = in;
   }
 
+  public TermFreqVector[] getTermFreqVectors(int docNumber)
+          throws IOException {
+    return in.getTermFreqVectors(docNumber);
+  }
+
+  public TermFreqVector getTermFreqVector(int docNumber, String field)
+          throws IOException {
+    return in.getTermFreqVector(docNumber, field);
+  }
+
   public int numDocs() { return in.numDocs(); }
   public int maxDoc() { return in.maxDoc(); }
 
-  public Document document(int n) throws IOException {return in.document(n);}
+  public Document document(int n) throws IOException { return in.document(n); }
 
   public boolean isDeleted(int n) { return in.isDeleted(n); }
   public boolean hasDeletions() { return in.hasDeletions(); }
@@ -132,7 +142,7 @@ public class FilterIndexReader extends IndexReader {
     in.norms(f, bytes, offset);
   }
   public void setNorm(int d, String f, byte b) throws IOException {
-    in.setNorm(d,f,b);
+    in.setNorm(d, f, b);
   }
 
   public TermEnum terms() throws IOException { return in.terms(); }
@@ -141,6 +151,7 @@ public class FilterIndexReader extends IndexReader {
   public int docFreq(Term t) throws IOException { return in.docFreq(t); }
 
   public TermDocs termDocs() throws IOException { return in.termDocs(); }
+
   public TermPositions termPositions() throws IOException {
     return in.termPositions();
   }
@@ -151,7 +162,18 @@ public class FilterIndexReader extends IndexReader {
   public Collection getFieldNames() throws IOException {
     return in.getFieldNames();
   }
+
   public Collection getFieldNames(boolean indexed) throws IOException {
     return in.getFieldNames(indexed);
+  }
+
+  /**
+   * 
+   * @param storedTermVector if true, returns only Indexed fields that have term vector info, 
+   *                        else only indexed fields without term vector info 
+   * @return Collection of Strings indicating the names of the fields
+   */
+  public Collection getIndexedFieldNames(boolean storedTermVector) {
+    return in.getIndexedFieldNames(storedTermVector);
   }
 }

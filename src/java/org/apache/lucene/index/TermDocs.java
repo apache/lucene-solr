@@ -57,13 +57,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 /** TermDocs provides an interface for enumerating &lt;document, frequency&gt;
-  pairs for a term.  <p> The document portion names each document containing
-  the term.  Documents are indicated by number.  The frequency portion gives
-  the number of times the term occurred in each document.  <p> The pairs are
-  ordered by document number.
+ pairs for a term.  <p> The document portion names each document containing
+ the term.  Documents are indicated by number.  The frequency portion gives
+ the number of times the term occurred in each document.  <p> The pairs are
+ ordered by document number.
 
-  @see IndexReader#termDocs
-  */
+ @see IndexReader#termDocs
+ */
 
 public interface TermDocs {
   /** Sets this to the data for a term.
@@ -77,15 +77,15 @@ public interface TermDocs {
   void seek(TermEnum termEnum) throws IOException;
 
   /** Returns the current document number.  <p> This is invalid until {@link
-      #next()} is called for the first time.*/
+   #next()} is called for the first time.*/
   int doc();
 
   /** Returns the frequency of the term within the current document.  <p> This
-    is invalid until {@link #next()} is called for the first time.*/
+   is invalid until {@link #next()} is called for the first time.*/
   int freq();
 
   /** Moves to the next pair in the enumeration.  <p> Returns true iff there is
-    such a next pair in the enumeration. */
+   such a next pair in the enumeration. */
   boolean next() throws IOException;
 
   /** Attempts to read multiple entries from the enumeration, up to length of

@@ -54,46 +54,62 @@ package org.apache.lucene.index;
  * <http://www.apache.org/>.
  */
 
+import junit.framework.TestCase;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.search.Similarity;
+
+import java.util.Map;
 import java.io.IOException;
 
-/** Abstract class for enumerating terms.
+public class TestFieldsReader extends TestCase {
+  private RAMDirectory dir = new RAMDirectory();
+  private Document testDoc = new Document();
+  private FieldInfos fieldInfos = null;
 
-  <p>Term enumerations are always ordered by Term.compareTo().  Each term in
-  the enumeration is greater than all that precede it.  */
+  public TestFieldsReader(String s) {
+    super(s);
+  }
 
-public abstract class TermEnum {
-  /** Increments the enumeration to the next element.  True if one exists.*/
-  public abstract boolean next() throws IOException;
+  protected void setUp() {
+    fieldInfos = new FieldInfos();
+    DocHelper.setupDoc(testDoc);
+    fieldInfos.add(testDoc);
+    DocumentWriter writer = new DocumentWriter(dir, new WhitespaceAnalyzer(),
+            Similarity.getDefault(), 50);
+    assertTrue(writer != null);
+    try {
+      writer.addDocument("test", testDoc);
+    }
+    catch (IOException e)
+    {
+      
+    }
+  }
 
-  /** Returns the current Term in the enumeration.*/
-  public abstract Term term();
+  protected void tearDown() {
 
-  /** Returns the docFreq of the current Term in the enumeration.*/
-  public abstract int docFreq();
+  }
 
-  /** Closes the enumeration to further activity, freeing resources. */
-  public abstract void close() throws IOException;
-  
-// Term Vector support
-  
-  /** Skips terms to the first beyond the current whose value is
-   * greater or equal to <i>target</i>. <p>Returns true iff there is such
-   * an entry.  <p>Behaves as if written: <pre>
-   *   public boolean skipTo(Term target) {
-   *     do {
-   *       if (!next())
-   * 	     return false;
-   *     } while (target > term());
-   *     return true;
-   *   }
-   * </pre>
-   * Some implementations are considerably more efficient than that.
-   */
-  public boolean skipTo(Term target) throws IOException {
-     do {
-        if (!next())
-  	        return false;
-     } while (target.compareTo(term()) > 0);
-     return true;
+  public void test() {
+    assertTrue(dir != null);
+    assertTrue(fieldInfos != null);
+    try {
+      FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+      assertTrue(reader != null);
+      assertTrue(reader.size() == 1);
+      Document doc = reader.doc(0);
+      assertTrue(doc != null);
+      assertTrue(doc.getField("textField1") != null);
+      Field field = doc.getField("textField2");
+      assertTrue(field != null);
+      assertTrue(field.isTermVectorStored() == true);
+      reader.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+      assertTrue(false);
+    }
   }
 }

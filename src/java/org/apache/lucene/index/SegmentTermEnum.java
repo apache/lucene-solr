@@ -76,9 +76,9 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   private char[] buffer = {};
 
   SegmentTermEnum(InputStream i, FieldInfos fis, boolean isi)
-       throws IOException {
+          throws IOException {
     input = i;
-    fieldInfos = fis; 
+    fieldInfos = fis;
     isIndex = isi;
 
     int firstInt = input.readInt();
@@ -98,24 +98,24 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
       // check that it is a format we can understand
       if (format < TermInfosWriter.FORMAT)
         throw new IOException("Unknown format version:" + format);
-      
+
       size = input.readLong();                    // read the size
-      
+
       if (!isIndex) {
         indexInterval = input.readInt();
         skipInterval = input.readInt();
       }
     }
-    
+
   }
-  
+
   protected Object clone() {
     SegmentTermEnum clone = null;
     try {
-      clone = (SegmentTermEnum)super.clone();
+      clone = (SegmentTermEnum) super.clone();
     } catch (CloneNotSupportedException e) {}
 
-    clone.input = (InputStream)input.clone();
+    clone.input = (InputStream) input.clone();
     clone.termInfo = new TermInfo(termInfo);
     if (term != null) clone.growBuffer(term.text.length());
 
@@ -123,7 +123,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   }
 
   final void seek(long pointer, int p, Term t, TermInfo ti)
-       throws IOException {
+          throws IOException {
     input.seek(pointer);
     position = p;
     term = t;
@@ -134,7 +134,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
   /** Increments the enumeration to the next element.  True if one exists.*/
   public final boolean next() throws IOException {
-    if (position++ >= size-1) {
+    if (position++ >= size - 1) {
       term = null;
       return false;
     }
@@ -145,7 +145,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     termInfo.docFreq = input.readVInt();	  // read doc freq
     termInfo.freqPointer += input.readVLong();	  // read freq pointer
     termInfo.proxPointer += input.readVLong();	  // read prox pointer
-    
+
     if (!isIndex) {
       if (termInfo.docFreq > skipInterval) {
         termInfo.skipOffset = input.readVInt();
@@ -164,10 +164,10 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     int totalLength = start + length;
     if (buffer.length < totalLength)
       growBuffer(totalLength);
-    
+
     input.readChars(buffer, start, length);
     return new Term(fieldInfos.fieldName(input.readVInt()),
-		    new String(buffer, 0, totalLength), false);
+            new String(buffer, 0, totalLength), false);
   }
 
   private final void growBuffer(int length) {
@@ -177,25 +177,25 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   }
 
   /** Returns the current Term in the enumeration.
-    Initially invalid, valid after next() called for the first time.*/
+   Initially invalid, valid after next() called for the first time.*/
   public final Term term() {
     return term;
   }
 
   /** Returns the current TermInfo in the enumeration.
-    Initially invalid, valid after next() called for the first time.*/
+   Initially invalid, valid after next() called for the first time.*/
   final TermInfo termInfo() {
     return new TermInfo(termInfo);
   }
 
   /** Sets the argument to the current TermInfo in the enumeration.
-    Initially invalid, valid after next() called for the first time.*/
+   Initially invalid, valid after next() called for the first time.*/
   final void termInfo(TermInfo ti) {
     ti.set(termInfo);
   }
 
   /** Returns the docFreq from the current TermInfo in the enumeration.
-    Initially invalid, valid after next() called for the first time.*/
+   Initially invalid, valid after next() called for the first time.*/
   public final int docFreq() {
     return termInfo.docFreq;
   }
