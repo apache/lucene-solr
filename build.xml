@@ -9,6 +9,7 @@
   <path id="classpath">
     <pathelement location="${build.classes}"/>
     <pathelement location="${build.demo.classes}"/>
+    <pathelement location="${build.test.classes}"/>
     <pathelement location="."/>
     <fileset dir="lib">
       <include name="*.jar" />
@@ -121,7 +122,7 @@
   <target name="demo" depends="compile" if="javacc.present">
     <mkdir dir="${build.demo}"/>
     
-    <copy todir="${build.demo}/src">
+    <copy todir="${build.demo.src}">
       <fileset dir="${demo.src}">
         <include name="**/*.java"/>
         <include name="**/*.jj"/>
@@ -129,17 +130,17 @@
     </copy>
     
     <javacc 
-      target="${build.src.demo}/org/apache/lucene/HTMLParser/HTMLParser.jj" 
+      target="${build.demo.src}/org/apache/lucene/HTMLParser/HTMLParser.jj" 
       javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.src.demo}/org/apache/lucene/HTMLParser"
+      outputdirectory="${build.demo.src}/org/apache/lucene/HTMLParser"
     />
     
-    <mkdir dir="${build.classes.demo}"/>
+    <mkdir dir="${build.demo.classes}"/>
     
     <javac 
-      srcdir="${build.src.demo}"
+      srcdir="${build.demo.src}"
       includes="**/*.java"
-      destdir="${build.classes.demo}"
+      destdir="${build.demo.classes}"
       debug="${debug}">
       <classpath refid="classpath"/>
     </javac>
@@ -150,12 +151,21 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="test" depends="compile">
+  <target name="test" depends="compile,demo">
     <mkdir dir="${build.test}"/>
+
+    <copy todir="${build.test.src}">
+      <fileset dir="${test.src}">
+        <include name="**/*.java"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${build.test.classes}"/>
+
     <javac 
-      srcdir="${build.src}" 
-      includes="${test.dir}/**" 
-      destdir="${build.test}" 
+      srcdir="${build.test.src}"
+      includes="**/*.java"
+      destdir="${build.test.classes}"
       debug="${debug}">
       <classpath refid="classpath"/>
     </javac>

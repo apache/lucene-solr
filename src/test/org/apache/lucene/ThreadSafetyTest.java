@@ -54,12 +54,12 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import com.lucene.store.*;
-import com.lucene.document.*;
-import com.lucene.analysis.*;
-import com.lucene.index.*;
-import com.lucene.search.*;
-import com.lucene.queryParser.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.document.*;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.*;
+import org.apache.lucene.queryParser.*;
 
 import java.io.File;
 import java.util.Random;
