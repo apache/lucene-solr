@@ -63,6 +63,7 @@ import org.apache.lucene.analysis.CharTokenizer;
  * which doesn't know how to detect letters in encodings like CP1252 and KOI8
  * (well-known problems with 0xD7 and 0xF7 chars)
  *
+ * @author  Boris Okner, b.okner@rogers.com
  * @version $Id$
  */
 

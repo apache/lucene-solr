@@ -56,8 +56,8 @@ package org.apache.lucene.analysis.ru;
 
 /**
  * Russian stemming algorithm implementation (see http://snowball.sourceforge.net for detailed description).
- * Creation date: (12/02/2002 10:34:15 PM)
- * @author Boris Okner
+ *
+ * @author  Boris Okner, b.okner@rogers.com
  * @version $Id$
  */
 class RussianStemmer

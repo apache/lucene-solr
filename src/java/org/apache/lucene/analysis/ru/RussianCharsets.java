@@ -60,7 +60,7 @@ package org.apache.lucene.analysis.ru;
  * One should be able to add other encoding schemes (like ISO-8859-5 or customized) by adding a new charset
  * and adding logic to toLowerCase() method for that charset.
  *
- * @author Boris Okner
+ * @author  Boris Okner, b.okner@rogers.com
  * @version $Id$
  */
 public class RussianCharsets

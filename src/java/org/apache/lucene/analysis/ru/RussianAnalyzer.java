@@ -70,8 +70,8 @@ import java.util.Hashtable;
  * will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
  *
- * @author    Boris Okner
- * @version $Id
+ * @author  Boris Okner, b.okner@rogers.com
+ * @version $Id$
  */
 public final class RussianAnalyzer extends Analyzer
 {
