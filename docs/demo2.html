@@ -188,7 +188,7 @@ The first substantial thing the main function does is instantiate an instance
 of IndexWriter.  It passes a string called "index" and a new instance of a class called
 "StandardAnalyzer".  The "index" string is the name of the directory that all index information
 should be stored in.  Because we're not passing any path information, one must assume this
-will be created as a subdirectory of the current directory (if does not already exist). On
+will be created as a subdirectory of the current directory (if it does not already exist). On
 some platforms this may actually result in it being created in other directories (such as 
 the user's home directory). 
 </p>
@@ -199,18 +199,18 @@ exist it will create it, otherwise it will refresh the index living at that path
 must a also pass an instance of <b>org.apache.analysis.Analyzer</b>. 
 </p>
                                                 <p>
-The <b>Analyzer</b>, in this case, the <b>Stop Analyzer</b> is little more than a standard Java
-Tokenizer, converting all strings to lowercase and filtering out useless words from the index.
-By useless words I mean common language words such as articles (a,an,the) and other words that
-would be useless for searching.  It should be noted that there are different rules for every 
-language, and you should use the proper analyzer for each.  Lucene currently provides Analyzers
-for English and German.
+The <b>Analyzer</b>, in this case, the <b>StandardAnalyzer</b> is little more than a standard Java
+Tokenizer, converting all strings to lowercase and filtering out useless words and characters from the index.
+By useless words and characters I mean common language words such as articles (a, an, the, etc.) and other 
+strings that would be useless for searching (e.g. <b>'s</b>) .  It should be noted that there are different 
+rules for every  language, and you should use the proper analyzer for each.  Lucene currently 
+provides Analyzers for English and German, more can be found in the Lucene Sandbox.
 </p>
                                                 <p>
 Looking down further in the file, you should see the indexDocs() code.  This recursive function 
 simply crawls the directories and uses FileDocument to create Document objects.  The Document
 is simply a data object to represent the content in the file as well as its creation time and 
-location.  These instances are added to the indexWriter.  Take a look inside FileDocument.  Its
+location.  These instances are added to the indexWriter.  Take a look inside FileDocument.  It's
 not particularly complicated, it just adds fields to the Document.
 </p>
                                                 <p>

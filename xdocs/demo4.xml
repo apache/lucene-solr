@@ -54,7 +54,7 @@ the meat of this application next.
 <section name="results.jsp (developers)">
 <p>
 The results.jsp had a lot more functionality.  Much of it is for paging the search results we'll not
-cover this as its commented well enough.  It does not peform any optimizations such as caching results, 
+cover this as it's commented well enough.  It does not perform any optimizations such as caching results, 
 etc. as that would make this a more complex example.  The first thing in this page is the actual imports
 for the Lucene classes and Lucene demo classes.  These classes are loaded from the jars included in the 
 WEB-INF/lib directory in the final war file.  
@@ -62,7 +62,7 @@ WEB-INF/lib directory in the final war file.
 <p>
 You'll notice that this file includes the same header and footer as the "index.jsp".  From there the jsp
 constructs an IndexSearcher with the "indexLocation" that was specified in the "configuration.jsp".  If there
-is an error of any kind in opening the index, it is diplayed ot the user and a boolean flag is set to tell 
+is an error of any kind in opening the index, it is diplayed to the user and a boolean flag is set to tell 
 the rest of the sections of the jsp not to continue.
 </p>
 <p>
@@ -75,12 +75,12 @@ or some form of browser malfunction).
 <p>
 The jsp moves on to construct a StandardAnalyzer just as in the simple demo, to analyze the search critieria, it 
 is passed to the QueryParser along with the criteria to construct a Query object.  You'll also notice the 
-string literal "contents" included.  This is to specify the search should include the  the contents and not 
+string literal "contents" included.  This is to specify the search should include the  contents and not 
 the title, url or some other field in the indexed documents.  If there is any error in constructing a Query 
 object an error is displayed to the user.
 </p>
 <p>
-In the next section of the jsp the IndexSearcher is asked to search given the query object.  the results are
+In the next section of the jsp the IndexSearcher is asked to search given the query object.  The results are
 returned in a collection called "hits".  If the length property of the hits collection is 0 then an error 
 is displayed to the user and the error flag is set.
 </p>
@@ -123,7 +123,7 @@ white with "Lucene Template" at the top.  We'll see you on the Lucene Users' or 
 <p>
 Please resist the urge to contact the authors of this document (without bribes of fame and fortune attached).  First
 contact the <a href="http://jakarta.apache.org/site/mail.html">mailing lists</a>.  That being said feedback, 
-and modifications to this document and samples are ever so greatly appreciatedThey are just best sent to the 
+and modifications to this document and samples are ever so greatly appreciated. They are just best sent to the 
 lists so that everyone can share in them.  Certainly you'll get the most help there as well.  
 Thanks for understanding.  
 </p>
