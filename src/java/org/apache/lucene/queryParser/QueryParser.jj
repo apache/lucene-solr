@@ -256,7 +256,7 @@ PARSER_END(QueryParser)
 <*> TOKEN : {
   <#_NUM_CHAR:   ["0"-"9"] >
 | <#_TERM_START_CHAR: [ "a"-"z", "A"-"Z", "_", "\u0080"-"\uFFFE" ] >
-| <#_TERM_CHAR: [ "a"-"z", "A"-"Z", "0"-"9", "_", "\u0080"-"\uFFFE" ] >
+| <#_TERM_CHAR: [ "a"-"z", "A"-"Z", "0"-"9", "_", ".", "\u0080"-"\uFFFE" ] >
 | <#_WHITESPACE: ( " " | "\t" ) >
 }
 
