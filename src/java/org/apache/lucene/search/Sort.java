@@ -100,114 +100,115 @@ import java.io.Serializable;
 public class Sort
 implements Serializable {
 
-	/** Represents sorting by computed relevance. Using this sort criteria
-	 * returns the same results as calling {@link Searcher#search(Query) Searcher#search()}
-	 * without a sort criteria, only with slightly more overhead. */
-	public static final Sort RELEVANCE = new Sort();
+  /**
+   * Represents sorting by computed relevance. Using this sort criteria returns
+   * the same results as calling
+   * {@link Searcher#search(Query) Searcher#search()}without a sort criteria,
+   * only with slightly more overhead.
+   */
+  public static final Sort RELEVANCE = new Sort();
 
-	/** Represents sorting by index order. */
-	public static final Sort INDEXORDER = new Sort (SortField.FIELD_DOC);
+  /** Represents sorting by index order. */
+  public static final Sort INDEXORDER = new Sort(SortField.FIELD_DOC);
 
-	// internal representation of the sort criteria
-	SortField[] fields;
+  // internal representation of the sort criteria
+  SortField[] fields;
 
+  /**
+   * Sorts by computed relevance. This is the same sort criteria as calling
+   * {@link Searcher#search(Query) Searcher#search()}without a sort criteria,
+   * only with slightly more overhead.
+   */
+  public Sort() {
+    this(new SortField[] { SortField.FIELD_SCORE, SortField.FIELD_DOC });
+  }
 
-	/** Sorts by computed relevance.  This is the same sort criteria as
-	 * calling {@link Searcher#search(Query) Searcher#search()} without a sort criteria, only with
-	 * slightly more overhead. */
-	public Sort() {
-		this (new SortField[]{SortField.FIELD_SCORE, SortField.FIELD_DOC});
-	}
+  /**
+   * Sorts by the terms in <code>field</code> then by index order (document
+   * number). The type of value in <code>field</code> is determined
+   * automatically.
+   * 
+   * @see SortField#AUTO
+   */
+  public Sort(String field) {
+    setSort(field, false);
+  }
 
+  /**
+   * Sorts possibly in reverse by the terms in <code>field</code> then by
+   * index order (document number). The type of value in <code>field</code> is
+   * determined automatically.
+   * 
+   * @see SortField#AUTO
+   */
+  public Sort(String field, boolean reverse) {
+    setSort(field, reverse);
+  }
 
-	/** Sorts by the terms in <code>field</code> then by index order (document
-	 * number). The type of value in <code>field</code> is determined
-	 * automatically.
-	 * @see SortField#AUTO
-	 */
-	public Sort (String field) {
-		setSort (field, false);
-	}
+  /**
+   * Sorts in succession by the terms in each field. The type of value in
+   * <code>field</code> is determined automatically.
+   * 
+   * @see SortField#AUTO
+   */
+  public Sort(String[] fields) {
+    setSort(fields);
+  }
 
+  /** Sorts by the criteria in the given SortField. */
+  public Sort(SortField field) {
+    setSort(field);
+  }
 
-	/** Sorts possibly in reverse by the terms in <code>field</code> then by
-	 * index order (document number). The type of value in <code>field</code> is determined
-	 * automatically.
-	 * @see SortField#AUTO
-	 */
-	public Sort (String field, boolean reverse) {
-		setSort (field, reverse);
-	}
+  /** Sorts in succession by the criteria in each SortField. */
+  public Sort(SortField[] fields) {
+    setSort(fields);
+  }
 
+  /**
+   * Sets the sort to the terms in <code>field</code> then by index order
+   * (document number).
+   */
+  public final void setSort(String field) {
+    setSort(field, false);
+  }
 
-	/** Sorts in succession by the terms in each field.
-	 * The type of value in <code>field</code> is determined
-	 * automatically.
-	 * @see SortField#AUTO
-	 */
-	public Sort (String[] fields) {
-		setSort (fields);
-	}
+  /**
+   * Sets the sort to the terms in <code>field</code> possibly in reverse,
+   * then by index order (document number).
+   */
+  public void setSort(String field, boolean reverse) {
+    SortField[] nfields = new SortField[] {
+        new SortField(field, SortField.AUTO, reverse), SortField.FIELD_DOC };
+    fields = nfields;
+  }
 
+  /** Sets the sort to the terms in each field in succession. */
+  public void setSort(String[] fieldnames) {
+    final int n = fieldnames.length;
+    SortField[] nfields = new SortField[n];
+    for (int i = 0; i < n; ++i) {
+      nfields[i] = new SortField(fieldnames[i], SortField.AUTO);
+    }
+    fields = nfields;
+  }
 
-	/** Sorts by the criteria in the given SortField. */
-	public Sort (SortField field) {
-		setSort (field);
-	}
+  /** Sets the sort to the given criteria. */
+  public void setSort(SortField field) {
+    this.fields = new SortField[] { field };
+  }
 
-
-	/** Sorts in succession by the criteria in each SortField. */
-	public Sort (SortField[] fields) {
-		setSort (fields);
-	}
-
-
-	/** Sets the sort to the terms in <code>field</code> then by index order
-	 * (document number). */
-	public final void setSort (String field) {
-		setSort (field, false);
-	}
-
-
-	/** Sets the sort to the terms in <code>field</code> possibly in reverse,
-	 * then by index order (document number). */
-	public void setSort (String field, boolean reverse) {
-		SortField[] nfields = new SortField[]{
-			new SortField (field, SortField.AUTO, reverse),
-			SortField.FIELD_DOC
-		};
-		fields = nfields;
-	}
-
-
-	/** Sets the sort to the terms in each field in succession. */
-	public void setSort (String[] fieldnames) {
-		final int n = fieldnames.length;
-		SortField[] nfields = new SortField[n];
-		for (int i = 0; i < n; ++i) {
-			nfields[i] = new SortField (fieldnames[i], SortField.AUTO);
-		}
-		fields = nfields;
-	}
-
-
-	/** Sets the sort to the given criteria. */
-	public void setSort (SortField field) {
-		this.fields = new SortField[]{field};
-	}
-
-
-	/** Sets the sort to the given criteria in succession. */
-	public void setSort (SortField[] fields) {
-		this.fields = fields;
-	}
+  /** Sets the sort to the given criteria in succession. */
+  public void setSort(SortField[] fields) {
+    this.fields = fields;
+  }
 
   public String toString() {
     StringBuffer buffer = new StringBuffer();
 
     for (int i = 0; i < fields.length; i++) {
       buffer.append(fields[i].toString());
-      if ((i +1) < fields.length)
+      if ((i+1) < fields.length)
         buffer.append(',');
     }
 
