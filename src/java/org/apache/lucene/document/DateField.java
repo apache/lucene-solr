@@ -36,6 +36,8 @@ import org.apache.lucene.search.RangeQuery;   // for javadoc
  * Note: dates before 1970 cannot be used, and therefore cannot be
  * indexed when using this class. See {@link DateTools} for an
  * alternative without such a limitation.
+ * 
+ * @deprecated Use {@link DateTools} instead.
  */
 public class DateField {
   

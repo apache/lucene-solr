@@ -30,7 +30,10 @@ import org.apache.lucene.index.IndexReader;
  * A Filter that restricts search results to a range of time.
  *
  * <p>For this to work, documents must have been indexed with a
- * {@link DateField}.
+ * {@link DateField}.</p>
+ * 
+ * @deprecated Instead, use {@link RangeFilter} combined with 
+ *             {@link org.apache.lucene.document.DateTools}.
  */
 public class DateFilter extends Filter {
   String field;

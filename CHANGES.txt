@@ -47,6 +47,8 @@ New features
 
  9. Added javadocs-internal to build.xml - bug #30360
     (Paul Elschot via Otis)
+    
+10. Added RangeFilter. (Chris M Hostetter via Erik)
 
 API Changes
 
@@ -67,6 +69,7 @@ API Changes
     
  4. Add a serializable Parameter Class to standardize parameter enum
     classes in BooleanClause and Field. (Christoph)
+ 
 
 Bug fixes
 
