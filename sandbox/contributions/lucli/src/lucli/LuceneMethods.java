@@ -92,281 +92,290 @@ import org.apache.lucene.search.Searcher;
  * Parts addapted from Lucene demo. Various methods that interact with
  * Lucene and provide info about the index, search, etc.
  */
+
 class LuceneMethods {
 
-	private int numDocs;
-	private String indexName; //directory of this index
-	private long version; //version number of this index
-	java.util.Iterator fieldIterator;
-	Vector fields; //Fields as a vector
-	Vector indexedFields; //Fields as a vector
-	String fieldsArray[]; //Fields as an array
-	Searcher searcher;
-	Query query; //current query string
+  private int numDocs;
+  private String indexName; //directory of this index
+  private long version; //version number of this index
+  java.util.Iterator fieldIterator;
+  Vector fields; //Fields as a vector
+  Vector indexedFields; //Fields as a vector
+  String fieldsArray[]; //Fields as an array
+  Searcher searcher;
+  Query query; //current query string
 
-	public LuceneMethods(String index) {
-		indexName = index;
-		message("Lucene CLI. Using directory:" + indexName);
-	}
-
-
-	public void info() throws java.io.IOException {
-		IndexReader indexReader = IndexReader.open(indexName);
+  public LuceneMethods(String index) {
+    indexName = index;
+    message("Lucene CLI. Using directory:" + indexName);
+  }
 
 
-		getFieldInfo();
-		numDocs= indexReader.numDocs();
-		message("Index has " + numDocs + " documents ");
-		message ("All Fields:" + fields.toString());
-		message ("Indexed Fields:" + indexedFields.toString());
-
-		if (IndexReader.isLocked(indexName)) {
-			message("Index is locked");
-		}
-		//IndexReader.getCurrentVersion(indexName);
-		//System.out.println("Version:" + version);
-
-		indexReader.close();
-	}
+  public void info() throws java.io.IOException {
+    IndexReader indexReader = IndexReader.open(indexName);
 
 
-	public void search(String queryString, boolean explain, boolean showTokens) throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		Hits hits = initSearch(queryString);
-		System.out.println(hits.length() + " total matching documents");
-		Query explainQuery;
-		if (explain) {
-			query = explainQuery(queryString);
-		}
+    getFieldInfo();
+    numDocs = indexReader.numDocs();
+    message("Index has " + numDocs + " documents ");
+    message("All Fields:" + fields.toString());
+    message("Indexed Fields:" + indexedFields.toString());
+
+    if (IndexReader.isLocked(indexName)) {
+      message("Index is locked");
+    }
+    //IndexReader.getCurrentVersion(indexName);
+    //System.out.println("Version:" + version);
+
+    indexReader.close();
+  }
 
 
-		final int HITS_PER_PAGE = 10;
-		message ("--------------------------------------");
-		for (int start = 0; start < hits.length(); start += HITS_PER_PAGE) {
-			int end = Math.min(hits.length(), start + HITS_PER_PAGE);
-			for (int ii = start; ii < end; ii++) {
-				Document doc = hits.doc(ii);
-				message ("---------------- " + ii + " score:" + hits.score(ii) + "---------------------");
-				printHit(doc);
-				if (showTokens) {
-					invertDocument(doc);
-				}
-				if (explain) {
-					Explanation exp = searcher.explain(query, hits.id(ii));
-					message("Explanation:" + exp.toString());
-				}
-			}
-			message ("#################################################");
-
-			if (hits.length() > end) {
-				System.out.print("more (y/n) ? ");
-				queryString = in.readLine();
-				if (queryString.length() == 0 || queryString.charAt(0) == 'n')
-					break;
-			}
-		}
-		searcher.close();
-	}
-
-	private void printHit(Document doc) {
-		for (int ii= 0; ii < fieldsArray.length; ii++) {
-			String currField = fieldsArray[ii];
-			String result = doc.get(currField);
-			message(currField + ":" + result);
-		}
-		//another option is to just do message(doc);
-	}
-
-	public void optimize () throws IOException{
-		//open the index writer. False: don't create a new one
-		IndexWriter indexWriter = new IndexWriter(indexName,  new StandardAnalyzer(), false);
-		message("Starting to optimize index.");
-		long start = System.currentTimeMillis();
-		indexWriter.optimize();
-		message("Done optimizing index. Took " + (System.currentTimeMillis() - start) + " msecs");
-		indexWriter.close();
-	}
+  public void search(String queryString, boolean explain, boolean showTokens) throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
+    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+    Hits hits = initSearch(queryString);
+    System.out.println(hits.length() + " total matching documents");
+    if (explain) {
+      query = explainQuery(queryString);
+    }
 
 
-	private Query explainQuery(String queryString) throws IOException, ParseException {
+    final int HITS_PER_PAGE = 10;
+    message("--------------------------------------");
+    for (int start = 0; start < hits.length(); start += HITS_PER_PAGE) {
+      int end = Math.min(hits.length(), start + HITS_PER_PAGE);
+      for (int ii = start; ii < end; ii++) {
+        Document doc = hits.doc(ii);
+        message("---------------- " + (ii + 1) + " score:" + hits.score(ii) + "---------------------");
+        printHit(doc);
+        if (showTokens) {
+          invertDocument(doc);
+        }
+        if (explain) {
+          Explanation exp = searcher.explain(query, hits.id(ii));
+          message("Explanation:" + exp.toString());
+        }
+      }
+      message("#################################################");
 
-		searcher = new IndexSearcher(indexName);
-		Analyzer analyzer = new StandardAnalyzer();
-		getFieldInfo();
+      if (hits.length() > end) {
+        System.out.print("more (y/n) ? ");
+        queryString = in.readLine();
+        if (queryString.length() == 0 || queryString.charAt(0) == 'n')
+          break;
+      }
+    }
+    searcher.close();
+  }
 
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+  /**
+   * @todo Allow user to specify what field(s) to display
+   */
+  private void printHit(Document doc) {
+    for (int ii = 0; ii < fieldsArray.length; ii++) {
+      String currField = fieldsArray[ii];
+      String[] result = doc.getValues(currField);
+      for (int i = 0; i < result.length; i++) {
+        message(currField + ":" + result[i]);
+      }
+    }
+    //another option is to just do message(doc);
+  }
 
-		MultiFieldQueryParser parser = new  MultiFieldQueryParser(queryString, analyzer);
-
-		int arraySize = indexedFields.size();
-		String indexedArray[] = new String[arraySize];
-		for (int ii = 0; ii < arraySize; ii++) {
-			indexedArray[ii] = (String) indexedFields.get(ii);
-		}
-		query = parser.parse(queryString, indexedArray, analyzer);
-		System.out.println("Searching for: " + query.toString());
-		return (query);
-
-	}
-	private Hits initSearch(String queryString) throws IOException, ParseException {
-
-		searcher = new IndexSearcher(indexName);
-		Analyzer analyzer = new StandardAnalyzer();
-		getFieldInfo();
-
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-
-		MultiFieldQueryParser parser = new  MultiFieldQueryParser(queryString, analyzer);
-
-		int arraySize = fields.size();
-		fieldsArray = new String[arraySize];
-		for (int ii = 0; ii < arraySize; ii++) {
-			fieldsArray[ii] = (String) fields.get(ii);
-		}
-		query = parser.parse(queryString, fieldsArray, analyzer);
-		System.out.println("Searching for: " + query.toString());
-		Hits hits = searcher.search(query);
-		return (hits);
-
-	}
-
-	public void count(String queryString) throws java.io.IOException, ParseException {
-		Hits hits = initSearch(queryString);
-		System.out.println(hits.length() + " total documents");
-		searcher.close();
-	}
-
-	static public void message (String s) {
-		System.out.println(s);
-	}
-
-	private void getFieldInfo() throws IOException {
-		IndexReader indexReader = IndexReader.open(indexName);
-		fields = new Vector();
-		indexedFields = new Vector();
-
-		//get the list of all field names
-		fieldIterator = indexReader.getFieldNames().iterator();
-		while (fieldIterator.hasNext()) {
-			Object field = fieldIterator.next();
-			if (field != null && !field.equals(""))
-				fields.add(field.toString());
-		}
-		//
-		//get the list of indexed field names
-		fieldIterator = indexReader.getFieldNames(true).iterator();
-		while (fieldIterator.hasNext()) {
-			Object field = fieldIterator.next();
-			if (field != null && !field.equals(""))
-				indexedFields.add(field.toString());
-		}
-		indexReader.close();
-	}
+  public void optimize() throws IOException {
+    //open the index writer. False: don't create a new one
+    IndexWriter indexWriter = new IndexWriter(indexName, new StandardAnalyzer(), false);
+    message("Starting to optimize index.");
+    long start = System.currentTimeMillis();
+    indexWriter.optimize();
+    message("Done optimizing index. Took " + (System.currentTimeMillis() - start) + " msecs");
+    indexWriter.close();
+  }
 
 
-	// Copied from DocumentWriter
-	// Tokenizes the fields of a document into Postings.
-	private void invertDocument(Document doc)
-		throws IOException {
+  private Query explainQuery(String queryString) throws IOException, ParseException {
 
-		Hashtable tokenHash = new Hashtable();
-		final int maxFieldLength = 10000;
+    searcher = new IndexSearcher(indexName);
+    Analyzer analyzer = new StandardAnalyzer();
+    getFieldInfo();
 
-		Analyzer analyzer = new StandardAnalyzer();
-		Enumeration fields = doc.fields();
-		while (fields.hasMoreElements()) {
-			Field field = (Field) fields.nextElement();
-			String fieldName = field.name();
+    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(queryString, analyzer);
+
+    int arraySize = indexedFields.size();
+    String indexedArray[] = new String[arraySize];
+    for (int ii = 0; ii < arraySize; ii++) {
+      indexedArray[ii] = (String) indexedFields.get(ii);
+    }
+    query = parser.parse(queryString, indexedArray, analyzer);
+    System.out.println("Searching for: " + query.toString());
+    return (query);
+
+  }
+
+  /**
+   * @todo Allow user to specify analyzer
+   */
+  private Hits initSearch(String queryString) throws IOException, ParseException {
+
+    searcher = new IndexSearcher(indexName);
+    Analyzer analyzer = new StandardAnalyzer();
+    getFieldInfo();
+
+    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(queryString, analyzer);
+
+    int arraySize = fields.size();
+    fieldsArray = new String[arraySize];
+    for (int ii = 0; ii < arraySize; ii++) {
+      fieldsArray[ii] = (String) fields.get(ii);
+    }
+    query = parser.parse(queryString, fieldsArray, analyzer);
+    System.out.println("Searching for: " + query.toString());
+    Hits hits = searcher.search(query);
+    return (hits);
+
+  }
+
+  public void count(String queryString) throws java.io.IOException, ParseException {
+    Hits hits = initSearch(queryString);
+    System.out.println(hits.length() + " total documents");
+    searcher.close();
+  }
+
+  static public void message(String s) {
+    System.out.println(s);
+  }
+
+  private void getFieldInfo() throws IOException {
+    IndexReader indexReader = IndexReader.open(indexName);
+    fields = new Vector();
+    indexedFields = new Vector();
+
+    //get the list of all field names
+    fieldIterator = indexReader.getFieldNames().iterator();
+    while (fieldIterator.hasNext()) {
+      Object field = fieldIterator.next();
+      if (field != null && !field.equals(""))
+        fields.add(field.toString());
+    }
+    //
+    //get the list of indexed field names
+    fieldIterator = indexReader.getFieldNames(true).iterator();
+    while (fieldIterator.hasNext()) {
+      Object field = fieldIterator.next();
+      if (field != null && !field.equals(""))
+        indexedFields.add(field.toString());
+    }
+    indexReader.close();
+  }
 
 
-			if (field.isIndexed()) {
-				if (field.isTokenized()) {     // un-tokenized field
-					Reader reader;        // find or make Reader
-					if (field.readerValue() != null)
-						reader = field.readerValue();
-					else if (field.stringValue() != null)
-						reader = new StringReader(field.stringValue());
-					else
-						throw new IllegalArgumentException
-							("field must have either String or Reader value");
+  // Copied from DocumentWriter
+  // Tokenizes the fields of a document into Postings.
+  private void invertDocument(Document doc)
+    throws IOException {
 
-					int position = 0;
-					// Tokenize field and add to postingTable
-					TokenStream stream = analyzer.tokenStream(fieldName, reader);
-					try {
-						for (Token t = stream.next(); t != null; t = stream.next()) {
-							position += (t.getPositionIncrement() - 1);
-							position++;
-							String name = t.termText();
-							Integer Count = (Integer)tokenHash.get(name);
-							if (Count == null) { // not in there yet
-								tokenHash.put(name, new Integer(1)); //first one
-							} else {
-								int count = Count.intValue();
-								tokenHash.put(name, new Integer (count+1));
-							}
-							if (position > maxFieldLength) break;
-						}
-					} finally {
-						stream.close();
-					}
-				}
+    Hashtable tokenHash = new Hashtable();
+    final int maxFieldLength = 10000;
 
-			}
-		}
-		Entry[] sortedHash = getSortedHashtableEntries(tokenHash);
-		for (int ii = 0; ii < sortedHash.length && ii < 10; ii ++) {
-			Entry currentEntry = sortedHash[ii];
-			message((ii + 1) + ":" + currentEntry.getKey() + " " + currentEntry.getValue());
-		}
-	}
+    Analyzer analyzer = new StandardAnalyzer();
+    Enumeration fields = doc.fields();
+    while (fields.hasMoreElements()) {
+      Field field = (Field) fields.nextElement();
+      String fieldName = field.name();
 
 
-	/** Provides a list of the top terms of the index.
-	 *
-	 * @param field  - the name of the command or null for all of them.
-	 */
-	public void terms(String field) throws IOException {
-		TreeMap termMap = new TreeMap();
-		IndexReader indexReader = IndexReader.open(indexName);
-		TermEnum terms = indexReader.terms();
-		while (terms.next()) {
-			Term term = terms.term();
-			//message(term.field() + ":" + term.text() + " freq:" + terms.docFreq());
-			//if we're either not looking by field or we're matching the specific field
-			if ((field == null) || field.equals(term.field()))
-				termMap.put(new Integer((0 - terms.docFreq())), term.field() + ":" + term.text());
-		}
+      if (field.isIndexed()) {
+        if (field.isTokenized()) {     // un-tokenized field
+          Reader reader;        // find or make Reader
+          if (field.readerValue() != null)
+            reader = field.readerValue();
+          else if (field.stringValue() != null)
+            reader = new StringReader(field.stringValue());
+          else
+            throw new IllegalArgumentException
+              ("field must have either String or Reader value");
 
-		Iterator termIterator = termMap.keySet().iterator();
-		for (int ii=0; termIterator.hasNext() && ii < 100; ii++) {
-			Integer termFreq = (Integer) termIterator.next();
-			String termDetails = (String) termMap.get(termFreq);
-			message(termDetails + ": " + termFreq);
-		}
-		indexReader.close();
-	}
+          int position = 0;
+          // Tokenize field and add to postingTable
+          TokenStream stream = analyzer.tokenStream(fieldName, reader);
+          try {
+            for (Token t = stream.next(); t != null; t = stream.next()) {
+              position += (t.getPositionIncrement() - 1);
+              position++;
+              String name = t.termText();
+              Integer Count = (Integer) tokenHash.get(name);
+              if (Count == null) { // not in there yet
+                tokenHash.put(name, new Integer(1)); //first one
+              } else {
+                int count = Count.intValue();
+                tokenHash.put(name, new Integer(count + 1));
+              }
+              if (position > maxFieldLength) break;
+            }
+          } finally {
+            stream.close();
+          }
+        }
 
-	/** Sort Hashtable values
-	 * @param h the hashtable we're sorting
-	 * from http://developer.java.sun.com/developer/qow/archive/170/index.jsp
-	 */
+      }
+    }
+    Entry[] sortedHash = getSortedHashtableEntries(tokenHash);
+    for (int ii = 0; ii < sortedHash.length && ii < 10; ii++) {
+      Entry currentEntry = sortedHash[ii];
+      message((ii + 1) + ":" + currentEntry.getKey() + " " + currentEntry.getValue());
+    }
+  }
 
-	public static Entry[]
-		getSortedHashtableEntries(Hashtable h) {
-			Set set = h.entrySet();
-			Entry [] entries =
-				(Entry[])set.toArray(
-																 new Entry[set.size()]);
-			Arrays.sort(entries, new Comparator() {
-				public int compare(Object o1, Object o2) {
-					Object v1 = ((Entry)o1).getValue();
-					Object v2 = ((Entry)o2).getValue();
-					return ((Comparable)v2).compareTo(v1); //descending order
-				}
-			});
-			return entries;
-		}
+
+  /** Provides a list of the top terms of the index.
+   *
+   * @param field  - the name of the command or null for all of them.
+   */
+  public void terms(String field) throws IOException {
+    TreeMap termMap = new TreeMap();
+    IndexReader indexReader = IndexReader.open(indexName);
+    TermEnum terms = indexReader.terms();
+    while (terms.next()) {
+      Term term = terms.term();
+      //message(term.field() + ":" + term.text() + " freq:" + terms.docFreq());
+      //if we're either not looking by field or we're matching the specific field
+      if ((field == null) || field.equals(term.field()))
+        termMap.put(term.field() + ":" + term.text(), new Integer((terms.docFreq())));
+    }
+
+    Iterator termIterator = termMap.keySet().iterator();
+    for (int ii = 0; termIterator.hasNext() && ii < 100; ii++) {
+      String termDetails = (String) termIterator.next();
+      Integer termFreq = (Integer) termMap.get(termDetails);
+      message(termDetails + ": " + termFreq);
+    }
+    indexReader.close();
+  }
+
+  /** Sort Hashtable values
+   * @param h the hashtable we're sorting
+   * from http://developer.java.sun.com/developer/qow/archive/170/index.jsp
+   */
+
+  public static Entry[]
+    getSortedHashtableEntries(Hashtable h) {
+    Set set = h.entrySet();
+    Entry[] entries =
+      (Entry[]) set.toArray(
+        new Entry[set.size()]);
+    Arrays.sort(entries, new Comparator() {
+      public int compare(Object o1, Object o2) {
+        Object v1 = ((Entry) o1).getValue();
+        Object v2 = ((Entry) o2).getValue();
+        return ((Comparable) v2).compareTo(v1); //descending order
+      }
+    });
+    return entries;
+  }
 
 }
 

@@ -69,7 +69,7 @@ import java.util.Iterator;
 public class Lucli {
 
 	final static String DEFAULT_INDEX = "index"; //directory "index" under the current directory
-	final static String HISTORYFILE = ".lucli"; //directory "index" under the current directory
+	final static String HISTORYFILE = ".lucli"; //history file in user's home directory
 	public final static int MAX_TERMS = 100; //Maximum number of terms we're going to show
 
 	// List of commands
@@ -352,7 +352,7 @@ public class Lucli {
 	}
 
 	private void usage() {
-		message("Usage: lucli [-j]");
+		message("Usage: lucli [-r]");
 		message("Arguments:");
 		message("\t-r: Provide tab completion and history using the GNU readline shared library ");
 	}
