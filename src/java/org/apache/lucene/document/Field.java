@@ -40,6 +40,67 @@ public final class Field implements java.io.Serializable {
   private boolean isTokenized = true;
 
   private float boost = 1.0f;
+  
+  public static final class Store {
+    private String name;
+    private Store() {}
+    private Store(String name) {
+      this.name = name;
+    }
+    public String toString() {
+      return name;
+    }
+    /** Store the original field value in the index. This is useful for short texts
+     * like a document's title which should be displayed with the results. The
+     * value is stored in its original form, i.e. no analyzer is used before it is
+     * stored. 
+     */
+    public static final Store YES = new Store("YES");
+    /** Do not store the field value in the index. */
+    public static final Store NO = new Store("NO");
+  }
+  
+  public static final class Index {
+    private String name;
+    private Index() {}
+    private Index(String name) {
+      this.name = name;
+    }
+    public String toString() {
+      return name;
+    }
+    /** Do not index the field value. This field can thus not be searched,
+     * but one can still access its contents provided it is 
+     * {@link Field.Store stored}. */
+    public static final Index NO = new Index("NO");
+    /** Index the field's value so it can be searched. An Analyzer will be used
+     * to tokenize and possibly further normalize the text before its
+     * terms will be stored in the index. This is useful for common text.
+     */
+    public static final Index TOKENIZED = new Index("TOKENIZED");
+    /** Index the field's value without using an Analyzer, so it can be searched.
+     * As no analyzer is used the value will be stored as a single term. This is 
+     * useful for unique Ids like product numbers.
+     */
+    public static final Index UN_TOKENIZED = new Index("UN_TOKENIZED");
+  }
+
+  public static final class TermVector {
+    private String name;
+    private TermVector() {}
+    private TermVector(String name) {
+      this.name = name;
+    }
+    public String toString() {
+      return name;
+    }
+    /** Do not store term vectors. 
+     */
+    public static final TermVector NO = new TermVector("NO");
+    /** Store the term vectors of each document. A term vector is a list
+     * of the document's terms and their number of occurences in that document. */
+    public static final TermVector YES = new TermVector("YES");
+  }
 
   /** Sets the boost factor hits on this field.  This value will be
    * multiplied into the score of all hits on this this field of this
@@ -91,7 +152,9 @@ public final class Field implements java.io.Serializable {
 
   /** Constructs a String-valued Field that is tokenized and indexed,
     and is stored in the index, for return with hits.  Useful for short text
-    fields, like "title" or "subject". Term vector will not be stored for this field. */
+    fields, like "title" or "subject". Term vector will not be stored for this field.
+  @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
+    Field(name, value, Field.Store.YES, Field.Index.TOKENIZED)} instead */
   public static final Field Text(String name, String value) {
     return Text(name, value, false);
   }
@@ -104,7 +167,9 @@ public final class Field implements java.io.Serializable {
 
   /** Constructs a String-valued Field that is tokenized and indexed,
     and is stored in the index, for return with hits.  Useful for short text
-    fields, like "title" or "subject". */
+    fields, like "title" or "subject".
+    @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)
+      Field(name, value, Field.Store.YES, Field.Index.TOKENIZED, boolean)} instead */
   public static final Field Text(String name, String value, boolean storeTermVector) {
     return new Field(name, value, true, true, true, storeTermVector);
   }
@@ -149,8 +214,75 @@ public final class Field implements java.io.Serializable {
   public Reader readerValue()	{ return readerValue; }
 
 
+  /** Create a field by specifying all parameters except for <code>termVector</code>,
+   *  which is set to <code>TermVector.NO</code>.
+   */
+  public Field(String name, String string, Store store, Index index) {
+    this(name, string, store, index, TermVector.NO);
+  }
+
+  /**
+   * Create a field by specifying its name, value and how it will
+   * be saved in the index.
+   * 
+   * @param name The name of the field
+   * @param value The string to process
+   * @param store whether <code>value</code> should be stored in the index
+   * @param index whether the field should be indexed, and if so, if it should
+   *  be tokenized before indexing 
+   * @param termVector whether Term Vector info should be stored
+   * @throws IllegalArgumentException in any of the following situations:
+   * <ul> 
+   *  <li>the field is neither stored nor indexed</li> 
+   *  <li>the field is not indexed but termVector is <code>TermVector.YES</code></li>
+   * </ul> 
+   */ 
+  public Field(String name, String value, Store store, Index index, TermVector termVector) {
+      if (name == null)
+         throw new IllegalArgumentException("name cannot be null");
+      if (value == null)
+        throw new IllegalArgumentException("value cannot be null");
+      if (index == Index.NO && store == Store.NO)
+        throw new IllegalArgumentException("it doesn't make sense to have a field that "
+            + "is neither indexed nor stored");
+      if (index == Index.NO && termVector != TermVector.NO)
+        throw new IllegalArgumentException("cannot store term vector information "
+            + "for a field that is not indexed");
+
+      this.name = name.intern();        // field names are interned
+      this.stringValue = value;
+      if (store == Store.YES)
+        this.isStored = true;
+      else if (store == Store.NO)
+        this.isStored = false;
+      else
+        throw new IllegalArgumentException("unknown store parameter " + store);
+      
+      if (index == Index.NO) {
+        this.isIndexed = false;
+        this.isTokenized = false;
+      } else if (index == Index.TOKENIZED) {
+        this.isIndexed = true;
+        this.isTokenized = true;
+      } else if (index == Index.UN_TOKENIZED) {
+        this.isIndexed = true;
+        this.isTokenized = false;
+      } else {
+        throw new IllegalArgumentException("unknown index parameter " + index);
+      }
+
+      if (termVector == TermVector.NO) {
+        this.storeTermVector = false;
+      } else if (termVector == TermVector.YES) {
+        this.storeTermVector = true;
+      } else {
+        throw new IllegalArgumentException("unknown termVector parameter " + termVector);
+      }
+}
+
   /** Create a field by specifying all parameters except for <code>storeTermVector</code>,
    *  which is set to <code>false</code>.
+   * @deprecated use {@link #Field(String, String, Field.Store, Field.Index)} instead
    */
   public Field(String name, String string,
 	       boolean store, boolean index, boolean token) {
@@ -165,6 +297,7 @@ public final class Field implements java.io.Serializable {
    * @param index true if the field should be indexed
    * @param token true if the field should be tokenized
    * @param storeTermVector true if we should store the Term Vector info
+   * @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)} instead
    */ 
   public Field(String name, String string,
 	       boolean store, boolean index, boolean token, boolean storeTermVector) {
@@ -173,7 +306,7 @@ public final class Field implements java.io.Serializable {
     if (string == null)
       throw new IllegalArgumentException("value cannot be null");
     if (!index && storeTermVector)
-      throw new IllegalArgumentException("cannot store a term vector for fields that are not indexed.");
+      throw new IllegalArgumentException("cannot store a term vector for fields that are not indexed");
 
     this.name = name.intern();			  // field names are interned
     this.stringValue = string;
