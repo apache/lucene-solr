@@ -49,6 +49,7 @@ all: $(BUILD)/indexFiles $(BUILD)/searchFiles
 # throw exceptions used in the Span and Sort code.)  So we compile
 # those that GCJ accepts from .java files, and those that GCJ does not
 # yet accept from .class files.
+# NOTE: Change when http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15501 is fixed.
 $(CORE_OBJ) : $(CORE_JAVA)
 	gcj $(GCJFLAGS) -c -I $(CORE) -o $@ `find $(ROOT)/src/java -name '*.java' -not -name '*Sort*' -not -name 'Span*'` `find $(CORE) -name '*.class' -name '*Sort*' -or -name 'Span*'`
 
