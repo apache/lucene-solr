@@ -1,1 +1,2 @@
-Main-Class: LuceneLine
+Main-Class: lucli.Lucli
+Class-Path: lib/libreadline-java.jar lib/lucene.jar
