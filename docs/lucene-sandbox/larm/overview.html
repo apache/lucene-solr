@@ -1,113 +1,259 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<document>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
-    <properties>
-        <author email="cmarschner at apache dot org">Clemens Marschner</author>
-        <title>LARM Webcrawler - Technical Overview</title>
-    </properties>
+<!-- Content Stylesheet for Site -->
 
-    <meta name="keyword" content="jakarta, java, LARM, WebCrawler,
-          Crawler, Fetcher"/>
+        
+<!-- start the processing -->
+    <!-- ====================================================================== -->
+    <!-- Main Page Section -->
+    <!-- ====================================================================== -->
+    <html>
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
 
-    <body>
+                                                    <meta name="author" value="Clemens Marschner">
+            <meta name="email" value="cmarschner at apache dot org">
+            
+           
+                                     <meta  name="keyword"  content="jakarta, java, LARM, WebCrawler,           Crawler, Fetcher"  />
+ 
+            <title>Jakarta Lucene - LARM Webcrawler - Technical Overview</title>
+        </head>
 
-        <section name="The LARM Web Crawler - Technical Overview">
-
-            <p align="center">Author: Clemens Marschner</p>
-
-            <p align="center">Revised: Oct. 28, 2002</p>
-
-            <p>
+        <body bgcolor="#ffffff" text="#000000" link="#525D76">        
+            <table border="0" width="100%" cellspacing="0">
+                <!-- TOP IMAGE -->
+                <tr>
+                    <td align="left">
+<a href="http://jakarta.apache.org"><img src="http://jakarta.apache.org/images/jakarta-logo.gif" border="0"/></a>
+</td>
+<td align="right">
+<a href="http://jakarta.apache.org/lucene/"><img src="../../images/lucene_green_300.gif" alt="Jakarta Lucene" border="0"/></a>
+</td>
+                </tr>
+            </table>
+            <table border="0" width="100%" cellspacing="4">
+                <tr><td colspan="2">
+                    <hr noshade="" size="1"/>
+                </td></tr>
+                
+                <tr>
+                    <!-- LEFT SIDE NAVIGATION -->
+                    <td width="20%" valign="top" nowrap="true">
+                                <p><strong>About</strong></p>
+        <ul>
+                    <li>    <a href="../../index.html">Overview</a>
+</li>
+                    <li>    <a href="../../powered.html">Powered by Lucene</a>
+</li>
+                    <li>    <a href="../../whoweare.html">Who We Are</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/mail.html">Mailing Lists</a>
+</li>
+                </ul>
+            <p><strong>Resources</strong></p>
+        <ul>
+                    <li>    <a href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi">FAQ (Official)</a>
+</li>
+                    <li>    <a href="http://www.jguru.com/faq/Lucene">JGuru FAQ</a>
+</li>
+                    <li>    <a href="../../gettingstarted.html">Getting Started</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/bugs.html">Bugs</a>
+</li>
+                    <li>    <a href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&bugidtype=include&bug_id=&changedin=&votes=&chfieldfrom=&chfieldto=Now&chfieldvalue=&product=Lucene&short_desc=&short_desc_type=allwordssubstr&long_desc=&long_desc_type=allwordssubstr&bug_file_loc=&bug_file_loc_type=allwordssubstr&keywords=&keywords_type=anywords&field0-0-0=noop&type0-0-0=noop&value0-0-0=&cmdtype=doit&order=%27Importance%27">Lucene Bugs</a>
+</li>
+                    <li>    <a href="../../queryparsersyntax.html">Query Syntax</a>
+</li>
+                    <li>    <a href="../../fileformats.html">File Formats</a>
+</li>
+                    <li>    <a href="../../api/index.html">Javadoc</a>
+</li>
+                    <li>    <a href="../../contributions.html">Contributions</a>
+</li>
+                    <li>    <a href="../../lucene-sandbox/">Lucene Sandbox</a>
+</li>
+                    <li>    <a href="../../resources.html">Articles, etc.</a>
+</li>
+                </ul>
+            <p><strong>Plans</strong></p>
+        <ul>
+                    <li>    <a href="../../luceneplan.html">Application Extensions</a>
+</li>
+                </ul>
+            <p><strong>Download</strong></p>
+        <ul>
+                    <li>    <a href="http://jakarta.apache.org/site/binindex.html">Binaries</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/sourceindex.html">Source Code</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/cvsindex.html">CVS Repositories</a>
+</li>
+                </ul>
+            <p><strong>Jakarta</strong></p>
+        <ul>
+                    <li>    <a href="http://jakarta.apache.org/site/getinvolved.html">Get Involved</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/acknowledgements.html">Acknowledgements</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/contact.html">Contact</a>
+</li>
+                    <li>    <a href="http://jakarta.apache.org/site/legal.html">Legal</a>
+</li>
+                </ul>
+                        </td>
+                    <td width="80%" align="left" valign="top">
+                                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="The LARM Web Crawler - Technical Overview"><strong>The LARM Web Crawler - Technical Overview</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p align="center">Author: Clemens Marschner</p>
+                                                <p align="center">Revised: Oct. 28, 2002</p>
+                                                <p>
                 This document describes the configuration parameters and the inner
                 workings of the LARM web crawler.
             </p>
-
-
-            <subsection name="Purpose and Intended Audience">
-
-                <p>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Purpose and Intended Audience"><strong>Purpose and Intended Audience</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     This document was made for Lucene developers, not necessarily with any
                     background knowledge on crawlers, to understand the inner workings of
                     the LARM crawler, the current problems and some directions for future
                     development. The aim is to keep the entry costs low for people who have
                     an interest in developing this piece of software further.
                 </p>
-
-                <p>
+                                                <p>
                     It may also serve for actual users of the Lucene engine, but beware,
                     since there is a lot that will change in the near future, especially the
                     configuration.
                 </p>
-
-            </subsection>
-
-            <subsection name="Quick Start">
-
-                <p>The crawler is only accessible via anonymous CVS at this time. See
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Quick Start"><strong>Quick Start</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>The crawler is only accessible via anonymous CVS at this time. See
                     the <a href="http://jakarta.apache.org/site/cvsindex.html">Jakarta CVS
                         instructions</a> for details if you're not familiar with CVS.</p>
-
-                <p>Too long? The following will give you a quick start: create a new
+                                                <p>Too long? The following will give you a quick start: create a new
                     directory, say, "jakarta", make it your current directory, and type</p>
-
-                <source><![CDATA[cvs -d :pserver:anoncvs@cvs.apache.org:/home/cvspublic
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>cvs -d :pserver:anoncvs@cvs.apache.org:/home/cvspublic
                     login
                     password: anoncvs
                     cvs -d :pserver:anoncvs@cvs.apache.org:/home/cvspublic checkout
-                    jakarta-lucene-sandbox]]></source>
-
-                <p>
+                    jakarta-lucene-sandbox</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>
                     The crawler will then be in
                     jakarta-lucene-sandbox/contributions/webcrawler-LARM. To compile it you will also need
                 </p>
+                                                <ul>
 
-                <ul>
+                    <li>this <a href="http://www.innovation.ch/java/HTTPClient/">HTTPClient</a>. Put the .zip file into the libs/ directory</li>
 
-                    <li>this <a
-                                href="http://www.innovation.ch/java/HTTPClient/">HTTPClient</a>. Put the .zip file into the libs/ directory</li>
-
-                    <li>a working installation of <a
-                                                     href="http://jakarta.apache.org/ant">ANT</a> (1.5 or above recommended). ant.sh/.bat should be in your
+                    <li>a working installation of <a href="http://jakarta.apache.org/ant">ANT</a> (1.5 or above recommended). ant.sh/.bat should be in your
                         PATH</li>
 
                 </ul>
-
-                <p>
+                                                <p>
                     Change to the webcrawler-LARM directory and type
                 </p>
-
-                <source>ant</source>
-
-                <p>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>ant</pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>
                     You should then have a working copy of LARM in
                     build/webcrawler-LARM-0.5.jar. See the section <a href="#syntax">Syntax</a> below on how to
-                    start the crawler.<br/>
+                    start the crawler.<br />
                 </p>
-
-            </subsection>
-
-
-        </section>
-
-        <section name="Introduction">
-
-            <subsection name="Why web crawlers at all?">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Introduction"><strong>Introduction</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                        <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Why web crawlers at all?"><strong>Why web crawlers at all?</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     Web crawlers became necessary because the web standard protocols didn't
                     contain any mechanisms to inform search engines that the data on a web
                     server had been changed. If this were possible, a search engine could
                     be notified in a "push" fashion, which would simplify the total process
                     and would make indexes as current as possible.
                 </p>
-
-                <p>
+                                                <p>
                     Imagine a web server that notifies another web server that a link was
                     created from one of its pages to the other server. That other server
                     could then send a message back if the page was removed.
                 </p>
-
-                <p>
+                                                <p>
                     On the other hand, handling this system would be a lot more
                     complicated. Keeping distributed information up to date is an erroneous task. Even
                     in a single relational database it is often complicated to define and
@@ -116,8 +262,7 @@
                     deleted if a record is removed? Handling relationships between clusters of
                     information well incorporates a new level of complexity.
                 </p>
-
-                <p>
+                                                <p>
                     In order to keep the software (web servers and browsers) simple, the
                     inventors of the web concentrated on just a few core elements - URLs for
                     (more or less) uniquely identifying distributed information, HTTP for
@@ -126,8 +271,7 @@
                     probably one of the main reasons why the WWW became so popular. Well,
                     another one would probably be coloured, moving graphics of naked people.
                 </p>
-
-                <p>
+                                                <p>
                     But the WWW has some major disadvantages: There is no single index of
                     all available pages. Information can change without notice. URLs can
                     point to pages that no longer exist. There is no mechanism to get "all"
@@ -140,8 +284,7 @@
                     search them. But we don't even know how to do that, since we don't know
                     all the web servers.
                 </p>
-
-                <p>
+                                                <p>
                     That first problem was addressed by bookmark collections, which soon
                     became very popular. The most popular probably was Yahoo, which evolved
                     to one of the most popular pages in the web just a year after it emerged
@@ -149,8 +292,7 @@
                     The second problem was how to get the information from all those pages
                     laying around. This is where a web crawler comes in.
                 </p>
-
-                <p>
+                                                <p>
                     Ok, those engineers said, we are not able to get a list of all the
                     pages. But almost every page contains links to other pages. We can save a
                     page, extract all the links, and load all of these pages these links
@@ -158,8 +300,7 @@
                     like Yahoo for example, chances should be that we can get "all" pages
                     on the web.
                 </p>
-
-                <p>
+                                                <p>
                     A little more formal, the web can be seen as a directional graph, with
                     pages as nodes and links as edges between them. A web crawler, also
                     called "spider" or "fetcher", uses the graph structure of the web to get
@@ -167,23 +308,28 @@
                     mechanism for updating our index, we need to "pull" the information on
                     our own, by repeatedly crawling the web.
                 </p>
-
-            </subsection>
-
-            <subsection name="Implementation - the first attempt">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Implementation - the first attempt"><strong>Implementation - the first attempt</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     "Easy", you may think now, "just implement what he said in the
                     paragraph before." So you start getting a page, extracting the links, following
                     all the pages you have not already visited. In Perl that can be done in
                     a few lines of code.
                 </p>
-
-                <p>
+                                                <p>
                     But then, very soon (I can tell you), you end up in a lot of problems:
                 </p>
-
-                <ul>
+                                                <ul>
                     <li>a server doesn't respond. Your program always wait for it to time
                         out
                     </li><li>you get OutOfMemory errors soon after the beginning
@@ -200,20 +346,25 @@
                         The overall process will take days
                     </li>
                 </ul>
-
-            </subsection>
-
-
-            <subsection name="Features of the LARM crawler">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Features of the LARM crawler"><strong>Features of the LARM crawler</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     The LARM web crawler is a result of experiences with the errors as
                     mentioned above, connected with a lot of monitoring to get the maximum out
                     of the given system ressources. It  was designed with several different
                     aspects in mind:
                 </p>
-
-                <ul>
+                                                <ul>
 
                     <li>Speed. This involves balancing the resources to prevent
                         bottlenecks. The crawler is multithreaded. A lot of work went in avoiding
@@ -245,17 +396,22 @@
                     </li>
 
                 </ul>
-
-            </subsection>
-
-            <subsection name="What the crawler can do for you, and what it cannot
-                        (yet)">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="What the crawler can do for you, and what it cannot                         (yet)"><strong>What the crawler can do for you, and what it cannot                         (yet)</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     What it can do for you:
                 </p>
-
-                <ul>
+                                                <ul>
                     <li>Crawl a distinct set of the web, only restricted by a given regular
                         expression all pages have to match. The pages are saved into page files
                         of max. 50 MB (look at FetcherMain.java for details) and an index file
@@ -299,17 +455,15 @@
                         allow a seperation of logging, processing, and storage
                     </li>
                 </ul>
-
-                <p>
+                                                <p>
                     On the other hand, at the time of this writing, the crawler has not yet
                     evolved into a production release. The reason is: until now, it just
                     served me alone.</p>
-                <p>
+                                                <p>
 
                     These issues remain:
                 </p>
-
-                <ul>
+                                                <ul>
                     <li>
                         Still, there's a relatively high memory overhead <i>per server</i> and
                         also some overhead <i>per page</i>, especially since a map of already
@@ -358,26 +512,50 @@
 
                     </li>
                 </ul>
-            </subsection>
-
-            <subsection name="Syntax and runtime behaviour">
-
-                <p>
-                    <a name="syntax"></a>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Syntax and runtime behaviour"><strong>Syntax and runtime behaviour</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
+                    <a name="syntax" />
 
                     The command line options are very simple:
                 </p>
-
-                <source><![CDATA[
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>
                     java [-server] [-Xmx[ZZ]mb] -classpath fetcher.jar
                     de.lanlab.larm.fetcher.FetcherMain
                     [-start STARTURL | @STARTURLFILE]+
                     -restrictto REGEX
                     [-threads[=10]]
                     -hostresolver HOSTRES.PROPERTIES
-                    ]]></source>
-
-                <ul>
+                    </pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <ul>
 
                     <li><b>-start</b>	a start URL or, alternatively, a file with start URLs
                         (one in each line). In the latter case the file name must be preceded
@@ -393,39 +571,32 @@
                         because synchronization effects and (probably) the overhead of the
                         scheduler slow the system down</li>
                 </ul>
-
-                <p>
+                                                <p>
                     <b>Java runtime options:</b>
                 </p>
-
-                <ul>
+                                                <ul>
                     <li><b>-server</b>	starts the hot spot VM in server mode, which starts
                         up a little slower, but is faster during the run. Recommended</li>
                     <li><b>-Xmx&lt;ZZ&gt;mb</b>	sets the maximum size of the heap to
                         &lt;ZZ&gt; mb. Should be a lot. Set it to what you have.</li>
                 </ul>
-
-                <p>
+                                                <p>
                     You may also want to have a look at the source code, because some
-                    options cannot be dealt with from the outside at this time.<br/><br/>
+                    options cannot be dealt with from the outside at this time.<br /><br />
                 </p>
-
-                <p>
+                                                <p>
                     <b>Other options</b>
                 </p>
-
-                <p>
+                                                <p>
                     Unfortunately, a lot of the options are still not configurable from the
                     outside. Most of them are configured from within FetcherMain.java.
                     However, others are still spread over some of the other classes. At this
                     time, we tried to put a "FIXME" comment around all these options, so
                     check out the source code. </p>
-
-                <p>
+                                                <p>
                     <b>What happens now?</b>
                 </p>
-
-                <ol>
+                                                <ol>
 
                     <li>The filter pipeline is built. The ScopeFilter is initialised with
                         the expression given by restrictto</li>
@@ -444,21 +615,26 @@
                         remaining in the queues</li>
 
                 </ol>
-                <!--zz-->
-            </subsection>
-            <!--zz !! -->
-
-            <subsection name="Normalized URLs">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Normalized URLs"><strong>Normalized URLs</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     URLs are only supposed to make a web resource accessible. Unfortunately
                     there can be more than one representation of a URL, which can cause a
                     web crawler to save one file twice under different URLs. Two mechanisms
                     are used to reduce this error, while at the same time trying to keep
                     the second error (two URLs are regarded as pointing to the same file, but
                     are in fact two different ones):</p>
-
-                <ul>
+                                                <ul>
                     <li>Common URL patterns are reduced to a known "canonical" form. I.
                         e. The URLs <i>http://host</i> and <i>http://host/</i> point to the same
                         file. The latter is defined as the canonical form of a root URL. For a
@@ -467,21 +643,27 @@
                         to the <i>HostResolver</i>, which can be configured in a configuration
                         file.</li>
                 </ul>
-
-                <p>
+                                                <p>
                     The result is used like a <i>stemming</i> function in IR systems: The
                     normalized form of a URL is used internally for comparisons, but to the
                     outside (i.e. for accessing the file), the original form is applied.
                 </p>
-
-            </subsection>
-
-            <subsection name="URL patterns">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="URL patterns"><strong>URL patterns</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     These are the patterns applied by the <i>URLNormalizer</i>:
                 </p>
-                <ul>
+                                                <ul>
                     <li>Host and path names are changed to lowercase. We know that on
                         Unix it may be possible to have two files in one directory that only
                         differ in their cases, but we don't think this will be used very often. On
@@ -494,38 +676,41 @@
                     <li>subsequent slashes '//' are removed. '/./' is reduced to '/'</li>
                     <li>index.* and default.* file names are removed</li>
                 </ul>
-                <p>Todo: '/../' is not handled yet</p>
-                <p>
+                                                <p>Todo: '/../' is not handled yet</p>
+                                                <p>
                     Todo: Examples</p>
-
-            </subsection>
-
-            <subsection name="The Host Resolver">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="The Host Resolver"><strong>The Host Resolver</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     The host resolver is also applied when the URL normalization takes
                     place. It knows three different types of rules:
                 </p>
-
-                <ul>
+                                                <ul>
                     <li>startsWith: replace the start of a URL with something else if a
                         certain pattern is found at the start</li>
                     <li>endsWith: same with the end</li>
                     <li>synonym: treat a host name as a synonym to another</li>
                 </ul>
-
-                <p>
+                                                <p>
                     These three rules are applied to each URL in that order. I. e. you
                     can tell the host resolver to always remove the "www." of each host,
                     therefore regarding "cnn.com" and "www.cnn.com" as equal, by defining the
                     rule <i>setStartsWith("www.","")</i>
                 </p>
-
-                <p>
+                                                <p>
                     <b>Configuring HostResolver in a config file</b>
                 </p>
-
-                <p>
+                                                <p>
                     The HostResolver was one test on how config files could look like if
                     they were implemented using standard Java procedures. We used the
                     Jakarta BeanUtils for these matters (see
@@ -536,12 +721,19 @@
                     normal properties and the mapped properties as supported by BeanUtils is
                     that a second argument can be passed to the latter.
                 </p>
-
-                <p>
+                                                <p>
                     An example of such a properties file would look like this:
                 </p>
-
-                <source><![CDATA[
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>
                     #hostResolver.properties
                     #format:
                     # startsWith(part1) = part2
@@ -560,16 +752,22 @@
                     endsWith(.somehost.com)=.somhost2.com
                     synonym(daedalus.apache.org)=apache.org
 
-                    ]]></source>
-
-                <p>
+                    </pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>
                     As you can see, the file format itself is like the standard Java
                     <a href="http://java.sun.com/j2se/1.3/docs/api/java/util/Properties.html">Properties</a>
                     format (comments etc.). Keywords are case sensitive.
                 </p>
-
-
-                <p>
+                                                <p>
                     At the time when the class was written, BeanUtils still had a bug
                     that dots "." were not supported in mapped properties indexes. As with
                     the new version (1.5 at the time of this writing) this is supposed to be
@@ -578,10 +776,11 @@
                     still use (and even mix) them if you want, or if you only have an older
                     BeanUtils version available.
                 </p>
-
-            </subsection>
-
-            <section name="Lucene Integration">
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <section name="Lucene Integration">
 
                 <p>
                     LARM currently provides a very simple LuceneStorage that allows for
@@ -602,21 +801,25 @@
                     details</p>
 
             </section>
-
-
-        </section>
-
-        <section name="Architecture">
-
-            <p>I studied the <a href="http://research.compaq.com/SRC/mercator/research.html">Mercator</a> web
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Architecture"><strong>Architecture</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>I studied the <a href="http://research.compaq.com/SRC/mercator/research.html">Mercator</a> web
                 crawler but decided to implement a somewhat different architecture.
                 Here is a high level overview of the default configuration:
             </p>
-
-            <img src="/images/larm_architecture.jpg" width="568" height="460"
-                 border="1" alt="Architecture Overview"/>
-
-            <p>
+                                                <img src="../../images/larm_architecture.jpg" width="568" height="460" align="">
+                                                <p>
                 The message handler is an implementation of a simple <i>chain of
                     responsibility</i>. Implementations of <i>Message</i> are passed down a
                 filter chain. Each of the filters can decide whether to send the message
@@ -631,8 +834,7 @@
                 <i>Tasks</i> which include the procedure to be executed. If more tasks are
                 to be done than threads are available, they are kept in a queue, which
                 will be read whenever a task is finished.</p>
-
-            <p>
+                                                <p>
                 At this point the pipeline pattern is left . The <i>FetcherTask</i>
                 itself is still quite monolithic. It gets the document, parses it if
                 possible, and stores it into a storage. In the future one might think of
@@ -641,10 +843,15 @@
                 the filters are passive components and the <i>FetcherThreads</i> are
                 active, this didn't work.
             </p>
-
-            <subsection name="Performance">
-
-                <p>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Performance"><strong>Performance</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     The performance was improved about 10-15 times compared to the first
                     naive attempts with a pre-built parser and Sun's network classes. And
                     there is still room left. On a network with about 150 web servers, which
@@ -655,31 +862,25 @@
                     crawling. There may also be servers that don't respond. They are
                     excluded from the crawl after a few attempts.
                 </p>
-
-                <p>
+                                                <p>
                     Overall, performance is affected by a lot of factors: The operating
                     system, the native interface, the Java libraries, the web servers, the
                     number of threads, whether dynamic pages are included in the crawl, etc.
                 </p>
-
-                <p>
+                                                <p>
                     From a development side, the speed is affected by the balance between
                     I/O and CPU usage. Both has to be kept at 100%, otherwise one of them
                     becomes the bottleneck. Managing these resources is the central part of a
                     crawler.
                     Imagine that only one thread is crawling. This is the worst case, as
                     can be seen very fast:</p>
-
-                <br/>
-                <br/>
-                <img src="/images/larm_crawling-process.jpg" width="600" height="306"
-                     border="1" alt="Crawling Process"/>
-
-                <p>
+                                                <br />
+                                                <br />
+                                                <img src="../../images/larm_crawling-process.jpg" width="600" height="306" align="">
+                                                <p>
                     The diagram to the right resembles a UML sequence diagram, except that
                     it stresses the time that a message needs to traverse the network.</p>
-
-                <ol>
+                                                <ol>
                     <li>The URL is processed somehow. That's the filter part as stated
                         above</li>
                     <li>The request is sent. It goes through the different network layers
@@ -698,32 +899,26 @@
                     <li>The document is processed, which will take up the whole CPU. The
                         network will be idle at that time.</li>
                 </ol>
-
-                <p>
+                                                <p>
                     The storage process, which by itself uses CPU and disk I/O resources,
                     was left out here. That process will be very similar, although the
                     traversal will be faster.
                 </p>
-
-                <p>
+                                                <p>
                     As you can see, both CPU and I/O are not used most of the time, and
                     wait for the other one (or the network) to complete. This is the reason
                     why single threaded web crawlers tend to be very slow (wget for example).
                     The slowest component always becomes the bottleneck.</p>
-
-                <p>
+                                                <p>
                     Two strategies can be followed to improve this situation:</p>
-
-                <ol>
+                                                <ol>
                     <li>use asynchronous I/O</li>
                     <li>use several threads</li>
                 </ol>
-
-                <p>
+                                                <p>
                     Asynchronous I/O means, I/O requests are sent, but then the crawler
                     continues to process documents it has already crawled.</p>
-
-                <p>
+                                                <p>
                     Actually I haven't seen an implementation of this technique.
                     Asynchronous I/O was not available in Java until version 1.4. An advantage would
                     be that thread handling is also an expensive process in terms of CPU
@@ -732,13 +927,12 @@
                     cope with hundreds of simultaneous requests without spawning extra
                     threads for each of them. Probably this can be a solution in the future. But
                     from what I know about it today, it will not be necessary </p>
-
-                <p>
+                                                <p>
                     The way this problem is solved usually in Java is with the use of
                     several threads. If many threads are used, chances are good that at any
                     given moment, at least one thread is in one of the states above, which
                     means both CPU and I/O will be at a maximum.</p>
-                <p>
+                                                <p>
                     The problem with this is that multi threaded programming is considered
                     to be one of the most difficult areas in computer science. But given
                     the simple linear structure of web crawlers, it is not very hard to avoid
@@ -746,7 +940,7 @@
                     when threads are supposed to access shared resources, though. Don't touch
                     this until you have read the standard literature and have made at least
                     10 mistakes (and solved them!).</p>
-                <p>
+                                                <p>
                     Multithreading doesn't come without a cost, however. First, there is
                     the cost of thread scheduling. I don't have numbers for that in Java, but
                     I suppose that this should not be very expensive. MutExes can affect
@@ -754,7 +948,7 @@
                     hell. In a crawler, a MutEx is used, for example, when a new URL is passed
                     to the thread, or when the fetched documents are supposed to be stored
                     linearly, one after the other.</p>
-                <p>
+                                                <p>
                     For example, the tasks used to insert a new URL into the global message
                     handler each time when a new URL was found in the document. I was able
                     to speed it up considerably when I changed this so that the URLs are
@@ -762,53 +956,74 @@
                     can be augmented even further if each task is comprised of several
                     documents which are fetched one after the other and then stored
                     together.</p>
-                <p>
+                                                <p>
                     Nonetheless, keeping the right balance between the two resources is a
                     big concern. At the moment, the number of threads and the number of
                     processing steps is static, and is only optimised by trial and error. Few
-                    hosts, slow network -> few threads. slow CPU -> few processing steps.
-                    many hosts, fast network -> many threads. Probably those heuristics will
+                    hosts, slow network -&gt; few threads. slow CPU -&gt; few processing steps.
+                    many hosts, fast network -&gt; many threads. Probably those heuristics will
                     do well, but I wonder if these figures could also be fine-tuned
                     dynamically during runtime.</p>
-                <p>
+                                                <p>
                     Another issue that was optimised were very fine-grained method calls.
                     For example, the original implementation of the HTML parser used to call
                     the read()-method for each character. This call had probably to
                     traverse several Decorators until it got to a - synchronized call. That's why
                     the CharArrayReader was replaced by a SimpleCharArrayReader, because
                     only one thread works on a document at a time.</p>
-                <p>
+                                                <p>
                     These issues can only be traced down with special tools, i.e.
                     profilers. The work is worth it, because it allows one to work on the 20% of the
                     code that costs 80% of the time.
                 </p>
-
-            </subsection>
-
-            <subsection name="Memory Usage">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Memory Usage"><strong>Memory Usage</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     One "web crawler law" could be defined as:</p>
-
-                <source>
+                                                    <div align="left">
+    <table cellspacing="4" cellpadding="0" border="0">
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#ffffff"><pre>
                     What can get infinite, will get infinite.
                     What can go wrong, will go wrong.
                     Eventually.
                     Very soon.
-                </source>
-
-                <p>
+                </pre></td>
+      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    <tr>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
+    </tr>
+    </table>
+    </div>
+                                                <p>
                     A major task during the development was to get memory usage low. But a
                     lot of work still needs to be done here. Most of the optimizations
                     incorporated now move the problem from main memory to the hard disk, which
-                    doesn't solve the problem.<br/>
+                    doesn't solve the problem.<br />
                 </p>
-
-                <p>
+                                                <p>
                     Here are some means that were used:
                 </p>
-
-                <ul>
+                                                <ul>
 
                     <li>CachingQueues: The message queue, the Fetcher queue, the robot
                         exclusion queue (see below) - a lot of queues can fill up the whole main
@@ -859,21 +1074,26 @@
                     </li>
 
                 </ul>
-
-            </subsection>
-
-            <subsection name="The Filters">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="The Filters"><strong>The Filters</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     Most of the functionality of the different filters has already been
                     described. Here's another, more detailed view :
                 </p>
-
-                <p>
+                                                <p>
                     <b>RobotExclusionFilter</b>
                 </p>
-
-                <p>
+                                                <p>
                     The first implementation of this filter just kept a list of hosts, and
                     every time a new URLMessage with an unknown host came by, it attempted
                     to read the robots.txt file first to determine whether the URL should
@@ -885,8 +1105,7 @@
                     The second implementation has its own little ThreadPool, and keeps a
                     state machine of each host in the HostInfo structure.
                 </p>
-
-                <p>
+                                                <p>
                     If the host manager doesn't contain a HostInfo structure at all, the
                     filter creates it and creates a task to get the robots.txt file. During
                     this time, the host state is set to "isLoadingRobotsTxt", which means
@@ -894,18 +1113,15 @@
                     finished, these URLs (and all subsequent ones) are put back to the beginning
                     of the queue.
                 </p>
-
-                <p>
+                                                <p>
                     After this initial step, every URL that enters the filter is compared
                     to the disallow rules set (if present), and is filtered if necessary.
                 </p>
-
-                <p>
+                                                <p>
                     Since the URLs are put back to the beginning of the queue, the filter
                     has to be put in front of the VisitedFilter.
                 </p>
-
-                <p>
+                                                <p>
                     In the host info structure, which is also used by the FetcherTasks,
                     some information about the health of the hosts is stored as well. If the
                     server is in a bad state several times, it is excluded from the crawl.
@@ -913,57 +1129,46 @@
                     (predefined) 5 times that it can time out, since a FetcherThread may
                     already have started to get a document when another one marks it as bad.
                 </p>
-
-                <p>
+                                                <p>
                     <b>URLLengthFilter</b>
                 </p>
-
-                <p>
+                                                <p>
                     This very simple filter just filters a URL if a certain (total) length
                     is exceeded
                 </p>
-
-                <p>
+                                                <p>
                     <b>KnownPathsFilter</b>
                 </p>
-
-                <p>
+                                                <p>
                     This one filters some very common URLs (i.e. different views of an
                     Apache directory index), or hosts known to make problems. Should be more
                     configurable from outside in the future
                 </p>
-
-                <p>
+                                                <p>
                     <b>URLScopeFilter</b>
                 </p>
-
-                <p>
+                                                <p>
                     The scope filter filters a URL if it doesn't match a given regular
                     expression.
                 </p>
-
-                <p>
+                                                <p>
                     <b>URLVisitedFilter</b>
                 </p>
-
-                <p>
+                                                <p>
                     This filter keeps a HashMap of already visited URLs, and filters out
                     what it already knows
                 </p>
-
-                <p>
+                                                <p>
                     <b>Fetcher</b>
                 </p>
-
-                <p>
+                                                <p>
                     The fetcher itself is also a filter that filters all URLs - they are
                     passed along to the storage as WebDocuments, in a different manner. It
                     contains a ThreadPool that runs in its own thread of control, which takes
                     tasks from the queue an distributes them to the different
                     FetcherThreads.
                 </p>
-
-                <p>
+                                                <p>
                     In the first implementation the fetcher would simply distribute the
                     incoming URLs to the threads. The thread pool would use a simple queue to
                     store the remaining tasks. But this can lead to a very "unpolite"
@@ -973,15 +1178,13 @@
                     probably causing denial of service, while other hosts present in the
                     queue are not accessed.
                 </p>
-
-                <p>
+                                                <p>
                     To overcome this, the queue is divided into different  parts, one for
                     each host. Each host contains its own (caching) queue. But the methods
                     used to pull tasks from the "end" of this queue cycle through the hosts
                     and always get a URL from a different host.
                 </p>
-
-                <p>
+                                                <p>
                     One major problem still remains with this technique: If one host is
                     very slow, it can still slow down everything. Since with n host every nth
                     task will be accessed to this host, it can eat one thread after the
@@ -992,18 +1195,15 @@
                     done to avoid these situations, i.e. by limiting the number of threads
                     that access one host at a time.
                 </p>
-
-                <p>
+                                                <p>
                     <b>A Note on DNS</b>
                 </p>
-
-                <p>
+                                                <p>
                     The Mercator crawler document stresses a lot on resolving host names.
                     Because of that, a DNSResolver filter was implemented in the very first
                     time. Two reasons prevented that it is used any more:
                 </p>
-
-                <ul>
+                                                <ul>
 
                     <li>newer versions of the JDK than the one Mercator used resolve the IP
                         address of a host the first time it is accessed, and keep a cache of
@@ -1013,25 +1213,48 @@
                         not the internet. Thus, the number of hosts is very limited.</li>
 
                 </ul>
-
-            </subsection>
-        </section>
-
-
-        <section name="Future Enhancements">
-
-            <subsection name="Politeness">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#525D76">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Future Enhancements"><strong>Future Enhancements</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                        <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Politeness"><strong>Politeness</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     A crawler should not cause a Denial of Service attack. So this has to
                     be addressed.
                 </p>
-
-            </subsection>
-
-            <subsection name="The processing pipeline">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="The processing pipeline"><strong>The processing pipeline</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     The FetcherTask, as already stated, is very monolithic at this time.
                     Probably some more processing should be done at this step (the problem
                     with balanced CPU/IO usage taken into account). At least different
@@ -1041,21 +1264,25 @@
                     log files, but also stored the files on disk. This should probably be
                     replaced by a storage chain where different stores could be appended.
                 </p>
-
-            </subsection>
-
-
-
-            <subsection name="LARM as a real server">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="LARM as a real server"><strong>LARM as a real server</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     The only way to start a crawl today is starting the crawler from the
                     shell. But it could also remain idle and wait for commands from an RMI
                     connection or expose a Web Service. Monitoring could be done by a simple
                     included web server that provides current statistics via HTML
                 </p>
-
-                <ul>
+                                                <ul>
                     <li><b>Recommended Reading: </b> We plan on using the
                     <a href="http://jakarta.apache.org/avalon">Avalon</a> Framework</li> for state
                     management and configuration. A very early proposal can
@@ -1064,20 +1291,25 @@
                     We found out that Avalon provides a lot of the functionality described
                     as necessary in that posting.
                 </ul>
-
-
-            </subsection>
-
-            <subsection name="Distribution">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Distribution"><strong>Distribution</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     Distribution is a big issue. Some people say "Distribute your program
                     late. And then later." But as others have implemented distributed
-                    crawlers, this should not be very hard.<br/>
+                    crawlers, this should not be very hard.<br />
                     I see two possible architectures for that:
                 </p>
-
-                <ul>
+                                                <ul>
                     <li>Write a single dispatcher (a star network) that contains the whole
                         MessageHandler except the Fetcher itself. The crawlers are run as
                         servers (see above), and are configured with a URL source that gets their
@@ -1093,60 +1325,105 @@
                         node. This could even be implemented as a filter.
                     </li>
                 </ul>
-
-                <p>
+                                                <p>
                     One thing to keep in mind is that the number of URLs transferred to
                     other nodes should be as large as possible. </p>
-
-                <p>
+                                                <p>
                     The next thing to be distributed is the storage mechanism. Here, the
                     number of pure crawling nodes and the number of storing (post processing)
                     nodes could possibly diverge. An issue here is that the whole documents
                     have to be transferred over the net. </p>
-
-
-                <ul>
+                                                <ul>
                     <li><b>Recommended Reading: </b> <i>Junghoo Cho and Hector
                             Garcia-Molina (2002).
                             <a href="http://citeseer.nj.nec.com/cho02parallel.html">Parallel crawlers</a>.
                             In Proc. of the 11th International World--Wide Web Conference, 2002</i></li>
                 </ul>
-
-            </subsection>
-
-            <subsection name="URL Reordering">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="URL Reordering"><strong>URL Reordering</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     One paper discussed different types of reordering URLs while crawling .
                     One of the most promising attempts was to take the calculated PageRank
                     into account . Crawling pages with higher PageRanks first seemed to get
                     important pages earlier. This is not rocket science, the research was
                     already done years ago.
                 </p>
-
-                <ul>
+                                                <ul>
                     <li><b>Recommended Reading: </b> <i>J. Cho, H. Garcia-Molina &amp; L.
                             Page (1998),
-                            <a
-                               href="http://citeseer.nj.nec.com/30730.html">Efficient Crawling Through URL Ordering</a>,
+                            <a href="http://citeseer.nj.nec.com/30730.html">Efficient Crawling Through URL Ordering</a>,
                             Seventh International Web Conference, Brisbane, Australia, 14-18 April</i></li>
                 </ul>
-
-            </subsection>
-
-            <subsection name="Recovery">
-
-                <p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Recovery"><strong>Recovery</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>
                     At the moment there is no way of stopping and restarting a crawl. There
                     should be a mechanism to move the current state of the crawler to disk,
                     and, in case of a failure, to recover and continue from the last saved
                     state.
                 </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                            </blockquote>
+        </p>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                        </td>
+                </tr>
 
-            </subsection>
+                <!-- FOOTER -->
+                <tr><td colspan="2">
+                    <hr noshade="" size="1"/>
+                </td></tr>
+                <tr><td colspan="2">
+                    <div align="center"><font color="#525D76" size="-1"><em>
+                    Copyright &#169; 1999-2002, Apache Software Foundation
+                    </em></font></div>
+                </td></tr>
+            </table>
+        </body>
+    </html>
+<!-- end the processing -->
 
-        </section>
 
-    </body>
 
-</document>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
