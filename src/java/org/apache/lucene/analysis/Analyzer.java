@@ -81,7 +81,7 @@ abstract public class Analyzer {
   /** Creates a TokenStream which tokenizes all the text in the provided
    *  Reader.  Provided for backward compatibility only.
    * @deprecated use tokenStream(String, Reader) instead.
-   * @see tokenStream(String, Reader)
+   * @see #tokenStream(String, Reader)
    */
   public TokenStream tokenStream(Reader reader)
   {
