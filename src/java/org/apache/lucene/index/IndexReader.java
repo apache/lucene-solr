@@ -75,7 +75,12 @@ import org.apache.lucene.document.Document;
   rely on a given document having the same number between sessions. */
 
 abstract public class IndexReader {
-  protected IndexReader() {}
+  protected IndexReader(Directory directory) {
+    this.directory = directory;
+  }
+
+  Directory directory;
+  private Lock writeLock;
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
   path. */
@@ -102,7 +107,7 @@ abstract public class IndexReader {
 	    SegmentReader[] readers = new SegmentReader[infos.size()];
 	    for (int i = 0; i < infos.size(); i++)
 	      readers[i] = new SegmentReader(infos.info(i), i==infos.size()-1);
-	    return new SegmentsReader(readers);
+	    return new SegmentsReader(directory, readers);
 	  }
 	}.run();
     }
@@ -240,7 +245,16 @@ abstract public class IndexReader {
     method will result in an error.  The presence of this document may still be
     reflected in the {@link #docFreq} statistic, though
     this will be corrected eventually as the index is further modified.  */
-  abstract public void delete(int docNum) throws IOException;
+  public synchronized final void delete(int docNum) throws IOException {
+    if (writeLock == null) {
+      Lock writeLock = directory.makeLock("write.lock");
+      if (!writeLock.obtain())			  // obtain write lock
+        throw new IOException("Index locked for write: " + writeLock);
+      this.writeLock = writeLock;
+    }
+    doDelete(docNum);
+  }
+  abstract void doDelete(int docNum) throws IOException;
 
   /** Deletes all documents containing <code>term</code>.
     This is useful if one uses a document field to hold a unique ID string for
@@ -267,7 +281,24 @@ abstract public class IndexReader {
    * Also saves any new deletions to disk.
    * No other methods should be called after this has been called.
    */
-    abstract public void close() throws IOException;
+  public final synchronized void close() throws IOException {
+    doClose();
+    if (writeLock != null) {
+      writeLock.release();  // release write lock
+      writeLock = null;
+    }
+  }
+
+  /** Implements close. */
+  abstract void doClose() throws IOException;
+
+  /** Release the write lock, if needed. */
+  protected final void finalize() throws IOException {
+    if (writeLock != null) {
+      writeLock.release();                        // release write lock
+      writeLock = null;
+    }
+  }
 
   /**
    * Returns <code>true</code> iff the index in the named directory is

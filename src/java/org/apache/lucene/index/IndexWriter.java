@@ -91,6 +91,8 @@ public final class IndexWriter {
   private SegmentInfos segmentInfos = new SegmentInfos(); // the segments
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
 
+  private Lock writeLock;
+
   /** Constructs an IndexWriter for the index in <code>path</code>.  Text will
     be analyzed with <code>a</code>.  If <code>create</code> is true, then a
     new, empty index will be created in <code>path</code>, replacing the index
@@ -119,8 +121,9 @@ public final class IndexWriter {
     analyzer = a;
 
     Lock writeLock = directory.makeLock("write.lock");
-    if (!writeLock.obtain())			  // obtain write lock
+    if (!writeLock.obtain())                      // obtain write lock
       throw new IOException("Index locked for write: " + writeLock);
+    this.writeLock = writeLock;                   // save it
 
     synchronized (directory) {			  // in- & inter-process sync
       new Lock.With(directory.makeLock("commit.lock")) {
@@ -140,8 +143,17 @@ public final class IndexWriter {
   public final synchronized void close() throws IOException {
     flushRamSegments();
     ramDirectory.close();
-    directory.makeLock("write.lock").release();  // release write lock
+    writeLock.release();                          // release write lock
+    writeLock = null;
     directory.close();
+  }
+
+  /** Release the write lock, if needed. */
+  protected final void finalize() throws IOException {
+    if (writeLock != null) {
+      writeLock.release();                        // release write lock
+      writeLock = null;
+    }
   }
 
   /** Returns the number of documents currently in this index. */

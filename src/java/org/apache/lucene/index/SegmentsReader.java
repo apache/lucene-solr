@@ -67,7 +67,8 @@ final class SegmentsReader extends IndexReader {
   private int maxDoc = 0;
   private int numDocs = -1;
 
-  SegmentsReader(SegmentReader[] r) throws IOException {
+  SegmentsReader(Directory directory, SegmentReader[] r) throws IOException {
+    super(directory);
     readers = r;
     starts = new int[readers.length + 1];	  // build starts array
     for (int i = 0; i < readers.length; i++) {
@@ -101,7 +102,7 @@ final class SegmentsReader extends IndexReader {
     return readers[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
   }
 
-  public synchronized final void delete(int n) throws IOException {
+  synchronized final void doDelete(int n) throws IOException {
     numDocs = -1;				  // invalidate cache
     int i = readerIndex(n);			  // find segment num
     readers[i].delete(n - starts[i]);		  // dispatch to segment reader
@@ -159,7 +160,7 @@ final class SegmentsReader extends IndexReader {
     return new SegmentsTermPositions(readers, starts);
   }
 
-  public final void close() throws IOException {
+  final synchronized void doClose() throws IOException {
     for (int i = 0; i < readers.length; i++)
       readers[i].close();
   }

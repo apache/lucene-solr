@@ -66,7 +66,6 @@ import org.apache.lucene.store.InputStream;
 import org.apache.lucene.document.Document;
 
 final class SegmentReader extends IndexReader {
-  Directory directory;
   private boolean closeDirectory = false;
   private String segment;
 
@@ -97,7 +96,7 @@ final class SegmentReader extends IndexReader {
 
   SegmentReader(SegmentInfo si)
        throws IOException {
-    directory = si.dir;
+    super(si.dir);
     segment = si.name;
 
     fieldInfos = new FieldInfos(directory, segment + ".fnm");
@@ -115,7 +114,7 @@ final class SegmentReader extends IndexReader {
     openNorms();
   }
   
-  public final synchronized void close() throws IOException {
+  final synchronized void doClose() throws IOException {
     if (deletedDocsDirty) {
       synchronized (directory) {		  // in- & inter-process sync
 	new Lock.With(directory.makeLock("commit.lock")) {
@@ -147,7 +146,7 @@ final class SegmentReader extends IndexReader {
     return si.dir.fileExists(si.name + ".del");
   }
 
-  public final synchronized void delete(int docNum) throws IOException {
+  final synchronized void doDelete(int docNum) throws IOException {
     if (deletedDocs == null)
       deletedDocs = new BitVector(maxDoc());
     deletedDocsDirty = true;
