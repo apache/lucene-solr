@@ -55,6 +55,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.File;
 import java.util.Vector;
 import java.util.Hashtable;
 import java.util.Enumeration;
@@ -63,7 +64,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
 
-/** A memory-resident {@link Directory} implementation. */
+/**
+ * A memory-resident {@link Directory} implementation.
+ *
+ * @version $Id$
+ */
 public final class RAMDirectory extends Directory {
   Hashtable files = new Hashtable();
 
@@ -78,16 +83,16 @@ public final class RAMDirectory extends Directory {
    * <P>
    * This should be used only with indices that can fit into memory.
    *
-   * @param d a <code>Directory</code> value
+   * @param dir a <code>Directory</code> value
    * @exception IOException if an error occurs
    */
-  public RAMDirectory(Directory d) throws IOException {
-    final String[] ar = d.list();
+  public RAMDirectory(Directory dir) throws IOException {
+    final String[] ar = dir.list();
     for (int i = 0; i < ar.length; i++) {
       // make place on ram disk
       OutputStream os = createFile(ar[i]);
       // read current file
-      InputStream is = d.openFile(ar[i]);
+      InputStream is = dir.openFile(ar[i]);
       // and copy to ram disk
       int len = (int) is.length();
       byte[] buf = new byte[len];
@@ -97,6 +102,24 @@ public final class RAMDirectory extends Directory {
       is.close();
       os.close();
     }
+  }
+
+  /**
+   * Creates a new <code>RAMDirectory</code> instance from the {@link FSDirectory}.
+   *
+   * @param dir a <code>File</code> specifying the index directory
+   */
+  public RAMDirectory(File dir) throws IOException {
+    this(FSDirectory.getDirectory(dir, false));
+  }
+
+  /**
+   * Creates a new <code>RAMDirectory</code> instance from the {@link FSDirectory}.
+   *
+   * @param dir a <code>String</code> specifying the full index directory path
+   */
+  public RAMDirectory(String dir) throws IOException {
+    this(FSDirectory.getDirectory(dir, false));
   }
 
   /** Returns an array of strings, one for each file in the directory. */

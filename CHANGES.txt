@@ -95,13 +95,14 @@ $Id$
 
  18. Added a public, extensible scoring API.  For details, see the
      javadoc for org.apache.lucene.search.Similarity.
- 
+
  19. Fixed return of Hits.id() from float to int. (Terry Steichen via Peter).
 
  20. Added getFieldNames() to IndexReader and Segment(s)Reader classes.
      (Peter Mularien via otis)
 
  21. Added getFields(String) and getValues(String) methods.
+     Contributed by Rasik Pandey on 2002-10-09
      (Rasik Pandey via otis)
 
  22. Revised internal search APIs.  Changes include:
@@ -142,9 +143,12 @@ $Id$
 
      Caution: These are extensive changes and they have not yet been
      tested extensively.  Bug reports are appreciated.
+     (cutting)
+
+ 23. Added convenience RAMDirectory constructors taking File and String
+     arguments, for easy FSDirectory to RAMDirectory conversion.
 
 
-  Contributed by Rasik Pandey on 2002-10-09
 1.2 RC6
 
  1. Changed QueryParser.jj to have "?" be a special character which
