@@ -101,7 +101,7 @@ class SearchFiles {
     if (queries != null) {
       in = new BufferedReader(new FileReader(queries));
     } else {
-      in = new BufferedReader(new InputStreamReader(System.int, "UTF-8"));
+      in = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
     }
 
     while (true) {
