@@ -85,7 +85,7 @@ final public class FSDirectory extends Directory {
    * 
    * @param path the path to the directory.
    * @param create if true, create, or erase any existing contents.
-   * @returns the FSDirectory for the named file.  */
+   * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path, boolean create)
       throws IOException {
     return getDirectory(new File(path), create);
@@ -99,7 +99,7 @@ final public class FSDirectory extends Directory {
    * 
    * @param file the path to the directory.
    * @param create if true, create, or erase any existing contents.
-   * @returns the FSDirectory for the named file.  */
+   * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file, boolean create)
     throws IOException {
     file = new File(file.getCanonicalPath());

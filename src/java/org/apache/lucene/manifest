@@ -1,8 +1,8 @@
 
-Name: com/lucene
+Name: org/apache/lucene
 Specification-Title: Lucene Search Engine
 Specification-Version: $Name$
 Specification-Vendor: Lucene
-Implementation-Title: com.lucene
+Implementation-Title: org.apache.lucene
 Implementation-Version: $Name$ $Date$
 Implementation-Vendor: Lucene

@@ -8,12 +8,12 @@
 The Jakarta Lucene API is divided into several packages:
 <ul>
 <li>
-<b><a href="org/apache/lucene/util/package-summary.html">com.lucene.util</a></b>
+<b><a href="org/apache/lucene/util/package-summary.html">org.apache.lucene.util</a></b>
 contains a few handy data structures, e.g., <a href="org/apache/lucene/util/BitVector.html">BitVector</a>
 and <a href="org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>.</li>
 
 <li>
-<b><a href="org/apache/lucene/store/package-summary.html">com.lucene.store</a></b>
+<b><a href="org/apache/lucene/store/package-summary.html">org.apache.lucene.store</a></b>
 defines an abstract class for storing persistent data, the <a href="org/apache/lucene/store/Directory.html">Directory</a>,
 a collection of named files written by an <a href="org/apache/lucene/store/OutputStream.html">OutputStream</a>
 and read by an <a href="org/apache/lucene/store/InputStream.html">InputStream</a>.&nbsp;
@@ -22,13 +22,13 @@ which uses a file system directory to store files, and <a href="org/apache/lucen
 which implements files as memory-resident data structures.</li>
 
 <li>
-<b><a href="org/apache/lucene/document/package-summary.html">com.lucene.document</a></b>
+<b><a href="org/apache/lucene/document/package-summary.html">org.apache.lucene.document</a></b>
 provides a simple <a href="org/apache/lucene/document/Document.html">Document</a>
 class.&nbsp; A document is simply a set of named <a href="org/apache/lucene/document/Field.html">Field</a>'s,
 whose values may be strings or instances of <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/io/Reader.html">java.io.Reader</a>.</li>
 
 <li>
-<b><a href="org/apache/lucene/analysis/package-summary.html">com.lucene.analysis</a></b>
+<b><a href="org/apache/lucene/analysis/package-summary.html">org.apache.lucene.analysis</a></b>
 defines an abstract <a href="org/apache/lucene/analysis/Analyzer.html">Analyzer</a>
 API for converting text from a <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/io/Reader.html">java.io.Reader</a>
 into a <a href="org/apache/lucene/analysis/TokenStream.html">TokenStream</a>,
@@ -39,13 +39,13 @@ A few simple implemenations are provided, including <a href="org/apache/lucene/a
 and the grammar-based <a href="org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.</li>
 
 <li>
-<b><a href="org/apache/lucene/index/package-summary.html">com.lucene.index</a></b>
+<b><a href="org/apache/lucene/index/package-summary.html">org.apache.lucene.index</a></b>
 provides two primary classes: <a href="org/apache/lucene/index/IndexWriter.html">IndexWriter</a>,
 which creates and adds documents to indices; and <a href="org/apache/lucene/index/IndexReader.html">IndexReader</a>,
 which accesses the data in the index.</li>
 
 <li>
-<b><a href="org/apache/lucene/search/package-summary.html">com.lucene.search</a></b>
+<b><a href="org/apache/lucene/search/package-summary.html">org.apache.lucene.search</a></b>
 provides data structures to represent queries (<a href="org/apache/lucene/search/TermQuery.html">TermQuery</a>
 for individual words, <a href="org/apache/lucene/search/PhraseQuery.html">PhraseQuery</a>
 for phrases, and <a href="org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>
@@ -55,7 +55,7 @@ which turns queries into <a href="org/apache/lucene/search/Hits.html">Hits</a>.
 implements search over a single IndexReader.</li>
 
 <li>
-<b><a href="org/apache/lucene/queryParser/package-summary.html">com.lucene.queryParser</a></b>
+<b><a href="org/apache/lucene/queryParser/package-summary.html">org.apache.lucene.queryParser</a></b>
 uses <a href="http://www.suntest.com/JavaCC/">JavaCC</a> to implement a
 <a href="org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>.</li>
 </ul>
@@ -68,7 +68,7 @@ adding
 
 <li>
 Create an <a href="org/apache/lucene/index/IndexWriter.html">IndexWriter</a>
-and add documents to to it with <a href="org/apache/lucene/index/IndexWriter.html#addDocument(com.lucene.document.Document)">addDocument()</a>;</li>
+and add documents to to it with <a href="org/apache/lucene/index/IndexWriter.html#addDocument(org.apache.lucene.document.Document)">addDocument()</a>;</li>
 
 <li>
 Call <a href="org/apache/lucene/queryParser/QueryParser.html#parse(java.lang.String)">QueryParser.parse()</a>
@@ -76,7 +76,7 @@ to build a query from a string; and</li>
 
 <li>
 Create an <a href="org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>
-and pass the query to it's <a href="org/apache/lucene/search/Searcher.html#search(com.lucene.search.Query)">search()</a>
+and pass the query to it's <a href="org/apache/lucene/search/Searcher.html#search(org.apache.lucene.search.Query)">search()</a>
 method.</li>
 </ol>
 Some simple examples of code which does this are:
