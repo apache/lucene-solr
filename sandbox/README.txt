@@ -50,20 +50,3 @@ The Lucene web site is at:
 
 Please join the Lucene-User mailing list by sending a message to:
   lucene-user-subscribe@jakarta.apache.org
-
-FILES
-
-lucene-XX.jar
-  The compiled lucene library.
-
-docs/index.html
-  The contents of the Lucene website.
-
-docs/api/index.html
-  The Javadoc Lucene API documentation.
-
-src/java
-  The Lucene source code.
-
-src/demo
-  Some example code.
