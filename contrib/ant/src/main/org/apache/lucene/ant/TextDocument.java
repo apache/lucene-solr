@@ -62,10 +62,9 @@ public class TextDocument {
         // make a new, empty document
         Document doc = new Document();
 
-        doc.add(Field.Text("title", f.getName()));
-        doc.add(Field.Text("contents", textDoc.getContents()));
-        doc.add(Field.UnIndexed("rawcontents",
-                textDoc.getContents()));
+        doc.add(new Field("title", f.getName(), Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("contents", textDoc.getContents(), Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("rawcontents", textDoc.getContents(), Field.Store.YES, Field.Index.NO));
 
         // return the document
         return doc;

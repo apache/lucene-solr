@@ -60,7 +60,7 @@ public class HtmlDocument {
      *@exception  IOException  if I/O exception occurs
      *@since
      */
-    public HtmlDocument(InputStream is) throws IOException {
+    public HtmlDocument(InputStream is) {
         Tidy tidy = new Tidy();
         tidy.setQuiet(true);
         tidy.setShowWarnings(false);
@@ -78,13 +78,13 @@ public class HtmlDocument {
      *@exception  IOException
      */
     public static org.apache.lucene.document.Document
-            getDocument(InputStream is) throws IOException {
+            getDocument(InputStream is) {
         HtmlDocument htmlDoc = new HtmlDocument(is);
         org.apache.lucene.document.Document luceneDoc =
                 new org.apache.lucene.document.Document();
 
-        luceneDoc.add(Field.Text("title", htmlDoc.getTitle()));
-        luceneDoc.add(Field.Text("contents", htmlDoc.getBody()));
+        luceneDoc.add(new Field("title", htmlDoc.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
+        luceneDoc.add(new Field("contents", htmlDoc.getBody(), Field.Store.YES, Field.Index.TOKENIZED));
 
         return luceneDoc;
     }
@@ -108,8 +108,8 @@ public class HtmlDocument {
         org.apache.lucene.document.Document luceneDoc =
                 new org.apache.lucene.document.Document();
 
-        luceneDoc.add(Field.Text("title", htmlDoc.getTitle()));
-        luceneDoc.add(Field.Text("contents", htmlDoc.getBody()));
+        luceneDoc.add(new Field("title", htmlDoc.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
+        luceneDoc.add(new Field("contents", htmlDoc.getBody(), Field.Store.YES, Field.Index.TOKENIZED));
 
         String contents = null;
         BufferedReader br =
@@ -124,7 +124,7 @@ public class HtmlDocument {
         contents = sw.toString();
         sw.close();
 
-        luceneDoc.add(Field.UnIndexed("rawcontents", contents));
+        luceneDoc.add(new Field("rawcontents", contents, Field.Store.YES, Field.Index.NO));
 
         return luceneDoc;
     }

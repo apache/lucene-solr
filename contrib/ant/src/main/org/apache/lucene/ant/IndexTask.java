@@ -4,8 +4,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.ru.RussianAnalyzer;
-import org.apache.lucene.analysis.de.GermanAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.Document;
@@ -250,7 +248,7 @@ public class IndexTask extends Task {
     int totalIndexed = 0;
     int totalIgnored = 0;
     try {
-      writer.mergeFactor = mergeFactor;
+      writer.setMergeFactor(mergeFactor);
 
       for (int i = 0; i < filesets.size(); i++) {
         FileSet fs = (FileSet) filesets.get(i);
@@ -309,13 +307,12 @@ public class IndexTask extends Task {
                 } else {
                   // Add the path of the file as a field named "path".  Use a Keyword field, so
                   // that the index stores the path, and so that the path is searchable
-                  doc.add(Field.Keyword("path", file.getPath()));
+                  doc.add(new Field("path", file.getPath(), Field.Store.YES, Field.Index.UN_TOKENIZED));
 
                   // Add the last modified date of the file a field named "modified".  Use a
                   // Keyword field, so that it's searchable, but so that no attempt is made
                   // to tokenize the field into words.
-                  doc.add(Field.Keyword("modified",
-                                        DateField.timeToString(file.lastModified())));
+                  doc.add(new Field("modified", DateField.timeToString(file.lastModified()), Field.Store.YES, Field.Index.UN_TOKENIZED));
 
                   writer.addDocument(doc);
                   totalIndexed++;
@@ -374,8 +371,6 @@ public class IndexTask extends Task {
       analyzerLookup.put("standard", StandardAnalyzer.class.getName());
       analyzerLookup.put("stop", StopAnalyzer.class.getName());
       analyzerLookup.put("whitespace", WhitespaceAnalyzer.class.getName());
-      analyzerLookup.put("german", GermanAnalyzer.class.getName());
-      analyzerLookup.put("russian", RussianAnalyzer.class.getName());
     }
 
     /**
