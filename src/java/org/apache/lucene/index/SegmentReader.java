@@ -121,6 +121,7 @@ final class SegmentReader extends IndexReader {
 	    public Object doBody() throws IOException {
 	      deletedDocs.write(directory, segment + ".tmp");
 	      directory.renameFile(segment + ".tmp", segment + ".del");
+              directory.touchFile("segments");
 	      return null;
 	    }
 	  }.run();

@@ -175,6 +175,12 @@ final public class FSDirectory extends Directory {
     return file.lastModified();
   }
 
+  /** Set the modified time of an existing file to now. */
+  public void touchFile(String name) throws IOException, SecurityException {
+    File file = new File(directory, name);
+    file.setLastModified(System.currentTimeMillis());
+  }
+
   /** Returns the length in bytes of a file in the directory. */
   public final long fileLength(String name) throws IOException {
     File file = new File(directory, name);

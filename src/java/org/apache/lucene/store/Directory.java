@@ -82,6 +82,10 @@ abstract public class Directory {
   abstract public long fileModified(String name)
        throws IOException, SecurityException;
 
+  /** Set the modified time of an existing file to now. */
+  abstract public void touchFile(String name)
+       throws IOException, SecurityException;
+
   /** Removes an existing file in the directory. */
   abstract public void deleteFile(String name)
        throws IOException, SecurityException;
