@@ -83,127 +83,132 @@ public class ClassInfo
         try
         {
             Class cls = Class.forName(name);
-            name = cls.getName();
-            String pkg =  getPackageName(name);
-            String clss = getClassName(name);
-
-            StringWriter importsWriter = new StringWriter();
-            PrintWriter imports = new PrintWriter(importsWriter);
-            StringWriter outWriter = new StringWriter();
-            PrintWriter out = new PrintWriter(outWriter);
-
-            TreeSet importClasses = new TreeSet();
-            importClasses.add(getImportStatement(name));
-
-            out.println("/**\n * (class description here)\n */\npublic class " + derivedName + " " + (cls.isInterface() ? "implements " : "extends ") + clss + "\n{");
-
-            Method[] m = cls.getMethods();
-            for(int i= 0; i< m.length; i++)
-            {
-                Method thism = m[i];
-                if((thism.getModifiers() & Modifier.PRIVATE) == 0 && ((thism.getModifiers() & Modifier.FINAL) == 0)
-                   && (thism.getDeclaringClass().getName() != "java.lang.Object"))
-                {
-                    out.println("    /**");
-                    out.println("     * (method description here)");
-                    out.println("     * defined in " + thism.getDeclaringClass().getName());
-
-                    Class[] parameters = thism.getParameterTypes();
-                    for(int j = 0; j < parameters.length; j ++)
-                    {
-                        if(getPackageName(parameters[j].getName()) != "")
-                        {
-                            importClasses.add(getImportStatement(parameters[j].getName()));
-                        }
-                        out.println("     * @param p" + j + " (parameter description here)");
-                    }
-
-                    if(thism.getReturnType().getName() != "void")
-                    {
-                        String returnPackage = getPackageName(thism.getReturnType().getName());
-                        if(returnPackage != "")
-                        {
-                            importClasses.add(getImportStatement(thism.getReturnType().getName()));
-                        }
-                        out.println("     * @return (return value description here)");
-                    }
-
-                    out.println("     */");
-
-                    out.print("    " + getModifierString(thism.getModifiers()) + getClassName(thism.getReturnType().getName()) + " ");
-                    out.print(thism.getName() + "(");
-
-                    for(int j = 0; j < parameters.length; j ++)
-                    {
-                        if(j>0)
-                        {
-                            out.print(", ");
-                        }
-                        out.print(getClassName(parameters[j].getName()) + " p" + j);
-                    }
-                    out.print(")");
-                    Class[] exceptions = thism.getExceptionTypes();
-
-                    if (exceptions.length > 0)
-                    {
-                       out.print(" throws ");
-                    }
-
-                    for(int k = 0; k < exceptions.length; k++)
-                    {
-                       if(k > 0)
-                       {
-                           out.print(", ");
-                       }
-                       String exCompleteName = exceptions[k].getName();
-                       String exName = getClassName(exCompleteName);
-                       importClasses.add(getImportStatement(exCompleteName));
-
-                       out.print(exName);
-                    }
-                    out.print("\n" +
-                              "    {\n" +
-                              "        /**@todo: Implement this " + thism.getName() + "() method */\n" +
-                              "        throw new UnsupportedOperationException(\"Method " + thism.getName() + "() not yet implemented.\");\n" +
-                              "    }\n\n");
-
-
-                }
-            }
-            out.println("}");
-
-            Iterator importIterator = importClasses.iterator();
-            while(importIterator.hasNext())
-            {
-                String importName = (String)importIterator.next();
-                if(!importName.startsWith("java.lang"))
-                {
-                    imports.println("import " + importName + ";");
-                }
-            }
-
-            out.flush();
-            imports.flush();
-
-            if(getPackageName(derivedName) != "")
-            {
-                System.out.println("package " + getPackageName(derivedName) + ";\n");
-            }
-            System.out.println( "/**\n" +
-                                " * Title:        \n" +
-                                " * Description:\n" +
-                                " * Copyright:    Copyright (c)\n" +
-                                " * Company:\n" +
-                                " * @author\n" +
-                                " * @version 1.0\n" +
-                                " */\n");
-            System.out.println(importsWriter.getBuffer());
-            System.out.print(outWriter.getBuffer());
+            classInfo(derivedName, cls);
         }
         catch(Throwable t)
         {
             t.printStackTrace();
         }
+    }
+
+    public static void classInfo(String derivedName, Class cls) throws SecurityException
+    {
+        String name = cls.getName();
+        String pkg =  getPackageName(name);
+        String clss = getClassName(name);
+
+        StringWriter importsWriter = new StringWriter();
+        PrintWriter imports = new PrintWriter(importsWriter);
+        StringWriter outWriter = new StringWriter();
+        PrintWriter out = new PrintWriter(outWriter);
+
+        TreeSet importClasses = new TreeSet();
+        importClasses.add(getImportStatement(name));
+
+        out.println("/**\n * (class description here)\n */\npublic class " + derivedName + " " + (cls.isInterface() ? "implements " : "extends ") + clss + "\n{");
+
+        Method[] m = cls.getMethods();
+        for(int i= 0; i< m.length; i++)
+        {
+            Method thism = m[i];
+            if((thism.getModifiers() & Modifier.PRIVATE) == 0 && ((thism.getModifiers() & Modifier.FINAL) == 0)
+               && (thism.getDeclaringClass().getName() != "java.lang.Object"))
+            {
+                out.println("    /**");
+                out.println("     * (method description here)");
+                out.println("     * defined in " + thism.getDeclaringClass().getName());
+
+                Class[] parameters = thism.getParameterTypes();
+                for(int j = 0; j < parameters.length; j ++)
+                {
+                    if(getPackageName(parameters[j].getName()) != "")
+                    {
+                        importClasses.add(getImportStatement(parameters[j].getName()));
+                    }
+                    out.println("     * @param p" + j + " (parameter description here)");
+                }
+
+                if(thism.getReturnType().getName() != "void")
+                {
+                    String returnPackage = getPackageName(thism.getReturnType().getName());
+                    if(returnPackage != "")
+                    {
+                        importClasses.add(getImportStatement(thism.getReturnType().getName()));
+                    }
+                    out.println("     * @return (return value description here)");
+                }
+
+                out.println("     */");
+
+                out.print("    " + getModifierString(thism.getModifiers()) + getClassName(thism.getReturnType().getName()) + " ");
+                out.print(thism.getName() + "(");
+
+                for(int j = 0; j < parameters.length; j ++)
+                {
+                    if(j>0)
+                    {
+                        out.print(", ");
+                    }
+                    out.print(getClassName(parameters[j].getName()) + " p" + j);
+                }
+                out.print(")");
+                Class[] exceptions = thism.getExceptionTypes();
+
+                if (exceptions.length > 0)
+                {
+                   out.print(" throws ");
+                }
+
+                for(int k = 0; k < exceptions.length; k++)
+                {
+                   if(k > 0)
+                   {
+                       out.print(", ");
+                   }
+                   String exCompleteName = exceptions[k].getName();
+                   String exName = getClassName(exCompleteName);
+                   importClasses.add(getImportStatement(exCompleteName));
+
+                   out.print(exName);
+                }
+                out.print("\n" +
+                          "    {\n" +
+                          "        /**@todo: Implement this " + thism.getName() + "() method */\n" +
+                          "        throw new UnsupportedOperationException(\"Method " + thism.getName() + "() not yet implemented.\");\n" +
+                          "    }\n\n");
+
+
+            }
+        }
+        out.println("}");
+
+        Iterator importIterator = importClasses.iterator();
+        while(importIterator.hasNext())
+        {
+            String importName = (String)importIterator.next();
+            if(!importName.startsWith("java.lang"))
+            {
+                imports.println("import " + importName + ";");
+            }
+        }
+
+        out.flush();
+        imports.flush();
+
+        if(getPackageName(derivedName) != "")
+        {
+            System.out.println("package " + getPackageName(derivedName) + ";\n");
+        }
+        System.out.println( "/**\n" +
+                            " * Title:        \n" +
+                            " * Description:\n" +
+                            " * Copyright:    Copyright (c)\n" +
+                            " * Company:\n" +
+                            " * @author\n" +
+                            " * @version 1.0\n" +
+                            " */\n");
+        System.out.println(importsWriter.getBuffer());
+        System.out.print(outWriter.getBuffer());
     }
 
     public static String getPackageName(String className)

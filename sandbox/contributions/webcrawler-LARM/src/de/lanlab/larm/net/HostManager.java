@@ -55,6 +55,11 @@
 package de.lanlab.larm.net;
 
 import java.util.HashMap;
+import java.util.*;
+import org.apache.oro.text.perl.*;
+import org.apache.oro.text.regex.*;
+import org.apache.oro.text.*;
+import org.apache.oro.util.*;
 
 /**
  * Description of the Class
@@ -67,7 +72,11 @@ public class HostManager
 {
     HashMap hosts;
     static int hostCount = 0;
+    HostResolver resolver;
 
+
+
+//    ArrayList rewriteRules = new ArrayList();
 
     /**
      * Constructor for the HostInfo object
@@ -79,6 +88,20 @@ public class HostManager
         hosts = new HashMap(initialCapacity);
     }
 
+    public void setHostResolver(HostResolver resolver)
+    {
+        this.resolver = resolver;
+    }
+
+    /**
+     * returns the hostResolver
+     * @return
+     */
+    public HostResolver getHostResolver()
+    {
+        return this.resolver;
+    }
+
 
     /**
      * Description of the Method
@@ -88,7 +111,20 @@ public class HostManager
      */
     public HostInfo put(String hostName)
     {
-        if (!hosts.containsKey(hostName))
+        if(resolver != null)
+        {
+            return putResolved(hostName, resolver.resolveHost(hostName));
+        }
+        else
+        {
+            return putResolved(hostName, hostName);
+        }
+    }
+
+
+    public HostInfo putResolved(String hostName, String resolvedHostName)
+    {
+        if (!hosts.containsKey(resolvedHostName))
         {
             int hostID;
             synchronized (this)
@@ -96,31 +132,29 @@ public class HostManager
                 hostID = hostCount++;
             }
             HostInfo hi = new HostInfo(hostName,hostID);
-            hosts.put(hostName, hi);
+            hosts.put(resolvedHostName, hi);
             //System.out.println("hostManager: + " + hostName);
-            if(!hostName.equals(hostName.toLowerCase()))
-            {
-                try
-                {
-                    throw new Exception();
-                }
-                catch(Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
+//            if(!hostName.equals(hostName.toLowerCase()))
+//            {
+//                try
+//                {
+//                    throw new Exception();
+//                }
+//                catch(Exception e)
+//                {
+//                    e.printStackTrace();
+//                }
+//            }
             return hi;
         }
         return (HostInfo)hosts.get(hostName);
-        /*else
-        {
-            hostID = hosts.get()
-        }
-        // assert hostID != -1;
-        return hostID;*/
-
     }
 
+
+    public HostInfo getHostInfo(String hostName)
+    {
+        return getHostInfoNormalized(hostName, resolver.resolveHost(hostName));
+    }
 
     /**
      * Gets the hostID attribute of the HostInfo object
@@ -128,12 +162,13 @@ public class HostManager
      * @param hostName  Description of the Parameter
      * @return          The hostID value
      */
-    public HostInfo getHostInfo(String hostName)
+    public HostInfo getHostInfoNormalized(String hostName, String normalizedHostName)
     {
-        HostInfo hi = (HostInfo)hosts.get(hostName);
+        HostInfo hi = (HostInfo)hosts.get(normalizedHostName);
         if(hi == null)
         {
-            return put(hostName);
+//            System.out.println("new host: " + normalizedHostName);
+            return putResolved(hostName, normalizedHostName);
         }
         return hi;
     }
@@ -145,9 +180,8 @@ public class HostManager
 
     public HostInfo addSynonym(String hostName, String synonym)
     {
-        HostInfo info = getHostInfo(hostName);
-        hosts.put(synonym, info);
-        return info;
+        resolver.addSynonym(hostName, synonym);
+        return getHostInfo(hostName);
     }
 
 
