@@ -25,6 +25,8 @@ $Id$
     termFreq(), termDocs() or termPositions() to improve
     multi-threaded performance.  (cutting)
 
+ 6. Fix a bug where obsolete segment files were not deleted on Win32.
+
 
 1.4 RC3
 

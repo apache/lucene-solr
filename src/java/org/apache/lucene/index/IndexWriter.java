@@ -490,6 +490,9 @@ public class IndexWriter {
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
                                             directory));
 
+    // close readers before we attempt to delete now-obsolete segments
+    merger.closeReaders();
+
     synchronized (directory) {                 // in- & inter-process sync
       new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
@@ -499,8 +502,7 @@ public class IndexWriter {
           }
         }.run();
     }
-    
-    merger.closeReaders();
+
   }
 
   /* Some operating systems (e.g. Windows) don't permit a file to be deleted
