@@ -105,10 +105,8 @@ final class FieldInfos {
     if (fi == null)
       addInternal(name, isIndexed);
     else if (fi.isIndexed != isIndexed)
-      throw new IllegalStateException("field " + name +
-				      (fi.isIndexed ? " must" : " cannot") +
-				      " be an indexed field.");
-  }
+      fi.isIndexed = true;
+   }
 
   private final void addInternal(String name, boolean isIndexed) {
     FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size());
