@@ -1019,7 +1019,7 @@
                             VInt
                         </p>
                         <p>IndexDelta
-                            determines the position of this term's TermInfo the .tis file.  In
+                            determines the position of this term's TermInfo within the .tis file.  In
                             particular, it is the difference between the position of this term's
                             entry in that file and the position of the previous term's entry (or
                             zero for the first term in the file).
