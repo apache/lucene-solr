@@ -16,7 +16,7 @@
             </p>
             <p>
                 Apache Lucene is an open source project available for
-				<a href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">free download</a> from Apache Jakarta.
+                <a href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">free download</a> from Apache Jakarta.
                 Please use the links on the left to access Lucene.
             </p>
         </section>
@@ -28,16 +28,24 @@
              <p>Lucene has migrated from Apache's Jakarta project to the top-level.  Along with this migration,
                 the source code repository has been converted to Subversion.  The migration is in progress with
                 some loose ends.  Please stay tuned!
-          </p>
+             </p>
 
-            <h3>29 November 2004 - Lucene 1.4.3 Released</h3>
+          <h3>December 2004 - <em>Lucene in Action</em> is published</h3>
 
-               <p>This fixes a few bugs in 1.4.2.  See <a
-               href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96.2.6">CHANGES.txt</a>
-               for details.  Binary and source distributions are
-               available <a
-               href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">here</a>.
+            <a href="http://www.lucenebook.com/"><img border="0" align="left"
+               src="images/lia_3d.jpg"/></a>
+            <p>The first book dedicated solely to Lucene is published.  The
+                "search inside the book" feature implemented with Lucene can
+                be seen at <a href="http://www.lucenebook.com/">lucenebook.com</a>.
             </p>
+            <p style="clear: both;"/>
+          <h3>29 November 2004 - Lucene 1.4.3 Released</h3>
+
+             <p>This fixes a few bugs in 1.4.2.  See <a
+                href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96.2.6">CHANGES.txt</a>
+                for details.  Binary and source distributions are
+                available <a href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">here</a>.
+             </p>
 
         </section>
 
