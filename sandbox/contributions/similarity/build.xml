@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="similarity" default="default">
+
+  <description>
+    Hits highlighter
+  </description>
+
+  <import file="../common.xml"/>
+</project>
