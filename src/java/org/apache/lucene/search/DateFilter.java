@@ -109,14 +109,14 @@ public final class DateFilter extends Filter {
     return result;
   }
 
-  /** Constructs a filter for field <code>f</code> matching dates before
+  /** Constructs a filter for field <code>f</code> matching dates after
     <code>date</code>. */
   public static DateFilter After(String field, Date date) {
     DateFilter result = new DateFilter(field);
     result.start = DateField.dateToString(date);
     return result;
   }
-  /** Constructs a filter for field <code>f</code> matching times before
+  /** Constructs a filter for field <code>f</code> matching times after
     <code>time</code>. */
   public static DateFilter After(String field, long time) {
     DateFilter result = new DateFilter(field);
