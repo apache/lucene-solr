@@ -67,7 +67,7 @@ public abstract class Directory {
   public abstract OutputStream createFile(String name)
        throws IOException;
 
-  /** @deprecated use {@link openInput(String)}. */
+  /** @deprecated use {@link #openInput(String)} */
   public InputStream openFile(String name) throws IOException {
     return (InputStream)openInput(name);
   }
