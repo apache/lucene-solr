@@ -28,6 +28,8 @@ $Id$
  8. Fixed so that FSDirectory's locks still work when the
     java.io.tmpdir system property is null.  (cutting)
 
+ 9. Changed FilteredTermEnum's constructor to take no parameters,
+    as the parameters were ignored anyway (bug #28858)
 
 1.4 RC2
 
