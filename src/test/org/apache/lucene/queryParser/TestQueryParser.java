@@ -248,10 +248,10 @@ public class TestQueryParser extends TestCase {
     assertTrue(getQuery("term~0.7", null) instanceof FuzzyQuery);
     FuzzyQuery fq = (FuzzyQuery)getQuery("term~0.7", null);
     assertEquals(0.7f, fq.getMinSimilarity(), 0.1f);
-    assertEquals(0, fq.getPrefixLength());
+    assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     fq = (FuzzyQuery)getQuery("term~", null);
     assertEquals(0.5f, fq.getMinSimilarity(), 0.1f);
-    assertEquals(0, fq.getPrefixLength());
+    assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     try {
       getQuery("term~1.1", null);   // value > 1, throws exception
       fail();

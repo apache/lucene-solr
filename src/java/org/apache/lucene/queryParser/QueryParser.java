@@ -74,6 +74,7 @@ public class QueryParser implements QueryParserConstants {
   String field;
   int phraseSlop = 0;
   float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
+  int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
@@ -131,16 +132,34 @@ public class QueryParser implements QueryParserConstants {
   }
 
    /**
-   * Get the default minimal similarity for fuzzy queries.
+   * Get the minimal similarity for fuzzy queries.
    */
   public float getFuzzyMinSim() {
       return fuzzyMinSim;
   }
+
   /**
-   *Set the default minimum similarity for fuzzy queries.
+   * Set the minimum similarity for fuzzy queries.
+   * Default is 0.5f.
    */
   public void setFuzzyMinSim(float fuzzyMinSim) {
       this.fuzzyMinSim = fuzzyMinSim;
+  }
+
+   /**
+   * Get the prefix length for fuzzy queries. 
+   * @return Returns the fuzzyPrefixLength.
+   */
+  public int getFuzzyPrefixLength() {
+    return fuzzyPrefixLength;
+  }
+
+  /**
+   * Set the prefix length for fuzzy queries. Default is 2.
+   * @param fuzzyPrefixLength The fuzzyPrefixLength to set.
+   */
+  public void setFuzzyPrefixLength(int fuzzyPrefixLength) {
+    this.fuzzyPrefixLength = fuzzyPrefixLength;
   }
 
   /**
@@ -419,7 +438,7 @@ public class QueryParser implements QueryParserConstants {
     return new PrefixQuery(t);
   }
 
-  /**
+   /**
    * Factory method for generating a query (similar to
    * ({@link #getWildcardQuery}). Called when parser parses
    * an input term token that has the fuzzy suffix (~) appended.
@@ -433,7 +452,7 @@ public class QueryParser implements QueryParserConstants {
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     Term t = new Term(field, termStr);
-    return new FuzzyQuery(t, minSimilarity);
+    return new FuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
   }
 
   /**

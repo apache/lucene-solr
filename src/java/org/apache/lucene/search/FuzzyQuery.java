@@ -18,6 +18,8 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.PriorityQueue;
+
 import java.io.IOException;
 
 /** Implements the fuzzy search query. The similiarity measurement
@@ -26,6 +28,8 @@ import java.io.IOException;
 public final class FuzzyQuery extends MultiTermQuery {
   
   public final static float defaultMinSimilarity = 0.5f;
+  public final static int defaultPrefixLength = 2;
+  
   private float minimumSimilarity;
   private int prefixLength;
   
@@ -48,16 +52,14 @@ public final class FuzzyQuery extends MultiTermQuery {
   public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) throws IllegalArgumentException {
     super(term);
     
-    if (minimumSimilarity > 1.0f)
-      throw new IllegalArgumentException("minimumSimilarity > 1");
+    if (minimumSimilarity >= 1.0f)
+      throw new IllegalArgumentException("minimumSimilarity >= 1");
     else if (minimumSimilarity < 0.0f)
       throw new IllegalArgumentException("minimumSimilarity < 0");
-    this.minimumSimilarity = minimumSimilarity;
     
+    this.minimumSimilarity = minimumSimilarity;
     if(prefixLength < 0)
         throw new IllegalArgumentException("prefixLength < 0");
-    else if(prefixLength >= term.text().length())
-        throw new IllegalArgumentException("prefixLength >= term.text().length()");
     this.prefixLength = prefixLength;
   }
   
@@ -65,14 +67,14 @@ public final class FuzzyQuery extends MultiTermQuery {
    * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, 0)}.
    */
   public FuzzyQuery(Term term, float minimumSimilarity) throws IllegalArgumentException {
-      this(term, minimumSimilarity, 0);
+      this(term, minimumSimilarity, defaultPrefixLength);
   }
 
   /**
    * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, 0.5f, 0)}.
    */
   public FuzzyQuery(Term term) {
-    this(term, defaultMinSimilarity, 0);
+    this(term, defaultMinSimilarity, defaultPrefixLength);
   }
   
   /**
@@ -95,8 +97,74 @@ public final class FuzzyQuery extends MultiTermQuery {
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new FuzzyTermEnum(reader, getTerm(), minimumSimilarity, prefixLength);
   }
+  
+  public Query rewrite(IndexReader reader) throws IOException {
+    FilteredTermEnum enumerator = getEnum(reader);
+    int maxClauseCount = BooleanQuery.getMaxClauseCount();
+    ScoreTermQueue stQueue = new ScoreTermQueue(maxClauseCount);
+    
+    try {
+      do {
+        float minScore = 0.0f;
+        float score = 0.0f;
+        Term t = enumerator.term();
+        if (t != null) {
+          score = enumerator.difference();
+          // terms come in alphabetical order, therefore if queue is full and score
+          // not bigger than minScore, we can skip
+          if(stQueue.size() < maxClauseCount || score > minScore){
+            stQueue.insert(new ScoreTerm(t, score));
+            minScore = ((ScoreTerm)stQueue.top()).score; // maintain minScore
+          }
+        }
+      } while (enumerator.next());
+    } finally {
+      enumerator.close();
+    }
+    
+    BooleanQuery query = new BooleanQuery();
+    int size = stQueue.size();
+    for(int i = 0; i < size; i++){
+      ScoreTerm st = (ScoreTerm) stQueue.pop();
+      TermQuery tq = new TermQuery(st.term);      // found a match
+      tq.setBoost(getBoost() * st.score); // set the boost
+      query.add(tq, BooleanClause.Occur.SHOULD);          // add to query
+    }
+
+    return query;
+  }
     
   public String toString(String field) {
     return super.toString(field) + '~' + Float.toString(minimumSimilarity);
+  }
+  
+  private static class ScoreTerm{
+    public Term term;
+    public float score;
+    
+    public ScoreTerm(Term term, float score){
+      this.term = term;
+      this.score = score;
+    }
+  }
+  
+  private static class ScoreTermQueue extends PriorityQueue {
+    
+    public ScoreTermQueue(int size){
+      initialize(size);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.apache.lucene.util.PriorityQueue#lessThan(java.lang.Object, java.lang.Object)
+     */
+    protected boolean lessThan(Object a, Object b) {
+      ScoreTerm termA = (ScoreTerm)a;
+      ScoreTerm termB = (ScoreTerm)b;
+      if (termA.score == termB.score)
+        return termA.term.compareTo(termB.term) > 0;
+      else
+        return termA.score < termB.score;
+    }
+    
   }
 }

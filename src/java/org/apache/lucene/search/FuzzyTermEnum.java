@@ -25,7 +25,7 @@ import org.apache.lucene.index.Term;
   <p>Term enumerations are always ordered by Term.compareTo().  Each term in
   the enumeration is greater than all that precede it.  */
 public final class FuzzyTermEnum extends FilteredTermEnum {
-    double distance;
+    float similarity;
     boolean endEnum = false;
 
     Term searchTerm = null;
@@ -35,7 +35,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     String prefix = "";
     int prefixLength = 0;
     float minimumSimilarity;
-    double scale_factor;
+    float scale_factor;
     
     
     /**
@@ -47,7 +47,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      * @see #FuzzyTermEnum(IndexReader, Term, float, int)
      */
     public FuzzyTermEnum(IndexReader reader, Term term) throws IOException {
-      this(reader, term, FuzzyQuery.defaultMinSimilarity, 0);
+      this(reader, term, FuzzyQuery.defaultMinSimilarity, FuzzyQuery.defaultPrefixLength);
     }
     
     /**
@@ -60,7 +60,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      * @see #FuzzyTermEnum(IndexReader, Term, float, int)
      */
     public FuzzyTermEnum(IndexReader reader, Term term, float minSimilarity) throws IOException {
-      this(reader, term, minSimilarity, 0);
+      this(reader, term, minSimilarity, FuzzyQuery.defaultPrefixLength);
     }
     
     /**
@@ -76,18 +76,30 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      */
     public FuzzyTermEnum(IndexReader reader, Term term, float minSimilarity, int prefixLength) throws IOException {
         super();
+        
+        if (minimumSimilarity >= 1.0f)
+          throw new IllegalArgumentException("minimumSimilarity >= 1");
+        else if (minimumSimilarity < 0.0f)
+          throw new IllegalArgumentException("minimumSimilarity < 0");
+        
         minimumSimilarity = minSimilarity;
         scale_factor = 1.0f / (1.0f - minimumSimilarity);
         searchTerm = term;
         field = searchTerm.field();
         text = searchTerm.text();
         textlen = text.length();
-        if(prefixLength > 0 && prefixLength < textlen){
-            this.prefixLength = prefixLength;
-            prefix = text.substring(0, prefixLength);
-            text = text.substring(prefixLength);
-            textlen = text.length();
-        }
+        
+        if(prefixLength < 0)
+          throw new IllegalArgumentException("prefixLength < 0");
+        
+        if(prefixLength > textlen)
+          prefixLength = textlen;
+        
+        this.prefixLength = prefixLength;
+        prefix = text.substring(0, prefixLength);
+        text = text.substring(prefixLength);
+        textlen = text.length();
+        
         setEnum(reader.terms(new Term(searchTerm.field(), prefix)));
     }
     
@@ -101,15 +113,15 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
             String target = termText.substring(prefixLength);
             int targetlen = target.length();
             int dist = editDistance(text, target, textlen, targetlen);
-            distance = 1 - ((double)dist / (double)Math.min(textlen, targetlen));
-            return (distance > minimumSimilarity);
+            similarity = 1 - ((float)dist / (float) (prefixLength + Math.min(textlen, targetlen)));
+            return (similarity > minimumSimilarity);
         }
         endEnum = true;
         return false;
     }
     
-    protected final float difference() {
-        return (float)((distance - minimumSimilarity) * scale_factor);
+    public final float difference() {
+        return (float)((similarity - minimumSimilarity) * scale_factor);
     }
     
     public final boolean endEnum() {

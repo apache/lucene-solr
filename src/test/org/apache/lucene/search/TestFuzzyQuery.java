@@ -47,20 +47,40 @@ public class TestFuzzyQuery extends TestCase {
     writer.close();
     IndexSearcher searcher = new IndexSearcher(directory);
 
-    FuzzyQuery query = new FuzzyQuery(new Term("field", "aaaaa"));   
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 0);   
     Hits hits = searcher.search(query);
     assertEquals(3, hits.length());
+    
+    // same with prefix
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 1);   
+    hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 2);   
+    hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 3);   
+    hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 4);   
+    hits = searcher.search(query);
+    assertEquals(2, hits.length());
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 5);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 6);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
 
     // not similar enough:
-    query = new FuzzyQuery(new Term("field", "xxxxx"));  	
+    query = new FuzzyQuery(new Term("field", "xxxxx"), FuzzyQuery.defaultMinSimilarity, 0);  	
     hits = searcher.search(query);
     assertEquals(0, hits.length());
-    query = new FuzzyQuery(new Term("field", "aaccc"));   // edit distance to "aaaaa" = 3
+    query = new FuzzyQuery(new Term("field", "aaccc"), FuzzyQuery.defaultMinSimilarity, 0);   // edit distance to "aaaaa" = 3
     hits = searcher.search(query);
     assertEquals(0, hits.length());
 
     // query identical to a word in the index:
-    query = new FuzzyQuery(new Term("field", "aaaaa"));   
+    query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(3, hits.length());
     assertEquals(hits.doc(0).get("field"), ("aaaaa"));
@@ -69,20 +89,71 @@ public class TestFuzzyQuery extends TestCase {
     assertEquals(hits.doc(2).get("field"), ("aaabb"));
 
     // query similar to a word in the index:
-    query = new FuzzyQuery(new Term("field", "aaaac"));   
+    query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(3, hits.length());
     assertEquals(hits.doc(0).get("field"), ("aaaaa"));
     assertEquals(hits.doc(1).get("field"), ("aaaab"));
     assertEquals(hits.doc(2).get("field"), ("aaabb"));
+    
+    // now with prefix
+    query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 1);   
+    hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("aaaaa"));
+    assertEquals(hits.doc(1).get("field"), ("aaaab"));
+    assertEquals(hits.doc(2).get("field"), ("aaabb"));
+    query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 2);   
+    hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("aaaaa"));
+    assertEquals(hits.doc(1).get("field"), ("aaaab"));
+    assertEquals(hits.doc(2).get("field"), ("aaabb"));
+    query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 3);   
+    hits = searcher.search(query);
+    assertEquals(3, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("aaaaa"));
+    assertEquals(hits.doc(1).get("field"), ("aaaab"));
+    assertEquals(hits.doc(2).get("field"), ("aaabb"));
+    query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 4);   
+    hits = searcher.search(query);
+    assertEquals(2, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("aaaaa"));
+    assertEquals(hits.doc(1).get("field"), ("aaaab"));
+    query = new FuzzyQuery(new Term("field", "aaaac"), FuzzyQuery.defaultMinSimilarity, 5);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
+    
 
-    query = new FuzzyQuery(new Term("field", "ddddX"));   
+    query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(1, hits.length());
     assertEquals(hits.doc(0).get("field"), ("ddddd"));
+    
+    // now with prefix
+    query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 1);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("ddddd"));
+    query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 2);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("ddddd"));
+    query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 3);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("ddddd"));
+    query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 4);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("ddddd"));
+    query = new FuzzyQuery(new Term("field", "ddddX"), FuzzyQuery.defaultMinSimilarity, 5);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
+    
 
     // different field = no match:
-    query = new FuzzyQuery(new Term("anotherfield", "ddddX"));   
+    query = new FuzzyQuery(new Term("anotherfield", "ddddX"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(0, hits.length());
 
@@ -101,31 +172,63 @@ public class TestFuzzyQuery extends TestCase {
 
     FuzzyQuery query;
     // not similar enough:
-    query = new FuzzyQuery(new Term("field", "xxxxx"));   
+    query = new FuzzyQuery(new Term("field", "xxxxx"), FuzzyQuery.defaultMinSimilarity, 0);   
     Hits hits = searcher.search(query);
     assertEquals(0, hits.length());
     // edit distance to "aaaaaaa" = 3, this matches because the string is longer than
     // in testDefaultFuzziness so a bigger difference is allowed:
-    query = new FuzzyQuery(new Term("field", "aaaaccc"));   
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(1, hits.length());
     assertEquals(hits.doc(0).get("field"), ("aaaaaaa"));
+    
+    // now with prefix
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 1);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("aaaaaaa"));
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 4);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    assertEquals(hits.doc(0).get("field"), ("aaaaaaa"));
+    query = new FuzzyQuery(new Term("field", "aaaaccc"), FuzzyQuery.defaultMinSimilarity, 5);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
 
     // no match, more than half of the characters is wrong:
-    query = new FuzzyQuery(new Term("field", "aaacccc"));   
+    query = new FuzzyQuery(new Term("field", "aaacccc"), FuzzyQuery.defaultMinSimilarity, 0);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
+    
+    // now with prefix
+    query = new FuzzyQuery(new Term("field", "aaacccc"), FuzzyQuery.defaultMinSimilarity, 2);   
     hits = searcher.search(query);
     assertEquals(0, hits.length());
 
     // "student" and "stellent" are indeed similar to "segment" by default:
-    query = new FuzzyQuery(new Term("field", "student"));   
+    query = new FuzzyQuery(new Term("field", "student"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(1, hits.length());
-    query = new FuzzyQuery(new Term("field", "stellent"));   
+    query = new FuzzyQuery(new Term("field", "stellent"), FuzzyQuery.defaultMinSimilarity, 0);   
     hits = searcher.search(query);
     assertEquals(1, hits.length());
-
+    
+    // now with prefix
+    query = new FuzzyQuery(new Term("field", "student"), FuzzyQuery.defaultMinSimilarity, 1);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    query = new FuzzyQuery(new Term("field", "stellent"), FuzzyQuery.defaultMinSimilarity, 1);   
+    hits = searcher.search(query);
+    assertEquals(1, hits.length());
+    query = new FuzzyQuery(new Term("field", "student"), FuzzyQuery.defaultMinSimilarity, 2);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
+    query = new FuzzyQuery(new Term("field", "stellent"), FuzzyQuery.defaultMinSimilarity, 2);   
+    hits = searcher.search(query);
+    assertEquals(0, hits.length());
+    
     // "student" doesn't match anymore thanks to increased minimum similarity:
-    query = new FuzzyQuery(new Term("field", "student"), 0.6f);   
+    query = new FuzzyQuery(new Term("field", "student"), 0.6f, 0);   
     hits = searcher.search(query);
     assertEquals(0, hits.length());
 

@@ -34,7 +34,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     protected abstract boolean termCompare(Term term);
     
     /** Equality measure on the term */
-    protected abstract float difference();
+    public abstract float difference();
 
     /** Indiciates the end of the enumeration has been reached */
     protected abstract boolean endEnum();
