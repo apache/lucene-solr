@@ -85,7 +85,7 @@ public class TestPrefixQuery extends TestCase {
     PrefixQuery query = new PrefixQuery(new Term("category", "/Computers"));
     IndexSearcher searcher = new IndexSearcher(directory);
     Hits hits = searcher.search(query);
-    assertEquals("All documents in /Computers category", 3, hits.length());
+    assertEquals("All documents in /Computers category and below", 3, hits.length());
 
     query = new PrefixQuery(new Term("category", "/Computers/Mac"));
     hits = searcher.search(query);
