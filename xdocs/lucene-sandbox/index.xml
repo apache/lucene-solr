@@ -17,6 +17,16 @@ not necessarily be maintained, particularly in their current state.
 You can access Lucene Sandbox CVS repository at
 <A HREF="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/">http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/</A>.
 </P>
+
+<subsection name="Indyo">
+<p>
+Indyo is a datasource-independent Lucene indexing framework.
+</p>
+<p>
+A tutorial for using Indyo can be found <a href="indyo/tutorial.html">here</a>.
+</p>
+</subsection>
+
 </section>
 
 </body>
