@@ -26,7 +26,7 @@ extends SegmentTermDocs implements TermPositions {
   private int proxCount;
   private int position;
   
-  SegmentTermPositions(SegmentReader p) throws IOException {
+  SegmentTermPositions(SegmentReader p) {
     super(p);
     this.proxStream = (IndexInput)parent.proxStream.clone();
   }
@@ -65,8 +65,7 @@ extends SegmentTermDocs implements TermPositions {
     return false;
   }
 
-  public final int read(final int[] docs, final int[] freqs)
-      throws IOException {
+  public final int read(final int[] docs, final int[] freqs) {
     throw new UnsupportedOperationException("TermPositions does not support processing multiple documents in one call. Use TermDocs instead.");
   }
 
