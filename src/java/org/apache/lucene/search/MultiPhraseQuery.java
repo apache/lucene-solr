@@ -28,18 +28,17 @@ import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.search.Query;
 
 /**
- * PhrasePrefixQuery is a generalized version of PhraseQuery, with an added
+ * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
  * method {@link #add(Term[])}.
  * To use this class, to search for the phrase "Microsoft app*" first use
- * add(Term) on the term "Microsoft", then find all terms that has "app" as
- * prefix using IndexReader.terms(Term), and use PhrasePrefixQuery.add(Term[]
+ * add(Term) on the term "Microsoft", then find all terms that have "app" as
+ * prefix using IndexReader.terms(Term), and use MultiPhraseQuery.add(Term[]
  * terms) to add them to the query.
- * 
- * @deprecated use {@link org.apache.lucene.search.MultiPhraseQuery} instead
+ *
  * @author Anders Nielsen
  * @version 1.0
  */
-public class PhrasePrefixQuery extends Query {
+public class MultiPhraseQuery extends Query {
   private String field;
   private ArrayList termArrays = new ArrayList();
   private Vector positions = new Vector();
@@ -107,18 +106,18 @@ public class PhrasePrefixQuery extends Query {
     return result;
   }
 
-  private class PhrasePrefixWeight implements Weight {
+  private class MultiPhraseWeight implements Weight {
     private Searcher searcher;
     private float value;
     private float idf;
     private float queryNorm;
     private float queryWeight;
 
-    public PhrasePrefixWeight(Searcher searcher) {
+    public MultiPhraseWeight(Searcher searcher) {
       this.searcher = searcher;
     }
 
-    public Query getQuery() { return PhrasePrefixQuery.this; }
+    public Query getQuery() { return MultiPhraseQuery.this; }
     public float getValue() { return value; }
 
     public float sumOfSquaredWeights() throws IOException {
@@ -236,7 +235,7 @@ public class PhrasePrefixQuery extends Query {
       boq.setBoost(getBoost());
       return boq.createWeight(searcher);
     }
-    return new PhrasePrefixWeight(searcher);
+    return new MultiPhraseWeight(searcher);
   }
 
   /** Prints a user-readable version of this query. */
@@ -251,7 +250,17 @@ public class PhrasePrefixQuery extends Query {
     Iterator i = termArrays.iterator();
     while (i.hasNext()) {
       Term[] terms = (Term[])i.next();
-      buffer.append(terms[0].text() + (terms.length > 1 ? "*" : ""));
+      if (terms.length > 1) {
+        buffer.append("(");
+        for (int j = 0; j < terms.length; j++) {
+          buffer.append(terms[j].text());
+          if (j < terms.length-1)
+            buffer.append(" ");
+        }
+        buffer.append(")");
+      } else {
+        buffer.append(terms[0].text());
+      }
       if (i.hasNext())
         buffer.append(" ");
     }
