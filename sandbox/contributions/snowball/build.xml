@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+
+<project name="Snowball" default="compile" basedir=".">
+
+  <!-- Load all the default properties, and any the user wants    -->
+  <!-- to contribute (without having to type -D or edit this file -->
+  <property file="${user.home}/build.properties" />
+  <property file="${basedir}/build.properties" />
+  <property file="${basedir}/default.properties" />
+ 
+  <!-- the normal classpath -->
+  <path id="classpath">
+    <pathelement location="${build.classes}"/>
+    <fileset dir="${lib.dir}">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
+  <!-- the unit test classpath -->
+  <path id="test.classpath">
+    <pathelement location="${test.build.classes}" />
+    <path refid="classpath"/>
+  </path>
+
+
+  <!-- ====================================================== -->
+  <!-- Stuff needed by all targets                            -->
+  <!-- ====================================================== -->
+  <target name="init">
+    <mkdir dir="${bin.dir}"/>
+
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.classes}"/>
+
+    <mkdir dir="${test.build.dir}"/>
+    <mkdir dir="${test.build.classes}"/>
+
+  </target>
+
+  <!-- ====================================================== -->
+  <!-- Download Snowball code                                 -->
+  <!-- ====================================================== -->
+  <target name="download" depends="init">
+    <cvs cvsRoot="${snowball.cvsroot}"
+         package="${snowball.root}"
+         passfile="snowball.cvspass"/>
+  </target>
+
+  <!-- ====================================================== -->
+  <!-- Compile Snowball C code                                -->
+  <!-- ====================================================== -->
+  <target name="compile-compiler" depends="download">
+    <apply failonerror="true" executable="gcc" parallel="true">
+      <arg value="-O"/>
+      <arg value="-o"/>
+      <arg value="${bin.dir}/snowball"/>
+      <fileset dir="${snowball.root}/p" includes="*.c"/>
+    </apply>
+  </target>
+
+  <!-- ====================================================== -->
+  <!-- Generate Java code                                     -->
+  <!-- ====================================================== -->
+  <target name="generate" depends="compile-compiler">
+    <apply failonerror="true" executable="${bin.dir}/snowball.sh">
+      <srcfile/>
+      <arg value="${src.dir}/net/sf/snowball/ext"/>
+      <fileset dir="${snowball.root}" includes="**/stem.sbl"/>
+    </apply>
+
+    <copy todir="${src.dir}/net">
+      <fileset dir="${snowball.root}/net">
+	<include name="**/*.java"/>
+      </fileset>
+    </copy>
+
+  </target>
+
+  <!-- ====================================================== -->
+  <!-- Compile Java source code                               -->
+  <!-- ====================================================== -->
+  <target name="compile" depends="init">
+    <javac 
+     encoding="${build.encoding}" 
+     srcdir="${src.dir}"
+     includes="**/*.java"
+     destdir="${build.classes}"
+     debug="${debug}"
+     optimize="${optimize}"
+     deprecation="${deprecation}">
+      <classpath refid="classpath"/>
+    </javac>    
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Make Snowball jar                                                  -->
+  <!-- ================================================================== -->
+  <target name="jar" depends="compile">
+    <jar
+      jarfile="${build.dir}/${final.name}.jar"
+      basedir="${build.classes}"
+    />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Test files                                                         --> 
+  <!-- ================================================================== -->
+  <target name="test" depends="compile">
+
+    <javac 
+     encoding="${build.encoding}" 
+     srcdir="${test.src.dir}"
+     includes="**/*.java"
+     destdir="${test.build.classes}"
+     debug="${debug}">
+      <classpath refid="test.classpath"/>
+    </javac>    
+
+    <junit printsummary="yes" haltonfailure="no">
+      <classpath refid="test.classpath"/>
+      <formatter type="plain" />
+      <batchtest todir="${test.build.dir}">
+        <fileset dir="${test.src.dir}" includes="**/Test*.java"/>
+      </batchtest>
+    </junit>
+
+  </target>   
+
+  <!-- ================================================================== -->
+  <!-- Documentation                                                      -->
+  <!-- ================================================================== -->
+  <target name="javadoc" depends="compile">
+    <mkdir dir="${build.javadoc}"/>
+    <javadoc
+      sourcepath="${src.dir}" 
+      overview="${src.dir}/overview.html"
+      packagenames="${javadoc.packages}"
+      destdir="${build.javadoc}"
+      author="true"
+      version="true"
+      use="true"
+      windowtitle="${Name} ${version} API"
+      doctitle="${Name} ${version} API"
+      >
+        <link href="${javadoc.link.java}"/>
+        <link href="${javadoc.link.lucene}"/>
+        <classpath refid="classpath"/>
+    </javadoc>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Clean.  Delete the build files, and their directories              -->
+  <!-- ================================================================== -->
+  <target name="clean" depends="init">
+    <delete dir="${build.dir}"/>
+  </target>
+
+</project>
