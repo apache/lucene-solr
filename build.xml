@@ -244,6 +244,7 @@
       errorProperty="tests.failed" failureProperty="tests.failed">
       <classpath refid="junit.classpath"/>
       <sysproperty key="dataDir" file="src/test"/>
+      <sysproperty key="tempDir" file="${build.dir}/test"/>
       <formatter type="xml"/>
       <formatter type="brief" usefile="false"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
@@ -307,8 +308,7 @@
       includes="**/*.xml"
       lastModifiedCheck="true"
       templatePath="${jakarta.site2.home}/xdocs/stylesheets"
-      >
-    </anakia>
+    />
 
     <copy todir="docs/images" filtering="no">
       <fileset dir="xdocs/images">
@@ -470,6 +470,7 @@
     description="Removes contents of build and dist directories">
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
+    <delete file="velocity.log"/>
   </target>
 
   <!-- ================================================================== -->
