@@ -101,6 +101,11 @@ $Id$
  20. Added getFieldNames() to IndexReader and Segment(s)Reader classes.
      (Peter Mularien via otis)
 
+ 21. Added getFields(String) and getValues(String) methods.
+     (Rasik Pandey via otis)
+
+
+  Contributed by Rasik Pandey on 2002-10-09
 1.2 RC6
 
  1. Changed QueryParser.jj to have "?" be a special character which
