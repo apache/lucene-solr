@@ -62,11 +62,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 import junit.framework.TestCase;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -84,13 +84,9 @@ public class TestMultiSearcher extends TestCase
     public void testEmptyIndex()
         throws Exception
     {
-        // creating file's for the FSDirectories
-        File a = new File(System.getProperty("user.home"), "indexStoreA");
-        File b = new File(System.getProperty("user.home"), "indexStoreB");
-
         // creating two directories for indices
-        FSDirectory indexStoreA = FSDirectory.getDirectory(a, true);
-        FSDirectory indexStoreB = FSDirectory.getDirectory(b, true);
+        Directory indexStoreA = new RAMDirectory();
+        Directory indexStoreB = new RAMDirectory();
 
         // creating a document to store
         Document lDoc = new Document();
