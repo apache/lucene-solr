@@ -121,9 +121,9 @@ public class RobotExclusionFilter extends Filter implements MessageListener
      */
     public RobotExclusionFilter(HostManager hm)
     {
-        log = new SimpleLogger("RobotExclusionFilter");
+        log = new SimpleLogger("RobotExclusionFilter", true);
         hostManager = hm;
-        rePool = new ThreadPool(2, new REFThreadFactory());
+        rePool = new ThreadPool(5, new REFThreadFactory());
         rePool.init();
         log.setFlushAtOnce(true);
         log.log("refilter: initialized");
@@ -164,19 +164,21 @@ public class RobotExclusionFilter extends Filter implements MessageListener
             // assert message instanceof URLMessage;
             URLMessage urlMsg = ((URLMessage) message);
             URL url = urlMsg.getUrl();
+//            String urlString = urlMsg.getNormalizedURLString();
+//            URL nUrl = new URL(urlString);
             //assert url != null;
-            HostInfo h = hostManager.getHostInfo(url.getHost().toLowerCase());
-            if (!h.isRobotTxtChecked() && !h.isLoadingRobotsTxt())
-            {
-                log.logThreadSafe("handleRequest: starting to get robots.txt");
-                // probably this results in Race Conditions here
-
-                rePool.doTask(new RobotExclusionTask(h), new Integer(h.getId()));
-                h.setLoadingRobotsTxt(true);
-            }
-
+            HostInfo h = hostManager.getHostInfo(url.getHost());
             synchronized (h)
             {
+                if (!h.isRobotTxtChecked() && !h.isLoadingRobotsTxt())
+                {
+                    log.logThreadSafe("handleRequest: starting to get robots.txt");
+                    // probably this results in Race Conditions here
+
+                    rePool.doTask(new RobotExclusionTask(h), new Integer(h.getId()));
+                    h.setLoadingRobotsTxt(true);
+                }
+
                 // isLoading...() and queuedRequest.insert() must be atomic
                 if (h.isLoadingRobotsTxt())
                 {
@@ -271,8 +273,16 @@ public class RobotExclusionFilter extends Filter implements MessageListener
          */
         public void run(ServerThread thread)
         {
-            // assert hostInfo != null;
             String threadName = Thread.currentThread().getName();
+            synchronized(hostInfo)
+            {
+                if(hostInfo.isRobotTxtChecked())
+                {
+                    log.logThreadSafe("task " + threadName + ": already loaded " + hostInfo.getHostName());
+                    return;         // may happen 'cause check is not synchronized
+                }
+            }
+            // assert hostInfo != null;
 
             log.logThreadSafe("task " + threadName + ": starting to load " + hostInfo.getHostName());
             //hostInfo.setLoadingRobotsTxt(true);
@@ -290,6 +300,7 @@ public class RobotExclusionFilter extends Filter implements MessageListener
                 if (res.getStatusCode() != 200)
                 {
                     errorOccured = true;
+                    log.log("task " + threadName + ": return code was " + res.getStatusCode());
                 }
                 else
                 {
@@ -309,26 +320,26 @@ public class RobotExclusionFilter extends Filter implements MessageListener
             catch (java.net.UnknownHostException e)
             {
                 hostInfo.setReachable(false);
-                log.logThreadSafe("task " + threadName + ": unknown host. setting to unreachable");
+                log.logThreadSafe("task " + threadName + ": unknown host '" + hostInfo.getHostName() + "'. setting to unreachable");
                 errorOccured = true;
             }
             catch (java.net.NoRouteToHostException e)
             {
                 hostInfo.setReachable(false);
-                log.logThreadSafe("task " + threadName + ": no route to. setting to unreachable");
+                log.logThreadSafe("task " + threadName + ": no route to '"+hostInfo.getHostName()+"'. setting to unreachable");
                 errorOccured = true;
             }
             catch (java.net.ConnectException e)
             {
                 hostInfo.setReachable(false);
-                log.logThreadSafe("task " + threadName + ": connect exception. setting to unreachable");
+                log.logThreadSafe("task " + threadName + ": connect exception while connecting to '"+hostInfo.getHostName()+"'. setting to unreachable");
                 errorOccured = true;
             }
             catch (java.io.InterruptedIOException e)
             {
                 // time out. fatal in this case
                 hostInfo.setReachable(false);
-                log.logThreadSafe("task " + threadName + ": time out. setting to unreachable");
+                log.logThreadSafe("task " + threadName + ": time out while connecting to '" +hostInfo.getHostName() + "'. setting to unreachable");
                 errorOccured = true;
             }
 
@@ -343,19 +354,20 @@ public class RobotExclusionFilter extends Filter implements MessageListener
             {
                 if (errorOccured)
                 {
+                    log.logThreadSafe("task " + threadName + ": error occured. putback...");
                     synchronized (hostInfo)
                     {
                         hostInfo.setRobotsChecked(true, null);
                         // crawl everything
                         hostInfo.setLoadingRobotsTxt(false);
-                        log.logThreadSafe("task " + threadName + ": error occured");
                         log.logThreadSafe("task " + threadName + ": now put " + hostInfo.getQueueSize() + " queueud requests back");
-                        hostInfo.setLoadingRobotsTxt(false);
+                        //hostInfo.setLoadingRobotsTxt(false);
                         putBackURLs();
                     }
                 }
                 else
                 {
+                    log.logThreadSafe("task " + threadName + ": finished. putback...");
                     synchronized (hostInfo)
                     {
                         hostInfo.setRobotsChecked(true, disallows);
@@ -374,11 +386,13 @@ public class RobotExclusionFilter extends Filter implements MessageListener
          */
         private void putBackURLs()
         {
+
+            int qSize = hostInfo.getQueueSize();
             while (hostInfo.getQueueSize() > 0)
             {
                 messageHandler.putMessage((Message) hostInfo.removeFromQueue());
             }
-            log.logThreadSafe("task " + Thread.currentThread().getName() + ": finished");
+            log.logThreadSafe("task " + Thread.currentThread().getName() + ": finished. put " + qSize + " URLs back");
             hostInfo.removeQueue();
         }
 
