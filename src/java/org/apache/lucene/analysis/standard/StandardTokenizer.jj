@@ -56,7 +56,7 @@ options {
   STATIC = false;
 //IGNORE_CASE = true;
 //BUILD_PARSER = false;
-//UNICODE_INPUT = true;
+  UNICODE_INPUT = true;
   USER_CHAR_STREAM = true;
   OPTIMIZE_TOKEN_MANAGER = true;
 //DEBUG_TOKEN_MANAGER = true;
@@ -125,6 +125,7 @@ TOKEN : {					  // token patterns
     (<LETTER>|<DIGIT>)*
   >
 
+| < SIGRAM: (<CJK>)+ >
 | < #ALPHA: (<LETTER>)+>
 | < #LETTER:					  // unicode letters
       [
@@ -133,7 +134,11 @@ TOKEN : {					  // token patterns
        "\u00c0"-"\u00d6",
        "\u00d8"-"\u00f6",
        "\u00f8"-"\u00ff",
-       "\u0100"-"\u1fff",
+       "\u0100"-"\u1fff"
+      ]
+  >
+| < #CJK:             // non-alphabets
+      [
        "\u3040"-"\u318f",
        "\u3300"-"\u337f",
        "\u3400"-"\u3d2d",
@@ -182,6 +187,7 @@ org.apache.lucene.analysis.Token next() throws IOException :
     token = <EMAIL> |
     token = <HOST> |
     token = <NUM> |
+    token = <SIGRAM> |
     token = <EOF>
    )
     {
