@@ -57,6 +57,7 @@ package de.lanlab.larm.fetcher;
 import de.lanlab.larm.threads.ServerThread;
 import de.lanlab.larm.util.State;
 import de.lanlab.larm.net.HostManager;
+import HTTPClient.NVPair;
 
 /**
  * a server thread for the thread pool that records the number
@@ -75,6 +76,22 @@ public class FetcherThread extends ServerThread
 
     byte[] documentBuffer = new byte[Constants.FETCHERTASK_READSIZE];
 
+    /**
+     * default headers for HTTPClient
+     */
+    private volatile NVPair headers[] = new NVPair[2];
+
+
+    public NVPair[] getDefaultHeaders()
+    {
+        return headers;
+    }
+
+    public int getUsedDefaultHeaders()
+    {
+        return 1;
+    }
+
     public HostManager getHostManager()
     {
         return hostManager;
@@ -84,6 +101,8 @@ public class FetcherThread extends ServerThread
     {
         super(threadNumber,"FetcherThread " + threadNumber, threadGroup);
         this.hostManager = hostManager;
+        headers[0] = new HTTPClient.NVPair("User-Agent", Constants.CRAWLER_AGENT);
+        headers[1] = null; // may contain an additional field
     }
 
     public static String STATE_IDLE = "Idle";
