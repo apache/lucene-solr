@@ -54,18 +54,27 @@ package lucli;
  * <http://www.apache.org/>.
  */
 
-import java.io.*;
-import org.gnu.readline.*;
-import org.apache.lucene.queryParser.ParseException;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
-import java.util.Iterator;
+
+import jline.ArgumentCompletor;
+import jline.Completor;
+import jline.ConsoleReader;
+import jline.FileNameCompletor;
+import jline.History;
+import jline.SimpleCompletor;
+
+import org.apache.lucene.queryParser.ParseException;
 
 /**
- * lucli Main class for lucli: the Lucene Command Line Interface
+ * Main class for lucli: the Lucene Command Line Interface.
  * This class handles mostly the actual CLI part, command names, help, etc.
  */
-
 public class Lucli {
 
 	final static String DEFAULT_INDEX = "index"; //directory "index" under the current directory
@@ -87,7 +96,7 @@ public class Lucli {
 	final static int TOKENS = 8;
 	final static int EXPLAIN = 9;
 
-	String fullPath;
+	String historyFile;
 	TreeMap commandMap = new TreeMap();
 	LuceneMethods luceneMethods; //current cli class we're using
 	boolean enableReadline; //false: use plain java. True: shared library readline
@@ -97,16 +106,14 @@ public class Lucli {
 		application initialization file.
 		*/
 
-	public Lucli(String[] args) throws ParseException, IOException {
+	public Lucli(String[] args) throws IOException {
 		String line;
 
-		fullPath = System.getProperty("user.home") +  System.getProperty("file.separator")
-			+ HISTORYFILE;
+		historyFile = System.getProperty("user.home") + File.separator	+ HISTORYFILE;
 
 		/*
 		 * Initialize the list of commands
 		 */
-
 		addCommand("info", INFO, "Display info about the current Lucene index. Example: info");
 		addCommand("search", SEARCH, "Search the current index. Example: search foo", 1);
 		addCommand("count", COUNT, "Return the number of hits for a search. Example: count foo", 1);
@@ -118,79 +125,64 @@ public class Lucli {
 		addCommand("tokens", TOKENS, "Does a search and shows the top 10 tokens for each document. Verbose! Example: tokens foo", 1);
 		addCommand("explain", EXPLAIN, "Explanation that describes how the document scored against query. Example: explain foo", 1);
 
-
-
 		//parse command line arguments
 		parseArgs(args);
 
-		if (enableReadline)
-			org.gnu.readline.Readline.load(ReadlineLibrary.GnuReadline  );
-		else
-			org.gnu.readline.Readline.load(ReadlineLibrary.PureJava  );
-
-		Readline.initReadline("lucli"); // init, set app name, read inputrc
-
-
-
-		Readline.readHistoryFile(fullPath);
-
-		// read history file, if available
-
-		File history = new File(".rltest_history");
-		try {
-			if (history.exists())
-				Readline.readHistoryFile(history.getName());
-		} catch (Exception e) {
-			System.err.println("Error reading history file!");
-		}
-
-		// Set word break characters
-		try {
-			Readline.setWordBreakCharacters(" \t;");
-		}
-		catch (UnsupportedEncodingException enc) {
-			System.err.println("Could not set word break characters");
-			System.exit(0);
-		}
-
+		ConsoleReader cr = new ConsoleReader();
+		//Readline.readHistoryFile(fullPath);
+		cr.setHistory(new History(new File(historyFile)));
+		
 		// set completer with list of words
-
-		Readline.setCompleter(new Completer(commandMap));
+    Completor[] comp = new Completor[]{
+            new SimpleCompletor(getCommandsAsArray()),
+            new FileNameCompletor()
+        };
+    cr.addCompletor (new ArgumentCompletor(comp));
 
 		// main input loop
-
 		luceneMethods = new LuceneMethods(DEFAULT_INDEX);
-
 		while (true) {
 			try {
-				line = Readline.readline("lucli> ");
+				line = cr.readLine("lucli> ");
 				if (line != null) {
-					handleCommand(line);
+					handleCommand(line, cr);
 				}
-			} catch (UnsupportedEncodingException enc) {
-				System.err.println("caught UnsupportedEncodingException");
-				break;
 			} catch (java.io.EOFException eof) {
 				System.out.println("");//new line
 				exit();
+			} catch (UnsupportedEncodingException enc) {
+				enc.printStackTrace(System.err);
+			} catch (ParseException pe) {
+				pe.printStackTrace(System.err);
 			} catch (IOException ioe) {
 				ioe.printStackTrace(System.err);
 			}
 		}
-
-		exit();
 	}
 
-	public static void main(String[] args) throws ParseException, IOException {
+	private String[] getCommandsAsArray() {
+		Set commandSet = commandMap.keySet();
+		String[] commands = new String[commandMap.size()];
+		int i = 0;
+		for (Iterator iter = commandSet.iterator(); iter.hasNext();) {
+			String	cmd = (String) iter.next();
+			commands[i++] = cmd;
+		}
+		return commands;
+	}
+
+	public static void main(String[] args) throws IOException {
 		new Lucli(args);
 	}
 
 
-	private void handleCommand(String line) throws IOException, ParseException {
+	private void handleCommand(String line, ConsoleReader cr) throws IOException, ParseException {
 		String [] words = tokenizeCommand(line);
 		if (words.length == 0)
 			return; //white space
 		String query = "";
+		if (line.trim().startsWith("#"))		// # = comment
+			return;
 		//Command name and number of arguments
 		switch (getCommandId(words[0], words.length - 1)) {
 			case INFO:
@@ -200,7 +192,7 @@ public class Lucli {
 				for (int ii = 1; ii < words.length; ii++) {
 					query += words[ii] + " ";
 				}
-				luceneMethods.search(query, false, false);
+				luceneMethods.search(query, false, false, cr);
 				break;
 			case COUNT:
 				for (int ii = 1; ii < words.length; ii++) {
@@ -234,13 +226,13 @@ public class Lucli {
 				for (int ii = 1; ii < words.length; ii++) {
 					query += words[ii] + " ";
 				}
-				luceneMethods.search(query, false, true);
+				luceneMethods.search(query, false, true, cr);
 				break;
 			case EXPLAIN:
 				for (int ii = 1; ii < words.length; ii++) {
 					query += words[ii] + " ";
 				}
-				luceneMethods.search(query, true, false);
+				luceneMethods.search(query, true, false, cr);
 				break;
 			case HELP:
 				help();
@@ -248,7 +240,7 @@ public class Lucli {
 			case NOCOMMAND: //do nothing
 				break;
 			case UNKOWN:
-				System.out.println("Unknown command:" + words[0] + ". Type help to get a list of commands.");
+				System.out.println("Unknown command: " + words[0] + ". Type help to get a list of commands.");
 				break;
 		}
 	}
@@ -264,13 +256,6 @@ public class Lucli {
 	}
 
 	private void exit() {
-
-		try {
-			Readline.writeHistoryFile(fullPath);
-		} catch (IOException ioe) {
-			error("while saving history:" + ioe);
-		}
-		Readline.cleanup();
 		System.exit(0);
 	}
 
@@ -329,32 +314,19 @@ public class Lucli {
 		System.out.println(text);
 	}
 
-
 	/*
-	 * Parse command line arguments
-	 * Code inspired by http://www.ecs.umass.edu/ece/wireless/people/emmanuel/java/java/cmdLineArgs/parsing.html
+	 * Parse command line arguments (currently none)
 	 */
 	private void parseArgs(String[] args) {
-		for (int ii = 0; ii < args.length; ii++) {
-			// a little overkill for now, but foundation
-			// for other args
-			if (args[ii].startsWith("-")) {
-				String arg = args[ii];
-				if (arg.equals("-r")) {
-					enableReadline = true;
-				}
-				else {
-					usage();
-					System.exit(1);
-				}
-			}
+		if (args.length > 0) {
+			usage();
+			System.exit(1);
 		}
 	}
 
 	private void usage() {
-		message("Usage: lucli [-r]");
-		message("Arguments:");
-		message("\t-r: Provide tab completion and history using the GNU readline shared library ");
+		message("Usage: lucli.Lucli");
+		message("(currently, no parameters are supported)");
 	}
 
 	private class Command {

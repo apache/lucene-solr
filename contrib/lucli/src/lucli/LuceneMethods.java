@@ -55,8 +55,6 @@ package lucli;
  */
 
 import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -69,6 +67,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Enumeration;
+
+import jline.ConsoleReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
@@ -130,14 +130,13 @@ class LuceneMethods {
   }
 
 
-  public void search(String queryString, boolean explain, boolean showTokens) throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
-    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+  public void search(String queryString, boolean explain, boolean showTokens, ConsoleReader cr)
+  		throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
     Hits hits = initSearch(queryString);
     System.out.println(hits.length() + " total matching documents");
     if (explain) {
       query = explainQuery(queryString);
     }
-
 
     final int HITS_PER_PAGE = 10;
     message("--------------------------------------");
@@ -158,8 +157,8 @@ class LuceneMethods {
       message("#################################################");
 
       if (hits.length() > end) {
-        System.out.print("more (y/n) ? ");
-        queryString = in.readLine();
+      	// TODO: don't let the input end up in the command line history
+      	queryString = cr.readLine("more (y/n) ? ");
         if (queryString.length() == 0 || queryString.charAt(0) == 'n')
           break;
       }
