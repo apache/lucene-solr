@@ -72,9 +72,9 @@ public abstract class PriorityQueue {
     heap = new Object[heapSize];
   }
 
-  /** Adds an Object to a PriorityQueue in log(size) time. */ 
+  /** Adds an Object to a PriorityQueue in log(size) time. */
   public final void put(Object element) {
-    size++;	
+    size++;
     heap[size] = element;
     upHeap();
   }
@@ -88,7 +88,7 @@ public abstract class PriorityQueue {
   }
 
   /** Removes and returns the least element of the PriorityQueue in log(size)
-    time. */ 
+    time. */
   public final Object pop() {
     if (size > 0) {
       Object result = heap[1];			  // save first value
@@ -111,16 +111,16 @@ public abstract class PriorityQueue {
   public final void adjustTop() {
     downHeap();
   }
-    
+
 
   /** Returns the number of elements currently stored in the PriorityQueue. */
   public final int size() {
     return size;
   }
-  
+
   /** Removes all entries from the PriorityQueue. */
   public final void clear() {
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i <= size; i++)
       heap[i] = null;
     size = 0;
   }
@@ -136,7 +136,7 @@ public abstract class PriorityQueue {
     }
     heap[i] = node;				  // install saved node
   }
-  
+
   private final void downHeap() {
     int i = 1;
     Object node = heap[i];			  // save top node
