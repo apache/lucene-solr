@@ -52,11 +52,12 @@
  * <http://www.apache.org/>.
  */
 
- package de.lanlab.larm.fetcher;
+package de.lanlab.larm.fetcher;
 
-import de.lanlab.larm.threads.*;
-import de.lanlab.larm.util.*;
-import java.util.*;
+import de.lanlab.larm.threads.TaskQueue;
+import de.lanlab.larm.util.Queue;
+import de.lanlab.larm.util.CachingQueue;
+import de.lanlab.larm.util.HashedCircularLinkedList;
 import java.net.URL;
 
 /**
@@ -76,8 +77,8 @@ public class FetcherTaskQueue extends TaskQueue
      * CachingQueue that stores all tasks for this server
      * @TODO probably link this to the host info structure
      */
-    HashedCircularLinkedList servers = new HashedCircularLinkedList(100, 0.75f);
-    int size = 0;
+    private HashedCircularLinkedList servers = new HashedCircularLinkedList(100, 0.75f);
+    private int size = 0;
 
 
     /**
@@ -248,7 +249,5 @@ public class FetcherTaskQueue extends TaskQueue
         {
             t.printStackTrace();
         }
-
     }
-
 }
