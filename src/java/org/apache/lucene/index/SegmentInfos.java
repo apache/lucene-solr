@@ -23,6 +23,11 @@ import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
 
 final class SegmentInfos extends Vector {
+  
+  /** The file format version, a negative number. */
+  /* Works since counter, the old 1st entry, is always >= 0 */
+  public static final int FORMAT = -1;
+  
   public int counter = 0;    // used to name new segments
   private long version = 0; //counts how often the index has been changed by adding or deleting docs
 
@@ -31,18 +36,33 @@ final class SegmentInfos extends Vector {
   }
 
   public final void read(Directory directory) throws IOException {
+    
     InputStream input = directory.openFile("segments");
     try {
-      counter = input.readInt(); // read counter
+      int format = input.readInt();
+      if(format < 0){     // file contains explicit format info
+        // check that it is a format we can understand
+        if (format < FORMAT)
+          throw new IOException("Unknown format version: " + format);
+        version = input.readLong(); // read version
+        counter = input.readInt(); // read counter
+      }
+      else{     // file is in old format without explicit format info
+        counter = format;
+      }
+      
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
         SegmentInfo si =
           new SegmentInfo(input.readString(), input.readInt(), directory);
         addElement(si);
       }
-      if (input.getFilePointer() >= input.length())
-        version = 0; // old file format without version number
-      else
-        version = input.readLong(); // read version
+      
+      if(format >= 0){    // in old format the version number may be at the end of the file
+        if (input.getFilePointer() >= input.length())
+          version = 0; // old file format without version number
+        else
+          version = input.readLong(); // read version
+      }
     }
     finally {
       input.close();
@@ -52,14 +72,15 @@ final class SegmentInfos extends Vector {
   public final void write(Directory directory) throws IOException {
     OutputStream output = directory.createFile("segments.new");
     try {
+      output.writeInt(FORMAT); // write FORMAT
+      output.writeLong(++version); // every write changes the index
       output.writeInt(counter); // write counter
       output.writeInt(size()); // write infos
       for (int i = 0; i < size(); i++) {
         SegmentInfo si = info(i);
         output.writeString(si.name);
         output.writeInt(si.docCount);
-      }
-      output.writeLong(++version); // every write changes the index         
+      }         
     }
     finally {
       output.close();
@@ -81,9 +102,27 @@ final class SegmentInfos extends Vector {
    */
   public static long readCurrentVersion(Directory directory)
     throws IOException {
+      
+    InputStream input = directory.openFile("segments");
+    int format = 0;
+    long version = 0;
+    try {
+      format = input.readInt();
+      if(format < 0){
+        if (format < FORMAT)
+          throw new IOException("Unknown format version: " + format);
+        version = input.readLong(); // read version
+       }
+     }
+     finally {
+       input.close();
+     }
+     
+     if(format < 0)
+      return version;
 
-    // We cannot be sure whether the segments file is in the old format or the new one.
-    // Therefore we have to read the whole file and cannot simple seek to the version entry.
+    // We cannot be sure about the format of the file.
+    // Therefore we have to read the whole file and cannot simply seek to the version entry.
 
     SegmentInfos sis = new SegmentInfos();
     sis.read(directory);
