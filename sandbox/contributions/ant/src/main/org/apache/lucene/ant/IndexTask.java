@@ -84,6 +84,8 @@ public class IndexTask extends Task {
 
   private HandlerConfig handlerConfig;
 
+  private boolean useCompoundIndex = true;
+
 
   /**
    *  Creates new instance
@@ -119,6 +121,14 @@ public class IndexTask extends Task {
     this.overwrite = overwrite;
   }
 
+
+  /**
+   * If creating a new index and this is set to true, the
+   * index will be created in compound format.
+   */ 
+  public void setUseCompoundIndex(boolean useCompoundIndex) {
+    this.useCompoundIndex = useCompoundIndex;
+  }
 
   /**
    *  Sets the documentHandler attribute of the IndexTask object
@@ -234,6 +244,10 @@ public class IndexTask extends Task {
 
     IndexWriter writer =
       new IndexWriter(indexDir, analyzer, create);
+
+    if (create && useCompoundIndex) {
+      writer.setUseCompoundFile(useCompoundIndex);
+    }
     int totalFiles = 0;
     int totalIndexed = 0;
     int totalIgnored = 0;
