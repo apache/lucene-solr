@@ -33,7 +33,7 @@ public interface Fragmenter
 
 	/**
 	 * Test to see if this token from the stream should be held in a new TextFragment
-	 * @param token
+	 * @param nextToken
 	 * @return
 	 */
 	public boolean isNewFragment(Token nextToken);

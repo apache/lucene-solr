@@ -83,7 +83,7 @@ public class QueryScorer implements Scorer
 			//not a query term - return
 			return 0;
 		}
-		//found a query term - is it unique in this doc?
+		//found a query term - is it unique in this fragment?
 		if(!uniqueTermsInFragment.contains(termText))
 		{
 			totalScore+=queryTerm.getWeight();

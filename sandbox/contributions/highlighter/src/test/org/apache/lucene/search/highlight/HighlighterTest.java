@@ -60,14 +60,6 @@ public class HighlighterTest extends TestCase implements Formatter
 			"John Kennedy has been shot",
 			"This text has a typo in referring to Keneddy" };
 
-	/**
-	 * Constructor for HighlightExtractorTest.
-	 * @param arg0
-	 */
-	public HighlighterTest(String arg0)
-	{
-		super(arg0);
-	}
 
 	public void testSimpleHighlighter() throws Exception
 	{
