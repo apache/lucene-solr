@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.standard.*;
 import net.sf.snowball.ext.*;
 
 import java.io.Reader;
-import java.util.Hashtable;
+import java.util.Set;
 
 /** Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
  * LowerCaseFilter}, {@link StopFilter} and {@link SnowballFilter}.
@@ -33,7 +33,7 @@ import java.util.Hashtable;
  */
 public class SnowballAnalyzer extends Analyzer {
   private String name;
-  private Hashtable stopTable;
+  private Set stopSet;
 
   /** Builds the named analyzer with no stop words. */
   public SnowballAnalyzer(String name) {
@@ -43,7 +43,7 @@ public class SnowballAnalyzer extends Analyzer {
   /** Builds the named analyzer with the given stop words. */
   public SnowballAnalyzer(String name, String[] stopWords) {
     this(name);
-    stopTable = StopFilter.makeStopTable(stopWords);
+    stopSet = StopFilter.makeStopSet(stopWords);
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
@@ -52,8 +52,8 @@ public class SnowballAnalyzer extends Analyzer {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
     result = new LowerCaseFilter(result);
-    if (stopTable != null)
-      result = new StopFilter(result, stopTable);
+    if (stopSet != null)
+      result = new StopFilter(result, stopSet);
     result = new SnowballFilter(result, name);
     return result;
   }
