@@ -8,22 +8,22 @@
 
 <section name="User Contributions">
   <subsection name="Lucene Documents">
-Ê Ê <p>Lucene requires information you want to index to be converted
-Ê into a Document class. Here are contributions for various Document
-Ê classes for different formats.</p>
+  <p>Lucene requires information you want to index to be converted
+ into a Document class. Here are contributions for various Document
+ classes for different formats.</p>
   <table>
    <tr>
-  Ê <th>XMLDocument Key</th> 
+   <th>XMLDocument Key</th> 
     <td>
-   Ê <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html</a> 
-  Ê </td>
+    <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html</a> 
+   </td>
    </tr>
    <tr>
     <th>author</th> 
     <td>Peter Carlson</td>
    </tr>
-Ê </table>
-Ê </subsection>
+ </table>
+ </subsection>
 </section>
 </body>
 </document>
