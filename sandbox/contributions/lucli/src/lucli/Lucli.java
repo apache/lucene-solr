@@ -107,12 +107,12 @@ public class Lucli {
 		 * Initialize the list of commands
 		 */
 
-		addCommand("info", INFO, "Display info about the current Lucene Index. Example:info");
+		addCommand("info", INFO, "Display info about the current Lucene index. Example: info");
 		addCommand("search", SEARCH, "Search the current index. Example: search foo", 1);
 		addCommand("count", COUNT, "Return the number of hits for a search. Example: count foo", 1);
 		addCommand("optimize", OPTIMIZE, "Optimize the current index");
 		addCommand("quit", QUIT, "Quit/exit the program");
-		addCommand("help", HELP, "Display help about commands.");
+		addCommand("help", HELP, "Display help about commands");
 		addCommand("terms", TERMS, "Show the first " + MAX_TERMS + " terms in this index. Supply a field name to only show terms in a specific field. Example: terms");
 		addCommand("index", INDEX, "Choose a different lucene index. Example index my_index", 1);
 		addCommand("tokens", TOKENS, "Does a search and shows the top 10 tokens for each document. Verbose! Example: tokens foo", 1);

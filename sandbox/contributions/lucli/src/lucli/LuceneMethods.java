@@ -107,7 +107,7 @@ class LuceneMethods {
 
   public LuceneMethods(String index) {
     indexName = index;
-    message("Lucene CLI. Using directory:" + indexName);
+    message("Lucene CLI. Using directory '" + indexName + "'. Type 'help' for instructions.");
   }
 
 
@@ -175,8 +175,12 @@ class LuceneMethods {
     for (int ii = 0; ii < fieldsArray.length; ii++) {
       String currField = fieldsArray[ii];
       String[] result = doc.getValues(currField);
-      for (int i = 0; i < result.length; i++) {
-        message(currField + ":" + result[i]);
+      if (result != null) {
+        for (int i = 0; i < result.length; i++) {
+          message(currField + ":" + result[i]);
+        }
+      } else {
+        message(currField + ": <not available>");
       }
     }
     //another option is to just do message(doc);
