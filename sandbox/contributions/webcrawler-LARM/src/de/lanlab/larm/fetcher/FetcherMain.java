@@ -183,10 +183,19 @@ public class FetcherMain
 
 
         StoragePipeline storage = new StoragePipeline();
-        storage.addDocStorage(new LogStorage(storeLog, /* save in page files? */ false, /* logfile prefix */ "logs/pagefile"));
+        //storage.addDocStorage(new LogStorage(storeLog, /* save in page files? */ false, /* logfile prefix */ "logs/pagefile"));
         storage.addLinkStorage(new LinkLogStorage(linksLog));
         storage.addLinkStorage(messageHandler);
-        //storage.addStorage(new LuceneStorage(...));
+
+        LuceneStorage luceneStorage = new LuceneStorage();
+        luceneStorage.setAnalyzer(new org.apache.lucene.analysis.de.GermanAnalyzer());
+        luceneStorage.setCreate(true);
+        luceneStorage.setIndexName("luceneIndex");
+        luceneStorage.setFieldInfo("url", LuceneStorage.INDEX | LuceneStorage.STORE);
+        luceneStorage.setFieldInfo("content", LuceneStorage.INDEX | LuceneStorage.STORE | LuceneStorage.TOKEN);
+        storage.addDocStorage(luceneStorage);
+        storage.open();
+
         //storage.addStorage(new JMSStorage(...));
 
         // a third example would be the NullStorage, which converts the documents into

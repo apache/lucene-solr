@@ -80,6 +80,8 @@ import de.lanlab.larm.net.*;
  * the storage. If it's an HTML document, it will be parsed and all links will
  * be put into the message handler again.
  *
+ * stores contents of the files in field "contents"
+ *
  * @author    Clemens Marschner
  * @version $Id$
  */
@@ -406,32 +408,40 @@ public class FetcherTask
                         Tokenizer tok = new Tokenizer();
                         tok.setLinkHandler(this);
                         tok.parse(new SimpleCharArrayReader(fullCharBuffer));
+
+                        taskState.setState(FT_STORING, ipURL);
+                        linkStorage.storeLinks(foundUrls);
+                        WebDocument d = new WebDocument(contextUrl, contentType, statusCode, actURLMessage.getReferer(), contentLength, title, date, hostManager);
+                        d.addField("content", fullCharBuffer);
+                        docStorage.store(d);
                     }
                     else
                     {
                         // System.out.println("Discovered unknown content type: " + contentType + " at " + urlString);
-                        errorLog.log("[" + threadNr + "] Discovered unknown content type at " + urlString + ": " + contentType + ". just storing");
+                        //errorLog.log("[" + threadNr + "] Discovered unknown content type at " + urlString + ": " + contentType + ". just storing");
+                        taskState.setState(FT_STORING, ipURL);
+                        linkStorage.storeLinks(foundUrls);
+                        WebDocument d = new WebDocument(contextUrl, contentType, statusCode, actURLMessage.getReferer(), contentLength, title, date, hostManager);
+                        d.addField("content", fullBuffer);
+                        docStorage.store(d);
                     }
                     log.log("scanned");
                 }
-                taskState.setState(FT_STORING, ipURL);
-                linkStorage.storeLinks(foundUrls);
-                //messageHandler.putMessages(foundUrls);
-                docStorage.store(new WebDocument(contextUrl, contentType, fullBuffer, statusCode, actURLMessage.getReferer(), contentLength, title, hostManager));
+
                 log.log("stored");
             }
         }
         catch (InterruptedIOException e)
         {
             // timeout while reading this file
-            System.out.println("[" + threadNr + "] FetcherTask: Timeout while opening: " + this.actURLMessage.getUrl());
+            //System.out.println("[" + threadNr + "] FetcherTask: Timeout while opening: " + this.actURLMessage.getUrl());
             errorLog.log("error: Timeout: " + this.actURLMessage.getUrl());
             hi.badRequest();
         }
         catch (FileNotFoundException e)
         {
             taskState.setState(FT_EXCEPTION);
-            System.out.println("[" + threadNr + "] FetcherTask: File not Found: " + this.actURLMessage.getUrl());
+            //System.out.println("[" + threadNr + "] FetcherTask: File not Found: " + this.actURLMessage.getUrl());
             errorLog.log("error: File not Found: " + this.actURLMessage.getUrl());
         }
         catch(NoRouteToHostException e)
@@ -439,7 +449,7 @@ public class FetcherTask
             // router is down or firewall prevents to connect
             hi.setReachable(false);
             taskState.setState(FT_EXCEPTION);
-            System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
+            //System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
             // e.printStackTrace();
             errorLog.log("error: " + e.getClass().getName() + ": " + e.getMessage());
         }
@@ -448,14 +458,14 @@ public class FetcherTask
             // no server is listening at this port
             hi.setReachable(false);
             taskState.setState(FT_EXCEPTION);
-            System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
+            //System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
             // e.printStackTrace();
             errorLog.log("error: " + e.getClass().getName() + ": " + e.getMessage());
         }
         catch (SocketException e)
         {
             taskState.setState(FT_EXCEPTION);
-            System.out.println("[" + threadNr + "]: SocketException:" + e.getMessage());
+            //System.out.println("[" + threadNr + "]: SocketException:" + e.getMessage());
             errorLog.log("error: " + e.getClass().getName() + ": " + e.getMessage());
 
         }
@@ -464,7 +474,7 @@ public class FetcherTask
             // IP Address not to be determined
             hi.setReachable(false);
             taskState.setState(FT_EXCEPTION);
-            System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
+            //System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
             // e.printStackTrace();
             errorLog.log("error: " + e.getClass().getName() + ": " + e.getMessage());
 
@@ -472,7 +482,7 @@ public class FetcherTask
         catch (IOException e)
         {
             taskState.setState(FT_EXCEPTION);
-            System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
+            //System.out.println("[" + threadNr + "] " + e.getClass().getName() + ": " + e.getMessage());
             // e.printStackTrace();
             errorLog.log("error: IOException: " + e.getClass().getName() + ": " + e.getMessage());
 

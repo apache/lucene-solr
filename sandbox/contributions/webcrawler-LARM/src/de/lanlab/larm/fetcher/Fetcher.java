@@ -93,6 +93,11 @@ public class Fetcher implements MessageListener
      */
     DocumentStorage storage;
 
+   /**
+     * the storage where the links are saved to
+     */
+    LinkStorage linkStorage;
+
     /**
      * the host manager keeps track of host information
      */
@@ -110,6 +115,7 @@ public class Fetcher implements MessageListener
     public Fetcher(int maxThreads, DocumentStorage docStorage, LinkStorage linkStorage, HostManager hostManager)
     {
         this.storage = storage;
+        this.linkStorage = linkStorage;
         FetcherTask.setDocStorage(docStorage);
         FetcherTask.setLinkStorage(linkStorage);
         fetcherPool = new ThreadPool(maxThreads, new FetcherThreadFactory(hostManager));
