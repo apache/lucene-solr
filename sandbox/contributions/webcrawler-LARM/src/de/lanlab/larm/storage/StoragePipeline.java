@@ -64,16 +64,15 @@ import java.util.Collection;
 /**
  * @author    Clemens Marschner
  * @created   1. Juni 2002
- * @version   $ver: $
+ * @version   $Id$
  */
-
 public class StoragePipeline implements DocumentStorage, LinkStorage
 {
 
-    boolean isOpen;
-    boolean isLinkStorageOpen;
-    ArrayList docStorages;
-    ArrayList linkStorages;
+    private boolean isOpen;
+    private boolean isLinkStorageOpen;
+    private ArrayList docStorages;
+    private ArrayList linkStorages;
 
 
     /**
@@ -95,6 +94,7 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
     {
         for (Iterator it = docStorages.iterator(); it.hasNext(); )
         {
+	    // FIXME: replace with logging
             System.out.println("opening...");
             ((DocumentStorage) it.next()).open();
         }
@@ -115,7 +115,7 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         for(Iterator it = docStorages.iterator(); it.hasNext();)
         {
             doc = ((DocumentStorage)it.next()).store(doc);
-            if(doc == null)
+            if (doc == null)
             {
                 break;
             }
@@ -152,7 +152,6 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         linkStorages.add(storage);
     }
 
-
     public void openLinkStorage()
     {
         for (Iterator it = linkStorages.iterator(); it.hasNext(); )
@@ -167,7 +166,7 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         for(Iterator it = linkStorages.iterator(); it.hasNext();)
         {
             c =  ((LinkStorage)it.next()).storeLinks(c);
-            if(c == null)
+            if (c == null)
             {
                 break;
             }
@@ -175,4 +174,3 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         return c;
     }
 }
-
