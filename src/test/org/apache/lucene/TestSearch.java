@@ -91,7 +91,7 @@ public class TestSearch extends TestCase {
       };
       for (int j = 0; j < docs.length; j++) {
         Document d = new Document();
-        d.add(Field.Text("contents", docs[j]));
+        d.add(new Field("contents", docs[j], Field.Store.YES, Field.Index.TOKENIZED));
         writer.addDocument(d);
       }
       writer.close();

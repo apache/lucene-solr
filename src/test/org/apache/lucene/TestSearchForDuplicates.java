@@ -91,8 +91,8 @@ public class TestSearchForDuplicates extends TestCase {
 
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
-        d.add(Field.Text(PRIORITY_FIELD, HIGH_PRIORITY));
-        d.add(Field.Text(ID_FIELD, Integer.toString(j)));
+        d.add(new Field(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.TOKENIZED));
+        d.add(new Field(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.TOKENIZED));
         writer.addDocument(d);
       }
       writer.close();

@@ -55,8 +55,8 @@ class ThreadSafetyTest {
         for (int i = 0; i < 1024*ITERATIONS; i++) {
           Document d = new Document();
           int n = RANDOM.nextInt();
-          d.add(Field.Keyword("id", Integer.toString(n)));
-          d.add(Field.UnStored("contents", English.intToEnglish(n)));
+          d.add(new Field("id", Integer.toString(n), Field.Store.YES, Field.Index.UN_TOKENIZED));
+          d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.TOKENIZED));
           System.out.println("Adding " + n);
           
           // Switch between single and multiple file segments
