@@ -32,25 +32,37 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public class IndexSearcher extends Searcher {
   IndexReader reader;
+  private boolean closeReader;
 
   /** Creates a searcher searching the index in the named directory. */
   public IndexSearcher(String path) throws IOException {
-    this(IndexReader.open(path));
+    this(IndexReader.open(path), true);
   }
 
   /** Creates a searcher searching the index in the provided directory. */
   public IndexSearcher(Directory directory) throws IOException {
-    this(IndexReader.open(directory));
+    this(IndexReader.open(directory), true);
   }
 
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
+    this(r, false);
+  }
+  
+  private IndexSearcher(IndexReader r, boolean closeReader) {
     reader = r;
+    this.closeReader = closeReader;
   }
 
-  // inherit javadoc
+  /**
+   * Note that the underlying IndexReader is not closed, if
+   * IndexSearcher was constructed with IndexSearcher(IndexReader r).
+   * If the IndexReader was supplied implicitly by specifying a directory, then
+   * the IndexReader gets closed.
+   */
   public void close() throws IOException {
-    reader.close();
+    if(closeReader)
+      reader.close();
   }
 
   // inherit javadoc
