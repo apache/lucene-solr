@@ -44,7 +44,10 @@ public class BooleanQuery extends Query {
       "1024"));
 
   /** Thrown when an attempt is made to add more than {@link
-   * #getMaxClauseCount()} clauses. */
+   * #getMaxClauseCount()} clauses. This typically happens if
+   * a PrefixQuery, FuzzyQuery, WildcardQuery, or RangeQuery 
+   * is expanded to many terms during search. 
+   */
   public static class TooManyClauses extends RuntimeException {}
 
   /** Return the maximum number of clauses permitted, 1024 by default.
