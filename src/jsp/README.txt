@@ -1,5 +1,5 @@
 To build the Jakarta Lucene web app demo just run 
-"ant wardemo" from the Jakarta Lucene Installation
+"ant war-demo" from the Jakarta Lucene Installation
 directory (follow the master instructions in 
 BUILD.txt).  If you have questions please post 
 them to the Jakarta Lucene mailing lists.  To 
