@@ -3,8 +3,8 @@ package org.apache.lucene.queryParser;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
- * reserved.
+ * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.  All
+ * rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,6 +67,11 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.Token;
 
+/**
+ * Tests QueryParser.
+ *
+ * @version $Id$
+ */
 public class TestQueryParser extends TestCase {
 
     public TestQueryParser(String name) {
@@ -86,7 +91,7 @@ public class TestQueryParser extends TestCase {
 	}
 
 	boolean inPhrase = false;
-	int savedStart=0, savedEnd=0;
+	int savedStart = 0, savedEnd = 0;
 
 	public Token next() throws IOException {
 	    if (inPhrase) {
@@ -119,12 +124,16 @@ public class TestQueryParser extends TestCase {
 	}
     }
 
-    public Query getQuery(String query, Analyzer a) throws Exception {
+    public QueryParser getParser(Analyzer a) throws Exception {
 	if (a == null)
 	    a = new SimpleAnalyzer();
 	QueryParser qp = new QueryParser("field", a);
 	qp.setOperator(QueryParser.DEFAULT_OPERATOR_OR);
-	return qp.parse(query);
+	return qp;
+    }
+
+    public Query getQuery(String query, Analyzer a) throws Exception {
+	return getParser(a).parse(query);
     }
 
     public void assertQueryEquals(String query, Analyzer a, String result)
@@ -133,6 +142,18 @@ public class TestQueryParser extends TestCase {
 	String s = q.toString("field");
 	if (!s.equals(result)) {
 	    fail("Query /" + query + "/ yielded /" + s
+		+ "/, expecting /" + result + "/");
+	}
+    }
+
+    public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
+	throws Exception {
+	QueryParser qp = getParser(null);
+	qp.setLowercaseWildcardTerms(lowercase);
+	Query q = qp.parse(query);
+	String s = q.toString("field");
+	if (!s.equals(result)) {
+	    fail("WildcardQuery /" + query + "/ yielded /" + s
 		+ "/, expecting /" + result + "/");
 	}
     }
@@ -247,6 +268,26 @@ public class TestQueryParser extends TestCase {
 	assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
 	assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
 	assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
+
+	/* Tests to see that wild card terms are (or are not) properly
+	 * lower-cased with propery parser configuration
+	 */
+	// First prefix queries:
+	assertWildcardQueryEquals("term*", true, "term*");
+	assertWildcardQueryEquals("Term*", true, "term*");
+	assertWildcardQueryEquals("TERM*", true, "term*");
+	assertWildcardQueryEquals("term*", false, "term*");
+	assertWildcardQueryEquals("Term*", false, "Term*");
+	assertWildcardQueryEquals("TERM*", false, "TERM*");
+	// Then 'full' wildcard queries:
+	assertWildcardQueryEquals("te?m", true, "te?m");
+	assertWildcardQueryEquals("Te?m", true, "te?m");
+	assertWildcardQueryEquals("TE?M", true, "te?m");
+	assertWildcardQueryEquals("Te?m*gerM", true, "te?m*germ");
+	assertWildcardQueryEquals("te?m", false, "te?m");
+	assertWildcardQueryEquals("Te?m", false, "Te?m");
+	assertWildcardQueryEquals("TE?M", false, "TE?M");
+	assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
     }
 
     public void testQPA() throws Exception {
@@ -290,7 +331,7 @@ public class TestQueryParser extends TestCase {
 
     public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1);
-    String endDate = getLocalizedDate(2002, 1, 4); 
+    String endDate = getLocalizedDate(2002, 1, 4);
 	assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null,
 	    "[" + getDate(startDate) + "-" + getDate(endDate) + "]");
 	assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null,
