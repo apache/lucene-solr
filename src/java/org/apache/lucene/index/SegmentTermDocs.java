@@ -66,21 +66,26 @@ class SegmentTermDocs implements TermDocs {
   int doc = 0;
   int freq;
 
-  SegmentTermDocs(SegmentReader p) throws IOException {
-    parent = p;
-    freqStream = parent.getFreqStream();
-    deletedDocs = parent.deletedDocs;
+  SegmentTermDocs(SegmentReader parent)
+    throws IOException {
+    this.parent = parent;
+    this.freqStream = (InputStream)parent.freqStream.clone();
+    this.deletedDocs = parent.deletedDocs;
   }
-
-  SegmentTermDocs(SegmentReader p, TermInfo ti) throws IOException {
-    this(p);
+  
+  public void seek(Term term) throws IOException {
+    TermInfo ti = parent.tis.get(term);
     seek(ti);
   }
   
   void seek(TermInfo ti) throws IOException {
-    freqCount = ti.docFreq;
-    doc = 0;
-    freqStream.seek(ti.freqPointer);
+    if (ti == null) {
+      freqCount = 0;
+    } else {
+      freqCount = ti.docFreq;
+      doc = 0;
+      freqStream.seek(ti.freqPointer);
+    }
   }
   
   public void close() throws IOException {

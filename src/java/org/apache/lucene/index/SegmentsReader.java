@@ -151,12 +151,12 @@ final class SegmentsReader extends IndexReader {
     return total;
   }
 
-  public final TermDocs termDocs(Term term) throws IOException {
-    return new SegmentsTermDocs(readers, starts, term);
+  public final TermDocs termDocs() throws IOException {
+    return new SegmentsTermDocs(readers, starts);
   }
 
-  public final TermPositions termPositions(Term term) throws IOException {
-    return new SegmentsTermPositions(readers, starts, term);
+  public final TermPositions termPositions() throws IOException {
+    return new SegmentsTermPositions(readers, starts);
   }
 
   public final void close() throws IOException {
@@ -240,14 +240,16 @@ class SegmentsTermDocs implements TermDocs {
   protected int base = 0;
   protected int pointer = 0;
 
-  SegmentsTermDocs(SegmentReader[] r, int[] s, Term t) {
+  private SegmentTermDocs[] segTermDocs;
+  protected SegmentTermDocs current;              // == segTermDocs[pointer]
+  
+  SegmentsTermDocs(SegmentReader[] r, int[] s) {
     readers = r;
     starts = s;
-    term = t;
+
+    segTermDocs = new SegmentTermDocs[r.length];
   }
 
-  protected SegmentTermDocs current;
-  
   public final int doc() {
     return base + current.doc;
   }
@@ -255,14 +257,19 @@ class SegmentsTermDocs implements TermDocs {
     return current.freq;
   }
 
+  public final void seek(Term term) {
+    this.term = term;
+    this.base = 0;
+    this.pointer = 0;
+    this.current = null;
+  }
+
   public final boolean next() throws IOException {
     if (current != null && current.next()) {
       return true;
     } else if (pointer < readers.length) {
-      if (current != null)
-	current.close();
       base = starts[pointer];
-      current = termDocs(readers[pointer++]);
+      current = termDocs(pointer++);
       return next();
     } else
       return false;
@@ -275,14 +282,13 @@ class SegmentsTermDocs implements TermDocs {
       while (current == null) {
 	if (pointer < readers.length) {		  // try next segment
 	  base = starts[pointer];
-	  current = termDocs(readers[pointer++]);
+	  current = termDocs(pointer++);
 	} else {
 	  return 0;
 	}
       }
       int end = current.read(docs, freqs);
       if (end == 0) {				  // none left in segment
-	current.close();
 	current = null;
       } else {					  // got some
 	final int b = base;			  // adjust doc numbers
@@ -302,25 +308,37 @@ class SegmentsTermDocs implements TermDocs {
     return true;
   }
 
+  private SegmentTermDocs termDocs(int i) throws IOException {
+    if (term == null)
+      return null;
+    SegmentTermDocs result = segTermDocs[i];
+    if (result == null)
+      result = segTermDocs[i] = termDocs(readers[i]);
+    result.seek(term);
+    return result;
+  }
+
   protected SegmentTermDocs termDocs(SegmentReader reader)
-       throws IOException {
-    return (SegmentTermDocs)reader.termDocs(term);
+    throws IOException {
+    return (SegmentTermDocs)reader.termDocs();
   }
 
   public final void close() throws IOException {
-    if (current != null)
-      current.close();
+    for (int i = 0; i < segTermDocs.length; i++) {
+      if (segTermDocs[i] != null)
+        segTermDocs[i].close();
+    }
   }
 }
 
 class SegmentsTermPositions extends SegmentsTermDocs implements TermPositions {
-  SegmentsTermPositions(SegmentReader[] r, int[] s, Term t) {
-    super(r,s,t);
+  SegmentsTermPositions(SegmentReader[] r, int[] s) {
+    super(r,s);
   }
 
   protected final SegmentTermDocs termDocs(SegmentReader reader)
        throws IOException {
-    return (SegmentTermDocs)reader.termPositions(term);
+    return (SegmentTermDocs)reader.termPositions();
   }
 
   public final int nextPosition() throws IOException {

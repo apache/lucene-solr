@@ -65,12 +65,10 @@ public abstract class TermEnum {
   /** Increments the enumeration to the next element.  True if one exists.*/
   abstract public boolean next() throws IOException;
 
-  /** Returns the current Term in the enumeration.
-    Initially invalid, valid after next() called for the first time.*/
+  /** Returns the current Term in the enumeration.*/
   abstract public Term term();
 
-  /** Returns the docFreq of the current Term in the enumeration.
-    Initially invalid, valid after next() called for the first time.*/
+  /** Returns the docFreq of the current Term in the enumeration.*/
   abstract public int docFreq();
 
   /** Closes the enumeration to further activity, freeing resources. */

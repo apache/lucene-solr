@@ -193,7 +193,7 @@ abstract public class IndexReader {
   abstract public int docFreq(Term t) throws IOException;
 
   /** Returns an enumeration of all the documents which contain
-    <code>Term</code>. For each document, the document number, the frequency of
+    <code>term</code>. For each document, the document number, the frequency of
     the term in that document is also provided, for use in search scoring.
     Thus, this method implements the mapping:
     <p><ul>
@@ -201,10 +201,17 @@ abstract public class IndexReader {
     </ul>
     <p>The enumeration is ordered by document number.  Each document number
     is greater than all that precede it in the enumeration. */
-  abstract public TermDocs termDocs(Term t) throws IOException;
+  public TermDocs termDocs(Term term) throws IOException {
+    TermDocs termDocs = termDocs();
+    termDocs.seek(term);
+    return termDocs;
+  }
+
+  /** Returns an unpositioned {@link TermDocs} enumerator. */
+  abstract public TermDocs termDocs() throws IOException;
 
   /** Returns an enumeration of all the documents which contain
-    <code>Term</code>.  For each document, in addition to the document number
+    <code>term</code>.  For each document, in addition to the document number
     and frequency of the term in that document, a list of all of the ordinal
     positions of the term in the document is available.  Thus, this method
     implements the mapping:
@@ -218,7 +225,14 @@ abstract public class IndexReader {
     <p> This positional information faciliates phrase and proximity searching.
     <p>The enumeration is ordered by document number.  Each document number is
     greater than all that precede it in the enumeration. */
-  abstract public TermPositions termPositions(Term t) throws IOException;
+  public TermPositions termPositions(Term term) throws IOException {
+    TermPositions termPositions = termPositions();
+    termPositions.seek(term);
+    return termPositions;
+  }
+
+  /** Returns an unpositioned {@link TermPositions} enumerator. */
+  abstract public TermPositions termPositions() throws IOException;
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
     deleted it will not appear in TermDocs or TermPostitions enumerations.

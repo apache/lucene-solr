@@ -78,8 +78,8 @@ final class SegmentReader extends IndexReader {
   BitVector deletedDocs = null;
   private boolean deletedDocsDirty = false;
 
-  private InputStream freqStream;
-  private InputStream proxStream;
+  InputStream freqStream;
+  InputStream proxStream;
 
 
   private static class Norm {
@@ -194,28 +194,12 @@ final class SegmentReader extends IndexReader {
     return (deletedDocs != null && deletedDocs.get(n));
   }
 
-  public final TermDocs termDocs(Term t) throws IOException {
-    TermInfo ti = tis.get(t);
-    if (ti != null)
-      return new SegmentTermDocs(this, ti);
-    else
-      return null;
+  public final TermDocs termDocs() throws IOException {
+    return new SegmentTermDocs(this);
   }
 
-  final InputStream getFreqStream () {
-    return (InputStream)freqStream.clone();
-  }
-
-  public final TermPositions termPositions(Term t) throws IOException {
-    TermInfo ti = tis.get(t);
-    if (ti != null)
-      return new SegmentTermPositions(this, ti);
-    else
-      return null;
-  }
-
-  final InputStream getProxStream () {
-    return (InputStream)proxStream.clone();
+  public final TermPositions termPositions() throws IOException {
+    return new SegmentTermPositions(this);
   }
 
   public final int docFreq(Term t) throws IOException {

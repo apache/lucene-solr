@@ -67,6 +67,11 @@ import org.apache.lucene.document.Document;
   */
 
 public interface TermDocs {
+  /** Sets this to the data for a term.
+   * The enumeration is reset to the start of the data for this term.
+   */
+  void seek(Term term) throws IOException;
+
   /** Returns the current document number.  <p> This is invalid until {@link
       #next()} is called for the first time.*/
   int doc();
@@ -91,7 +96,7 @@ public interface TermDocs {
   /** Skips entries to the first beyond the current whose document number is
    * greater than or equal to <i>target</i>. <p>Returns true iff there is such
    * an entry.  <p>Behaves as if written: <pre>
-   *   public boolean skipTo(int target) {
+   *   boolean skipTo(int target) {
    *     do {
    *       if (!next())
    * 	     return false;

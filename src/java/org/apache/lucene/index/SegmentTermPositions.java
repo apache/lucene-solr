@@ -66,13 +66,7 @@ extends SegmentTermDocs implements TermPositions {
   
   SegmentTermPositions(SegmentReader p) throws IOException {
     super(p);
-    proxStream = parent.getProxStream();
-  }
-
-  SegmentTermPositions(SegmentReader p, TermInfo ti)
-       throws IOException {
-    this(p);
-    seek(ti);
+    this.proxStream = (InputStream)parent.proxStream.clone();
   }
 
   final void seek(TermInfo ti) throws IOException {

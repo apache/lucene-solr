@@ -129,10 +129,11 @@ public final class DateFilter extends Filter {
   final public BitSet bits(IndexReader reader) throws IOException {
     BitSet bits = new BitSet(reader.maxDoc());
     TermEnum enum = reader.terms(new Term(field, start));
+    TermDocs termDocs = reader.termDocs();
     try {
       Term stop = new Term(field, end);
       while (enum.term().compareTo(stop) <= 0) {
-	TermDocs termDocs = reader.termDocs(enum.term());
+	termDocs.seek(enum.term());
 	try {
 	  while (termDocs.next())
 	    bits.set(termDocs.doc());
