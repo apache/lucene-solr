@@ -61,7 +61,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.PriorityQueue;
 
-/** Implements search over a set of Searcher's. */
+/** Implements search over a set of <code>Searchers</code>. */
 public final class MultiSearcher extends Searcher {
   private Searcher[] searchers;
   private int[] starts;
@@ -78,8 +78,8 @@ public final class MultiSearcher extends Searcher {
     }
     starts[searchers.length] = maxDoc;
   }
-    
-  /** Frees resources associated with this Searcher. */
+
+  /** Frees resources associated with this <code>Searcher</code>. */
   public final void close() throws IOException {
     for (int i = 0; i < searchers.length; i++)
       searchers[i].close();
@@ -145,11 +145,11 @@ public final class MultiSearcher extends Searcher {
 	  break;				  // no more scores > minScore
       }
     }
-    
+
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
       scoreDocs[i] = (ScoreDoc)hq.pop();
-    
+
     return new TopDocs(totalHits, scoreDocs);
   }
 
@@ -172,7 +172,7 @@ public final class MultiSearcher extends Searcher {
 			   final HitCollector results)
     throws IOException {
     for (int i = 0; i < searchers.length; i++) {
-      
+
       final int start = starts[i];
 
       searchers[i].search(query, filter, new HitCollector() {
