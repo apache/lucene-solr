@@ -66,7 +66,7 @@ import java.io.Reader;
  *  WARNING: You must override one of the methods defined by this class in your
  *  subclass or the Analyzer will enter an infinite loop.
  */
-abstract public class Analyzer {
+public abstract class Analyzer {
   /** Creates a TokenStream which tokenizes all the text in the provided
     Reader.  Default implementation forwards to tokenStream(Reader) for 
     compatibility with older version.  Override to allow Analyzer to choose 

@@ -60,9 +60,9 @@ import java.io.IOException;
  * stream.  Used for all Lucene index output operations.
  * @see Directory
  * @see InputStream
- */ 
-abstract public class OutputStream {
-  final static int BUFFER_SIZE = 1024;
+ */
+public abstract class OutputStream {
+  static final int BUFFER_SIZE = 1024;
 
   private final byte[] buffer = new byte[BUFFER_SIZE];
   private long bufferStart = 0;			  // position in file of buffer
@@ -176,7 +176,7 @@ abstract public class OutputStream {
    * @param b the bytes to write
    * @param len the number of bytes to write
    */
-  abstract protected void flushBuffer(byte[] b, int len) throws IOException;
+  protected abstract void flushBuffer(byte[] b, int len) throws IOException;
 
   /** Closes this stream to further operations. */
   public void close() throws IOException {
@@ -200,7 +200,7 @@ abstract public class OutputStream {
   }
 
   /** The number of bytes in the file. */
-  abstract public long length() throws IOException;
+  public abstract long length() throws IOException;
 
 
 }

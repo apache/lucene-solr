@@ -67,7 +67,7 @@ final class TermInfosWriter {
   private Term lastTerm = new Term("", "");
   private TermInfo lastTi = new TermInfo();
   private int size = 0;
-  
+
   static final int INDEX_INTERVAL = 128;
   private long lastIndexPointer = 0;
   private boolean isIndex = false;
@@ -75,7 +75,7 @@ final class TermInfosWriter {
   private TermInfosWriter other = null;
 
   TermInfosWriter(Directory directory, String segment, FieldInfos fis)
-       throws IOException, SecurityException {
+       throws IOException {
     initialize(directory, segment, fis, false);
     other = new TermInfosWriter(directory, segment, fis, true);
     other.other = this;
@@ -98,7 +98,7 @@ final class TermInfosWriter {
     Term must be lexicographically greater than all previous Terms added.
     TermInfo pointers must be positive and greater than all previous.*/
   final void add(Term term, TermInfo ti)
-       throws IOException, SecurityException {
+       throws IOException {
     if (!isIndex && term.compareTo(lastTerm) <= 0)
       throw new IOException("term out of order");
     if (ti.freqPointer < lastTi.freqPointer)
@@ -127,7 +127,7 @@ final class TermInfosWriter {
        throws IOException {
     int start = stringDifference(lastTerm.text, term.text);
     int length = term.text.length() - start;
-    
+
     output.writeVInt(start);			  // write shared prefix length
     output.writeVInt(length);			  // write delta length
     output.writeChars(term.text, start, length);  // write delta chars
@@ -148,11 +148,11 @@ final class TermInfosWriter {
   }
 
   /** Called to complete TermInfos creation. */
-  final void close() throws IOException, SecurityException {
+  final void close() throws IOException {
     output.seek(0);				  // write size at start
     output.writeInt(size);
     output.close();
-    
+
     if (!isIndex)
       other.close();
   }

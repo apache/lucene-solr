@@ -76,7 +76,7 @@ import org.apache.lucene.index.IndexReader;
     <li>{@link org.apache.lucene.queryParser.QueryParser QueryParser}
     </ul>
 */
-abstract public class Query implements java.io.Serializable
+public abstract class Query implements java.io.Serializable
 {
     // query boost factor
     protected float boost = 1.0f;
@@ -122,5 +122,5 @@ abstract public class Query implements java.io.Serializable
      * (although, if the query was created by the parser, the printed
      * representation may not be exactly what was parsed).
      */
-    abstract public String toString(String field);
+    public abstract String toString(String field);
 }

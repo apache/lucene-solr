@@ -82,7 +82,7 @@ public abstract class FilteredTermEnum extends TermEnum {
         this.actualEnum = actualEnum;
         // Find the first term that matches
         Term term = actualEnum.term();
-        if (termCompare(term)) 
+        if (term != null && termCompare(term)) 
             currentTerm = term;
         else next();
     }

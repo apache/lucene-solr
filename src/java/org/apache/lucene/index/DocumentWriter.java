@@ -75,13 +75,13 @@ final class DocumentWriter {
   private Directory directory;
   private FieldInfos fieldInfos;
   private int maxFieldLength;
-  
+
   DocumentWriter(Directory d, Analyzer a, int mfl) {
     directory = d;
     analyzer = a;
     maxFieldLength = mfl;
   }
-  
+
   final void addDocument(String segment, Document doc)
        throws IOException {
     // write field names
@@ -97,7 +97,7 @@ final class DocumentWriter {
     } finally {
       fieldsWriter.close();
     }
-      
+
     // invert doc into postingTable
     postingTable.clear();			  // clear postingTable
     fieldLengths = new int[fieldInfos.size()];	  // init fieldLengths
@@ -128,7 +128,7 @@ final class DocumentWriter {
 
     // write norms of indexed fields
     writeNorms(doc, segment);
-    
+
   }
 
   // Keys are Terms, values are Postings.
@@ -216,7 +216,7 @@ final class DocumentWriter {
     return array;
   }
 
-  static private final void quickSort(Posting[] postings, int lo, int hi) {
+  private static final void quickSort(Posting[] postings, int lo, int hi) {
     if(lo >= hi)
       return;
 
@@ -232,7 +232,7 @@ final class DocumentWriter {
       Posting tmp = postings[mid];
       postings[mid] = postings[hi];
       postings[hi] = tmp;
-      
+
       if(postings[lo].term.compareTo(postings[mid].term) > 0) {
 	Posting tmp2 = postings[lo];
         postings[lo] = postings[mid];
@@ -244,17 +244,17 @@ final class DocumentWriter {
     int right = hi - 1;
 
     if (left >= right)
-      return; 
+      return;
 
     Term partition = postings[mid].term;
-    
+
     for( ;; ) {
       while(postings[right].term.compareTo(partition) > 0)
 	--right;
-      
+
       while(left < right && postings[left].term.compareTo(partition) <= 0)
 	++left;
-      
+
       if(left < right) {
         Posting tmp = postings[left];
         postings[left] = postings[right];
@@ -264,7 +264,7 @@ final class DocumentWriter {
 	break;
       }
     }
-    
+
     quickSort(postings, lo, left);
     quickSort(postings, left + 1, hi);
   }
@@ -286,7 +286,7 @@ final class DocumentWriter {
 	// add an entry to the dictionary with pointers to prox and freq files
 	ti.set(1, freq.getFilePointer(), prox.getFilePointer());
 	tis.add(posting.term, ti);
-	
+
 	// add an entry to the freq file
 	int f = posting.freq;
 	if (f == 1)				  // optimize freq=1
@@ -295,7 +295,7 @@ final class DocumentWriter {
 	  freq.writeVInt(0);			  // the document number
 	  freq.writeVInt(f);			  // frequency in doc
 	}
-	
+
 	int lastPosition = 0;			  // write positions
 	int[] positions = posting.positions;
 	for (int j = 0; j < f; j++) {		  // use delta-encoding
@@ -336,7 +336,7 @@ final class Posting {				  // info about a Term in a doc
   Term term;					  // the Term
   int freq;					  // its frequency in doc
   int[] positions;				  // positions it occurs at
-  
+
   Posting(Term t, int position) {
     term = t;
     freq = 1;

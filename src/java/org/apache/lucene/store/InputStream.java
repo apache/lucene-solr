@@ -61,8 +61,8 @@ import java.io.IOException;
  * @see Directory
  * @see OutputStream
  */
-abstract public class InputStream implements Cloneable {
-  final static int BUFFER_SIZE = OutputStream.BUFFER_SIZE;
+public abstract class InputStream implements Cloneable {
+  static final int BUFFER_SIZE = OutputStream.BUFFER_SIZE;
 
   private byte[] buffer;
   private char[] chars;
@@ -174,7 +174,7 @@ abstract public class InputStream implements Cloneable {
       else if ((b & 0xE0) != 0xE0) {
 	buffer[i] = (char)(((b & 0x1F) << 6)
 		 | (readByte() & 0x3F));
-      } else 
+      } else
 	buffer[i] = (char)(((b & 0x0F) << 12)
 		| ((readByte() & 0x3F) << 6)
 	        |  (readByte() & 0x3F));
@@ -205,11 +205,11 @@ abstract public class InputStream implements Cloneable {
    * @param offset the offset in the array to start storing bytes
    * @param length the number of bytes to read
    */
-  abstract protected void readInternal(byte[] b, int offset, int length)
+  protected abstract void readInternal(byte[] b, int offset, int length)
        throws IOException;
 
   /** Closes the stream to futher operations. */
-  abstract public void close() throws IOException;
+  public abstract void close() throws IOException;
 
   /** Returns the current position in this file, where the next read will
    * occur.
@@ -237,7 +237,7 @@ abstract public class InputStream implements Cloneable {
    * next {@link #readInternal(byte[],int,int)} will occur.
    * @see #readInternal(byte[],int,int)
    */
-  abstract protected void seekInternal(long pos) throws IOException;
+  protected abstract void seekInternal(long pos) throws IOException;
 
   /** The number of bytes in the file. */
   public final long length() {

@@ -109,7 +109,7 @@ public class MultiTermQuery extends Query {
         return getQuery().scorer(reader);
     }
     
-    final private BooleanQuery getQuery() throws IOException {
+    private final BooleanQuery getQuery() throws IOException {
         if (query == null) {
             BooleanQuery q = new BooleanQuery();
             try {

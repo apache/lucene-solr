@@ -328,6 +328,15 @@ PARSER_END(QueryParser)
   <<_WHITESPACE>>
 }
 
+// OG: to support prefix queries:
+// http://nagoya.apache.org/bugzilla/show_bug.cgi?id=12137
+// Change from:
+// | <WILDTERM:  <_TERM_START_CHAR>
+//              (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
+// To:
+//
+// | <WILDTERM:  (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
+
 <DEFAULT> TOKEN : {
   <AND:       ("AND" | "&&") >
 | <OR:        ("OR" | "||") >

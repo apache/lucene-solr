@@ -65,6 +65,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
 
@@ -92,6 +93,8 @@ public class IndexWriter {
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
 
   private Lock writeLock;
+
+  private Similarity similarity;
 
   /** Constructs an IndexWriter for the index in <code>path</code>.  Text will
     be analyzed with <code>a</code>.  If <code>create</code> is true, then a
@@ -403,5 +406,14 @@ public class IndexWriter {
       output.close();
     }
     directory.renameFile("deleteable.new", "deletable");
+  }
+
+  /**
+   * Sets the <code>Similarity</code> implementation to use.
+   *
+   * @param sim an instance of a class that implements  <code>Similarity</code
+   */
+  public void setSimilarity(Similarity sim) {
+    similarity = sim;
   }
 }

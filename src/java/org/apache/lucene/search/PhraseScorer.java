@@ -100,7 +100,7 @@ abstract class PhraseScorer extends Scorer {
     }
   }
 
-  abstract protected float phraseFreq() throws IOException;
+  protected abstract float phraseFreq() throws IOException;
 
   protected final void pqToList() {
     last = first = null;

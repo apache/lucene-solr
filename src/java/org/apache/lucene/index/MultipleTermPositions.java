@@ -72,7 +72,7 @@ import org.apache.lucene.util.PriorityQueue;
 public class MultipleTermPositions
     implements TermPositions
 {
-    private final static class TermPositionsQueue
+    private static final class TermPositionsQueue
 	extends PriorityQueue
     {
 	TermPositionsQueue(List termPositions)
@@ -100,7 +100,7 @@ public class MultipleTermPositions
 	}
     }
 
-    private final static class IntQueue
+    private static final class IntQueue
     {
 	private int _arraySize = 16;
 

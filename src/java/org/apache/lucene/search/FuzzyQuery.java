@@ -59,7 +59,7 @@ import org.apache.lucene.index.Term;
 import java.io.IOException;
 
 /** Implements the fuzzy search query */
-final public class FuzzyQuery extends MultiTermQuery {
+public final class FuzzyQuery extends MultiTermQuery {
     private Term fuzzyTerm;
     
     public FuzzyQuery(Term term) {

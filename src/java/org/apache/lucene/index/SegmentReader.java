@@ -143,7 +143,7 @@ final class SegmentReader extends IndexReader {
       directory.close();
   }
 
-  final static boolean hasDeletions(SegmentInfo si) throws IOException {
+  static final boolean hasDeletions(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".del");
   }
 

@@ -62,7 +62,7 @@ import java.io.IOException;
   This is an abstract class.
  */
 
-abstract public class Tokenizer extends TokenStream {
+public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
   protected Reader input;
 

@@ -71,7 +71,7 @@ import org.apache.lucene.util.Constants;
  * @author Doug Cutting
  */
 
-final public class FSDirectory extends Directory {
+public final class FSDirectory extends Directory {
   /** This cache of directories ensures that there is a unique Directory
    * instance per path, so that synchronization on the Directory can be used to
    * synchronize access between readers and writers.
@@ -176,7 +176,7 @@ final public class FSDirectory extends Directory {
   }
 
   /** Set the modified time of an existing file to now. */
-  public void touchFile(String name) throws IOException, SecurityException {
+  public void touchFile(String name) throws IOException {
     File file = new File(directory, name);
     file.setLastModified(System.currentTimeMillis());
   }

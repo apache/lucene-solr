@@ -61,14 +61,26 @@ import org.apache.lucene.document.Field;
 /** Internal class used for scoring.
  * <p>Public only so that the indexing code can compute and store the
  * normalization byte for each document. */
-public final class Similarity {
-  private Similarity() {}			  // no public constructor
+public abstract class Similarity {
 
-  static final float[] NORM_TABLE = new float[256];
+  private static final float[] NORM_TABLE = new float[256];
 
   static {
     for (int i = 0; i < 256; i++)
       NORM_TABLE[i] = byteToFloat((byte)i);
+  }
+
+  private static Similarity similarity;
+
+  private Similarity() {}			  // no public constructor
+
+  /**
+   * Sets the <code>Similarity</code> implementation to use.
+   *
+   * @param sim an instance of a class that implements  <code>Similarity</code
+   */
+  public static void setDefaultSimilarity(Similarity sim) {
+    similarity = sim;
   }
 
   /** Computes the normalization value for a document given the total number of

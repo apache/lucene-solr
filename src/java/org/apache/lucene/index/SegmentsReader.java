@@ -84,7 +84,7 @@ final class SegmentsReader extends IndexReader
     starts[readers.length] = maxDoc;
   }
 
-  public synchronized final int numDocs() {
+  public final synchronized int numDocs() {
     if (numDocs == -1) {			  // check cache
       int n = 0;				  // cache miss--recompute
       for (int i = 0; i < readers.length; i++)
@@ -108,7 +108,7 @@ final class SegmentsReader extends IndexReader
     return readers[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
   }
 
-  synchronized final void doDelete(int n) throws IOException {
+  final synchronized void doDelete(int n) throws IOException {
     numDocs = -1;				  // invalidate cache
     int i = readerIndex(n);			  // find segment num
     readers[i].doDelete(n - starts[i]);		  // dispatch to segment reader

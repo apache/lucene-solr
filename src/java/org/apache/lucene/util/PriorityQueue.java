@@ -63,7 +63,7 @@ public abstract class PriorityQueue {
 
   /** Determines the ordering of objects in this priority queue.  Subclasses
     must define this one method. */
-  abstract protected boolean lessThan(Object a, Object b);
+  protected abstract boolean lessThan(Object a, Object b);
 
   /** Subclass constructors must call this. */
   protected final void initialize(int maxSize) {

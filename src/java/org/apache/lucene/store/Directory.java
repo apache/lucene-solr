@@ -61,7 +61,7 @@ import java.io.IOException;
  * deleted.  Random access is permitted both when reading and writing.
  *
  * <p> Java's i/o APIs not used directly, but rather all i/o is
- * through this API.  This permits things such as: <ul> 
+ * through this API.  This permits things such as: <ul>
  * <li> implementation of RAM-based indices;
  * <li> implementation indices stored in a database, via JDBC;
  * <li> implementation of an index as a single file;
@@ -69,52 +69,52 @@ import java.io.IOException;
  *
  * @author Doug Cutting
  */
-abstract public class Directory {
+public abstract class Directory {
   /** Returns an array of strings, one for each file in the directory. */
-  abstract public String[] list()
-       throws IOException, SecurityException;
-       
+  public abstract String[] list()
+       throws IOException;
+
   /** Returns true iff a file with the given name exists. */
-  abstract public boolean fileExists(String name)
-       throws IOException, SecurityException;
+  public abstract boolean fileExists(String name)
+       throws IOException;
 
   /** Returns the time the named file was last modified. */
-  abstract public long fileModified(String name)
-       throws IOException, SecurityException;
+  public abstract long fileModified(String name)
+       throws IOException;
 
   /** Set the modified time of an existing file to now. */
-  abstract public void touchFile(String name)
-       throws IOException, SecurityException;
+  public abstract void touchFile(String name)
+       throws IOException;
 
   /** Removes an existing file in the directory. */
-  abstract public void deleteFile(String name)
-       throws IOException, SecurityException;
+  public abstract void deleteFile(String name)
+       throws IOException;
 
   /** Renames an existing file in the directory.
     If a file already exists with the new name, then it is replaced.
     This replacement should be atomic. */
-  abstract public void renameFile(String from, String to)
-       throws IOException, SecurityException;
+  public abstract void renameFile(String from, String to)
+       throws IOException;
 
   /** Returns the length of a file in the directory. */
-  abstract public long fileLength(String name)
-       throws IOException, SecurityException;
+  public abstract long fileLength(String name)
+       throws IOException;
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  abstract public OutputStream createFile(String name)
-       throws IOException, SecurityException;
+  public abstract OutputStream createFile(String name)
+       throws IOException;
 
   /** Returns a stream reading an existing file. */
-  abstract public InputStream openFile(String name)
-       throws IOException, SecurityException;
+  public abstract InputStream openFile(String name)
+       throws IOException;
 
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
    */
-  abstract public Lock makeLock(String name);
+  public abstract Lock makeLock(String name);
 
   /** Closes the store. */
-  abstract public void close()
-       throws IOException, SecurityException;
+  public abstract void close()
+       throws IOException;
 }

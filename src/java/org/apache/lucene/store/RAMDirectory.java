@@ -64,11 +64,39 @@ import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
 
 /** A memory-resident {@link Directory} implementation. */
-final public class RAMDirectory extends Directory {
+public final class RAMDirectory extends Directory {
   Hashtable files = new Hashtable();
 
   /** Constructs an empty {@link Directory}. */
   public RAMDirectory() {
+  }
+
+  /**
+   * Creates a new <code>RAMDirectory</code> instance from a different
+   * <code>Directory</code> implementation.  This can be used to load
+   * a disk-based index into memory.
+   * <P>
+   * This should be used only with indices that can fit into memory.
+   *
+   * @param d a <code>Directory</code> value
+   * @exception IOException if an error occurs
+   */
+  public RAMDirectory(Directory d) throws IOException {
+    final String[] ar = d.list();
+    for (int i = 0; i < ar.length; i++) {
+      // make place on ram disk
+      OutputStream os = createFile(ar[i]);
+      // read current file
+      InputStream is = d.openFile(ar[i]);
+      // and copy to ram disk
+      int len = (int) is.length();
+      byte[] buf = new byte[len];
+      is.readBytes(buf, 0, len);
+      os.writeBytes(buf, len);
+      // graceful cleanup
+      is.close();
+      os.close();
+    }
   }
 
   /** Returns an array of strings, one for each file in the directory. */
@@ -80,7 +108,7 @@ final public class RAMDirectory extends Directory {
       result[i++] = (String)names.nextElement();
     return result;
   }
-       
+
   /** Returns true iff the named file exists in this directory. */
   public final boolean fileExists(String name) {
     RAMFile file = (RAMFile)files.get(name);
@@ -94,7 +122,7 @@ final public class RAMDirectory extends Directory {
   }
 
   /** Set the modified time of an existing file to now. */
-  public void touchFile(String name) throws IOException, SecurityException {
+  public void touchFile(String name) throws IOException {
     RAMFile file = (RAMFile)files.get(name);
     file.lastModified = System.currentTimeMillis();
   }

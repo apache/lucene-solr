@@ -75,7 +75,7 @@ import org.apache.lucene.document.Field;
   as documents are added to and deleted from an index.  Clients should thus not
   rely on a given document having the same number between sessions. */
 
-abstract public class IndexReader {
+public abstract class IndexReader {
   protected IndexReader(Directory directory) {
     this.directory = directory;
   }
@@ -162,42 +162,42 @@ abstract public class IndexReader {
   }
 
   /** Returns the number of documents in this index. */
-  abstract public int numDocs();
+  public abstract int numDocs();
 
   /** Returns one greater than the largest possible document number.
     This may be used to, e.g., determine how big to allocate an array which
     will have an element for every document number in an index.
    */
-  abstract public int maxDoc();
+  public abstract int maxDoc();
 
   /** Returns the stored fields of the <code>n</code><sup>th</sup>
       <code>Document</code> in this index. */
-  abstract public Document document(int n) throws IOException;
+  public abstract Document document(int n) throws IOException;
 
   /** Returns true if document <i>n</i> has been deleted */
-  abstract public boolean isDeleted(int n);
+  public abstract boolean isDeleted(int n);
 
   /** Returns the byte-encoded normalization factor for the named field of
    * every document.  This is used by the search code to score documents.
    *
    * @see Field#setBoost(float)
    */
-  abstract public byte[] norms(String field) throws IOException;
+  public abstract byte[] norms(String field) throws IOException;
 
   /** Returns an enumeration of all the terms in the index.
     The enumeration is ordered by Term.compareTo().  Each term
     is greater than all that precede it in the enumeration.
    */
-  abstract public TermEnum terms() throws IOException;
+  public abstract TermEnum terms() throws IOException;
 
   /** Returns an enumeration of all terms after a given term.
     The enumeration is ordered by Term.compareTo().  Each term
     is greater than all that precede it in the enumeration.
    */
-  abstract public TermEnum terms(Term t) throws IOException;
+  public abstract TermEnum terms(Term t) throws IOException;
 
   /** Returns the number of documents containing the term <code>t</code>. */
-  abstract public int docFreq(Term t) throws IOException;
+  public abstract int docFreq(Term t) throws IOException;
 
   /** Returns an enumeration of all the documents which contain
     <code>term</code>. For each document, the document number, the frequency of
@@ -215,7 +215,7 @@ abstract public class IndexReader {
   }
 
   /** Returns an unpositioned {@link TermDocs} enumerator. */
-  abstract public TermDocs termDocs() throws IOException;
+  public abstract TermDocs termDocs() throws IOException;
 
   /** Returns an enumeration of all the documents which contain
     <code>term</code>.  For each document, in addition to the document number
@@ -239,7 +239,7 @@ abstract public class IndexReader {
   }
 
   /** Returns an unpositioned {@link TermPositions} enumerator. */
-  abstract public TermPositions termPositions() throws IOException;
+  public abstract TermPositions termPositions() throws IOException;
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
     deleted it will not appear in TermDocs or TermPostitions enumerations.
@@ -247,7 +247,7 @@ abstract public class IndexReader {
     method will result in an error.  The presence of this document may still be
     reflected in the {@link #docFreq} statistic, though
     this will be corrected eventually as the index is further modified.  */
-  public synchronized final void delete(int docNum) throws IOException {
+  public final synchronized void delete(int docNum) throws IOException {
     if (writeLock == null) {
       Lock writeLock = directory.makeLock("write.lock");
       if (!writeLock.obtain())			  // obtain write lock

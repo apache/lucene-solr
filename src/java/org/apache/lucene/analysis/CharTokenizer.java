@@ -63,8 +63,8 @@ public abstract class CharTokenizer extends Tokenizer {
   }
 
   private int offset = 0, bufferIndex=0, dataLen=0;
-  private final static int MAX_WORD_LEN = 255;
-  private final static int IO_BUFFER_SIZE = 1024;
+  private static final int MAX_WORD_LEN = 255;
+  private static final int IO_BUFFER_SIZE = 1024;
   private final char[] buffer = new char[MAX_WORD_LEN];
   private final char[] ioBuffer = new char[IO_BUFFER_SIZE];
 

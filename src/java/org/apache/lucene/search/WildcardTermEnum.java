@@ -94,7 +94,7 @@ public class WildcardTermEnum extends FilteredTermEnum {
       setEnum(reader.terms(new Term(searchTerm.field(), pre)));
   }
 
-  final protected boolean termCompare(Term term) {
+  protected final boolean termCompare(Term term) {
       if (field == term.field()) {
           String searchText = term.text();
           if (searchText.startsWith(pre)) {
@@ -105,11 +105,11 @@ public class WildcardTermEnum extends FilteredTermEnum {
       return false;
   }
 
-  final public float difference() {
+  public final float difference() {
     return 1.0f;
   }
 
-  final public boolean endEnum() {
+  public final boolean endEnum() {
     return endEnum;
   }
 

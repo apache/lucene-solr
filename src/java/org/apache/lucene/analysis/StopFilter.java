@@ -80,7 +80,7 @@ public final class StopFilter extends TokenFilter {
   /** Builds a Hashtable from an array of stop words, appropriate for passing
     into the StopFilter constructor.  This permits this table construction to
     be cached once when an Analyzer is constructed. */
-  public final static Hashtable makeStopTable(String[] stopWords) {
+  public static final Hashtable makeStopTable(String[] stopWords) {
     Hashtable stopTable = new Hashtable(stopWords.length);
     for (int i = 0; i < stopWords.length; i++)
       stopTable.put(stopWords[i], stopWords[i]);

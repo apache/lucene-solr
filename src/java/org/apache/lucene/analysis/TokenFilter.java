@@ -61,7 +61,7 @@ import java.io.IOException;
   This is an abstract class.
   */
 
-abstract public class TokenFilter extends TokenStream {
+public abstract class TokenFilter extends TokenStream {
   /** The source of tokens for this filter. */
   protected TokenStream input;
 

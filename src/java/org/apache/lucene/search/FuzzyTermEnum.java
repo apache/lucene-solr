@@ -63,7 +63,7 @@ import org.apache.lucene.index.TermEnum;
 
   <p>Term enumerations are always ordered by Term.compareTo().  Each term in
   the enumeration is greater than all that precede it.  */
-final public class FuzzyTermEnum extends FilteredTermEnum {
+public final class FuzzyTermEnum extends FilteredTermEnum {
     double distance;
     boolean fieldMatch = false;
     boolean endEnum = false;
@@ -86,7 +86,7 @@ final public class FuzzyTermEnum extends FilteredTermEnum {
      The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
      calculate the distance between the given term and the comparing term. 
      */
-    final protected boolean termCompare(Term term) {
+    protected final boolean termCompare(Term term) {
         if (field == term.field()) {
             String target = term.text();
             int targetlen = target.length();
@@ -98,11 +98,11 @@ final public class FuzzyTermEnum extends FilteredTermEnum {
         return false;
     }
     
-    final protected float difference() {
+    protected final float difference() {
         return (float)((distance - FUZZY_THRESHOLD) * SCALE_FACTOR);
     }
     
-    final public boolean endEnum() {
+    public final boolean endEnum() {
         return endEnum;
     }
     
@@ -116,7 +116,7 @@ final public class FuzzyTermEnum extends FilteredTermEnum {
     /**
      Finds and returns the smallest of three integers 
      */
-    private final static int min(int a, int b, int c) {
+    private static final int min(int a, int b, int c) {
         int t = (a < b) ? a : b;
         return (t < c) ? t : c;
     }
