@@ -1,5 +1,4 @@
 <?xml version="1.0"?>
-
 <project name="lucene-ant" default="default">
 
   <description>
@@ -18,5 +17,28 @@
 
   <property name="src.dir" location="src/main"/>
 
+  <!-- alias classpath for cleaner example in index target -->
+  <path id="index.classpath">
+    <path refid="test.classpath"/>
+  </path>
+
   <import file="../common.xml"/>
+
+  <property name="index.dir" location="${test.output.dir}/index"/>
+  <property name="files.dir" location="${test.src.dir}"/>
+
+  <target name="index" depends="compile">
+    <taskdef name="index"
+      classname="org.apache.lucene.ant.IndexTask"
+      classpathref="index.classpath"
+    />
+<!--    <typedef file="src/main/org/apache/lucene/ant/antlib.xml"
+      uri="lucene:/org/apache/lucene/ant"
+      classpathref="index.classpath"/> -->
+
+    <index index="${index.dir}">
+      <fileset dir="${files.dir}"/>
+    </index>
+  </target>
+
 </project>

@@ -1,5 +1,12 @@
 package org.apache.lucene.ant;
 
+import org.apache.lucene.document.Field;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+import org.w3c.tidy.Tidy;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -7,18 +14,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-
-// Imports commented out since there is a name clash and fully
-// qualified class names will be used in the code.  Imports are
-// left for ease of maintenance.
-import org.apache.lucene.document.Field;
-//import org.apache.lucene.document.Document;
-//import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-import org.w3c.tidy.Tidy;
 
 /**
  *  The <code>HtmlDocument</code> class creates a Lucene {@link
@@ -51,8 +46,8 @@ public class HtmlDocument {
         Tidy tidy = new Tidy();
         tidy.setQuiet(true);
         tidy.setShowWarnings(false);
-        org.w3c.dom.Document root = 
-                    tidy.parseDOM(new FileInputStream(file), null);
+        org.w3c.dom.Document root =
+                tidy.parseDOM(new FileInputStream(file), null);
         rawDoc = root.getDocumentElement();
     }
 
@@ -84,7 +79,7 @@ public class HtmlDocument {
      *@exception  IOException
      */
     public static org.apache.lucene.document.Document
-                   getDocument(InputStream is) throws IOException {
+            getDocument(InputStream is) throws IOException {
         HtmlDocument htmlDoc = new HtmlDocument(is);
         org.apache.lucene.document.Document luceneDoc =
                 new org.apache.lucene.document.Document();
@@ -109,7 +104,7 @@ public class HtmlDocument {
      *@exception  IOException
      */
     public static org.apache.lucene.document.Document
-                           Document(File file) throws IOException {
+            Document(File file) throws IOException {
         HtmlDocument htmlDoc = new HtmlDocument(file);
         org.apache.lucene.document.Document luceneDoc =
                 new org.apache.lucene.document.Document();
@@ -119,7 +114,7 @@ public class HtmlDocument {
 
         String contents = null;
         BufferedReader br =
-                          new BufferedReader(new FileReader(file));
+                new BufferedReader(new FileReader(file));
         StringWriter sw = new StringWriter();
         String line = br.readLine();
         while (line != null) {
@@ -153,7 +148,7 @@ public class HtmlDocument {
 //         System.out.println("Body  = " + doc.getBody());
 
         HtmlDocument doc =
-          new HtmlDocument(new FileInputStream(new File(args[0])));
+                new HtmlDocument(new FileInputStream(new File(args[0])));
         System.out.println("Title = " + doc.getTitle());
         System.out.println("Body  = " + doc.getBody());
     }

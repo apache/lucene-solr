@@ -1,19 +1,20 @@
 package org.apache.lucene.ant;
 
-import java.io.File;
 import org.apache.lucene.document.Document;
 
+import java.io.File;
+
 /**
- *  Decides which class used to create the Lucene Document
- *  object based on its file extension.
+ *  A DocumentHandler implementation to delegate responsibility to
+ *  based on a files extension.  Currently only .html and .txt
+ *  files are handled, other extensions ignored.
  *
  *@author     Erik Hatcher
  *@created    October 28, 2001
- *@todo Add dynamic file extension/classname mappings for
- *      extensibility
+ *@todo Implement dynamic document type lookup
  */
 public class FileExtensionDocumentHandler
-                                       implements DocumentHandler {
+        implements DocumentHandler {
     /**
      *  Gets the document attribute of the
      *  FileExtensionDocumentHandler object
@@ -25,7 +26,7 @@ public class FileExtensionDocumentHandler
      *      Exception
      */
     public Document getDocument(File file)
-                                  throws DocumentHandlerException {
+            throws DocumentHandlerException {
         Document doc = null;
 
         String name = file.getName();
@@ -38,8 +39,7 @@ public class FileExtensionDocumentHandler
             if (name.endsWith(".html")) {
                 doc = HtmlDocument.Document(file);
             }
-        }
-        catch (java.io.IOException e) {
+        } catch (java.io.IOException e) {
             throw new DocumentHandlerException(e);
         }
 

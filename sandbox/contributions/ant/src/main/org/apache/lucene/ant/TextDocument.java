@@ -1,13 +1,13 @@
 package org.apache.lucene.ant;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 
 /**
  *  A utility for making Lucene Documents from a File.
@@ -62,9 +62,10 @@ public class TextDocument {
         // make a new, empty document
         Document doc = new Document();
 
+        doc.add(Field.Text("title", f.getName()));
         doc.add(Field.Text("contents", textDoc.getContents()));
-        doc.add(Field.UnIndexed("rawcontents", 
-                                           textDoc.getContents()));
+        doc.add(Field.UnIndexed("rawcontents",
+                textDoc.getContents()));
 
         // return the document
         return doc;

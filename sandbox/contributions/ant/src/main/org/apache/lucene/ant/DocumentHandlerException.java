@@ -5,32 +5,42 @@ import java.io.PrintWriter;
 
 /**
  */
-public class DocumentHandlerException extends Exception
-{
+public class DocumentHandlerException extends Exception {
     private Throwable cause;
-    
+
+    /**
+     * Default constructor.
+     */
     public DocumentHandlerException() {
         super();
     }
-    
+
+    /**
+     * Constructs with message.
+     */
     public DocumentHandlerException(String message) {
         super(message);
     }
-    
+
+    /**
+     * Constructs with chained exception.
+     */
     public DocumentHandlerException(Throwable cause) {
         super(cause.toString());
         this.cause = cause;
     }
-    
+
+    /**
+     * Retrieves nested exception.
+     */
     public Throwable getException() {
         return cause;
     }
 
-    // Override stack trace methods to show original cause:
     public void printStackTrace() {
         printStackTrace(System.err);
     }
-    
+
     public void printStackTrace(PrintStream ps) {
         synchronized (ps) {
             super.printStackTrace(ps);
@@ -40,7 +50,7 @@ public class DocumentHandlerException extends Exception
             }
         }
     }
-    
+
     public void printStackTrace(PrintWriter pw) {
         synchronized (pw) {
             super.printStackTrace(pw);

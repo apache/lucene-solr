@@ -1,12 +1,11 @@
 package org.apache.lucene.ant;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.Vector;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.de.GermanAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -16,271 +15,372 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
-
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
+import org.apache.tools.ant.DynamicConfigurator;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.FileSet;
+import org.apache.tools.ant.types.EnumeratedAttribute;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Properties;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.ArrayList;
 
 /**
- * Builds a Lucene index from a fileset.
+ *  Ant task to index files with Lucene
  *
- * @author     Erik Hatcher
+ *@author Erik Hatcher
  */
 public class IndexTask extends Task {
-    /**
-     *  file list
-     */
-    private Vector filesets = new Vector();
+  /**
+   *  file list
+   */
+  private ArrayList filesets = new ArrayList();
 
-    /**
-     *  overwrite index?
-     */
-    private boolean overwrite = false;
+  /**
+   *  overwrite index?
+   */
+  private boolean overwrite = false;
 
-    /**
-     *  index path
-     */
-    private File indexPath;
+  /**
+   *  index path
+   */
+  private File indexDir;
 
-    /**
-     *  document handler classname
-     */
-    private String handlerClassName =
-            "org.apache.lucene.ant.FileExtensionDocumentHandler";
+  /**
+   *  document handler classname
+   */
+  private String handlerClassName =
+    FileExtensionDocumentHandler.class.getName();
 
-    /**
-     *  document handler instance
-     */
-    private DocumentHandler handler;
-
-    /**
-     *  Lucene merge factor
-     */
-    private int mergeFactor = 20;
+  /**
+   *  document handler instance
+   */
+  private DocumentHandler handler;
 
 
-    /**
-     *  Specifies the directory where the index will be stored
-     *
-     * @param  indexPath  The new index value
-     */
-    public void setIndex(File indexPath) {
-        this.indexPath = indexPath;
+  /**
+   *
+   */
+  private String analyzerClassName =
+    StandardAnalyzer.class.getName();
+
+  /**
+   *  analyzer instance
+   */
+  private Analyzer analyzer;
+
+  /**
+   *  Lucene merge factor
+   */
+  private int mergeFactor = 20;
+
+  private HandlerConfig handlerConfig;
+
+
+  /**
+   *  Creates new instance
+   */
+  public IndexTask() {
+  }
+
+
+  /**
+   *  Specifies the directory where the index will be stored
+   */
+  public void setIndex(File indexDir) {
+    this.indexDir = indexDir;
+  }
+
+
+  /**
+   *  Sets the mergeFactor attribute of the IndexTask object
+   *
+   *@param  mergeFactor  The new mergeFactor value
+   */
+  public void setMergeFactor(int mergeFactor) {
+    this.mergeFactor = mergeFactor;
+  }
+
+
+  /**
+   *  Sets the overwrite attribute of the IndexTask object
+   *
+   *@param  overwrite  The new overwrite value
+   */
+  public void setOverwrite(boolean overwrite) {
+    this.overwrite = overwrite;
+  }
+
+
+  /**
+   *  Sets the documentHandler attribute of the IndexTask object
+   *
+   *@param  classname  The new documentHandler value
+   */
+  public void setDocumentHandler(String classname) {
+    handlerClassName = classname;
+  }
+
+  /**
+   * Sets the analyzer based on the builtin Lucene analyzer types.
+   *
+   * @todo Enforce analyzer and analyzerClassName to be mutually exclusive
+   */
+  public void setAnalyzer(AnalyzerType type) {
+    analyzerClassName = type.getClassname();
+  }
+
+  public void setAnalyzerClassName(String classname) {
+    analyzerClassName = classname;
+  }
+
+  /**
+   *  Adds a set of files (nested fileset attribute).
+   *
+   *@param  set  FileSet to be added
+   */
+  public void addFileset(FileSet set) {
+    filesets.add(set);
+  }
+
+  /**
+   * Sets custom properties for a configurable document handler.
+   */
+  public void addConfig(HandlerConfig config) throws BuildException {
+    if (handlerConfig != null) {
+      throw new BuildException("Only one config element allowed");
     }
 
-    /**
-     *  Sets the mergeFactor attribute of the IndexTask object
-     *
-     *@param  mergeFactor  The new mergeFactor value
-     */
-    public void setMergeFactor(int mergeFactor) {
-        this.mergeFactor = mergeFactor;
+    handlerConfig = config;
+  }
+
+
+  /**
+   *  Begins the indexing
+   *
+   *@exception  BuildException  If an error occurs indexing the
+   *      fileset
+   */
+  public void execute() throws BuildException {
+
+    // construct handler and analyzer dynamically
+    try {
+      Class clazz = Class.forName(handlerClassName);
+      handler = (DocumentHandler) clazz.newInstance();
+
+      clazz = Class.forName(analyzerClassName);
+      analyzer = (Analyzer) clazz.newInstance();
+    } catch (ClassNotFoundException cnfe) {
+      throw new BuildException(cnfe);
+    } catch (InstantiationException ie) {
+      throw new BuildException(ie);
+    } catch (IllegalAccessException iae) {
+      throw new BuildException(iae);
     }
 
+    log("Document handler = " + handler.getClass(), Project.MSG_VERBOSE);
+    log("Analyzer = " + analyzer.getClass(), Project.MSG_VERBOSE);
 
-    /**
-     * If true, index will be overwritten.
-     *
-     * @param  overwrite  The new overwrite value
-     */
-    public void setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
+    if (handler instanceof ConfigurableDocumentHandler) {
+      ((ConfigurableDocumentHandler) handler).configure(handlerConfig.getProperties());
     }
 
+    try {
+      indexDocs();
+    } catch (IOException e) {
+      throw new BuildException(e);
+    }
+  }
 
-    /**
-     * Classname of document handler.
-     *
-     * @param  classname  The new documentHandler value
-     */
-    public void setDocumentHandler(String classname) {
-        handlerClassName = classname;
+
+  /**
+   * Index the fileset.
+   *
+   *@exception  IOException if Lucene I/O exception
+   *@todo refactor!!!!!
+   */
+  private void indexDocs() throws IOException {
+    Date start = new Date();
+
+    boolean create = overwrite;
+    // If the index directory doesn't exist,
+    // create it and force create mode
+    if (indexDir.mkdirs() && !overwrite) {
+      create = true;
     }
 
-
-    /**
-     *  Adds a set of files.
-     *
-     * @param  set  FileSet to be added
-     */
-    public void addFileset(FileSet set) {
-        filesets.addElement(set);
+    Searcher searcher = null;
+    boolean checkLastModified = false;
+    if (!create) {
+      try {
+        searcher = new IndexSearcher(indexDir.getAbsolutePath());
+        checkLastModified = true;
+      } catch (IOException ioe) {
+        log("IOException: " + ioe.getMessage());
+        // Empty - ignore, which indicates to index all
+        // documents
+      }
     }
 
+    log("checkLastModified = " + checkLastModified, Project.MSG_VERBOSE);
 
-    /**
-     *  Begins the indexing
-     *
-     * @exception  BuildException  If an error occurs indexing the
-     *      fileset
-     * @todo add classpath handling so handler does not
-     *       have to be in system classpath
-     */
-    public void execute() throws BuildException {
-        try {
-            Class clazz = Class.forName(handlerClassName);
-            handler = (DocumentHandler) clazz.newInstance();
-        }
-        catch (ClassNotFoundException cnfe) {
-            throw new BuildException(cnfe);
-        }
-        catch (InstantiationException ie) {
-            throw new BuildException(ie);
-        }
-        catch (IllegalAccessException iae) {
-            throw new BuildException(iae);
-        }
+    IndexWriter writer =
+      new IndexWriter(indexDir, analyzer, create);
+    int totalFiles = 0;
+    int totalIndexed = 0;
+    int totalIgnored = 0;
+    try {
+      writer.mergeFactor = mergeFactor;
 
-        try {
-            indexDocs();
-        }
-        catch (IOException e) {
-            throw new BuildException(e);
-        }
-    }
+      for (int i = 0; i < filesets.size(); i++) {
+        FileSet fs = (FileSet) filesets.get(i);
+        if (fs != null) {
+          DirectoryScanner ds =
+            fs.getDirectoryScanner(getProject());
+          String[] dsfiles = ds.getIncludedFiles();
+          File baseDir = ds.getBasedir();
 
+          for (int j = 0; j < dsfiles.length; j++) {
+            File file = new File(baseDir, dsfiles[j]);
+            totalFiles++;
 
-    /**
-     *  index the fileset
-     *
-     * @exception  IOException  Description of Exception
-     * @todo refactor - definitely lots of room for improvement here
-     */
-    private void indexDocs() throws IOException {
-        Date start = new Date();
-
-        boolean create = overwrite;
-        // If the index directory doesn't exist,
-        // create it and force create mode
-        if (indexPath.mkdirs() && !overwrite) {
-            create = true;
-        }
-
-        Searcher searcher = null;
-        Analyzer analyzer = new StopAnalyzer();
-        boolean checkLastModified = false;
-        if (!create) {
-            try {
-                searcher = new IndexSearcher(indexPath.getAbsolutePath());
-                checkLastModified = true;
+            if (!file.exists() || !file.canRead()) {
+              throw new BuildException("File \"" +
+                                       file.getAbsolutePath()
+                                       + "\" does not exist or is not readable.");
             }
-            catch (IOException ioe) {
-                log("IOException: " + ioe.getMessage());
-                // Empty - ignore, which indicates to index all
-                // documents
-            }
-        }
 
-        log("checkLastModified = " + checkLastModified);
+            boolean indexIt = true;
 
-        IndexWriter writer =
-                       new IndexWriter(indexPath, analyzer, create);
-        int totalFiles = 0;
-        int totalIndexed = 0;
-        int totalIgnored = 0;
-        try {
-            writer.mergeFactor = mergeFactor;
+            if (checkLastModified) {
+              Hits hits = null;
+              Term pathTerm =
+                new Term("path", file.getPath());
+              TermQuery query =
+                new TermQuery(pathTerm);
+              hits = searcher.search(query);
 
-            for (int i = 0; i < filesets.size(); i++) {
-                FileSet fs = (FileSet) filesets.elementAt(i);
-                if (fs != null) {
-                    DirectoryScanner ds =
-                                   fs.getDirectoryScanner(getProject());
-                    String[] dsfiles = ds.getIncludedFiles();
-                    File baseDir = ds.getBasedir();
-
-                    for (int j = 0; j < dsfiles.length; j++) {
-                        File file = new File(baseDir, dsfiles[j]);
-                        totalFiles++;
-
-                        if (!file.exists() || !file.canRead()) {
-                            throw new BuildException("File \"" +
-                        file.getAbsolutePath()
-                        + "\" does not exist or is not readable.");
-                        }
-
-                        boolean indexIt = true;
-
-                        if (checkLastModified) {
-                            Hits hits = null;
-                            Term pathTerm =
-                                  new Term("path", file.getPath());
-                            TermQuery query =
-                                           new TermQuery(pathTerm);
-                            hits = searcher.search(query);
-
-                            // if document is found, compare the
-                            // indexed last modified time with the
-                            // current file
-                            // - don't index if up to date
-                            if (hits.length() > 0) {
-                                Document doc = hits.doc(0);
-                                String indexModified =
-                                               doc.get("modified");
-                                if (indexModified != null) {
-                                    if (DateField.stringToTime(indexModified)
-                                             == file.lastModified()) {
-                                        indexIt = false;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (indexIt) {
-                            try {
-                                log("Indexing " + file.getPath(),
-                                    Project.MSG_VERBOSE);
-                                Document doc =
-                                         handler.getDocument(file);
-
-                                if (doc == null) {
-                                    totalIgnored++;
-                                }
-                                else {
-                                    // Add the path of the file as a field named "path".  Use a Text field, so
-                                    // that the index stores the path, and so that the path is searchable
-                                    doc.add(Field.Keyword("path", file.getPath()));
-
-                                    // Add the last modified date of the file a field named "modified".  Use a
-                                    // Keyword field, so that it's searchable, but so that no attempt is made
-                                    // to tokenize the field into words.
-                                    doc.add(Field.Keyword("modified",
-                                            DateField.timeToString(file.lastModified())));
-
-                                    writer.addDocument(doc);
-                                    totalIndexed++;
-                                }
-                            }
-                            catch (DocumentHandlerException e) {
-                                throw new BuildException(e);
-                            }
-                        }
-                    }
-                    // for j
+              // if document is found, compare the
+              // indexed last modified time with the
+              // current file
+              // - don't index if up to date
+              if (hits.length() > 0) {
+                Document doc = hits.doc(0);
+                String indexModified =
+                  doc.get("modified").trim();
+                if (indexModified != null) {
+                  if (DateField.stringToTime(indexModified)
+                    == file.lastModified()) {
+                    indexIt = false;
+                  }
                 }
-                // if (fs != null)
+              }
             }
-            // for i
 
-            writer.optimize();
-        }
-        //try
-        finally {
-            // always make sure everything gets closed,
-            // no matter how we exit.
-            writer.close();
-            if (searcher != null) {
-                searcher.close();
+            if (indexIt) {
+              try {
+                log("Indexing " + file.getPath(),
+                    Project.MSG_VERBOSE);
+                Document doc =
+                  handler.getDocument(file);
+
+                if (doc == null) {
+                  totalIgnored++;
+                } else {
+                  // Add the path of the file as a field named "path".  Use a Text field, so
+                  // that the index stores the path, and so that the path is searchable
+                  doc.add(Field.Keyword("path", file.getPath()));
+
+                  // Add the last modified date of the file a field named "modified".  Use a
+                  // Keyword field, so that it's searchable, but so that no attempt is made
+                  // to tokenize the field into words.
+                  doc.add(Field.Keyword("modified",
+                                        DateField.timeToString(file.lastModified())));
+
+                  writer.addDocument(doc);
+                  totalIndexed++;
+                }
+              } catch (DocumentHandlerException e) {
+                throw new BuildException(e);
+              }
             }
+          }
+          // for j
         }
+        // if (fs != null)
+      }
+      // for i
 
-        Date end = new Date();
-
-        log(totalIndexed + " out of " + totalFiles + " indexed (" +
-                totalIgnored + " ignored) in " + (end.getTime() - start.getTime()) +
-                " milliseconds");
+      writer.optimize();
     }
+      //try
+    finally {
+      // always make sure everything gets closed,
+      // no matter how we exit.
+      writer.close();
+      if (searcher != null) {
+        searcher.close();
+      }
+    }
+
+    Date end = new Date();
+
+    log(totalIndexed + " out of " + totalFiles + " indexed (" +
+        totalIgnored + " ignored) in " + (end.getTime() - start.getTime()) +
+        " milliseconds");
+  }
+
+  public static class HandlerConfig implements DynamicConfigurator {
+    Properties props = new Properties();
+
+    public void setDynamicAttribute(String attributeName, String value) throws BuildException {
+      props.setProperty(attributeName, value);
+    }
+
+    public Object createDynamicElement(String elementName) throws BuildException {
+      throw new BuildException("Sub elements not supported");
+    }
+
+    public Properties getProperties() {
+      return props;
+    }
+  }
+
+  /**
+   * @todo - the RusionAnalyzer requires a constructor argument
+   *         so its being removed from here until a mechanism
+   *         is developed to pass ctor info somehow
+   */
+  public static class AnalyzerType extends EnumeratedAttribute {
+    private static Map analyzerLookup = new HashMap();
+
+    static {
+      analyzerLookup.put("simple", SimpleAnalyzer.class.getName());
+      analyzerLookup.put("standard", StandardAnalyzer.class.getName());
+      analyzerLookup.put("stop", StopAnalyzer.class.getName());
+      analyzerLookup.put("whitespace", WhitespaceAnalyzer.class.getName());
+      analyzerLookup.put("german", GermanAnalyzer.class.getName());
+//            analyzerLookup.put("russian", RussianAnalyzer.class.getName());
+    }
+
+    /**
+     * @see EnumeratedAttribute#getValues
+     */
+    public String[] getValues() {
+      Set keys = analyzerLookup.keySet();
+      return (String[]) keys.toArray(new String[0]);
+    }
+
+    public String getClassname() {
+      return (String) analyzerLookup.get(getValue());
+    }
+  }
 }
 
