@@ -2,26 +2,25 @@
 
   <property name="dist.dir" location="dist"/>
 
-  <target name="clean">
-    <subant target="clean">
-      <property name="dist.dir" location="${dist.dir}"/>
+  <macrodef name="crawl">
+    <attribute name="target"/>
+    <sequential>
+      <subant target="@{target}" failonerror="false">
+        <property name="dist.dir" location="${dist.dir}"/>
 
-      <fileset dir="."
-               includes="*/build.xml"
-      />
-    </subant>
+        <fileset dir="."
+                 includes="*/build.xml"
+                 excludes="webcrawler-LARM/build.xml,taglib/build.xml"
+        />
+      </subant>
+    </sequential>
+  </macrodef>
+
+  <target name="clean">
+    <crawl target="clean"/>
   </target>
 
   <target name="build-tree">
-    <subant target="">
-      <property name="dist.dir" location="${dist.dir}"/>
-
-      <!-- LARM now lives at SourceForge.  taglib compiles, but JSP is busted
-      -->
-      <fileset dir="."
-               includes="*/build.xml"
-               excludes="webcrawler-LARM/build.xml,taglib/build.xml"
-      />
-    </subant>
+    <crawl target=""/>
   </target>
 </project>
