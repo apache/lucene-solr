@@ -234,7 +234,7 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="Chainable Filter">
+            <subsection name="Chained Filter">
                 <p>
                 </p>
                 <table>
@@ -243,8 +243,8 @@
                             URL
                         </th>
                         <td>
-                            <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg01168.html">
-                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg01168.html
+                            <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/filters/ChainedFilter.java">
+                                http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/filters/ChainedFilter.java
                             </a>
                         </td>
                     </tr>
@@ -253,31 +253,7 @@
                             author
                         </th>
                         <td>
-                            Kelvin Tan - kelvin@relevanz.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-            <subsection name="Multiple Field Searching">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00775.html">
-                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00775.html
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Kelvin Tan - kelvin@relevanz.com
+                            Kelvin Tan - kelvint at apache.org
                         </td>
                     </tr>
                 </table>
