@@ -66,6 +66,8 @@ final class TermInfosReader {
   final void close() throws IOException {
     if (origEnum != null)
       origEnum.close();
+    if (indexEnum != null)
+      indexEnum.close();
   }
 
   /** Returns the number of term/value pairs in the set. */
