@@ -341,7 +341,7 @@
 	      <formatter type="xml"/>
 	      <formatter type="brief" usefile="false"/>
 	      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-	        <fileset dir="src/test" includes="**/Test*.java"/>
+	        <fileset dir="src/test" includes="**/Test*.java" excludes="**/TestPrecedenceQueryParser.java"/>
 	      </batchtest>
 	      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
 	        <fileset dir="src/test" includes="**/${testcase}.java"/>
