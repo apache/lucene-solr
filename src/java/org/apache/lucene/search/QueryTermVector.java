@@ -147,63 +147,23 @@ public class QueryTermVector implements TermFreqVector {
     }
   
 
-  /** 
-   * @return The number of terms in the term vector.
-   */
   public int size() {
     return terms.length;
   }
 
-  /** Returns an array of positions in which the term is found or null if no position information is
-   * available or positions are not implemented.
-   *  Terms are identified by the index at which its number appears in the
-   *  term array obtained from <code>getTerms</code> method.
-   */
-  public int[] getTermPositions(int index) {
-    return null;
-  }
-
-  /** 
-   * @return An Array of term texts in ascending order.
-   */
   public String[] getTerms() {
     return terms;
   }
 
-  /** Array of term frequencies. Locations of the array correspond one to one
-   *  to the term numbers in the array obtained from <code>getTermNumbers</code>
-   *  method. Each location in the array contains the number of times this
-   *  term occurs in the document or the document field.
-   */
   public int[] getTermFrequencies() {
     return termFreqs;
   }
 
-  /** Return a string representation of the vector, but use the provided IndexReader
-   *  to obtain text for each term and include the text instead of term numbers.
-   */
-  public String toString(IndexReader ir) throws IOException {
-    return toString();
-  }
-
-  /** Return an index in the term numbers array returned from <code>getTermNumbers</code>
-   *  at which the term with the specified <code>termNumber</code> appears. If this
-   *  term does not appear in the array, return -1.
-   */
   public int indexOf(String term) {
     int res = Arrays.binarySearch(terms, term);
         return res >= 0 ? res : -1;
   }
 
-  /** Just like <code>indexOf(int)</code> but searches for a number of terms
-   *  at the same time. Returns an array that has the same size as the number
-   *  of terms searched for, each slot containing the result of searching for
-   *  that term number.
-   *
-   *  @param terms array containing terms to look for
-   *  @param start index in the array where the list of terms starts
-   *  @param len the number of terms in the list
-   */
   public int[] indexesOf(String[] terms, int start, int len) {
     int res[] = new int[len];
 

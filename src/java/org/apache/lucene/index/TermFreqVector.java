@@ -25,27 +25,17 @@ public interface TermFreqVector {
 
 
   /** Array of term frequencies. Locations of the array correspond one to one
-   *  to the term numbers in the array obtained from <code>getTermNumbers</code>
+   *  to the terms in the array obtained from <code>getTerms</code>
    *  method. Each location in the array contains the number of times this
    *  term occurs in the document or the document field.
    */
   public int[] getTermFrequencies();
   
-  
-  /** Return a string representation of the vector.
-   */
-  public String toString();
 
-
-  /** Return a string representation of the vector, but use the provided IndexReader
-   *  to obtain text for each term and include the text instead of term numbers.
-   */
-  public String toString(IndexReader ir) throws IOException;
-
-
-  /** Return an index in the term numbers array returned from <code>getTermNumbers</code>
-   *  at which the term with the specified <code>termNumber</code> appears. If this
-   *  term does not appear in the array, return -1.
+  /** Return an index in the term numbers array returned from
+   *  <code>getTerms</code> at which the term with the specified
+   *  <code>term</code> appears. If this term does not appear in the array,
+   *  return -1.
    */
   public int indexOf(String term);
 
