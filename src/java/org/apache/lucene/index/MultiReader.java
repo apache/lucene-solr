@@ -247,7 +247,7 @@ public class MultiReader extends IndexReader {
   }
 
   /**
-   * @see IndexReader#getFieldNames(IndexReader.FieldNames fldOption)
+   * @see IndexReader#getFieldNames(IndexReader.FieldOption)
    */
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
     // maintain a unique set of field names

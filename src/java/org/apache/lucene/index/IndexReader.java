@@ -574,7 +574,7 @@ public abstract class IndexReader {
    * @return Collection of Strings indicating the names of the fields
    * @throws IOException if there is a problem with accessing the index
    * 
-   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
+   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
    */
   public abstract Collection getFieldNames() throws IOException;
 
@@ -587,7 +587,7 @@ public abstract class IndexReader {
    * @return Collection of Strings indicating the names of the fields
    * @throws IOException if there is a problem with accessing the index
    * 
-   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
+   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
    */
   public abstract Collection getFieldNames(boolean indexed) throws IOException;
 
@@ -597,7 +597,7 @@ public abstract class IndexReader {
    *                        else only indexed fields without term vector info 
    * @return Collection of Strings indicating the names of the fields
    * 
-   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
+   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
    */ 
   public Collection getIndexedFieldNames(boolean storedTermVector){
     if(storedTermVector){
@@ -619,7 +619,7 @@ public abstract class IndexReader {
    * @param tvSpec specifies which term vector information should be available for the fields
    * @return Collection of Strings indicating the names of the fields
    * 
-   * @deprecated  Replaced by {@link #getFieldNames (IndexReader.FieldOption fldOption)}
+   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
    */
   public abstract Collection getIndexedFieldNames(Field.TermVector tvSpec);
   
