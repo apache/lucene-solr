@@ -56,7 +56,7 @@ package org.apache.lucene.search;
 
 /** Expert: Returned by low-level search implementations.
  * @see Searcher#search(Query,Filter,int) */
-public class TopDocs {
+public class TopDocs implements java.io.Serializable {
   /** Expert: The total number of hits for the query.
    * @see Hits#length()
   */

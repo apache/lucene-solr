@@ -111,6 +111,11 @@
       debug="${debug}">
       <classpath refid="classpath"/>
     </javac>
+
+    <rmic classname="org.apache.lucene.search.RemoteSearchableImpl"
+          base="${build.classes}">
+      <classpath refid="classpath"/>
+    </rmic>
   </target>
 
   <!-- ================================================================== -->

@@ -64,7 +64,7 @@ import java.util.Enumeration;
  * stored fields which uniquely identify it.
  * */
 
-public final class Document {
+public final class Document implements java.io.Serializable {
   DocumentFieldList fieldList = null;
 
   /** Constructs a new document with no fields. */
@@ -118,7 +118,7 @@ public final class Document {
 
 }
 
-final class DocumentFieldList {
+final class DocumentFieldList implements java.io.Serializable {
   DocumentFieldList(Field f, DocumentFieldList n) {
     field = f;
     next = n;

@@ -65,7 +65,7 @@ import java.util.Date;
   index, so that they may be returned with hits on the document.
   */
 
-public final class Field {
+public final class Field implements java.io.Serializable {
   private String name = "body";
   private String stringValue = null;
   private Reader readerValue = null;

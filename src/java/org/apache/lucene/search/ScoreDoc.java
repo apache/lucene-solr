@@ -56,7 +56,7 @@ package org.apache.lucene.search;
 
 /** Expert: Returned by low-level search implementations.
  * @see TopDocs */
-public class ScoreDoc {
+public class ScoreDoc implements java.io.Serializable {
   /** Expert: The score of this document for the query. */
   public float score;
 

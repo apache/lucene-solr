@@ -54,58 +54,63 @@ package org.apache.lucene.search;
  * <http://www.apache.org/>.
  */
 
-import java.io.IOException;
-import org.apache.lucene.document.Document;
+import java.rmi.Naming;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
-/** The interface for search implementations. */
-public interface Searchable extends java.rmi.Remote {
-  /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
-   * scoring document.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   *
-   * @param query to match documents
-   * @param filter if non-null, a bitset used to eliminate some documents
-   * @param results to receive hits
-   */
-  void search(Query query, Filter filter, HitCollector results)
-    throws IOException;
+public class TestRemoteSearchable extends TestCase {
+  public TestRemoteSearchable(String name) {
+    super(name);
+  }
 
-  /** Frees resources associated with this Searcher. */
-  void close() throws IOException;
+  public static void startServer() throws Exception {
+    // construct an index
+    RAMDirectory indexStore = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(),true);
+    Document doc = new Document();
+    doc.add(Field.Text("test", "test"));
+    writer.addDocument(doc);
+    writer.optimize();
+    writer.close();
 
-  /** Expert: Returns the number of documents containing <code>term</code>.
-   * Called by search code to compute term weights.
-   * @see IndexReader#docFreq(Term).
-   */
-  int docFreq(Term term) throws IOException;
+    // publish it
+    LocateRegistry.createRegistry(1099);
+    Searchable local = new IndexSearcher(indexStore);
+    RemoteSearchableImpl impl = new RemoteSearchableImpl(local);
+    Naming.rebind("//localhost/Searchable", impl);
+  }
 
-  /** Expert: Returns one greater than the largest possible document number.
-   * Called by search code to compute term weights.
-   * @see IndexReader#maxDoc().
-   */
-  int maxDoc() throws IOException;
+  public static void search() throws Exception {
+    // try to search the published index
+    Searchable remote = (Searchable)Naming.lookup("//localhost/Searchable");
+    Searchable[] searchables = {remote};
+    Searcher searcher = new MultiSearcher(searchables);
+    Query query = new TermQuery(new Term("test", "test"));
+    Hits result = searcher.search(query);
 
-  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   *
-   * <p>Called by {@link Hits}.
-   *
-   * <p>Applications should usually call {@link Searcher#search(Query)} or
-   * {@link Searcher#search(Query,Filter)} instead.
-   */
-  TopDocs search(Query query, Filter filter, int n) throws IOException;
+    assertEquals(1, result.length());
+    assertEquals("test", result.doc(0).get("test"));
+  }
+  
+  public void testRemoteSearch() throws Exception { 
+    startServer();
+    search();
+  }
 
-  /** Expert: Returns the stored fields of document <code>i</code>.
-   * Called by {@link HitCollector} implementations.
-   * @see IndexReader#document(int).
-   */
-  Document doc(int i) throws IOException;
+  public static void main(String[] args) throws Exception {
+    startServer();
+    search();
+    System.exit(0);
+  }
 }
