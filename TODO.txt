@@ -74,9 +74,10 @@ $Revision$
   c.f.
   http://www.mail-archive.com/lucene-dev@jakarta.apache.org/msg00101.html
 
-- Alex Murzaku contributed some code for dealing with Russian.
+- Boris Okner contributed some code for dealing with Russian.
   c.f.
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=115631
+  Status: COMPLETED
 
 - A lady from Finland submitted code for handling Finnish.
 
