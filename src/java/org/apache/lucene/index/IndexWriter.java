@@ -311,6 +311,10 @@ public class IndexWriter {
     }
   }
 
+  final int getSegmentsCounter(){
+    return segmentInfos.counter;
+  }
+  
   private final synchronized String newSegmentName() {
     return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
   }
