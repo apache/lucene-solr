@@ -78,6 +78,10 @@ New features
     compound index file.
     (adapted from code contributed by Garrett Rooney; committed by Bernhard)
     
+13. Add IndexWriter.setTermIndexInterval() method.  See javadocs.
+    (Doug Cutting)
+
+    
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 

@@ -61,20 +61,22 @@ final class TermInfosWriter {
 
   private TermInfosWriter other = null;
 
-  TermInfosWriter(Directory directory, String segment, FieldInfos fis)
+  TermInfosWriter(Directory directory, String segment, FieldInfos fis,
+                  int interval)
        throws IOException {
-    initialize(directory, segment, fis, false);
-    other = new TermInfosWriter(directory, segment, fis, true);
+    initialize(directory, segment, fis, interval, false);
+    other = new TermInfosWriter(directory, segment, fis, interval, true);
     other.other = this;
   }
 
   private TermInfosWriter(Directory directory, String segment, FieldInfos fis,
-        boolean isIndex) throws IOException {
-    initialize(directory, segment, fis, isIndex);
+                          int interval, boolean isIndex) throws IOException {
+    initialize(directory, segment, fis, interval, isIndex);
   }
 
   private void initialize(Directory directory, String segment, FieldInfos fis,
-         boolean isi) throws IOException {
+                          int interval, boolean isi) throws IOException {
+    indexInterval = interval;
     fieldInfos = fis;
     isIndex = isi;
     output = directory.createOutput(segment + (isIndex ? ".tii" : ".tis"));

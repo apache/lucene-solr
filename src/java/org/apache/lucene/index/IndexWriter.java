@@ -103,6 +103,16 @@ public class IndexWriter {
       "10000"));
 
 
+  /** The default value for {@link #getTermIndexInterval()}.  This is
+   * determined by the <code>org.apache.lucene.termIndexInterval</code> system
+   * property.  The default is 128.
+   */
+  public static final int DEFAULT_TERM_INDEX_INTERVAL =
+    Integer.parseInt(System.getProperty("org.apache.lucene.termIndexInterval",
+                                        "128"));
+
+
+
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
 
@@ -112,6 +122,8 @@ public class IndexWriter {
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
 
   private Lock writeLock;
+
+  private int termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
 
   /** Use compound file setting. Defaults to true, minimizing the number of
    * files used.  Setting this to false may improve indexing performance, but
@@ -153,6 +165,26 @@ public class IndexWriter {
   public Similarity getSimilarity() {
     return this.similarity;
   }
+
+  /** Expert: Set the interval between indexed terms.  Large values cause less
+   * memory to be used by IndexReader, but slow random-access to terms.  Small
+   * values cause more memory to be used by an IndexReader, and speed
+   * random-access to terms.  In particular,
+   * <code>numUniqueTerms/interval</code> terms are read into memory by an
+   * IndexReader, and, on average, <code>interval/2</code> terms must be
+   * scanned for each random term access.
+   *
+   * @see #DEFAULT_TERM_INDEX_INTERVAL
+   */
+  public void setTermIndexInterval(int interval) {
+    this.termIndexInterval = interval;
+  }
+
+  /** Expert: Return the interval between indexed terms.
+   *
+   * @see #setTermIndexInterval(int)
+   */
+  public int getTermIndexInterval() { return termIndexInterval; }
 
   /**
    * Constructs an IndexWriter for the index in <code>path</code>.
@@ -359,6 +391,11 @@ public class IndexWriter {
     }
   }
 
+  /** Returns the Directory used by this index. */
+  public Directory getDirectory() {
+      return directory;
+  }
+
   /** Returns the analyzer used by this index. */
   public Analyzer getAnalyzer() {
       return analyzer;
@@ -408,7 +445,7 @@ public class IndexWriter {
    */
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
     DocumentWriter dw =
-      new DocumentWriter(ramDirectory, analyzer, similarity, maxFieldLength);
+      new DocumentWriter(ramDirectory, analyzer, this);
     dw.setInfoStream(infoStream);
     String segmentName = newSegmentName();
     dw.addDocument(segmentName, doc);
@@ -514,7 +551,7 @@ public class IndexWriter {
     optimize();					  // start with zero or 1 seg
 
     final String mergedName = newSegmentName();
-    SegmentMerger merger = new SegmentMerger(directory, mergedName);
+    SegmentMerger merger = new SegmentMerger(this, mergedName);
 
     final Vector segmentsToDelete = new Vector();
     IndexReader sReader = null;
@@ -609,7 +646,7 @@ public class IndexWriter {
     final String mergedName = newSegmentName();
     if (infoStream != null) infoStream.print("merging segments");
     SegmentMerger merger =
-        new SegmentMerger(directory, mergedName);
+        new SegmentMerger(this, mergedName);
 
     final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < segmentInfos.size(); i++) {

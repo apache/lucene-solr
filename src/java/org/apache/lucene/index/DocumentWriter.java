@@ -39,10 +39,11 @@ final class DocumentWriter {
   private Similarity similarity;
   private FieldInfos fieldInfos;
   private int maxFieldLength;
+  private int termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
   private PrintStream infoStream;
 
-  /**
-   * 
+  /** This ctor used by test code only.
+   *
    * @param directory The directory to write the document information to
    * @param analyzer The analyzer to use for the document
    * @param similarity The Similarity function
@@ -54,6 +55,14 @@ final class DocumentWriter {
     this.analyzer = analyzer;
     this.similarity = similarity;
     this.maxFieldLength = maxFieldLength;
+  }
+
+  DocumentWriter(Directory directory, Analyzer analyzer, IndexWriter writer) {
+    this.directory = directory;
+    this.analyzer = analyzer;
+    this.similarity = writer.getSimilarity();
+    this.maxFieldLength = writer.getMaxFieldLength();
+    this.termIndexInterval = writer.getTermIndexInterval();
   }
 
   final void addDocument(String segment, Document doc)
@@ -295,7 +304,8 @@ final class DocumentWriter {
       //open files for inverse index storage
       freq = directory.createOutput(segment + ".frq");
       prox = directory.createOutput(segment + ".prx");
-      tis = new TermInfosWriter(directory, segment, fieldInfos);
+      tis = new TermInfosWriter(directory, segment, fieldInfos,
+                                termIndexInterval);
       TermInfo ti = new TermInfo();
       String currentField = null;
 

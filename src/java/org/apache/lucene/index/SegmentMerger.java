@@ -39,6 +39,7 @@ import org.apache.lucene.store.RAMOutputStream;
 final class SegmentMerger {
   private Directory directory;
   private String segment;
+  private int termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
 
   private Vector readers = new Vector();
   private FieldInfos fieldInfos;
@@ -51,7 +52,7 @@ final class SegmentMerger {
     "tvx", "tvd", "tvf"
   };
 
-  /**
+  /** This ctor used only by test code.
    * 
    * @param dir The Directory to merge the other segments into
    * @param name The name of the new segment
@@ -59,6 +60,12 @@ final class SegmentMerger {
   SegmentMerger(Directory dir, String name) {
     directory = dir;
     segment = name;
+  }
+
+  SegmentMerger(IndexWriter writer, String name) {
+    directory = writer.getDirectory();
+    segment = name;
+    termIndexInterval = writer.getTermIndexInterval();
   }
 
   /**
@@ -220,7 +227,8 @@ final class SegmentMerger {
       freqOutput = directory.createOutput(segment + ".frq");
       proxOutput = directory.createOutput(segment + ".prx");
       termInfosWriter =
-              new TermInfosWriter(directory, segment, fieldInfos);
+              new TermInfosWriter(directory, segment, fieldInfos,
+                                  termIndexInterval);
       skipInterval = termInfosWriter.skipInterval;
       queue = new SegmentMergeQueue(readers.size());
 
