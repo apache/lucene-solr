@@ -49,7 +49,7 @@ public class CheckHits {
       actual.add(new Integer(hits.id(i)));
     }
 
-    testCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+    TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
   }
 
   public static void printDocNrs(Hits hits) throws IOException {
