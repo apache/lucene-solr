@@ -16,7 +16,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 
 /**
