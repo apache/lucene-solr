@@ -53,13 +53,13 @@ public interface Searchable extends java.rmi.Remote {
 
   /** Expert: Returns the number of documents containing <code>term</code>.
    * Called by search code to compute term weights.
-   * @see IndexReader#docFreq(Term).
+   * @see IndexReader#docFreq(Term)
    */
   int docFreq(Term term) throws IOException;
 
   /** Expert: Returns one greater than the largest possible document number.
    * Called by search code to compute term weights.
-   * @see IndexReader#maxDoc().
+   * @see IndexReader#maxDoc()
    */
   int maxDoc() throws IOException;
 
@@ -75,7 +75,7 @@ public interface Searchable extends java.rmi.Remote {
 
   /** Expert: Returns the stored fields of document <code>i</code>.
    * Called by {@link HitCollector} implementations.
-   * @see IndexReader#document(int).
+   * @see IndexReader#document(int)
    */
   Document doc(int i) throws IOException;
 
