@@ -62,6 +62,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.File;
 import java.io.Reader;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -82,14 +83,14 @@ public class GermanAnalyzer extends Analyzer {
    */
   private String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
-    "der", "die", "das", "dass", "daß",
+    "der", "die", "das", "dass", "daï¿½",
     "du", "er", "sie", "es",
     "was", "wer", "wie", "wir",
     "und", "oder", "ohne", "mit",
     "am", "im", "in", "aus", "auf",
     "ist", "sein", "war", "wird",
     "ihr", "ihre", "ihres",
-    "als", "für", "von", "mit",
+    "als", "fï¿½r", "von", "mit",
     "dich", "dir", "mich", "mir",
     "mein", "sein", "kein",
     "durch", "wegen", "wird"
@@ -129,7 +130,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public GermanAnalyzer(File stopwords) {
+  public GermanAnalyzer(File stopwords) throws IOException {
     stopSet = new HashSet(WordlistLoader.getWordtable(stopwords).keySet());
   }
 
@@ -150,7 +151,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an exclusionlist from the words contained in the given file.
    */
-  public void setStemExclusionTable(File exclusionlist) {
+  public void setStemExclusionTable(File exclusionlist) throws IOException {
     exclusionSet = new HashSet(WordlistLoader.getWordtable(exclusionlist).keySet());
   }
 

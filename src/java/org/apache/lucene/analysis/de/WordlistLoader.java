@@ -62,20 +62,18 @@ import java.util.Hashtable;
 
 /**
  * Loads a text file and adds every line as an entry to a Hashtable. Every line
- * should contain only one word. If the file is not found or on any error, an
- * empty table is returned.
+ * should contain only one word.
  *
- * @author    Gerhard Schwarz
- * @version   $Id$
- *
+ * @author Gerhard Schwarz
+ * @version $Id$
  * @todo refactor to convert to Sets instead of Hashtable
  */
 public class WordlistLoader {
   /**
-   * @param path      Path to the wordlist
-   * @param wordfile  Name of the wordlist
+   * @param path     Path to the wordlist
+   * @param wordfile Name of the wordlist
    */
-  public static Hashtable getWordtable(String path, String wordfile) {
+  public static Hashtable getWordtable(String path, String wordfile) throws IOException {
     if (path == null || wordfile == null) {
       return new Hashtable();
     }
@@ -83,9 +81,9 @@ public class WordlistLoader {
   }
 
   /**
-   * @param wordfile  Complete path to the wordlist
+   * @param wordfile Complete path to the wordlist
    */
-  public static Hashtable getWordtable(String wordfile) {
+  public static Hashtable getWordtable(String wordfile) throws IOException {
     if (wordfile == null) {
       return new Hashtable();
     }
@@ -93,16 +91,19 @@ public class WordlistLoader {
   }
 
   /**
-   * @param wordfile  File containing the wordlist
+   * @param wordfile File containing the wordlist
    * @todo Create a Set version of this method
    */
-  public static Hashtable getWordtable(File wordfile) {
+  public static Hashtable getWordtable(File wordfile) throws IOException {
     if (wordfile == null) {
       return new Hashtable();
     }
     Hashtable result = null;
+    FileReader freader = null;
+    LineNumberReader lnr = null;
     try {
-      LineNumberReader lnr = new LineNumberReader(new FileReader(wordfile));
+      freader = new FileReader(wordfile);
+      lnr = new LineNumberReader(freader);
       String word = null;
       String[] stopwords = new String[100];
       int wordcount = 0;
@@ -116,10 +117,11 @@ public class WordlistLoader {
         stopwords[wordcount - 1] = word;
       }
       result = makeWordTable(stopwords, wordcount);
-    }
-// On error, use an empty table
-    catch (IOException e) {
-      result = new Hashtable();
+    } finally {
+      if (lnr != null)
+        lnr.close();
+      if (freader != null)
+        freader.close();
     }
     return result;
   }
@@ -127,8 +129,8 @@ public class WordlistLoader {
   /**
    * Builds the wordlist table.
    *
-   * @param words   Word that where read
-   * @param length  Amount of words that where read into <tt>words</tt>
+   * @param words  Word that where read
+   * @param length Amount of words that where read into <tt>words</tt>
    */
   private static Hashtable makeWordTable(String[] words, int length) {
     Hashtable table = new Hashtable(length);
