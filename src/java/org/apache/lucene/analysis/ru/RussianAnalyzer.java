@@ -35,39 +35,39 @@ import java.util.HashSet;
  */
 public final class RussianAnalyzer extends Analyzer
 {
-    // letters
-    private static char A = 0;
-    private static char B = 1;
-    private static char V = 2;
-    private static char G = 3;
-    private static char D = 4;
-    private static char E = 5;
-    private static char ZH = 6;
-    private static char Z = 7;
-    private static char I = 8;
-    private static char I_ = 9;
-    private static char K = 10;
-    private static char L = 11;
-    private static char M = 12;
-    private static char N = 13;
-    private static char O = 14;
-    private static char P = 15;
-    private static char R = 16;
-    private static char S = 17;
-    private static char T = 18;
-    private static char U = 19;
-    //private static char F = 20;
-    private static char X = 21;
-    //private static char TS = 22;
-    private static char CH = 23;
-    private static char SH = 24;
-    private static char SHCH = 25;
-    //private static char HARD = 26;
-    private static char Y = 27;
-    private static char SOFT = 28;
-    private static char AE = 29;
-    private static char IU = 30;
-    private static char IA = 31;
+    // letters (currently unused letters are commented out)
+    private final static char A = 0;
+    private final static char B = 1;
+    private final static char V = 2;
+    private final static char G = 3;
+    private final static char D = 4;
+    private final static char E = 5;
+    private final static char ZH = 6;
+    private final static char Z = 7;
+    private final static char I = 8;
+    private final static char I_ = 9;
+    private final static char K = 10;
+    private final static char L = 11;
+    private final static char M = 12;
+    private final static char N = 13;
+    private final static char O = 14;
+    private final static char P = 15;
+    private final static char R = 16;
+    private final static char S = 17;
+    private final static char T = 18;
+    private final static char U = 19;
+    //private final static char F = 20;
+    private final static char X = 21;
+    //private final static char TS = 22;
+    private final static char CH = 23;
+    private final static char SH = 24;
+    private final static char SHCH = 25;
+    //private final static char HARD = 26;
+    private final static char Y = 27;
+    private final static char SOFT = 28;
+    private final static char AE = 29;
+    private final static char IU = 30;
+    private final static char IA = 31;
 
     /**
      * List of typical Russian stopwords.
@@ -221,7 +221,7 @@ public final class RussianAnalyzer extends Analyzer
         for (int i = 0; i < res.length; i++)
         {
             char[] theStopWord = RUSSIAN_STOP_WORDS[i];
-            // translate the word,using the charset
+            // translate the word, using the charset
             StringBuffer theWord = new StringBuffer();
             for (int j = 0; j < theStopWord.length; j++)
             {
