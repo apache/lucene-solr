@@ -67,11 +67,18 @@ final class FieldsReader {
 
       byte bits = fieldsStream.readByte();
 
+      Field.Index index;
+      boolean tokenize = (bits & 1) != 0;
+      if (fi.isIndexed && tokenize)
+        index = Field.Index.TOKENIZED;
+      else if (fi.isIndexed && !tokenize)
+        index = Field.Index.UN_TOKENIZED;
+      else
+        index = Field.Index.NO;
       doc.add(new Field(fi.name,		  // name
 			fieldsStream.readString(), // read value
-			true,			  // stored
-			fi.isIndexed,		  // indexed
-			(bits & 1) != 0, fi.storeTermVector)); // vector
+			Field.Store.YES, index,
+			fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
     }
 
     return doc;
