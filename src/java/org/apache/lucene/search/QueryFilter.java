@@ -70,37 +70,37 @@ import org.apache.lucene.index.IndexReader;
  * once per day.
  */
 public class QueryFilter extends Filter {
-  private Query query;
-  private transient WeakHashMap cache = new WeakHashMap();
+    private Query query;
+    private transient WeakHashMap cache = new WeakHashMap();
 
-  /** Constructs a filter which only matches documents matching
-   * <code>query</code>.
-   */
-  public QueryFilter(Query query) {
-    this.query = query;
-  }
-
-  public BitSet bits(IndexReader reader) throws IOException {
-
-    synchronized (cache) {                        // check cache
-      BitSet cached = (BitSet)cache.get(reader);
-      if (cached != null)
-        return cached;
+    /** Constructs a filter which only matches documents matching
+     * <code>query</code>.
+     */
+    public QueryFilter(Query query) {
+        this.query = query;
     }
 
-    final BitSet bits = new BitSet(reader.maxDoc());
+    public BitSet bits(IndexReader reader) throws IOException {
 
-    new IndexSearcher(reader).search(query, new HitCollector() {
-	public final void collect(int doc, float score) {
-          bits.set(doc);                          // set bit for hit
+        synchronized (cache) {  // check cache
+            BitSet cached = (BitSet) cache.get(reader);
+            if (cached != null)
+                return cached;
         }
-      });
-                                     
 
-    synchronized (cache) {                        // update cache
-      cache.put(reader, bits);
+        final BitSet bits = new BitSet(reader.maxDoc());
+
+        new IndexSearcher(reader).search(query, new HitCollector() {
+            public final void collect(int doc, float score) {
+                bits.set(doc);  // set bit for hit
+            }
+        });
+
+
+        synchronized (cache) {  // update cache
+            cache.put(reader, bits);
+        }
+
+        return bits;
     }
-
-    return bits;
-  }
 }
