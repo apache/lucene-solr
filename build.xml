@@ -33,7 +33,7 @@
 
   <property name="javacc.home" location="."/>
 
-  <property name="jakarta.site2.home" location="../jakarta-site2"/>
+  <property name="asf.site.home" location="../../../site"/>
 
   <property name="junit.output.dir" location="${build.dir}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
@@ -84,7 +84,7 @@
   </path>
 
   <path id="anakia.classpath">
-    <fileset dir="${jakarta.site2.home}/lib">
+    <fileset dir="${asf.site.home}/lib">
       <include name="*.jar"/>
     </fileset>
   </path>
@@ -380,7 +380,7 @@
   <target name="prepare-error" depends="docs-prepare" unless="AnakiaTask.present">
     <echo>
       AnakiaTask is not present! Please check to make sure that
-      you have jakarta.site2.home set correctly.
+      you have asf.site.home set correctly.
     </echo>
   </target>
 
@@ -400,7 +400,7 @@
       excludes="**/stylesheets/** empty.xml"
       includes="**/*.xml"
       lastModifiedCheck="true"
-      templatePath="${jakarta.site2.home}/xdocs/stylesheets"
+      templatePath="${asf.site.home}/xdocs/stylesheets"
     />
 
     <copy todir="docs/images" filtering="no">
