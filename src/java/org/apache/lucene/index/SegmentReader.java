@@ -137,7 +137,7 @@ final class SegmentReader extends IndexReader {
   final synchronized void doClose() throws IOException {
     if (deletedDocsDirty) {
       synchronized (directory) {		  // in- & inter-process sync
-        new Lock.With(directory.makeLock("IndexWriter.COMMIT_LOCK_NAME"),
+        new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
           IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
             deletedDocs.write(directory, segment + ".tmp");

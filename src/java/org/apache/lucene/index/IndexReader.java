@@ -108,7 +108,7 @@ public abstract class IndexReader {
   public static IndexReader open(final Directory directory) throws IOException{
     synchronized (directory) {			  // in- & inter-process sync
       return (IndexReader)new Lock.With(
-          directory.makeLock("IndexWriter.COMMIT_LOCK_NAME"),
+          directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
           IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
             IndexReader result = null;
@@ -269,7 +269,7 @@ public abstract class IndexReader {
   */
   public final synchronized void delete(int docNum) throws IOException {
     if (writeLock == null) {
-      Lock writeLock = directory.makeLock("IndexWriter.WRITE_LOCK_NAME");
+      Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
       if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;
@@ -360,8 +360,8 @@ public abstract class IndexReader {
    */
     public static boolean isLocked(Directory directory) throws IOException {
       return
-        directory.makeLock("IndexWriter.WRITE_LOCK_NAME").isLocked() ||
-        directory.makeLock("IndexWriter.COMMIT_LOCK_NAME").isLocked();
+        directory.makeLock(IndexWriter.WRITE_LOCK_NAME).isLocked() ||
+        directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).isLocked();
 
     }
 
@@ -383,7 +383,7 @@ public abstract class IndexReader {
     * currently accessing this index.
     */
     public static void unlock(Directory directory) throws IOException {
-      directory.makeLock("IndexWriter.WRITE_LOCK_NAME").release();
-      directory.makeLock("IndexWriter.COMMIT_LOCK_NAME").release();
+      directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
+      directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).release();
     }
 }
