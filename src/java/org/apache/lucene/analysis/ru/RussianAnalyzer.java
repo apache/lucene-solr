@@ -224,6 +224,13 @@ public final class RussianAnalyzer extends Analyzer
      */
     private char[] charset;
 
+
+    public RussianAnalyzer() {
+        charset = RussianCharsets.UnicodeRussian;
+        stoptable = StopFilter.makeStopTable(
+                    makeStopWords(RussianCharsets.UnicodeRussian));
+    }
+
     /**
      * Builds an analyzer.
      */
