@@ -27,7 +27,7 @@ package org.apache.lucene.index;
 public final class Term implements Comparable, java.io.Serializable {
   String field;
   String text;
-  
+
   /** Constructs a Term with the given field and text. */
   public Term(String fld, String txt) {
     this(fld, txt, true);
@@ -64,9 +64,9 @@ public final class Term implements Comparable, java.io.Serializable {
     return compareTo((Term)other);
   }
 
-  /** Compares two terms, returning an integer which is less than zero iff this
-    term belongs after the argument, equal zero iff this term is equal to the
-    argument, and greater than zero iff this term belongs after the argument.
+  /** Compares two terms, returning a negative integer iff this
+    term belongs before the argument, zero iff this term is equal to the
+    argument, and a positive integer iff this term belongs after the argument.
 
     The ordering of terms is first by field, then by text.*/
   public final int compareTo(Term other) {
@@ -83,8 +83,8 @@ public final class Term implements Comparable, java.io.Serializable {
   }
 
   public final String toString() { return field + ":" + text; }
-  
-  private void readObject(java.io.ObjectInputStream in) 
+
+  private void readObject(java.io.ObjectInputStream in)
     throws java.io.IOException, ClassNotFoundException
   {
       in.defaultReadObject();
