@@ -1,5 +1,5 @@
 // Lucene Search Query Constructor
-// Author:  Kelvin Tan  (kelvin at relevanz.com)
+// Author:  Kelvin Tan  (kelvint at apache.org)
 
 // Change this according to what you use to name the field modifiers in your form.
 // e.g. with the field "name", the modifier will be called "nameModifier"
@@ -23,59 +23,51 @@ var OR_MODIFIER  = '';
 // default prefix modifier for boolean queries
 var DEFAULT_MODIFIER = OR_MODIFIER;
 
+// used to delimit multiple values from checkboxes and select lists
+var VALUE_DELIMITER = ' ';
+
 // Constructs the query
 // @param query Form field to represent the constructed query to be submitted
-function doMakeQuery( query )
+// @param debug Turn on debugging?
+function doMakeQuery( query, dbg )
 {
+  if(typeof(dbg) != "undefined")
+    debug = dbg;
+    
   var frm = query.form;
   var formElements = frm.elements;
   query.value = '';
+  
+  // keep track of the fields we've examined
+  var dict = new Array();
+  
   for(var i=0; i<formElements.length; i++)
   {
     var element = formElements[i];
     var elementName = element.name;
-    var elementValue = element.value;
-    if(elementValue.length > 0)
+    if(!contains(dict, elementName))
     {
-      for(var j=0; j<formElements.length; j++)
+      dict[dict.length] = elementName;
+      
+      // ensure we get the whole group (of checkboxes, radio, etc), if applicable
+      var elementValue = getFieldValue(frm[element.name]);
+      if(elementValue.length > 0)
       {
-        var subElement = formElements[j];
-        if(subElement.name == (elementName + modifierSuffix))
+        var subElement = frm[elementName + modifierSuffix];
+        if(typeof(subElement) != "undefined") // found a field/fieldModifier pair
         {
-          var subElementValue;
-          
-          // support drop-down select lists, radio buttons and text fields
-          if(subElement.type == "select")
-          {
-            subElementValue = subElement.options[subElement.selectedIndex].value;
-          }
-          else if(subElement.type == "radio")
-          {
-            // radio button elements often have the same element name, 
-            // so ensure we have the right one            
-            if(subElement.checked)
-            {
-              subElementValue = subElement.value;              
-            }
-            else
-            {
-              continue;
-            }
-          }
-          else
-          {
-            subElementValue = subElement.value;
-          }
-          
-          if(subElementValue == 'And')
+          // assume that the user only allows one logic, i.e. AND OR, AND NOT, OR NOT, etc not supported
+          var logic = getFieldValue(subElement);
+
+          if(logic == 'And')
           {
             addFieldWithModifier(query, AND_MODIFIER, elementName, elementValue);
           }     
-          else if(subElementValue == 'Not')
+          else if(logic == 'Not')
           {
             addFieldWithModifier(query, NOT_MODIFIER, elementName, elementValue);
           }
-          else if(subElementValue == 'Or')
+          else if(logic == 'Or')
           {
             addFieldWithModifier(query, OR_MODIFIER, elementName, elementValue);
           }
@@ -97,6 +89,58 @@ function doMakeQuery( query )
   {
     frm.submit();
   }
+}
+
+function contains(array, s)
+{
+  for(var i=0; i<array.length; i++)
+  {
+    if(s == array[i])
+      return true;
+  }
+  return false;
+}
+
+function getFieldValue(field)
+{
+  if(typeof(field[0]) != "undefined" && field[0].type=="checkbox")
+    return getCheckedValues(field);
+  if(typeof(field[0]) != "undefined" && field[0].type=="radio")
+    return getRadioValue(field);
+  if(field.type.match("select*")) 
+    return getSelectedValues(field);
+  
+  return field.value;
+}
+
+function getRadioValue(radio)
+{
+  for(var i=0; i<radio.length; i++)
+  {
+    if(radio[i].checked)
+      return radio[i].value;
+  }
+}
+
+function getCheckedValues(checkbox)
+{
+  var r = new Array();
+  for(var i = 0; i < checkbox.length; i++)
+  {
+    if(checkbox[i].checked)
+      r[r.length] = checkbox[i].value;
+  }
+  return r.join(VALUE_DELIMITER);
+}
+
+function getSelectedValues (select) {
+  var r = new Array();
+  for (var i = 0; i < select.options.length; i++)
+    if (select.options[i].selected)
+    {
+      r[r.length] = select.options[i].value;
+    }
+  return r.join(VALUE_DELIMITER);
 }
 
 function addFieldWithModifier(query, modifier, field, fieldValue)
