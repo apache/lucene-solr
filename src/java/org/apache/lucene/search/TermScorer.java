@@ -78,7 +78,7 @@ final class TermScorer extends Scorer {
   public boolean skipTo(int target) throws IOException {
     // first scan in cache
     for (pointer++; pointer < pointerMax; pointer++) {
-      if (!(target > docs[pointer])) {
+      if (docs[pointer] >= target) {
         doc = docs[pointer];
         return true;
       }
