@@ -52,14 +52,14 @@ class SegmentTermDocs implements TermDocs {
     seek(ti);
   }
 
-  public void seek(TermEnum enum) throws IOException {
+  public void seek(TermEnum termEnum) throws IOException {
     TermInfo ti;
     
-    // use comparison of fieldinfos to verify that enum belongs to the same segment as this SegmentTermDocs
-    if (enum instanceof SegmentTermEnum && ((SegmentTermEnum) enum).fieldInfos == parent.fieldInfos)          // optimized case
-      ti = ((SegmentTermEnum) enum).termInfo();
+    // use comparison of fieldinfos to verify that termEnum belongs to the same segment as this SegmentTermDocs
+    if (termEnum instanceof SegmentTermEnum && ((SegmentTermEnum) termEnum).fieldInfos == parent.fieldInfos)          // optimized case
+      ti = ((SegmentTermEnum) termEnum).termInfo();
     else                                          // punt case
-      ti = parent.tis.get(enum.term());
+      ti = parent.tis.get(termEnum.term());
       
     seek(ti);
   }

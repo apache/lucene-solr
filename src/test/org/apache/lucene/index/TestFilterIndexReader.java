@@ -43,9 +43,9 @@ public class TestFilterIndexReader extends TestCase {
 
      /** Filter that only permits terms containing 'e'.*/
     private static class TestTermEnum extends FilterTermEnum {
-      public TestTermEnum(TermEnum enum)
+      public TestTermEnum(TermEnum termEnum)
         throws IOException {
-        super(enum);
+        super(termEnum);
       }
 
       /** Scan for terms containing the letter 'e'.*/

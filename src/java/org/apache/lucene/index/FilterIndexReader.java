@@ -39,7 +39,7 @@ public class FilterIndexReader extends IndexReader {
     public FilterTermDocs(TermDocs in) { this.in = in; }
 
     public void seek(Term term) throws IOException { in.seek(term); }
-    public void seek(TermEnum enum) throws IOException { in.seek(enum); }
+    public void seek(TermEnum termEnum) throws IOException { in.seek(termEnum); }
     public int doc() { return in.doc(); }
     public int freq() { return in.freq(); }
     public boolean next() throws IOException { return in.next(); }

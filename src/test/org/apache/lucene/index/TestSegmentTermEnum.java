@@ -63,36 +63,36 @@ public class TestSegmentTermEnum extends TestCase
       throws IOException
   {
       IndexReader reader = IndexReader.open(dir);
-      TermEnum enum = null;
+      TermEnum termEnum = null;
 
     // create enumeration of all terms
-    enum = reader.terms();
+    termEnum = reader.terms();
     // go to the first term (aaa)
-    enum.next();
+    termEnum.next();
     // assert that term is 'aaa'
-    assertEquals("aaa", enum.term().text());
-    assertEquals(200, enum.docFreq());
+    assertEquals("aaa", termEnum.term().text());
+    assertEquals(200, termEnum.docFreq());
     // go to the second term (bbb)
-    enum.next();
+    termEnum.next();
     // assert that term is 'bbb'
-    assertEquals("bbb", enum.term().text());
-    assertEquals(100, enum.docFreq());
+    assertEquals("bbb", termEnum.term().text());
+    assertEquals(100, termEnum.docFreq());
 
-    enum.close();
+    termEnum.close();
 
 
     // create enumeration of terms after term 'aaa', including 'aaa'
-    enum = reader.terms(new Term("content", "aaa"));
+    termEnum = reader.terms(new Term("content", "aaa"));
     // assert that term is 'aaa'
-    assertEquals("aaa", enum.term().text());
-    assertEquals(200, enum.docFreq());
+    assertEquals("aaa", termEnum.term().text());
+    assertEquals(200, termEnum.docFreq());
     // go to term 'bbb'
-    enum.next();
+    termEnum.next();
     // assert that term is 'bbb'
-    assertEquals("bbb", enum.term().text());
-    assertEquals(100, enum.docFreq());
+    assertEquals("bbb", termEnum.term().text());
+    assertEquals(100, termEnum.docFreq());
 
-    enum.close();
+    termEnum.close();
   }
 
   private void addDoc(IndexWriter writer, String value)

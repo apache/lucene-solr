@@ -60,12 +60,12 @@ final class TermInfosReader {
   }
 
   private SegmentTermEnum getEnum() {
-    SegmentTermEnum enum = (SegmentTermEnum)enumerators.get();
-    if (enum == null) {
-      enum = terms();
-      enumerators.set(enum);
+    SegmentTermEnum termEnum = (SegmentTermEnum)enumerators.get();
+    if (termEnum == null) {
+      termEnum = terms();
+      enumerators.set(termEnum);
     }
-    return enum;
+    return termEnum;
   }
 
   Term[] indexTerms = null;
