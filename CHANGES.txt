@@ -4,6 +4,18 @@ $Id$
 
 1.9 RC1
 
+Changes in runtime behavior
+
+ 1. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
+    FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
+    terms only the BooleanQuery.maxClauseCount most similar terms 
+    go into the rewritten query and thus the exception is avoided.
+    (Christoph)
+
+ 2.	Changed system property from "org.apache.lucene.lockdir" to
+    "org.apache.lucene.lockDir", so that its casing follows the existing
+    pattern used in other Lucene system properties. (Bernhard)		
+
 New features
 
  1. Added support for stored compressed fields (patch #31149)
@@ -54,16 +66,6 @@ New features
 11. Added NumberTools, a utility class indexing numeric fields.
     (adapted from code contributed by Matt Quail; committed by Erik)
     
-12. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
-    FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
-    terms only the BooleanQuery.maxClauseCount most similar terms 
-    go into the rewritten query and thus the exception is avoided.
-    (Christoph)
-
-13.	Changed system property from "org.apache.lucene.lockdir" to
-    "org.apache.lucene.lockDir", so that its casing follows the existing
-    pattern used in other Lucene system properties. (Bernhard)
-		
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
