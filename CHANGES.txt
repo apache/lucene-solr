@@ -95,6 +95,9 @@ Bug fixes
 
  3. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
     prevented deletion of obsolete segments. (Christoph Goller)
+    
+ 4. QueryParser changes in 1.4.2 broke the QueryParser API. Now the old 
+     API is supported again. (Christoph)
 
 Optimizations
      
