@@ -1,2 +1,3 @@
 lucene.jar=/usr/local/jakarta-lucene/lucene.jar
+oro.jar=/usr/local/jakarta-oro/oro.jar
 debug=on
