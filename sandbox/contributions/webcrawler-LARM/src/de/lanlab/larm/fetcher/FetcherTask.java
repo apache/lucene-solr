@@ -65,7 +65,6 @@ import de.lanlab.larm.storage.LinkStorage;
 
 import de.lanlab.larm.util.State;
 import de.lanlab.larm.util.SimpleLogger;
-import de.lanlab.larm.net.HttpTimeoutFactory;
 import HTTPClient.*;
 import java.net.*;
 import java.io.*;
@@ -73,6 +72,7 @@ import java.util.*;
 import java.text.*;
 import de.lanlab.larm.parser.Tokenizer;
 import de.lanlab.larm.parser.LinkHandler;
+import de.lanlab.larm.net.*;
 
 /**
  * this class gets the documents from the web. It connects to the server given
@@ -266,8 +266,11 @@ public class FetcherTask
         return actURLMessage.getUrl();
     }
 
-    SimpleLogger log;
-    SimpleLogger errorLog;
+    volatile SimpleLogger log;
+
+    volatile SimpleLogger errorLog;
+
+    volatile HostManager hostManager;
     //private long startTime;
 
     /**
@@ -282,7 +285,9 @@ public class FetcherTask
         taskState.setState(FT_STARTED); // state information is always set to make the thread monitor happy
 
         log = thread.getLog();
-        HostManager hm = ((FetcherThread)thread).getHostManager();
+        hostManager = ((FetcherThread)thread).getHostManager();
+
+        //HostManager hm = ((FetcherThread)thread).getHostManager();
 
         errorLog = thread.getErrorLog();
 
@@ -292,11 +297,11 @@ public class FetcherTask
         log.log("start");
         base = contextUrl = actURLMessage.getUrl();
         String urlString = actURLMessage.getURLString();
-        String host = contextUrl.getHost();
+        String host = contextUrl.getHost().toLowerCase();
         int hostPos = urlString.indexOf(host);
         int hostLen = host.length();
 
-        HostInfo hi = hm.getHostInfo(host); // get and create
+        HostInfo hi = hostManager.getHostInfo(host); // get and create
 
         if(!hi.isHealthy())
         {
@@ -344,6 +349,7 @@ public class FetcherTask
             byte[] fullBuffer = null;
             String contentType = "";
             int contentLength = 0;
+            Date date = null;
 
             if (statusCode != 404 && statusCode != 403)
             {
@@ -351,6 +357,8 @@ public class FetcherTask
                 taskState.setState(FT_READING, ipURL);
                 contentType = response.getHeader("Content-Type");
                 String length = response.getHeader("Content-Length");
+                date = response.getHeaderAsDate("Last-Modified");
+
                 if (length != null)
                 {
                     contentLength = Integer.parseInt(length);
@@ -358,6 +366,12 @@ public class FetcherTask
                 log.log("reading");
 
                 fullBuffer = response.getData(Constants.FETCHERTASK_MAXFILESIZE); // max. 2 MB
+                base = contextUrl = response.getEffectiveURI().toURL();
+                // may have changed after a 30x result code
+                // to do: record the link between original and effective URL
+                // like this the effectiveURL may be crawled twice
+
+
                 if (fullBuffer != null)
                 {
                     contentLength = fullBuffer.length;
@@ -403,7 +417,7 @@ public class FetcherTask
                 taskState.setState(FT_STORING, ipURL);
                 linkStorage.storeLinks(foundUrls);
                 //messageHandler.putMessages(foundUrls);
-                docStorage.store(new WebDocument(contextUrl, contentType, fullBuffer, statusCode, actURLMessage.getReferer(), contentLength, title));
+                docStorage.store(new WebDocument(contextUrl, contentType, fullBuffer, statusCode, actURLMessage.getReferer(), contentLength, title, hostManager));
                 log.log("stored");
             }
         }
@@ -576,9 +590,9 @@ public class FetcherTask
                 url = new URL(base, link);
             }
 
-            URLMessage urlMessage =  new URLMessage(url, contextUrl, isFrame, anchor);
+            URLMessage urlMessage =  new URLMessage(url, contextUrl, isFrame, anchor, hostManager);
 
-            String urlString = urlMessage.getURLString();
+            //String urlString = urlMessage.getURLString();
 
             foundUrls.add(urlMessage);
             //messageHandler.putMessage(new actURLMessage(url)); // put them in the very end
