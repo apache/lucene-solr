@@ -1332,9 +1332,18 @@ limitations under the License.
 
                         <p>
                             TermInfoFile (.tis)--&gt;
-                            TermCount, TermInfos
+                            TIVersion, TermCount, IndexInterval, SkipInterval, TermInfos
+                        </p>
+                        <p>TIVersion    --&gt;
+                            UInt32
                         </p>
                         <p>TermCount    --&gt;
+                            UInt64
+                        </p>
+                        <p>IndexInterval    --&gt;
+                            UInt32
+                        </p>
+                        <p>SkipInterval   --&gt;
                             UInt32
                         </p>
                         <p>TermInfos    --&gt;
@@ -1356,6 +1365,9 @@ limitations under the License.
                             file is sorted by Term.  Terms are ordered first lexicographically
                             by the term's field name, and within that lexicographically by the
                             term's text.
+                        </p>
+                        <p>TIVersion names the version of the format
+                            of this file and is -1 in Lucene 1.4.
                         </p>
                         <p>Term
                             text prefixes are shared.  The PrefixLength is the number of initial
@@ -1389,7 +1401,7 @@ limitations under the License.
                         </p>
 
                         <p>
-                            This contains every 128th entry from the .tis
+                            This contains every IndexInterval<sup>th</sup> entry from the .tis
                             file, along with its location in the "tis" file.  This is
                             designed to be read entirely into memory and used to provide random
                             access to the "tis" file.
@@ -1440,6 +1452,7 @@ limitations under the License.
                 </p>
                                                 <p>FreqFile (.frq)    --&gt;
                     &lt;TermFreqs&gt;<sup>TermCount</sup>
+                    &lt;SkipDatum&gt;<sup>TermCount/SkipInterval</sup>
                 </p>
                                                 <p>TermFreqs    --&gt;
                     &lt;TermFreq&gt;<sup>DocFreq</sup>
@@ -1447,7 +1460,10 @@ limitations under the License.
                                                 <p>TermFreq        --&gt;
                     DocDelta, Freq?
                 </p>
-                                                <p>DocDelta,Freq    --&gt;
+                                                <p>SkipDatum        --&gt;
+                    DocSkip,FreqSkip,ProxSkip
+                </p>
+                                                <p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip    --&gt;
                     VInt
                 </p>
                                                 <p>TermFreqs
@@ -1470,6 +1486,29 @@ limitations under the License.
                 </p>
                                                 <p>    15,
                     22, 3
+                </p>
+                                                <p>DocSkip records the document number before every
+                    SkipInterval<sup>th</sup> document in TermFreqs.
+                    Document numbers are represented as differences
+                    from the previous value in the sequence.  FreqSkip
+                    and ProxSkip record the position of every
+                    SkipInterval<sup>th</sup> entry in FreqFile and
+                    ProxFile, respectively.  File positions are
+                    relative to the start of TermFreqs and Positions,
+                    to the previous SkipDatum in the sequence.
+                </p>
+                                                <p>For example, if TermCount=35 and SkipInterval=16,
+                    then there are two SkipData entries, containing
+                    the 15<sup>th</sup> and 31<sup>st</sup> document
+                    numbers in TermFreqs.  The first FreqSkip names
+                    the number of bytes after the beginning of
+                    TermFreqs that the 16<sup>th</sup> SkipDatum
+                    starts, and the second the number of bytes after
+                    that that the 32<sup>nd</sup> starts.  The first
+                    ProxSkip names the number of bytes after the
+                    beginning of Positions that the 16<sup>th</sup>
+                    SkipDatum starts, and the second the number of
+                    bytes after that that the 32<sup>nd</sup> starts.
                 </p>
                             </blockquote>
       </td></tr>
@@ -1588,8 +1627,8 @@ limitations under the License.
                   <p>This contains, for each document, a pointer to the document data in the Document 
                     (.tvd) file.
                   </p>
-                  <p>DocumentIndex (.tvx) --&gt; FormatVersion&lt;DocumentPosition&gt;<sup>NumDocs</sup></p>
-                  <p>FormatVersion --&gt; Int</p>
+                  <p>DocumentIndex (.tvx) --&gt; TVXVersion&lt;DocumentPosition&gt;<sup>NumDocs</sup></p>
+                  <p>TVXVersion --&gt; Int</p>
                   <p>DocumentPosition   --&gt; UInt64</p>
                   <p>This is used to find the position of the Document in the .tvd file.</p>
                 </li>
@@ -1599,9 +1638,9 @@ limitations under the License.
                   term vector info and finally a list of pointers to the field information in the .tvf 
                   (Term Vector Fields) file.</p>
                   <p>
-                    Document (.tvd) --&gt; FormatVersion&lt;NumFields, FieldNums, FieldPositions,&gt;<sup>NumDocs</sup>
+                    Document (.tvd) --&gt; TVDVersion&lt;NumFields, FieldNums, FieldPositions,&gt;<sup>NumDocs</sup>
                   </p>
-                  <p>FormatVersion --&gt; Int</p>
+                  <p>TVDVersion --&gt; Int</p>
                   <p>NumFields --&gt; VInt</p>
                   <p>FieldNums --&gt; &lt;FieldNumDelta&gt;<sup>NumFields</sup></p>
                   <p>FieldNumDelta --&gt; VInt</p>
@@ -1614,8 +1653,8 @@ limitations under the License.
                   <p>The Field or .tvf file.</p>
                   <p>This file contains, for each field that has a term vector stored, a list of
                   the terms and their frequencies.</p>
-                  <p>Field (.tvf) --&gt; FormatVersion&lt;NumTerms, NumDistinct, TermFreqs&gt;<sup>NumFields</sup></p>
-                  <p>FormatVersion --&gt; Int</p>
+                  <p>Field (.tvf) --&gt; TVFVersion&lt;NumTerms, NumDistinct, TermFreqs&gt;<sup>NumFields</sup></p>
+                  <p>TVFVersion --&gt; Int</p>
                   <p>NumTerms --&gt; VInt</p>
                   <p>NumDistinct --&gt; VInt -- Future Use</p>
                   <p>TermFreqs --&gt; &lt;TermText, TermFreq&gt;<sup>NumTerms</sup></p>
