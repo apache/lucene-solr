@@ -68,7 +68,7 @@ import org.apache.lucene.index.IndexReader;
   </ul>
   <p>A parser for queries is contained in:
   <ul>
-  <li><a href="/lucene/docs/api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>
+  <li>{@link org.apache.lucene.queryParser.QueryParser}
   </ul>
   */
 abstract public class Query implements java.io.Serializable {
