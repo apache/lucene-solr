@@ -8,7 +8,6 @@
   <property file="${user.home}/build.properties" />
   <property file="build.properties" />
   <property file="default.properties" />
-  <property name="lib.dir" location="lib"/>
 
   <!-- Build classpath -->
   <path id="classpath">
