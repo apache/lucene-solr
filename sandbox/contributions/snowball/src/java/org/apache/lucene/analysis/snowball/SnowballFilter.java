@@ -3,7 +3,7 @@ package org.apache.lucene.analysis.snowball;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,7 @@ public class SnowballFilter extends TokenFilter {
       Class stemClass =
         Class.forName("net.sf.snowball.ext." + name + "Stemmer");
       stemmer = (SnowballProgram) stemClass.newInstance();
+      // why doesn't the SnowballProgram class have an (abstract?) stem method?
       stemMethod = stemClass.getMethod("stem", new Class[0]);
     } catch (Exception e) {
       throw new RuntimeException(e.toString());

@@ -3,7 +3,7 @@ package org.apache.lucene.analysis.snowball;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,12 +61,8 @@ import org.apache.lucene.analysis.*;
 
 public class TestSnowball extends TestCase {
 
-  public TestSnowball(String name) {
-    super(name);
-  }
-
-  public void assertAnalyzesTo(Analyzer a, 
-                               String input, 
+  public void assertAnalyzesTo(Analyzer a,
+                               String input,
                                String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
     for (int i=0; i<output.length; i++) {
@@ -80,7 +76,7 @@ public class TestSnowball extends TestCase {
 
   public void testEnglish() throws Exception {
     Analyzer a = new SnowballAnalyzer("English");
-    assertAnalyzesTo(a, "he abhorred accents", 
+    assertAnalyzesTo(a, "he abhorred accents",
                      new String[] { "he", "abhor", "accent" });
   }
 }
