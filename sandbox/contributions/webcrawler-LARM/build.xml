@@ -2,6 +2,8 @@
 
 <project name="webcrawler-LARM" default="build" basedir=".">
 
+  <property file="${basedir}/build.properties" />
+
   <property name="name"           value="webcrawler_LARM"/>
   <property name="version"        value="0.5"/>
   <property name="final.name"     value="${name}-${version}"/>
@@ -18,27 +20,56 @@
   <property name="build.src"      value="${build.dir}/src"/>
   <property name="build.encoding" value="ISO-8859-1"/>
 
+  
+
   <property name="threads"        value="15"/>
 
 <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.classes}"/>
+    <pathelement location="${lucene.jar}"/>
+    <fileset dir="${lib.dir}">
+        <include name="*.jar" />
+     </fileset>
+   </path>
+
+  <path id="run.classpath">
+    <pathelement location="${build.dir}/${final.name}.jar"/>
+    <pathelement location="${lucene.jar}"/>
     <fileset dir="${lib.dir}">
       <include name="*.jar" />
     </fileset>
   </path>
 
-  <path id="run.classpath">
-    <pathelement location="${build.dir}/${final.name}.jar"/>
-    <fileset dir="${lib.dir}">
-      <include name="*.jar" />
-    </fileset>
-  </path>
+
+
+  <!-- ================================================================== -->
+  <!-- I N I T                                                            -->
+  <!-- ================================================================== -->
+
+
+  <target name="init">
+    <available
+      property="lucene.present"
+      classname="org.apache.lucene.document.Document"
+      classpath="${lucene.jar}"
+    />
+  </target>
+
+  <target name="lucene_check" depends="init" unless="lucene.present">
+    <echo>
+      ##################################################################
+      Lucene not found.
+      Lucene Home: ${lucene.jar}
+      ##################################################################
+    </echo>
+  </target>
+
 
   <!-- ================================================================== -->
   <!-- B U I L D                                                          -->
   <!-- ================================================================== -->
-  <target name="build"
+  <target name="build" depends="init,lucene_check"
     description="-> builds jar file">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${build.classes}"/>
