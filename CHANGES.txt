@@ -36,6 +36,9 @@ $Id$
  11. Allow co-existence of indexed and non-indexed fields with the same name
      (cutting/casper, via otis)
 
+ 12. Add escape character to query parser.  
+     (briangoetz)
+
 1.2 RC4
 
  1. Updated contributions section of website.
