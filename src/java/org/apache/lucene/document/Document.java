@@ -110,8 +110,8 @@ public final class Document implements java.io.Serializable {
   }
 
   /** Returns a field with the given name if any exist in this document, or
-    null.  If multiple fields may exist with this name, this method returns the
-    last added such added. */
+    null.  If multiple fields exists with this name, this method returns the
+    last field value added. */
   public final Field getField(String name) {
     for (DocumentFieldList list = fieldList; list != null; list = list.next)
       if (list.field.name().equals(name))
@@ -120,8 +120,8 @@ public final class Document implements java.io.Serializable {
   }
 
   /** Returns the string value of the field with the given name if any exist in
-    this document, or null.  If multiple fields may exist with this name, this
-    method returns the last added such added. */
+    this document, or null.  If multiple fields exist with this name, this
+    method returns the last value added. */
   public final String get(String name) {
     Field field = getField(name);
     if (field != null)
