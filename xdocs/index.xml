@@ -12,8 +12,7 @@
 <p>
 Jakarta Lucene is a high-performance, full-featured text search engine
 written entirely in Java.  It is a technology suitable for nearly any
-application that requires full-text search, especially
-cross-platform. 
+application that requires full-text search, especially cross-platform. 
 </p>
 <p>
 Jakarta Lucene is an open source project available for 
@@ -24,13 +23,13 @@ Please use the links on the left to access Lucene.
 
 <section name="Lucene News">
 <p>
-<b>Lucene v1.02 released</b> - This release repackages Lucene as product 
+<b>Lucene v1.02 released</b> - This release repackages Lucene as a product 
 of the Apache Software Foundation. Download it 
 <a href="http://jakarta.apache.org/site/binindex.html">here</a>.
 </p>
 <p>
 <b>Lucene Joins Jakarta</b> - The Lucene Team is happy to announce that 
-Lucene is now part of a member of the Apache Jakarta Project. This move will 
+Lucene is now a part of the Apache Jakarta Project. This move will 
 help Lucene continue to grow, and enhance its position as the leading 
 server-side searching solution for Java.
 </p>
@@ -39,8 +38,8 @@ server-side searching solution for Java.
 <section name="About Apache Jakarta">
 <p>
 The goal of the <a href="http://jakarta.apache.org/">Apache Jakarta Project</a> 
-is to provide commercial-quality server solutions based on the Java Platform that 
-are developed in an open and cooperative fashion.
+is to provide commercial-quality server solutions, based on the Java Platform,
+developed in an open and cooperative fashion.
 </p>
 </section>
 
