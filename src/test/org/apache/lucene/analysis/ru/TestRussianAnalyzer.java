@@ -56,11 +56,7 @@ package org.apache.lucene.analysis.ru;
 
 import junit.framework.TestCase;
 
-import java.io.FileReader;
-
-import java.io.InputStreamReader;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
@@ -78,13 +74,13 @@ public class TestRussianAnalyzer extends TestCase
 
     private InputStreamReader sampleUnicode;
 
-    private FileReader inWordsKOI8;
+    private Reader inWordsKOI8;
 
-    private FileReader sampleKOI8;
+    private Reader sampleKOI8;
 
-    private FileReader inWords1251;
+    private Reader inWords1251;
 
-    private FileReader sample1251;
+    private Reader sample1251;
 
     public TestRussianAnalyzer(String name)
     {
@@ -155,9 +151,9 @@ public class TestRussianAnalyzer extends TestCase
         //System.out.println(new java.util.Date());
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.KOI8);
         // KOI8
-        inWordsKOI8 = new FileReader("src/test/org/apache/lucene/analysis/ru/testKOI8.txt");
+        inWordsKOI8 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/testKOI8.txt"), "iso-8859-1");
 
-        sampleKOI8 = new FileReader("src/test/org/apache/lucene/analysis/ru/resKOI8.htm");
+        sampleKOI8 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/resKOI8.htm"), "iso-8859-1");
 
         TokenStream in = ra.tokenStream("all", inWordsKOI8);
         RussianLetterTokenizer sample =
@@ -191,9 +187,9 @@ public class TestRussianAnalyzer extends TestCase
     public void test1251() throws IOException
     {
         // 1251
-        inWords1251 = new FileReader("src/test/org/apache/lucene/analysis/ru/test1251.txt");
+        inWords1251 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/test1251.txt"), "iso-8859-1");
 
-        sample1251 = new FileReader("src/test/org/apache/lucene/analysis/ru/res1251.htm");
+        sample1251 = new InputStreamReader(new FileInputStream("src/test/org/apache/lucene/analysis/ru/res1251.htm"), "iso-8859-1");
 
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.CP1251);
         TokenStream in = ra.tokenStream("", inWords1251);
