@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <!-- $Id$ -->
-<project name="webcrawler-LARM" default="build" basedir=".">
+<project name="webcrawler-LARM" default="compile" basedir=".">
 
     <property file="${basedir}/build.properties" />
     <property file="${basedir}/default.build.properties" />
@@ -55,13 +55,11 @@
 	</echo>
     </target>
 
-
     <!-- ================================================================== -->
-    <!-- B U I L D                                                          -->
+    <!-- C O M P I L E                                                      -->
     <!-- ================================================================== -->
-    <target name="build" depends="init,lucene_check"
-	    description="-> compiles sources and builds jar file">
-
+    <target name="compile" depends="init,lucene_check"
+	    description="-> compiles sources">
 	<!-- unzip HTTPClient in the build source tree -->
 	<unzip src="${src.httpclient}" dest="${build.src}" overwrite="false"/>
 
@@ -75,7 +73,13 @@
 	       deprecation="${deprecation}">
 	    <classpath refid="classpath"/>
 	</javac>
+    </target>
 
+    <!-- ================================================================== -->
+    <!-- D I S T                                                            -->
+    <!-- ================================================================== -->
+    <target name="dist" depends="compile"
+	    description="-> builds jar file">
 	<!-- make a jar -->
 	<jar
 	     jarfile="${build.dir}/${final.name}.jar"
