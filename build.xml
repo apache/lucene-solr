@@ -152,6 +152,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
+  <target name="jar" depends="jar-core"/>
   <target name="jar-core" depends="compile-core"
     description="Generates the Jar file">
     <jar
