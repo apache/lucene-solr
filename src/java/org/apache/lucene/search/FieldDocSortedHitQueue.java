@@ -101,7 +101,9 @@ extends PriorityQueue {
 					case SortField.STRING:
 						String s1 = (String) docA.fields[i];
 						String s2 = (String) docB.fields[i];
-						c = s2.compareTo(s1);
+						if (s2 == null) c = -1;      // could be null if there are
+						else if (s1 == null) c = 1;  // no terms in the given field
+						else c = s2.compareTo(s1);
 						break;
 					case SortField.FLOAT:
 						float f1 = ((Float)docA.fields[i]).floatValue();
@@ -139,7 +141,9 @@ extends PriorityQueue {
 					case SortField.STRING:
 						String s1 = (String) docA.fields[i];
 						String s2 = (String) docB.fields[i];
-						c = s1.compareTo(s2);
+						if (s1 == null) c = -1;      // could be null if there are
+						else if (s2 == null) c = 1;  // no terms in the given field
+						else c = s1.compareTo(s2);
 						break;
 					case SortField.FLOAT:
 						float f1 = ((Float)docA.fields[i]).floatValue();

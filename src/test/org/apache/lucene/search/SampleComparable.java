@@ -64,26 +64,18 @@ implements Comparable, Serializable {
     return i;
   }
 
-  public static SortComparatorSource getComparator () {
+  public static SortComparatorSource getComparatorSource () {
     return new SortComparatorSource () {
-      public ScoreDocLookupComparator newComparator (final IndexReader reader, String fieldname)
+      public ScoreDocComparator newComparator (final IndexReader reader, String fieldname)
       throws IOException {
         final String field = fieldname.intern ();
         final TermEnum enumerator = reader.terms (new Term (fieldname, ""));
         try {
-          return new ScoreDocLookupComparator () {
+          return new ScoreDocComparator () {
             protected Comparable[] cachedValues = fillCache (reader, enumerator, field);
-
-            public boolean sizeMatches (int n) {
-              return (cachedValues.length == n);
-            }
 
             public int compare (ScoreDoc i, ScoreDoc j) {
               return cachedValues[i.doc].compareTo (cachedValues[j.doc]);
-            }
-
-            public int compareReverse (ScoreDoc i, ScoreDoc j) {
-              return cachedValues[j.doc].compareTo (cachedValues[i.doc]);
             }
 
             public Comparable sortValue (ScoreDoc i) {
@@ -136,6 +128,14 @@ implements Comparable, Serializable {
       }
 
       Comparable getComparable (String termtext) {
+        return new SampleComparable (termtext);
+      }
+    };
+  }
+
+  public static SortComparator getComparator() {
+    return new SortComparator() {
+      protected Comparable getComparable (String termtext) {
         return new SampleComparable (termtext);
       }
     };

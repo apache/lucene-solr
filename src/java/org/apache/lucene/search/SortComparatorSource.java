@@ -23,6 +23,6 @@ extends Serializable {
    * @return Comparator of ScoreDoc objects.
    * @throws IOException If an error occurs reading the index.
    */
-  ScoreDocLookupComparator newComparator (IndexReader reader, String fieldname)
+  ScoreDocComparator newComparator (IndexReader reader, String fieldname)
   throws IOException;
 }

@@ -115,8 +115,8 @@ public class IndexSearcher extends Searcher {
       return new TopFieldDocs(0, new ScoreDoc[0], sort.fields);
 
     final BitSet bits = filter != null ? filter.bits(reader) : null;
-    final MultiFieldSortedHitQueue hq =
-      new MultiFieldSortedHitQueue(reader, sort.fields, nDocs);
+    final FieldSortedHitQueue hq =
+      new FieldSortedHitQueue(reader, sort.fields, nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
         public final void collect(int doc, float score) {

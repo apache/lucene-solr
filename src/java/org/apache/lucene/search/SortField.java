@@ -62,6 +62,11 @@ implements Serializable {
    * sorting is done according to natural order. */
   public static final int CUSTOM = 9;
 
+  // IMPLEMENTATION NOTE: the FieldCache.STRING_INDEX is in the same "namespace"
+  // as the above static int values.  Any new values must not have the same value
+  // as FieldCache.STRING_INDEX.
+
+	
   /** Represents sorting by document score (relevancy). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
 

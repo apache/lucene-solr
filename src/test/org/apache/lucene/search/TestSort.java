@@ -253,9 +253,14 @@ implements Serializable {
 
 
 	public void testCustomSorts() throws Exception {
-		sort.setSort (new SortField ("custom", SampleComparable.getComparator()));
+		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
 		assertMatches (full, queryX, sort, "CAIEG");
-		sort.setSort (new SortField ("custom", SampleComparable.getComparator(), true));
+		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
+		assertMatches (full, queryY, sort, "HJDBF");
+		SortComparator custom = SampleComparable.getComparator();
+		sort.setSort (new SortField ("custom", custom));
+		assertMatches (full, queryX, sort, "CAIEG");
+		sort.setSort (new SortField ("custom", custom, true));
 		assertMatches (full, queryY, sort, "HJDBF");
 	}
 
@@ -281,9 +286,14 @@ implements Serializable {
 	public void testRemoteCustomSort() throws Exception {
 		Searchable searcher = getRemote();
 		MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-		sort.setSort (new SortField ("custom", SampleComparable.getComparator()));
+		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
 		assertMatches (multi, queryX, sort, "CAIEG");
-		sort.setSort (new SortField ("custom", SampleComparable.getComparator(), true));
+		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
+		assertMatches (multi, queryY, sort, "HJDBF");
+		SortComparator custom = SampleComparable.getComparator();
+		sort.setSort (new SortField ("custom", custom));
+		assertMatches (multi, queryX, sort, "CAIEG");
+		sort.setSort (new SortField ("custom", custom, true));
 		assertMatches (multi, queryY, sort, "HJDBF");
 	}
 
