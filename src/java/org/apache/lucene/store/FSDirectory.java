@@ -63,10 +63,13 @@ import java.util.Hashtable;
 import org.apache.lucene.util.Constants;
 
 /**
-  Straightforward implementation of Directory as a directory of files.
-    @see Directory
-    @author Doug Cutting
-*/
+ * Straight forward implementation of Directory as a directory of files.
+ * If the system property 'disableLocks' has the String value of "true", lock
+ * creation will be disabled.
+ *
+ * @see Directory
+ * @author Doug Cutting
+ */
 
 final public class FSDirectory extends Directory {
   /** This cache of directories ensures that there is a unique Directory
@@ -77,14 +80,15 @@ final public class FSDirectory extends Directory {
    * require Java 1.2.  Instead we use refcounts...  */
   private static final Hashtable DIRECTORIES = new Hashtable();
 
-  private static final boolean DISABLE_LOCKS = Boolean.getBoolean("disableLocks");
+  private static final boolean DISABLE_LOCKS =
+      Boolean.getBoolean("disableLocks") || Constants.JAVA_1_1;
 
   /** Returns the directory instance for the named location.
-   * 
+   *
    * <p>Directories are cached, so that, for a given canonical path, the same
    * FSDirectory instance will always be returned.  This permits
    * synchronization on directories.
-   * 
+   *
    * @param path the path to the directory.
    * @param create if true, create, or erase any existing contents.
    * @return the FSDirectory for the named file.  */
@@ -94,11 +98,11 @@ final public class FSDirectory extends Directory {
   }
 
   /** Returns the directory instance for the named location.
-   * 
+   *
    * <p>Directories are cached, so that, for a given canonical path, the same
    * FSDirectory instance will always be returned.  This permits
    * synchronization on directories.
-   * 
+   *
    * @param file the path to the directory.
    * @param create if true, create, or erase any existing contents.
    * @return the FSDirectory for the named file.  */
@@ -151,19 +155,19 @@ final public class FSDirectory extends Directory {
   public final String[] list() throws IOException {
     return directory.list();
   }
-       
+
   /** Returns true iff a file with the given name exists. */
   public final boolean fileExists(String name) throws IOException {
     File file = new File(directory, name);
     return file.exists();
   }
-       
+
   /** Returns the time the named file was last modified. */
   public final long fileModified(String name) throws IOException {
     File file = new File(directory, name);
     return file.lastModified();
   }
-       
+
   /** Returns the time the named file was last modified. */
   public static final long fileModified(File directory, String name)
        throws IOException {
@@ -229,15 +233,13 @@ final public class FSDirectory extends Directory {
     final File lockFile = new File(directory, name);
     return new Lock() {
 	public boolean obtain() throws IOException {
-          if (Constants.JAVA_1_1)
-	      return true;    // locks disabled in jdk 1.1
 	  if (DISABLE_LOCKS)
 	      return true;
           return lockFile.createNewFile();
 	}
 	public void release() {
-          if (Constants.JAVA_1_1)
-	      return;         // locks disabled in jdk 1.1
+	  if (DISABLE_LOCKS)
+	      return;
 	  lockFile.delete();
 	}
 	public String toString() {
@@ -308,7 +310,7 @@ final class FSInputStream extends InputStream {
   }
 
   protected final void finalize() throws IOException {
-    close();					  // close the file 
+    close();					  // close the file
   }
 
   public Object clone() {
@@ -345,7 +347,7 @@ final class FSOutputStream extends OutputStream {
   }
 
   protected final void finalize() throws IOException {
-    file.close();				  // close the file 
+    file.close();				  // close the file
   }
 
 }
