@@ -150,11 +150,12 @@ final class TermVectorsWriter {
     return currentField != null;
   }
 
-  /** Add term to the field's term vector. Field must already be open
-   *  of NullPointerException is thrown. Terms should be added in
+  /** Add term to the field's term vector. Field must already be open.
+   *  Terms should be added in
    *  increasing order of terms, one call per unique termNum. ProxPointer
    *  is a pointer into the TermPosition file (prx). Freq is the number of
    *  times this term appears in this field, in this document.
+   * @throws IllegalStateException if document or field is not open
    */
   public final void addTerm(String termText, int freq) {
     addTerm(termText, freq, null, null);
