@@ -81,12 +81,12 @@ public class TestFilterIndexReader extends TestCase {
 
     /** Filter terms with TestTermEnum. */
     public TermEnum terms() throws IOException {
-      return new TestTermEnum(baseReader.terms());
+      return new TestTermEnum(in.terms());
     }
 
     /** Filter positions with TestTermPositions. */
     public TermPositions termPositions() throws IOException {
-      return new TestTermPositions(baseReader.termPositions());
+      return new TestTermPositions(in.termPositions());
     }
   }
 
