@@ -69,7 +69,7 @@ public abstract class IndexReader {
    * @param segmentInfos Used for write-l
    * @param closeDirectory
    */
-  protected IndexReader(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory) {
+  IndexReader(Directory directory, SegmentInfos segmentInfos, boolean closeDirectory) {
     this.directory = directory;
     this.segmentInfos = segmentInfos;
     directoryOwner = true;
