@@ -8,7 +8,6 @@ import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
@@ -30,19 +29,9 @@ public class IndexTaskTest extends TestCase {
 
     private String docsDir = System.getProperty("docs.dir");
     private String indexDir = System.getProperty("index.dir");
-    
+
     private Searcher searcher;
     private Analyzer analyzer;
-
-
-    /**
-     *  Constructor for the IndexTaskTest object
-     *
-     *@param  name  Description of Parameter
-     */
-    public IndexTaskTest(String name) {
-        super(name);
-    }
 
 
     /**
@@ -50,7 +39,7 @@ public class IndexTaskTest extends TestCase {
      *
      *@exception  IOException  Description of Exception
      */
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
         Project project = new Project();
 
         IndexTask task = new IndexTask();
@@ -68,16 +57,11 @@ public class IndexTaskTest extends TestCase {
     }
 
 
-    /**
-     *  A unit test for JUnit
-     */
-    public void testSearch() throws IOException, ParseException {
-        System.out.println("sysout");
-        System.err.println("syserr");
+    public void testSearch() throws Exception {
         Query query = QueryParser.parse("test", "contents", analyzer);
 
         Hits hits = searcher.search(query);
-        
+
         assertEquals("Find document(s)", 2, hits.length());
     }
 
