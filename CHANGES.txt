@@ -6,6 +6,8 @@ $Id$
 
  1. Fixed a few problems with GermanAnalyzer. (Otis, Erik)
 
+ 2. Fixed a few bugs in the file format documentation. (cutting)
+
 
 1.4 RC1
 
