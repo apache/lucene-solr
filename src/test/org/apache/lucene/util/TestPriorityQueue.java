@@ -101,12 +101,12 @@ public class TestPriorityQueue extends TestCase {
     int last = Integer.MIN_VALUE;
     for (int i = 0; i < count; i++) {
       Integer next = (Integer)pq.pop();
-      assert(next.intValue() >= last);
+      assertTrue(next.intValue() >= last);
       last = next.intValue();
       sum2 += last;
     }
 
-    assert(sum == sum2); 
+    assertEquals(sum, sum2); 
 //      end = new Date();
 
 //      System.out.print(((float)(end.getTime()-start.getTime()) / count) * 1000);

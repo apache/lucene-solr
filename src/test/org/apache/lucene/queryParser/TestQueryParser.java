@@ -158,9 +158,9 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term AND \"phrase phrase\"", null, 
                       "+term +\"phrase phrase\"");
     assertQueryEquals("\"hello there\"", null, "\"hello there\"");
-    assert(getQuery("a AND b", null) instanceof BooleanQuery);
-    assert(getQuery("hello", null) instanceof TermQuery);
-    assert(getQuery("\"hello there\"", null) instanceof PhraseQuery);
+    assertTrue(getQuery("a AND b", null) instanceof BooleanQuery);
+    assertTrue(getQuery("hello", null) instanceof TermQuery);
+    assertTrue(getQuery("\"hello there\"", null) instanceof PhraseQuery);
 
     assertQueryEquals("germ term^2.0", null, "germ term^2.0");
     assertQueryEquals("term^2.0", null, "term^2.0");
@@ -205,10 +205,10 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
-    assert(getQuery("term*", null) instanceof PrefixQuery);
-    assert(getQuery("term*^2", null) instanceof PrefixQuery);
-    assert(getQuery("term~", null) instanceof FuzzyQuery);
-    assert(getQuery("term*germ", null) instanceof WildcardQuery);
+    assertTrue(getQuery("term*", null) instanceof PrefixQuery);
+    assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
+    assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
+    assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
   }
 
   public void testQPA() throws Exception {
@@ -221,13 +221,13 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer, 
                       "+term -\"phrase1 phrase2\" term");
     assertQueryEquals("stop", qpAnalyzer, "");
-    assert(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
-    assert(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
+    assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
+    assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a z]", null, "[a-z]");
-    assert(getQuery("[ a z]", null) instanceof RangeQuery);
+    assertTrue(getQuery("[ a z]", null) instanceof RangeQuery);
     assertQueryEquals("[ a z ]", null, "[a-z]");
     assertQueryEquals("{ a z}", null, "{a-z}");
     assertQueryEquals("{ a z }", null, "{a-z}");
@@ -238,4 +238,3 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("gack ( bar blar { a z}) ", null, "gack (bar blar {a-z})");
   }
 }
-
