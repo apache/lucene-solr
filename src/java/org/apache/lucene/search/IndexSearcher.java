@@ -27,7 +27,8 @@ import org.apache.lucene.index.Term;
 /** Implements search over a single IndexReader.
  *
  * <p>Applications usually need only call the inherited {@link #search(Query)}
- * or {@link #search(Query,Filter)} methods.
+ * or {@link #search(Query,Filter)} methods. For performance reasons it is 
+ * recommended to open only one IndexSearcher and use it for all of your searches.
  */
 public class IndexSearcher extends Searcher {
   IndexReader reader;
