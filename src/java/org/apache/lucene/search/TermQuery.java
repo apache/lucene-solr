@@ -131,7 +131,7 @@ public class TermQuery extends Query {
   }
 
   /** Returns the term of this query. */
-  public Term getTerm() { return term; };
+  public Term getTerm() { return term; }
 
   protected Weight createWeight(Searcher searcher) {
     return new TermWeight(searcher);
