@@ -35,7 +35,7 @@ import java.util.TreeSet;
 public class TestSpans extends TestCase {
   private IndexSearcher searcher;
 
-  public final String field = "field";
+  public static final String field = "field";
 
   public void setUp() throws Exception {
     RAMDirectory directory = new RAMDirectory();
