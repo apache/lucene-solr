@@ -21,7 +21,7 @@ import org.apache.lucene.store.InputStream;
 
 final class SegmentTermEnum extends TermEnum implements Cloneable {
   private InputStream input;
-  private FieldInfos fieldInfos;
+  FieldInfos fieldInfos;
   long size;
   long position = -1;
 
