@@ -22,7 +22,7 @@ import org.apache.lucene.index.*;
 final class ExactPhraseScorer extends PhraseScorer {
 
   ExactPhraseScorer(Weight weight, TermPositions[] tps, int[] positions, Similarity similarity,
-                    byte[] norms) throws IOException {
+                    byte[] norms) {
     super(weight, tps, positions, similarity, norms);
   }
 
