@@ -64,37 +64,30 @@ import org.apache.lucene.index.TermEnum;
 class HighFreqTerms {
   public static int numTerms = 100;
 
-  public static void main(String[] args) {
-    try {
-      Directory directory = new FSDirectory("demo index", false);
-      IndexReader reader = IndexReader.open(directory);
+  public static void main(String[] args) throws Exception {
+    IndexReader reader = IndexReader.open("index");
 
-      TermInfoQueue tiq = new TermInfoQueue(numTerms);
-      TermEnum terms = reader.terms();
+    TermInfoQueue tiq = new TermInfoQueue(numTerms);
+    TermEnum terms = reader.terms();
 
-      int minFreq = 0;
-      while (terms.next()) {
-	if (terms.docFreq() > minFreq) {
-	  tiq.put(new TermInfo(terms.term(), terms.docFreq()));
-	  if (tiq.size() > numTerms) {		  // if tiq overfull
-	    tiq.pop();				  // remove lowest in tiq
-	    minFreq = ((TermInfo)tiq.top()).docFreq; // reset minFreq
-	  }
-	}
+    int minFreq = 0;
+    while (terms.next()) {
+      if (terms.docFreq() > minFreq) {
+        tiq.put(new TermInfo(terms.term(), terms.docFreq()));
+        if (tiq.size() > numTerms) {		  // if tiq overfull
+          tiq.pop();				  // remove lowest in tiq
+          minFreq = ((TermInfo)tiq.top()).docFreq; // reset minFreq
+        }
       }
-
-      while (tiq.size() != 0) {
-	TermInfo termInfo = (TermInfo)tiq.pop();
-	System.out.println(termInfo.term + " " + termInfo.docFreq);
-      }
-
-      reader.close();
-      directory.close();
-
-    } catch (Exception e) {
-      System.out.println(" caught a " + e.getClass() +
-			 "\n with message: " + e.getMessage());
     }
+
+    while (tiq.size() != 0) {
+      TermInfo termInfo = (TermInfo)tiq.pop();
+      System.out.println(termInfo.term + " " + termInfo.docFreq);
+    }
+
+    reader.close();
+
   }
 }
 

@@ -299,8 +299,8 @@
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
     <mkdir dir="${dist.dir}/demo"/>
-    <mkdir dir="${dist.dir}/demo/src"/>
     <mkdir dir="${dist.dir}/demo/classes"/>
+    <mkdir dir="${dist.dir}/src"/>
 
     <copy todir="${dist.dir}/docs">
       <fileset dir="${docs.dir}"/>
@@ -311,9 +311,16 @@
     <copy todir="${dist.dir}/demo/classes">
       <fileset dir="${build.demo.classes}"/>
     </copy>
-    <copy todir="${dist.dir}/demo/src">
-      <fileset dir="${build.demo.src}"/>
+
+    <copy todir="${dist.dir}/src">
+      <fileset dir="src"/>
     </copy>
+    <copy todir="${dist.dir}/lib">
+      <fileset dir="lib"/>
+    </copy>
+    <copy todir="${dist.dir}/" file="build.xml"/>
+    <copy todir="${dist.dir}/" file="build.properties"/>
+
     <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
   </target>
 
