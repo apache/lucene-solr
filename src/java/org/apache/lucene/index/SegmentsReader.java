@@ -238,9 +238,7 @@ class SegmentsTermEnum extends TermEnum {
     }
 
     if (t != null && queue.size() > 0) {
-      SegmentMergeInfo top = (SegmentMergeInfo)queue.top();
-      term = top.termEnum.term();
-      docFreq = top.termEnum.docFreq();
+      next();
     }
   }
 
