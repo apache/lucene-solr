@@ -148,21 +148,6 @@ final class BooleanScorer extends Scorer {
       this.scorer = scorer;
     }
 
-    public final void collectHits(HitCollector results) {
-      final int required = scorer.requiredMask;
-      final int prohibited = scorer.prohibitedMask;
-      final float[] coord = scorer.coordFactors;
-
-      for (Bucket bucket = first; bucket!=null; bucket = bucket.next) {
-	if ((bucket.bits & prohibited) == 0 &&	  // check prohibited
-	    (bucket.bits & required) == required){// check required
-	  results.collect(bucket.doc,		  // add to results
-			  bucket.score * coord[bucket.coord]);
-	}
-      }
-      first = null;				  // reset for next round
-    }
-
     public final int size() { return SIZE; }
 
     public HitCollector newCollector(int mask) {
