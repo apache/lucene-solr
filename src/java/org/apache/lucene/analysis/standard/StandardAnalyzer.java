@@ -33,7 +33,7 @@ public class StandardAnalyzer extends Analyzer {
   useful for searching. */
   public static final String[] STOP_WORDS = StopAnalyzer.ENGLISH_STOP_WORDS;
 
-  /** Builds an analyzer. */
+  /** Builds an analyzer with the default stop words ({@link #STOP_WORDS}). */
   public StandardAnalyzer() {
     this(STOP_WORDS);
   }
