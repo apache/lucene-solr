@@ -56,6 +56,9 @@ package org.apache.lucene.index;
 
 
 import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import junit.textui.TestRunner;
+import junit.framework.TestResult;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
@@ -63,6 +66,7 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -73,6 +77,20 @@ import java.io.IOException;
 
 public class TestIndexReader extends TestCase
 {
+    /** Main for running test case by itself. */
+    public static void main(String args[]) {
+        TestRunner.run (new TestSuite(TestIndexReader.class));
+//        TestRunner.run (new TestIndexReader("testBasicDelete"));
+//        TestRunner.run (new TestIndexReader("testDeleteReaderWriterConflict"));
+//        TestRunner.run (new TestIndexReader("testDeleteReaderReaderConflict"));
+//        TestRunner.run (new TestIndexReader("testFilesOpenClose"));
+    }
+    
+    public TestIndexReader(String name) {
+        super(name);
+    }
+
+
     /**
      * Tests the IndexReader.getFieldNames implementation
      * @throws Exception on error
@@ -131,148 +149,286 @@ public class TestIndexReader extends TestCase
         assertTrue(fieldNames.contains("unindexed"));
     }
 
-    public void testDeleteReaderWriterConflict()
+    
+    private void assertTermDocsCount(String msg, 
+                                     IndexReader reader, 
+                                     Term term,
+                                     int expected) 
+    throws IOException
     {
-        Directory dir = new RAMDirectory();
-        IndexWriter writer = null;
-        IndexReader reader = null;
-        Searcher searcher = null;
-        Term searchTerm = new Term("content", "aaa");
-        Hits hits = null;
-
-        try
-        {
-            //  add 100 documents with term : aaa
-            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-            for (int i = 0; i < 100; i++)
-            {
-                addDoc(writer, "aaa");
+        TermDocs tdocs = null;
+        
+        try {
+            tdocs = reader.termDocs(term);
+            assertNotNull(msg + ", null TermDocs", tdocs);
+            int count = 0;
+            while(tdocs.next()) {
+                count++;
             }
-            writer.close();
-            reader = IndexReader.open(dir);
-
-            //  add 100 documents with term : bbb
-            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
-            for (int i = 0; i < 100; i++)
-            {
-                addDoc(writer, "bbb");
-            }
-            writer.optimize();
-            writer.close();
+            assertEquals(msg + ", count mismatch", expected, count);
+            
+        } finally {
+            if (tdocs != null) 
+                try { tdocs.close(); } catch (Exception e) { }
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-
-        try
-        {
-            // delete documents containing term: aaa
-            reader.delete(searchTerm);
-            reader.close();
-        }
-        catch (IOException e)
-        {
-            try
-            {
-                // if reader throws IOException try once more to delete documents with a new reader
-                reader.close();
-                reader = IndexReader.open(dir);
-                reader.delete(searchTerm);
-                reader.close();
-            }
-            catch (IOException e1)
-            {
-                e1.printStackTrace();
-            }
-        }
-
-        try
-        {
-            searcher = new IndexSearcher(dir);
-            hits = searcher.search(new TermQuery(searchTerm));
-            assertEquals(0, hits.length());
-            searcher.close();
-        }
-        catch (IOException e1)
-        {
-            e1.printStackTrace();
-        }
+        
     }
 
-    public void testDeleteReaderReaderConflict()
+    
+
+    public void testBasicDelete() throws IOException
     {
         Directory dir = new RAMDirectory();
+        //Directory dir = FSDirectory.getDirectory("testIndex", true);
+            
         IndexWriter writer = null;
-        IndexReader reader1 = null;
-        IndexReader reader2 = null;
-        Searcher searcher = null;
-        Hits hits = null;
-        Term searchTerm1 = new Term("content", "aaa");
+        IndexReader reader = null;
+        Term searchTerm = new Term("content", "aaa");
+
+        //  add 100 documents with term : aaa
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 100; i++)
+        {
+            addDoc(writer, searchTerm.text());
+        }
+        writer.close();
+        
+        // OPEN READER AT THIS POINT - this should fix the view of the
+        // index at the point of having 100 "aaa" documents and 0 "bbb"
+        reader = IndexReader.open(dir);
+        assertEquals("first docFreq", 100, reader.docFreq(searchTerm));
+        assertTermDocsCount("first reader", reader, searchTerm, 100);
+
+        // DELETE DOCUMENTS CONTAINING TERM: aaa
+        int deleted = 0;
+        reader = IndexReader.open(dir);
+        deleted = reader.delete(searchTerm);
+        assertEquals("deleted count", 100, deleted);
+        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
+        assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
+        reader.close();
+
+        // CREATE A NEW READER and re-test
+        reader = IndexReader.open(dir);
+        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
+        assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
+        reader.close();
+    }
+
+
+    
+    public void testDeleteReaderWriterConflict() throws IOException
+    {
+        //Directory dir = new RAMDirectory();
+        Directory dir = FSDirectory.getDirectory("testIndex", true);
+            
+        Term searchTerm = new Term("content", "aaa");
         Term searchTerm2 = new Term("content", "bbb");
 
-        try
+        //  add 100 documents with term : aaa
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 100; i++)
         {
-            //  add 100 documents with term : aaa
-            //  add 100 documents with term : bbb
-            //  add 100 documents with term : ccc
-            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-            for (int i = 0; i < 100; i++)
-            {
-                addDoc(writer, "aaa");
-                addDoc(writer, "bbb");
-                addDoc(writer, "ccc");
-            }
-            writer.optimize();
-            writer.close();
+            addDoc(writer, searchTerm.text());
         }
-        catch (IOException e)
+        writer.close();
+        
+        // OPEN READER AT THIS POINT - this should fix the view of the
+        // index at the point of having 100 "aaa" documents and 0 "bbb"
+        IndexReader reader = IndexReader.open(dir);
+        assertEquals("first docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("first docFreq", 0, reader.docFreq(searchTerm2));
+        assertTermDocsCount("first reader", reader, searchTerm, 100);
+        assertTermDocsCount("first reader", reader, searchTerm2, 0);
+
+        // add 100 documents with term : bbb
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+        for (int i = 0; i < 100; i++)
         {
-            e.printStackTrace();
+            addDoc(writer, searchTerm2.text());
         }
+        
+        // REQUEST OPTIMIZATION
+        // This causes a new segment to become current for all subsequent
+        // searchers. Because of this, deletions made via a previously open
+        // reader, which would be applied to that reader's segment, are lost
+        // for subsequent searchers/readers
+        writer.optimize();
+        writer.close();
 
-        try
+        // The reader should not see the new data
+        assertEquals("first docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("first docFreq", 0, reader.docFreq(searchTerm2));
+        assertTermDocsCount("first reader", reader, searchTerm, 100);
+        assertTermDocsCount("first reader", reader, searchTerm2, 0);
+        
+        
+        // DELETE DOCUMENTS CONTAINING TERM: aaa
+        // NOTE: the reader was created when only "aaa" documents were in
+        int deleted = 0;
+        try {
+            deleted = reader.delete(searchTerm);
+            fail("Delete allowed on an index reader with stale segment information");
+        } catch (IOException e) {
+            /* success */
+        }
+        
+        // Re-open index reader and try again. This time it should see 
+        // the new data.
+        reader.close();
+        reader = IndexReader.open(dir);
+        assertEquals("first docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("first docFreq", 100, reader.docFreq(searchTerm2));
+        assertTermDocsCount("first reader", reader, searchTerm, 100);
+        assertTermDocsCount("first reader", reader, searchTerm2, 100);
+        
+        deleted = reader.delete(searchTerm);
+        assertEquals("deleted count", 100, deleted);
+        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm2));
+        assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
+        assertTermDocsCount("deleted termDocs", reader, searchTerm2, 100);
+        reader.close();
+
+        // CREATE A NEW READER and re-test
+        reader = IndexReader.open(dir);
+        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
+        assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm2));
+        assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
+        assertTermDocsCount("deleted termDocs", reader, searchTerm2, 100);
+        reader.close();
+    }
+
+    public void testFilesOpenClose() throws IOException 
+    {
+        // Create initial data set
+        Directory dir = FSDirectory.getDirectory("testIndex", true);
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        addDoc(writer, "test");
+        writer.close();
+        dir.close();
+        
+        // Try to erase the data - this ensures that the writer closed all files
+        dir = FSDirectory.getDirectory("testIndex", true);
+        
+        // Now create the data set again, just as before 
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        addDoc(writer, "test");
+        writer.close();
+        dir.close();
+        
+        // Now open existing directory and test that reader closes all files
+        dir = FSDirectory.getDirectory("testIndex", false);
+        IndexReader reader1 = IndexReader.open(dir);
+        reader1.close();
+        dir.close();
+        
+        // The following will fail if reader did not close all files
+        dir = FSDirectory.getDirectory("testIndex", true);
+    }
+    
+    
+    public void testDeleteReaderReaderConflict() throws IOException
+    {
+//        Directory dir = new RAMDirectory();
+        Directory dir = FSDirectory.getDirectory("testIndex", true);
+
+        Term searchTerm1 = new Term("content", "aaa");
+        Term searchTerm2 = new Term("content", "bbb");
+        Term searchTerm3 = new Term("content", "ccc");
+
+        //  add 100 documents with term : aaa
+        //  add 100 documents with term : bbb
+        //  add 100 documents with term : ccc
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 100; i++)
         {
-            reader1 = IndexReader.open(dir);
-            reader2 = IndexReader.open(dir);
+            addDoc(writer, searchTerm1.text());
+            addDoc(writer, searchTerm2.text());
+            addDoc(writer, searchTerm3.text());
+        }
+        writer.optimize();
+        writer.close();
 
-            // delete documents containing term: aaa
-            reader2.delete(searchTerm1);
-            reader2.close();
+        // OPEN TWO READERS
+        // Both readers get segment info as exists at this time
+        IndexReader reader1 = IndexReader.open(dir);
+        assertEquals("first opened", 100, reader1.docFreq(searchTerm1));
+        assertEquals("first opened", 100, reader1.docFreq(searchTerm2));
+        assertEquals("first opened", 100, reader1.docFreq(searchTerm3));
+        assertTermDocsCount("first opened", reader1, searchTerm1, 100);
+        assertTermDocsCount("first opened", reader1, searchTerm2, 100);
+        assertTermDocsCount("first opened", reader1, searchTerm3, 100);
+        
+        IndexReader reader2 = IndexReader.open(dir);
+        assertEquals("first opened", 100, reader2.docFreq(searchTerm1));
+        assertEquals("first opened", 100, reader2.docFreq(searchTerm2));
+        assertEquals("first opened", 100, reader2.docFreq(searchTerm3));
+        assertTermDocsCount("first opened", reader2, searchTerm1, 100);
+        assertTermDocsCount("first opened", reader2, searchTerm2, 100);
+        assertTermDocsCount("first opened", reader2, searchTerm3, 100);
 
-            // delete documents containing term: bbb
+        // DELETE DOCS FROM READER 2 and CLOSE IT
+        // delete documents containing term: aaa
+        // when the reader is closed, the segment info is updated and
+        // the first reader is now stale
+        reader2.delete(searchTerm1);
+        assertEquals("after delete 1", 100, reader2.docFreq(searchTerm1));
+        assertEquals("after delete 1", 100, reader2.docFreq(searchTerm2));
+        assertEquals("after delete 1", 100, reader2.docFreq(searchTerm3));
+        assertTermDocsCount("after delete 1", reader2, searchTerm1, 0);
+        assertTermDocsCount("after delete 1", reader2, searchTerm2, 100);
+        assertTermDocsCount("after delete 1", reader2, searchTerm3, 100);
+        reader2.close();
+
+        // Make sure reader 1 is unchanged since it was open earlier
+        assertEquals("after delete 1", 100, reader1.docFreq(searchTerm1));
+        assertEquals("after delete 1", 100, reader1.docFreq(searchTerm2));
+        assertEquals("after delete 1", 100, reader1.docFreq(searchTerm3));
+        assertTermDocsCount("after delete 1", reader1, searchTerm1, 100);
+        assertTermDocsCount("after delete 1", reader1, searchTerm2, 100);
+        assertTermDocsCount("after delete 1", reader1, searchTerm3, 100);
+        
+        
+        // ATTEMPT TO DELETE FROM STALE READER
+        // delete documents containing term: bbb
+        try {
             reader1.delete(searchTerm2);
-            reader1.close();
+            fail("Delete allowed from a stale index reader");
+        } catch (IOException e) {
+            /* success */
         }
-        catch (IOException e)
-        {
-            try
-            {
-                // if reader throws IOException try once more to delete documents with a new reader
-                reader1.close();
-                reader1 = IndexReader.open(dir);
-                reader1.delete(searchTerm2);
-                reader1.close();
-            }
-            catch (IOException e1)
-            {
-                e1.printStackTrace();
-            }
-        }
+        
+        // RECREATE READER AND TRY AGAIN
+        reader1.close();
+        reader1 = IndexReader.open(dir);
+        assertEquals("reopened", 100, reader1.docFreq(searchTerm1));
+        assertEquals("reopened", 100, reader1.docFreq(searchTerm2));
+        assertEquals("reopened", 100, reader1.docFreq(searchTerm3));
+        assertTermDocsCount("reopened", reader1, searchTerm1, 0);
+        assertTermDocsCount("reopened", reader1, searchTerm2, 100);
+        assertTermDocsCount("reopened", reader1, searchTerm3, 100);
 
-        try
-        {
-            searcher = new IndexSearcher(dir);
-            hits = searcher.search(new TermQuery(searchTerm1));
-            assertEquals(0, hits.length());
-            hits = searcher.search(new TermQuery(searchTerm2));
-            assertEquals(0, hits.length());
-            searcher.close();
-        }
-        catch (IOException e1)
-        {
-            e1.printStackTrace();
-        }
+        reader1.delete(searchTerm2);
+        assertEquals("deleted 2", 100, reader1.docFreq(searchTerm1));
+        assertEquals("deleted 2", 100, reader1.docFreq(searchTerm2));
+        assertEquals("deleted 2", 100, reader1.docFreq(searchTerm3));
+        assertTermDocsCount("deleted 2", reader1, searchTerm1, 0);
+        assertTermDocsCount("deleted 2", reader1, searchTerm2, 0);
+        assertTermDocsCount("deleted 2", reader1, searchTerm3, 100);
+        reader1.close();
+        
+        // Open another reader to confirm that everything is deleted
+        reader2 = IndexReader.open(dir);
+        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm1));
+        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm2));
+        assertEquals("reopened 2", 100, reader2.docFreq(searchTerm3));
+        assertTermDocsCount("reopened 2", reader2, searchTerm1, 0);
+        assertTermDocsCount("reopened 2", reader2, searchTerm2, 0);
+        assertTermDocsCount("reopened 2", reader2, searchTerm3, 100);
+        reader2.close();
+        
+        dir.close();
     }
 
 
