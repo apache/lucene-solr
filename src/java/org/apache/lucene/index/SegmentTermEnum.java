@@ -88,7 +88,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
     clone.input = (InputStream)input.clone();
     clone.termInfo = new TermInfo(termInfo);
-    clone.growBuffer(term.text.length());
+    if (term != null) clone.growBuffer(term.text.length());
 
     return clone;
   }

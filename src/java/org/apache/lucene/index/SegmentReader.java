@@ -61,6 +61,7 @@ import java.util.Vector;
 
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.document.Document;
 
@@ -116,9 +117,14 @@ final class SegmentReader extends IndexReader {
   
   public final synchronized void close() throws IOException {
     if (deletedDocsDirty) {
-      synchronized (directory) {
-	deletedDocs.write(directory, segment + ".tmp");
-	directory.renameFile(segment + ".tmp", segment + ".del");
+      synchronized (directory) {		  // in- & inter-process sync
+	new Lock.With(directory.makeLock("commit.lock")) {
+	    public Object doBody() throws IOException {
+	      deletedDocs.write(directory, segment + ".tmp");
+	      directory.renameFile(segment + ".tmp", segment + ".del");
+	      return null;
+	    }
+	  }.run();
       }
       deletedDocsDirty = false;
     }

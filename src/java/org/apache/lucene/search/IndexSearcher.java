@@ -91,7 +91,8 @@ public final class IndexSearcher extends Searcher {
     return reader.docFreq(term);
   }
 
-  final Document doc(int i) throws IOException {
+  /** For use by {@link HitCollector} implementations. */
+  public final Document doc(int i) throws IOException {
     return reader.document(i);
   }
 
@@ -140,21 +141,12 @@ public final class IndexSearcher extends Searcher {
    * <p>Applications should only use this if they need <it>all</it> of the
    * matching documents.  The high-level search API ({@link
    * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.  */
-  public final void search(Query query, HitCollector results)
-      throws IOException {
-    search(query, null, results);
-  }
-
-  /** Lower-level search API.
+   * non-high-scoring hits.
    *
-   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
-   * scoring document.
-   *
-   * <p>Applications should only use this if they need <it>all</it> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.  */
+   * @param query to match documents
+   * @param filter if non-null, a bitset used to eliminate some documents
+   * @param results to receive hits
+   */
   public final void search(Query query, Filter filter,
 			   final HitCollector results) throws IOException {
     HitCollector collector = results;

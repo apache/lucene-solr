@@ -92,13 +92,16 @@ public final class MultiSearcher extends Searcher {
     return docFreq;
   }
 
-  final Document doc(int n) throws IOException {
+  /** For use by {@link HitCollector} implementations. */
+  public final Document doc(int n) throws IOException {
     int i = searcherIndex(n);			  // find searcher index
     return searchers[i].doc(n - starts[i]);	  // dispatch to searcher
   }
 
-  // replace w/ call to Arrays.binarySearch in Java 1.2
-  private final int searcherIndex(int n) {	  // find searcher for doc n:
+  /** For use by {@link HitCollector} implementations to identify the
+   * index of the sub-searcher that a particular hit came from. */
+  public final int searcherIndex(int n) {	  // find searcher for doc n:
+    // replace w/ call to Arrays.binarySearch in Java 1.2
     int lo = 0;					  // search starts array
     int hi = searchers.length - 1;		  // for first element less
 						  // than n, return its index
@@ -148,5 +151,36 @@ public final class MultiSearcher extends Searcher {
       scoreDocs[i] = (ScoreDoc)hq.pop();
     
     return new TopDocs(totalHits, scoreDocs);
+  }
+
+
+  /** Lower-level search API.
+   *
+   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
+   * scoring document.
+   *
+   * <p>Applications should only use this if they need <it>all</it> of the
+   * matching documents.  The high-level search API ({@link
+   * Searcher#search(Query)}) is usually more efficient, as it skips
+   * non-high-scoring hits.
+   *
+   * @param query to match documents
+   * @param filter if non-null, a bitset used to eliminate some documents
+   * @param results to receive hits
+   */
+  public final void search(Query query, Filter filter,
+			   final HitCollector results)
+    throws IOException {
+    for (int i = 0; i < searchers.length; i++) {
+      
+      final int start = starts[i];
+
+      searchers[i].search(query, filter, new HitCollector() {
+	  public void collect(int doc, float score) {
+	    results.collect(doc + start, score);
+	  }
+	});
+
+    }
   }
 }

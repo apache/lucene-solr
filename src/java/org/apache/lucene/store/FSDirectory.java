@@ -60,9 +60,7 @@ import java.io.RandomAccessFile;
 import java.io.FileNotFoundException;
 import java.util.Hashtable;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.InputStream;
-import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.util.Constants;
 
 /**
   Straightforward implementation of Directory as a directory of files.
@@ -111,6 +109,8 @@ final public class FSDirectory extends Directory {
       if (dir == null) {
 	dir = new FSDirectory(file, create);
 	DIRECTORIES.put(file, dir);
+      } else if (create) {
+        dir.create();
       }
     }
     synchronized (dir) {
@@ -124,20 +124,24 @@ final public class FSDirectory extends Directory {
 
   private FSDirectory(File path, boolean create) throws IOException {
     directory = path;
-    if (!directory.exists() && create)
-      directory.mkdir();
+
+    if (create)
+      create();
+
     if (!directory.isDirectory())
       throw new IOException(path + " not a directory");
+  }
 
-    if (create) {				  // clear old files
-      String[] files = directory.list();
-      for (int i = 0; i < files.length; i++) {
-	File file = new File(directory, files[i]);
-	if (!file.delete())
-	  throw new IOException("couldn't delete " + files[i]);
-      }
+  private synchronized void create() throws IOException {
+    if (!directory.exists())
+      directory.mkdir();
+
+    String[] files = directory.list();            // clear old files
+    for (int i = 0; i < files.length; i++) {
+      File file = new File(directory, files[i]);
+      if (!file.delete())
+        throw new IOException("couldn't delete " + files[i]);
     }
-
   }
 
   /** Returns an array of strings, one for each file in the directory. */
@@ -206,6 +210,26 @@ final public class FSDirectory extends Directory {
     return new FSInputStream(new File(directory, name));
   }
 
+  /** Construct a {@link Lock}.
+   * @param name the name of the lock file
+   */
+  public final Lock makeLock(String name) {
+    final File lockFile = new File(directory, name);
+    return new Lock() {
+	public boolean obtain() throws IOException {
+          if (Constants.JAVA_1_1) return true;    // locks disabled in jdk 1.1
+          return lockFile.createNewFile();
+	}
+	public void release() {
+          if (Constants.JAVA_1_1) return;         // locks disabled in jdk 1.1
+	  lockFile.delete();
+	}
+	public String toString() {
+	  return "Lock@" + lockFile;
+	}
+      };
+  }
+
   /** Closes the store to future operations. */
   public final synchronized void close() throws IOException {
     if (--refCount <= 0) {
@@ -213,6 +237,11 @@ final public class FSDirectory extends Directory {
 	DIRECTORIES.remove(directory);
       }
     }
+  }
+
+  /** For debug output. */
+  public String toString() {
+    return "FSDirectory@" + directory;
   }
 }
 
@@ -278,8 +307,6 @@ final class FSOutputStream extends OutputStream {
   RandomAccessFile file = null;
 
   public FSOutputStream(File path) throws IOException {
-    if (path.isFile())
-      throw new IOException(path + " already exists");
     file = new RandomAccessFile(path, "rw");
   }
 

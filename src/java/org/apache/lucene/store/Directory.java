@@ -108,6 +108,11 @@ abstract public class Directory {
   abstract public InputStream openFile(String name)
        throws IOException, SecurityException;
 
+  /** Construct a {@link Lock}.
+   * @param name the name of the lock file
+   */
+  abstract public Lock makeLock(String name);
+
   /** Closes the store. */
   abstract public void close()
        throws IOException, SecurityException;

@@ -56,10 +56,10 @@ package org.apache.lucene;
 
 import java.io.IOException;
 
-import com.lucene.store.Directory;
-import com.lucene.store.FSDirectory;
-import com.lucene.index.IndexReader;
-import com.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 
 class DeleteFiles {
   public static void main(String[] args) {

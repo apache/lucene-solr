@@ -54,8 +54,8 @@ package org.apache.lucene;
  * <http://www.apache.org/>.
  */
 
-import com.lucene.analysis.StopAnalyzer;
-import com.lucene.index.IndexWriter;
+import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.index.IndexWriter;
 
 import java.io.File;
 import java.util.Date;

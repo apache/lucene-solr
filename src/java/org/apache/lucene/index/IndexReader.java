@@ -58,6 +58,7 @@ import java.io.IOException;
 import java.io.File;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.document.Document;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
@@ -89,17 +90,21 @@ abstract public class IndexReader {
   }
 
   /** Returns an IndexReader reading the index in the given Directory. */
-  public static IndexReader open(Directory directory) throws IOException {
-    synchronized (directory) {
-      SegmentInfos infos = new SegmentInfos();
-      infos.read(directory);
-      if (infos.size() == 1)			  // index is optimized
-	return new SegmentReader(infos.info(0), true);
-      
-      SegmentReader[] readers = new SegmentReader[infos.size()];
-      for (int i = 0; i < infos.size(); i++)
-	readers[i] = new SegmentReader(infos.info(i), i == infos.size() - 1);
-      return new SegmentsReader(readers);
+  public static IndexReader open(final Directory directory) throws IOException{
+    synchronized (directory) {			  // in- & inter-process sync
+      return (IndexReader)new Lock.With(directory.makeLock("commit.lock")) {
+	  public Object doBody() throws IOException {
+	    SegmentInfos infos = new SegmentInfos();
+	    infos.read(directory);
+	    if (infos.size() == 1)		  // index is optimized
+	      return new SegmentReader(infos.info(0), true);
+
+	    SegmentReader[] readers = new SegmentReader[infos.size()];
+	    for (int i = 0; i < infos.size(); i++)
+	      readers[i] = new SegmentReader(infos.info(i), i==infos.size()-1);
+	    return new SegmentsReader(readers);
+	  }
+	}.run();
     }
   }
 

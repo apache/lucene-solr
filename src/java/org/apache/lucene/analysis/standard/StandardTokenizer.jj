@@ -168,7 +168,7 @@ SKIP : {					  // skip unrecognized chars
 
 /** Returns the next token in the stream, or null at EOS.
  * <p>The returned token's type is set to an element of {@link
- * StandardTokenizerConstants.tokenImage}.
+ * StandardTokenizerConstants#tokenImage}.
  */
 org.apache.lucene.analysis.Token next() throws IOException :
 {

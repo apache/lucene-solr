@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="Jakarta Lucene" href="http://jakarta.apache.org/lucene/">
+
+    <title>Jakarta Lucene</title>
+    <logo href="/images/lucene_green_300.gif">Jakarta Lucene</logo>
+    
+    <body>
+    <menu name="About">
+        <item name="Overview"           href="/index.html"/>
+        <item name="Powered by Lucene"  href="/powered.html"/>
+        <item name="Who We Are"         href="/whoweare.html"/>
+        <item name="Mailing Lists"      href="/site/mail.html"/>
+        <item name="Bugs"               href="/site/bugs.html"/>
+    </menu>
+
+    <menu name="Documentation">
+        <item name="FAQ"               href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
+        <item name="Articles"          href="/resources.html"/>
+        <item name="Javadoc"            href="/api/index.html"/>
+    </menu>
+
+    <menu name="Download">
+        <item name="Binaries"           href="/site/binindex.html"/>
+        <item name="Source Code"        href="/site/sourceindex.html"/>
+        <item name="CVS Repositories"   href="/site/cvsindex.html"/>
+    </menu>
+
+    <menu name="Jakarta">
+        <item name="Get Involved"          href="/site/getinvolved.html"/>
+        <item name="Acknowledgements"      href="/site/acknowledgements.html"/>
+        <item name="Contact"               href="/site/contact.html"/>
+        <item name="Legal"                 href="/site/legal.html"/>
+    </menu>
+    </body>
+</project>
