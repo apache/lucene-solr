@@ -61,15 +61,15 @@ import de.lanlab.larm.util.UnderflowException;
 import de.lanlab.larm.storage.LinkStorage;
 
 /**
- *  this is a message handler that runs in its own thread.
+ *  This is a message handler that runs in its own thread.
  *  Messages can be put via <code>putMessage</code> or <code>putMessages</code>
  *  (use the latter whenever possible).<br>
- *  The messages are passed to the filters in the order in which the filters where
+ *  Messages are passed to the filters in the order in which the filters where
  *  added to the handler.<br>
- *  They can consume the message by returning null. Otherwise, they return a Message
- *  object, usually the one they got.<br>
+ *  They can consume a message by returning <code>null</code>. Otherwise, they
+ *  return a Message object, usually the one they got.<br>
  *  The filters will run synchronously within the message handler thread<br>
- *  This implements a chain of responsibility-style message handling
+ *  This implements a chain of responsibility-style message handling.
  * @version $Id$
  */
 public class MessageHandler implements Runnable, LinkStorage
@@ -111,19 +111,20 @@ public class MessageHandler implements Runnable, LinkStorage
     SimpleObservable messageQueueObservable = new SimpleObservable();
     SimpleObservable messageProcessorObservable = new SimpleObservable();
 
-    public boolean isWorkingOnMessage()
-    {
-        return workingOnMessage;
-    }
-
     /**
      *  messageHandler-Thread erzeugen und starten
      */
     public MessageHandler()
     {
-        t = new Thread(this,"MessageHandler Thread");
-        t.setPriority(5);   // higher priority to prevent starving when a lot of fetcher threads are used
+        t = new Thread(this, "MessageHandler Thread");
+	// higher priority to prevent starving when a lot of fetcher threads are used
+        t.setPriority(5);
         t.start();
+    }
+
+    public boolean isWorkingOnMessage()
+    {
+        return workingOnMessage;
     }
 
     /**
@@ -131,7 +132,7 @@ public class MessageHandler implements Runnable, LinkStorage
      */
     public void finalize()
     {
-        if(t != null)
+        if (t != null)
         {
             try
             {
@@ -174,7 +175,6 @@ public class MessageHandler implements Runnable, LinkStorage
         messageProcessorObservable.addObserver(o);
     }
 
-
     /**
      *  insert one message into the queue
      */
@@ -197,8 +197,8 @@ public class MessageHandler implements Runnable, LinkStorage
     {
         for(Iterator i = msgs.iterator(); i.hasNext();)
         {
-          Message msg = (Message)i.next();
-          messageQueue.insert(msg);
+	    Message msg = (Message)i.next();
+	    messageQueue.insert(msg);
         }
         messageQueueObservable.setChanged();
         messageQueueObservable.notifyObservers(new Integer(1));
@@ -247,8 +247,12 @@ public class MessageHandler implements Runnable, LinkStorage
                 {
                     synchronized(this.queueMonitor)
                     {
+			// note: another thread may put a new message in the queue after
+			// messageQueue.size() is called below, which would result in the
+			// inconsistent state: messageWaiting would be set to false, but
+			// the queue would actually not be empty
                         m = (Message)messageQueue.remove();
-                        if(messageQueue.size() == 0)
+                        if (messageQueue.size() == 0)
                         {
                             messagesWaiting = false;
                         }
@@ -279,7 +283,7 @@ public class MessageHandler implements Runnable, LinkStorage
                         }
                         catch(ClassCastException e)
                         {
-                          System.out.println("MessageHandler:run: ClassCastException(2): " + e.getMessage());
+			    System.out.println("MessageHandler:run: ClassCastException(2): " + e.getMessage());
                         }
                     }
                 }
