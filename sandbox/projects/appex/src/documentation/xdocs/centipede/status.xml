@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<document><header><title>Project Status</title></header><body><section title="Developers"><p><table><tr><td>Andrew C. Oliver</td><td>acoliver@apache.org</td><td>acoliver</td></tr><tr><td>Glen Stampoultzis</td><td>glens@apache.org</td><td>glens</td></tr><tr><td>Marc Johnson</td><td>mjohnson@apache.org</td><td>mjohnson</td></tr><tr><td>Nicola Ken Barozzi</td><td>nicolaken@apache.org</td><td>nicolaken</td></tr><tr><td>Rainer Klute</td><td>rainer@apache.org</td><td>rainer</td></tr></table></p></section><section title="To do"><section title="&#10;			      priority:high"><p><table><tr><th>context</th><th>what</th><th>assigned to</th></tr><tr><td>docs</td><td>
-      Finish writing documentation, by simply answering these questions (Leo Simmons):- what is centipede?; how does it work?; what features does it provide? (how, how stable, ...)
-      ; which features will it provide? (when, how); which projects does it use? (how, which version, why, ...); what is the project structure?; what is the project architecture?
-      ; where's the latest download?; how do I build?; how do I install?; how do I run the sample?; how do I integrate?; which XML files are used?; what are their DTDs and purposes?
-      ; what is the relationship between centipede and gump, forrest, ant, maven, ...?
-    </td><td>nicolaken</td></tr></table></p></section></section><section title="Changes"><section title="&#10;			    release:1.0&#10;			     of date:20020430"><p><table><tr><th>type</th><th>what</th><th>developer</th></tr><tr><td>add</td><td>
-       Commited first version of 1.0 codebase
-    </td><td>[nicolaken]</td></tr></table></p></section></section></body></document>

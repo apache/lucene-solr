@@ -1,5 +1,0 @@
-See Apache Cocoon documentation
-"Entity resolution with catalogs" (catalog.html)
-
-Note: You must move the CatalogManager.properties file to
-some filesystem location that is accessible to your classpath.
