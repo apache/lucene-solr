@@ -244,14 +244,19 @@ public class ChainedFilter extends Filter
         {
             case OR:
                 result.or(filter.bits(reader));
+                break;
             case AND:
                 result.and(filter.bits(reader));
+                break;
             case ANDNOT:
                 result.andNot(filter.bits(reader));
+                break;
             case XOR:
                 result.xor(filter.bits(reader));
+                break;
             default:
                 doChain(result, reader, DEFAULT, filter);
+                break;          
         }
     }
 }
