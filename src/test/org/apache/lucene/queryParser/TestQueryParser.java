@@ -89,7 +89,7 @@ public class TestQueryParser extends TestCase {
       super(f, a);
     }
 
-    protected Query getFuzzyQuery(String field, String termStr) throws ParseException {
+    protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException {
       throw new ParseException("Fuzzy queries not allowed");
     }
 
@@ -235,15 +235,17 @@ public class TestQueryParser extends TestCase {
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~");
-    assertQueryEquals("term~^2", null, "term^2.0~");
-    assertQueryEquals("term^2~", null, "term^2.0~");
+    assertQueryEquals("term~", null, "term~0.5");
+    assertQueryEquals("term~0.7", null, "term~0.7");
+    assertQueryEquals("term~^2", null, "term^2.0~0.5");
+    assertQueryEquals("term^2~", null, "term^2.0~0.5");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
     assertTrue(getQuery("term*", null) instanceof PrefixQuery);
     assertTrue(getQuery("term*^2", null) instanceof PrefixQuery);
     assertTrue(getQuery("term~", null) instanceof FuzzyQuery);
+    assertTrue(getQuery("term~0.7", null) instanceof FuzzyQuery);
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
 /* Tests to see that wild card terms are (or are not) properly
@@ -364,10 +366,10 @@ public class TestQueryParser extends TestCase {
 
     assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
 
-    assertQueryEquals("a:b\\-c~", a, "a:b-c~");
-    assertQueryEquals("a:b\\+c~", a, "a:b+c~");
-    assertQueryEquals("a:b\\:c~", a, "a:b:c~");
-    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~");
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~0.5");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~0.5");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~0.5");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~0.5");
 
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
     assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
