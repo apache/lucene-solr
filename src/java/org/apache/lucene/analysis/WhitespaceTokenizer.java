@@ -56,22 +56,18 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
-/** A LetterTokenizer is a tokenizer that divides text at non-letters.  That's
-  to say, it defines tokens as maximal strings of adjacent letters, as defined
-  by java.lang.Character.isLetter() predicate.
+/** A WhitespaceTokenizer is a tokenizer that divides text at whitespace.
+ * Adjacent sequences of non-Whitespace characters form tokens. */
 
-  Note: this does a decent job for most European languages, but does a terrible
-  job for some Asian languages, where words are not separated by spaces. */
-
-public class LetterTokenizer extends CharTokenizer {
-  /** Construct a new LetterTokenizer. */
-  public LetterTokenizer(Reader in) {
+public class WhitespaceTokenizer extends CharTokenizer {
+  /** Construct a new WhitespaceTokenizer. */
+  public WhitespaceTokenizer(Reader in) {
     super(in);
   }
 
-  /** Collects only characters which satisfy
-   * {@link Character.isLetter(char)}.*/
+  /** Collects only characters which do not satisfy
+   * {@link Character.isWhitespace(char)}.*/
   protected boolean isTokenChar(char c) {
-    return Character.isLetter(c);
+    return !Character.isWhitespace(c);
   }
 }
