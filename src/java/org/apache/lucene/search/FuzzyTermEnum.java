@@ -32,15 +32,49 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     String field = "";
     String text = "";
     int textlen;
+    String prefix = "";
+    int prefixLength = 0;
     float minimumSimilarity;
     double scale_factor;
     
     
+    /**
+     * Empty prefix and minSimilarity of 0.5f are used.
+     * 
+     * @param reader
+     * @param term
+     * @throws IOException
+     * @see #FuzzyTermEnum(IndexReader, Term, float, int)
+     */
     public FuzzyTermEnum(IndexReader reader, Term term) throws IOException {
-      this(reader, term, 0.5f);
+      this(reader, term, FuzzyQuery.defaultMinSimilarity, 0);
     }
     
+    /**
+     * This is the standard FuzzyTermEnum with an empty prefix.
+     * 
+     * @param reader
+     * @param term
+     * @param minSimilarity
+     * @throws IOException
+     * @see #FuzzyTermEnum(IndexReader, Term, float, int)
+     */
     public FuzzyTermEnum(IndexReader reader, Term term, float minSimilarity) throws IOException {
+      this(reader, term, minSimilarity, 0);
+    }
+    
+    /**
+     * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
+     * length <code>prefixLength</code> with <code>term</code> and which have a fuzzy similarity &gt;
+     * <code>minSimilarity</code>. 
+     * 
+     * @param reader Delivers terms.
+     * @param term Pattern term.
+     * @param minSimilarity Minimum required similarity for terms from the reader. Default value is 0.5f.
+     * @param prefixLength Length of required common prefix. Default value is 0.
+     * @throws IOException
+     */
+    public FuzzyTermEnum(IndexReader reader, Term term, float minSimilarity, int prefixLength) throws IOException {
         super();
         minimumSimilarity = minSimilarity;
         scale_factor = 1.0f / (1.0f - minimumSimilarity);
@@ -48,7 +82,13 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
         field = searchTerm.field();
         text = searchTerm.text();
         textlen = text.length();
-        setEnum(reader.terms(new Term(searchTerm.field(), "")));
+        if(prefixLength > 0 && prefixLength < textlen){
+            this.prefixLength = prefixLength;
+            prefix = text.substring(0, prefixLength);
+            text = text.substring(prefixLength);
+            textlen = text.length();
+        }
+        setEnum(reader.terms(new Term(searchTerm.field(), prefix)));
     }
     
     /**
@@ -56,8 +96,9 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      calculate the distance between the given term and the comparing term. 
      */
     protected final boolean termCompare(Term term) {
-        if (field == term.field()) {
-            String target = term.text();
+        String termText = term.text();
+        if (field == term.field() && termText.startsWith(prefix)) {
+            String target = termText.substring(prefixLength);
             int targetlen = target.length();
             int dist = editDistance(text, target, textlen, targetlen);
             distance = 1 - ((double)dist / (double)Math.min(textlen, targetlen));

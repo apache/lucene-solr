@@ -96,6 +96,7 @@ public class QueryParser {
   Analyzer analyzer;
   String field;
   int phraseSlop = 0;
+  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
@@ -150,6 +151,19 @@ public class QueryParser {
    */
   public String getField() {
     return field;
+  }
+  
+   /**
+   * Get the default minimal similarity for fuzzy queries.
+   */
+  public float getFuzzyMinSim() {
+      return fuzzyMinSim;
+  }
+  /**
+   *Set the default minimum similarity for fuzzy queries.
+   */
+  public void setFuzzyMinSim(float fuzzyMinSim) {
+      this.fuzzyMinSim = fuzzyMinSim;
   }
 
   /**
@@ -439,10 +453,10 @@ public class QueryParser {
    * @return Resulting {@link Query} built for the term
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFuzzyQuery(String field, String termStr) throws ParseException
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     Term t = new Term(field, termStr);
-    return new FuzzyQuery(t);
+    return new FuzzyQuery(t, minSimilarity);
   }
 
   /**
@@ -531,8 +545,7 @@ PARSER_END(QueryParser)
 | <CARAT:     "^" > : Boost
 | <QUOTED:     "\"" (~["\""])+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
-| <FUZZY:     "~" >
-| <SLOP:      "~" (<_NUM_CHAR>)+ >
+| <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <PREFIXTERM:  <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" >
 | <WILDTERM:  <_TERM_START_CHAR>
               (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
@@ -641,7 +654,7 @@ Query Clause(String field) : {
 
 
 Query Term(String field) : {
-  Token term, boost=null, slop=null, goop1, goop2;
+  Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
@@ -656,8 +669,8 @@ Query Term(String field) : {
        | term=<WILDTERM> { wildcard=true; }
        | term=<NUMBER>
      )
-     [ <FUZZY> { fuzzy=true; } ]
-     [ <CARAT> boost=<NUMBER> [ <FUZZY> { fuzzy=true; } ] ]
+     [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
+     [ <CARAT> boost=<NUMBER> [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ] ]
      {
        String termImage=discardEscapeChar(term.image);
        if (wildcard) {
@@ -667,7 +680,11 @@ Query Term(String field) : {
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
        } else if (fuzzy) {
-         q = getFuzzyQuery(field, termImage);
+       	  float fms = fuzzyMinSim;
+       	  try {
+            fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+       	  } catch (Exception ignored) { }
+         q = getFuzzyQuery(field, termImage, fms);
        } else {
          q = getFieldQuery(field, termImage);
        }
@@ -708,14 +725,14 @@ Query Term(String field) : {
           q = getRangeQuery(field, goop1.image, goop2.image, false);
         }
      | term=<QUOTED>
-       [ slop=<SLOP> ]
+       [ fuzzySlop=<FUZZY_SLOP> ]
        [ <CARAT> boost=<NUMBER> ]
        {
          int s = phraseSlop;
 
-         if (slop != null) {
+         if (fuzzySlop != null) {
            try {
-             s = Float.valueOf(slop.image.substring(1)).intValue();
+             s = Float.valueOf(fuzzySlop.image.substring(1)).intValue();
            }
            catch (Exception ignored) { }
          }

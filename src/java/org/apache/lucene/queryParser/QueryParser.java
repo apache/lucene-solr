@@ -73,6 +73,7 @@ public class QueryParser implements QueryParserConstants {
   Analyzer analyzer;
   String field;
   int phraseSlop = 0;
+  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
@@ -127,6 +128,19 @@ public class QueryParser implements QueryParserConstants {
    */
   public String getField() {
     return field;
+  }
+
+   /**
+   * Get the default minimal similarity for fuzzy queries.
+   */
+  public float getFuzzyMinSim() {
+      return fuzzyMinSim;
+  }
+  /**
+   *Set the default minimum similarity for fuzzy queries.
+   */
+  public void setFuzzyMinSim(float fuzzyMinSim) {
+      this.fuzzyMinSim = fuzzyMinSim;
   }
 
   /**
@@ -416,10 +430,10 @@ public class QueryParser implements QueryParserConstants {
    * @return Resulting {@link Query} built for the term
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFuzzyQuery(String field, String termStr) throws ParseException
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     Term t = new Term(field, termStr);
-    return new FuzzyQuery(t);
+    return new FuzzyQuery(t, minSimilarity);
   }
 
   /**
@@ -622,7 +636,7 @@ public class QueryParser implements QueryParserConstants {
   }
 
   final public Query Term(String field) throws ParseException {
-  Token term, boost=null, slop=null, goop1, goop2;
+  Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
@@ -654,9 +668,9 @@ public class QueryParser implements QueryParserConstants {
         throw new ParseException();
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case FUZZY:
-        jj_consume_token(FUZZY);
-                 fuzzy=true;
+      case FUZZY_SLOP:
+        fuzzySlop = jj_consume_token(FUZZY_SLOP);
+                                fuzzy=true;
         break;
       default:
         jj_la1[8] = jj_gen;
@@ -667,9 +681,9 @@ public class QueryParser implements QueryParserConstants {
         jj_consume_token(CARAT);
         boost = jj_consume_token(NUMBER);
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-        case FUZZY:
-          jj_consume_token(FUZZY);
-                                          fuzzy=true;
+        case FUZZY_SLOP:
+          fuzzySlop = jj_consume_token(FUZZY_SLOP);
+                                                         fuzzy=true;
           break;
         default:
           jj_la1[9] = jj_gen;
@@ -688,7 +702,11 @@ public class QueryParser implements QueryParserConstants {
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
        } else if (fuzzy) {
-         q = getFuzzyQuery(field, termImage);
+          float fms = fuzzyMinSim;
+          try {
+            fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+          } catch (Exception ignored) { }
+         q = getFuzzyQuery(field, termImage, fms);
        } else {
          q = getFieldQuery(field, termImage);
        }
@@ -809,8 +827,8 @@ public class QueryParser implements QueryParserConstants {
     case QUOTED:
       term = jj_consume_token(QUOTED);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case SLOP:
-        slop = jj_consume_token(SLOP);
+      case FUZZY_SLOP:
+        fuzzySlop = jj_consume_token(FUZZY_SLOP);
         break;
       default:
         jj_la1[19] = jj_gen;
@@ -827,9 +845,9 @@ public class QueryParser implements QueryParserConstants {
       }
          int s = phraseSlop;
 
-         if (slop != null) {
+         if (fuzzySlop != null) {
            try {
-             s = Float.valueOf(slop.image.substring(1)).intValue();
+             s = Float.valueOf(fuzzySlop.image.substring(1)).intValue();
            }
            catch (Exception ignored) { }
          }
@@ -883,16 +901,11 @@ public class QueryParser implements QueryParserConstants {
   private int jj_gen;
   final private int[] jj_la1 = new int[22];
   static private int[] jj_la1_0;
-  static private int[] jj_la1_1;
   static {
       jj_la1_0();
-      jj_la1_1();
    }
    private static void jj_la1_0() {
-      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0x1f31f80,0x8000,0x1f31000,0x1320000,0x40000,0x40000,0x8000,0x18000000,0x2000000,0x18000000,0x8000,0x80000000,0x20000000,0x80000000,0x8000,0x80000,0x8000,0x1f30000,};
-   }
-   private static void jj_la1_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x0,0x0,0x0,};
+      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0xfb1f80,0x8000,0xfb1000,0x9a0000,0x40000,0x40000,0x8000,0xc000000,0x1000000,0xc000000,0x8000,0xc0000000,0x10000000,0xc0000000,0x8000,0x40000,0x8000,0xfb0000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -1041,8 +1054,8 @@ public class QueryParser implements QueryParserConstants {
 
   public ParseException generateParseException() {
     jj_expentries.removeAllElements();
-    boolean[] la1tokens = new boolean[33];
-    for (int i = 0; i < 33; i++) {
+    boolean[] la1tokens = new boolean[32];
+    for (int i = 0; i < 32; i++) {
       la1tokens[i] = false;
     }
     if (jj_kind >= 0) {
@@ -1055,13 +1068,10 @@ public class QueryParser implements QueryParserConstants {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
             la1tokens[j] = true;
           }
-          if ((jj_la1_1[i] & (1<<j)) != 0) {
-            la1tokens[32+j] = true;
-          }
         }
       }
     }
-    for (int i = 0; i < 33; i++) {
+    for (int i = 0; i < 32; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
