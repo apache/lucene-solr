@@ -57,6 +57,7 @@ package de.lanlab.larm.fetcher;
 import org.apache.oro.text.regex.Perl5Matcher;
 import org.apache.oro.text.regex.Perl5Compiler;
 import org.apache.oro.text.regex.Pattern;
+import de.lanlab.larm.util.*;
 
 /**
  * filter class. Tries to match a regular expression with an incoming URL
@@ -77,11 +78,13 @@ class URLScopeFilter extends Filter implements MessageListener
     private Pattern pattern;
     private Perl5Matcher matcher;
     private Perl5Compiler compiler;
+    SimpleLogger log;
 
-    public URLScopeFilter()
+    public URLScopeFilter(SimpleLogger log)
     {
             matcher = new Perl5Matcher();
             compiler = new Perl5Compiler();
+            this.log = log;
     }
 
     public String getRexString()
@@ -108,7 +111,7 @@ class URLScopeFilter extends Filter implements MessageListener
     {
         if(message instanceof URLMessage)
         {
-            String urlString = ((URLMessage)message).toString();
+            String urlString = ((URLMessage)message).getNormalizedURLString();
             int length = urlString.length();
             char buffer[] = new char[length];
             urlString.getChars(0,length,buffer,0);
@@ -117,8 +120,10 @@ class URLScopeFilter extends Filter implements MessageListener
             boolean match = matcher.matches(buffer, pattern);
             if(!match)
             {
-                //System.out.println("not in Scope: " + urlString);
+                //log.log("URLScopeFilter: not in scope: " + urlString);
+                log.log(message.toString());
                 filtered++;
+
                 return null;
             }
         }
