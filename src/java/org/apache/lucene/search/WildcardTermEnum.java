@@ -75,7 +75,11 @@ public class WildcardTermEnum extends FilteredTermEnum {
   boolean fieldMatch = false;
   boolean endEnum = false;
 
-  /** Creates new WildcardTermEnum */
+  /**
+   * Creates a new <code>WildcardTermEnum</code>.  Passing in a
+   * {@link org.apache.lucene.index.Term} that does not contain a
+   * <code>WILDCARD_CHAR</code> will cause an exception to be thrown.
+   */
   public WildcardTermEnum(IndexReader reader, Term term) throws IOException {
       super(reader, term);
       searchTerm = term;
@@ -85,8 +89,12 @@ public class WildcardTermEnum extends FilteredTermEnum {
       int sidx = text.indexOf(WILDCARD_STRING);
       int cidx = text.indexOf(WILDCARD_CHAR);
       int idx = sidx;
-      if (idx == -1) idx = cidx;
-      else if (cidx >= 0) idx = Math.min(idx, cidx);
+      if (idx == -1) {
+        idx = cidx;
+      }
+      else if (cidx >= 0) {
+        idx = Math.min(idx, cidx);
+      }
 
       pre = searchTerm.text().substring(0,idx);
       preLen = pre.length();
