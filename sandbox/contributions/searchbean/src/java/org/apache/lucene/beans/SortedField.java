@@ -10,7 +10,7 @@ package org.apache.lucene.beans;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
-import java.util.Hashtable; 
+import java.util.Hashtable;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class SortedField {
      * @param fieldName the name of the field to add
      * @param directory Lucene Directory
      */
-    public static void addField(String fieldName, Directory directory) throws IOException{        
+    public static void addField(String fieldName, Directory directory) throws IOException{
         IndexReader ir = IndexReader.open(directory);
         addField(fieldName, ir);
     }
@@ -73,7 +73,11 @@ public class SortedField {
         int numDocs = ir.numDocs();
         fieldValues = new String[numDocs];
         for (int i=0; i<numDocs; i++) {
-            fieldValues[i] = ir.document(i).get(fieldName);
+            if (ir.isDeleted(i) == false){
+                fieldValues[i] = ir.document(i).get(fieldName);
+            } else {
+                fieldValues[i] = "";
+            }
         }
         ir.close();
     }
