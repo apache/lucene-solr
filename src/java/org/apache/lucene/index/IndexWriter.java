@@ -225,19 +225,11 @@ public final class IndexWriter {
   public final synchronized void addIndexes(Directory[] dirs)
       throws IOException {
     optimize();					  // start with zero or 1 seg
-    int minSegment = segmentInfos.size();
-    int segmentsAddedSinceMerge = 0;
     for (int i = 0; i < dirs.length; i++) {
       SegmentInfos sis = new SegmentInfos();	  // read infos from dir
       sis.read(dirs[i]);
       for (int j = 0; j < sis.size(); j++) {
 	segmentInfos.addElement(sis.info(j));	  // add each info
-
-	// merge whenever mergeFactor segments have been added
-	if (++segmentsAddedSinceMerge == mergeFactor) {
-	  mergeSegments(minSegment++, false);
-	  segmentsAddedSinceMerge = 0;
-	}
       }
     }
     optimize();					  // final cleanup
@@ -286,13 +278,7 @@ public final class IndexWriter {
 
   /** Pops segments off of segmentInfos stack down to minSegment, merges them,
     and pushes the merged index onto the top of the segmentInfos stack. */
-  private final void mergeSegments(int minSegment) throws IOException {
-    mergeSegments(minSegment, true);
-  }
-
-  /** Pops segments off of segmentInfos stack down to minSegment, merges them,
-    and pushes the merged index onto the top of the segmentInfos stack. */
-  private final void mergeSegments(int minSegment, boolean delete)
+  private final void mergeSegments(int minSegment)
       throws IOException {
     String mergedName = newSegmentName();
     int mergedDocCount = 0;
@@ -305,8 +291,9 @@ public final class IndexWriter {
 	infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
       SegmentReader reader = new SegmentReader(si);
       merger.add(reader);
-      if (delete)
-	segmentsToDelete.addElement(reader);	  // queue for deletion
+      if ((reader.directory == this.directory) || // if we own the directory
+          (reader.directory == this.ramDirectory))
+	segmentsToDelete.addElement(reader);	  // queue segment for deletion
       mergedDocCount += si.docCount;
     }
     if (infoStream != null) {
