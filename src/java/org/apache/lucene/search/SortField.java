@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.Serializable;
+import java.util.Locale;
 
 /**
  * Stores information about how to sort documents by terms in an individual
@@ -66,7 +67,7 @@ implements Serializable {
   // as the above static int values.  Any new values must not have the same value
   // as FieldCache.STRING_INDEX.
 
-	
+
   /** Represents sorting by document score (relevancy). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
 
@@ -76,6 +77,7 @@ implements Serializable {
 
   private String field;
   private int type = AUTO;  // defaults to determining type dynamically
+  private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
   private SortComparatorSource factory;
 
@@ -121,6 +123,29 @@ implements Serializable {
     this.reverse = reverse;
   }
 
+  /** Creates a sort by terms in the given field sorted
+   * according to the given locale.
+   * @param field  Name of field to sort by, cannot be <code>null</code>.
+   * @param locale Locale of values in the field.
+   */
+  public SortField (String field, Locale locale) {
+    this.field = field.intern();
+    this.type = STRING;
+    this.locale = locale;
+  }
+
+  /** Creates a sort, possibly in reverse, by terms in the given field sorted
+   * according to the given locale.
+   * @param field  Name of field to sort by, cannot be <code>null</code>.
+   * @param locale Locale of values in the field.
+   */
+  public SortField (String field, Locale locale, boolean reverse) {
+    this.field = field.intern();
+    this.type = STRING;
+    this.locale = locale;
+    this.reverse = reverse;
+  }
+
   /** Creates a sort with a custom comparison function.
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
@@ -158,6 +183,14 @@ implements Serializable {
     return type;
   }
 
+  /** Returns the Locale by which term values are interpreted.
+   * May return <code>null</code> if no Locale was specified.
+   * @return Locale, or <code>null</code>.
+   */
+  public Locale getLocale() {
+    return locale;
+  }
+
   /** Returns whether the sort should be reversed.
    * @return  True if natural order should be reversed.
    */
@@ -186,8 +219,8 @@ implements Serializable {
                break;
     }
 
-    if (reverse)
-      buffer.append('!');
+    if (locale != null) buffer.append ("("+locale+")");
+    if (reverse) buffer.append('!');
 
     return buffer.toString();
   }

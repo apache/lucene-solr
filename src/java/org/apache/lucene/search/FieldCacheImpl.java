@@ -230,11 +230,18 @@ implements FieldCache {
     Object ret = lookup (reader, field, STRING_INDEX);
     if (ret == null) {
       final int[] retArray = new int[reader.maxDoc()];
-      String[] mterms = new String[reader.maxDoc()];
+      String[] mterms = new String[reader.maxDoc()+1];
       if (retArray.length > 0) {
         TermDocs termDocs = reader.termDocs();
         TermEnum termEnum = reader.terms (new Term (field, ""));
         int t = 0;  // current term number
+
+        // an entry for documents that have no terms in this field
+        // should a document with no terms be at top or bottom?
+        // this puts them at the top - if it is changed, FieldDocSortedHitQueue
+        // needs to change as well.
+        mterms[t++] = null;
+
         try {
           if (termEnum.term() == null) {
             throw new RuntimeException ("no terms in field " + field);
@@ -264,7 +271,7 @@ implements FieldCache {
           // if there are no terms, make the term array
           // have a single null entry
           mterms = new String[1];
-		} else if (t < mterms.length) {
+        } else if (t < mterms.length) {
           // if there are less terms than documents,
           // trim off the dead array space
           String[] terms = new String[t];

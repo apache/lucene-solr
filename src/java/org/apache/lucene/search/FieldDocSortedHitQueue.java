@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
+import java.text.Collator;
+import java.util.Locale;
 
 /**
  * Expert: Collects sorted results from Searchable's and collates them.
@@ -37,6 +39,10 @@ extends PriorityQueue {
 	// have been resolved by the time this class is used.
 	volatile SortField[] fields;
 
+	// used in the case where the fields are sorted by locale
+	// based strings
+	volatile Collator[] collators;
+
 
 	/**
 	 * Creates a hit queue sorted by the given list of fields.
@@ -47,6 +53,7 @@ extends PriorityQueue {
 	FieldDocSortedHitQueue (SortField[] fields, int size)
 	throws IOException {
 		this.fields = fields;
+		this.collators = hasCollators (fields);
 		initialize (size);
 	}
 
@@ -60,13 +67,33 @@ extends PriorityQueue {
 	 * @param fields
 	 */
 	synchronized void setFields (SortField[] fields) {
-		if (this.fields == null) this.fields = fields;
+		if (this.fields == null) {
+			this.fields = fields;
+			this.collators = hasCollators (fields);
+		}
 	}
 
 
 	/** Returns the fields being used to sort. */
 	SortField[] getFields() {
 		return fields;
+	}
+
+
+	/** Returns an array of collators, possibly <code>null</code>.  The collators
+	 * correspond to any SortFields which were given a specific locale.
+	 * @param fields Array of sort fields.
+	 * @return Array, possibly <code>null</code>.
+	 */
+	private Collator[] hasCollators (final SortField[] fields) {
+		if (fields == null) return null;
+		Collator[] ret = new Collator[fields.length];
+		for (int i=0; i<fields.length; ++i) {
+			Locale locale = fields[i].getLocale();
+			if (locale != null)
+				ret[i] = Collator.getInstance (locale);
+		}
+		return ret;
 	}
 
 
@@ -103,7 +130,11 @@ extends PriorityQueue {
 						String s2 = (String) docB.fields[i];
 						if (s2 == null) c = -1;      // could be null if there are
 						else if (s1 == null) c = 1;  // no terms in the given field
-						else c = s2.compareTo(s1);
+						else if (fields[i].getLocale() == null) {
+							c = s2.compareTo(s1);
+						} else {
+							c = collators[i].compare (s2, s1);
+						}
 						break;
 					case SortField.FLOAT:
 						float f1 = ((Float)docA.fields[i]).floatValue();
@@ -141,9 +172,16 @@ extends PriorityQueue {
 					case SortField.STRING:
 						String s1 = (String) docA.fields[i];
 						String s2 = (String) docB.fields[i];
+						// null values need to be sorted first, because of how FieldCache.getStringIndex()
+						// works - in that routine, any documents without a value in the given field are
+						// put first.
 						if (s1 == null) c = -1;      // could be null if there are
 						else if (s2 == null) c = 1;  // no terms in the given field
-						else c = s1.compareTo(s2);
+						else if (fields[i].getLocale() == null) {
+							c = s1.compareTo(s2);
+						} else {
+							c = collators[i].compare (s1, s2);
+						}
 						break;
 					case SortField.FLOAT:
 						float f1 = ((Float)docA.fields[i]).floatValue();

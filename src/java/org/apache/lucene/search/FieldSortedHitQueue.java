@@ -22,6 +22,8 @@ import org.apache.lucene.util.PriorityQueue;
 import java.io.IOException;
 import java.util.WeakHashMap;
 import java.util.Map;
+import java.util.Locale;
+import java.text.Collator;
 
 /**
  * Expert: A hit queue for sorting by hits by terms in more than one field.
@@ -52,7 +54,7 @@ extends PriorityQueue {
     this.fields = new SortField[n];
     for (int i=0; i<n; ++i) {
       String fieldname = fields[i].getField();
-      comparators[i] = getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getFactory());
+      comparators[i] = getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getLocale(), fields[i].getFactory());
       this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
     }
     initialize (size);
@@ -144,7 +146,7 @@ extends PriorityQueue {
     }
   }
 
-  static ScoreDocComparator getCachedComparator (IndexReader reader, String fieldname, int type, SortComparatorSource factory)
+  static ScoreDocComparator getCachedComparator (IndexReader reader, String fieldname, int type, Locale locale, SortComparatorSource factory)
   throws IOException {
     if (type == SortField.DOC) return ScoreDocComparator.INDEXORDER;
     if (type == SortField.SCORE) return ScoreDocComparator.RELEVANCE;
@@ -161,7 +163,8 @@ extends PriorityQueue {
           comparator = comparatorFloat (reader, fieldname);
           break;
         case SortField.STRING:
-          comparator = comparatorString (reader, fieldname);
+          if (locale != null) comparator = comparatorStringLocale (reader, fieldname, locale);
+          else comparator = comparatorString (reader, fieldname);
           break;
         case SortField.CUSTOM:
           comparator = factory.newComparator (reader, fieldname);
@@ -261,6 +264,34 @@ extends PriorityQueue {
 
       public Comparable sortValue (final ScoreDoc i) {
         return index.lookup[index.order[i.doc]];
+      }
+
+      public int sortType() {
+        return SortField.STRING;
+      }
+    };
+  }
+
+  /**
+   * Returns a comparator for sorting hits according to a field containing strings.
+   * @param reader  Index to use.
+   * @param fieldname  Field containg string values.
+   * @return  Comparator for sorting hits.
+   * @throws IOException If an error occurs reading the index.
+   */
+  static ScoreDocComparator comparatorStringLocale (final IndexReader reader, final String fieldname, final Locale locale)
+  throws IOException {
+    final Collator collator = Collator.getInstance (locale);
+    final String field = fieldname.intern();
+    return new ScoreDocComparator() {
+      final String[] index = FieldCache.DEFAULT.getStrings (reader, field);
+
+      public final int compare (final ScoreDoc i, final ScoreDoc j) {
+        return collator.compare (index[i.doc], index[j.doc]);
+      }
+
+      public Comparable sortValue (final ScoreDoc i) {
+        return index[i.doc];
       }
 
       public int sortType() {

@@ -30,6 +30,7 @@ import java.io.Serializable;
 import java.util.regex.Pattern;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 
 import junit.framework.TestCase;
 import junit.framework.Test;
@@ -56,6 +57,7 @@ implements Serializable {
 	private Query queryX;
 	private Query queryY;
 	private Query queryA;
+	private Query queryF;
 	private Sort sort;
 
 
@@ -101,6 +103,7 @@ implements Serializable {
 	{   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88"  },
 	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10"  },
 	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7"   },
+	{   "Z",   "f",             null,          null,           null,    null    }
 	};
 
 	// create an index of all the documents, or just the x, or just the y documents
@@ -113,10 +116,10 @@ implements Serializable {
 				Document doc = new Document();          // store, index, token
 				doc.add (new Field ("tracer",   data[i][0], true, false, false));
 				doc.add (new Field ("contents", data[i][1], false, true, true));
-				doc.add (new Field ("int",      data[i][2], false, true, false));
-				doc.add (new Field ("float",    data[i][3], false, true, false));
-				doc.add (new Field ("string",   data[i][4], false, true, false));
-				doc.add (new Field ("custom",   data[i][5], false, true, false));
+				if (data[i][2] != null) doc.add (new Field ("int",      data[i][2], false, true, false));
+				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], false, true, false));
+				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], false, true, false));
+				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], false, true, false));
 				writer.addDocument (doc);
 			}
 		}
@@ -152,6 +155,7 @@ implements Serializable {
 		queryX = new TermQuery (new Term ("contents", "x"));
 		queryY = new TermQuery (new Term ("contents", "y"));
 		queryA = new TermQuery (new Term ("contents", "a"));
+		queryF = new TermQuery (new Term ("contents", "f"));
 		sort = new Sort();
 	}
 
@@ -239,6 +243,27 @@ implements Serializable {
 		assertMatches (full, queryY, sort, "BFHJD");
 	}
 
+	// test sorting when the sort field is empty (undefined) for some of the documents
+	public void testEmptyFieldSort() throws Exception {
+		sort.setSort ("string");
+		assertMatches (full, queryF, sort, "ZJI");
+
+		sort.setSort ("string", true);
+		assertMatches (full, queryF, sort, "IJZ");
+
+		sort.setSort ("int");
+		assertMatches (full, queryF, sort, "IZJ");
+
+		sort.setSort ("int", true);
+		assertMatches (full, queryF, sort, "JZI");
+
+		sort.setSort ("float");
+		assertMatches (full, queryF, sort, "ZJI");
+
+		sort.setSort ("float", true);
+		assertMatches (full, queryF, sort, "IJZ");
+	}
+
 	// test sorts using a series of fields
 	public void testSortCombos() throws Exception {
 		sort.setSort (new String[] {"int","float"});
@@ -251,7 +276,18 @@ implements Serializable {
 		assertMatches (full, queryX, sort, "GICEA");
 	}
 
+	// test using a Locale for sorting strings
+	public void testLocaleSort() throws Exception {
+		sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
+		assertMatches (full, queryX, sort, "AIGEC");
+		assertMatches (full, queryY, sort, "DJHFB");
 
+		sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
+		assertMatches (full, queryX, sort, "CEGIA");
+		assertMatches (full, queryY, sort, "BFHJD");
+	}
+
+	// test a custom sort function
 	public void testCustomSorts() throws Exception {
 		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
 		assertMatches (full, queryX, sort, "CAIEG");
@@ -283,6 +319,7 @@ implements Serializable {
 		runMultiSorts (multi);
 	}
 
+	// test custom search when remote
 	public void testRemoteCustomSort() throws Exception {
 		Searchable searcher = getRemote();
 		MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
@@ -438,11 +475,32 @@ implements Serializable {
 		sort.setSort ("string", true);
 		assertMatches (multi, queryA, sort, "CBEFGHIAJD");
 
+		sort.setSort (new SortField[] { new SortField ("string", Locale.US) });
+		assertMatches (multi, queryA, sort, "DJAIHGFEBC");
+
+		sort.setSort (new SortField[] { new SortField ("string", Locale.US, true) });
+		assertMatches (multi, queryA, sort, "CBEFGHIAJD");
+
 		sort.setSort (new String[] {"int","float"});
-		assertMatches (full, queryA, sort, "IDHFGJEABC");
+		assertMatches (multi, queryA, sort, "IDHFGJEABC");
 
 		sort.setSort (new String[] {"float","string"});
-		assertMatches (full, queryA, sort, "GDHJICEFAB");
+		assertMatches (multi, queryA, sort, "GDHJICEFAB");
+
+		sort.setSort ("int");
+		assertMatches (multi, queryF, sort, "IZJ");
+
+		sort.setSort ("int", true);
+		assertMatches (multi, queryF, sort, "JZI");
+
+		sort.setSort ("float");
+		assertMatches (multi, queryF, sort, "ZJI");
+
+		sort.setSort ("string");
+		assertMatches (multi, queryF, sort, "ZJI");
+
+		sort.setSort ("string", true);
+		assertMatches (multi, queryF, sort, "IJZ");
 	}
 
 	// make sure the documents returned by the search match the expected list
