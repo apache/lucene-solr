@@ -192,15 +192,25 @@ public class IndexWriter {
     return count;
   }
 
-  /** The maximum number of terms that will be indexed for a single field in a
-    document.  This limits the amount of memory required for indexing, so that
-    collections with very large files will not crash the indexing process by
-    running out of memory.
-
-    <p>By default, no more than 10,000 terms will be indexed for a field. */
+  /**
+   * The maximum number of terms that will be indexed for a single field in a
+   * document.  This limits the amount of memory required for indexing, so that
+   * collections with very large files will not crash the indexing process by
+   * running out of memory.<p/>
+   * Note that this effectively truncates large documents, excluding from the
+   * index terms that occur further in the document.  If you know your source
+   * documents are large, be sure to set this value high enough to accomodate
+   * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
+   * is your memory, but you should anticipate an OutOfMemoryError.<p/>
+   * By default, no more than 10,000 terms will be indexed for a field.
+  */
   public int maxFieldLength = 10000;
 
-  /** Adds a document to this index.*/
+  /**
+   * Adds a document to this index.  If the document contains more than
+   * {@link #maxFieldLength} terms for a given field, the remainder are
+   * discarded.
+   */
   public void addDocument(Document doc) throws IOException {
     DocumentWriter dw =
       new DocumentWriter(ramDirectory, analyzer, similarity, maxFieldLength);
@@ -309,7 +319,7 @@ public class IndexWriter {
 	mergeSegments(minSegment+1);
       else
 	break;
-      
+
       targetMergeDocs *= mergeFactor;		  // increase target size
     }
   }
@@ -343,7 +353,7 @@ public class IndexWriter {
     segmentInfos.setSize(minSegment);		  // pop old infos & add new
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
 					    directory));
-    
+
     synchronized (directory) {			  // in- & inter-process sync
       new Lock.With(directory.makeLock("commit.lock")) {
 	  public Object doBody() throws IOException {
@@ -364,7 +374,7 @@ public class IndexWriter {
     Vector deletable = new Vector();
 
     deleteFiles(readDeleteableFiles(), deletable); // try to delete deleteable
-    
+
     for (int i = 0; i < segments.size(); i++) {
       SegmentReader reader = (SegmentReader)segments.elementAt(i);
       if (reader.directory == this.directory)
