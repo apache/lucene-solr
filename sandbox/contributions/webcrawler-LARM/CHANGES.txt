@@ -1,0 +1,11 @@
+$id: $
+
+2002-05-23 (cmarschner)
+	* removed 0x0d0d from the source files (Otis?)
+	* included Apache License into all of the source files in de.lanlab.larm.* directories
+	* added anchor text deparsing to the Tokenizer
+	* split store.log in two files: 
+	  - store.log contains the page file index: <referer> <URL> <ResultCode> <MimeType> <Size> <Title> <PageFileNo> <PageFileOffset>
+	  - links.log contains link information: <referer> <URL> <isFrame> <AnchorText>
+	* changed lib to libs in the startup scripts
+	* added .bat files for Windows

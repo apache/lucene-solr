@@ -1,9 +1,57 @@
-/*
- *  $Id$
+/* ====================================================================
+ * The Apache Software License, Version 1.1
  *
- *  Copyright 2000 LANLab
+ * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * reserved.
  *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. The end-user documentation included with the redistribution,
+ *    if any, must include the following acknowledgment:
+ *       "This product includes software developed by the
+ *        Apache Software Foundation (http://www.apache.org/)."
+ *    Alternately, this acknowledgment may appear in the software itself,
+ *    if and wherever such third-party acknowledgments normally appear.
+ *
+ * 4. The names "Apache" and "Apache Software Foundation" and
+ *    "Apache Lucene" must not be used to endorse or promote products
+ *    derived from this software without prior written permission. For
+ *    written permission, please contact apache@apache.org.
+ *
+ * 5. Products derived from this software may not be called "Apache",
+ *    "Apache Lucene", nor may "Apache" appear in their name, without
+ *    prior written permission of the Apache Software Foundation.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
+ * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This software consists of voluntary contributions made by many
+ * individuals on behalf of the Apache Software Foundation.  For more
+ * information on the Apache Software Foundation, please see
+ * <http://www.apache.org/>.
  */
+
 package de.lanlab.larm.parser;
 
 import hplb.org.xml.sax.*;
@@ -26,7 +74,9 @@ import java.net.URL;
  * @todo add handling of anchor texts
  *
  * @author    Clemens Marschner
+ * $Id$
  */
+
 public class Tokenizer implements hplb.org.xml.sax.Parser
 {
     /**
@@ -71,6 +121,7 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
     final static int ST_VALUE_QUOTED = 11;
     final static int ST_PCDATA = 21;
     final static int ST_COMMENT = 22;
+    final static int ST_IN_ANCHOR = 23;
 
     LinkHandler linkHandler;
 
@@ -109,9 +160,10 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
     private final static int ATTR_SRC = 2;
 
     private final static int LINKTYPE_NONE = 0;
-    private final static int LINKTYPE_LINK = 1;
+    private final static int LINKTYPE_A = 1;
     private final static int LINKTYPE_BASE = 2;
     private final static int LINKTYPE_FRAME = 3;
+    private final static int LINKTYPE_AREA = 4;
 
 
     private byte linkTagType;
@@ -121,7 +173,6 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
     private boolean keepPCData;
     private boolean isInTitleTag;
     private boolean isInAnchorTag;
-
     CharBuffer buf = new CharBuffer();
     boolean isStartTag = true;
     /**
@@ -133,6 +184,12 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
     CharBuffer attrName = new CharBuffer();
     CharBuffer attrValue = new CharBuffer(1000);
     CharBuffer pcData = new CharBuffer(8000);
+    int pcDataLength;
+
+    /**
+     * specifies how much pcData is kept when a link was found
+     */
+    private final static int MAX_PCDATA_LENGTH = 200;
 
     Reader in;
 
@@ -256,8 +313,11 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
         attrName.reset();
         attrValue.reset();
         pcData.reset();
+        pcDataLength = 0;
         //attrs.clear();
         isStartTag = true;
+        isInAnchorTag = false;
+
         // until proven wrong
 
         linkTagType = LINKTYPE_NONE;
@@ -313,6 +373,12 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
                             if(keepPCData)
                             {
                                 pcData.write(c);
+                                pcDataLength++;
+                                if(pcDataLength > MAX_PCDATA_LENGTH)
+                                {
+                                    this.gotPCDATA(false);
+                                    keepPCData = false;
+                                }
                             }
 
                     }
@@ -336,6 +402,13 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
                         if(keepPCData)
                         {
                             pcData.write(c);
+                            pcDataLength++;
+                            if(pcDataLength > MAX_PCDATA_LENGTH)
+                            {
+                                this.gotPCDATA(false);
+                                keepPCData = false;
+                            }
+
                         }
                     }
                     break;
@@ -643,6 +716,69 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
                         keepPCData = false;
                         break;
                     }
+                    break;
+                case ST_IN_ANCHOR:
+                     // we've seen <a href="...">. href is in linkValue. Read until
+                     // the next end tag, at most 200 characters.
+                     // (end tags are often ommited, i.e. <a ...>text</td>)
+                     // regards other tags as text
+                     // todo: read until next </a> or a couple other tags
+                    try
+                    {
+                        short count = 0;
+                        switch(c)
+                        {
+                            case '\t':
+                            case '\n':
+                            case '\r':
+                                pcData.write(' ');
+                                break;
+                            default:
+                                pcData.write(c);
+                        }
+                        while(count < MAX_PCDATA_LENGTH)
+                        {
+                            count++;
+                            while(((c =read_ex()) != '<') && (count < MAX_PCDATA_LENGTH))
+                            {
+                                switch(c)
+                                {
+                                    case '\t':
+                                    case '\n':
+                                    case '\r':
+                                        pcData.write(' ');
+                                        break;
+                                    default:
+                                        pcData.write(c);
+                                }
+                            }
+                            if(count >= MAX_PCDATA_LENGTH)
+                            {
+                                gotAnchor(false);
+                                break;
+                            }
+                            else
+                            {
+                                pcData.write(c);
+                                count++;
+                                if((c=read_ex()) == '/')
+                                {
+                                    gotAnchor(true);
+                                    isStartTag = false;
+                                    state = ST_TAG_NAME;
+                                    break;
+                                }
+                                else
+                                {
+                                    pcData.write(c);
+                                }
+                            }
+                        }
+                    }
+                    catch(EmptyInputStream ex)
+                    {
+
+                    }
             }
         }
 
@@ -749,6 +885,21 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
         //attrs.put(nm, val);
     }
 
+    protected void gotAnchor(boolean tooMuch)
+    {
+        String anchor;
+        if(tooMuch)
+        {
+            anchor = pcData.toString().substring(0, pcData.getLength()-1);
+        }
+        else
+        {
+            anchor = pcData.toString();
+        }
+        linkHandler.handleLink(linkValue, anchor, false);
+        toStart();
+    }
+
 
     /**
      * Description of the Method
@@ -761,11 +912,10 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
         {
             case 1:
                 // A
-                if (tag[0] == 'a')
+                if (isStartTag && tag[0] == 'a')
                 {
-                    linkTagType = LINKTYPE_LINK;
+                    linkTagType = LINKTYPE_A;
                     linkAttrType = ATTR_HREF;
-
                 }
                 break;
             // [case 3: // IMG]
@@ -780,7 +930,7 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
                     }
                     else if (tag[0] == 'a' && tag[1] == 'r' && tag[2] == 'e' && tag[3] == 'a')
                     {
-                        linkTagType = LINKTYPE_LINK;
+                        linkTagType = LINKTYPE_AREA;
                         linkAttrType = ATTR_HREF;
                     }
                 }
@@ -817,17 +967,20 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
         {
             switch (linkTagType)
             {
-                case LINKTYPE_LINK:
+                case LINKTYPE_AREA:
                     //System.out.println("got link " + linkValue);
-                    linkHandler.handleLink(linkValue, false);
+                    linkHandler.handleLink(linkValue, /*@todo altText*/ null, false);
                     break;
                 case LINKTYPE_FRAME:
                     //System.out.println("got link " + linkValue);
-                    linkHandler.handleLink(linkValue, true);
+                    linkHandler.handleLink(linkValue, null, true);
                     break;
                 case LINKTYPE_BASE:
                     linkHandler.handleBase(linkValue);
                     break;
+                case LINKTYPE_A:
+                    state = ST_IN_ANCHOR;
+                    return;
             }
         }
         toStart();
@@ -866,6 +1019,11 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
         {
             linkHandler.handleTitle(pcData.toString());
             isInTitleTag = false;
+        }
+        else if(isInAnchorTag)
+        {
+            linkHandler.handleLink(this.linkValue, pcData.toString(), false);
+            isInAnchorTag = false;
         }
 
         // ignore it
@@ -1288,9 +1446,9 @@ public class Tokenizer implements hplb.org.xml.sax.Parser
                 int nr = 0;
 
 
-                public void handleLink(String link, boolean isFrame)
+                public void handleLink(String link, String anchor, boolean isFrame)
                 {
-                    System.out.println("found link " + (++nr) + ": " + link);
+                    System.out.println("found link " + (++nr) + ": " + link + "; Text: " + anchor);
                 }
                 public void handleTitle(String title)
                 {
