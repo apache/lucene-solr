@@ -174,7 +174,7 @@ public class Lucli {
 				System.out.println("");//new line
 				exit();
 			} catch (IOException ioe) {
-				throw (ioe);
+				ioe.printStackTrace(System.err);
 			}
 		}
 
