@@ -3,14 +3,16 @@
     <meta name="Author" content="Kelvin Tan">
     <title>Lucene Query Constructor Demo and Introduction</title>
     <script type="text/javascript" src="luceneQueryConstructor.js"></script>
+    <script type="text/javascript" src="../queryValidator/luceneQueryValidator.js"></script>
     <script>
-      function submitForm(frm)
+      submitForm = false // necessary for luceneQueryConstructor not to submit the form upon query construction
+      function doSubmitForm(frm)
       {
         if(frm["noField-phrase-input"].value.length > 0)
           frm["noField-phrase"].value = quote(frm["noField-phrase-input"].value)
         else if(frm["noField-phrase"].value.length > 0)
           frm["noField-phrase"].value = ''
-        doMakeQuery(frm.query,true);
+        doMakeQuery(frm.query);
       }
     </script>
   </head>
@@ -94,8 +96,15 @@
           <input type="hidden" name="dateRangeField" value="lastModifiedDate">    
         </td>
       </tr>
+      <tr>      
+      
       <input type="hidden" name="query">
-      <tr><th></th><td></td><td><input type="button" value="Search" onClick="submitForm(this.form)"></td>      
+      <tr><td>&nbsp;</tr>
+      <tr><th><p>Current Query:</th><td><pre id="curQuery"></pre><pre id="curQueryValid"></pre></td><td>
+            
+      <input type="button" name="Update" value="Update Query" onClick="doSubmitForm(this.form); curQuery.innerText = this.form.query.value" />
+      <input type="button" name="Validate" value="Validate" onClick="doCheckLuceneQuery(this.form.query); curQueryValid.innerText = 'Query is valid'" />      
+      </td>      
     </table>
     </form>
     <p>luceneQueryConstructor works by assuming a certain naming convention of form fields to obtain the necessary information to construct the query.<br>
