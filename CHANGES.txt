@@ -39,6 +39,11 @@ $Id$
  12. Add escape character to query parser.  
      (briangoetz)
 
+ 13. Applied a patch that ensures that searches that use DateFilter
+     don't throw an exception when no matches are found. (David Smiley, via
+     otis)
+
+
 1.2 RC4
 
  1. Updated contributions section of website.
