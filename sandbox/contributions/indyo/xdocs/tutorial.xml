@@ -45,7 +45,7 @@
 </p>
 
 <p>
-	Voila! You should now have a jar file "indyo-<version number>.jar".
+  Voila! You should now have a jar file "indyo-&lt;version number&gt;.jar".
 </p>
 
 </section>
@@ -62,9 +62,9 @@
 <section name="Step 4: Using Indyo">
 
 <p>
-	Congratulations, you have finally reached the fun the
-	part of this tutorial.  This is where you'll discover
-	the power of Indyo.  
+  Congratulations, you have finally reached the fun the
+  part of this tutorial.  This is where you'll discover
+  the power of Indyo.  
 </p>
 
 <p>
@@ -76,8 +76,8 @@
 <source><![CDATA[
 IndexDataSource ds = new FSDataSource("/usr/local/lucene/docs");
 IndyoIndexer indexer = new IndyoIndexer("/usr/local/index", 
-										"/usr/local/indyo/default.config.xml");
-indexer.index(ds);										
+                    "/usr/local/indyo/default.config.xml");
+indexer.index(ds);                    
 ]]></source>
 
 <p>
@@ -92,11 +92,11 @@ indexer.index(ds);
 </p>
 
 <p>
-	Get familiar with FSDataSource. You'll find it very handy, both for indexing 
-	files directly, as well as nesting it within another datasource. For example, 
-	you might need to index a database table, in which one of the rows represent 
-	the location of a file, and you may want to use FSDataSource to index this 
-	file as well.
+  Get familiar with FSDataSource. You'll find it very handy, both for indexing 
+  files directly, as well as nesting it within another datasource. For example, 
+  you might need to index a database table, in which one of the rows represent 
+  the location of a file, and you may want to use FSDataSource to index this 
+  file as well.
 </p>
 
 <subsection name="Writing your custom IndexDataSource">
@@ -147,16 +147,16 @@ public class HashMapDataSource implements IndexDataSource
 </p>
 
 <p>
-	A slightly more useful IndexDataSource, SingleDocumentFSDataSource 
-	provides an example of how to nest datasources. Given a directory, 
-	SingleDocumentFSDataSource recursively indexes all directories 
-	and files within that directory <i>as the same Document</i>. In other 
-	words, only one Document is created in the index. This is accomplished 
-	by the use of a nested datasource. The code for 
-	SingleDocumentFSDataSource is listed below:
+  A slightly more useful IndexDataSource, SingleDocumentFSDataSource 
+  provides an example of how to nest datasources. Given a directory, 
+  SingleDocumentFSDataSource recursively indexes all directories 
+  and files within that directory <i>as the same Document</i>. In other 
+  words, only one Document is created in the index. This is accomplished 
+  by the use of a nested datasource. The code for 
+  SingleDocumentFSDataSource is listed below:
 </p>
 
-<source><![CDATA[	
+<source><![CDATA[ 
 public class SingleDocumentFSDataSource
         implements IndexDataSource
 {
@@ -177,12 +177,12 @@ public class SingleDocumentFSDataSource
 ]]></source>
 
 <p>
-	Nested datasources don't result in a separate Document being created. 
-	Use them when working with complex datasources, i.e., datasources 
-	which are an aggregation of multiple datasources. The current way to 
-	add a nested datasource is using the key "NESTED_DATASOURCE". Indyo 
-	accepts an IndexDataSource object, a List of IndexDataSources, 
-	or an IndexDataSource[] for this key.
+  Nested datasources don't result in a separate Document being created. 
+  Use them when working with complex datasources, i.e., datasources 
+  which are an aggregation of multiple datasources. The current way to 
+  add a nested datasource is using the key "NESTED_DATASOURCE". Indyo 
+  accepts an IndexDataSource object, a List of IndexDataSources, 
+  or an IndexDataSource[] for this key.
 </p>
 
 </subsection>
@@ -208,10 +208,10 @@ public class SingleDocumentFSDataSource
 <section name="Acknowledgements">
 
 <p>
-	This document was shamelessly ripped from the extremely well-written 
-	and well-organized 
-	<a href="http://jakarta.apache.org/turbine/torque/tutorial.html">Torque
-	</a> tutorial. Thanks Pete!
+  This document was shamelessly ripped from the extremely well-written 
+  and well-organized 
+  <a href="http://jakarta.apache.org/turbine/torque/tutorial.html">Torque
+  </a> tutorial. Thanks Pete!
 </p>
 
 </section>
