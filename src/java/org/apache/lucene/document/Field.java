@@ -202,7 +202,7 @@ public final class Field implements java.io.Serializable {
     return f;
   }
 
-  /** The name of the field (e.g., "date", "subject", "title", or "body")
+  /** The name of the field (e.g., "date", "title", "body", ...)
     as an interned string. */
   public String name() 		{ return name; }
 
