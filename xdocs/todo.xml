@@ -162,29 +162,6 @@
                             </ul></td>
                     </tr>
                     <tr>
-                        <td valign="top">A lady from Finland submitted code for handling
-                            Finnish.</td>
-                    </tr>
-                    <tr>
-                        <td valign="top">Dutch stemmer, analyzer, etc.</td>
-                        <td valign="top"></td>
-                        <td valign="top">
-                            <ul>
-                                <li><a
-                                       href="http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=145">http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&amp;msgNo=145</a></li>
-                            </ul>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td valign="top">French stemmer, analyzer, etc.</td>
-                        <td valign="top"></td>
-                        <td valign="top">
-                            <ul>
-                                <li><a
-                                       href="http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&amp;by=thread&amp;from=56256">http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&amp;by=thread&amp;from=56256</a></li>
-                            </ul></td>
-                    </tr>
-                    <tr>
                         <td valign="top">Che Dong's CJKTokenizer for Chinese, Japanese,
                             and Korean.</td>
                         <td valign="top"></td>
