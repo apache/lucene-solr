@@ -90,6 +90,9 @@ $Id$
  16. Fixed a bug with IndexReader.lastModified().  Before, document
      deletion did not update this.  Now it does.  (cutting)
 
+ 17. Added Russian Analyzer.
+     (Boris Okner via otis)
+
 
 1.2 RC6
 
