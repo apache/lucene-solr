@@ -246,4 +246,13 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("( bar blar { a z}) ", null, "bar blar {a-z}");
     assertQueryEquals("gack ( bar blar { a z}) ", null, "gack (bar blar {a-z})");
   }
+
+  public void testEscaped() throws Exception {
+    Analyzer a = new WhitespaceAnalyzer();
+    assertQueryEquals("\\[brackets", a, "\\[brackets");
+    assertQueryEquals("\\[brackets", null, "brackets");
+    assertQueryEquals("\\\\", a, "\\\\");
+    assertQueryEquals("\\+blah", a, "\\+blah");
+    assertQueryEquals("\\(blah", a, "\\(blah");
+  }
 }

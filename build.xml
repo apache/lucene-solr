@@ -198,6 +198,7 @@
   <!-- ================================================================== -->
   <target name="demo" depends="compile" if="javacc.present">
     <mkdir dir="${build.demo}"/>
+    <mkdir dir="${build.demo.src}" />
 
     <copy todir="${build.demo.src}">
       <fileset dir="${demo.src}">
@@ -211,7 +212,6 @@
       javacchome="${javacc.zip.dir}"
       outputdirectory="${build.demo.src}/org/apache/lucene/demo/html"
     />
-
     <mkdir dir="${build.demo.classes}"/>
 
     <javac

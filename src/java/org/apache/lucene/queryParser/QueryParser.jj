@@ -111,12 +111,16 @@ public class QueryParser {
    *  @param field	the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
-   *  @throws TokenMgrError if the parsing fails
    */
   static public Query parse(String query, String field, Analyzer analyzer)
-       throws ParseException, TokenMgrError {
-    QueryParser parser = new QueryParser(field, analyzer);
-    return parser.parse(query);
+       throws ParseException {
+    try {
+      QueryParser parser = new QueryParser(field, analyzer);
+      return parser.parse(query);
+    }
+    catch (TokenMgrError tme) { 
+      throw new ParseException(tme.getMessage());
+    }
   }
        
   Analyzer analyzer;
@@ -269,9 +273,12 @@ PARSER_END(QueryParser)
 
 <*> TOKEN : {
   <#_NUM_CHAR:   ["0"-"9"] >
-| <#_TERM_START_CHAR: ~[ " ", "\t", "+", "-", "!", "(", ")", ":", "^", 
-                         "[", "]", "\"", "{", "}", "~", "*" ] >
-| <#_TERM_CHAR: <_TERM_START_CHAR> >
+| <#_ESCAPED_CHAR: "\\" [ "\\", "+", "-", "!", "(", ")", ":", "^", 
+                          "[", "]", "\"", "{", "}", "~", "*" ] >
+| <#_TERM_START_CHAR: ( ~[ " ", "\t", "+", "-", "!", "(", ")", ":", "^", 
+                           "[", "]", "\"", "{", "}", "~", "*" ] 
+                       | <_ESCAPED_CHAR> ) >
+| <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> ) >
 | <#_WHITESPACE: ( " " | "\t" ) >
 }
 
