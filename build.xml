@@ -207,10 +207,11 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="docs-prepare">    
+  <target name="docs-prepare">
     <available 
       classname="org.apache.velocity.anakia.AnakiaTask" 
       property="AnakiaTask.present"
+      classpathref="classpath"
     />
   </target>
 
@@ -222,7 +223,13 @@
   </target>
 
   <target name="docs" depends="prepare-error" if="AnakiaTask.present">
-    <taskdef name="anakia" classname="org.apache.velocity.anakia.AnakiaTask"/>
+    <taskdef 
+      name="anakia" 
+      classname="org.apache.velocity.anakia.AnakiaTask"
+      >
+      <classpath refid="classpath"/>
+    </taskdef>
+      
     <anakia 
       basedir="${docs.src}" 
       destdir="${docs.dest}/"
