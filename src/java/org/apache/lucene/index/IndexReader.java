@@ -310,6 +310,16 @@ abstract public class IndexReader {
 	return directory.fileExists("write.lock");
     }
 
+  /**
+   * Returns <code>true</code> iff the index in the named directory is
+   * currently locked.
+   * @param directory the directory to check for a lock
+   * @throws IOException if there is a problem with accessing the index
+   */
+    public static boolean isLocked(String directory) throws IOException {
+	return (new File(directory, "write.lock")).exists();
+    }
+
    /**
     * Forcibly unlocks the index in the named directory.
     * <P>
