@@ -11,8 +11,12 @@ $Id$
 
  2. FuzzyQuery now takes an additional parameter that specifies the
     minimum similarity that is required for a term to match the query.
-    Note that this isn't supported by QueryParser yet.
+    Note that this isn't supported by QueryParser yet. (Daniel Naber)
   
+ 3. The Russian and the German analyzers have been moved to Sandbox.
+    Also, the WordlistLoader class has been moved one level up in the
+    hierarchie and is now org.apache.lucene.analysis.WordlistLoader
+    (Daniel Naber)
  
 1.4.1
 
