@@ -20,14 +20,13 @@
   <property name="build.src"      value="${build.dir}/src"/>
   <property name="build.encoding" value="ISO-8859-1"/>
 
-  
-
   <property name="threads"        value="15"/>
 
-<!-- Build classpath -->
+  <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.classes}"/>
     <pathelement location="${lucene.jar}"/>
+    <pathelement location="${oro.jar}"/>
     <fileset dir="${lib.dir}">
         <include name="*.jar" />
      </fileset>
@@ -36,6 +35,7 @@
   <path id="run.classpath">
     <pathelement location="${build.dir}/${final.name}.jar"/>
     <pathelement location="${lucene.jar}"/>
+    <pathelement location="${oro.jar}"/>
     <fileset dir="${lib.dir}">
       <include name="*.jar" />
     </fileset>
@@ -95,9 +95,9 @@
   <target name="checksyntax" unless="start">
     <echo>
     use run with the following syntax
-    
-    ant run -Dstart=&lt;URL&gt; -Drestrictto=&lt;Pattern&gt; [-threads=&lt;Thread Count&gt;]
-    
+
+    ant run -Dstart=&lt;URL&gt; -Drestrictto=&lt;Pattern&gt; [-Dthreads=&lt;Thread Count&gt;]
+
     default value for threads is 15
     </echo>
   </target>
@@ -109,7 +109,7 @@
     description="-> runs command-line version of the crawler">
     <delete dir="${logs.dir}"/>
     <mkdir dir="${logs.dir}"/>
-    <java 
+    <java
       classname="de.lanlab.larm.fetcher.FetcherMain"
       fork="yes">
       <jvmarg value="-server"/>
