@@ -148,15 +148,15 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="PDF Parser">
+            <subsection name="PDF Box">
                 <table>
                     <tr>
                         <th>
                             URL
                         </th>
                         <td>
-                            <a href="http://www.csh.rit.edu/~ben/projects/pdfparser/">
-                                http://www.csh.rit.edu/~ben/projects/pdfparser/
+                            <a href="http://www.pdfbox.org/">
+                                http://www.pdfbox.org/
                             </a>
                         </td>
                     </tr>
