@@ -71,7 +71,8 @@ import java.io.IOException;
 
 import junit.framework.TestCase;
 
- /** Document boost unit test.
+ /**
+  * Term position unit test.
   *
   * @author Doug Cutting
   * @version $Revision$
