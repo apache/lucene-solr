@@ -21,13 +21,18 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 
 /** Expert: Calculate query weights and build query scorers.
- *
- * <p>A Weight is constructed by a query, given a Searcher ({@link
- * Query#createWeight(Searcher)}).  The {@link #sumOfSquaredWeights()} method
- * is then called on the top-level query to compute the query normalization
- * factor {@link Similarity#queryNorm(float)}.  This factor is then passed to
- * {@link #normalize(float)}.  At this point the weighting is complete and a
- * scorer may be constructed by calling {@link #scorer(IndexReader)}.
+ * <br>A <code>Weight</code> is used in the following way:
+ * <ol>
+ * <li>A <code>Weight</code> is constructed by a top-level query,
+ *     given a <code>Searcher</code> ({@link Query#createWeight(Searcher)}).
+ * <li>The {@link #sumOfSquaredWeights()} method is called
+ *     on the <code>Weight</code> to compute
+ *     the query normalization factor {@link Similarity#queryNorm(float)}
+ *     of the query clauses contained in the query.
+ * <li>The query normalization factor is passed to {@link #normalize(float)}.
+ *     At this point the weighting is complete.
+ * <li>A <code>Scorer</code> is constructed by {@link #scorer(IndexReader)}.
+ * </ol>
  */
 public interface Weight extends java.io.Serializable {
   /** The query that this concerns. */

@@ -99,7 +99,7 @@ public abstract class Similarity {
    * @see #encodeNorm(float)
    */
   public static float decodeNorm(byte b) {
-    return NORM_TABLE[b & 0xFF];
+    return NORM_TABLE[b & 0xFF];  // & 0xFF maps negative bytes to positive above 127
   }
 
   /** Returns a table for decoding normalization bytes.

@@ -496,7 +496,7 @@ public class QueryParser {
 
   /**
    * Returns a String where those characters that QueryParser
-   * expects to be escaped are escaped, i.e. preceded by a <code>\</code>.
+   * expects to be escaped are escaped by a preceding <code>\</code>.
    */
   public static String escape(String s) {
     StringBuffer sb = new StringBuffer();

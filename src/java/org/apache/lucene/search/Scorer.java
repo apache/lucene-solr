@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 /** Expert: Common scoring functionality for different types of queries.
- * <br>A <code>Scorer</code> iterates over all documents matching a query,
+ * <br>A <code>Scorer</code> either iterates over documents matching a query,
  * or provides an explanation of the score for a query for a given document.
- * <br>Scores are computed using a given <code>Similarity</code> implementation.
+ * <br>Document scores are computed using a given <code>Similarity</code> implementation.
  */
 public abstract class Scorer {
   private Similarity similarity;
@@ -41,6 +41,7 @@ public abstract class Scorer {
   /** Scores and collects all matching documents.
    * @param hc The collector to which all matching documents are passed through
    * {@link HitCollector#collect(int, float)}.
+   * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   public void score(HitCollector hc) throws IOException {
     while (next()) {
@@ -67,6 +68,7 @@ public abstract class Scorer {
 
   /** Advances to the next document matching the query.
    * @return true iff there is another document matching the query.
+   * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   public abstract boolean next() throws IOException;
 
@@ -81,7 +83,8 @@ public abstract class Scorer {
   public abstract float score() throws IOException;
 
   /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target. 
+   * greater than or equal to a given target.
+   * <br>When this method is used the {@link #explain(int)} method should not be used.
    * @param target The target document number.
    * @return true iff there is such a match.
    * <p>Behaves as if written: <pre>
@@ -92,14 +95,13 @@ public abstract class Scorer {
    *     } while (target > doc());
    *     return true;
    *   }
-   * </pre>
-   * Most implementations are considerably more efficient than that.
+   * </pre>Most implementations are considerably more efficient than that.
    */
   public abstract boolean skipTo(int target) throws IOException;
 
   /** Returns an explanation of the score for a document.
-   * <br>When this method is used, the {@link #next()} method
-   * and the {@link #score(HitCollector)} method should not be used.
+   * <br>When this method is used, the {@link #next()}, {@link #skipTo(int)} and
+   * {@link #score(HitCollector)} methods should not be used.
    * @param doc The document number for the explanation.
    */
   public abstract Explanation explain(int doc) throws IOException;

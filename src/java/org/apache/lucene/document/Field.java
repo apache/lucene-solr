@@ -246,8 +246,9 @@ public final class Field implements Serializable {
     return f;
   }
   
-  /** The name of the field (e.g., "date", "title", "body", ...)
-    as an interned string. */
+  /** Returns the name of the field as an interned string.
+   * For example "date", "title", "body", ...
+   */
   public String name()    { return name; }
 
   /** The value of the field as a String, or null.  If null, the Reader value

@@ -86,7 +86,7 @@ public final class FuzzyQuery extends MultiTermQuery {
   }
     
   /**
-   * Returns the prefix length, i.e. the number of characters at the start
+   * Returns the non-fuzzy prefix length. This is the number of characters at the start
    * of a term that must be identical (not fuzzy) to the query term if the query
    * is to match that term. 
    */
