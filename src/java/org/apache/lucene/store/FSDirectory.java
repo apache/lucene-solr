@@ -381,10 +381,34 @@ public final class FSDirectory extends Directory {
 
 final class FSInputStream extends InputStream {
   private class Descriptor extends RandomAccessFile {
+    /* DEBUG */
+    //private String name;
+    /* DEBUG */
     public long position;
     public Descriptor(File file, String mode) throws IOException {
       super(file, mode);
+      /* DEBUG */
+      //name = file.toString();
+      //debug_printInfo("OPEN");
+      /* DEBUG */
     }
+    
+    /* DEBUG */
+    //public void close() throws IOException {
+    //  debug_printInfo("CLOSE");
+    //    super.close();
+    //}
+    //
+    //private void debug_printInfo(String op) {
+    //  try { throw new Exception(op + " <" + name + ">"); 
+    //  } catch (Exception e) {
+    //    java.io.StringWriter sw = new java.io.StringWriter();
+    //    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+    //    e.printStackTrace(pw);
+    //    System.out.println(sw.getBuffer().toString());
+    //  }
+    //}
+    /* DEBUG */
   }
 
   Descriptor file = null;
@@ -432,6 +456,13 @@ final class FSInputStream extends InputStream {
     FSInputStream clone = (FSInputStream)super.clone();
     clone.isClone = true;
     return clone;
+  }
+  
+  /** Method used for testing. Returns true if the underlying
+   *  file descriptor is valid.
+   */
+  boolean isFDValid() throws IOException {
+    return file.getFD().valid();
   }
 }
 
