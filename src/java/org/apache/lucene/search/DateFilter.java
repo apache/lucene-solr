@@ -128,27 +128,27 @@ public class DateFilter extends Filter {
     search results, and false for those that should not. */
   public BitSet bits(IndexReader reader) throws IOException {
     BitSet bits = new BitSet(reader.maxDoc());
-    TermEnum enum = reader.terms(new Term(field, start));
+    TermEnum enumerator = reader.terms(new Term(field, start));
     TermDocs termDocs = reader.termDocs();
-    if (enum.term() == null)
+    if (enumerator.term() == null)
 	return bits;
 
     try {
       Term stop = new Term(field, end);
-      while (enum.term().compareTo(stop) <= 0) {
-	termDocs.seek(enum.term());
+      while (enumerator.term().compareTo(stop) <= 0) {
+	termDocs.seek(enumerator.term());
 	try {
 	  while (termDocs.next())
 	    bits.set(termDocs.doc());
 	} finally {
 	  termDocs.close();
 	}
-	if (!enum.next()) {
+	if (!enumerator.next()) {
 	  break;
 	}
       }
     } finally {
-      enum.close();
+      enumerator.close();
     }
     return bits;
   }

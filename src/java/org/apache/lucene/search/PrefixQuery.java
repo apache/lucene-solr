@@ -71,12 +71,12 @@ public class PrefixQuery extends Query {
 
   public Query rewrite(IndexReader reader) throws IOException {
     BooleanQuery query = new BooleanQuery();
-    TermEnum enum = reader.terms(prefix);
+    TermEnum enumerator = reader.terms(prefix);
     try {
       String prefixText = prefix.text();
       String prefixField = prefix.field();
       do {
-        Term term = enum.term();
+        Term term = enumerator.term();
         if (term != null &&
             term.text().startsWith(prefixText) &&
             term.field() == prefixField) {
@@ -87,9 +87,9 @@ public class PrefixQuery extends Query {
         } else {
           break;
         }
-      } while (enum.next());
+      } while (enumerator.next());
     } finally {
-      enum.close();
+      enumerator.close();
     }
     return query;
   }

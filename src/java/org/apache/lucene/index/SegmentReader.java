@@ -235,7 +235,7 @@ final class SegmentReader extends IndexReader {
     }
     return fieldSet;
   }
-    
+
   /**
    * @see IndexReader#getFieldNames(boolean)
    */
@@ -285,7 +285,7 @@ final class SegmentReader extends IndexReader {
   private final void openNorms() throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed) 
+      if (fi.isIndexed)
 	norms.put(fi.name,
 		  new Norm(directory.openFile(segment + ".f" + fi.number)));
     }
@@ -293,9 +293,9 @@ final class SegmentReader extends IndexReader {
 
   private final void closeNorms() throws IOException {
     synchronized (norms) {
-      Enumeration enum  = norms.elements();
-      while (enum.hasMoreElements()) {
-	Norm norm = (Norm)enum.nextElement();
+      Enumeration enumerator  = norms.elements();
+      while (enumerator.hasMoreElements()) {
+	Norm norm = (Norm)enumerator.nextElement();
 	norm.in.close();
       }
     }

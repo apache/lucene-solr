@@ -66,11 +66,11 @@ public class RangeQuery extends Query
     private Term lowerTerm;
     private Term upperTerm;
     private boolean inclusive;
-    
-    /** Constructs a query selecting all terms greater than 
+
+    /** Constructs a query selecting all terms greater than
      * <code>lowerTerm</code> but less than <code>upperTerm</code>.
      * There must be at least one term and either term may be null--
-     * in which case there is no bound on that side, but if there are 
+     * in which case there is no bound on that side, but if there are
      * two term, both terms <b>must</b> be for the same field.
      */
     public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive)
@@ -92,7 +92,7 @@ public class RangeQuery extends Query
       BooleanQuery query = new BooleanQuery();
       // if we have a lowerTerm, start there. otherwise, start at beginning
       if (lowerTerm == null) lowerTerm = new Term(getField(), "");
-      TermEnum enum = reader.terms(lowerTerm);
+      TermEnum enumerator = reader.terms(lowerTerm);
       try {
         String lowerText = null;
         String field;
@@ -110,7 +110,7 @@ public class RangeQuery extends Query
           }
           String testField = getField();
           do {
-            Term term = enum.term();
+            Term term = enumerator.term();
             if (term != null && term.field() == testField) {
               if (!checkLower || term.text().compareTo(lowerText) > 0) {
                 checkLower = false;
@@ -124,18 +124,18 @@ public class RangeQuery extends Query
                 tq.setBoost(getBoost());          // set the boost
                 query.add(tq, false, false); // add to query
               }
-            } 
+            }
             else {
               break;
             }
           }
-          while (enum.next());
+          while (enumerator.next());
       } finally {
-        enum.close();
+        enumerator.close();
       }
       return query;
     }
-    
+
     public Query combine(Query[] queries) {
       return Query.mergeBooleanQueries(queries);
     }
@@ -144,7 +144,7 @@ public class RangeQuery extends Query
     {
         return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
     }
-    
+
     /** Prints a user-readable version of this query. */
     public String toString(String field)
     {

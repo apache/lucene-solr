@@ -296,6 +296,10 @@ Implementation-Vendor: Lucene
       <classpath refid="test.classpath"/>
     </javac>
 
+    <copy todir="${junit.classes}">
+        <fileset dir="${junit.src}" excludes="**/*.java"/>
+    </copy>
+
     <junit printsummary="yes" haltonfailure="no" >
       <classpath refid="junit.classpath"/>
       <formatter type="plain" />

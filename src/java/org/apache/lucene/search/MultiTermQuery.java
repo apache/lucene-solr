@@ -74,37 +74,37 @@ import org.apache.lucene.index.Term;
  */
 public abstract class MultiTermQuery extends Query {
     private Term term;
-    
+
     /** Constructs a query for terms matching <code>term</code>. */
     public MultiTermQuery(Term term) {
         this.term = term;
     }
-    
+
     /** Returns the pattern term. */
     public Term getTerm() { return term; }
 
     /** Construct the enumeration to be used, expanding the pattern term. */
     protected abstract FilteredTermEnum getEnum(IndexReader reader)
       throws IOException;
-    
+
     public Query rewrite(IndexReader reader) throws IOException {
-      FilteredTermEnum enum = getEnum(reader);
+      FilteredTermEnum enumerator = getEnum(reader);
       BooleanQuery query = new BooleanQuery();
       try {
         do {
-          Term t = enum.term();
+          Term t = enumerator.term();
           if (t != null) {
             TermQuery tq = new TermQuery(t);      // found a match
-            tq.setBoost(getBoost() * enum.difference()); // set the boost
+            tq.setBoost(getBoost() * enumerator.difference()); // set the boost
             query.add(tq, false, false);          // add to query
           }
-        } while (enum.next());
+        } while (enumerator.next());
       } finally {
-        enum.close();
+        enumerator.close();
       }
       return query;
     }
-    
+
     public Query combine(Query[] queries) {
       return Query.mergeBooleanQueries(queries);
     }

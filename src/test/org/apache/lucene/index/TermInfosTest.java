@@ -152,15 +152,15 @@ class TermInfosTest {
 
     start = new Date();
 
-    SegmentTermEnum enum = (SegmentTermEnum)reader.terms();
+    SegmentTermEnum enumerator = reader.terms();
     for (int i = 0; i < keys.size(); i++) {
-      enum.next();
+      enumerator.next();
       Term key = (Term)keys.elementAt(i);
-      if (!key.equals(enum.term()))
-	throw new Exception("wrong term: " + enum.term()
+      if (!key.equals(enumerator.term()))
+	throw new Exception("wrong term: " + enumerator.term()
 			    + ", expected: " + key
 			    + " at " + i);
-      TermInfo ti = enum.termInfo();
+      TermInfo ti = enumerator.termInfo();
       if (ti.docFreq != docFreqs[i])
 	throw
 	  new Exception("wrong value: " + Long.toString(ti.docFreq, 16)
