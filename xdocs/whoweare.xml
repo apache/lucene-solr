@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<document>
+<properties>
+<author email="husted@apache.org">Ted Husted</author>
+<title>Who We Are - Jakarta Lucene</title>
+</properties>
+<body>
+
+<section name="WHO WE ARE">
+<h3>Lucene is maintained by a team of volunteer developers</h3>
+</section>
+
+<section name="Committers">
+<ul>
+<li><b>Doug Cutting</b> (cutting at apache.org)</li>
+<li><b>Otis Gospodnetic</b> (otis at apache.org)</li>
+<li><b>Brian Goetz</b> (briangoetz at apache.org)</li>
+<li><b>Scott Ganyo</b> (scottganyo at apache.org)</li>
+<li><b>Eugene Gluzberg</b> (drag0n at apache.org)</li>
+<li><b>Matt Tucker</b> (mtucker at apache.org)</li>
+<li><b>Cory Hubert</b> (clhubert at apache.org)</li>
+<li><b>Dave Kor</b> (davekor at apache.org)</li>
+<li><b>Jon Stevens</b> (jon at latchkey.com)</li>
+<li><b>Tal Dayan</b> (zapta at apache.org)</li>
+</ul>
+</section>
+
+<section name="Other Contributors">
+<ul>
+<li>Josh Bloch</li>
+<li>Ted Husted</li>
+</ul>
+</section>
+
+</body>
+</document>
+
