@@ -145,7 +145,7 @@ implements Serializable {
 	public void setSort (String field, boolean reverse) {
 		SortField[] nfields = new SortField[]{
 			new SortField (field, SortField.AUTO, reverse),
-			new SortField (field, SortField.DOC)
+			SortField.FIELD_DOC
 		};
 		fields = nfields;
 	}
