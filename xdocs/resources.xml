@@ -32,7 +32,10 @@
                         href="http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-cooltools.html">Build your own languages with JavaCC</a>
                     <br/> - JavaWorld December 2000
                 </li>
-                <li><a href="http://sourceforge.net/projects/nlucene">NLucene</a>
+                <li><a href="http://sourceforge.net/projects/clucene/">CLucene</a>
+                    <br/> - C++ implementation of Lucene
+                </li>
+                <li><a href="http://sourceforge.net/projects/nlucene/">NLucene</a>
                     <br/> - .NET implementation of Lucene
                 </li>
                 <li><a href="http://www.divmod.org/Lupy/">Lupy</a>
