@@ -13,10 +13,10 @@
   <property name="version" value="1.4-rc1-dev"/>
   <property name="year" value="2000-2003"/> <!-- todo: make this dynamic -->
   <property name="final.name" value="${name}-${version}"/>
+  <property name="javac.deprecation" value="on"/>
   <property name="javac.debug" value="on"/>
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
-  <property name="build.compiler.pedantic" value="false"/>
   <property name="build.encoding" value="ISO-8859-1"/>
 
   <property name="build.dir" location="build"/>
@@ -126,6 +126,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
+  <target name="compile" depends="compile-core"/>
   <target name="compile-core" depends="init"
     description="Compiles core classes">
     <mkdir dir="${build.dir}/classes/java"/>
@@ -134,6 +135,7 @@
       srcdir="src/java"
       includes="org/**/*.java"
       destdir="${build.dir}/classes/java"
+      deprecation="${javac.deprecation}"
       debug="${javac.debug}">
       <classpath refid="classpath"/>
     </javac>
