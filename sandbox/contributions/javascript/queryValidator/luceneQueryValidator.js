@@ -3,11 +3,20 @@
 // JavaScript Lucene Query Validator
 // Version: $Id$
 
+// Makes wildcard queries case-insensitive if true.
+var wildcardCaseInsensitive = true;
+
+// Mutator method for wildcardCaseInsensitive.
+// @param Should wildcard queries be case-insensitive?
+function setWildcardCaseInsensitive(bool)
+{
+  wildcardCaseInsensitive = bool;
+}
+
 // validates a lucene query.
 // @param Form field that contains the query
 function doCheckLuceneQuery(queryField)
 {
-  var wildcardCaseInsensitive = true;
   var query = queryField.value;
   if(query != null && query.length > 0)
   {
