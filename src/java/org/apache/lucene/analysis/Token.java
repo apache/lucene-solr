@@ -122,7 +122,7 @@ public final class Token {
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0)
       throw new IllegalArgumentException
-        ("Increment must be positive: " + positionIncrement);
+        ("Increment must be zero or greater: " + positionIncrement);
     this.positionIncrement = positionIncrement;
   }
 
