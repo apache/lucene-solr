@@ -106,7 +106,8 @@ public class TestTermVectorsWriter extends TestCase {
       assertTrue(false);
     }
   }
-  private void checkTermVector(TermVectorsReader reader, int docNum, String field) throws IOException {
+  
+  private void checkTermVector(TermVectorsReader reader, int docNum, String field) {
     TermFreqVector vector = reader.get(docNum, field);
     assertTrue(vector != null);
     String[] terms = vector.getTerms();
@@ -159,7 +160,7 @@ public class TestTermVectorsWriter extends TestCase {
   /**
    * 
    * @param writer The writer to write to
-   * @param j The field number
+   * @param f The field name
    * @throws IOException
    */
   private void writeField(TermVectorsWriter writer, String f) throws IOException {
