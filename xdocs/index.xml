@@ -25,21 +25,12 @@ Please use the links on the left to access Lucene.
 <section name="Lucene News">
 <h3>12 June 2002 - Lucene 1.2 Final Released</h3>
 <p>The Lucene Team is proud to announce the release of Lucene 1.2.
-This is the first production release of Lucene since it moved to the Apache project. 
-This release contains many features and bug fixes over the previous 1.0.2 release - see <a href="http://cvs.apache.org/viewcvs/jakarta-lucene/CHANGES.txt">CHANGES.txt</a> for details. 
-Binary and source distributions are available <a href="http://jakarta.apache.org/builds/jakarta-lucene/release/v1.2/">here</a>.
-</p>
-<h3>Lucene v1.02 released</h3>
-<p>
-This release repackages Lucene as a product of the Apache Software Foundation. Download it 
-<a href="http://jakarta.apache.org/site/binindex.html">here</a>.
-</p>
-<h3>Lucene Joins Jakarta</h3>
-<p>
-The Lucene Team is happy to announce that 
-Lucene is now a part of the Apache Jakarta Project. This move will 
-help Lucene continue to grow, and enhance its position as the leading 
-server-side searching solution for Java.
+This is the first production release of Lucene since it moved to the
+Apache project.  This release contains many features and bug fixes.
+See <a
+href="http://cvs.apache.org/viewcvs/jakarta-lucene/CHANGES.txt">CHANGES.txt</a>
+for details.  Binary and source distributions are available <a
+href="http://jakarta.apache.org/builds/jakarta-lucene/release/v1.2/">here</a>.
 </p>
 </section>
 
