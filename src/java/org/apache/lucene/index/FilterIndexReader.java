@@ -114,6 +114,7 @@ public class FilterIndexReader extends IndexReader {
 
   public FilterIndexReader(IndexReader in) {
     super(in.directory());
+    segmentInfos = in.segmentInfos;
     this.in = in;
   }
 

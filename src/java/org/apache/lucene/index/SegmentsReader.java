@@ -77,9 +77,10 @@ final class SegmentsReader extends IndexReader
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
-
-  SegmentsReader(Directory directory, SegmentReader[] r) throws IOException {
+  
+  SegmentsReader(SegmentInfos sis, Directory directory, SegmentReader[] r) throws IOException {
     super(directory);
+    segmentInfos = sis;
     readers = r;
     starts = new int[readers.length + 1];	  // build starts array
     for (int i = 0; i < readers.length; i++) {

@@ -98,10 +98,11 @@ final class SegmentReader extends IndexReader {
   }
   private Hashtable norms = new Hashtable();
 
-  SegmentReader(SegmentInfo si, boolean closeDir)
+  SegmentReader(SegmentInfos sis, SegmentInfo si, boolean closeDir)
     throws IOException {
     this(si);
     closeDirectory = closeDir;
+    segmentInfos = sis;
   }
 
   SegmentReader(SegmentInfo si)
@@ -141,7 +142,10 @@ final class SegmentReader extends IndexReader {
           public Object doBody() throws IOException {
             deletedDocs.write(directory(), segment + ".tmp");
             directory().renameFile(segment + ".tmp", segment + ".del");
-            directory().touchFile("segments");
+            if(segmentInfos != null)
+              segmentInfos.write(directory());
+            else
+              directory().touchFile("segments");
             return null;
           }
         }.run();

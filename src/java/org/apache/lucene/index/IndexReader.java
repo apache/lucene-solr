@@ -83,14 +83,14 @@ import org.apache.lucene.document.Field;          // for javadoc
 public abstract class IndexReader {
   protected IndexReader(Directory directory) {
     this.directory = directory;
-    segmentInfosAge = Long.MAX_VALUE;
+    stale = false;
+    segmentInfos = null;
   }
 
   private Directory directory;
   private Lock writeLock;
-
-  //used to determine whether index has chaged since reader was opened
-  private long segmentInfosAge;
+  SegmentInfos segmentInfos = null;
+  private boolean stale = false;
   
   /** Returns an IndexReader reading the index in an FSDirectory in the named
   path. */
@@ -111,21 +111,16 @@ public abstract class IndexReader {
           directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
           IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
-            IndexReader result = null;
-            
             SegmentInfos infos = new SegmentInfos();
             infos.read(directory);
             if (infos.size() == 1) {		  // index is optimized
-                result = new SegmentReader(infos.info(0), true);
+              return new SegmentReader(infos, infos.info(0), true);
             } else {
                 SegmentReader[] readers = new SegmentReader[infos.size()];
                 for (int i = 0; i < infos.size(); i++)
-                  readers[i] = new SegmentReader(infos.info(i), i==infos.size()-1);
-                result =  new SegmentsReader(directory, readers);
+                  readers[i] = new SegmentReader(infos, infos.info(i), i==infos.size()-1);
+                return new SegmentsReader(infos, directory, readers);
             }
-        
-            result.segmentInfosAge = lastModified(directory);
-            return result;
           }
         }.run();
     }
@@ -134,19 +129,88 @@ public abstract class IndexReader {
   /** Returns the directory this index resides in. */
   public Directory directory() { return directory; }
 
-  /** Returns the time the index in the named directory was last modified. */
+  /** 
+   * Returns the time the index in the named directory was last modified. 
+   * 
+   * <p>Synchronization of IndexReader and IndexWriter instances is 
+   * no longer done via time stamps of the segments file since the time resolution 
+   * depends on the hardware platform. Instead, a version number is maintained
+   * within the segments file, which is incremented everytime when the index is
+   * changed.</p>
+   * 
+   * @deprecated  Replaced by {@link #getCurrentVersion(String)}
+   * */
   public static long lastModified(String directory) throws IOException {
     return lastModified(new File(directory));
   }
 
-  /** Returns the time the index in the named directory was last modified. */
+  /** 
+   * Returns the time the index in the named directory was last modified. 
+   * 
+   * <p>Synchronization of IndexReader and IndexWriter instances is 
+   * no longer done via time stamps of the segments file since the time resolution 
+   * depends on the hardware platform. Instead, a version number is maintained
+   * within the segments file, which is incremented everytime when the index is
+   * changed.</p>
+   * 
+   * @deprecated  Replaced by {@link #getCurrentVersion(File)}
+   * */
   public static long lastModified(File directory) throws IOException {
     return FSDirectory.fileModified(directory, "segments");
   }
 
-  /** Returns the time the index in this directory was last modified. */
+  /** 
+   * Returns the time the index in the named directory was last modified. 
+   * 
+   * <p>Synchronization of IndexReader and IndexWriter instances is 
+   * no longer done via time stamps of the segments file since the time resolution 
+   * depends on the hardware platform. Instead, a version number is maintained
+   * within the segments file, which is incremented everytime when the index is
+   * changed.</p>
+   * 
+   * @deprecated  Replaced by {@link #getCurrentVersion(Directory)}
+   * */
   public static long lastModified(Directory directory) throws IOException {
     return directory.fileModified("segments");
+  }
+  
+  /**
+   * Reads version number from segments files. The version number counts the
+   * number of changes of the index.
+   * 
+   * @param directory where the index resides.
+   * @return version number.
+   * @throws IOException if segments file cannot be read
+   */
+  public static long getCurrentVersion(String directory) throws IOException {
+    return getCurrentVersion(new File(directory));
+  }
+  
+  /**
+   * Reads version number from segments files. The version number counts the
+   * number of changes of the index.
+   * 
+   * @param directory where the index resides.
+   * @return version number.
+   * @throws IOException if segments file cannot be read
+   */
+  public static long getCurrentVersion(File directory) throws IOException {
+    Directory dir = FSDirectory.getDirectory(directory, false);
+    long version = getCurrentVersion(dir);
+    dir.close();
+    return version;
+  }
+  
+  /**
+   * Reads version number from segments files. The version number counts the
+   * number of changes of the index.
+   * 
+   * @param directory where the index resides.
+   * @return version number.
+   * @throws IOException if segments file cannot be read.
+   */
+  public static long getCurrentVersion(Directory directory) throws IOException {
+    return SegmentInfos.readCurrentVersion(directory);
   }
 
   /**
@@ -274,6 +338,9 @@ public abstract class IndexReader {
     this will be corrected eventually as the index is further modified.
   */
   public final synchronized void delete(int docNum) throws IOException {
+    if(stale)
+      throw new IOException("IndexReader out of date and no longer valid for deletion");
+      
     if (writeLock == null) {
       Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
       if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
@@ -282,11 +349,11 @@ public abstract class IndexReader {
 
       // we have to check whether index has changed since this reader was opened.
       // if so, this reader is no longer valid for deletion
-      if(lastModified(directory) > segmentInfosAge){
+      if(segmentInfos != null  && SegmentInfos.readCurrentVersion(directory) > segmentInfos.getVersion()){
+          stale = true;
           this.writeLock.release();
           this.writeLock = null;
-          throw new IOException(
-            "IndexReader out of date and no longer valid for deletion");
+          throw new IOException("IndexReader out of date and no longer valid for deletion");
       }
     }
     doDelete(docNum);
