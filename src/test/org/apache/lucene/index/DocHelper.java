@@ -57,13 +57,10 @@ class DocHelper {
   public static Field unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT,
       Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES);
 
-//  public static Set fieldNamesSet = null;
-//  public static Set fieldValuesSet = null;
   public static Map nameValues = null;
   
   static
   {
-    
     nameValues = new HashMap();
     nameValues.put(TEXT_FIELD_1_KEY, FIELD_1_TEXT);
     nameValues.put(TEXT_FIELD_2_KEY, FIELD_2_TEXT);
@@ -85,6 +82,7 @@ class DocHelper {
     doc.add(unStoredField1);
     doc.add(unStoredField2);
   }                         
+
   /**
    * Writes the document to the directory using a segment named "test"
    * @param dir
@@ -92,9 +90,9 @@ class DocHelper {
    */ 
   public static void writeDoc(Directory dir, Document doc)
   {
-    
     writeDoc(dir, "test", doc);
   }
+
   /**
    * Writes the document to the directory in the given segment
    * @param dir
@@ -107,6 +105,7 @@ class DocHelper {
     Similarity similarity = Similarity.getDefault();
     writeDoc(dir, analyzer, similarity, segment, doc);
   }
+
   /**
    * Writes the document to the directory segment named "test" using the specified analyzer and similarity
    * @param dir
@@ -118,6 +117,7 @@ class DocHelper {
   {
     writeDoc(dir, analyzer, similarity, "test", doc);
   }
+
   /**
    * Writes the document to the directory segment using the analyzer and the similarity score
    * @param dir
@@ -147,19 +147,3 @@ class DocHelper {
     return result;
   }
 }
-/*
-    fieldNamesSet = new HashSet();
-    fieldNamesSet.add(TEXT_FIELD_1_KEY);
-    fieldNamesSet.add(TEXT_FIELD_2_KEY);
-    fieldNamesSet.add(KEYWORD_FIELD_KEY);
-    fieldNamesSet.add(UNINDEXED_FIELD_KEY);
-    fieldNamesSet.add(UNSTORED_FIELD_1_KEY);
-    fieldNamesSet.add(UNSTORED_FIELD_2_KEY);
-    fieldValuesSet = new HashSet();
-    fieldValuesSet.add(FIELD_1_TEXT);
-    fieldValuesSet.add(FIELD_2_TEXT);
-    fieldValuesSet.add(KEYWORD_TEXT);
-    fieldValuesSet.add(UNINDEXED_FIELD_TEXT);
-    fieldValuesSet.add(UNSTORED_1_FIELD_TEXT);
-    fieldValuesSet.add(UNSTORED_2_FIELD_TEXT);
-*/
