@@ -65,6 +65,8 @@ import org.apache.lucene.index.Term;
  * <p>
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
+ *
+ * @version $Id$
  */
 public class WildcardTermEnum extends FilteredTermEnum {
   Term searchTerm;
@@ -77,40 +79,40 @@ public class WildcardTermEnum extends FilteredTermEnum {
 
   /**
    * Creates a new <code>WildcardTermEnum</code>.  Passing in a
-   * {@link org.apache.lucene.index.Term} that does not contain a
+   * {@link org.apache.lucene.index.Term Term} that does not contain a
    * <code>WILDCARD_CHAR</code> will cause an exception to be thrown.
    */
   public WildcardTermEnum(IndexReader reader, Term term) throws IOException {
-      super(reader, term);
-      searchTerm = term;
-      field = searchTerm.field();
-      text = searchTerm.text();
+    super(reader, term);
+    searchTerm = term;
+    field = searchTerm.field();
+    text = searchTerm.text();
 
-      int sidx = text.indexOf(WILDCARD_STRING);
-      int cidx = text.indexOf(WILDCARD_CHAR);
-      int idx = sidx;
-      if (idx == -1) {
-        idx = cidx;
-      }
-      else if (cidx >= 0) {
-        idx = Math.min(idx, cidx);
-      }
+    int sidx = text.indexOf(WILDCARD_STRING);
+    int cidx = text.indexOf(WILDCARD_CHAR);
+    int idx = sidx;
+    if (idx == -1) {
+      idx = cidx;
+    }
+    else if (cidx >= 0) {
+      idx = Math.min(idx, cidx);
+    }
 
-      pre = searchTerm.text().substring(0,idx);
-      preLen = pre.length();
-      text = text.substring(preLen);
-      setEnum(reader.terms(new Term(searchTerm.field(), pre)));
+    pre = searchTerm.text().substring(0,idx);
+    preLen = pre.length();
+    text = text.substring(preLen);
+    setEnum(reader.terms(new Term(searchTerm.field(), pre)));
   }
 
   protected final boolean termCompare(Term term) {
-      if (field == term.field()) {
-          String searchText = term.text();
-          if (searchText.startsWith(pre)) {
-            return wildcardEquals(text, 0, searchText, preLen);
-          }
+    if (field == term.field()) {
+      String searchText = term.text();
+      if (searchText.startsWith(pre)) {
+        return wildcardEquals(text, 0, searchText, preLen);
       }
-      endEnum = true;
-      return false;
+    }
+    endEnum = true;
+    return false;
   }
 
   public final float difference() {
@@ -128,102 +130,101 @@ public class WildcardTermEnum extends FilteredTermEnum {
   public static final char WILDCARD_STRING = '*';
   public static final char WILDCARD_CHAR = '?';
 
-    /**
-     * Determines if a word matches a wildcard pattern.
-     * <small>Work released by Granta Design Ltd after originally being done on
-     * company time.</small>
-     */
-    public static final boolean wildcardEquals(String pattern, int patternIdx,
-	String string, int stringIdx)
+  /**
+   * Determines if a word matches a wildcard pattern.
+   * <small>Work released by Granta Design Ltd after originally being done on
+   * company time.</small>
+   */
+  public static final boolean wildcardEquals(String pattern, int patternIdx,
+    String string, int stringIdx)
+  {
+    for (int p = patternIdx; ; ++p)
     {
-        for (int p = patternIdx; ; ++p)
+      for (int s = stringIdx; ; ++p, ++s)
+      {
+        // End of string yet?
+        boolean sEnd = (s >= string.length());
+        // End of pattern yet?
+        boolean pEnd = (p >= pattern.length());
+
+        // If we're looking at the end of the string...
+        if (sEnd)
         {
-            for (int s = stringIdx; ; ++p, ++s)
+          // Assume the only thing left on the pattern is/are wildcards
+          boolean justWildcardsLeft = true;
+
+          // Current wildcard position
+          int wildcardSearchPos = p;
+          // While we haven't found the end of the pattern,
+          // and haven't encountered any non-wildcard characters
+          while (wildcardSearchPos < pattern.length() && justWildcardsLeft)
+          {
+            // Check the character at the current position
+            char wildchar = pattern.charAt(wildcardSearchPos);
+            // If it's not a wildcard character, then there is more
+            // pattern information after this/these wildcards.
+
+            if (wildchar != WILDCARD_CHAR && wildchar != WILDCARD_STRING)
             {
-                // End of string yet?
-                boolean sEnd = (s >= string.length());
-                // End of pattern yet?
-                boolean pEnd = (p >= pattern.length());
-
-                // If we're looking at the end of the string...
-                if (sEnd)
-                {
-                    // Assume the only thing left on the pattern is/are wildcards
-                    boolean justWildcardsLeft = true;
-
-                    // Current wildcard position
-                    int wildcardSearchPos = p;
-                    // While we haven't found the end of the pattern,
-		    // and haven't encountered any non-wildcard characters
-                    while (wildcardSearchPos < pattern.length() && justWildcardsLeft)
-                    {
-                        // Check the character at the current position
-                        char wildchar = pattern.charAt(wildcardSearchPos);
-                        // If it's not a wildcard character, then there is more
-			// pattern information after this/these wildcards.
-
-                        if (wildchar != WILDCARD_CHAR &&
-			    wildchar != WILDCARD_STRING)
-                        {
-                            justWildcardsLeft = false;
-                        }
-                        else
-                        {
-                            // Look at the next character
-                            wildcardSearchPos++;
-                        }
-                    }
-
-                    // This was a prefix wildcard search, and we've matched, so
-		    // return true.
-                    if (justWildcardsLeft)
-		    {
-                        return true;
-		    }
-                }
-
-                // If we've gone past the end of the string, or the pattern,
-		// return false.
-                if (sEnd || pEnd)
-		{
-		    break;
-		}
-
-                // Match a single character, so continue.
-                if (pattern.charAt(p) == WILDCARD_CHAR)
-		{
-		    continue;
-		}
-
-                //
-                if (pattern.charAt(p) == WILDCARD_STRING)
-                {
-                    // Look at the character beyond the '*'.
-                    ++p;
-                    // Examine the string, starting at the last character.
-                    for (int i = string.length(); i >= s; --i)
-                    {
-                        if (wildcardEquals(pattern, p, string, i))
-			{
-                            return true;
-			}
-                    }
-                    break;
-                }
-                if (pattern.charAt(p) != string.charAt(s))
-		{
-		    break;
-		}
+              justWildcardsLeft = false;
             }
-            return false;
-	}
-    }
+            else
+            {
+              // Look at the next character
+              wildcardSearchPos++;
+            }
+          }
 
-    public void close() throws IOException
-    {
-	super.close();
-	searchTerm = null;
-	field = null;
-	text = null;
+          // This was a prefix wildcard search, and we've matched, so
+          // return true.
+          if (justWildcardsLeft)
+          {
+            return true;
+          }
+        }
+
+        // If we've gone past the end of the string, or the pattern,
+        // return false.
+        if (sEnd || pEnd)
+        {
+          break;
+        }
+
+        // Match a single character, so continue.
+        if (pattern.charAt(p) == WILDCARD_CHAR)
+        {
+          continue;
+        }
+
+        //
+        if (pattern.charAt(p) == WILDCARD_STRING)
+        {
+          // Look at the character beyond the '*'.
+          ++p;
+          // Examine the string, starting at the last character.
+          for (int i = string.length(); i >= s; --i)
+          {
+            if (wildcardEquals(pattern, p, string, i))
+            {
+              return true;
+            }
+          }
+          break;
+        }
+        if (pattern.charAt(p) != string.charAt(s))
+        {
+          break;
+        }
+      }
+      return false;
     }
+  }
+
+  public void close() throws IOException
+  {
+    super.close();
+    searchTerm = null;
+    field = null;
+    text = null;
+  }
 }
