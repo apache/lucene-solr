@@ -1328,11 +1328,18 @@ limitations under the License.
                         <ul>
                         	<li>low order bit is one for tokenized fields</li>
                         	<li>second bit is one for fields containing binary data</li>
-                        	<li>third bit is one for fields with compression option enabled</li>
+                        	<li>third bit is one for fields with compression option enabled
+                        		(if compression is enabled, the algorithm used is ZLIB)</li>
                         </ul>
                         </p>
                         <p>Value        --&gt;
-                            String (default) or byte[] when the field value is a binary field
+                            String | BinaryValue (depending on Bits)
+                        </p>
+                        <p>BinaryValue        --&gt;
+                            ValueSize, &lt;Byte&gt;^ValueSize
+                        </p>
+                        <p>ValueSize        --&gt;
+                            VInt
                         </p>
 
                     </li>
