@@ -56,10 +56,15 @@ New features
     
 12. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
     FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
-    terms only the BooleanQuery.maxClauseCount most similar terms 
+		terms only the BooleanQuery.maxClauseCount most similar terms 
     go into the rewritten query and thus the exception is avoided.
     (Christoph)
 
+13.	Changed system property from "org.apache.lucene.lockdir" to
+		"org.apache.lucene.lockDir", so that it's casing follows the existing
+		casing pattern used in other Lucene system properties.
+		(Bernhard)
+		
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
