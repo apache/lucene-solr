@@ -23,8 +23,10 @@ import java.util.TreeSet;
 import java.util.TreeMap;
 
 /**
- * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/~wn/obtain.shtml">WordNet prolog download</a>
- * into a Lucene index suitable for looking up synonyms and performing query expansion.
+ * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">WordNet prolog download</a>
+ * into a Lucene index suitable for looking up synonyms and performing query expansion ({@see SynExpand#expand SynExpand.expand(...)}).
+ *
+ * This has been tested with WordNet 2.0.
  *
  * The index has fields named "word" ({@see #F_WORD})
  * and "syn" ({@see #F_SYN}).
@@ -40,8 +42,7 @@ import java.util.TreeMap;
  * related meanings we don't do that here.
  * </p>
  *
- * This can take 8 minutes to execute and build an index on a "fast" system and the index takes up almost 3 MB.
- * If you boost the minMergeDocuments and mergeFactor of the index writer than you can get this down to under 4 minutes.
+ * This can take 4 minutes to execute and build an index on a "fast" system and the index takes up almost 3 MB.
  *
  * @author Dave Spencer, dave&#064;searchmorph.com
  * @see <a href="http://www.cogsci.princeton.edu/~wn/">WordNet home page</a>
@@ -76,7 +77,7 @@ public class Syns2Index
     private static final Analyzer ana = new StandardAnalyzer();
 
     /**
-     * Takes optional arg of prolog file name.
+     * Takes arg of prolog file name and index directory.
      */
     public static void main(String[] args)
         throws Throwable
@@ -228,9 +229,10 @@ public class Syns2Index
 
         // override the specific index if it already exists
         IndexWriter writer = new IndexWriter(indexDir, ana, true);
-        writer.setUseCompoundFile(true);
-		writer.mergeFactor *= 2;
-		writer.minMergeDocs *= 2;
+        writer.setUseCompoundFile(true); // why?
+		// blindly up these parameters for speed
+		writer.setMergeFactor( writer.getMergeFactor() * 2);
+		writer.setMaxBufferedDocs( writer.getMaxBufferedDocs() * 2);
         Iterator i1 = word2Nums.keySet().iterator();
         while (i1.hasNext()) // for each word
         {

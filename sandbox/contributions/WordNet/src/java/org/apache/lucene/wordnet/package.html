@@ -1,0 +1,25 @@
+<html>
+    <head>
+<title>WordNet Lucene Synonyms Integration</title>
+</head>
+<body>
+
+    This package uses synonyms defined by <a href="http://www.cogsci.princeton.edu/~wn/">WordNet</a> to build a
+    Lucene index storing them, which in turn can be used for query expansion.
+
+    You normally run {@see org.apache.lucene.wordnet.Syns2Index} once to build the query index/"database", and then call
+    {@see org.apache.lucene.wordnet.SynExpand#expand SynExpand.expand(...)} to expand a query.
+
+    <p>
+
+	<h3> Instructions </h3>
+	<ol>
+	    <li> Download the <a href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">WordNet prolog database</a> , gunzip, untar etc.
+	<li> Invoke Syn2Index as appropriate to build a synonym index.
+	    It'll take 2 arguments, the path to wn_s.pl from that WordNet downlaod, and the index name.
+   
+	 <li> Update your UI so that as appropriate you call SynExpand.expand(...) to expand user queries with synonyms.
+       </ol>
+
+</body>
+    </html>
