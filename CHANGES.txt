@@ -77,7 +77,10 @@ Bug fixes
     characters from user input in order to avoid so-called cross site
     scripting attacks. (Daniel Naber)
 
- 2. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
+ 2. The JSP demo page (src/jsp/results.jsp) now properly closes the 
+    IndexSearcher it opens. (Daniel Naber)
+
+ 3. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
     prevented deletion of obsolete segments. (Christoph Goller)
 
 Optimizations
