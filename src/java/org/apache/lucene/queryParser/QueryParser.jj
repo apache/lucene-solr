@@ -135,12 +135,9 @@ public class QueryParser {
   Analyzer analyzer;
   String field;
   int phraseSlop = 0;
-  Locale locale;
-
+  Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  Default locale is used for date range parsing.
-   *  Use {@link #parse(String, String, Analyzer, Locale)} for non-default locale handling.
    *  @param query	the query string to be parsed.
    *  @param field	the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
@@ -157,42 +154,14 @@ public class QueryParser {
     }
   }
 
-  /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query	the query string to be parsed.
-   *  @param field	the default field for query terms.
-   *  @param analyzer   used to find terms in the query text.
-   *  @param locale locale to use for date range parsing
-   *  @throws ParseException if the parsing fails
-   */
-  static public Query parse(String query, String field, Analyzer analyzer, Locale locale)
-       throws ParseException {
-    try {
-      QueryParser parser = new QueryParser(field, analyzer, locale);
-      return parser.parse(query);
-    }
-    catch (TokenMgrError tme) {
-      throw new ParseException(tme.getMessage());
-    }
-  }
-
   /** Constructs a query parser.
    *  @param f	the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
   public QueryParser(String f, Analyzer a) {
-    this(f, a, Locale.getDefault());
-  }
-
-  /** Constructs a query parser.
-   *  @param f	the default field for query terms.
-   *  @param a   used to find terms in the query text.
-   *  @param locale
-   */
-  public QueryParser(String f, Analyzer a, Locale locale) {
     this(new FastCharStream(new StringReader("")));
     analyzer = a;
     field = f;
-    this.locale = locale;
   }
 
   /** Parses a query string, returning a
@@ -233,6 +202,10 @@ public class QueryParser {
     this.operator = operator;
   }
 
+  /**
+   * Gets implicit operator setting, which will be either DEFAULT_OPERATOR_AND
+   * or DEFAULT_OPERATOR_AND.
+   */
   public int getOperator() {
     return operator;
   }
@@ -243,6 +216,20 @@ public class QueryParser {
 
   public boolean getLowercaseWildcardTerms() {
     return lowercaseWildcardTerms;
+  }
+
+  /**
+   * Set locale used by date range parsing.
+   */
+  public void setLocale(Locale locale) {
+    this.locale = locale;
+  }
+
+  /**
+   * Returns current locale, allowing access by subclasses.
+   */
+  public Locale getLocale() {
+    return locale;
   }
 
   protected void addClause(Vector clauses, int conj, int mods, Query q) {
