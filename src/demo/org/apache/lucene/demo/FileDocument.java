@@ -34,7 +34,7 @@ public class FileDocument {
     The document has three fields:
     <ul>
     <li><code>path</code>--containing the pathname of the file, as a stored,
-    tokenized field;
+    untokenized field;
     <li><code>modified</code>--containing the last modified date of the file as
     a keyword field as encoded by <a
     href="lucene.document.DateField.html">DateField</a>; and
