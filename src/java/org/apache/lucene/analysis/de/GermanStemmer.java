@@ -178,15 +178,16 @@ public class GermanStemmer
         else if ( buffer.charAt( c ) == 'ü' ) {
           buffer.setCharAt( c, 'u' );
         }
-        // Take care that at least one character is left left side from the current one
-        if ( c < buffer.length() - 1 ) {
-          if ( buffer.charAt( c ) == 'ß' ) {
+        // Fix bug so that 'ß' at the end of a word is replaced.
+        else if ( buffer.charAt( c ) == 'ß' ) {
             buffer.setCharAt( c, 's' );
             buffer.insert( c + 1, 's' );
             substCount++;
-          }
+        }
+        // Take care that at least one character is left left side from the current one
+        if ( c < buffer.length() - 1 ) {
           // Masking several common character combinations with an token
-          else if ( ( c < buffer.length() - 2 ) && buffer.charAt( c ) == 's' &&
+          if ( ( c < buffer.length() - 2 ) && buffer.charAt( c ) == 's' &&
             buffer.charAt( c + 1 ) == 'c' && buffer.charAt( c + 2 ) == 'h' )
           {
             buffer.setCharAt( c, '$' );
@@ -260,4 +261,5 @@ public class GermanStemmer
         }
       }
     }
+    
 }
