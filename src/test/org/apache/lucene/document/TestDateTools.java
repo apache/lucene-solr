@@ -114,12 +114,19 @@ public class TestDateTools extends TestCase {
     assertEquals("1961-03-05 23:00:00:000", isoFormat(DateTools.stringToDate(dateString)));
 
     // timeToString:
-    dateString = DateTools.timeToString(0, DateTools.Resolution.MILLISECOND);
-    assertEquals("19700101010000000", dateString);
-
-    dateString = DateTools.timeToString(123000, DateTools.Resolution.MILLISECOND);
+    cal.set(1970, 0, 1, // year=1970, month=january, day=1
+        0, 0, 0); // hour, minute, second
+    cal.set(Calendar.MILLISECOND, 0);
+    dateString = DateTools.timeToString(cal.getTime().getTime(),
+        DateTools.Resolution.MILLISECOND);
+    assertEquals("19700101000000000", dateString);
+        
+    cal.set(1970, 0, 1, // year=1970, month=january, day=1
+        1, 2, 3); // hour, minute, second
+    cal.set(Calendar.MILLISECOND, 0);
+    dateString = DateTools.timeToString(cal.getTime().getTime(),
+        DateTools.Resolution.MILLISECOND);
     assertEquals("19700101010203000", dateString);
-    
   }
   
   public void testRound() {
