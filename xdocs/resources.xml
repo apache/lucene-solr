@@ -27,6 +27,14 @@
                 <li><a href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Intro</a>
                     <br/> - java.net, July 2003
                 </li>
+            </ul>
+        </section>
+
+        <section name="Tutorials">
+            <ul>
+                <li><a
+                        href="http://www.darksleep.com/lucene/">Lucene Tutorial</a>
+                </li>
                 <li><a
                         href="http://www.chedong.com/tech/lucene.html">Lucene introduction in Chinese</a>
                 </li>

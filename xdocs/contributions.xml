@@ -358,30 +358,6 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="Lucene Tutorial">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.darksleep.com/lucene">
-                                http://www.darksleep.com/lucene
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Steven J. Owens - puff@darksleep.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
             <subsection name="JavaCC">
                 <table>
                     <tr>
