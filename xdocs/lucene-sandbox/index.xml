@@ -164,14 +164,6 @@
                 </p>
             </subsection>
 
-            <subsection name="LARM">
-                <p>
-                    LARM is a web crawler optimized for large intranets with up to a couple of hundred hosts.
-                </p>
-                <a href="larm/overview.html">Technical Overview</a>.
-                See also: <a href="http://larm.sourceforge.net/">LARM's home page on SourceForge</a>.
-            </subsection>
-
         </section>
 
     </body>
