@@ -1,4 +1,16 @@
-$id: $
+$Id$
+
+2002-06-18 (cmarschner)
+	* added an experimental version of Lucene storage. see FetcherMain.java for details how to use it
+	  LuceneStorage simply saves all fields as specified in WebDocument. add a converter to the 
+	  storage pipeline before LuceneStorage to do preprocessing
+
+2002-06-17 (cmarschner)
+	* moved HostInfo and HostManager to larm.net package
+	* included URLNormalizer (todo: source code Docs)
+	* changed filters to use normalized URLs when appropriate; 
+	  logs contain normalized version of referer and URL now
+	  (todo: change description of log format in technical_overview.rtf)
 
 2002-06-01 (cmarschner)
 	* divided Storage into LinkStorage and DocumentStorage
