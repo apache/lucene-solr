@@ -58,17 +58,19 @@ public class TestMultiPhraseQuery
         Document doc3 = new Document();
         Document doc4 = new Document();
         Document doc5 = new Document();
+        Document doc6 = new Document();
         doc1.add(new Field("body", "blueberry pie", Field.Store.YES, Field.Index.TOKENIZED));
         doc2.add(new Field("body", "blueberry strudel", Field.Store.YES, Field.Index.TOKENIZED));
         doc3.add(new Field("body", "blueberry pizza", Field.Store.YES, Field.Index.TOKENIZED));
         doc4.add(new Field("body", "blueberry chewing gum", Field.Store.YES, Field.Index.TOKENIZED));
-        doc4.add(new Field("body", "bluebird pizza", Field.Store.YES, Field.Index.TOKENIZED));
-        doc5.add(new Field("body", "piccadilly circus", Field.Store.YES, Field.Index.TOKENIZED));
+        doc5.add(new Field("body", "bluebird pizza", Field.Store.YES, Field.Index.TOKENIZED));
+        doc6.add(new Field("body", "piccadilly circus", Field.Store.YES, Field.Index.TOKENIZED));
         writer.addDocument(doc1);
         writer.addDocument(doc2);
         writer.addDocument(doc3);
         writer.addDocument(doc4);
         writer.addDocument(doc5);
+        writer.addDocument(doc6);
         writer.optimize();
         writer.close();
 
@@ -120,7 +122,7 @@ public class TestMultiPhraseQuery
         query3.add(new Term("body", "pizza"));
 
         result = searcher.search(query3);
-        assertEquals(2, result.length()); // blueberry pizza, blueberry chewing gum
+        assertEquals(2, result.length()); // blueberry pizza, bluebird pizza
         assertEquals("body:\"(blueberry bluebird) pizza\"", query3.toString());
 
         MultiPhraseQuery query4 = new MultiPhraseQuery();
