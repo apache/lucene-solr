@@ -542,8 +542,13 @@ public final class Field implements Serializable {
   /** Prints a Field for human consumption. */
   public final String toString() {
     StringBuffer result = new StringBuffer();
-    if (isStored)
+    if (isStored) {
       result.append("stored");
+      if (isCompressed)
+        result.append("/compressed");
+      else
+        result.append("/uncompressed");
+    }
     if (isIndexed) {
       if (result.length() > 0)
         result.append(",");
@@ -573,12 +578,6 @@ public final class Field implements Serializable {
       if (result.length() > 0)
         result.append(",");
       result.append("binary");
-    }
-    
-    if (isCompressed) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("compressed");
     }
     
     result.append('<');
