@@ -239,9 +239,9 @@ public final class Field implements java.io.Serializable {
    */ 
   public Field(String name, String value, Store store, Index index, TermVector termVector) {
       if (name == null)
-         throw new IllegalArgumentException("name cannot be null");
+         throw new NullPointerException("name cannot be null");
       if (value == null)
-        throw new IllegalArgumentException("value cannot be null");
+        throw new NullPointerException("value cannot be null");
       if (index == Index.NO && store == Store.NO)
         throw new IllegalArgumentException("it doesn't make sense to have a field that "
             + "is neither indexed nor stored");
@@ -302,9 +302,9 @@ public final class Field implements java.io.Serializable {
   public Field(String name, String string,
 	       boolean store, boolean index, boolean token, boolean storeTermVector) {
     if (name == null)
-      throw new IllegalArgumentException("name cannot be null");
+      throw new NullPointerException("name cannot be null");
     if (string == null)
-      throw new IllegalArgumentException("value cannot be null");
+      throw new NullPointerException("value cannot be null");
     if (!index && storeTermVector)
       throw new IllegalArgumentException("cannot store a term vector for fields that are not indexed");
 
@@ -318,9 +318,9 @@ public final class Field implements java.io.Serializable {
 
   Field(String name, Reader reader) {
     if (name == null)
-      throw new IllegalArgumentException("name cannot be null");
+      throw new NullPointerException("name cannot be null");
     if (reader == null)
-      throw new IllegalArgumentException("value cannot be null");
+      throw new NullPointerException("value cannot be null");
 
     this.name = name.intern();			  // field names are interned
     this.readerValue = reader;
