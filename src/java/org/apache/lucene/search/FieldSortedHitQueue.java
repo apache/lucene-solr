@@ -95,6 +95,9 @@ extends PriorityQueue {
       c = (fields[i].reverse) ? comparators[i].compare (docB, docA)
                               : comparators[i].compare (docA, docB);
     }
+    // avoid random sort order that could lead to duplicates (bug #31241):
+    if (c == 0)
+      return docA.doc > docB.doc;
     return c > 0;
   }
 
