@@ -189,7 +189,7 @@
       excludes="**/*.java">
       <manifest>
         <attribute name="Created-By" value="Apache Jakarta"/>
-        <section name="org/apache/lucene">
+        <section name="org/apache/lucene/">
           <attribute name="Specification-Title" value="Lucene Search Engine"/>
           <attribute name="Specification-Version" value="${version}"/>
           <attribute name="Specification-Vendor" value="Lucene"/>
