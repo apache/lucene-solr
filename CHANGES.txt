@@ -18,16 +18,17 @@ $Id$
     hierarchy and is now org.apache.lucene.analysis.WordlistLoader
     (Daniel Naber)
     
-  4. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
-     prevented deletion of obsolete segments. (Christoph Goller)
+ 4. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
+    prevented deletion of obsolete segments. (Christoph Goller)
      
-  5. Disk usage (peak requirements during indexing and optimization)
-     in case of compound file format has been improved. 
-     (Bernhard, Dmitry, and Christoph)
+ 5. Disk usage (peak requirements during indexing and optimization)
+    in case of compound file format has been improved. 
+    (Bernhard, Dmitry, and Christoph)
 
-  6. Added javadocs-internal to build.xml - bug #30360
-     (Paul Elschot via Otis)
- 
+ 6. Added javadocs-internal to build.xml - bug #30360
+    (Paul Elschot via Otis)
+
+
 1.4.1
 
  1. Fixed a performance bug in hit sorting code, where values were not
