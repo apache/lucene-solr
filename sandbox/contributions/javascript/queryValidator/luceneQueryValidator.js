@@ -1,9 +1,9 @@
 // Author: Kelvin Tan  (kelvin@relevanz.com)
-// Date:   03/12/2002
 // JavaScript Lucene Query Validator
 // Version: $Id$
 
 // Makes wildcard queries case-insensitive if true.
+// Refer to http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00646.html
 var wildcardCaseInsensitive = true;
 
 // Mutator method for wildcardCaseInsensitive.
@@ -69,7 +69,15 @@ function doCheckLuceneQuery(queryField)
     {
       if(query.indexOf("*") != -1)
       {
-        queryField.value = query.toLowerCase();
+        var i = query.indexOf(':');
+        if(i == -1)
+        {
+          queryField.value = query.toLowerCase();
+        }
+        else // found a wildcard field search
+        {
+          queryField.value = query.substring(0, i) + query.substring(i).toLowerCase();
+        }
       }
     }
 
