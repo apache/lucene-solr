@@ -66,7 +66,7 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Test case for FrenchAnalyzer.
  *
- * @author    Jean-FranÁois Halleux
+ * @author    Jean-Fran√ßois Halleux
  * @version   $version$
  */
 
@@ -140,25 +140,25 @@ public class TestFrenchAnalyzer extends TestCase {
 		sign is often used for composing words */
 		assertAnalyzesTo(
 			fa,
-			"Jean-FranÁois",
-			new String[] { "jean", "franÁois" });
+			"Jean-Fran√ßois",
+			new String[] { "jean", "fran√ßois" });
 
 		// 2. stopwords
 		assertAnalyzesTo(
 			fa,
-			"le la chien les aux chat du des ‡ cheval",
+			"le la chien les aux chat du des √† cheval",
 			new String[] { "chien", "chat", "cheval" });
 
 		// some nouns and adjectives
 		assertAnalyzesTo(
 			fa,
-			"lances chismes habitable chiste ÈlÈments captifs",
+			"lances chismes habitable chiste √©l√©ments captifs",
 			new String[] {
 				"lanc",
 				"chism",
 				"habit",
 				"chist",
-				"ÈlÈment",
+				"√©l√©ment",
 				"captif" });
 
 		// some verbs
@@ -171,12 +171,12 @@ public class TestFrenchAnalyzer extends TestCase {
 		// aujourd'hui stays one term which is OK
 		assertAnalyzesTo(
 			fa,
-			"C3PO aujourd'hui oeuf Ô‚ˆ˚‡‰ anticonstitutionnellement Java++ ",
+			"C3PO aujourd'hui oeuf √Ø√¢√∂√ª√†√§ anticonstitutionnellement Java++ ",
 			new String[] {
 				"c3po",
 				"aujourd'hui",
 				"oeuf",
-				"Ô‚ˆ˚‡‰",
+				"√Ø√¢√∂√ª√†√§",
 				"anticonstitutionnel",
 				"jav" });
 
