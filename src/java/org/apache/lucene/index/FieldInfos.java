@@ -182,7 +182,8 @@ final class FieldInfos {
   }
 
   /**
-   * Return the fieldName identified by it's number.
+   * Return the fieldName identified by its number.
+   * 
    * @param fieldNumber
    * @return the fieldName or an empty string when the field
    * with the given number doesn't exist.
