@@ -1,59 +1,19 @@
 package org.apache.lucene.store.db;
 
-/* ====================================================================
- * The Apache Software License, Version 1.1
+/**
+ * Copyright 2002-2004 The Apache Software Foundation
  *
- * Copyright (c) 2004 The Apache Software Foundation.  All rights
- * reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. The end-user documentation included with the redistribution,
- *    if any, must include the following acknowledgment:
- *       "This product includes software developed by the
- *        Apache Software Foundation (http://www.apache.org/)."
- *    Alternately, this acknowledgment may appear in the software itself,
- *    if and wherever such third-party acknowledgments normally appear.
- *
- * 4. The names "Apache" and "Apache Software Foundation" and
- *    "Apache Lucene" must not be used to endorse or promote products
- *    derived from this software without prior written permission. For
- *    written permission, please contact apache@apache.org.
- *
- * 5. Products derived from this software may not be called "Apache",
- *    "Apache Lucene", nor may "Apache" appear in their name, without
- *    prior written permission of the Apache Software Foundation.
- *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- * ====================================================================
- *
- * This software consists of voluntary contributions made by the Open Source
- * Applications Foundation on behalf of the Apache Software Foundation.
- * For more information on the Open Source Applications Foundation, please see
- * <http://www.osafoundation.org>.
- * For more information on the Apache Software Foundation, please see
- * <http://www.apache.org/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 import java.io.IOException;
@@ -63,11 +23,12 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Random;
 
-import com.sleepycat.db.Dbt;
-import com.sleepycat.db.Dbc;
-import com.sleepycat.db.Db;
-import com.sleepycat.db.DbTxn;
-import com.sleepycat.db.DbException;
+import com.sleepycat.db.DatabaseEntry;
+import com.sleepycat.db.internal.DbConstants;
+import com.sleepycat.db.internal.Dbc;
+import com.sleepycat.db.internal.Db;
+import com.sleepycat.db.internal.DbTxn;
+import com.sleepycat.db.DatabaseException;
 
 /**
  * @author Andi Vajda
@@ -77,7 +38,7 @@ public class File extends Object {
 
     static protected Random random = new Random();
 
-    protected Dbt key, data;
+    protected DatabaseEntry key, data;
     protected long length, timeModified;
     protected String name;
     protected byte[] uuid;
@@ -87,9 +48,8 @@ public class File extends Object {
     {
         setName(name);
 
-        data = new Dbt(new byte[32]);
-        data.setUserBufferLength(data.getSize());
-        data.setFlags(Db.DB_DBT_USERMEM);
+        data = new DatabaseEntry(new byte[32]);
+        data.setUserBuffer(data.getSize(), true);
     }
 
     protected File(Db files, Db blocks, DbTxn txn, int flags,
@@ -104,13 +64,11 @@ public class File extends Object {
                 throw new IOException("File does not exist: " + name);
             else
             {
-                Dbt key = new Dbt(new byte[24]);
-                Dbt data = new Dbt(null);
+                DatabaseEntry key = new DatabaseEntry(new byte[24]);
+                DatabaseEntry data = new DatabaseEntry(null);
 
-                key.setFlags(Db.DB_DBT_USERMEM);
-                key.setUserBufferLength(24);
-                data.setPartialLength(0);
-                data.setFlags(Db.DB_DBT_USERMEM | Db.DB_DBT_PARTIAL);
+                key.setUserBuffer(24, true);
+                data.setPartial(true);
 
                 uuid = new byte[16];
 
@@ -124,8 +82,8 @@ public class File extends Object {
                                           (uuid[8] & (byte) 0x3f));
                         System.arraycopy(uuid, 0, key.getData(), 0, 16);
                     } while (blocks.get(txn, key, data,
-                                        flags) != Db.DB_NOTFOUND);
-                } catch (DbException e) {
+                                        flags) != DbConstants.DB_NOTFOUND);
+                } catch (DatabaseException e) {
                     throw new IOException(e.getMessage());
                 }
             }
@@ -148,9 +106,8 @@ public class File extends Object {
         out.writeUTF(name);
         out.close();
 
-        key = new Dbt(buffer.toByteArray());
-        key.setUserBufferLength(key.getSize());
-        key.setFlags(Db.DB_DBT_USERMEM);
+        key = new DatabaseEntry(buffer.toByteArray());
+        key.setUserBuffer(key.getSize(), true);
 
         this.name = name;
     }
@@ -178,9 +135,9 @@ public class File extends Object {
         throws IOException
     {
         try {
-            if (files.get(txn, key, data, flags) == Db.DB_NOTFOUND)
+            if (files.get(txn, key, data, flags) == DbConstants.DB_NOTFOUND)
                 return false;
-        } catch (DbException e) {
+        } catch (DatabaseException e) {
             throw new IOException(e.getMessage());
         }
         
@@ -214,7 +171,7 @@ public class File extends Object {
 
         try {
             files.put(txn, key, data, 0);
-        } catch (DbException e) {
+        } catch (DatabaseException e) {
             throw new IOException(e.getMessage());
         }
         
@@ -235,38 +192,36 @@ public class File extends Object {
                 byte[] bytes = getKey();
                 int ulen = bytes.length + 8;
                 byte[] cursorBytes = new byte[ulen];
-                Dbt cursorKey = new Dbt(cursorBytes);
-                Dbt cursorData = new Dbt(null);
+                DatabaseEntry cursorKey = new DatabaseEntry(cursorBytes);
+                DatabaseEntry cursorData = new DatabaseEntry(null);
 
                 System.arraycopy(bytes, 0, cursorBytes, 0, bytes.length);
-                cursorKey.setUserBufferLength(ulen);
-                cursorKey.setFlags(Db.DB_DBT_USERMEM);
-                cursorData.setPartialLength(0);
-                cursorData.setFlags(Db.DB_DBT_PARTIAL);
+                cursorKey.setUserBuffer(ulen, true);
+                cursorData.setPartial(true);
 
                 cursor = blocks.cursor(txn, flags);
 
                 if (cursor.get(cursorKey, cursorData,
-                               Db.DB_SET_RANGE | flags) != Db.DB_NOTFOUND)
+                               DbConstants.DB_SET_RANGE | flags) != DbConstants.DB_NOTFOUND)
                 {
-                    cursor.delete(0);
+                    cursor.del(0);
 
                     while (cursor.get(cursorKey, cursorData,
-                                      Db.DB_NEXT | flags) != Db.DB_NOTFOUND) {
+                                      DbConstants.DB_NEXT | flags) != DbConstants.DB_NOTFOUND) {
                         for (int i = 0; i < bytes.length; i++)
                             if (bytes[i] != cursorBytes[i])
                                 return;
 
-                        cursor.delete(0);
+                        cursor.del(0);
                     }
                 }
 
-                files.delete(txn, key, 0);
+                files.del(txn, key, 0);
             } finally {
                 if (cursor != null)
                     cursor.close();
             }
-        } catch (DbException e) {
+        } catch (DatabaseException e) {
             throw new IOException(e.getMessage());
         }
     }
@@ -284,10 +239,10 @@ public class File extends Object {
             newFile.delete(files, blocks, txn, flags);
 
         try {
-            files.delete(txn, key, 0);
+            files.del(txn, key, 0);
             setName(name);
             files.put(txn, key, data, 0);
-        } catch (DbException e) {
+        } catch (DatabaseException e) {
             throw new IOException(e.getMessage());
         }
     }
