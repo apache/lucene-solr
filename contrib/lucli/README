@@ -2,7 +2,7 @@ lucli (pronounced Luckily) is the Lucene Command Line Interface.
 
 INSTALLATION
 
-Edit the run.sh shell script
+Call "ant", then call the run.sh shell script. If it doesn't work right away:
 	Edit JAVA_HOME to point to your java directory.
 	Edit LUCLI to point to where you installed lucli.
 	Edit LUCLI_MEMORY and set it to the maximum amount of memory you want to allocate to lucli
@@ -11,12 +11,7 @@ Edit the run.sh shell script
 
 ENABLING READLINE
 
-If you add the -r command line parameter lucli will try to use a shared library 
-to enable things like tab completion and history. Unfortunately Java doesn't support 
-this capability natively so you'll need a shared library for this. I'm including one
-that worked for me with Debian Linux.
-For more details about GNU readline and java see http://java-readline.sourceforge.net/
-which is the library that lucli uses.
+Readline support should automatically work thanks to JLine, see http://jline.sourceforge.net/
 
 
 Documentation
