@@ -3,7 +3,7 @@ package org.apache.lucene.store;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.  All
+ * Copyright (c) 2001, 2003 The Apache Software Foundation.  All
  * rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,7 +92,7 @@ public final class FSDirectory extends Directory {
     try {
       DIGESTER = MessageDigest.getInstance("MD5");
     } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e);
+        throw new RuntimeException(e.toString());
     }
   }
 
