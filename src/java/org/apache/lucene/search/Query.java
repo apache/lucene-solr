@@ -66,12 +66,14 @@ import org.apache.lucene.index.IndexReader;
     <ul>
     <li> {@link TermQuery}
     <li> {@link MultiTermQuery}
-    <li> {@link PhraseQuery}
     <li> {@link BooleanQuery}
     <li> {@link WildcardQuery}
+    <li> {@link PhraseQuery}
     <li> {@link PrefixQuery}
+    <li> {@link PhrasePrefixQuery}
     <li> {@link FuzzyQuery}
     <li> {@link RangeQuery}
+    <li> {@link org.apache.lucene.search.spans.SpanQuery}
     </ul>
     <p>A parser for queries is contained in:
     <ul>
