@@ -1,4 +1,5 @@
 package org.apache.lucene.analysis.de;
+// This file is encoded in UTF-8
 
 /**
  * Copyright 2004 The Apache Software Foundation
