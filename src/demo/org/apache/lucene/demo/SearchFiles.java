@@ -16,7 +16,6 @@ package org.apache.lucene.demo;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -56,15 +55,13 @@ class SearchFiles {
 	    Document doc = hits.doc(i);
 	    String path = doc.get("path");
 	    if (path != null) {
-              System.out.println(i + ". " + path);
-	    } else {
-              String url = doc.get("url");
-	      if (url != null) {
-		System.out.println(i + ". " + url);
-		System.out.println("   - " + doc.get("title"));
-	      } else {
-		System.out.println(i + ". " + "No path nor URL for this document");
+              System.out.println((i+1) + ". " + path);
+              String title = doc.get("title");
+	      if (title != null) {
+		System.out.println("   Title: " + doc.get("title"));
 	      }
+	    } else {
+	      System.out.println((i+1) + ". " + "No path for this document");
 	    }
 	  }
 

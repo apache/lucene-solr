@@ -16,27 +16,36 @@ package org.apache.lucene.demo;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+//import org.apache.lucene.index.Term;
 
 class DeleteFiles {
+  
   public static void main(String[] args) {
+    String usage = "java org.apache.lucene.demo.DeleteFiles <unique_term>";
+    if (args.length == 0) {
+      System.err.println("Usage: " + usage);
+      System.exit(1);
+    }
     try {
-      Directory directory = FSDirectory.getDirectory("demo index", false);
+      Directory directory = FSDirectory.getDirectory("index", false);
       IndexReader reader = IndexReader.open(directory);
 
-//       Term term = new Term("path", "pizza");
-//       int deleted = reader.delete(term);
+      Term term = new Term("path", args[0]);
+      int deleted = reader.delete(term);
 
-//       System.out.println("deleted " + deleted +
-// 			 " documents containing " + term);
+      System.out.println("deleted " + deleted +
+ 			 " documents containing " + term);
 
-      for (int i = 0; i < reader.maxDoc(); i++)
-	reader.delete(i);
+      // one can also delete documents by their internal id:
+      /*
+      for (int i = 0; i < reader.maxDoc(); i++) {
+        System.out.println("Deleting document with id " + i);
+        reader.delete(i);
+      }*/
 
       reader.close();
       directory.close();

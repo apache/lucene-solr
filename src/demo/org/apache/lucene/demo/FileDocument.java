@@ -47,9 +47,10 @@ public class FileDocument {
     // make a new, empty document
     Document doc = new Document();
 
-    // Add the path of the file as a field named "path".  Use a Text field, so
-    // that the index stores the path, and so that the path is searchable
-    doc.add(Field.Text("path", f.getPath()));
+    // Add the path of the file as a field named "path".  Use a
+    // Keyword field, so that it's searchable, but so that no attempt is made
+    // to tokenize the field into words.
+    doc.add(Field.Keyword("path", f.getPath()));
 
     // Add the last modified date of the file a field named "modified".  Use a
     // Keyword field, so that it's searchable, but so that no attempt is made

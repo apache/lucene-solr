@@ -144,12 +144,12 @@ class IndexHTML {
 	  uidIter.next();			  // keep matching docs
 	} else if (!deleting) {			  // add new docs
 	  Document doc = HTMLDocument.Document(file);
-	  System.out.println("adding " + doc.get("url"));
+	  System.out.println("adding " + doc.get("path"));
 	writer.addDocument(doc);
 	}
       } else {					  // creating a new index
 	Document doc = HTMLDocument.Document(file);
-	System.out.println("adding " + doc.get("url"));
+	System.out.println("adding " + doc.get("path"));
 	writer.addDocument(doc);		  // add docs unconditionally
       }
     }

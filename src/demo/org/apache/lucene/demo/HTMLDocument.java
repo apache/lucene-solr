@@ -45,9 +45,10 @@ public class HTMLDocument {
     // make a new, empty document
     Document doc = new Document();
 
-    // Add the url as a field named "url".  Use an UnIndexed field, so
-    // that the url is just stored with the document, but is not searchable.
-    doc.add(Field.UnIndexed("url", f.getPath().replace(dirSep, '/')));
+    // Add the url as a field named "path".  Use a Keyword field, so 
+    // that it's searchable, but so that no attempt is made
+    // to tokenize the field into words.
+    doc.add(Field.Keyword("path", f.getPath().replace(dirSep, '/')));
 
     // Add the last modified date of the file a field named "modified".  Use a
     // Keyword field, so that it's searchable, but so that no attempt is made
