@@ -150,5 +150,7 @@ public String escapeHTML(String s) {
                 </table>
 
 <%       }                                            //then include our footer.
+         if (searcher != null)
+                searcher.close();
 %>
 <%@include file="footer.jsp"%>        
