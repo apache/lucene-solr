@@ -58,7 +58,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
 import org.apache.lucene.index.IndexReader;       // for javadoc
-import org.apache.lucene.search.Hits;             // for javadoc
 
 /** Documents are the unit of indexing and search.
  *
