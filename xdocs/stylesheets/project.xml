@@ -32,10 +32,6 @@
         <item name="Lucene Sandbox"    href="/lucene-sandbox/"/>
     </menu>
 
-    <menu name="Plans">
-        <item name="Application Extensions"           href="/luceneplan.html"/>
-    </menu>
-
     <menu name="Download">
         <item name="Binaries"           href="/site/binindex.html"/>
         <item name="Source Code"        href="/site/sourceindex.html"/>
