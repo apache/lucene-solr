@@ -37,8 +37,7 @@ import java.io.Serializable;
  * <p>There are three possible kinds of term values which may be put into
  * sorting fields: Integers, Floats, or Strings.  Unless
  * {@link SortField SortField} objects are specified, the type of value
- * in the field is determined by using a regular expression against the
- * first term in the field.
+ * in the field is determined by parsing the first term in the field.
  *
  * <p>Integer term values should contain only digits and an optional
  * preceeding negative sign.  Values must be base 10 and in the range
