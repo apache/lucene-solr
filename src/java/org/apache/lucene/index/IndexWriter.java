@@ -275,6 +275,16 @@ public class IndexWriter {
    *
    * <p>This must never be less than 2.  The default value is 10.*/
   public int mergeFactor = 10;
+  
+  /** Determines the minimal number of documents required before the buffered
+   * in-memory documents are merging and a new Segment is created.
+   * Since Documents are merged in a {@link org.apache.lucene.store.RAMDirectory},
+   * large value gives faster indexing.  At the same time, mergeFactor limits
+   * the number of files open in a FSDirectory.
+   * 
+   * <p> The default value is 10.*/
+  public int minMergeDocs = 10;
+
 
   /** Determines the largest number of documents ever merged by addDocument().
    * Small values (e.g., less than 10,000) are best for interactive indexing,
@@ -375,7 +385,7 @@ public class IndexWriter {
 
   /** Incremental segment merger.  */
   private final void maybeMergeSegments() throws IOException {
-    long targetMergeDocs = mergeFactor;
+    long targetMergeDocs = minMergeDocs;
     while (targetMergeDocs <= maxMergeDocs) {
       // find segments smaller than current target size
       int minSegment = segmentInfos.size();
