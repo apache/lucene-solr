@@ -338,8 +338,10 @@ public class IndexWriter {
   public synchronized void close() throws IOException {
     flushRamSegments();
     ramDirectory.close();
-    writeLock.release();                          // release write lock
-    writeLock = null;
+    if (writeLock != null) {
+      writeLock.release();                          // release write lock
+      writeLock = null;
+    }
     if(closeDir)
       directory.close();
   }
