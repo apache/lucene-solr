@@ -3,15 +3,15 @@ Lucene Build Instructions
 $Id$
 
 Basic steps:
-  0) Install JDK 1.2 (or greater), Ant 1.4 (or greater), and the Ant
+  0) Install JDK 1.2 (or greater), Ant 1.5 (or greater), and the Ant
      optional.jar
   1) Download Lucene from Apache and unpack it
   2) Connect to the top-level of your Lucene installation
-  3) Install JavaCC
+  3) Install JavaCC (optional)
   4) Run ant
 
 Step 0) Set up your development environment (JDK 1.2 or greater,
-Ant 1.4 or greater)
+Ant 1.5 or greater)
 
 We'll assume that you know how to get and set up the JDK - if you
 don't, then we suggest starting at http://java.sun.com and learning
@@ -22,26 +22,22 @@ with the development version of Lucene, we recommend you stick with
 the most current version of Java (at the time of this writing, JDK
 1.4).  Also, note that if you're working with the Lucene source,
 you'll need to use Ant (see below) and Ant requires at least JDK 1.1
-(and in the future will likely move to requiring JDK 1.2, according to
+(and in the future will move to requiring JDK 1.2, according to
 the Ant install docs).
 
 Like most of the Jakarta projects, Lucene uses Apache Ant for build
-control.  Specifically, you MUST use Ant version 1.4 or greater.
+control.  Specifically, you MUST use Ant version 1.5 or greater.
 
 Ant is "kind of like make without make's wrinkles".  Ant is
 implemented in java and uses XML-based configuration files.  You can
 get it at:
 
-  http://jakarta.apache.org/ant
-
-Specifically, you can get the binary distributions at:
-
-  http://jakarta.apache.org/builds/jakarta-ant/release/
+  http://ant.apache.org
 
 You'll need to download both the Ant binary distribution and the
 "optional" jar file.  Install these according to the instructions at:
 
-  http://jakarta.apache.org/ant/manual
+  http://ant.apache.org/manual
 
 Step 1) Download Lucene from Apache
 
@@ -79,21 +75,16 @@ NOTE: the ~ character represents your user account home directory.
 
 Step 3) Install JavaCC
 
-Building the Lucene distribution from the source requires the JavaCC
-parser generator.  This software has a separate license agreement that
-must be agreed to before you can use it.  The web page for JavaCC is here:
+Building the Lucene distribution from the source does not require the JavaCC
+parser generator, but if you wish to regenerate any of the pre-generated
+parser pieces, you will need to install JavaCC.
 
-  http://www.experimentalstuff.com/Technologies/JavaCC/
+  http://javacc.dev.java.net
 
 Follow the download links and download the zip file to a temporary
-location on your file system. Unzip the file and run the large class file
-in the directory. On windows, use this command from the temp directory:
+location on your file system.
 
-  java -cp . JavaCC2_1
-
-This will launch a Java GUI installer.  There is also a command line
-installer available, and the installation class will give you those
-directions.  After JavaCC is installed, edit your build properties
+After JavaCC is installed, edit your build.properties
 (as in step 2), and add the line
 
   javacc.home=/javacc/bin
@@ -107,14 +98,16 @@ location of your ant installation, typing "ant" at the shell prompt
 and command prompt should run ant.  Ant will by default look for the
 "build.xml" file in your current directory, and compile Lucene.
 
+To rebuild any of the JavaCC-based parsers, run "ant javacc".
+
 For further information on Lucene, go to:
   http://jakarta.apache.org/lucene/
 
 Please join the Lucene-User mailing list by visiting this site:
   http://jakarta.apache.org/site/mail.html
-  
+
 Please post suggestions, questions, corrections or additions to this
-document to the Lucene-User mailing list.
+document to the lucene-user mailing list.
 
 This file was originally written by Steven J. Owens <puff@darksleep.com>.
 This file was modified by Jon S. Stevens <jon@latchkey.com>.

@@ -9,6 +9,8 @@
   <property file="${basedir}/build.properties" />
   <property file="${basedir}/default.properties" />
 
+  <property name="javacc.main.class" value="org.javacc.parser.Main"/>
+
   <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.classes}"/>
@@ -52,8 +54,8 @@
 
     <available
       property="javacc.present"
-      classname="COM.sun.labs.javacc.Main"
-      classpath="${javacc.zip}"
+      classname="${javacc.main.class}"
+      classpath="${javacc.jar}"
     />
 
     <available
@@ -67,21 +69,21 @@
     </tstamp>
   </target>
 
-  <target name="javacc_check" depends="init" unless="javacc.present">
-    <echo>
+  <target name="javacc-check" depends="init">
+    <fail unless="javacc.present">
       ##################################################################
       JavaCC not found.
       JavaCC Home: ${javacc.home}
-      JavaCC Zip: ${javacc.zip}
+      JavaCC Zip: ${javacc.jar}
 
-      Please download and install JavaCC 2.0 from:
+      Please download and install JavaCC from:
 
-      &lt;http://www.experimentalstuff.com/Technologies/JavaCC/&gt;
+      &lt;http://javacc.dev.java.net&gt;
 
       Then, create a build.properties file either in your home
       directory, or within the Lucene directory and set the javacc.home
       property to the path where JavaCC.zip is located. For example,
-      if you installed JavaCC in /usr/local/java/javacc2.0, then set the
+      if you installed JavaCC in /usr/local/java/javacc3.2, then set the
       javacc.home property to:
 
       javacc.home=/usr/local/java/javacc2.0/bin
@@ -89,9 +91,10 @@
       If you get an error like the one below, then you have not installed
       things correctly. Please check all your paths and try again.
 
-      java.lang.NoClassDefFoundError: COM/sun/labs/javacc/Main
+      java.lang.NoClassDefFoundError: org.javacc.parser.Main
       ##################################################################
-    </echo>
+    </fail>
+
   </target>
 
   <!-- ================================================================== -->
@@ -99,25 +102,10 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="compile" depends="init,javacc_check" if="javacc.present">
-    <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
-    <javacc
-      target="${src.dir}/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
-      javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.src}/org/apache/lucene/analysis/standard"
-    />
-
-    <delete file="${build.src}/org/apache/lucene/analysis/standard/ParseException.java"/>
-    <mkdir dir="${build.src}/org/apache/lucene/queryParser"/>
-    <javacc
-      target="${src.dir}/org/apache/lucene/queryParser/QueryParser.jj"
-      javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.src}/org/apache/lucene/queryParser"
-    />
-
+  <target name="compile" depends="init">
     <javac
       encoding="${build.encoding}"
-      srcdir="${src.dir}:${build.src}"
+      srcdir="${src.dir}"
       includes="org/**/*.java"
       destdir="${build.classes}"
       debug="${debug}">
@@ -135,7 +123,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="jar" depends="compile" if="javacc.present">
+  <target name="jar" depends="compile">
 
         <!-- Create Jar MANIFEST file -->
                 <echo file="${build.manifest}">Manifest-Version: 1.0
@@ -158,7 +146,7 @@ Implementation-Vendor: Lucene
     />
   </target>
 
-  <target name="jardemo" depends="compile,demo" if="javacc.present">
+  <target name="jardemo" depends="compile,demo">
     <jar
       jarfile="${build.demo}/${build.demo.name}.jar"
       basedir="${build.demo.classes}"
@@ -166,7 +154,7 @@ Implementation-Vendor: Lucene
     />
   </target>
 
-  <target name="wardemo" depends="compile,demo,jar,jardemo" if="javacc.present">
+  <target name="wardemo" depends="compile,demo,jar,jardemo">
     <mkdir dir="${build.demo}/${build.demo.war.name}"/>
     <mkdir dir="${build.demo}/${build.demo.war.name}/WEB-INF"/>
     <mkdir dir="${build.demo}/${build.demo.war.name}/WEB-INF/lib"/>
@@ -202,22 +190,8 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="jar-src" depends="init,javacc_check" if="javacc.present">
+  <target name="jar-src" depends="init">
     <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
-    <javacc
-      target="${src.dir}/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
-      javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.src}/org/apache/lucene/analysis/standard"
-    />
-
-    <delete file="${build.src}/org/apache/lucene/analysis/standard/ParseException.java"/>
-    <mkdir dir="${build.src}/org/apache/lucene/queryParser"/>
-    <javacc
-      target="${src.dir}/org/apache/lucene/queryParser/QueryParser.jj"
-      javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.src}/org/apache/lucene/queryParser"
-    />
-
     <jar jarfile="${build.dir}/${final.name}-src.jar">
       <fileset dir="${build.dir}" includes="**/*.java"/>
     </jar>
@@ -228,7 +202,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="demo" depends="compile" if="javacc.present">
+  <target name="demo" depends="compile">
     <mkdir dir="${build.demo}"/>
     <mkdir dir="${build.demo.src}" />
 
@@ -239,11 +213,6 @@ Implementation-Vendor: Lucene
       </fileset>
     </copy>
 
-    <javacc
-      target="${build.demo.src}/org/apache/lucene/demo/html/HTMLParser.jj"
-      javacchome="${javacc.zip.dir}"
-      outputdirectory="${build.demo.src}/org/apache/lucene/demo/html"
-    />
     <mkdir dir="${build.demo.classes}"/>
 
     <javac
@@ -355,7 +324,7 @@ Implementation-Vendor: Lucene
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="javadocs" depends="compile" if="javacc.present">
+  <target name="javadocs" depends="compile">
     <mkdir dir="${build.javadocs}"/>
     <javadoc
       sourcepath="${src.dir}:${build.src}"
@@ -619,4 +588,51 @@ Implementation-Vendor: Lucene
     </war>
   </target>
   -->
+
+
+    <!-- ================================================================== -->
+    <!-- Build the JavaCC files into the source tree                                              -->
+    <!-- ================================================================== -->
+    <target name="javacc" depends="javacc-StandardAnalyzer,javacc-QueryParser,javacc-HTMLParser"/>
+
+    <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
+      <!-- generate this in a build directory so we can exclude ParseException -->
+      <mkdir dir="${build.src}/org/apache/lucene/analysis/standard"/>
+      <antcall target="invoke-javacc">
+        <param name="target" location="${src.dir}/org/apache/lucene/analysis/standard/StandardTokenizer.jj"/>
+        <param name="output.dir" location="${build.src}/org/apache/lucene/analysis/standard"/>
+      </antcall>
+      <copy todir="${src.dir}/org/apache/lucene/analysis/standard">
+        <fileset dir="${build.src}/org/apache/lucene/analysis/standard">
+          <include name="*.java"/>
+          <exclude name="ParseException.java"/>
+        </fileset>
+      </copy>
+    </target>
+
+    <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
+      <antcall target="invoke-javacc">
+        <param name="target" location="${src.dir}/org/apache/lucene/queryParser/QueryParser.jj"/>
+        <param name="output.dir" location="${src.dir}/org/apache/lucene/queryParser"/>
+      </antcall>
+    </target>
+
+    <target name="javacc-HTMLParser" depends="init,javacc-check" if="javacc.present">
+      <antcall target="invoke-javacc">
+        <param name="target" location="${demo.src}/org/apache/lucene/demo/html/HTMLParser.jj"/>
+        <param name="output.dir" location="${demo.src}/org/apache/lucene/demo/html"/>
+      </antcall>
+    </target>
+
+    <target name="invoke-javacc">
+      <java classname="${javacc.main.class}" fork="true">
+        <classpath path="${javacc.jar}"/>
+
+        <sysproperty key="install.root" file="${javacc.home}"/>
+
+        <arg value="-OUTPUT_DIRECTORY:${output.dir}"/>
+        <arg value="${target}"/>
+      </java>
+    </target>
+
 </project>
