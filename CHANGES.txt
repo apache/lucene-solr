@@ -87,22 +87,12 @@ API Changes
 
 Bug fixes
 
- 1. The JSP demo page (src/jsp/results.jsp) now properly escapes error
-    messages which might contain user input (e.g. error messages about 
-    query parsing). If you used that page as a starting point for your
-    own code please make sure your code also properly escapes HTML
-    characters from user input in order to avoid so-called cross site
-    scripting attacks. (Daniel Naber)
-
- 2. The JSP demo page (src/jsp/results.jsp) now properly closes the 
+ 1. The JSP demo page (src/jsp/results.jsp) now properly closes the 
     IndexSearcher it opens. (Daniel Naber)
 
- 3. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
+ 2. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
     prevented deletion of obsolete segments. (Christoph Goller)
     
- 4. QueryParser changes in 1.4.2 broke the QueryParser API. Now the old 
-     API is supported again. (Christoph)
-
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
@@ -126,6 +116,19 @@ Optimizations
  5. Optimize fuzzy queries so the standard fuzzy queries with a prefix 
     of 0 now run 20-50% faster (Patch #31882).
     (Jonathan Hager via Daniel Naber)
+
+
+1.4.3
+
+ 1. The JSP demo page (src/jsp/results.jsp) now properly escapes error
+    messages which might contain user input (e.g. error messages about 
+    query parsing). If you used that page as a starting point for your
+    own code please make sure your code also properly escapes HTML
+    characters from user input in order to avoid so-called cross site
+    scripting attacks. (Daniel Naber)
+  
+  2. QueryParser changes in 1.4.2 broke the QueryParser API. Now the old 
+     API is supported again. (Christoph)
 
 
 1.4.2
