@@ -33,7 +33,7 @@ public class IndexTask extends Task {
      *  file list
      */
     private Vector filesets = new Vector();
-    
+
     /**
      *  overwrite index?
      */
@@ -187,7 +187,7 @@ public class IndexTask extends Task {
                 FileSet fs = (FileSet) filesets.elementAt(i);
                 if (fs != null) {
                     DirectoryScanner ds =
-                                   fs.getDirectoryScanner(project);
+                                   fs.getDirectoryScanner(getProject());
                     String[] dsfiles = ds.getIncludedFiles();
                     File baseDir = ds.getBasedir();
 
@@ -205,7 +205,7 @@ public class IndexTask extends Task {
 
                         if (checkLastModified) {
                             Hits hits = null;
-                            Term pathTerm = 
+                            Term pathTerm =
                                   new Term("path", file.getPath());
                             TermQuery query =
                                            new TermQuery(pathTerm);
