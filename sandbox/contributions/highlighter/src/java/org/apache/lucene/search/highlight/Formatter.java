@@ -30,6 +30,7 @@ public interface Formatter
    *
    * @param originalTermText (unstemmed) term text to highlight
    * @param stemmedTerm the stemmed form of the originalTermText
+   * @param score The score for this term returned by Scorer.getTokenScore - one use for this may be to set font weight in highlighted text 
    * @param startOffset the position of the originalTermText in the text being highlighted  
    *
    * @return highlighted term text

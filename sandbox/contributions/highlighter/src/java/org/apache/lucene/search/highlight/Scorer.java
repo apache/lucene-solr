@@ -39,8 +39,9 @@ public interface Scorer
 	
 
 	/**
-	 * Called when the highlighter has no more tokens for the current fragment - the scorer will typically
-	 * call setScore() on the fragment passed in startFragment to record total info
+	 * Called when the highlighter has no more tokens for the current fragment - the scorer returns
+	 * the weighting it has derived for the most recent fragment, typically based on the tokens
+	 * passed to getTokenScore(). 
 	 *
 	 */	
 	public float getFragmentScore();
