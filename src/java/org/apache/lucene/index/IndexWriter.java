@@ -286,8 +286,12 @@ public class IndexWriter {
    * the number of files open in a FSDirectory.
    *
    * <p> The default value is 10.
+   * 
+   * @throws IllegalArgumentException if maxBufferedDocs is smaller than 1 
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
+    if (maxBufferedDocs < 1)
+      throw new IllegalArgumentException("maxBufferedDocs must at least be 1");
     this.minMergeDocs = maxBufferedDocs;
   }
 
