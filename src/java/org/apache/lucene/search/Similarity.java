@@ -212,9 +212,9 @@ public abstract class Similarity {
       mantissa = 7;
     }
 
-    if (exponent < 1) {                           // underflow: use min value
-      exponent = 1;
-      mantissa = 0;
+    if (exponent < 0) {                           // underflow: use min value
+      exponent = 0;
+      mantissa = 1;
     }
 
     return (byte)((exponent << 3) | mantissa);    // pack into a byte
