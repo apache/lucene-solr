@@ -101,6 +101,7 @@ public class TestRemoteSearchable extends TestCase {
     Hits hits = searcher.search(
           new TermQuery(new Term("test", "text")),
           new QueryFilter(new TermQuery(new Term("test", "test"))));
+    assertEquals(1, hits.length());
     Hits nohits = searcher.search(
           new TermQuery(new Term("test", "text")),
           new QueryFilter(new TermQuery(new Term("test", "non-existent-term"))));
