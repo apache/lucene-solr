@@ -59,10 +59,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 
-/** Subclass of FilteredTermEnum for enumerating all terms that match the specified wildcard filter term.
-
-  <p>Term enumerations are always ordered by Term.compareTo().  Each term in
-  the enumeration is greater than all that precede it.  */
+/**
+ * Subclass of FilteredTermEnum for enumerating all terms that match the
+ * specified wildcard filter term.
+ * <p>
+ * Term enumerations are always ordered by Term.compareTo().  Each term in
+ * the enumeration is greater than all that precede it.
+ */
 public class WildcardTermEnum extends FilteredTermEnum {
   Term searchTerm;
   String field = "";
@@ -71,7 +74,7 @@ public class WildcardTermEnum extends FilteredTermEnum {
   int preLen = 0;
   boolean fieldMatch = false;
   boolean endEnum = false;
-  
+
   /** Creates new WildcardTermEnum */
   public WildcardTermEnum(IndexReader reader, Term term) throws IOException {
       super(reader, term);
@@ -90,7 +93,7 @@ public class WildcardTermEnum extends FilteredTermEnum {
       text = text.substring(preLen);
       setEnum(reader.terms(new Term(searchTerm.field(), pre)));
   }
-  
+
   final protected boolean termCompare(Term term) {
       if (field == term.field()) {
           String searchText = term.text();
@@ -101,49 +104,118 @@ public class WildcardTermEnum extends FilteredTermEnum {
       endEnum = true;
       return false;
   }
-  
+
   final public float difference() {
     return 1.0f;
   }
-  
+
   final public boolean endEnum() {
     return endEnum;
   }
-  
+
   /********************************************
    * String equality with support for wildcards
    ********************************************/
-  
+
   public static final char WILDCARD_STRING = '*';
   public static final char WILDCARD_CHAR = '?';
-  
-  public static final boolean wildcardEquals(String pattern, int patternIdx, String string, int stringIdx) {
-    for ( int p = patternIdx; ; ++p ) {
-      for ( int s = stringIdx; ; ++p, ++s ) {
-        boolean sEnd = (s >= string.length());
-        boolean pEnd = (p >= pattern.length());
-        
-        if (sEnd && pEnd) return true;
-        if (sEnd || pEnd) break;
-        if (pattern.charAt(p) == WILDCARD_CHAR) continue;
-        if (pattern.charAt(p) == WILDCARD_STRING) {
-          int i;
-          ++p;
-          for (i = string.length(); i >= s; --i)
-            if (wildcardEquals(pattern, p, string, i))
-              return true;
-          break;
-        }
-        if (pattern.charAt(p) != string.charAt(s)) break;
-      }
-      return false;
+
+    /**
+     * Determines if a word matches a wildcard pattern.
+     * <small>Work released by Granta Design Ltd after originally being done on
+     * company time.</small>
+     */
+    public static final boolean wildcardEquals(String pattern, int patternIdx,
+	String string, int stringIdx)
+    {
+        for (int p = patternIdx; ; ++p)
+        {
+            for (int s = stringIdx; ; ++p, ++s)
+            {
+                // End of string yet?
+                boolean sEnd = (s >= string.length());
+                // End of pattern yet?
+                boolean pEnd = (p >= pattern.length());
+
+                // If we're looking at the end of the string...
+                if (sEnd)
+                {
+                    // Assume the only thing left on the pattern is/are wildcards
+                    boolean justWildcardsLeft = true;
+
+                    // Current wildcard position
+                    int wildcardSearchPos = p;
+                    // While we haven't found the end of the pattern,
+		    // and haven't encountered any non-wildcard characters
+                    while (wildcardSearchPos < pattern.length() && justWildcardsLeft)
+                    {
+                        // Check the character at the current position
+                        char wildchar = pattern.charAt(wildcardSearchPos);
+                        // If it's not a wildcard character, then there is more
+			// pattern information after this/these wildcards.
+
+                        if (wildchar != WILDCARD_CHAR &&
+			    wildchar != WILDCARD_STRING)
+                        {
+                            justWildcardsLeft = false;
+                        }
+                        else
+                        {
+                            // Look at the next character
+                            wildcardSearchPos++;
+                        }
+                    }
+
+                    // This was a prefix wildcard search, and we've matched, so
+		    // return true.
+                    if (justWildcardsLeft)
+		    {
+                        return true;
+		    }
+                }
+
+                // If we've gone past the end of the string, or the pattern,
+		// return false.
+                if (sEnd || pEnd)
+		{
+		    break;
+		}
+
+                // Match a single character, so continue.
+                if (pattern.charAt(p) == WILDCARD_CHAR)
+		{
+		    continue;
+		}
+
+                //
+                if (pattern.charAt(p) == WILDCARD_STRING)
+                {
+                    // Look at the character beyond the '*'.
+                    ++p;
+                    // Examine the string, starting at the last character.
+                    for (int i = string.length(); i >= s; --i)
+                    {
+                        if (wildcardEquals(pattern, p, string, i))
+			{
+                            return true;
+			}
+                    }
+                    break;
+                }
+                if (pattern.charAt(p) != string.charAt(s))
+		{
+		    break;
+		}
+            }
+            return false;
+	}
     }
-  }
-  
-  public void close() throws IOException {
-      super.close();
-      searchTerm = null;
-      field = null;
-      text = null;
-  }
+
+    public void close() throws IOException
+    {
+	super.close();
+	searchTerm = null;
+	field = null;
+	text = null;
+    }
 }
