@@ -13,7 +13,7 @@
     </menu>
 
     <menu name="Resources">
-        <item name="FAQ (Official)"    href="http://www.lucene.com/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
+        <item name="FAQ (Official)"    href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi" target="_blank"/>
         <item name="Getting Started"   href="/gettingstarted.html"/>
         <item name="JGuru FAQ"         href="http://www.jguru.com/faq/Lucene"/>
         <item name="Bugs"              href="/site/bugs.html"/>
