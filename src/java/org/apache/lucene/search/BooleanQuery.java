@@ -225,7 +225,7 @@ public class BooleanQuery extends Query {
     if (clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.elementAt(0);
       if (!c.prohibited) {			  // just return clause
-        Query query = c.query;
+        Query query = c.query.rewrite(reader);    // rewrite first
         if (getBoost() != 1.0f) {                 // have to clone to boost
           query = (Query)query.clone();
           query.setBoost(getBoost() * query.getBoost());
