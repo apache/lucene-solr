@@ -532,6 +532,25 @@ public class TestPrecedenceQueryParser extends TestCase {
     assertEquals(query1, query2);
   }
 
+  public void testPrecedenceWithNot() throws Exception {
+    Query query1 = PrecedenceQueryParser.parse("A OR B C", "field", new WhitespaceAnalyzer());
+    Query query2 = PrecedenceQueryParser.parse("A B C", "field", new WhitespaceAnalyzer());
+    assertEquals(query1, query2);
+
+    query1 = PrecedenceQueryParser.parse("A AND B C", "field", new WhitespaceAnalyzer());
+    query2 = PrecedenceQueryParser.parse("(+A +B) C", "field", new WhitespaceAnalyzer());
+    assertEquals(query1, query2);
+
+    query1 = PrecedenceQueryParser.parse("A AND NOT B", "field", new WhitespaceAnalyzer());
+    query2 = PrecedenceQueryParser.parse("+A -B", "field", new WhitespaceAnalyzer());
+    assertEquals(query1, query2);
+
+    query1 = PrecedenceQueryParser.parse("A OR NOT B", "field", new WhitespaceAnalyzer());
+    query2 = PrecedenceQueryParser.parse("A -B", "field", new WhitespaceAnalyzer());
+    assertEquals(query1, query2);
+  }
+
+
 
   public void tearDown() {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);

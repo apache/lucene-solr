@@ -639,13 +639,15 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   Vector clauses = new Vector();
   int modifier;
   Query q, firstQuery=null;
+  boolean orPresent = false;
     modifier = Modifier();
-    q = orExpression(field);
+    q = andExpression(field);
     addClause(clauses, CONJ_NONE, modifier, q);
     firstQuery=q;
     label_1:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case OR:
       case NOT:
       case PLUS:
       case MINUS:
@@ -663,39 +665,18 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         jj_la1[4] = jj_gen;
         break label_1;
       }
-      modifier = Modifier();
-      q = orExpression(field);
-      addClause(clauses, CONJ_NONE, modifier, q);
-    }
-      if (clauses.size() == 1 && firstQuery != null)
-        {if (true) return firstQuery;}
-      else {
-        {if (true) return getBooleanQuery(clauses);}
-      }
-    throw new Error("Missing return statement in function");
-  }
-
-  final public Query orExpression(String field) throws ParseException {
-  Vector clauses = new Vector();
-  Query q, firstQuery=null;
-  int modifier;
-    q = andExpression(field);
-    addClause(clauses, CONJ_NONE, MOD_NONE, q);
-    firstQuery=q;
-    label_2:
-    while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case OR:
-        ;
+        jj_consume_token(OR);
+            orPresent=true;
         break;
       default:
         jj_la1[5] = jj_gen;
-        break label_2;
+        ;
       }
-      jj_consume_token(OR);
       modifier = Modifier();
       q = andExpression(field);
-      addClause(clauses, CONJ_OR, modifier, q);
+      addClause(clauses, orPresent ? CONJ_OR : CONJ_NONE, modifier, q);
     }
       if (clauses.size() == 1 && firstQuery != null)
         {if (true) return firstQuery;}
@@ -705,6 +686,32 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     throw new Error("Missing return statement in function");
   }
 
+/*
+Query orExpression(String field) :
+{
+  Vector clauses = new Vector();
+  Query q, firstQuery=null;
+  int modifier;
+}
+{
+  q=andExpression(field)
+  {
+    addClause(clauses, CONJ_NONE, MOD_NONE, q);
+    firstQuery=q;
+  }
+  (
+    <OR> modifier=Modifier() q=andExpression(field)
+    { addClause(clauses, CONJ_OR, modifier, q); }
+  )*
+    {
+      if (clauses.size() == 1 && firstQuery != null)
+        return firstQuery;
+      else {
+        return getBooleanQuery(clauses);
+      }
+    }
+}
+*/
   final public Query andExpression(String field) throws ParseException {
   Vector clauses = new Vector();
   Query q, firstQuery=null;
@@ -712,7 +719,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     q = Clause(field);
     addClause(clauses, CONJ_NONE, MOD_NONE, q);
     firstQuery=q;
-    label_3:
+    label_2:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case AND:
@@ -720,7 +727,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         break;
       default:
         jj_la1[6] = jj_gen;
-        break label_3;
+        break label_2;
       }
       jj_consume_token(AND);
       modifier = Modifier();
@@ -1058,7 +1065,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       jj_la1_0();
    }
    private static void jj_la1_0() {
-      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0xfb1e00,0x100,0x80,0x8000,0xfb1000,0x9a0000,0x40000,0x40000,0x8000,0xc000000,0x1000000,0xc000000,0x8000,0xc0000000,0x10000000,0xc0000000,0x8000,0x40000,0x8000,0xfb0000,};
+      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0xfb1f00,0x100,0x80,0x8000,0xfb1000,0x9a0000,0x40000,0x40000,0x8000,0xc000000,0x1000000,0xc000000,0x8000,0xc0000000,0x10000000,0xc0000000,0x8000,0x40000,0x8000,0xfb0000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
