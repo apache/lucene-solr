@@ -58,7 +58,7 @@ public abstract class MultiTermQuery extends Query {
           if (t != null) {
             TermQuery tq = new TermQuery(t);      // found a match
             tq.setBoost(getBoost() * enumerator.difference()); // set the boost
-            query.add(tq, false, false);          // add to query
+            query.add(tq, BooleanClause.Occur.SHOULD);          // add to query
           }
         } while (enumerator.next());
       } finally {

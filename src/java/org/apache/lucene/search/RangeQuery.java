@@ -96,7 +96,7 @@ public class RangeQuery extends Query
                         }
                         TermQuery tq = new TermQuery(term); // found a match
                         tq.setBoost(getBoost()); // set the boost
-                        query.add(tq, false, false); // add to query
+                        query.add(tq, BooleanClause.Occur.SHOULD); // add to query
                     }
                 }
                 else {
