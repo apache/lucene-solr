@@ -62,7 +62,7 @@ final class TermScorer extends Scorer {
 
   protected boolean score(HitCollector c, int end) throws IOException {
     Similarity similarity = getSimilarity();      // cache sim in local
-    float[] normDecoder = similarity.getNormDecoder();
+    float[] normDecoder = Similarity.getNormDecoder();
     while (doc < end) {                           // for docs in window
       int f = freqs[pointer];
       float score =                               // compute tf(f)*weight
