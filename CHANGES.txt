@@ -15,18 +15,21 @@ $Id$
  3. Added the ability to disable lock creation by using disableLuceneLocks
     system property.  This is useful for read-only media, such as CD-ROMs.
     (otis)
-    
+
  4. Added id method to Hits to be able to access the index global id.
     Required for sorting options.
     (carlson)
 
- 5. Added the ability to retrieve HTML documents' META tag values to HTMLParser.jj.
+ 5. Added support for new range query syntax to QueryParser.jj.
+    (briangoetz)
+
+ 6. Added the ability to retrieve HTML documents' META tag values to HTMLParser.jj.
     (Mark Harwood via otis)
-    
+
 1.2 RC6
 
  1. Changed QueryParser.jj to have "?" be a special character which
-    allowed it to be used as a wildcard term. Updated TestWildcard 
+    allowed it to be used as a wildcard term. Updated TestWildcard
     unit test also. (Ralf Hettesheimer via carlson)
 
 1.2 RC5
@@ -43,10 +46,10 @@ $Id$
 
  4. Fixed instruction for setting up JavaCC - Bug #7017 (otis)
 
- 5. Added throwing exception if FSDirectory could not create diectory 
+ 5. Added throwing exception if FSDirectory could not create diectory
     - Bug #6914 (Eugene Gluzberg via otis)
 
- 6. Update MultiSearcher, MultiFieldParse, Constants, DateFilter, 
+ 6. Update MultiSearcher, MultiFieldParse, Constants, DateFilter,
     LowerCaseTokenizer javadoc (otis)
 
  7. Added fix to avoid NullPointerException in results.jsp
@@ -63,16 +66,16 @@ $Id$
  11. Allow co-existence of indexed and non-indexed fields with the same name
      (cutting/casper, via otis)
 
- 12. Add escape character to query parser.  
+ 12. Add escape character to query parser.
      (briangoetz)
 
  13. Applied a patch that ensures that searches that use DateFilter
      don't throw an exception when no matches are found. (David Smiley, via
      otis)
- 
+
  14. Fixed bugs in DateFilter and wildcardquery unit tests. (cutting, otis, carlson)
- 
- 
+
+
 1.2 RC4
 
  1. Updated contributions section of website.
