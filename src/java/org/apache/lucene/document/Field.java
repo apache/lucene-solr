@@ -139,13 +139,16 @@ public final class Field implements java.io.Serializable {
 
   /** Constructs a String-valued Field that is not tokenized, but is indexed
     and stored.  Useful for non-text fields, e.g. date or url.  
-   */
+    @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
+      Field(name, value, Field.Store.YES, Field.Index.UN_TOKENIZED)} instead */
   public static final Field Keyword(String name, String value) {
     return new Field(name, value, true, true, false);
   }
 
   /** Constructs a String-valued Field that is not tokenized nor indexed,
-    but is stored in the index, for return with hits. */
+    but is stored in the index, for return with hits.
+    @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
+      Field(name, value, Field.Store.YES, Field.Index.NO)} instead */
   public static final Field UnIndexed(String name, String value) {
     return new Field(name, value, true, false, false);
   }
@@ -160,7 +163,9 @@ public final class Field implements java.io.Serializable {
   }
 
   /** Constructs a Date-valued Field that is not tokenized and is indexed,
-      and stored in the index, for return with hits. */
+      and stored in the index, for return with hits.
+      @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
+      Field(name, value, Field.Store.YES, Field.Index.UN_TOKENIZED)} instead */
   public static final Field Keyword(String name, Date value) {
     return new Field(name, DateField.dateToString(value), true, true, false);
   }
@@ -169,33 +174,40 @@ public final class Field implements java.io.Serializable {
     and is stored in the index, for return with hits.  Useful for short text
     fields, like "title" or "subject".
     @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)
-      Field(name, value, Field.Store.YES, Field.Index.TOKENIZED, boolean)} instead */
+      Field(name, value, Field.Store.YES, Field.Index.TOKENIZED, storeTermVector)} instead */
   public static final Field Text(String name, String value, boolean storeTermVector) {
     return new Field(name, value, true, true, true, storeTermVector);
   }
 
   /** Constructs a String-valued Field that is tokenized and indexed,
-    but that is not stored in the index.  Term vector will not be stored for this field. */
+    but that is not stored in the index.  Term vector will not be stored for this field.
+    @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
+      Field(name, value, Field.Store.NO, Field.Index.TOKENIZED)} instead */
   public static final Field UnStored(String name, String value) {
     return UnStored(name, value, false);
   }
 
   /** Constructs a String-valued Field that is tokenized and indexed,
-    but that is not stored in the index. */
+    but that is not stored in the index.
+    @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)
+      Field(name, value, Field.Store.NO, Field.Index.TOKENIZED, storeTermVector)} instead */
   public static final Field UnStored(String name, String value, boolean storeTermVector) {
     return new Field(name, value, false, true, true, storeTermVector);
   }
 
   /** Constructs a Reader-valued Field that is tokenized and indexed, but is
     not stored in the index verbatim.  Useful for longer text fields, like
-    "body". Term vector will not be stored for this field. */
+    "body". Term vector will not be stored for this field.
+    @deprecated use {@link #Field(String, Reader) Field(name, value)} instead */
   public static final Field Text(String name, Reader value) {
     return Text(name, value, false);
   }
 
   /** Constructs a Reader-valued Field that is tokenized and indexed, but is
     not stored in the index verbatim.  Useful for longer text fields, like
-    "body". */
+    "body".
+    @deprecated use {@link #Field(String, Reader, Field.TermVector)
+      Field(name, value, storeTermVector)} instead */
   public static final Field Text(String name, Reader value, boolean storeTermVector) {
     Field f = new Field(name, value);
     f.storeTermVector = storeTermVector;
