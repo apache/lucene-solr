@@ -283,7 +283,7 @@
                     bytes, high-order bytes first.
                 </p>
 
-                <p>UInt32    --&gt; &lt;Byte&gt;<sup>8</sup>
+                <p>UInt64    --&gt; &lt;Byte&gt;<sup>8</sup>
                 </p>
 
             </subsection>
