@@ -400,11 +400,16 @@ public class IndexWriter {
     optimize();					  // start with zero or 1 seg
 
     String mergedName = newSegmentName();
-    SegmentMerger merger = new SegmentMerger(directory, mergedName, false);
+    SegmentMerger merger = new SegmentMerger(directory, mergedName, useCompoundFile);
 
-    if (segmentInfos.size() == 1)                 // add existing index, if any
-      merger.add(new SegmentReader(segmentInfos.info(0)));
-
+    final Vector segmentsToDelete = new Vector();
+    IndexReader sReader = null;
+    if (segmentInfos.size() == 1){ // add existing index, if any
+        sReader = new SegmentReader(segmentInfos.info(0));
+        merger.add(sReader);
+        segmentsToDelete.addElement(sReader);   // queue segment for deletion
+    }
+      
     for (int i = 0; i < readers.length; i++)      // add new indexes
       merger.add(readers[i]);
 
@@ -412,11 +417,15 @@ public class IndexWriter {
 
     segmentInfos.setSize(0);                      // pop old infos & add new
     segmentInfos.addElement(new SegmentInfo(mergedName, docCount, directory));
+    
+    if(sReader != null)
+        sReader.close();
 
     synchronized (directory) {			  // in- & inter-process sync
       new Lock.With(directory.makeLock("commit.lock"), COMMIT_LOCK_TIMEOUT) {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit changes
+	    deleteSegments(segmentsToDelete);  // delete now-unused segments
 	    return null;
 	  }
 	}.run();
