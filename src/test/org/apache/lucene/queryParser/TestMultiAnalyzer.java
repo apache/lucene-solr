@@ -75,7 +75,7 @@ public class TestMultiAnalyzer extends TestCase {
     assertEquals("\"(multi multi2) foo\"^2.0", qp.parse("\"multi foo\"^2").toString());
 
     // non-default operator:
-    qp.setOperator(QueryParser.DEFAULT_OPERATOR_AND);
+    qp.setDefaultOperator(QueryParser.AND_OPERATOR);
     assertEquals("+(multi multi2) +foo", qp.parse("multi foo").toString());
 
   }
