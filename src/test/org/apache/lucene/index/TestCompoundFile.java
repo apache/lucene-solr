@@ -365,46 +365,51 @@ public class TestCompoundFile extends TestCase
 
         // basic clone
         IndexInput expected = dir.openInput("f11");
-        assertTrue(_TestHelper.isFSIndexInputOpen(expected));
 
-        IndexInput one = cr.openInput("f11");
-        assertTrue(isCSIndexInputOpen(one));
+        // this test only works for FSIndexInput
+        if (_TestHelper.isFSIndexInput(expected)) {
 
-        IndexInput two = (IndexInput) one.clone();
-        assertTrue(isCSIndexInputOpen(two));
+          assertTrue(_TestHelper.isFSIndexInputOpen(expected));
 
-        assertSameStreams("basic clone one", expected, one);
-        expected.seek(0);
-        assertSameStreams("basic clone two", expected, two);
+          IndexInput one = cr.openInput("f11");
+          assertTrue(isCSIndexInputOpen(one));
 
-        // Now close the first stream
-        one.close();
-        assertTrue("Only close when cr is closed", isCSIndexInputOpen(one));
+          IndexInput two = (IndexInput) one.clone();
+          assertTrue(isCSIndexInputOpen(two));
 
-        // The following should really fail since we couldn't expect to
-        // access a file once close has been called on it (regardless of
-        // buffering and/or clone magic)
-        expected.seek(0);
-        two.seek(0);
-        assertSameStreams("basic clone two/2", expected, two);
+          assertSameStreams("basic clone one", expected, one);
+          expected.seek(0);
+          assertSameStreams("basic clone two", expected, two);
 
+          // Now close the first stream
+          one.close();
+          assertTrue("Only close when cr is closed", isCSIndexInputOpen(one));
 
-        // Now close the compound reader
-        cr.close();
-        assertFalse("Now closed one", isCSIndexInputOpen(one));
-        assertFalse("Now closed two", isCSIndexInputOpen(two));
-
-        // The following may also fail since the compound stream is closed
-        expected.seek(0);
-        two.seek(0);
-        //assertSameStreams("basic clone two/3", expected, two);
+          // The following should really fail since we couldn't expect to
+          // access a file once close has been called on it (regardless of
+          // buffering and/or clone magic)
+          expected.seek(0);
+          two.seek(0);
+          assertSameStreams("basic clone two/2", expected, two);
 
 
-        // Now close the second clone
-        two.close();
-        expected.seek(0);
-        two.seek(0);
-        //assertSameStreams("basic clone two/4", expected, two);
+          // Now close the compound reader
+          cr.close();
+          assertFalse("Now closed one", isCSIndexInputOpen(one));
+          assertFalse("Now closed two", isCSIndexInputOpen(two));
+
+          // The following may also fail since the compound stream is closed
+          expected.seek(0);
+          two.seek(0);
+          //assertSameStreams("basic clone two/3", expected, two);
+
+
+          // Now close the second clone
+          two.close();
+          expected.seek(0);
+          two.seek(0);
+          //assertSameStreams("basic clone two/4", expected, two);
+        }
 
         expected.close();
     }
