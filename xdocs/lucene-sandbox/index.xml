@@ -37,6 +37,18 @@ LARM is a web crawler optimized for large intranets with up to a couple of hundr
 <a href="larm/overview.html">Technical Overview</a>
 
 </subsection>
+<subsection name="Snowball Stemmers for Lucene">
+<p>
+This project provides pre-compiled versions of the Snowball stemmers
+for Lucene.
+</p>
+
+<p>
+More information can be found 
+<a href="http://jakarta.apache.org/lucene/docs/lucene-sandbox/snowball/">here</a>.
+</p>
+
+</subsection>
 
 </section>
 
