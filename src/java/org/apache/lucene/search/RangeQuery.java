@@ -169,13 +169,16 @@ public final class RangeQuery extends Query
                         if (!checkLower || term.text().compareTo(lowerText) > 0) 
                         {
                             checkLower = false;
-                            // if exclusive and this is last term, don't count it and break
-                            if (!inclusive && (upperTerm != null) && (upperTerm.compareTo(term) <= 0)) break;
+                            if (upperTerm != null)
+                            {
+                                int compare = upperTerm.compareTo(term);
+                                /* if beyond the upper term, or is exclusive and
+                                 * this is equal to the upper term, break out */
+                                if ((compare < 0) || (!inclusive && compare == 0)) break;
+                            }
                             TermQuery tq = new TermQuery(term);	  // found a match
                             tq.setBoost(boost);               // set the boost
                             q.add(tq, false, false);		  // add to q
-                            // if inclusive just added last term, break out
-                            if (inclusive && (upperTerm != null) && (upperTerm.compareTo(term) <= 0)) break;
                         }
                     } 
                     else
