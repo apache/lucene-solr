@@ -12,6 +12,7 @@ $Id$
     across more than across a single buffer boundary.
 
  3. Fix query parser so it accepts queries with unicode characters.
+    (briangoetz)
  
  4. Fix query parser so that PrefixQuery is used in preference to
     WildcardQuery when there's only an asterisk at the end of the
@@ -19,6 +20,27 @@ $Id$
 
  5. Fix tests so they compile; fix ant file so it compiles tests
     properly.  Added test cases for Analyzers and PriorityQueue.
+
+ 6. Updated demos, added Getting Started documentation. (acoliver)
+
+ 7. Added 'contributions' section to website & docs. (carlson)
+
+ 8. Removed JavaCC from source distribution for copyright reasons.
+    Folks must now download this separately from metamata in order to
+    compile Lucene.  (cutting)
+
+ 9. Substantially improved the performance of DateFilter by adding the
+    ability to reuse TermDocs objects.  (cutting)
+
+10. Added IndexReader methods:
+      public static boolean indexExists(String directory);
+      public static boolean indexExists(File directory);
+      public static boolean indexExists(Directory directory);
+      public static boolean isLocked(Directory directory);
+      public static void unlock(Directory directory);
+    (cutting, otis)
+
+11. Fixed bugs in GermanAnalyzer (gschwarz)
 
 
 1.2 RC2, 19 October 2001:
