@@ -68,7 +68,7 @@ public class TestSnowball extends TestCase {
     for (int i=0; i<output.length; i++) {
       Token t = ts.next();
       assertNotNull(t);
-      assertEquals(t.termText(), output[i]);
+      assertEquals(output[i], t.termText());
     }
     assertNull(ts.next());
     ts.close();
