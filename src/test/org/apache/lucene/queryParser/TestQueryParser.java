@@ -137,6 +137,28 @@ public class TestQueryParser extends TestCase {
 	}
     }
 
+    public Query getQueryDOA(String query, Analyzer a)
+	throws Exception
+    {
+	if (a == null)
+	    a = new SimpleAnalyzer();
+	QueryParser qp = new QueryParser("field", a);
+	qp.setOperator(QueryParser.DEFAULT_OPERATOR_AND);
+	return qp.parse(query);
+    }
+
+    public void assertQueryEqualsDOA(String query, Analyzer a, String result)
+	throws Exception
+    {
+	Query q = getQueryDOA(query, a);
+	String s = q.toString("field");
+	if (!s.equals(result))
+	{
+	    fail("Query /" + query + "/ yielded /" + s
+		+ "/, expecting /" + result + "/");
+	}
+    }
+
     public void testSimple() throws Exception {
 	assertQueryEquals("term term term", null, "term term term");
 	assertQueryEquals("türm term term", null, "türm term term");
@@ -271,5 +293,15 @@ public class TestQueryParser extends TestCase {
 	assertQueryEquals("\\\\", a, "\\\\");
 	assertQueryEquals("\\+blah", a, "\\+blah");
 	assertQueryEquals("\\(blah", a, "\\(blah");
+    }
+
+    public void testSimpleDAO()
+	throws Exception
+    {
+	assertQueryEqualsDOA("term term term", null, "+term +term +term");
+	assertQueryEqualsDOA("term +term term", null, "+term +term +term");
+	assertQueryEqualsDOA("term term +term", null, "+term +term +term");
+	assertQueryEqualsDOA("term +term +term", null, "+term +term +term");
+	assertQueryEqualsDOA("-term term term", null, "-term +term +term");
     }
 }
