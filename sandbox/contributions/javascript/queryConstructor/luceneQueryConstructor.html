@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>Demo Lucene Query Constructor</title>
+    <script type="text/javascript" src="luceneQueryConstructor.js"></script>
+  </head>
+  
+  <body>
+    <form>
+      <input type="hidden" name="query">
+      Name:
+      <input type="text" name="name">
+      <select name="nameModifier">
+        <option value="And" />And 
+        <option value="Or" selected/>Or
+        <option value="Not" />Not
+      </select>
+      <p>
+      Description:
+      <input type="text" name="description">
+      <select name="descriptionModifier">
+        <option value="And" />And 
+        <option value="Or" selected/>Or
+        <option value="Not" />Not
+      </select>  
+      <input type="button" name="Search" value="Search" onClick="doMakeQuery(this.form.query)" />
+    </form>
+  </body>
+</html>
