@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.GCJDirectory;
+import org.apache.lucene.store.GCJIndexInput;
 
 class GCJSegmentReader extends SegmentReader {
 
@@ -26,8 +26,7 @@ class GCJSegmentReader extends SegmentReader {
    * implementation can only be used when the segment's directory is a
    * GCJDirectory and it is not in compound format.  */
   public final TermDocs termDocs() throws IOException {
-    if (directory() instanceof GCJDirectory       // it's a GCJ directory
-        && this.cfsReader == null) {              // & not in compound format
+    if (freqStream instanceof GCJIndexInput) {    // it's a GCJIndexInput
       return new GCJTermDocs(this);               // so can use GCJTermDocs
     } else {
       return super.termDocs();
