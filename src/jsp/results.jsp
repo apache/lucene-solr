@@ -43,8 +43,12 @@ public String escapeHTML(String s) {
 
         try {
         searcher = new IndexSearcher(
-                        IndexReader.open(indexName)     //create an indexSearcher for our page
-                );
+                        IndexReader.open(indexName));   //create an indexSearcher for our page
+                                                        //NOTE: this operation is slow for large
+                                                        //indices (much slower than the search itself)
+                                                        //so you might want to keep an IndexSearcher 
+                                                        //open
+                                                        
         } catch (Exception e) {                         //any error that happens is probably due
                                                         //to a permission problem or non-existant
                                                         //or otherwise corrupt index
