@@ -104,6 +104,7 @@
     />
 
     <javac
+      encoding="${build.encoding}"
       srcdir="${src.dir}:${build.src}"
       includes="org/**/*.java"
       destdir="${build.classes}"
@@ -214,6 +215,7 @@
     <mkdir dir="${build.demo.classes}"/>
 
     <javac
+      encoding="${build.encoding}"
       srcdir="${build.demo.src}"
       includes="**/*.java"
       destdir="${build.demo.classes}"
@@ -239,6 +241,7 @@
     <mkdir dir="${build.test.classes}"/>
 
     <javac
+      encoding="${build.encoding}"
       srcdir="${build.test.src}"
       includes="**/*.java"
       destdir="${build.test.classes}"
@@ -262,6 +265,7 @@
     <mkdir dir="${junit.classes}"/>
     <mkdir dir="${junit.reports}"/>
     <javac
+      encoding="${build.encoding}"
       srcdir="${junit.src}"
       includes="**/*.java"
       destdir="${junit.classes}"
