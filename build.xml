@@ -8,10 +8,14 @@
   <property file="${user.home}/build.properties"/>
   <property file="${basedir}/build.properties"/>
 
+  <tstamp>
+    <format property="current.year" pattern="yyyy"/>
+  </tstamp>
+
   <property name="name" value="lucene"/>
   <property name="Name" value="Lucene"/>
   <property name="version" value="1.4-rc1-dev"/>
-  <property name="year" value="2000-2003"/> <!-- todo: make this dynamic -->
+  <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="${name}-${version}"/>
   <property name="javac.deprecation" value="on"/>
   <property name="javac.debug" value="on"/>
@@ -86,11 +90,6 @@
       property="junit.present"
       classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"
       />
-
-    <tstamp>
-      <format property="DSTAMP" pattern="yyyy-MM-dd"/>
-      <format property="TSTAMP" pattern="HH:mm:ss"/>
-    </tstamp>
   </target>
 
   <target name="javacc-check" depends="init">
