@@ -165,8 +165,6 @@ public class GermanStemmer
     /**
      * Does some optimizations on the term. This optimisations are
      * contextual.
-     *
-     * @return  The term with the optimizations applied.
      */
     private void optimize( StringBuffer buffer )
     {

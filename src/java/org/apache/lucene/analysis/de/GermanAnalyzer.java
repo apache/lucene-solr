@@ -169,7 +169,8 @@ public class GermanAnalyzer extends Analyzer
     {
 	TokenStream result = new StandardTokenizer( reader );
 	result = new StandardFilter( result );
-	result = new StopFilter( result, stoptable );
+  // shouldn't there be a lowercaser before stop word filtering?
+  result = new StopFilter( result, stoptable );
 	result = new GermanStemFilter( result, excltable );
 	return result;
     }
