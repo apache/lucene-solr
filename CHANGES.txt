@@ -2,12 +2,20 @@ Lucene Change Log
 
 $Id$
 
+1.9 RC1
+
+ 1. The API contained methods that declared to throw an IOException
+    but that never did this. These declarations have been removed. If 
+    your code tries to catch these exceptions you might need to remove
+    those catch clauses to avoid compile errors. (Daniel Naber)
+ 
+ 
 1.4.1
 
  1. Fixed a performance bug in hit sorting code, where values were not
     correctly cached.  (Aviran via cutting)
 
- 2. Fixed errors in file format documentation. (Naber)
+ 2. Fixed errors in file format documentation. (Daniel Naber)
 
 
 1.4 final
