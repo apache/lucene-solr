@@ -1,7 +1,9 @@
+package org.apache.lucene.analysis.cjk;
+
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * Copyright (c) 2004 The Apache Software Foundation.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,8 +55,6 @@
  *
  * $Id$
  */
-
-package org.apache.lucene.analysis.cjk;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
