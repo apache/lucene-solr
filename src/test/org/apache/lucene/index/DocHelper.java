@@ -28,7 +28,8 @@ import java.util.Enumeration;
 class DocHelper {
   public static final String FIELD_1_TEXT = "field one text";
   public static final String TEXT_FIELD_1_KEY = "textField1";
-  public static Field textField1 = Field.Text(TEXT_FIELD_1_KEY, FIELD_1_TEXT, false);
+  public static Field textField1 = new Field(TEXT_FIELD_1_KEY, FIELD_1_TEXT,
+      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO);
   
   public static final String FIELD_2_TEXT = "field field field two text";
   //Fields will be lexicographically sorted.  So, the order is: field, text, two
@@ -38,19 +39,23 @@ class DocHelper {
   
   public static final String KEYWORD_TEXT = "Keyword";
   public static final String KEYWORD_FIELD_KEY = "keyField";
-  public static Field keyField = Field.Keyword(KEYWORD_FIELD_KEY, KEYWORD_TEXT);
+  public static Field keyField = new Field(KEYWORD_FIELD_KEY, KEYWORD_TEXT,
+      Field.Store.YES, Field.Index.UN_TOKENIZED);
   
   public static final String UNINDEXED_FIELD_TEXT = "unindexed field text";
   public static final String UNINDEXED_FIELD_KEY = "unIndField";
-  public static Field unIndField = Field.UnIndexed(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT);
+  public static Field unIndField = new Field(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT,
+      Field.Store.YES, Field.Index.NO);
   
   public static final String UNSTORED_1_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_1_KEY = "unStoredField1";
-  public static Field unStoredField1 = Field.UnStored(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT, false);
+  public static Field unStoredField1 = new Field(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT,
+      Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.NO);
 
   public static final String UNSTORED_2_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_2_KEY = "unStoredField2";
-  public static Field unStoredField2 = Field.UnStored(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT, true);
+  public static Field unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT,
+      Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES);
 
 //  public static Set fieldNamesSet = null;
 //  public static Set fieldValuesSet = null;
@@ -136,6 +141,7 @@ class DocHelper {
     int result = 0;
     while (fields.hasMoreElements()) {
       String name = fields.nextElement().toString();
+      name += "";   // avoid compiler warning
       result++;
     }
     return result;
