@@ -46,11 +46,12 @@ public class TextFragment
 	/**
 	 * @param frag2 Fragment to be merged into this one
 	 */
-	public void merge(TextFragment frag2)
-	{
-		textEndPos = frag2.textEndPos;
-	}
-	/**
+  public void merge(TextFragment frag2)
+  {
+    textEndPos = frag2.textEndPos;
+    score=Math.max(score,frag2.score);
+  }
+  /**
 	 * @param fragment 
 	 * @return true if this fragment follows the one passed
 	 */
