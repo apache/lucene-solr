@@ -239,12 +239,12 @@ public class IndexWriter {
     return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
   }
 
-  /** Determines how often segment indexes are merged by addDocument().  With
+  /** Determines how often segment indices are merged by addDocument().  With
    * smaller values, less RAM is used while indexing, and searches on
-   * unoptimized indexes are faster, but indexing speed is slower.  With larger
-   * values more RAM is used while indexing and searches on unoptimized indexes
-   * are slower, but indexing is faster.  Thus larger values (> 10) are best
-   * for batched index creation, and smaller values (< 10) for indexes that are
+   * unoptimized indices are faster, but indexing speed is slower.  With larger
+   * values, more RAM is used during indexing, and while searches on unoptimized
+   * indices are slower, indexing is faster.  Thus larger values (> 10) are best
+   * for batch index creation, and smaller values (< 10) for indices that are
    * interactively maintained.
    *
    * <p>This must never be less than 2.  The default value is 10.*/
@@ -355,7 +355,7 @@ public class IndexWriter {
       if ((reader.directory == this.directory) || // if we own the directory
           (reader.directory == this.ramDirectory))
 	segmentsToDelete.addElement(reader);	  // queue segment for deletion
-      mergedDocCount += si.docCount;
+      mergedDocCount += reader.numDocs();
     }
     if (infoStream != null) {
       infoStream.println();
