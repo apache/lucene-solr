@@ -64,9 +64,9 @@ public final class Term implements Comparable, java.io.Serializable {
     return compareTo((Term)other);
   }
 
-  /** Compares two terms, returning a negative integer iff this
-    term belongs before the argument, zero iff this term is equal to the
-    argument, and a positive integer iff this term belongs after the argument.
+  /** Compares two terms, returning a negative integer if this
+    term belongs before the argument, zero if this term is equal to the
+    argument, and a positive integer if this term belongs after the argument.
 
     The ordering of terms is first by field, then by text.*/
   public final int compareTo(Term other) {
