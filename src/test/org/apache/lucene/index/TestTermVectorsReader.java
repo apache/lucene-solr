@@ -128,7 +128,7 @@ public class TestTermVectorsReader extends TestCase {
         }
       }
       
-      TermFreqVector freqVector = (TermFreqVector)reader.get(0, testFields[1]); //no pos, no offset
+      TermFreqVector freqVector = reader.get(0, testFields[1]); //no pos, no offset
       assertTrue(freqVector != null);      
       assertTrue(freqVector instanceof TermPositionVector == false);
       terms = freqVector.getTerms();
@@ -202,9 +202,18 @@ public class TestTermVectorsReader extends TestCase {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
       assertTrue(reader != null);
       //Bad document number, good field number
-      TermFreqVector vector = reader.get(50, testFields[0]);
+      reader.get(50, testFields[0]);
       assertTrue(false);      
-    } catch (Exception e) {
+    } catch (IOException e) {
+      assertTrue(true);
+    }
+    try {
+      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      assertTrue(reader != null);
+      //Bad document number, no field
+      reader.get(50);
+      assertTrue(false);      
+    } catch (IOException e) {
       assertTrue(true);
     }
     try {
@@ -213,7 +222,7 @@ public class TestTermVectorsReader extends TestCase {
       //good document number, bad field number
       TermFreqVector vector = reader.get(0, "f50");
       assertTrue(vector == null);      
-    } catch (Exception e) {
+    } catch (IOException e) {
       assertTrue(false);
     }
   }    
