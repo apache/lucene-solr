@@ -112,10 +112,11 @@ public class IndexWriter {
 
   private Lock writeLock;
 
-  /** Use compound file setting. Defaults to false to maintain multiple files
-   *  per segment behavior.
+  /** Use compound file setting. Defaults to true, minimizing the number of
+   * files used.  Setting this to false may improve indexing performance, but
+   * may also cause file handle problems.
    */
-  private boolean useCompoundFile = false;
+  private boolean useCompoundFile = true;
 
 
   /** Setting to turn on usage of a compound file. When on, multiple files

@@ -75,6 +75,10 @@ $Id$
     http://issues.apache.org/bugzilla/show_bug.cgi?id=27491
     (Morus Walter via Otis)
 
+14. Changed so that the compound index format is used by default.
+    This makes indexing a bit slower, but vastly reduces the chances
+    of file handle problems.  (Cutting)
+
 
 1.3 final
 
