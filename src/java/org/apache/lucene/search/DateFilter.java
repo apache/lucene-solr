@@ -157,12 +157,8 @@ public class DateFilter extends Filter {
       Term stop = new Term(field, end);
       while (enumerator.term().compareTo(stop) <= 0) {
         termDocs.seek(enumerator.term());
-        try {
-          while (termDocs.next()) {
-            bits.set(termDocs.doc());
-          }
-        } finally {
-          termDocs.close();
+        while (termDocs.next()) {
+          bits.set(termDocs.doc());
         }
         if (!enumerator.next()) {
           break;
@@ -170,6 +166,7 @@ public class DateFilter extends Filter {
       }
     } finally {
       enumerator.close();
+      termDocs.close();
     }
     return bits;
   }
