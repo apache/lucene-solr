@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.spans;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -20,9 +20,6 @@ import junit.framework.TestCase;
 
 import java.io.IOException;
 
-import java.util.Set;
-import java.util.TreeSet;
-
 import org.apache.lucene.util.English;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,7 +28,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
-import org.apache.lucene.search.spans.*;
+import org.apache.lucene.search.*;
 
 /**
  * Tests basic search capabilities.
@@ -54,7 +51,6 @@ public class TestBasics extends TestCase {
     IndexWriter writer
       = new IndexWriter(directory, new SimpleAnalyzer(), true);
     //writer.infoStream = System.out;
-    StringBuffer buffer = new StringBuffer();
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
       doc.add(Field.Text("field", English.intToEnglish(i)));
@@ -267,30 +263,6 @@ public class TestBasics extends TestCase {
 
 
   private void checkHits(Query query, int[] results) throws IOException {
-    Hits hits = searcher.search(query);
-
-    Set correct = new TreeSet();
-    for (int i = 0; i < results.length; i++) {
-      correct.add(new Integer(results[i]));
-    }
-
-    Set actual = new TreeSet();
-    for (int i = 0; i < hits.length(); i++) {
-      actual.add(new Integer(hits.id(i)));
-    }
-
-    assertEquals(query.toString("field"), correct, actual);
+    CheckHits.checkHits(query, "field", searcher, results, this);
   }
-
-  private void printHits(Query query) throws IOException {
-    Hits hits = searcher.search(query);
-    System.out.print("new int[] {");
-    for (int i = 0; i < hits.length(); i++) {
-      System.out.print(hits.id(i));
-      if (i != hits.length()-1)
-        System.out.print(", ");
-    }
-    System.out.println("}");
-  }
-
 }
