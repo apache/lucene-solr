@@ -103,10 +103,10 @@
                     </tr>
                     <tr valign="TOP">
                         <td width="25%">
-                            <a href="api/org/apache/lucene/store/FSDirectory.html#lockDir">lockDir</a>
+                            <a href="api/org/apache/lucene/store/FSDirectory.html#lockdir">lockdir</a>
                         </td>
                         <td width="25%">
-                            org.apache.lucene.lockDir
+                            org.apache.lucene.lockdir
                         </td>
                         <td width="25%">
                             the value of <code>java.io.tmpdir</code> system property
