@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="misc" default="default">
+
+  <description>
+    Miscellaneous Lucene extensions
+  </description>
+
+  <import file="../common.xml"/>
+</project>
