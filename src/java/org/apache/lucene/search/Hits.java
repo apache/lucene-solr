@@ -132,6 +132,12 @@ public final class Hits {
   public final float score(int n) throws IOException {
     return hitDoc(n).score;
   }
+  
+ /** Returns the id for the nth document in this set. */ 
+  public final float id(int n) throws IOException {
+    return hitDoc(n).id;
+  }
+
 
   private final HitDoc hitDoc(int n) throws IOException {
     if (n >= length)
