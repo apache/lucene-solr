@@ -72,7 +72,7 @@
       if you installed JavaCC in /usr/local/java/javacc2.0, then set the
       javacc.home property to:
 
-      javacc.home=/usr/local/java/javacc2.0/bin/lib
+      javacc.home=/usr/local/java/javacc2.0/bin
 
       If you get an error like the one below, then you have not installed
       things correctly. Please check all your paths and try again.
