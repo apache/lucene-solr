@@ -1445,10 +1445,10 @@ public class LovinsStemmer extends SnowballProgram {
             int v_1;
             int v_2;
             int v_3;
-            // (, line 48
-            // test, line 48
+            // (, line 49
+            // test, line 49
             v_1 = limit - cursor;
-            // hop, line 48
+            // hop, line 49
             {
                 int c = cursor - 3;
                 if (limit_backward > c || c > limit)
@@ -1458,11 +1458,11 @@ public class LovinsStemmer extends SnowballProgram {
                 cursor = c;
             }
             cursor = limit - v_1;
-            // not, line 48
+            // not, line 49
             {
                 v_2 = limit - cursor;
                 lab0: do {
-                    // literal, line 48
+                    // literal, line 49
                     if (!(eq_s_b(3, "met")))
                     {
                         break lab0;
@@ -1471,11 +1471,11 @@ public class LovinsStemmer extends SnowballProgram {
                 } while (false);
                 cursor = limit - v_2;
             }
-            // not, line 48
+            // not, line 49
             {
                 v_3 = limit - cursor;
                 lab1: do {
-                    // literal, line 48
+                    // literal, line 49
                     if (!(eq_s_b(4, "ryst")))
                     {
                         break lab1;
@@ -1489,10 +1489,10 @@ public class LovinsStemmer extends SnowballProgram {
 
         private boolean r_CC() {
             int v_1;
-            // (, line 49
-            // test, line 49
+            // (, line 50
+            // test, line 50
             v_1 = limit - cursor;
-            // hop, line 49
+            // hop, line 50
             {
                 int c = cursor - 2;
                 if (limit_backward > c || c > limit)
@@ -1502,7 +1502,7 @@ public class LovinsStemmer extends SnowballProgram {
                 cursor = c;
             }
             cursor = limit - v_1;
-            // literal, line 49
+            // literal, line 50
             if (!(eq_s_b(1, "l")))
             {
                 return false;
@@ -1512,23 +1512,23 @@ public class LovinsStemmer extends SnowballProgram {
 
         private boolean r_endings() {
             int among_var;
-            // (, line 54
-            // [, line 55
+            // (, line 55
+            // [, line 56
             ket = cursor;
-            // substring, line 55
+            // substring, line 56
             among_var = find_among_b(a_1, 294);
             if (among_var == 0)
             {
                 return false;
             }
-            // ], line 55
+            // ], line 56
             bra = cursor;
             switch(among_var) {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 144
-                    // delete, line 144
+                    // (, line 145
+                    // delete, line 145
                     slice_del();
                     break;
             }
@@ -1537,26 +1537,26 @@ public class LovinsStemmer extends SnowballProgram {
 
         private boolean r_undouble() {
             int v_1;
-            // (, line 150
-            // test, line 151
+            // (, line 151
+            // test, line 152
             v_1 = limit - cursor;
-            // substring, line 151
+            // substring, line 152
             if (find_among_b(a_2, 10) == 0)
             {
                 return false;
             }
             cursor = limit - v_1;
-            // [, line 152
+            // [, line 154
             ket = cursor;
-            // next, line 152
+            // next, line 154
             if (cursor <= limit_backward)
             {
                 return false;
             }
             cursor--;
-            // ], line 152
+            // ], line 154
             bra = cursor;
-            // delete, line 152
+            // delete, line 154
             slice_del();
             return true;
         }
@@ -1571,67 +1571,67 @@ public class LovinsStemmer extends SnowballProgram {
             int v_6;
             int v_7;
             int v_8;
-            // (, line 157
-            // [, line 158
+            // (, line 159
+            // [, line 160
             ket = cursor;
-            // substring, line 158
+            // substring, line 160
             among_var = find_among_b(a_3, 34);
             if (among_var == 0)
             {
                 return false;
             }
-            // ], line 158
+            // ], line 160
             bra = cursor;
             switch(among_var) {
                 case 0:
                     return false;
                 case 1:
-                    // (, line 159
-                    // <-, line 159
+                    // (, line 161
+                    // <-, line 161
                     slice_from("ief");
                     break;
                 case 2:
-                    // (, line 160
-                    // <-, line 160
+                    // (, line 162
+                    // <-, line 162
                     slice_from("uc");
                     break;
                 case 3:
-                    // (, line 161
-                    // <-, line 161
+                    // (, line 163
+                    // <-, line 163
                     slice_from("um");
                     break;
                 case 4:
-                    // (, line 162
-                    // <-, line 162
+                    // (, line 164
+                    // <-, line 164
                     slice_from("rb");
                     break;
                 case 5:
-                    // (, line 163
-                    // <-, line 163
+                    // (, line 165
+                    // <-, line 165
                     slice_from("ur");
                     break;
                 case 6:
-                    // (, line 164
-                    // <-, line 164
+                    // (, line 166
+                    // <-, line 166
                     slice_from("ister");
                     break;
                 case 7:
-                    // (, line 165
-                    // <-, line 165
+                    // (, line 167
+                    // <-, line 167
                     slice_from("meter");
                     break;
                 case 8:
-                    // (, line 166
-                    // <-, line 166
+                    // (, line 168
+                    // <-, line 168
                     slice_from("olut");
                     break;
                 case 9:
-                    // (, line 167
-                    // not, line 167
+                    // (, line 169
+                    // not, line 169
                     {
                         v_1 = limit - cursor;
                         lab0: do {
-                            // literal, line 167
+                            // literal, line 169
                             if (!(eq_s_b(1, "a")))
                             {
                                 break lab0;
@@ -1640,11 +1640,11 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_1;
                     }
-                    // not, line 167
+                    // not, line 169
                     {
                         v_2 = limit - cursor;
                         lab1: do {
-                            // literal, line 167
+                            // literal, line 169
                             if (!(eq_s_b(1, "i")))
                             {
                                 break lab1;
@@ -1653,11 +1653,11 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_2;
                     }
-                    // not, line 167
+                    // not, line 169
                     {
                         v_3 = limit - cursor;
                         lab2: do {
-                            // literal, line 167
+                            // literal, line 169
                             if (!(eq_s_b(1, "o")))
                             {
                                 break lab2;
@@ -1666,86 +1666,86 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_3;
                     }
-                    // <-, line 167
+                    // <-, line 169
                     slice_from("l");
                     break;
                 case 10:
-                    // (, line 168
-                    // <-, line 168
+                    // (, line 170
+                    // <-, line 170
                     slice_from("bic");
                     break;
                 case 11:
-                    // (, line 169
-                    // <-, line 169
+                    // (, line 171
+                    // <-, line 171
                     slice_from("dic");
                     break;
                 case 12:
-                    // (, line 170
-                    // <-, line 170
+                    // (, line 172
+                    // <-, line 172
                     slice_from("pic");
                     break;
                 case 13:
-                    // (, line 171
-                    // <-, line 171
+                    // (, line 173
+                    // <-, line 173
                     slice_from("tic");
                     break;
                 case 14:
-                    // (, line 172
-                    // <-, line 172
+                    // (, line 174
+                    // <-, line 174
                     slice_from("ac");
                     break;
                 case 15:
-                    // (, line 173
-                    // <-, line 173
+                    // (, line 175
+                    // <-, line 175
                     slice_from("ec");
                     break;
                 case 16:
-                    // (, line 174
-                    // <-, line 174
+                    // (, line 176
+                    // <-, line 176
                     slice_from("ic");
                     break;
                 case 17:
-                    // (, line 175
-                    // <-, line 175
+                    // (, line 177
+                    // <-, line 177
                     slice_from("luc");
                     break;
                 case 18:
-                    // (, line 176
-                    // <-, line 176
+                    // (, line 178
+                    // <-, line 178
                     slice_from("uas");
                     break;
                 case 19:
-                    // (, line 177
-                    // <-, line 177
+                    // (, line 179
+                    // <-, line 179
                     slice_from("vas");
                     break;
                 case 20:
-                    // (, line 178
-                    // <-, line 178
+                    // (, line 180
+                    // <-, line 180
                     slice_from("cis");
                     break;
                 case 21:
-                    // (, line 179
-                    // <-, line 179
+                    // (, line 181
+                    // <-, line 181
                     slice_from("lis");
                     break;
                 case 22:
-                    // (, line 180
-                    // <-, line 180
+                    // (, line 182
+                    // <-, line 182
                     slice_from("eris");
                     break;
                 case 23:
-                    // (, line 181
-                    // <-, line 181
+                    // (, line 183
+                    // <-, line 183
                     slice_from("pans");
                     break;
                 case 24:
-                    // (, line 182
-                    // not, line 182
+                    // (, line 184
+                    // not, line 184
                     {
                         v_4 = limit - cursor;
                         lab3: do {
-                            // literal, line 182
+                            // literal, line 184
                             if (!(eq_s_b(1, "s")))
                             {
                                 break lab3;
@@ -1754,31 +1754,31 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_4;
                     }
-                    // <-, line 182
+                    // <-, line 184
                     slice_from("ens");
                     break;
                 case 25:
-                    // (, line 183
-                    // <-, line 183
+                    // (, line 185
+                    // <-, line 185
                     slice_from("ons");
                     break;
                 case 26:
-                    // (, line 184
-                    // <-, line 184
+                    // (, line 186
+                    // <-, line 186
                     slice_from("lus");
                     break;
                 case 27:
-                    // (, line 185
-                    // <-, line 185
+                    // (, line 187
+                    // <-, line 187
                     slice_from("rus");
                     break;
                 case 28:
-                    // (, line 186
-                    // not, line 186
+                    // (, line 188
+                    // not, line 188
                     {
                         v_5 = limit - cursor;
                         lab4: do {
-                            // literal, line 186
+                            // literal, line 188
                             if (!(eq_s_b(1, "p")))
                             {
                                 break lab4;
@@ -1787,11 +1787,11 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_5;
                     }
-                    // not, line 186
+                    // not, line 188
                     {
                         v_6 = limit - cursor;
                         lab5: do {
-                            // literal, line 186
+                            // literal, line 188
                             if (!(eq_s_b(1, "t")))
                             {
                                 break lab5;
@@ -1800,21 +1800,21 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_6;
                     }
-                    // <-, line 186
+                    // <-, line 188
                     slice_from("hes");
                     break;
                 case 29:
-                    // (, line 187
-                    // <-, line 187
+                    // (, line 189
+                    // <-, line 189
                     slice_from("mis");
                     break;
                 case 30:
-                    // (, line 188
-                    // not, line 188
+                    // (, line 190
+                    // not, line 190
                     {
                         v_7 = limit - cursor;
                         lab6: do {
-                            // literal, line 188
+                            // literal, line 190
                             if (!(eq_s_b(1, "m")))
                             {
                                 break lab6;
@@ -1823,21 +1823,21 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_7;
                     }
-                    // <-, line 188
+                    // <-, line 190
                     slice_from("ens");
                     break;
                 case 31:
-                    // (, line 189
-                    // <-, line 189
+                    // (, line 192
+                    // <-, line 192
                     slice_from("ers");
                     break;
                 case 32:
-                    // (, line 190
-                    // not, line 190
+                    // (, line 193
+                    // not, line 193
                     {
                         v_8 = limit - cursor;
                         lab7: do {
-                            // literal, line 190
+                            // literal, line 193
                             if (!(eq_s_b(1, "n")))
                             {
                                 break lab7;
@@ -1846,17 +1846,17 @@ public class LovinsStemmer extends SnowballProgram {
                         } while (false);
                         cursor = limit - v_8;
                     }
-                    // <-, line 190
+                    // <-, line 193
                     slice_from("es");
                     break;
                 case 33:
-                    // (, line 191
-                    // <-, line 191
+                    // (, line 194
+                    // <-, line 194
                     slice_from("ys");
                     break;
                 case 34:
-                    // (, line 192
-                    // <-, line 192
+                    // (, line 195
+                    // <-, line 195
                     slice_from("ys");
                     break;
             }
@@ -1867,34 +1867,34 @@ public class LovinsStemmer extends SnowballProgram {
             int v_1;
             int v_2;
             int v_3;
-            // (, line 197
-            // backwards, line 199
+            // (, line 200
+            // backwards, line 202
             limit_backward = cursor; cursor = limit;
-            // (, line 199
-            // do, line 200
+            // (, line 202
+            // do, line 203
             v_1 = limit - cursor;
             lab0: do {
-                // call endings, line 200
+                // call endings, line 203
                 if (!r_endings())
                 {
                     break lab0;
                 }
             } while (false);
             cursor = limit - v_1;
-            // do, line 201
+            // do, line 204
             v_2 = limit - cursor;
             lab1: do {
-                // call undouble, line 201
+                // call undouble, line 204
                 if (!r_undouble())
                 {
                     break lab1;
                 }
             } while (false);
             cursor = limit - v_2;
-            // do, line 202
+            // do, line 205
             v_3 = limit - cursor;
             lab2: do {
-                // call respell, line 202
+                // call respell, line 205
                 if (!r_respell())
                 {
                     break lab2;

@@ -988,6 +988,7 @@ public class PortugueseStemmer extends SnowballProgram {
             int v_7;
             int v_8;
             int v_9;
+            int v_10;
             // (, line 199
             // do, line 200
             v_1 = cursor;
@@ -1021,9 +1022,12 @@ public class PortugueseStemmer extends SnowballProgram {
                     v_4 = limit - cursor;
                     lab4: do {
                         // (, line 204
+                        // and, line 205
+                        v_5 = limit - cursor;
+                        // (, line 204
                         // or, line 204
                         lab5: do {
-                            v_5 = limit - cursor;
+                            v_6 = limit - cursor;
                             lab6: do {
                                 // call standard_suffix, line 204
                                 if (!r_standard_suffix())
@@ -1032,15 +1036,16 @@ public class PortugueseStemmer extends SnowballProgram {
                                 }
                                 break lab5;
                             } while (false);
-                            cursor = limit - v_5;
+                            cursor = limit - v_6;
                             // call verb_suffix, line 204
                             if (!r_verb_suffix())
                             {
                                 break lab4;
                             }
                         } while (false);
+                        cursor = limit - v_5;
                         // do, line 205
-                        v_6 = limit - cursor;
+                        v_7 = limit - cursor;
                         lab7: do {
                             // (, line 205
                             // [, line 205
@@ -1053,13 +1058,13 @@ public class PortugueseStemmer extends SnowballProgram {
                             // ], line 205
                             bra = cursor;
                             // test, line 205
-                            v_7 = limit - cursor;
+                            v_8 = limit - cursor;
                             // literal, line 205
                             if (!(eq_s_b(1, "c")))
                             {
                                 break lab7;
                             }
-                            cursor = limit - v_7;
+                            cursor = limit - v_8;
                             // call RV, line 205
                             if (!r_RV())
                             {
@@ -1068,7 +1073,7 @@ public class PortugueseStemmer extends SnowballProgram {
                             // delete, line 205
                             slice_del();
                         } while (false);
-                        cursor = limit - v_6;
+                        cursor = limit - v_7;
                         break lab3;
                     } while (false);
                     cursor = limit - v_4;
@@ -1081,7 +1086,7 @@ public class PortugueseStemmer extends SnowballProgram {
             } while (false);
             cursor = limit - v_3;
             // do, line 209
-            v_8 = limit - cursor;
+            v_9 = limit - cursor;
             lab8: do {
                 // call residual_form, line 209
                 if (!r_residual_form())
@@ -1089,9 +1094,9 @@ public class PortugueseStemmer extends SnowballProgram {
                     break lab8;
                 }
             } while (false);
-            cursor = limit - v_8;
+            cursor = limit - v_9;
             cursor = limit_backward;            // do, line 211
-            v_9 = cursor;
+            v_10 = cursor;
             lab9: do {
                 // call postlude, line 211
                 if (!r_postlude())
@@ -1099,7 +1104,7 @@ public class PortugueseStemmer extends SnowballProgram {
                     break lab9;
                 }
             } while (false);
-            cursor = v_9;
+            cursor = v_10;
             return true;
         }
 
