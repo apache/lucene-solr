@@ -23,7 +23,6 @@ import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.Hashtable;
-import java.util.regex.Pattern;
 
 /**
  * Expert: Base class for collecting results from a search and sorting
@@ -84,10 +83,14 @@ extends PriorityQueue {
     protected static final Hashtable fieldCache = new Hashtable();
 
 	/** The pattern used to detect integer values in a field */
-	protected static final Pattern pIntegers = Pattern.compile ("[0-9\\-]+");
+	/** removed for java 1.3 compatibility
+		protected static final Pattern pIntegers = Pattern.compile ("[0-9\\-]+");
+	**/
 
 	/** The pattern used to detect float values in a field */
-	protected static final Pattern pFloats = Pattern.compile ("[0-9+\\-\\.eEfFdD]+");
+	/** removed for java 1.3 compatibility
+		protected static final Object pFloats = Pattern.compile ("[0-9+\\-\\.eEfFdD]+");
+	**/
 
 
 	/**
@@ -187,12 +190,30 @@ extends PriorityQueue {
 			if (term.field() == field) {
 				String termtext = term.text().trim();
 
+				/**
+				 * Java 1.4 level code:
+
 				if (pIntegers.matcher(termtext).matches())
 					return IntegerSortedHitQueue.comparator (reader, enumerator, field);
 
 				else if (pFloats.matcher(termtext).matches())
 					return FloatSortedHitQueue.comparator (reader, enumerator, field);
+				 */
 
+				// Java 1.3 level code:
+				try {
+					Integer.parseInt (termtext);
+					return IntegerSortedHitQueue.comparator (reader, enumerator, field);
+				} catch (NumberFormatException nfe) {
+					// nothing
+				}
+				try {
+					Float.parseFloat (termtext);
+					return FloatSortedHitQueue.comparator (reader, enumerator, field);
+				} catch (NumberFormatException nfe) {
+					// nothing
+				}
+				
 				return StringSortedHitQueue.comparator (reader, enumerator, field);
 
 			} else {
