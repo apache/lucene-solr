@@ -238,6 +238,13 @@ public class QueryParser implements QueryParserConstants {
         break;
       v.addElement(t.termText());
     }
+    try {
+      source.close();
+    }
+    catch (IOException e) {
+      // ignore
+    }
+
     if (v.size() == 0)
       return null;
     else if (v.size() == 1)
