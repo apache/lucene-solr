@@ -2,6 +2,20 @@ Lucene Change Log
 
 $Id$
 
+1.2 RC4
+
+ 1. Updated contributions section of website
+    Add XML Document #3 implementation to Document Section
+    Also added Term Highlighting to Misc Section
+
+ 2. Fixed NullPointerException for phrase searches containing
+    unindexed terms, introduced in 1.2RC3.
+
+ 3. Changed document deletion code to obtain the index write lock,
+    enforcing the fact that document addition and deletion cannot be
+    performed concurrently.
+
+
 1.2 RC3
 
  1. IndexWriter: fixed a bug where adding an optimized index to an
@@ -41,11 +55,6 @@ $Id$
     (cutting, otis)
 
 11. Fixed bugs in GermanAnalyzer (gschwarz)
-
-12. Updated contributions section of website 
-    Add XML Document #3 implementation to Document Section
-    Also added Term Highlighting to Misc Section
-
 
 
 1.2 RC2, 19 October 2001:
