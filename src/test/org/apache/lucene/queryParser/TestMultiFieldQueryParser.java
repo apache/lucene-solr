@@ -58,6 +58,12 @@ public class TestMultiFieldQueryParser extends TestCase {
     q = mfqp.parse("[a TO c] two");
     assertEquals("(b:[a TO c] t:[a TO c]) (b:two t:two)", q.toString());
 
+    q = mfqp.parse("\"foo bar\"");
+    assertEquals("b:\"foo bar\" t:\"foo bar\"", q.toString());
+
+    q = mfqp.parse("\"aa bb cc\" \"dd ee\"");
+    assertEquals("(b:\"aa bb cc\" t:\"aa bb cc\") (b:\"dd ee\" t:\"dd ee\")", q.toString());
+
     // make sure that terms which have a field are not touched:
     q = mfqp.parse("one f:two");
     assertEquals("(b:one t:one) f:two", q.toString());
@@ -66,6 +72,8 @@ public class TestMultiFieldQueryParser extends TestCase {
     mfqp.setDefaultOperator(QueryParser.AND_OPERATOR);
     q = mfqp.parse("one two");
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
+    q = mfqp.parse("\"aa bb cc\" \"dd ee\"");
+    assertEquals("+(b:\"aa bb cc\" t:\"aa bb cc\") +(b:\"dd ee\" t:\"dd ee\")", q.toString());
 
   }
   

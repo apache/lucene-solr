@@ -57,6 +57,17 @@ public class MultiFieldQueryParser extends QueryParser
     this.fields = fields;
   }
   
+  protected Query getFieldQuery(String field, String queryText) throws ParseException {
+    if (field == null) {
+      Vector clauses = new Vector();
+      for (int i = 0; i < fields.length; i++)
+        clauses.add(new BooleanClause(super.getFieldQuery(fields[i], queryText),
+            BooleanClause.Occur.SHOULD));
+      return getBooleanQuery(clauses);
+    }
+    return super.getFieldQuery(field, queryText);
+  }
+  
   protected Query getFieldQuery(String field, Analyzer analyzer, String queryText)
       throws ParseException {
     if (field == null) {
