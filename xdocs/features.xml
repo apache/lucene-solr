@@ -25,6 +25,7 @@
 <li>boolean and phrase queries</li>
 <li>fielded searching (e.g., title, author, contents)</li>
 <li>date-range searching</li>
+<li>multiple-index searching with merged results</li>
 </ul>
 </section>
 
@@ -38,15 +39,8 @@
 
 <section name="Cross-Platform Solution">
 <ul>
-<li>100%-pure Java <i>(not yet certified)</i></li>
+<li>100%-pure Java</li>
 </ul>
-</section>
-
-<section name="Coming soon">
-<ul>
-<li><i>multiple-index searching with merged results</i></li>
-<li><i>distributed searching over a network</i></li>
-</ul>            
 </section>
 
 </body>
