@@ -80,7 +80,7 @@ extends PriorityQueue {
    * @param b ScoreDoc
    * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
    */
-  protected final boolean lessThan (final Object a, final Object b) {
+  protected boolean lessThan (final Object a, final Object b) {
     final ScoreDoc docA = (ScoreDoc) a;
     final ScoreDoc docB = (ScoreDoc) b;
 
