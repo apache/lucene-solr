@@ -34,7 +34,7 @@ import java.util.Set;
  so that any subclass which implements it is searchable.
 
  <p> Concrete subclasses of IndexReader are usually constructed with a call to
- the static method {@link #open}.
+ one of the static <code>open()</code> methods, e.g. {@link #open(String)}.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique
@@ -223,7 +223,7 @@ public abstract class IndexReader {
    * @return array of term frequency vectors. May be null if no term vectors have been
    *  stored for the specified document.
    * @throws IOException if index cannot be accessed
-   * @see Field#TermVector
+   * @see org.apache.lucene.document.Field.TermVector
    */
   abstract public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException;
@@ -241,7 +241,7 @@ public abstract class IndexReader {
    * @return term frequency vector May be null if field does not exist in the specified
    * document or term vector was not stored.
    * @throws IOException if index cannot be accessed
-   * @see Field#TermVector
+   * @see org.apache.lucene.document.Field.TermVector
    */
   abstract public TermFreqVector getTermFreqVector(int docNumber, String field)
           throws IOException;

@@ -524,7 +524,6 @@ public final class Field implements Serializable {
   /**
    * True iff terms are stored as term vector together with their offsets 
    * (start and end positon in source text).
-   * @return
    */
   public boolean isStoreOffsetWithTermVector(){ 
     return storeOffsetWithTermVector; 
@@ -532,7 +531,6 @@ public final class Field implements Serializable {
   
   /**
    * True iff terms are stored as term vector together with their token positions.
-   * @return
    */
   public boolean isStorePositionWithTermVector(){ 
     return storePositionWithTermVector; 
