@@ -178,12 +178,12 @@
   </target>
 
   <target name="war-demo" depends="jar-core,jar-demo">
-    <!-- todo: convert this to use war task instead -->
-    <jar destfile="${build.dir}/${demo.war.name}.war">
-      <fileset dir="src/jsp"/>
-      <zipfileset prefix="WEB-INF/lib" dir="${build.dir}" includes="${demo.name}.jar"/>
-      <zipfileset prefix="WEB-INF/lib" dir="${build.dir}" includes="${final.name}.jar"/>
-    </jar>
+    <war destfile="${build.dir}/${demo.war.name}.war"
+         webxml="src/jsp/WEB-INF/web.xml">
+      <fileset dir="src/jsp" excludes="WEB-INF/web.xml"/>
+      <lib dir="${build.dir}" includes="${demo.name}.jar"/>
+      <lib dir="${build.dir}" includes="${final.name}.jar"/>
+    </war>
   </target>
 
   <!-- ================================================================== -->
