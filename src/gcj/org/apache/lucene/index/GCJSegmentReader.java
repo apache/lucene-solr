@@ -22,9 +22,13 @@ import org.apache.lucene.store.GCJDirectory;
 
 class GCJSegmentReader extends SegmentReader {
 
+  /** Try to use an optimized native implementation of TermDocs.  The optimized
+   * implementation can only be used when the segment's directory is a
+   * GCJDirectory and it is not in compound format.  */
   public final TermDocs termDocs() throws IOException {
-    if (directory() instanceof GCJDirectory) {
-      return new GCJTermDocs(this);
+    if (directory() instanceof GCJDirectory       // it's a GCJ directory
+        && this.cfsReader == null) {              // & not in compound format
+      return new GCJTermDocs(this);               // so can use GCJTermDocs
     } else {
       return super.termDocs();
     }
