@@ -53,6 +53,11 @@
       property="junit.present"
       classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"
     />
+
+    <tstamp>
+      <format property="DSTAMP" pattern="yyyy-MM-dd"/>
+      <format property="TSTAMP" pattern="HH:mm:ss"/>
+    </tstamp>
   </target>
 
   <target name="javacc_check" depends="init" unless="javacc.present">
@@ -124,10 +129,22 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="jar" depends="compile" if="javacc.present">
+
+        <!-- Create Jar MANIFEST file -->
+                <echo file="${build.manifest}">Manifest-Version: 1.0
+Created-By: Apache Jakarta
+
+Name: org/apache/lucene
+Implementation-Title: org.apache.lucene
+Implementation-Version: build ${DSTAMP} ${TSTAMP}
+Implementation-Vendor: Apache Jakarta
+</echo>
+
     <jar
       jarfile="${build.dir}/${final.name}.jar"
       basedir="${build.classes}"
       excludes="**/*.java"
+      manifest="${build.manifest}"
     />
   </target>
 
