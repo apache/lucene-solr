@@ -73,7 +73,7 @@ public class QueryParser implements QueryParserConstants {
   /** The actual operator that parser uses to combine query terms */
   private Operator operator = OR_OPERATOR;
 
-  boolean lowercaseWildcardTerms = true;
+  boolean lowercaseExpandedTerms = true;
 
   Analyzer analyzer;
   String field;
@@ -242,18 +242,34 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * Whether terms of wildcard and prefix queries are to be automatically
+   * Whether terms of wildcard, prefix, fuzzy and range queries are to be automatically
    * lower-cased or not.  Default is <code>true</code>.
+   * @deprecated use {@link #setLowercaseExpandedTerms(boolean)} instead
    */
-  public void setLowercaseWildcardTerms(boolean lowercaseWildcardTerms) {
-    this.lowercaseWildcardTerms = lowercaseWildcardTerms;
+  public void setLowercaseWildcardTerms(boolean lowercaseExpandedTerms) {
+    this.lowercaseExpandedTerms = lowercaseExpandedTerms;
   }
 
   /**
-   * @see #setLowercaseWildcardTerms(boolean)
+   * Whether terms of wildcard, prefix, fuzzy and range queries are to be automatically
+   * lower-cased or not.  Default is <code>true</code>.
+   */
+  public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
+    this.lowercaseExpandedTerms = lowercaseExpandedTerms;
+  }
+
+  /**
+   * @deprecated use {@link #getLowercaseExpandedTerms()} instead
    */
   public boolean getLowercaseWildcardTerms() {
-    return lowercaseWildcardTerms;
+    return lowercaseExpandedTerms;
+  }
+
+  /**
+   * @see #setLowercaseExpandedTerms(boolean)
+   */
+  public boolean getLowercaseExpandedTerms() {
+    return lowercaseExpandedTerms;
   }
 
   /**
@@ -473,6 +489,10 @@ public class QueryParser implements QueryParserConstants {
                                 String part2,
                                 boolean inclusive) throws ParseException
   {
+    if (lowercaseExpandedTerms) {
+      part1 = part1.toLowerCase();
+      part2 = part2.toLowerCase();
+    }
     try {
       DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
       df.setLenient(true);
@@ -533,8 +553,8 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
-    if (lowercaseWildcardTerms) {
-  termStr = termStr.toLowerCase();
+    if (lowercaseExpandedTerms) {
+      termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
     return new WildcardQuery(t);
@@ -565,8 +585,8 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
-    if (lowercaseWildcardTerms) {
-  termStr = termStr.toLowerCase();
+    if (lowercaseExpandedTerms) {
+      termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
     return new PrefixQuery(t);
@@ -592,6 +612,9 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
+    if (lowercaseExpandedTerms) {
+      termStr = termStr.toLowerCase();
+    }
     Term t = new Term(field, termStr);
     return new FuzzyQuery(t, minSimilarity, fuzzyPrefixLength);
   }
