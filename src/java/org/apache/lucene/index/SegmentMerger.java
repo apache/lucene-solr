@@ -71,6 +71,11 @@ final class SegmentMerger {
 
   private Vector readers = new Vector();
   private FieldInfos fieldInfos;
+
+  // File extensions of old-style index files
+  private static final String COMPOUND_EXTENSIONS[] = new String[] {
+    "fnm", "frq", "prx", "fdx", "fdt", "tii", "tis"
+  };
   
   SegmentMerger(Directory dir, String name, boolean compoundFile) {
     directory = dir;
@@ -103,17 +108,9 @@ final class SegmentMerger {
         createCompoundFile();
   }
 
-
-  // Add the fixed files
-  private final String COMPOUND_EXTENSIONS[] = new String[] {
-    "fnm", "frq", "prx", "fdx", "fdt", "tii", "tis"
-  };
-
-
   private final void createCompoundFile() 
-  throws IOException
-  {
-    CompoundFileWriter oneWriter = 
+  throws IOException {
+    CompoundFileWriter cfsWriter = 
         new CompoundFileWriter(directory, segment + ".cfs");
     
     ArrayList files = 
@@ -135,17 +132,16 @@ final class SegmentMerger {
     // Now merge all added files
     Iterator it = files.iterator();
     while(it.hasNext()) {
-        oneWriter.addFile((String) it.next());
+      cfsWriter.addFile((String) it.next());
     }
     
     // Perform the merge
-    oneWriter.close();
-    
-    
+    cfsWriter.close();
+        
     // Now delete the source files
     it = files.iterator();
     while(it.hasNext()) {
-        directory.deleteFile((String) it.next());
+      directory.deleteFile((String) it.next());
     }
   }
   
