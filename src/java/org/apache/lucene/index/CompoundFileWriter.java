@@ -94,11 +94,12 @@ final class CompoundFileWriter {
         return fileName;
     }
 
-    /** Add a source stream. If sourceDir is null, it is set to the
-     *  same value as the directory where this compound stream exists.
-     *  The id is the string by which the sub-stream will be know in the
-     *  compound stream. The caller must ensure that the ID is unique. If the
-     *  id is null, it is set to the name of the source file.
+    /** Add a source stream. <code>file</code> is the string by which the 
+     *  sub-stream will be known in the compound stream.
+     * 
+     *  @throws IllegalStateException if this writer is closed
+     *  @throws IllegalArgumentException if <code>file</code> is null
+     *   or if a file with the same name has been added already
      */
     public void addFile(String file) {
         if (merged)
