@@ -13,8 +13,11 @@ and to serve as a place to try out new ideas and prepare them for inclusion into
 distribution.
 Users are free to experiment with the components developed in the Sandbox, but Sandbox components will
 not necessarily be maintained, particularly in their current state.
+<P>
+You can access Lucene Sandbox CVS repository at
+<A HREF="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/">http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/</A>.
+
 </section>
 
 </body>
 </document>
-
