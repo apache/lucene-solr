@@ -265,14 +265,18 @@ void Tag() throws IOException :
 }
 {
   t1=<TagName> {
-    inTitle = t1.image.equalsIgnoreCase("<title"); // keep track if in <TITLE>
-    inMetaTag = t1.image.equalsIgnoreCase("<META"); // keep track if in <META>
-    inStyle = t1.image.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
-    inImg = t1.image.equalsIgnoreCase("<img");	  // keep track if in <IMG>
+   String tagName = t1.image.toLowerCase();
+   if(Tags.WS_ELEMS.contains(tagName) ) {
+      addSpace();
+    }
+    inTitle = tagName.equalsIgnoreCase("<title"); // keep track if in <TITLE>
+    inMetaTag = tagName.equalsIgnoreCase("<META"); // keep track if in <META>
+    inStyle = tagName.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
+    inImg = tagName.equalsIgnoreCase("<img");	  // keep track if in <IMG>
     if (inScript) {				  // keep track if in <SCRIPT>
-      inScript = !t1.image.equalsIgnoreCase("</script");
+      inScript = !tagName.equalsIgnoreCase("</script");
     } else {
-      inScript = t1.image.equalsIgnoreCase("<script");
+      inScript = tagName.equalsIgnoreCase("<script");
     }
   }
   (t1=<ArgName>

@@ -224,14 +224,18 @@ InterruptedException {
   Token t1, t2;
   boolean inImg = false;
     t1 = jj_consume_token(TagName);
-    inTitle = t1.image.equalsIgnoreCase("<title"); // keep track if in <TITLE>
-    inMetaTag = t1.image.equalsIgnoreCase("<META"); // keep track if in <META>
-    inStyle = t1.image.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
-    inImg = t1.image.equalsIgnoreCase("<img");    // keep track if in <IMG>
+   String tagName = t1.image.toLowerCase();
+   if(Tags.WS_ELEMS.contains(tagName) ) {
+      addSpace();
+    }
+    inTitle = tagName.equalsIgnoreCase("<title"); // keep track if in <TITLE>
+    inMetaTag = tagName.equalsIgnoreCase("<META"); // keep track if in <META>
+    inStyle = tagName.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
+    inImg = tagName.equalsIgnoreCase("<img");     // keep track if in <IMG>
     if (inScript) {                               // keep track if in <SCRIPT>
-      inScript = !t1.image.equalsIgnoreCase("</script");
+      inScript = !tagName.equalsIgnoreCase("</script");
     } else {
-      inScript = t1.image.equalsIgnoreCase("<script");
+      inScript = tagName.equalsIgnoreCase("<script");
     }
     label_2:
     while (true) {
@@ -424,15 +428,15 @@ null)
     finally { jj_save(1, xla); }
   }
 
-  final private boolean jj_3_2() {
-    if (jj_scan_token(ArgQuote2)) return true;
-    if (jj_scan_token(CloseQuote2)) return true;
-    return false;
-  }
-
   final private boolean jj_3_1() {
     if (jj_scan_token(ArgQuote1)) return true;
     if (jj_scan_token(CloseQuote1)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_2() {
+    if (jj_scan_token(ArgQuote2)) return true;
+    if (jj_scan_token(CloseQuote2)) return true;
     return false;
   }
 
