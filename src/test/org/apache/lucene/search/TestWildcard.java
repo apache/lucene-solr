@@ -67,8 +67,9 @@ import junit.framework.TestCase;
 import java.io.IOException;
 
 /**
+ * TestWildcard tests the '*' and '?' wildard characters.
  *
- *
+ * @author Otis Gospodnetic
  */
 public class TestWildcard
     extends TestCase
@@ -78,7 +79,7 @@ public class TestWildcard
 	super(name);
     }
 
-    /*
+    /**
      *
      */
     public void testAsterisk()
@@ -93,6 +94,8 @@ public class TestWildcard
         writer.addDocument(doc1);
         writer.addDocument(doc2);
 	writer.optimize();
+	writer.close();
+
 	IndexSearcher searcher = new IndexSearcher(indexStore);
 	Query query1 = new TermQuery(new Term("body", "metal"));
         Query query2 = new WildcardQuery(new Term("body", "metal*"));
@@ -112,8 +115,6 @@ public class TestWildcard
 
 	result = searcher.search(query4);
 	assertEquals(2, result.length());
-
-	writer.close();
     }
 
     public void testQuestionmark()
@@ -134,8 +135,10 @@ public class TestWildcard
         writer.addDocument(doc3);
         writer.addDocument(doc4);
 	writer.optimize();
+	writer.close();
+
 	IndexSearcher searcher = new IndexSearcher(indexStore);
-        Query query1 = new WildcardQuery(new Term("body", "m?tal")); 
+        Query query1 = new WildcardQuery(new Term("body", "m?tal"));
         Query query2 = new WildcardQuery(new Term("body", "metal?"));
         Query query3 = new WildcardQuery(new Term("body", "metals?"));
         Query query4 = new WildcardQuery(new Term("body", "m?t?ls"));
@@ -153,7 +156,5 @@ public class TestWildcard
 
 	result = searcher.search(query4);
 	assertEquals(3, result.length());
-
-	writer.close();
     }
 }
