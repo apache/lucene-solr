@@ -119,10 +119,19 @@
       <tr><td>
         <blockquote>
                                     <p align="center">Author: Clemens Marschner</p>
-                                                <p align="center">Revised: Oct. 28, 2002</p>
+                                                <p align="center">Revised: Apr. 11, 2003</p>
                                                 <p>
                 This document describes the configuration parameters and the inner
-                workings of the LARM web crawler.
+                workings of the LARM web crawler contribution.
+            </p>
+                                                <p>
+               <b><i>Note: There have been discussions about how the future of LARM could be.
+               In this paper, which describes the original architecture or LARM, you can see it
+               still has a lot of the shortcomings. The discussions have resulted in an effort to
+               expand the LARM-crawler into a complete search engine. The project is still in
+               its infancies: Contributions are very welcome. Please see
+               <a href="http://nagoya.apache.org/wiki/apachewiki.cgi?LuceneLARMPages">the LARM pages</a>
+               in the Apache Wiki for details.</i></b>
             </p>
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
@@ -190,14 +199,25 @@
                 </p>
                                                 <ul>
 
-                    <li>this <a href="http://www.innovation.ch/java/HTTPClient/">HTTPClient</a>. Put the .zip file into the libs/ directory</li>
+                    <li>a copy of a current lucene-X.jar. You can get it from Jakarta's <a href="http://jakarta.apache.org/builds/jakarta-lucene/release/">download pages</a>.
+                    </li>
 
                     <li>a working installation of <a href="http://jakarta.apache.org/ant">ANT</a> (1.5 or above recommended). ant.sh/.bat should be in your
                         PATH</li>
 
+
                 </ul>
                                                 <p>
-                    Change to the webcrawler-LARM directory and type
+                    After that you will need to tell ANT where the lucene.jar is located. This is done in the build.properties file.
+                    The easiest way to write one is to copy the build.properties.sample file in LARM's root directory and adapt the path.
+                </p>
+                                                <p>
+                    LARM needs a couple of other libraries which have been included in the libs/ directory. You shouldn't have to care about that.
+                    Some fixes had to be applied to the underlying HTTP library, the HTTPClient from <a href="http://www.innovation.ch">Roland Tschalär</a>.
+                    The patched jar was added to the libraries in the libs/ directory now. See the README file for details.<br />
+                </p>
+                                                <p>
+                    Compiling should work simply by typing
                 </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
@@ -391,8 +411,8 @@
 
                     <li>Scalability. The crawler was supposed to be able to crawl <i>large
                             intranets</i> with hundreds of servers and hundreds of thousands of
-                        documents within a reasonable amount of time. It was not meant to be
-                        scalable to the whole Internet.</li>
+                        documents within a reasonable amount of time. <i>It was not meant to be
+                        scalable to the whole Internet</i>.</li>
 
                     <li>Java. Although there are many crawlers around at the time when I
                         started to think about it (in Summer 2000), I couldn't find a good
@@ -546,7 +566,8 @@
     <tr>
       <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
       <td bgcolor="#ffffff"><pre>
-                    java [-server] [-Xmx[ZZ]mb] -classpath fetcher.jar
+                    java [-server] [-Xmx[ZZ]mb]
+                    -classpath &lt;path-to-LARM.jar&gt;:&lt;paths-to-libs/*.jar&gt;:&lt;path-to-lucene&gt;
                     de.lanlab.larm.fetcher.FetcherMain
                     [-start STARTURL | @STARTURLFILE]+
                     -restrictto REGEX
@@ -596,7 +617,8 @@
                 </p>
                                                 <p>
                     Unfortunately, a lot of the options are still not configurable from the
-                    outside. Most of them are configured from within FetcherMain.java.
+                    outside. Most of them are configured from within FetcherMain.java. <i>You
+                    will have to edit this file if you want to change LARM's behavior</i>.
                     However, others are still spread over some of the other classes. At this
                     time, we tried to put a "FIXME" comment around all these options, so
                     check out the source code. </p>
@@ -622,6 +644,46 @@
                         remaining in the queues</li>
 
                 </ol>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="LARM's output files"><strong>LARM's output files</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>LARM is by default configured such that it outputs a bunch of files into the logs/ directory.
+               During the run it also uses a cachingqueue/ directory that holds temporary internal queues. This directory
+               can be deleted if the crawler should be stopped before its operation has ended. Logfiles are flushed every time
+               the ThreadMonitor is called, usually every 5 seconds.
+               <p />
+
+               <p>The logs/ directory keeps output from the LogStorage, which is a pretty verbose storage class, and
+               the output from different filter classes (see below).
+               Namely, in the default configuration, the directory will contain the following files after a crawl:</p>
+               <ul>
+               <li>links.log - contains the list of links. One record is a tab-delimited line. Format is
+               [from-page] [to-page] [to-page-normalized] [link-type] [anchor-text]. link-type can be 0 (ordinary link),
+               1 (frame) or 2 (redirect). anchor text is the text between &lt;a&gt; and &lt;/a&gt; tags or the ALT-Tag in case of
+               IMG or AREA links. FRAME or LINK links don't contain anchor texts.
+               </li>
+
+               <li>pagefile_x.pfl - contains the contents of the downloaded files. Pagefiles are segments of max. 50 MB. Offsets
+               are included in store.log. files are saved as-is.</li>
+               <li>store.log - contains the list of downloaded files. One record is a tab-delimited line. Format is [from-page] [url]
+               [url-normalized] [link-type] [HTTP-response-code] [MIME type] [file size] [HTML-title] [page file nr.] [offset in page file]. The attributes
+               [from-page] and [link-type] refer to the first link found to this file. You can extract the files from the page files by using
+               the [page file nr.], [offset] and [file size] attributes.</li>
+
+               <li>thread(\n+)[|_errors].log - contain output of each crawling thread</li>
+               <li>.*Filter.log - contain status messages of the different filters.</li>
+               <li>ThreadMonitor.log - contains info from the ThreadMonitor. self-explanation is included in the first line of this file.</li>
+               </ul>
+              </p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
