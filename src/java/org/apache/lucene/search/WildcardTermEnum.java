@@ -99,9 +99,9 @@ public class WildcardTermEnum extends FilteredTermEnum {
   public static final boolean wildcardEquals(String pattern, int patternIdx,
     String string, int stringIdx)
   {
-    for (int p = patternIdx; ; ++p)
-    {
-      for (int s = stringIdx; ; ++p, ++s)
+    int p = patternIdx;
+    
+    for (int s = stringIdx; ; ++p, ++s)
       {
         // End of string yet?
         boolean sEnd = (s >= string.length());
@@ -178,7 +178,6 @@ public class WildcardTermEnum extends FilteredTermEnum {
         }
       }
       return false;
-    }
   }
 
   public void close() throws IOException
