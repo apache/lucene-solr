@@ -24,7 +24,7 @@ import java.io.IOException;
  the number of times the term occurred in each document.  <p> The pairs are
  ordered by document number.
 
- @see IndexReader#termDocs
+ @see IndexReader#termDocs()
  */
 
 public interface TermDocs {
