@@ -44,9 +44,6 @@ class CompoundFileReader extends Directory {
     private Directory directory;
     private String fileName;
 
-    // Reference count
-    private boolean open;
-
     private InputStream stream;
     private HashMap entries = new HashMap();
 
@@ -226,7 +223,7 @@ class CompoundFileReader extends Directory {
          */
         protected void seekInternal(long pos) {}
 
-        /** Closes the stream to futher operations. */
+        /** Closes the stream to further operations. */
         public void close() {}
 
     }
