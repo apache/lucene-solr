@@ -235,15 +235,12 @@ public class CompoundFileReader extends Directory {
         InputStream base;
         long fileOffset;
 
-        CSInputStream(final InputStream base,
-                      final long fileOffset,
-                      final long length)
-        throws IOException
+        CSInputStream(final InputStream base, final long fileOffset, final long length)
+          throws IOException
         {
-            this.base = (InputStream) base.clone();
+            this.base = base;
             this.fileOffset = fileOffset;
             this.length = length;   // variable in the superclass
-            seekInternal(0);        // position to the adjusted 0th byte
         }
 
         /** Expert: implements buffer refill.  Reads bytes from the current
@@ -255,43 +252,23 @@ public class CompoundFileReader extends Directory {
         protected void readInternal(byte[] b, int offset, int len)
         throws IOException
         {
-            base.readBytes(b, offset, len);
+            synchronized (base) {
+              long start = getFilePointer();
+              if(start + len > length)
+                throw new IOException("read past EOF");
+              base.seek(fileOffset + start);
+              base.readBytes(b, offset, len);
+            }
         }
 
         /** Expert: implements seek.  Sets current position in this file, where
          *  the next {@link #readInternal(byte[],int,int)} will occur.
          * @see #readInternal(byte[],int,int)
          */
-        protected void seekInternal(long pos) throws IOException
-        {
-            if (pos > 0 && pos >= length)
-                throw new IOException("Seek past the end of file");
-
-            if (pos < 0)
-                throw new IOException("Seek to a negative offset");
-
-            base.seek(fileOffset + pos);
-        }
+        protected void seekInternal(long pos) throws IOException {}
 
         /** Closes the stream to futher operations. */
-        public void close() throws IOException
-        {
-            base.close();
-        }
+        public void close() throws IOException {}
 
-        /** Returns a clone of this stream.
-         *
-         * <p>Clones of a stream access the same data, and are positioned at the same
-         * point as the stream they were cloned from.
-         *
-         * <p>Expert: Subclasses must ensure that clones may be positioned at
-         * different points in the input from each other and from the stream they
-         * were cloned from.
-         */
-        public Object clone() {
-            CSInputStream other = (CSInputStream) super.clone();
-            other.base = (InputStream) base.clone();
-            return other;
-        }
     }
 }
