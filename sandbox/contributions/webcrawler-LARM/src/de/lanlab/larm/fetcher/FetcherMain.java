@@ -56,16 +56,16 @@ package de.lanlab.larm.fetcher;
 
 import de.lanlab.larm.threads.ThreadPoolObserver;
 import de.lanlab.larm.threads.ThreadPool;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
 import de.lanlab.larm.gui.*;
 import de.lanlab.larm.util.*;
 import de.lanlab.larm.storage.*;
 import de.lanlab.larm.net.*;
-import javax.swing.UIManager;
 import HTTPClient.*;
 import org.apache.oro.text.regex.MalformedPatternException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+import javax.swing.UIManager;
 
 
 /**
@@ -110,11 +110,6 @@ public class FetcherMain
     protected RobotExclusionFilter reFilter;
 
     /**
-     * the host manager keeps track of all hosts and is used by the filters.
-     */
-    protected HostManager hostManager;
-
-    /**
      * this rather flaky filter just filters out some URLs, i.e. different views
      * of Apache the apache DirIndex module. Has to be made
      * configurable in near future
@@ -122,18 +117,27 @@ public class FetcherMain
     protected KnownPathsFilter knownPathsFilter;
 
     /**
+     * the URL length filter filters URLs that are too long, i.e. because of errors
+     * in the implementation of dynamic web sites
+     */
+    protected URLLengthFilter urlLengthFilter;
+
+    /**
+     * the host manager keeps track of all hosts and is used by the filters.
+     */
+    protected HostManager hostManager;
+
+    /**
      * this is the main document fetcher. It contains a thread pool that fetches the
      * documents and stores them
      */
     protected Fetcher fetcher;
-
 
     /**
      * the thread monitor once was only a monitoring tool, but now has become a
      * vital part of the system that computes statistics and
      * flushes the log file buffers
      */
-
     protected ThreadMonitor monitor;
 
     /**
@@ -143,24 +147,18 @@ public class FetcherMain
     protected DocumentStorage storage;
 
     /**
-     * the URL length filter filters URLs that are too long, i.e. because of errors
-     * in the implementation of dynamic web sites
-     */
-    protected URLLengthFilter urlLengthFilter;
-
-    /**
      * initializes all classes and registers anonymous adapter classes as
      * listeners for fetcher events.
      *
      * @param nrThreads  number of fetcher threads to be created
      */
-    public FetcherMain(int nrThreads)
+    private FetcherMain(int nrThreads)
     {
         // to make things clear, this method is commented a bit better than
         // the rest of the program...
 
         // this is the main message queue. handlers are registered with
-        // the queue, and whenever a message is put in it, they are passed to the
+        // the queue, and whenever a message is put in it, the message is passed to the
         // filters in a "chain of responibility" manner. Every listener can decide
         // to throw the message away
         messageHandler = new MessageHandler();
@@ -168,7 +166,6 @@ public class FetcherMain
         // the storage is the class which saves a WebDocument somewhere, no
         // matter how it does it, whether it's in a file, in a database or
         // whatever
-
 
         // example for the (very slow) SQL Server storage:
         // this.storage = new SQLServerStorage("sun.jdbc.odbc.JdbcOdbcDriver","jdbc:odbc:search","sa","...",nrThreads);
@@ -190,6 +187,7 @@ public class FetcherMain
         LuceneStorage luceneStorage = new LuceneStorage();
         luceneStorage.setAnalyzer(new org.apache.lucene.analysis.de.GermanAnalyzer());
         luceneStorage.setCreate(true);
+	// FIXME: index name and path need to be configurable
         luceneStorage.setIndexName("luceneIndex");
         luceneStorage.setFieldInfo("url", LuceneStorage.INDEX | LuceneStorage.STORE);
         luceneStorage.setFieldInfo("content", LuceneStorage.INDEX | LuceneStorage.STORE | LuceneStorage.TOKEN);
@@ -202,29 +200,23 @@ public class FetcherMain
         // heat, which evaporates above the processor
         // NullStorage();
 
-        // create the filters and add them to the message queue
-        urlScopeFilter = new URLScopeFilter();
-
-        urlVisitedFilter = new URLVisitedFilter(100000);
-
-        // dnsResolver = new DNSResolver();
         hostManager = new HostManager(1000);
 
+        // create the filters and add them to the message queue
         reFilter = new RobotExclusionFilter(hostManager);
-
-        fetcher = new Fetcher(nrThreads, storage, storage, hostManager);
-
+        urlScopeFilter = new URLScopeFilter();
+        urlVisitedFilter = new URLVisitedFilter(100000);
         knownPathsFilter = new KnownPathsFilter();
-
         urlLengthFilter = new URLLengthFilter(255);
+
+        // dnsResolver = new DNSResolver();
+        fetcher = new Fetcher(nrThreads, storage, storage, hostManager);
 
         // prevent message box popups
         HTTPConnection.setDefaultAllowUserInteraction(false);
 
         // prevent GZipped files from being decoded
         HTTPConnection.removeDefaultModule(HTTPClient.ContentEncodingModule.class);
-
-
 
         // initialize the threads
         fetcher.init();
@@ -266,9 +258,9 @@ public class FetcherMain
 
 
     /**
-     * Sets the RexString attribute of the FetcherMain object
+     * Sets the RexString attribute of <code>UrlScopeFilter</code>.
      *
-     * @param restrictTo                          The new RexString value
+     * @param restrictTo the new RexString value
      */
     public void setRexString(String restrictTo) throws MalformedPatternException
     {
@@ -292,6 +284,7 @@ public class FetcherMain
         }
         catch (Exception e)
         {
+	    // FIXME: replace with logging
             System.out.println("Exception: " + e.getMessage());
             e.printStackTrace();
         }
@@ -344,7 +337,7 @@ public class FetcherMain
 
 
     /**
-     * The main program. parsed
+     * The main program.
      *
      * @param args  The command line arguments
      */
@@ -357,6 +350,8 @@ public class FetcherMain
         boolean gui = false;
         boolean showInfo = false;
         System.out.println("LARM - LANLab Retrieval Machine - Fetcher - V 1.00 - (C) LANLab 2000-02");
+
+	// FIXME: consider using Jakarta Commons' CLI package for command line parameters
         for (int i = 0; i < args.length; i++)
         {
             if (args[i].equals("-start"))
@@ -419,7 +414,6 @@ public class FetcherMain
                 catch (MalformedURLException e)
                 {
                     System.out.println("Malformed URL");
-
                 }
             }
         }
