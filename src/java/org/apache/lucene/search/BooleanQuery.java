@@ -25,9 +25,14 @@ import org.apache.lucene.index.IndexReader;
   */
 public class BooleanQuery extends Query {
   
-  /**
-   * Default value is 1024.  Use <code>org.apache.lucene.maxClauseCount</code>
-   * system property to override.
+  /** The maximum number of clauses permitted. Default value is 1024.
+   * Use the <code>org.apache.lucene.maxClauseCount</code> system property to override.
+   * <p>TermQuery clauses are generated from for example prefix queries and fuzzy queries.
+   * Each TermQuery needs some buffer space during search, so this parameter indirectly 
+   * controls the maximum buffer requirements for query search. Normally the buffers
+   * are allocated by the JVM. When using for example
+   * {@link org.apache.lucene.store.MMapDirectory} the buffering is left to the 
+   * operating system.</p>
    */
   public static int maxClauseCount =
     Integer.parseInt(System.getProperty("org.apache.lucene.maxClauseCount",
@@ -39,7 +44,9 @@ public class BooleanQuery extends Query {
 
   /** Return the maximum number of clauses permitted, 1024 by default.
    * Attempts to add more than the permitted number of clauses cause {@link
-   * TooManyClauses} to be thrown.*/
+   * TooManyClauses} to be thrown.
+   * @see #maxClauseCount
+   */
   public static int getMaxClauseCount() { return maxClauseCount; }
 
   /** Set the maximum number of clauses permitted. */
