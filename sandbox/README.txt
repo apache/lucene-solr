@@ -9,7 +9,7 @@ complete application, but rather a code library and an API that can
 easily be used to add text indexing and search capabilities to
 applications.
 
-The Lucene Sanbox is a place for contributions that are not part of
+The Lucene Sandbox is a place for contributions that are not part of
 the core Lucene distribution. These contributions will not be part of
 Lucene distribution.
 The Lucene Sandbox is also for creating new sub-projects in Lucene that
