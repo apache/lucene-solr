@@ -401,7 +401,6 @@ public class IndexWriter {
   private final void mergeSegments(int minSegment)
       throws IOException {
     String mergedName = newSegmentName();
-    int mergedDocCount = 0;
     if (infoStream != null) infoStream.print("merging segments");
     SegmentMerger merger = 
         new SegmentMerger(directory, mergedName, useCompoundFile);
@@ -416,13 +415,14 @@ public class IndexWriter {
       if ((reader.directory()==this.directory) || // if we own the directory
           (reader.directory()==this.ramDirectory))
 	segmentsToDelete.addElement(reader);	  // queue segment for deletion
-      mergedDocCount += reader.numDocs();
     }
+    
+    int mergedDocCount = merger.merge();
+    
     if (infoStream != null) {
       infoStream.println();
       infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
     }
-    merger.merge();
     
     segmentInfos.setSize(minSegment);		  // pop old infos & add new
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
