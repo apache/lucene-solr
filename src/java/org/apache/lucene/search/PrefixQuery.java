@@ -35,7 +35,7 @@ public class PrefixQuery extends Query {
   public Term getPrefix() { return prefix; }
 
   public Query rewrite(IndexReader reader) throws IOException {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery query = new BooleanQuery(true);
     TermEnum enumerator = reader.terms(prefix);
     try {
       String prefixText = prefix.text();

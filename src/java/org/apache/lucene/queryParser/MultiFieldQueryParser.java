@@ -63,7 +63,7 @@ public class MultiFieldQueryParser extends QueryParser
       for (int i = 0; i < fields.length; i++)
         clauses.add(new BooleanClause(super.getFieldQuery(fields[i], queryText),
             BooleanClause.Occur.SHOULD));
-      return getBooleanQuery(clauses);
+      return getBooleanQuery(clauses, true);
     }
     return super.getFieldQuery(field, queryText);
   }
@@ -95,7 +95,7 @@ public class MultiFieldQueryParser extends QueryParser
         clauses.add(new BooleanClause(super.getFuzzyQuery(fields[i], termStr, minSimilarity),
             BooleanClause.Occur.SHOULD));
       }
-      return getBooleanQuery(clauses);
+      return getBooleanQuery(clauses, true);
     }
     return super.getFuzzyQuery(field, termStr, minSimilarity);
   }
@@ -108,7 +108,7 @@ public class MultiFieldQueryParser extends QueryParser
         clauses.add(new BooleanClause(super.getPrefixQuery(fields[i], termStr),
             BooleanClause.Occur.SHOULD));
       }
-      return getBooleanQuery(clauses);
+      return getBooleanQuery(clauses, true);
     }
     return super.getPrefixQuery(field, termStr);
   }
@@ -128,7 +128,7 @@ public class MultiFieldQueryParser extends QueryParser
         clauses.add(new BooleanClause(super.getRangeQuery(fields[i], part1, part2, inclusive),
             BooleanClause.Occur.SHOULD));
       }
-      return getBooleanQuery(clauses);
+      return getBooleanQuery(clauses, true);
     }
     return super.getRangeQuery(field, part1, part2, inclusive);
   }

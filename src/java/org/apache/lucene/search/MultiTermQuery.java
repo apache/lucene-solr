@@ -51,7 +51,7 @@ public abstract class MultiTermQuery extends Query {
 
     public Query rewrite(IndexReader reader) throws IOException {
       FilteredTermEnum enumerator = getEnum(reader);
-      BooleanQuery query = new BooleanQuery();
+      BooleanQuery query = new BooleanQuery(true);
       try {
         do {
           Term t = enumerator.term();

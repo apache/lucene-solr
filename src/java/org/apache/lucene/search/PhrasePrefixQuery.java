@@ -229,7 +229,7 @@ public class PhrasePrefixQuery extends Query {
   protected Weight createWeight(Searcher searcher) {
     if (termArrays.size() == 1) {                 // optimize one-term case
       Term[] terms = (Term[])termArrays.get(0);
-      BooleanQuery boq = new BooleanQuery();
+      BooleanQuery boq = new BooleanQuery(true);
       for (int i=0; i<terms.length; i++) {
         boq.add(new TermQuery(terms[i]), BooleanClause.Occur.SHOULD);
       }

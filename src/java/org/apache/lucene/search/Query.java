@@ -125,7 +125,9 @@ public abstract class Query implements java.io.Serializable, Cloneable {
       }
     }
 
-    BooleanQuery result = new BooleanQuery();
+    boolean coordDisabled =
+      queries.length==0? false : ((BooleanQuery)queries[0]).isCoordDisabled();
+    BooleanQuery result = new BooleanQuery(coordDisabled);
     Iterator i = allClauses.iterator();
     while (i.hasNext()) {
       result.add((BooleanClause)i.next());

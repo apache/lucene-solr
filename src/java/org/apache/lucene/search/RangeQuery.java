@@ -64,7 +64,7 @@ public class RangeQuery extends Query
 
     public Query rewrite(IndexReader reader) throws IOException {
 
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery query = new BooleanQuery(true);
         TermEnum enumerator = reader.terms(lowerTerm);
 
         try {

@@ -122,7 +122,7 @@ public final class FuzzyQuery extends MultiTermQuery {
       enumerator.close();
     }
     
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery query = new BooleanQuery(true);
     int size = stQueue.size();
     for(int i = 0; i < size; i++){
       ScoreTerm st = (ScoreTerm) stQueue.pop();

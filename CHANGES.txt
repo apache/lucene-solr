@@ -12,7 +12,7 @@ Changes in runtime behavior
     go into the rewritten query and thus the exception is avoided.
     (Christoph)
 
- 2.	Changed system property from "org.apache.lucene.lockdir" to
+ 2. Changed system property from "org.apache.lucene.lockdir" to
     "org.apache.lucene.lockDir", so that its casing follows the existing
     pattern used in other Lucene system properties. (Bernhard)		
 
@@ -116,6 +116,15 @@ Bug fixes
  5. Small bug in skipTo of ConjunctionScorer that caused NullPointerException 
     if skipTo() was called without prior call to next() fixed. (Christoph)
  
+ 6. Disable Similiarty.coord() in the scoring of most automatically
+    generated boolean queries.  The coord() score factor is
+    appropriate when clauses are independently specified by a user,
+    but is usually not appropriate when clauses are generated
+    automatically, e.g., by a fuzzy, wildcard or range query.  Matches
+    on such automatically generated queries are no longer penalized
+    for not matching all terms.  (Doug Cutting, Patch #33472)
+
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)

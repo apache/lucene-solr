@@ -63,9 +63,43 @@ public class BooleanQuery extends Query {
   }
 
   private Vector clauses = new Vector();
+  private boolean disableCoord;
 
   /** Constructs an empty boolean query. */
   public BooleanQuery() {}
+
+  /** Constructs an empty boolean query.
+   *
+   * {@link Similarity#coord(int,int)} may be disabled in scoring, as
+   * appropriate. For example, this score factor does not make sense for most
+   * automatically generated queries, like {@link WildCardQuery} and {@link
+   * FuzzyQuery}.
+   *
+   * @param disableCoord disables {@link Similarity#coord(int,int)} in scoring.
+   */
+  public BooleanQuery(boolean disableCoord) {
+    this.disableCoord = disableCoord;
+  }
+
+  /** Returns true iff {@link Similarity#coord(int,int)} is disabled in
+   * scoring for this query instance.
+   * @see BooleanQuery(boolean)
+   */
+  public boolean isCoordDisabled() { return disableCoord; }
+
+  // Implement coord disabling.
+  // Inherit javadoc.
+  public Similarity getSimilarity(Searcher searcher) {
+    Similarity result = super.getSimilarity(searcher);
+    if (disableCoord) {                           // disable coord as requested
+      result = new SimilarityDelegator(result) {
+          public float coord(int overlap, int maxOverlap) {
+            return 1.0f;
+          }
+        };
+    }
+    return result;
+  }
 
   /** Adds a clause to a boolean query.  Clauses may be:
    * <ul>
