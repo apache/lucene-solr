@@ -236,31 +236,6 @@
         <section name="Miscellaneous">
             <p>
             </p>
-
-            <subsection name="Term Highlighter">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://home.clara.net/markharwood/lucene/highlight.htm">
-                                http://home.clara.net/markharwood/lucene/highlight.htm
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Mark Harwood
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
             <subsection name="Arabic Analyzer for Java">
                 <table>
                     <tr>

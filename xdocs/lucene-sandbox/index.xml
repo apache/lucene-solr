@@ -117,6 +117,15 @@
                 </p>
             </subsection>
 
+            <subsection name="Term Highlighter">
+                <p>
+                  A small set of classes for highlighting matching terms in
+                    search results.
+                </p>
+                    <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/highlighter/">The
+                        CVS repository for the Highlighter contribution.</a>
+            </subsection>
+
             <subsection name="Javascript Query Constructor">
                 <p>
                     Javascript library to support client-side query-building. Provides support for a user interface similar to
