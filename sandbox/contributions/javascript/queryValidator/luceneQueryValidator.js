@@ -1,12 +1,13 @@
-//
-// JavaScript Lucene Query Validator
 // Author: Kelvin Tan  (kelvin@relevanz.com)
-// Date:   10/04/2002
+// Date:   03/12/2002
+// JavaScript Lucene Query Validator
+// Version: $Id$
 
 // validates a lucene query.
 // @param Form field that contains the query
 function doCheckLuceneQuery(queryField)
 {
+  var wildcardCaseInsensitive = true;
   var query = queryField.value;
   if(query != null && query.length > 0)
   {
@@ -20,7 +21,7 @@ function doCheckLuceneQuery(queryField)
     }
 
     // check parentheses are used properly
-      matches = query.match(/^([^\n()]*|(\(([a-zA-Z0-9_+\-:()\" ]|\*)+\)))*$/);
+    matches = query.match(/^([^\n()]*|(\(([a-zA-Z0-9_+\-:()\" ]|\*)+\)))*$/);
     if(matches == null || matches.length == 0)
     {
       alert("Invalid search query! Parentheses must contain at least one alphabet or number. Please try again.")
@@ -34,7 +35,7 @@ function doCheckLuceneQuery(queryField)
       alert("Invalid search query! '+' and '-' modifiers must be followed by at least one alphabet or number. Please try again.")
       return false;
     }      
-
+    
     // check that quote marks are closed
     matches = query.match(/\"/g);
     if(matches != null)
@@ -46,13 +47,21 @@ function doCheckLuceneQuery(queryField)
         return false;
       }
     }
-
+    
     // check ':' is used properly
-      matches = query.match(/^(([^\n:]*|([a-zA-Z0-9_]|\*)+[:]([a-zA-Z0-9_()"]|\*)+))*$/);
+    matches = query.match(/^(([^\n:]*|([a-zA-Z0-9_]|\*)+[:]([a-zA-Z0-9_()"]|\*)+))*$/);
     if(matches == null || matches.length == 0)
     {
       alert("Invalid search query! Field declarations (:) must be preceded by at least one alphabet or number and followed by at least one alphabet or number. Please try again.")
       return false;
+    }
+    
+    if(wildcardCaseInsensitive)
+    {
+      if(query.indexOf("*") != -1)
+      {
+        queryField.value = query.toLowerCase();
+      }
     }
 
     return true;
