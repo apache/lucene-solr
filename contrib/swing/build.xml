@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<project name="swing" default="default">
+
+  <description>
+    Swing Models
+  </description>
+
+  <import file="../common.xml"/>
+
+  <target name="list-demo" depends="compile">
+    <java classname="org.apache.lucene.swing.models.ListSearcherSimulator"
+          fork="yes" spawn="yes"
+          classpathref="test.classpath"
+    />
+  </target>
+
+  <target name="table-demo" depends="compile">
+    <java classname="org.apache.lucene.swing.models.TableSearcherSimulator"
+          fork="yes" spawn="yes"
+          classpathref="test.classpath"
+    />
+  </target>
+</project>
