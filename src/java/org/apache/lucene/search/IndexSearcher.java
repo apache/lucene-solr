@@ -61,71 +61,48 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.PriorityQueue;
 
-/** Implements search over a single IndexReader.
- *
- * <p>Applications usually need only call the inherited {@link #search(Query)}
- * or {@link #search(Query,Filter)} methods.
- */
-public class IndexSearcher extends Searcher {
+/** Implements search over a single IndexReader. */
+public final class IndexSearcher extends Searcher {
   IndexReader reader;
 
   /** Creates a searcher searching the index in the named directory. */
   public IndexSearcher(String path) throws IOException {
     this(IndexReader.open(path));
   }
-
+    
   /** Creates a searcher searching the index in the provided directory. */
   public IndexSearcher(Directory directory) throws IOException {
     this(IndexReader.open(directory));
   }
-
+    
   /** Creates a searcher searching the provided index. */
   public IndexSearcher(IndexReader r) {
     reader = r;
   }
-
-  /**
-   * Frees resources associated with this Searcher.
-   * Be careful not to call this method while you are still using objects
-   * like {@link Hits}.
-   */
-  public void close() throws IOException {
+    
+  /** Frees resources associated with this Searcher. */
+  public final void close() throws IOException {
     reader.close();
   }
 
-  /** Expert: Returns the number of documents containing <code>term</code>.
-   * Called by search code to compute term weights.
-   * @see IndexReader#docFreq(Term).
-   */
-  public int docFreq(Term term) throws IOException {
+  final int docFreq(Term term) throws IOException {
     return reader.docFreq(term);
   }
 
   /** For use by {@link HitCollector} implementations. */
-  public Document doc(int i) throws IOException {
+  public final Document doc(int i) throws IOException {
     return reader.document(i);
   }
 
-  /** Expert: Returns one greater than the largest possible document number.
-   * Called by search code to compute term weights.
-   * @see IndexReader#maxDoc().
-   */
-  public int maxDoc() throws IOException {
+  final int maxDoc() throws IOException {
     return reader.maxDoc();
   }
 
-  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   *
-   * <p>Called by {@link Hits}.
-   *
-   * <p>Applications should usually call {@link #search(Query)} or {@link
-   * #search(Query,Filter)} instead.
-   */
-  public TopDocs search(Query query, Filter filter, final int nDocs)
+  final TopDocs search(Query query, Filter filter, final int nDocs)
        throws IOException {
-    Scorer scorer = query.weight(this).scorer(reader);
+    Scorer scorer = Query.scorer(query, this, reader);
     if (scorer == null)
       return new TopDocs(0, new ScoreDoc[0]);
 
@@ -133,11 +110,18 @@ public class IndexSearcher extends Searcher {
     final HitQueue hq = new HitQueue(nDocs);
     final int[] totalHits = new int[1];
     scorer.score(new HitCollector() {
+	private float minScore = 0.0f;
 	public final void collect(int doc, float score) {
 	  if (score > 0.0f &&			  // ignore zeroed buckets
 	      (bits==null || bits.get(doc))) {	  // skip docs not in bits
 	    totalHits[0]++;
-            hq.insert(new ScoreDoc(doc, score));
+	    if (score >= minScore) {
+	      hq.put(new ScoreDoc(doc, score));	  // update hit queue
+	      if (hq.size() > nDocs) {		  // if hit queue overfull
+		hq.pop();			  // remove lowest in hit queue
+		minScore = ((ScoreDoc)hq.top()).score; // reset minScore
+	      }
+	    }
 	  }
 	}
       }, reader.maxDoc());
@@ -145,7 +129,7 @@ public class IndexSearcher extends Searcher {
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
       scoreDocs[i] = (ScoreDoc)hq.pop();
-
+    
     return new TopDocs(totalHits[0], scoreDocs);
   }
 
@@ -163,8 +147,8 @@ public class IndexSearcher extends Searcher {
    * @param filter if non-null, a bitset used to eliminate some documents
    * @param results to receive hits
    */
-  public void search(Query query, Filter filter,
-                     final HitCollector results) throws IOException {
+  public final void search(Query query, Filter filter,
+			   final HitCollector results) throws IOException {
     HitCollector collector = results;
     if (filter != null) {
       final BitSet bits = filter.bits(reader);
@@ -177,23 +161,10 @@ public class IndexSearcher extends Searcher {
 	};
     }
 
-    Scorer scorer = query.weight(this).scorer(reader);
+    Scorer scorer = Query.scorer(query, this, reader);
     if (scorer == null)
       return;
     scorer.score(collector, reader.maxDoc());
-  }
-
-  public Query rewrite(Query original) throws IOException {
-    Query query = original;
-    for (Query rewrittenQuery = query.rewrite(reader); rewrittenQuery != query;
-         rewrittenQuery = query.rewrite(reader)) {
-      query = rewrittenQuery;
-    }
-    return query;
-  }
-
-  public Explanation explain(Query query, int doc) throws IOException {
-    return query.weight(this).explain(reader, doc);
   }
 
 }

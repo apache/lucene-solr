@@ -5,7 +5,6 @@
         
 <!-- start the processing -->
     <!-- ====================================================================== -->
-    <!-- GENERATED FILE, DO NOT EDIT, EDIT THE XML FILE IN xdocs INSTEAD! -->
     <!-- Main Page Section -->
     <!-- ====================================================================== -->
     <html>
@@ -15,7 +14,6 @@
                         
            
                                     
-                        
             <title>Jakarta Lucene - Plan for enhancements to Lucene</title>
         </head>
 
@@ -39,10 +37,7 @@
                 <tr>
                     <!-- LEFT SIDE NAVIGATION -->
                     <td width="20%" valign="top" nowrap="true">
-                    
-    <!-- ============================================================ -->
-
-                <p><strong>About</strong></p>
+                                <p><strong>About</strong></p>
         <ul>
                     <li>    <a href="./index.html">Overview</a>
 </li>
@@ -57,33 +52,26 @@
         <ul>
                     <li>    <a href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi">FAQ (Official)</a>
 </li>
-                    <li>    <a href="http://www.jguru.com/faq/Lucene">jGuru FAQ</a>
-</li>
                     <li>    <a href="./gettingstarted.html">Getting Started</a>
 </li>
-                    <li>    <a href="./queryparsersyntax.html">Query Syntax</a>
-</li>
-                    <li>    <a href="./fileformats.html">File Formats</a>
-</li>
-                    <li>    <a href="./api/index.html">Javadoc</a>
-</li>
-                    <li>    <a href="./contributions.html">Contributions</a>
-</li>
-                    <li>    <a href="./resources.html">Articles, etc.</a>
-</li>
-                    <li>    <a href="./benchmarks.html">Benchmarks</a>
-</li>
-                    <li>    <a href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&bugidtype=include&bug_id=&changedin=&votes=&chfieldfrom=&chfieldto=Now&chfieldvalue=&product=Lucene&short_desc=%5BPATCH%5D&short_desc_type=allwordssubstr&long_desc=&long_desc_type=allwordssubstr&bug_file_loc=&bug_file_loc_type=allwordssubstr&keywords=&keywords_type=anywords&field0-0-0=noop&type0-0-0=noop&value0-0-0=&cmdtype=doit&order=%27Importance%27">Patches</a>
+                    <li>    <a href="http://www.jguru.com/faq/Lucene">JGuru FAQ</a>
 </li>
                     <li>    <a href="http://jakarta.apache.org/site/bugs.html">Bugs</a>
 </li>
                     <li>    <a href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&bugidtype=include&bug_id=&changedin=&votes=&chfieldfrom=&chfieldto=Now&chfieldvalue=&product=Lucene&short_desc=&short_desc_type=allwordssubstr&long_desc=&long_desc_type=allwordssubstr&bug_file_loc=&bug_file_loc_type=allwordssubstr&keywords=&keywords_type=anywords&field0-0-0=noop&type0-0-0=noop&value0-0-0=&cmdtype=doit&order=%27Importance%27">Lucene Bugs</a>
 </li>
-                    <li>    <a href="http://nagoya.apache.org/eyebrowse/SummarizeList?listId=30">Lucene-user</a>
+                    <li>    <a href="./resources.html">Articles</a>
 </li>
-                    <li>    <a href="http://nagoya.apache.org/eyebrowse/SummarizeList?listId=29">Lucene-dev</a>
+                    <li>    <a href="./queryparsersyntax.html">Query Syntax</a>
 </li>
-                    <li>    <a href="./lucene-sandbox/">Lucene Sandbox</a>
+                    <li>    <a href="./api/index.html">Javadoc</a>
+</li>
+                    <li>    <a href="./contributions.html">Contributions</a>
+</li>
+                </ul>
+            <p><strong>Plans</strong></p>
+        <ul>
+                    <li>    <a href="./luceneplan.html">Application Extensions</a>
 </li>
                 </ul>
             <p><strong>Download</strong></p>
@@ -127,8 +115,8 @@
                         The best reference is <a href="http://www.htdig.org">
                         htDig</a>, though it is not quite as sophisticated as
                         Lucene, it has a number of features that make it
-                        desirable.  It however is a traditional c-compiled app
-                        which makes it somewhat unpleasant to install on some
+                        desireable.  It however is a traditional c-compiled app
+                        which makes it somewhat unpleasent to install on some
                         platforms (like Solaris!).
                 </p>
                                                 <p>
@@ -136,12 +124,12 @@
                         community for an initial reaction, advice, feedback and
                         consent.  Following this it will be submitted to the
                         Lucene user community for support.  Although, I'm (Andy
-                        Oliver) capable of providing these enhancements by
-                        myself, I'd of course prefer to work on them in concert
+                        Oliver) capable of providing these enhancements by 
+                        myself, I'd of course prefer to work on them in concert 
                         with others.
                 </p>
                                                 <p>
-                        While I'm outlaying a fairly large feature set, these can
+                        While I'm outlaying a fairly large featureset, these can
                         be implemented incrementally of course (and are probably
                         best if done that way).
                 </p>
@@ -160,27 +148,27 @@
         <blockquote>
                                     <p>
                         The goal is to provide features to Lucene that allow it
-                        to be used as a drop-in search engine.  It should provide
+                        to be used as a dropin search engine.  It should provide
                         many of the features of projects like <a href="http://www.htdig.org">htDig</a> while surpassing
-                        them with unique Lucene features and capabilities such as
+                        them with unique Lucene features and capabillities such as
                         easy installation on and java-supporting platform,
-                        and support for document fields and field searches.  And
+                        and support for document fields and field searches.  And 
                         of course, <a href="http://apache.org/LICENSE">
                         a pragmatic software license</a>.
                 </p>
                                                 <p>
                         To reach this goal we'll implement code to support the
                         following objectives that augment but do not replace
-                        the current Lucene feature set.
+                        the current Lucene featureset.  
                 </p>
                                                 <ul>
                         <li>
-                                Document Location Independence - meaning mapping
+                                Document Location Independance - meaning mapping
                                 real contexts to runtime contexts.
                                 Essentially, if the document is at
                                 /var/www/htdocs/mydoc.html, I probably want it
                                 indexed as
-                                http://www.bigevilmegacorp.com/mydoc.html.
+                                http://www.bigevilmegacorp.com/mydoc.html.                                
                         </li>
                         <li>
                                 Standard methods of creating central indicies -
@@ -188,21 +176,21 @@
                                 many environments than is *remote* indexing (for
                                 instance http).  I would suggest that most folks
                                 would prefer that general functionality be
-                                supported by Lucene instead of having to write
+                                suppored by Lucene instead of having to write
                                 code for every indexing project.  Obviously, if
                                 what they are doing is *special* they'll have to
-                                code, but general document indexing across
-                                web servers would not qualify.
+                                code, but general document indexing accross
+                                webservers would not qualify.
                         </li>
                         <li>
-                                Document interpretation abstraction - currently
+                                Document interperatation abstraction - currently
                                 one must handle document object construction via
                                 custom code.  A standard interface for plugging
-                                in format handlers should be supported.
+                                in format handlers should be supported.  
                         </li>
                         <li>
                                 Mime and file-extension to document
-                                interpretation mapping.
+                                interperatation mapping.                                  
                         </li>
                 </ul>
                             </blockquote>
@@ -253,7 +241,7 @@
                                 </li>
                                 <li>
                                         replacement type - the type of
-                                        replace with path:  relative, URL or
+                                        replacewith path:  relative, url or
                                         path.
                                 </li>
                                 <li>
@@ -278,8 +266,8 @@
                                         0 - Long.MAX_VALUE.
                                 </li>
                                 <li>
-                                        SleeptimeBetweenCalls - can be used to
-                                        avoid flooding a machine with too many
+                                        SleeptimeBetweenCalls - can be used to 
+                                        avoid flooding a machine with too many 
                                         requests
                                 </li>
                                 <li>
@@ -288,12 +276,12 @@
                                         inactivity.
                                 </li>
                                 <li>
-                                        IncludeFilter - include only items
-                                        matching filter.  (can occur multiple
+                                        IncludeFilter - include only items 
+                                        matching filter.  (can occur mulitple
                                         times)
                                 </li>
                                 <li>
-                                        ExcludeFilter - exclude only items
+                                        ExcludeFilter - exclude only items 
                                         matching filter.  (can occur multiple
                                         times)
                                 </li>
@@ -321,9 +309,9 @@
                                         (probably from the command line) read
                                         this properties file and get them from
                                         it.  Command line options override
-                                        the properties file in the case of
+                                        the properties file in the case of 
                                         duplicates.  There should also be an
-                                        environment variable or VM parameter to
+                                        enivironment variable or VM parameter to
                                         set this.
                                 </li>
                         </ul>
@@ -332,19 +320,19 @@
                         </p>
                                                 <p>
                                 This should extend the AbstractCrawler and
-                                support any additional options required for a
-                                file system index.
+                                support any addtional options required for a
+                                filesystem index.
                         </p>
                                                 <p>
-                  <b>HTTP Crawler </b>
+			      <b>HTTP Crawler </b>
                         </p>
                                                 <p>
-                                Supports the AbstractCrawler options as well as:
+                                Supports the AbstractCrawler options as well as:                                
                         </p>
                                                 <ul>
                                 <li>
-                                        span hosts - Whether to span hosts or not,
-                                        by default this should be no.
+                                        span hosts - Wheter to span hosts or not,
+                                        by default this should be no.                                        
                                 </li>
                                 <li>
                                         restrict domains - (ignored if span
@@ -358,11 +346,11 @@
                                         recurse and go to
                                         /nextcontext/index.html this option says
                                         to also try /nextcontext to get the dir
-                                        listing)
+                                        lsiting)
                                 </li>
                                 <li>
                                         map extensions -
-                                        (always/default/never/fallback).  Whether
+                                        (always/default/never/fallback).  Wether
                                         to always use extension mapping, by
                                         default (fallback to mime type), NEVER
                                         or fallback if mime is not available
@@ -388,8 +376,8 @@
         <blockquote>
                                     <p>
                         A configurable registry of document types, their
-                        description, an identifier, mime-type and file
-                        extension.  This should map both MIME -&gt; factory
+                        description, an identifyer, mime-type and file
+                        extension.  This should map both MIME -&gt; factory 
                         and extension -&gt; factory.
                 </p>
                                                 <p>
@@ -512,17 +500,17 @@
       <tr><td>
         <blockquote>
                                     <p>
-                        A class that maps standard fields from the
+                        A class taht maps standard fields from the
                         DocumentFactories into *fields* in the Document objects
                         they create.  I suggest that a regular expression system
                         or xpath might be the most universal way to do this.
                         For instance if perhaps I had an XML factory that
                         represented XML elements as fields, I could map content
-                        from particular fields to their fields or suppress them
+                        from particular fields to ther fields or supress them
                         entirely.  We could even make this configurable.
                 </p>
                                                 <p>
-
+                
                         for example:
                 </p>
                                                 <ul>
@@ -545,11 +533,11 @@
                         title.suppress=false
                         </li>
                 </ul>
-                                                <p>
-                        In this example we map html documents such that all
-                        fields are suppressed but author and title.  We map
-                        author and title to anything in the content matching
-                        author: (and x characters).  Okay my regular expresions
+                                                <p>                
+                        In this example we map html documents such that all 
+                        fields are suppressed but author and title.  We map 
+                        author and title to anything in the content matching 
+                        author: (and x characters).  Okay my regular expresions 
                         suck but hopefully you get the idea.
                 </p>
                             </blockquote>
@@ -566,35 +554,35 @@
       <tr><td>
         <blockquote>
                                     <p>
-                        We might also consider eliminating the DocumentFactory
-                        entirely by making an AbstractDocument from which the
-                        current document object would inherit from.  I
-                        experimented with this locally, and it was a relatively
-                        minor code change and there was of course no difference
-                        in performance.  The Document Factory classes would
-                        instead be instances of various subclasses of
+                        We might also consider eliminating the DocumentFactory 
+                        entirely by making an AbstractDocument from which the 
+                        current document object would inherit from.  I 
+                        experimented with this locally, and it was a relatively 
+                        minor code change and there was of course no difference 
+                        in performance.  The Document Factory classes would 
+                        instead be instances of various subclasses of 
                         AbstractDocument.
                 </p>
                                                 <p>
-                        My inspiration for this is HTDig (http://www.htdig.org/).
-                        While this goes slightly beyond what HTDig provides by
-                        providing field mapping (where HTDIG is just interested
-                        in Strings/numbers wherever they are found), it provides
-                        at least what I would need to use this as a drop-in for
-                        most places I contract at (with the obvious exception of
-                        a default set of content handlers which would of course
+                        My inspiration for this is HTDig (http://www.htdig.org/).  
+                        While this goes slightly beyond what HTDig provides by 
+                        providing field mapping (where HTDIG is just interested 
+                        in Strings/numbers wherever they are found), it provides 
+                        at least what I would need to use this as a dropin for 
+                        most places I contract at (with the obvious exception of 
+                        a default set of content handlers which would of course 
                         develop naturally over time).
                 </p>
                                                 <p>
-                        I am able to certainly contribute to this effort if the
-                        development community is open to it.  I'd suggest we do
-                        it iteratively in stages and not aim for all of this at
+                        I am able to certainly contribute to this effort if the 
+                        development community is open to it.  I'd suggest we do 
+                        it iteratively in stages and not aim for all of this at 
                         once (for instance leave out the field mapping at first).
                 </p>
                                                 <p>
-
-                        Anyhow, please give me some feedback, counter
-                        suggestions, let me know if I'm way off base or out of
+                
+                        Anyhow, please give me some feedback, counter 
+                        suggestions, let me know if I'm way off base or out of 
                         line, etc. -Andy
                 </p>
                             </blockquote>
@@ -611,7 +599,7 @@
                 </td></tr>
                 <tr><td colspan="2">
                     <div align="center"><font color="#525D76" size="-1"><em>
-                    Copyright &#169; 1999-2003, Apache Software Foundation
+                    Copyright &#169; 1999-2002, Apache Software Foundation
                     </em></font></div>
                 </td></tr>
             </table>

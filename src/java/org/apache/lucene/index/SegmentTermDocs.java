@@ -78,15 +78,6 @@ class SegmentTermDocs implements TermDocs {
     seek(ti);
   }
   
-  public void seek(TermEnum enum) throws IOException {
-    TermInfo ti;
-    if (enum instanceof SegmentTermEnum)          // optimized case
-      ti = ((SegmentTermEnum)enum).termInfo();
-    else                                          // punt case
-      ti = parent.tis.get(enum.term());
-    seek(ti);
-  }
-  
   void seek(TermInfo ti) throws IOException {
     if (ti == null) {
       freqCount = 0;

@@ -55,106 +55,54 @@ package org.apache.lucene.index;
  */
 
 import java.util.Vector;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.OutputStream;
 import org.apache.lucene.store.InputStream;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BitVector;
 
 final class SegmentMerger {
-  private boolean useCompoundFile;
   private Directory directory;
   private String segment;
 
   private Vector readers = new Vector();
   private FieldInfos fieldInfos;
-
-  // File extensions of old-style index files
-  private static final String COMPOUND_EXTENSIONS[] = new String[] {
-    "fnm", "frq", "prx", "fdx", "fdt", "tii", "tis"
-  };
   
-  SegmentMerger(Directory dir, String name, boolean compoundFile) {
+  SegmentMerger(Directory dir, String name) {
     directory = dir;
     segment = name;
-    useCompoundFile = compoundFile;
   }
 
-  final void add(IndexReader reader) {
+  final void add(SegmentReader reader) {
     readers.addElement(reader);
   }
 
-  final IndexReader segmentReader(int i) {
-    return (IndexReader)readers.elementAt(i);
+  final SegmentReader segmentReader(int i) {
+    return (SegmentReader)readers.elementAt(i);
   }
 
-  final int merge() throws IOException {
-    int value;
+  final void merge() throws IOException {
     try {
-      value = mergeFields();
+      mergeFields();
       mergeTerms();
       mergeNorms();
+      
     } finally {
       for (int i = 0; i < readers.size(); i++) {  // close readers
-	IndexReader reader = (IndexReader)readers.elementAt(i);
+	SegmentReader reader = (SegmentReader)readers.elementAt(i);
 	reader.close();
       }
     }
-    
-    if (useCompoundFile)
-        createCompoundFile();
-
-    return value;
   }
 
-  private final void createCompoundFile() 
-  throws IOException {
-    CompoundFileWriter cfsWriter = 
-        new CompoundFileWriter(directory, segment + ".cfs");
-    
-    ArrayList files = 
-        new ArrayList(COMPOUND_EXTENSIONS.length + fieldInfos.size());    
-    
-    // Basic files
-    for (int i=0; i<COMPOUND_EXTENSIONS.length; i++) {
-        files.add(segment + "." + COMPOUND_EXTENSIONS[i]);
-    }
-
-    // Field norm files
-    for (int i = 0; i < fieldInfos.size(); i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed) {
-        files.add(segment + ".f" + i);
-      }
-    }
-
-    // Now merge all added files
-    Iterator it = files.iterator();
-    while(it.hasNext()) {
-      cfsWriter.addFile((String) it.next());
-    }
-    
-    // Perform the merge
-    cfsWriter.close();
-        
-    // Now delete the source files
-    it = files.iterator();
-    while(it.hasNext()) {
-      directory.deleteFile((String) it.next());
-    }
-  }
-  
-  
-  private final int mergeFields() throws IOException {
+  private final void mergeFields() throws IOException {
     fieldInfos = new FieldInfos();		  // merge field names
-    int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = (IndexReader)readers.elementAt(i);
-      fieldInfos.add(reader.getFieldNames(true), true);
-      fieldInfos.add(reader.getFieldNames(false), false);
+      SegmentReader reader = (SegmentReader)readers.elementAt(i);
+      fieldInfos.add(reader.fieldInfos);
     }
     fieldInfos.write(directory, segment + ".fnm");
     
@@ -162,18 +110,16 @@ final class SegmentMerger {
       new FieldsWriter(directory, segment, fieldInfos);
     try {
       for (int i = 0; i < readers.size(); i++) {
-	IndexReader reader = (IndexReader)readers.elementAt(i);
+	SegmentReader reader = (SegmentReader)readers.elementAt(i);
+	BitVector deletedDocs = reader.deletedDocs;
 	int maxDoc = reader.maxDoc();
 	for (int j = 0; j < maxDoc; j++)
-	  if (!reader.isDeleted(j)){               // skip deleted docs
-            fieldsWriter.addDocument(reader.document(j));
-            docCount++;
-	  }
+	  if (deletedDocs == null || !deletedDocs.get(j)) // skip deleted docs
+	    fieldsWriter.addDocument(reader.document(j));
       }
     } finally {
       fieldsWriter.close();
     }
-    return docCount;
   }
 
   private OutputStream freqOutput = null;
@@ -186,7 +132,7 @@ final class SegmentMerger {
       freqOutput = directory.createFile(segment + ".frq");
       proxOutput = directory.createFile(segment + ".prx");
       termInfosWriter =
-        new TermInfosWriter(directory, segment, fieldInfos);
+	new TermInfosWriter(directory, segment, fieldInfos);
       
       mergeTermInfos();
       
@@ -202,14 +148,14 @@ final class SegmentMerger {
     queue = new SegmentMergeQueue(readers.size());
     int base = 0;
     for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = (IndexReader)readers.elementAt(i);
-      TermEnum termEnum = reader.terms();
+      SegmentReader reader = (SegmentReader)readers.elementAt(i);
+      SegmentTermEnum termEnum = (SegmentTermEnum)reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
       base += reader.numDocs();
       if (smi.next())
-        queue.put(smi);				  // initialize queue
+	queue.put(smi);				  // initialize queue
       else
-        smi.close();
+	smi.close();
     }
 
     SegmentMergeInfo[] match = new SegmentMergeInfo[readers.size()];
@@ -221,18 +167,18 @@ final class SegmentMerger {
       SegmentMergeInfo top = (SegmentMergeInfo)queue.top();
       
       while (top != null && term.compareTo(top.term) == 0) {
-        match[matchSize++] = (SegmentMergeInfo)queue.pop();
-        top = (SegmentMergeInfo)queue.top();
+	match[matchSize++] = (SegmentMergeInfo)queue.pop();
+	top = (SegmentMergeInfo)queue.top();
       }
 
       mergeTermInfo(match, matchSize);		  // add new TermInfo
       
       while (matchSize > 0) {
-        SegmentMergeInfo smi = match[--matchSize];
-        if (smi.next())
-          queue.put(smi);			  // restore queue
-        else
-          smi.close();				  // done with a segment
+	SegmentMergeInfo smi = match[--matchSize];
+	if (smi.next())
+	  queue.put(smi);			  // restore queue
+	else
+	  smi.close();				  // done with a segment
       }
     }
   }
@@ -252,49 +198,52 @@ final class SegmentMerger {
       termInfosWriter.add(smis[0].term, termInfo);
     }
   }
-
+       
   private final int appendPostings(SegmentMergeInfo[] smis, int n)
        throws IOException {
     int lastDoc = 0;
     int df = 0;					  // number of docs w/ term
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
-      TermPositions postings = smi.postings;
+      SegmentTermPositions postings = smi.postings;
       int base = smi.base;
       int[] docMap = smi.docMap;
-      postings.seek(smi.termEnum);
+      smi.termEnum.termInfo(termInfo);
+      postings.seek(termInfo);
       while (postings.next()) {
-        int doc = postings.doc();
-        if (docMap != null)
-          doc = docMap[doc];                      // map around deletions
-        doc += base;                              // convert to merged space
+	int doc;
+	if (docMap == null)
+	  doc = base + postings.doc;		  // no deletions
+	else
+	  doc = base + docMap[postings.doc];	  // re-map around deletions
 
-        if (doc < lastDoc)
-          throw new IllegalStateException("docs out of order");
+	if (doc < lastDoc)
+	  throw new IllegalStateException("docs out of order");
 
-        int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
-        lastDoc = doc;
-        
-        int freq = postings.freq();
-        if (freq == 1) {
-          freqOutput.writeVInt(docCode | 1);	  // write doc & freq=1
-        } else {
-          freqOutput.writeVInt(docCode);	  // write doc
-          freqOutput.writeVInt(freq);		  // write frequency in doc
-        }
+	int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
+	lastDoc = doc;
+
+	int freq = postings.freq;
+	if (freq == 1) {
+	  freqOutput.writeVInt(docCode | 1);	  // write doc & freq=1
+	} else {
+	  freqOutput.writeVInt(docCode);	  // write doc
+	  freqOutput.writeVInt(freq);		  // write frequency in doc
+	}
 	  
-        int lastPosition = 0;			  // write position deltas
+	int lastPosition = 0;			  // write position deltas
 	for (int j = 0; j < freq; j++) {
 	  int position = postings.nextPosition();
-          proxOutput.writeVInt(position - lastPosition);
-          lastPosition = position;
-        }
+	  proxOutput.writeVInt(position - lastPosition);
+	  lastPosition = position;
+	}
 
-        df++;
+	df++;
       }
     }
     return df;
   }
+
   private final void mergeNorms() throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
@@ -302,14 +251,19 @@ final class SegmentMerger {
 	OutputStream output = directory.createFile(segment + ".f" + i);
 	try {
 	  for (int j = 0; j < readers.size(); j++) {
-	    IndexReader reader = (IndexReader)readers.elementAt(j);
-	    byte[] input = reader.norms(fi.name);
+	    SegmentReader reader = (SegmentReader)readers.elementAt(j);
+	    BitVector deletedDocs = reader.deletedDocs;
+	    InputStream input = reader.normStream(fi.name);
             int maxDoc = reader.maxDoc();
-            for (int k = 0; k < maxDoc; k++) {
-              byte norm = input != null ? input[k] : (byte)0;
-              if (!reader.isDeleted(k)) {
-                output.writeByte(norm);
-              }
+	    try {
+	      for (int k = 0; k < maxDoc; k++) {
+		byte norm = input != null ? input.readByte() : (byte)0;
+		if (deletedDocs == null || !deletedDocs.get(k))
+		  output.writeByte(norm);
+	      }
+	    } finally {
+	      if (input != null)
+		input.close();
 	    }
 	  }
 	} finally {
@@ -318,5 +272,4 @@ final class SegmentMerger {
       }
     }
   }
-
 }

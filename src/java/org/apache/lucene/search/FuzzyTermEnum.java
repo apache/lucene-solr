@@ -57,12 +57,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 
 /** Subclass of FilteredTermEnum for enumerating all terms that are similiar to the specified filter term.
 
   <p>Term enumerations are always ordered by Term.compareTo().  Each term in
   the enumeration is greater than all that precede it.  */
-public final class FuzzyTermEnum extends FilteredTermEnum {
+final public class FuzzyTermEnum extends FilteredTermEnum {
     double distance;
     boolean fieldMatch = false;
     boolean endEnum = false;
@@ -85,7 +86,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
      calculate the distance between the given term and the comparing term. 
      */
-    protected final boolean termCompare(Term term) {
+    final protected boolean termCompare(Term term) {
         if (field == term.field()) {
             String target = term.text();
             int targetlen = target.length();
@@ -97,11 +98,11 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
         return false;
     }
     
-    protected final float difference() {
+    final protected float difference() {
         return (float)((distance - FUZZY_THRESHOLD) * SCALE_FACTOR);
     }
     
-    public final boolean endEnum() {
+    final public boolean endEnum() {
         return endEnum;
     }
     
@@ -115,7 +116,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     /**
      Finds and returns the smallest of three integers 
      */
-    private static final int min(int a, int b, int c) {
+    private final static int min(int a, int b, int c) {
         int t = (a < b) ? a : b;
         return (t < c) ? t : c;
     }
@@ -124,7 +125,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      * This static array saves us from the time required to create a new array
      * everytime editDistance is called.
      */
-    private int e[][] = new int[1][1];
+    private int e[][] = new int[0][0];
     
     /**
      Levenshtein distance also known as edit distance is a measure of similiarity
@@ -137,7 +138,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
      */ 
     private final int editDistance(String s, String t, int n, int m) {
         if (e.length <= n || e[0].length <= m) {
-            e = new int[Math.max(e.length, n+1)][Math.max(e[0].length, m+1)];
+            e = new int[Math.max(e.length, n+1)][Math.max(e.length, m+1)];
         }
         int d[][] = e; // matrix
         int i; // iterates through s

@@ -64,7 +64,7 @@ public final class StandardFilter extends TokenFilter
 
   /** Construct filtering <i>in</i>. */
   public StandardFilter(TokenStream in) {
-    super(in);
+    input = in;
   }
 
   private static final String APOSTROPHE_TYPE = tokenImage[APOSTROPHE];

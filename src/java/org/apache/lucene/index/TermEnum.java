@@ -63,14 +63,14 @@ import java.io.IOException;
 
 public abstract class TermEnum {
   /** Increments the enumeration to the next element.  True if one exists.*/
-  public abstract boolean next() throws IOException;
+  abstract public boolean next() throws IOException;
 
   /** Returns the current Term in the enumeration.*/
-  public abstract Term term();
+  abstract public Term term();
 
   /** Returns the docFreq of the current Term in the enumeration.*/
-  public abstract int docFreq();
+  abstract public int docFreq();
 
   /** Closes the enumeration to further activity, freeing resources. */
-  public abstract void close() throws IOException;
+  abstract public void close() throws IOException;
 }

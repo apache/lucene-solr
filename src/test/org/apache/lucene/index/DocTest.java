@@ -59,12 +59,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.File;
+import java.util.Date;
 
-// FIXME: OG: remove hard-coded file names
+
 class DocTest {
   public static void main(String[] args) {
     try {
@@ -75,7 +75,7 @@ class DocTest {
       printSegment("one");
       indexDoc("two", "test2.txt");
       printSegment("two");
-
+      
       merge("one", "two", "merge");
       printSegment("merge");
 
@@ -87,8 +87,7 @@ class DocTest {
 
     } catch (Exception e) {
       System.out.println(" caught a " + e.getClass() +
-                         "\n with message: " + e.getMessage());
-      e.printStackTrace();
+			 "\n with message: " + e.getMessage());
     }
   }
 
@@ -96,8 +95,7 @@ class DocTest {
        throws Exception {
     Directory directory = FSDirectory.getDirectory("test", false);
     Analyzer analyzer = new SimpleAnalyzer();
-    DocumentWriter writer =
-      new DocumentWriter(directory, analyzer, Similarity.getDefault(), 1000);
+    DocumentWriter writer = new DocumentWriter(directory, analyzer, 1000);
 
     File file = new File(fileName);
     Document doc = FileDocument.Document(file);
@@ -114,7 +112,7 @@ class DocTest {
     SegmentReader r1 = new SegmentReader(new SegmentInfo(seg1, 1, directory));
     SegmentReader r2 = new SegmentReader(new SegmentInfo(seg2, 1, directory));
 
-    SegmentMerger merger = new SegmentMerger(directory, merged, false);
+    SegmentMerger merger = new SegmentMerger(directory, merged);
     merger.add(r1);
     merger.add(r2);
     merger.merge();
@@ -130,25 +128,25 @@ class DocTest {
 
     for (int i = 0; i < reader.numDocs(); i++)
       System.out.println(reader.document(i));
-
+    
     TermEnum tis = reader.terms();
     while (tis.next()) {
       System.out.print(tis.term());
       System.out.println(" DF=" + tis.docFreq());
-
+      
       TermPositions positions = reader.termPositions(tis.term());
       try {
-        while (positions.next()) {
-          System.out.print(" doc=" + positions.doc());
-          System.out.print(" TF=" + positions.freq());
-          System.out.print(" pos=");
-          System.out.print(positions.nextPosition());
-          for (int j = 1; j < positions.freq(); j++)
-            System.out.print("," + positions.nextPosition());
-          System.out.println("");
-        }
+	while (positions.next()) {
+	  System.out.print(" doc=" + positions.doc());
+	  System.out.print(" TF=" + positions.freq());
+	  System.out.print(" pos=");
+	  System.out.print(positions.nextPosition());
+	  for (int j = 1; j < positions.freq(); j++)
+	    System.out.print("," + positions.nextPosition());
+	  System.out.println("");
+	}
       } finally {
-        positions.close();
+	positions.close();
       }
     }
     tis.close();

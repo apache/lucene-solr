@@ -55,10 +55,6 @@ package org.apache.lucene.document;
  */
 
 import java.io.Reader;
-import java.util.Date;
-import org.apache.lucene.index.IndexReader;       // for javadoc
-import org.apache.lucene.search.Similarity;       // for javadoc
-import org.apache.lucene.search.Hits;             // for javadoc
 
 /**
   A field is a section of a Document.  Each field has two parts, a name and a
@@ -68,50 +64,13 @@ import org.apache.lucene.search.Hits;             // for javadoc
   index, so that they may be returned with hits on the document.
   */
 
-public final class Field implements java.io.Serializable {
+public final class Field {
   private String name = "body";
   private String stringValue = null;
   private Reader readerValue = null;
   private boolean isStored = false;
   private boolean isIndexed = true;
   private boolean isTokenized = true;
-
-  private float boost = 1.0f;
-
-  /** Sets the boost factor hits on this field.  This value will be
-   * multiplied into the score of all hits on this this field of this
-   * document.
-   *
-   * <p>The boost is multiplied by {@link Document#getBoost()} of the document
-   * containing this field.  If a document has multiple fields with the same
-   * name, all such values are multiplied together.  This product is then
-   * multipled by the value {@link Similarity#lengthNorm(String,int)}, and
-   * rounded by {@link Similarity#encodeNorm(float)} before it is stored in the
-   * index.  One should attempt to ensure that this product does not overflow
-   * the range of that encoding.
-   *
-   * @see Document#setBoost(float)
-   * @see Similarity#lengthNorm(String, int)
-   * @see Similarity#encodeNorm(float)
-   */
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
-
-  /** Returns the boost factor for hits on any field of this document.
-   *
-   * <p>The default value is 1.0.
-   *
-   * <p>Note: this value is not stored directly with the document in the index.
-   * Documents returned from {@link IndexReader#document(int)} and {@link
-   * Hits#doc(int)} may thus not have the same value present as when this field
-   * was indexed.
-   *
-   * @see #setBoost(float)
-   */
-  public float getBoost() {
-    return boost;
-  }
 
   /** Constructs a String-valued Field that is not tokenized, but is indexed
     and stored.  Useful for non-text fields, e.g. date or url.  */
@@ -132,12 +91,6 @@ public final class Field implements java.io.Serializable {
     return new Field(name, value, true, true, true);
   }
 
-  /** Constructs a Date-valued Field that is not tokenized and is indexed,
-      and stored in the index, for return with hits. */
-  public static final Field Keyword(String name, Date value) {
-    return new Field(name, DateField.dateToString(value), true, true, false);
-  }
-
   /** Constructs a String-valued Field that is tokenized and indexed,
     but that is not stored in the index. */
   public static final Field UnStored(String name, String value) {
@@ -151,7 +104,7 @@ public final class Field implements java.io.Serializable {
     return new Field(name, value);
   }
 
-  /** The name of the field (e.g., "date", "subject", "title", or "body")
+  /** The name of the field (e.g., "date", "subject", "title", "body", etc.)
     as an interned string. */
   public String name() 		{ return name; }
 

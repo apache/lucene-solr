@@ -1,0 +1,103 @@
+$Revision$
+
+				LUCENE TO-DO ITEMS
+
+
+- Term Vector support
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgNo=273
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgNo=272
+
+- Support for Search Term Highlighting
+  c.f.
+  http://www.geocrawler.org/archives/3/2624/2001/9/50/6553088/
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=115271
+  http://www.iq-computing.de/index.asp?menu=projekte-lucene-highlight
+  http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&by=thread&from=56403
+
+- Better support for hits sorted by things other than score.
+  An easy, efficient case is to support results sorted by the order documents were
+  added to the index.  A little harder and less efficient is support for
+  results sorted by an arbitrary field.
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114756
+  http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00228.html
+
+- Add ability to "boost" individual documents/fields.
+  When a document is indexed, a numeric "boost" value could be specified for the whole
+  document, and/or for individual fields.  This value would be multipled into
+  scores for hits on this document.  This would facilitate the implementation of
+  things like Google's PageRank.
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114749
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114757
+
+- Add to FSDirectory the ability to specify where lock files live and
+  to disable the use of lock files altogether (for read-only media).
+  c.f.
+  http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-user@jakarta.apache.org&by=thread&from=57011
+
+- Add some requested methods:
+    String[] Document.getValues(String fieldName);
+    String[] IndexReader.getIndexedFields();
+    void Token.setPositionIncrement(int);
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=330010
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=330009
+
+- Péter Halácsy's changes to the QueryParser that make it possible to
+  programmatically specify a default operator (OR or AND).
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=115677
+
+- The recenly submitted code that allows for queries such as
+  "Microsoft suc*" to match "Microsoft success" and "Microsoft sucks".
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=333275
+
+- Make package protected abstract methods of org.apache.lucene.search.Searcher
+  public (I'd like to be able to make subclasses of Searcher, IndexWriter, InderReader).
+  c.f.
+  http://www.mail-archive.com/cgi-bin/htsearch?method=and&format=short&config=lucene-dev_jakarta_apache_org&restrict=&exclude=&words=IndexAccessControl
+
+- Add lastModified() method to Directory, FSDirectory and RamDirectory, so
+  it could be cached in IndexWriter/Searcher manager.
+
+- Support for adding more than 1 term to the same position.
+  N.B. I think the Finnish lady already implemented this.  It required some
+  pieces of Lucene to be modified. (OG).
+
+- The ability to retrieve the number of occurences not only for a term
+  but also for a Phrase.
+  c.f.
+  http://www.mail-archive.com/lucene-dev@jakarta.apache.org/msg00101.html
+
+- Alex Murzaku contributed some code for dealing with Russian.
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=115631
+
+- A lady from Finland submitted code for handling Finnish.
+
+- Dutch stemmer, analyzer, etc.
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgNo=145
+
+- French stemmer, analyzer, etc.
+  c.f.
+  http://nagoya.apache.org/eyebrowse/BrowseList?listName=lucene-dev@jakarta.apache.org&by=thread&from=56256
+
+- Che Dong's CJKTokenizer for Chinese, Japanese, and Korean.
+  c.f.
+  http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=330905
+
+- Selecting a language-specific analyzer according to a locale.
+  Now we rewrite parts of lucene codes in order to use another
+  analyzer. It will be useful to select analyzer without touching codes.
+
+- Adding "-encoding" option and encoding-sensitive methods to tools.
+  Current tools needs minor changes on a Japanese (and other language)
+  environment: adding an "-encode" option and argument, useing
+  Reader/Writer classes instead of InputStream/OutputStream classes, etc.
+
+
+$Revision$

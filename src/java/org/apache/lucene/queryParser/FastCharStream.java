@@ -66,7 +66,7 @@ public final class FastCharStream implements CharStream {
 
   int bufferLength = 0;				  // end of valid chars
   int bufferPosition = 0;			  // next char to read
-
+  
   int tokenStart = 0;				  // offset in buffer
   int bufferStart = 0;				  // position in file of buffer
 
@@ -88,7 +88,7 @@ public final class FastCharStream implements CharStream {
 
     if (tokenStart == 0) {			  // token won't fit in buffer
       if (buffer == null) {			  // first time: alloc buffer
-	buffer = new char[2048];
+	buffer = new char[2048];		  
       } else if (bufferLength == buffer.length) { // grow buffer
 	char[] newBuffer = new char[buffer.length*2];
 	System.arraycopy(buffer, 0, newBuffer, 0, bufferLength);

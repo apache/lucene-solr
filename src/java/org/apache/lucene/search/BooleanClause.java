@@ -55,7 +55,7 @@ package org.apache.lucene.search;
  */
 
 /** A clause in a BooleanQuery. */
-public class BooleanClause implements java.io.Serializable {
+public final class BooleanClause {
   /** The query whose matching documents are combined by the boolean query. */
   public Query query;
   /** If true, documents documents which <i>do not</i>
@@ -72,20 +72,4 @@ public class BooleanClause implements java.io.Serializable {
     required = r;
     prohibited = p;
   }
-
-  /** Returns true iff <code>o</code> is equal to this. */
-  public boolean equals(Object o) {
-    if (!(o instanceof BooleanClause))
-      return false;
-    BooleanClause other = (BooleanClause)o;
-    return this.query.equals(other.query)
-      && (this.required == other.required)
-      && (this.prohibited == other.prohibited);
-  }
-
-  /** Returns a hash code value for this object.*/
-  public int hashCode() {
-    return query.hashCode() ^ (this.required?1:0) ^ (this.prohibited?2:0);
-  }
-
 }

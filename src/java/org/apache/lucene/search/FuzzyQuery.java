@@ -59,16 +59,21 @@ import org.apache.lucene.index.Term;
 import java.io.IOException;
 
 /** Implements the fuzzy search query */
-public final class FuzzyQuery extends MultiTermQuery {
-  public FuzzyQuery(Term term) {
-    super(term);
-  }
+final public class FuzzyQuery extends MultiTermQuery {
+    private Term fuzzyTerm;
     
-  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new FuzzyTermEnum(reader, getTerm());
-  }
+    public FuzzyQuery(Term term) {
+        super(term);
+        fuzzyTerm = term;
+    }
     
-  public String toString(String field) {
-    return super.toString(field) + '~';
-  }
+    final void prepare(IndexReader reader) {
+        try {
+            setEnum(new FuzzyTermEnum(reader, fuzzyTerm));
+        } catch (IOException e) {}
+    }
+    
+    public String toString(String field) {
+        return super.toString(field) + '~';
+    }
 }

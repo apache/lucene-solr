@@ -55,6 +55,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import org.apache.lucene.document.Document;
 
 /** TermDocs provides an interface for enumerating &lt;document, frequency&gt;
   pairs for a term.  <p> The document portion names each document containing
@@ -70,11 +71,6 @@ public interface TermDocs {
    * The enumeration is reset to the start of the data for this term.
    */
   void seek(Term term) throws IOException;
-
-  /** Sets this to the data for the current term in a {@link TermEnum}.
-   * This may be optimized in some implementations.
-   */
-  void seek(TermEnum termEnum) throws IOException;
 
   /** Returns the current document number.  <p> This is invalid until {@link
       #next()} is called for the first time.*/

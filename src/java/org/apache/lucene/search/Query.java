@@ -55,120 +55,60 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
-import java.util.HashSet;
-import java.util.Iterator;
-
+import java.util.Hashtable;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
 /** The abstract base class for queries.
-    <p>Instantiable subclasses are:
-    <ul>
-    <li> {@link TermQuery}
-    <li> {@link MultiTermQuery}
-    <li> {@link PhraseQuery}
-    <li> {@link BooleanQuery}
-    <li> {@link WildcardQuery}
-    <li> {@link PrefixQuery}
-    <li> {@link FuzzyQuery}
-    <li> {@link RangeQuery}
-    </ul>
-    <p>A parser for queries is contained in:
-    <ul>
-    <li>{@link org.apache.lucene.queryParser.QueryParser QueryParser}
-    </ul>
-*/
-public abstract class Query implements java.io.Serializable, Cloneable {
-  private float boost = 1.0f;                     // query boost factor
+  <p>Instantiable subclasses are:
+  <ul>
+  <li> {@link TermQuery}
+  <li> {@link PhraseQuery}
+  <li> {@link BooleanQuery}
+  </ul>
+  <p>A parser for queries is contained in:
+  <ul>
+  <li>{@link org.apache.lucene.queryParser.QueryParser}
+  </ul>
+  */
+abstract public class Query implements java.io.Serializable {
 
-  /** Sets the boost for this query clause to <code>b</code>.  Documents
-   * matching this clause will (in addition to the normal weightings) have
-   * their score multiplied by <code>b</code>.
-   */
+  // query boost factor
+  protected float boost = 1.0f;
+
+  // query weighting
+  abstract float sumOfSquaredWeights(Searcher searcher) throws IOException;
+  abstract void normalize(float norm);
+
+  // query evaluation
+  abstract Scorer scorer(IndexReader reader) throws IOException;
+
+  void prepare(IndexReader reader) {}
+
+  static Scorer scorer(Query query, Searcher searcher, IndexReader reader)
+    throws IOException {
+    query.prepare(reader);
+    float sum = query.sumOfSquaredWeights(searcher);
+    float norm = 1.0f / (float)Math.sqrt(sum);
+    query.normalize(norm);
+    return query.scorer(reader);
+  }
+
+  /** Sets the boost for this term to <code>b</code>.  Documents containing
+    this term will (in addition to the normal weightings) have their score
+    multiplied by <code>b</code>. */
   public void setBoost(float b) { boost = b; }
 
-  /** Gets the boost for this clause.  Documents matching
-   * this clause will (in addition to the normal weightings) have their score
-   * multiplied by <code>b</code>.   The boost is 1.0 by default.
-   */
+  /** Gets the boost for this term.  Documents containing
+    this term will (in addition to the normal weightings) have their score
+    multiplied by <code>b</code>.   The boost is 1.0 by default.  */
   public float getBoost() { return boost; }
 
   /** Prints a query to a string, with <code>field</code> as the default field
-   * for terms.  <p>The representation used is one that is readable by
-   * {@link org.apache.lucene.queryParser.QueryParser QueryParser}
-   * (although, if the query was created by the parser, the printed
-   * representation may not be exactly what was parsed).
-   */
-  public abstract String toString(String field);
-
-  /** Prints a query to a string. */
-  public String toString() {
-    return toString("");
-  }
-
-  /** Expert: Constructs an appropriate Weight implementation for this query.
-   *
-   * <p>Only implemented by primitive queries, which re-write to themselves.
-   */
-  protected Weight createWeight(Searcher searcher) {
-    throw new UnsupportedOperationException();
-  }
-
-  /** Expert: Constructs an initializes a Weight for a top-level query. */
-  public Weight weight(Searcher searcher)
-    throws IOException {
-    Query query = searcher.rewrite(this);
-    Weight weight = query.createWeight(searcher);
-    float sum = weight.sumOfSquaredWeights();
-    float norm = searcher.getSimilarity().queryNorm(sum);
-    weight.normalize(norm);
-    return weight;
-  }
-
-  /** Expert: called to re-write queries into primitive queries. */
-  public Query rewrite(IndexReader reader) throws IOException {
-    return this;
-  }
-
-  /** Expert: called when re-writing queries under MultiSearcher.
-   *
-   * <p>Only implemented by derived queries, with no {@link
-   * #createWeight(Searcher)} implementatation..
-   */
-  public Query combine(Query[] queries) {
-    throw new UnsupportedOperationException();
-  }
-
-
-  /** Expert: merges the clauses of a set of BooleanQuery's into a single
-   * BooleanQuery.
-   *
-   *<p>A utility for use by {@link #combine(Query[])} implementations.
-   */
-  public static Query mergeBooleanQueries(Query[] queries) {
-    HashSet allClauses = new HashSet();
-    for (int i = 0; i < queries.length; i++) {
-      BooleanClause[] clauses = ((BooleanQuery)queries[i]).getClauses();
-      for (int j = 0; j < clauses.length; j++) {
-        allClauses.add(clauses[j]);
-      }
-    }
-
-    BooleanQuery result = new BooleanQuery();
-    Iterator i = allClauses.iterator();
-    while (i.hasNext()) {
-      result.add((BooleanClause)i.next());
-    }
-    return result;
-  }
-
-
-  /** Returns a clone of this query. */
-  public Object clone() {
-    try {
-      return (Query)super.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException("Clone not supported: " + e.getMessage());
-    }
-  }
+    for terms.
+    <p>The representation used is one that is readable by
+    <a href="doc/lucene.queryParser.QueryParser.html">QueryParser</a>
+    (although, if the query was created by the parser, the printed
+    representation may not be exactly what was parsed). */
+  abstract public String toString(String field);
 }

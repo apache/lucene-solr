@@ -60,29 +60,30 @@ import org.apache.lucene.util.BitVector;
 final class SegmentMergeInfo {
   Term term;
   int base;
-  TermEnum termEnum;
-  IndexReader reader;
-  TermPositions postings;
+  SegmentTermEnum termEnum;
+  SegmentReader reader;
+  SegmentTermPositions postings;
   int[] docMap = null;				  // maps around deleted docs
 
-  SegmentMergeInfo(int b, TermEnum te, IndexReader r)
+  SegmentMergeInfo(int b, SegmentTermEnum te, SegmentReader r)
     throws IOException {
     base = b;
     reader = r;
     termEnum = te;
     term = te.term();
-    postings = reader.termPositions();
+    postings = new SegmentTermPositions(r);
 
-    // build array which maps document numbers around deletions 
-    if (reader.hasDeletions()) {
+    if (reader.deletedDocs != null) {
+      // build array which maps document numbers around deletions 
+      BitVector deletedDocs = reader.deletedDocs;
       int maxDoc = reader.maxDoc();
       docMap = new int[maxDoc];
       int j = 0;
       for (int i = 0; i < maxDoc; i++) {
-        if (reader.isDeleted(i))
-          docMap[i] = -1;
-        else
-          docMap[i] = j++;
+	if (deletedDocs.get(i))
+	  docMap[i] = -1;
+	else
+	  docMap[i] = j++;
       }
     }
   }

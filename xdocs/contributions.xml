@@ -2,98 +2,38 @@
 <document>
     <properties>
         <author email="carlson@apache.org">
-            Peter Carlson
+            Peter Carlson 
         </author>
         <title>
-            Contributions - Jakarta Lucene
+            Contributions - Jakarta Lucene 
         </title>
     </properties>
     <body>
         <section name="Overview">
-            <p>This page lists external Lucene resources. If you have
-            written something that should be included, please post all
-            relevant information to one of the mailing lists.  Nothing
-            listed here is directly supported by the Lucene
-            developers, so if you encounter any problems with any of
-            this software, please use the author's contact information
-            to get help.</p>
+            <p>This page lists external resources for Lucene. If you've written something that should be included, please post all relevant information to one of the mailing lists. Nothing listed here is directly supported by the Lucene developers, if you encounter any problems with them, please use the contact information. </p>
         </section>
-
-        <section name="Lucene Tools">
+        <section name="Lucene Documents">
             <p>
-                Software that works with Lucene indices.
-            </p>
-            <subsection name="Luke">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.getopt.org/luke/">
-                                http://www.getopt.org/luke/
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Andrzej Bialecki
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-            <subsection name="LIMO (Lucene Index Monitor)">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.jnioche.freesurf.fr/LIMO/">
-                                http://www.jnioche.freesurf.fr/LIMO/
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Julien Nioche
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-        </section>
-
-        <section name="Lucene Document Converters">
-            <p>
-                Lucene requires information you want to index to be
-                converted into a Document class.  Here are
-                contributions for various solutions that convert different
-                content types to Lucene's Document classes.
+                Lucene requires information you want to index to be converted into a Document class. Here are contributions for various Document classes for different formats. 
             </p>
             <subsection name="RTF->XML->Lucene">
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
                             <a href="http://www.tetrasix.com/">
-                                http://www.tetrasix.com/
+                                http://www.tetrasix.com/ 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            N/A
+                            N/A 
                         </td>
                     </tr>
                 </table>
@@ -102,20 +42,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
                             <a href="http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2">
-                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2
+                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            Philip Ogren - ogren@mayo.edu
+                            Philip Ogren - ogren@mayo.edu 
                         </td>
                     </tr>
                 </table>
@@ -124,20 +64,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
                             <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">
-                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html
+                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            Peter Carlson - carlson@bookandhammer.com
+                            Peter Carlson - carlson@bookandhammer.com 
                         </td>
                     </tr>
                 </table>
@@ -146,43 +86,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
-                            <a href="http://www.isogen.com/downloads/demos/demos.jsp#xml_searching_demo">
-                                http://www.isogen.com/downloads/demos/demos.jsp#xml_searching_demo
+                            <a href="http://www.isogen.com/papers/lucene_xml_indexing.html">
+                                http://www.isogen.com/papers/lucene_xml_indexing.html
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
                             W. Eliot Kimber - eliot@isogen.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-
-            <subsection name="PDF Box">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.pdfbox.org/">
-                                http://www.pdfbox.org/
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Ben Litchfield - ben@csh.rit.edu
                         </td>
                     </tr>
                 </table>
@@ -191,169 +108,193 @@
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
                             <a href="http://www.foolabs.com/xpdf">
-                                http://www.foolabs.com/xpdf
+                                http://www.foolabs.com/xpdf 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            N/A
+                            N/A 
                         </td>
                     </tr>
                 </table>
             </subsection>
-            <subsection name="PJ Classic &amp; PJ Professional - PDF Document Conversion">
+            <subsection name="PJ - PDF Document Conversion">
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
-                            <a href=" http://www.etymon.com/">
-                                http://www.etymon.com/
+                            <a href=" http://www.etymon.com/pj/">
+                                http://www.etymon.com/pj/ 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            N/A
+                            N/A 
                         </td>
                     </tr>
                 </table>
             </subsection>
         </section>
-
-        <section name="Lucene Analyzers and Filters">
+        <section name="Lucene Analyzers">
             <p>
             </p>
             <subsection name="Chinese Analyzer, Tokenizer, Filter">
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
                             <a href="http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2">
-                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2
+                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100705753831746&amp;w=2 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            Yiyi Sun - yiyisun@yahoo.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-            <subsection name="Chained Filter">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/misc/src/java/org/apache/lucene/misc/ChainedFilter.java">
-                                http://cvs.apache.org/viewcvs/jakarta-lucene-sandbox/contributions/misc/src/java/org/apache/lucene/misc/ChainedFilter.java
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Kelvin Tan - kelvint at apache.org
+                            Yiyi Sun - yiyisun@yahoo.com 
                         </td>
                     </tr>
                 </table>
             </subsection>
         </section>
-
-        <section name="Miscellaneous">
+        <section name="Misc">
             <p>
             </p>
-
+            
             <subsection name="Term Highlighter">
                 <p>
                 </p>
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
-                            <a href="http://home.clara.net/markharwood/lucene/highlight.htm">
-                                http://home.clara.net/markharwood/lucene/highlight.htm
+                            <a href="http://www.iq-computing.de/lucene/highlight.htm">
+                                http://www.iq-computing.de/lucene/highlight.htm
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            Mark Harwood
+                            Maik Schreiber - info@iq-computing.de 
                         </td>
                     </tr>
                 </table>
             </subsection>
-            <subsection name="Phonetix">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html">
-                                http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            tangentum technologies
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-            <subsection name="ejIndex - JBoss MBean for Lucene">
+            <subsection name="Chainable Filter">
                 <p>
                 </p>
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
-                            <a href="http://ejindex.sourceforge.net/">
-                                http://ejindex.sourceforge.net/
+                            <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg01168.html">
+                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg01168.html
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            Andy Scholz
+                            Kelvin Tan - kelvin@relevanz.com 
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="Multiple Field Searching">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL 
+                        </th>
+                        <td>
+                            <a href="http://http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00775.html">
+                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00775.html
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author 
+                        </th>
+                        <td>
+                            Kelvin Tan - kelvin@relevanz.com 
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="Lucene Tutorial">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL 
+                        </th>
+                        <td>
+                            <a href="http://www.darksleep.com/puff/lucene/lucene.html">
+                                http://www.darksleep.com/puff/lucene/lucene.html 
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author 
+                        </th>
+                        <td>
+                            Steven J. Owens - puff@darksleep.com 
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="HTML Syntax Checker and Pretty Printer">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL 
+                        </th>
+                        <td>
+                            <a href="http://lempinen.net/sami/jtidy/">
+                                http://lempinen.net/sami/jtidy/ 
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author 
+                        </th>
+                        <td>
+                            N/A 
                         </td>
                     </tr>
                 </table>
@@ -362,20 +303,20 @@
                 <table>
                     <tr>
                         <th>
-                            URL
+                            URL 
                         </th>
                         <td>
                             <a href="http://www.webgain.com/products/java_cc/">
-                                http://www.webgain.com/products/java_cc/
+                                http://www.webgain.com/products/java_cc/ 
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <th>
-                            author
+                            author 
                         </th>
                         <td>
-                            N/A
+                            N/A 
                         </td>
                     </tr>
                 </table>

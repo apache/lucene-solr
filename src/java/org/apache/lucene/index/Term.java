@@ -116,7 +116,9 @@ public final class Term implements java.io.Serializable {
     text = txt;
   }
 
-  public final String toString() { return field + ":" + text; }
+  public final String toString() {
+    return "Term<" + field + ":" + text + ">";
+  }
   
   private void readObject(java.io.ObjectInputStream in) 
     throws java.io.IOException, ClassNotFoundException

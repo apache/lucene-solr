@@ -55,6 +55,8 @@ package org.apache.lucene;
  */
 
 import java.io.IOException;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
@@ -65,11 +67,11 @@ import org.apache.lucene.queryParser.*;
 
 class SearchTestForDuplicates {
 
-  static final String PRIORITY_FIELD ="priority";
-  static final String ID_FIELD ="id";
-  static final String HIGH_PRIORITY ="high";
-  static final String MED_PRIORITY ="medium";
-  static final String LOW_PRIORITY ="low";
+  final static String PRIORITY_FIELD ="priority";
+  final static String ID_FIELD ="id";
+  final static String HIGH_PRIORITY ="high";
+  final static String MED_PRIORITY ="medium";
+  final static String LOW_PRIORITY ="low";
 
   public static void main(String[] args) {
     try {

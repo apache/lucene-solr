@@ -68,69 +68,62 @@ import java.util.Hashtable;
  * @author    Gerhard Schwarz
  * @version   $Id$
  */
-public final class GermanStemFilter extends TokenFilter
-{
-    /**
-     * The actual token in the input stream.
-     */
-    private Token token = null;
-    private GermanStemmer stemmer = null;
-    private Hashtable exclusions = null;
-    
-    public GermanStemFilter( TokenStream in )
-    {
-        super(in);
-	stemmer = new GermanStemmer();
-    }
-    
-    /**
-     * Builds a GermanStemFilter that uses an exclusiontable.
-     */
-    public GermanStemFilter( TokenStream in, Hashtable exclusiontable )
-    {
-	this( in );
-	exclusions = exclusiontable;
-    }
-    
-    /**
-     * @return  Returns the next token in the stream, or null at EOS
-     */
-    public final Token next()
-	throws IOException
-    {
-	if ( ( token = input.next() ) == null ) {
-	    return null;
-	}
-	// Check the exclusiontable
-	else if ( exclusions != null && exclusions.contains( token.termText() ) ) {
-	    return token;
-	}
-	else {
-	    String s = stemmer.stem( token.termText() );
-	    // If not stemmed, dont waste the time creating a new token
-	    if ( !s.equals( token.termText() ) ) {
-		return new Token( s, token.startOffset(),
-		    token.endOffset(), token.type() );
-	    }
-	    return token;
-	}
-    }
+public final class GermanStemFilter extends TokenFilter {
 
-    /**
-     * Set a alternative/custom GermanStemmer for this filter.
-     */
-    public void setStemmer( GermanStemmer stemmer )
-    {
-	if ( stemmer != null ) {
-	    this.stemmer = stemmer;
+	/**
+	 * The actual token in the input stream.
+	 */
+	private Token token = null;
+	private GermanStemmer stemmer = null;
+	private Hashtable exclusions = null;
+	
+	public GermanStemFilter( TokenStream in ) {
+		stemmer = new GermanStemmer();
+		input = in;
 	}
-    }
+	
+	/**
+	 * Builds a GermanStemFilter that uses an exclusiontable.
+	 */
+	public GermanStemFilter( TokenStream in, Hashtable exclusiontable ) {
+		this( in );
+		exclusions = exclusiontable;
+	}
 
-    /**
-     * Set an alternative exclusion list for this filter.
-     */
-    public void setExclusionTable( Hashtable exclusiontable )
-    {
-	exclusions = exclusiontable;
-    }
+	/**
+	 * @return  Returns the next token in the stream, or null at EOS
+	 */
+	public final Token next()
+		throws IOException {
+		if ( ( token = input.next() ) == null ) {
+			return null;
+		}
+		// Check the exclusiontable
+		else if ( exclusions != null && exclusions.contains( token.termText() ) ) {
+			return token;
+		}
+		else {
+			String s = stemmer.stem( token.termText() );
+			// If not stemmed, dont waste the time creating a new token
+			if ( !s.equals( token.termText() ) ) {
+				return new Token( s, token.startOffset(),
+				    token.endOffset(), token.type() );
+			}
+			return token;
+		}
+	}
+	/**
+	 * Set a alternative/custom GermanStemmer for this filter.
+	 */
+	public void setStemmer( GermanStemmer stemmer ) {
+		if ( stemmer != null ) {
+			this.stemmer = stemmer;
+		}
+	}
+	/**
+	 * Set an alternative exclusion list for this filter.
+	 */
+	public void setExclusionTable( Hashtable exclusiontable ) {
+		exclusions = exclusiontable;
+	}
 }

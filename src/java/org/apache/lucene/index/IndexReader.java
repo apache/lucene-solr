@@ -3,8 +3,8 @@ package org.apache.lucene.index;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.
- * All rights reserved.
+ * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -56,14 +56,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.File;
-import java.util.Collection;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;          // for javadoc
-import org.apache.lucene.search.Similarity;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
   index.  Search of an index is done entirely through this abstract interface,
@@ -76,23 +72,16 @@ import org.apache.lucene.search.Similarity;
   <i>document numbers</i>, non-negative integers which each name a unique
   document in the index.  These document numbers are ephemeral--they may change
   as documents are added to and deleted from an index.  Clients should thus not
-  rely on a given document having the same number between sessions.
+  rely on a given document having the same number between sessions. */
 
-  @author Doug Cutting
-  @version $Id$
-*/
-public abstract class IndexReader {
+abstract public class IndexReader {
   protected IndexReader(Directory directory) {
     this.directory = directory;
-    stale = false;
-    segmentInfos = null;
   }
 
-  private Directory directory;
+  Directory directory;
   private Lock writeLock;
-  SegmentInfos segmentInfos = null;
-  private boolean stale = false;
-  
+
   /** Returns an IndexReader reading the index in an FSDirectory in the named
   path. */
   public static IndexReader open(String path) throws IOException {
@@ -108,110 +97,35 @@ public abstract class IndexReader {
   /** Returns an IndexReader reading the index in the given Directory. */
   public static IndexReader open(final Directory directory) throws IOException{
     synchronized (directory) {			  // in- & inter-process sync
-      return (IndexReader)new Lock.With(
-          directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
-          IndexWriter.COMMIT_LOCK_TIMEOUT) {
-          public Object doBody() throws IOException {
-            SegmentInfos infos = new SegmentInfos();
-            infos.read(directory);
-            if (infos.size() == 1) {		  // index is optimized
-              return new SegmentReader(infos, infos.info(0), true);
-            } else {
-                SegmentReader[] readers = new SegmentReader[infos.size()];
-                for (int i = 0; i < infos.size(); i++)
-                  readers[i] = new SegmentReader(infos, infos.info(i), i==infos.size()-1);
-                return new SegmentsReader(infos, directory, readers);
-            }
-          }
-        }.run();
+      return (IndexReader)new Lock.With(directory.makeLock("commit.lock")) {
+	  public Object doBody() throws IOException {
+	    SegmentInfos infos = new SegmentInfos();
+	    infos.read(directory);
+	    if (infos.size() == 1)		  // index is optimized
+	      return new SegmentReader(infos.info(0), true);
+
+	    SegmentReader[] readers = new SegmentReader[infos.size()];
+	    for (int i = 0; i < infos.size(); i++)
+	      readers[i] = new SegmentReader(infos.info(i), i==infos.size()-1);
+	    return new SegmentsReader(directory, readers);
+	  }
+	}.run();
     }
   }
 
-  /** Returns the directory this index resides in. */
-  public Directory directory() { return directory; }
-
-  /** 
-   * Returns the time the index in the named directory was last modified. 
-   * 
-   * <p>Synchronization of IndexReader and IndexWriter instances is 
-   * no longer done via time stamps of the segments file since the time resolution 
-   * depends on the hardware platform. Instead, a version number is maintained
-   * within the segments file, which is incremented everytime when the index is
-   * changed.</p>
-   * 
-   * @deprecated  Replaced by {@link #getCurrentVersion(String)}
-   * */
+  /** Returns the time the index in the named directory was last modified. */
   public static long lastModified(String directory) throws IOException {
     return lastModified(new File(directory));
   }
 
-  /** 
-   * Returns the time the index in the named directory was last modified. 
-   * 
-   * <p>Synchronization of IndexReader and IndexWriter instances is 
-   * no longer done via time stamps of the segments file since the time resolution 
-   * depends on the hardware platform. Instead, a version number is maintained
-   * within the segments file, which is incremented everytime when the index is
-   * changed.</p>
-   * 
-   * @deprecated  Replaced by {@link #getCurrentVersion(File)}
-   * */
+  /** Returns the time the index in the named directory was last modified. */
   public static long lastModified(File directory) throws IOException {
     return FSDirectory.fileModified(directory, "segments");
   }
 
-  /** 
-   * Returns the time the index in the named directory was last modified. 
-   * 
-   * <p>Synchronization of IndexReader and IndexWriter instances is 
-   * no longer done via time stamps of the segments file since the time resolution 
-   * depends on the hardware platform. Instead, a version number is maintained
-   * within the segments file, which is incremented everytime when the index is
-   * changed.</p>
-   * 
-   * @deprecated  Replaced by {@link #getCurrentVersion(Directory)}
-   * */
+  /** Returns the time the index in this directory was last modified. */
   public static long lastModified(Directory directory) throws IOException {
     return directory.fileModified("segments");
-  }
-  
-  /**
-   * Reads version number from segments files. The version number counts the
-   * number of changes of the index.
-   * 
-   * @param directory where the index resides.
-   * @return version number.
-   * @throws IOException if segments file cannot be read
-   */
-  public static long getCurrentVersion(String directory) throws IOException {
-    return getCurrentVersion(new File(directory));
-  }
-  
-  /**
-   * Reads version number from segments files. The version number counts the
-   * number of changes of the index.
-   * 
-   * @param directory where the index resides.
-   * @return version number.
-   * @throws IOException if segments file cannot be read
-   */
-  public static long getCurrentVersion(File directory) throws IOException {
-    Directory dir = FSDirectory.getDirectory(directory, false);
-    long version = getCurrentVersion(dir);
-    dir.close();
-    return version;
-  }
-  
-  /**
-   * Reads version number from segments files. The version number counts the
-   * number of changes of the index.
-   * 
-   * @param directory where the index resides.
-   * @return version number.
-   * @throws IOException if segments file cannot be read.
-   */
-  public static long getCurrentVersion(Directory directory) throws IOException {
-    return SegmentInfos.readCurrentVersion(directory);
   }
 
   /**
@@ -247,69 +161,41 @@ public abstract class IndexReader {
   }
 
   /** Returns the number of documents in this index. */
-  public abstract int numDocs();
+  abstract public int numDocs();
 
   /** Returns one greater than the largest possible document number.
     This may be used to, e.g., determine how big to allocate an array which
     will have an element for every document number in an index.
    */
-  public abstract int maxDoc();
+  abstract public int maxDoc();
 
   /** Returns the stored fields of the <code>n</code><sup>th</sup>
       <code>Document</code> in this index. */
-  public abstract Document document(int n) throws IOException;
+  abstract public Document document(int n) throws IOException;
 
   /** Returns true if document <i>n</i> has been deleted */
-  public abstract boolean isDeleted(int n);
-
-  /** Returns true if any documents have been deleted */
-  public abstract boolean hasDeletions();
+  abstract public boolean isDeleted(int n);
 
   /** Returns the byte-encoded normalization factor for the named field of
-   * every document.  This is used by the search code to score documents.
-   *
-   * @see Field#setBoost(float)
-   */
-  public abstract byte[] norms(String field) throws IOException;
-
-  /** Expert: Resets the normalization factor for the named field of the named
-   * document.  The norm represents the product of the field's {@link
-   * Field#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
-   * int) length normalization}.  Thus, to preserve the length normalization
-   * values when resetting this, one should base the new value upon the old.
-   *
-   * @see #norms(String)
-   * @see Similarity#decodeNorm(byte)
-   */
-  public abstract void setNorm(int doc, String field, byte value)
-    throws IOException;
-
-  /** Expert: Resets the normalization factor for the named field of the named
-   * document.
-   *
-   * @see #norms(String)
-   * @see Similarity#decodeNorm(byte)
-   */
-  public void setNorm(int doc, String field, float value)
-    throws IOException {
-    setNorm(doc, field, Similarity.encodeNorm(value));
-  }
-
+    every document.  This is used by the search code to score documents.
+    @see org.apache.lucene.search.Similarity#norm
+    */
+  abstract public byte[] norms(String field) throws IOException;
 
   /** Returns an enumeration of all the terms in the index.
     The enumeration is ordered by Term.compareTo().  Each term
     is greater than all that precede it in the enumeration.
    */
-  public abstract TermEnum terms() throws IOException;
+  abstract public TermEnum terms() throws IOException;
 
   /** Returns an enumeration of all terms after a given term.
     The enumeration is ordered by Term.compareTo().  Each term
     is greater than all that precede it in the enumeration.
    */
-  public abstract TermEnum terms(Term t) throws IOException;
+  abstract public TermEnum terms(Term t) throws IOException;
 
   /** Returns the number of documents containing the term <code>t</code>. */
-  public abstract int docFreq(Term t) throws IOException;
+  abstract public int docFreq(Term t) throws IOException;
 
   /** Returns an enumeration of all the documents which contain
     <code>term</code>. For each document, the document number, the frequency of
@@ -319,8 +205,7 @@ public abstract class IndexReader {
     Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq&gt;<sup>*</sup>
     </ul>
     <p>The enumeration is ordered by document number.  Each document number
-    is greater than all that precede it in the enumeration.
-  */
+    is greater than all that precede it in the enumeration. */
   public TermDocs termDocs(Term term) throws IOException {
     TermDocs termDocs = termDocs();
     termDocs.seek(term);
@@ -328,7 +213,7 @@ public abstract class IndexReader {
   }
 
   /** Returns an unpositioned {@link TermDocs} enumerator. */
-  public abstract TermDocs termDocs() throws IOException;
+  abstract public TermDocs termDocs() throws IOException;
 
   /** Returns an enumeration of all the documents which contain
     <code>term</code>.  For each document, in addition to the document number
@@ -339,13 +224,12 @@ public abstract class IndexReader {
     <p><ul>
     Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq,
           &lt;pos<sub>1</sub>, pos<sub>2</sub>, ...
-          pos<sub>freq-1</sub>&gt;
-        &gt;<sup>*</sup>
+	  pos<sub>freq-1</sub>&gt;
+	&gt;<sup>*</sup>
     </ul>
     <p> This positional information faciliates phrase and proximity searching.
     <p>The enumeration is ordered by document number.  Each document number is
-    greater than all that precede it in the enumeration.
-  */
+    greater than all that precede it in the enumeration. */
   public TermPositions termPositions(Term term) throws IOException {
     TermPositions termPositions = termPositions();
     termPositions.seek(term);
@@ -353,65 +237,44 @@ public abstract class IndexReader {
   }
 
   /** Returns an unpositioned {@link TermPositions} enumerator. */
-  public abstract TermPositions termPositions() throws IOException;
+  abstract public TermPositions termPositions() throws IOException;
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
     deleted it will not appear in TermDocs or TermPostitions enumerations.
     Attempts to read its field with the {@link #document}
     method will result in an error.  The presence of this document may still be
     reflected in the {@link #docFreq} statistic, though
-    this will be corrected eventually as the index is further modified.
-  */
-  public final synchronized void delete(int docNum) throws IOException {
-    if(stale)
-      throw new IOException("IndexReader out of date and no longer valid for deletion");
-      
+    this will be corrected eventually as the index is further modified.  */
+  public synchronized final void delete(int docNum) throws IOException {
     if (writeLock == null) {
-      Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-      if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
+      Lock writeLock = directory.makeLock("write.lock");
+      if (!writeLock.obtain())			  // obtain write lock
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;
-
-      // we have to check whether index has changed since this reader was opened.
-      // if so, this reader is no longer valid for deletion
-      if(segmentInfos != null  && SegmentInfos.readCurrentVersion(directory) > segmentInfos.getVersion()){
-          stale = true;
-          this.writeLock.release();
-          this.writeLock = null;
-          throw new IOException("IndexReader out of date and no longer valid for deletion");
-      }
     }
     doDelete(docNum);
   }
-
-  /** Implements deletion of the document numbered <code>docNum</code>.
-   * Applications should call {@link #delete(int)} or {@link #delete(Term)}.
-   */
-  protected abstract void doDelete(int docNum) throws IOException;
+  abstract void doDelete(int docNum) throws IOException;
 
   /** Deletes all documents containing <code>term</code>.
     This is useful if one uses a document field to hold a unique ID string for
     the document.  Then to delete such a document, one merely constructs a
     term with the appropriate field and the unique ID string as its text and
-    passes it to this method.  Returns the number of documents deleted.
-  */
+    passes it to this method.  Returns the number of documents deleted. */
   public final int delete(Term term) throws IOException {
     TermDocs docs = termDocs(term);
     if ( docs == null ) return 0;
     int n = 0;
     try {
       while (docs.next()) {
-        delete(docs.doc());
-        n++;
+	delete(docs.doc());
+	n++;
       }
     } finally {
       docs.close();
     }
     return n;
   }
-
-  /** Undeletes all documents currently marked as deleted in this index.*/
-  public abstract void undeleteAll() throws IOException;
 
   /**
    * Closes files associated with this index.
@@ -427,7 +290,7 @@ public abstract class IndexReader {
   }
 
   /** Implements close. */
-  protected abstract void doClose() throws IOException;
+  abstract void doClose() throws IOException;
 
   /** Release the write lock, if needed. */
   protected final void finalize() throws IOException {
@@ -438,35 +301,13 @@ public abstract class IndexReader {
   }
 
   /**
-   * Returns a list of all unique field names that exist in the index pointed to by
-   * this IndexReader.
-   * @return Collection of Strings indicating the names of the fields
-   * @throws IOException if there is a problem with accessing the index
-   */
-  public abstract Collection getFieldNames() throws IOException;
-
-  /**
-   * Returns a list of all unique field names that exist in the index pointed to by
-   * this IndexReader.  The boolean argument specifies whether the fields returned
-   * are indexed or not.
-   * @param indexed <code>true</code> if only indexed fields should be returned;
-   *                <code>false</code> if only unindexed fields should be returned.
-   * @return Collection of Strings indicating the names of the fields
-   * @throws IOException if there is a problem with accessing the index
-   */
-   public abstract Collection getFieldNames(boolean indexed) throws IOException;
-
-  /**
    * Returns <code>true</code> iff the index in the named directory is
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a problem with accessing the index
    */
     public static boolean isLocked(Directory directory) throws IOException {
-      return
-        directory.makeLock(IndexWriter.WRITE_LOCK_NAME).isLocked() ||
-        directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).isLocked();
-
+	return directory.fileExists("write.lock");
     }
 
   /**
@@ -476,7 +317,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
     public static boolean isLocked(String directory) throws IOException {
-      return isLocked(FSDirectory.getDirectory(directory, false));
+	return (new File(directory, "write.lock")).exists();
     }
 
    /**
@@ -487,7 +328,7 @@ public abstract class IndexReader {
     * currently accessing this index.
     */
     public static void unlock(Directory directory) throws IOException {
-      directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
-      directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).release();
+	directory.deleteFile("write.lock");
+	directory.deleteFile("commit.lock");
     }
 }

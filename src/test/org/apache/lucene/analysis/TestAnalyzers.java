@@ -59,6 +59,7 @@ import junit.framework.*;
 
 import org.apache.lucene.*;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Token;
 
 public class TestAnalyzers extends TestCase {
 

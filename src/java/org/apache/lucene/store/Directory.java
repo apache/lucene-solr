@@ -56,65 +56,64 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-/** A Directory is a flat list of files.  Files may be written once, when they
- * are created.  Once a file is created it may only be opened for read, or
- * deleted.  Random access is permitted both when reading and writing.
- *
- * <p> Java's i/o APIs not used directly, but rather all i/o is
- * through this API.  This permits things such as: <ul>
- * <li> implementation of RAM-based indices;
- * <li> implementation indices stored in a database, via JDBC;
- * <li> implementation of an index as a single file;
- * </ul>
- *
- * @author Doug Cutting
- */
-public abstract class Directory {
-  /** Returns an array of strings, one for each file in the directory. */
-  public abstract String[] list()
-       throws IOException;
+/*
+  Java's filesystem API is not used directly, but rather through these
+  classes.  This permits:
+    . implementation of RAM-based indices, useful for summarization, etc.;
+    . implementation of an index as a single file.
 
+*/
+
+/**
+  A Directory is a flat list of files.  Files may be written once,
+  when they are created.  Once a file is created it may only be opened for
+  read, or deleted.  Random access is permitted when reading and writing.
+
+    @author Doug Cutting
+*/
+
+abstract public class Directory {
+  /** Returns an array of strings, one for each file in the directory. */
+  abstract public String[] list()
+       throws IOException, SecurityException;
+       
   /** Returns true iff a file with the given name exists. */
-  public abstract boolean fileExists(String name)
-       throws IOException;
+  abstract public boolean fileExists(String name)
+       throws IOException, SecurityException;
 
   /** Returns the time the named file was last modified. */
-  public abstract long fileModified(String name)
-       throws IOException;
-
-  /** Set the modified time of an existing file to now. */
-  public abstract void touchFile(String name)
-       throws IOException;
+  abstract public long fileModified(String name)
+       throws IOException, SecurityException;
 
   /** Removes an existing file in the directory. */
-  public abstract void deleteFile(String name)
-       throws IOException;
+  abstract public void deleteFile(String name)
+       throws IOException, SecurityException;
 
   /** Renames an existing file in the directory.
     If a file already exists with the new name, then it is replaced.
     This replacement should be atomic. */
-  public abstract void renameFile(String from, String to)
-       throws IOException;
+  abstract public void renameFile(String from, String to)
+       throws IOException, SecurityException;
 
   /** Returns the length of a file in the directory. */
-  public abstract long fileLength(String name)
-       throws IOException;
+  abstract public long fileLength(String name)
+       throws IOException, SecurityException;
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public abstract OutputStream createFile(String name)
-       throws IOException;
+  abstract public OutputStream createFile(String name)
+       throws IOException, SecurityException;
 
   /** Returns a stream reading an existing file. */
-  public abstract InputStream openFile(String name)
-       throws IOException;
+  abstract public InputStream openFile(String name)
+       throws IOException, SecurityException;
 
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
    */
-  public abstract Lock makeLock(String name);
+  abstract public Lock makeLock(String name);
 
   /** Closes the store. */
-  public abstract void close()
-       throws IOException;
+  abstract public void close()
+       throws IOException, SecurityException;
 }

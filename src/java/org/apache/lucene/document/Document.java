@@ -55,10 +55,6 @@ package org.apache.lucene.document;
  */
 
 import java.util.Enumeration;
-import java.util.List;
-import java.util.ArrayList;
-import org.apache.lucene.index.IndexReader;       // for javadoc
-import org.apache.lucene.search.Hits;             // for javadoc
 
 /** Documents are the unit of indexing and search.
  *
@@ -68,41 +64,11 @@ import org.apache.lucene.search.Hits;             // for javadoc
  * stored fields which uniquely identify it.
  * */
 
-public final class Document implements java.io.Serializable {
+public final class Document {
   DocumentFieldList fieldList = null;
-  private float boost = 1.0f;
 
   /** Constructs a new document with no fields. */
   public Document() {}
-
-
-  /** Sets a boost factor for hits on any field of this document.  This value
-   * will be multiplied into the score of all hits on this document.
-   *
-   * <p>Values are multiplied into the value of {@link Field#getBoost()} of
-   * each field in this document.  Thus, this method in effect sets a default
-   * boost for the fields of this document.
-   *
-   * @see Field#setBoost(float)
-   */
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
-
-  /** Returns the boost factor for hits on any field of this document.
-   *
-   * <p>The default value is 1.0.
-   *
-   * <p>Note: This value is not stored directly with the document in the index.
-   * Documents returned from {@link IndexReader#document(int)} and
-   * {@link Hits#doc(int)} may thus not have the same value present as when
-   * this document was indexed.
-   *
-   * @see #setBoost(float)
-   */
-  public float getBoost() {
-    return boost;
-  }
 
   /** Adds a field to a document.  Several fields may be added with
    * the same name.  In this case, if the fields are indexed, their text is
@@ -112,8 +78,8 @@ public final class Document implements java.io.Serializable {
   }
 
   /** Returns a field with the given name if any exist in this document, or
-    null.  If multiple fields exists with this name, this method returns the
-    last field value added. */
+    null.  If multiple fields may exist with this name, this method returns the
+    last added such added. */
   public final Field getField(String name) {
     for (DocumentFieldList list = fieldList; list != null; list = list.next)
       if (list.field.name().equals(name))
@@ -122,8 +88,8 @@ public final class Document implements java.io.Serializable {
   }
 
   /** Returns the string value of the field with the given name if any exist in
-    this document, or null.  If multiple fields exist with this name, this
-    method returns the last value added. */
+    this document, or null.  If multiple fields may exist with this name, this
+    method returns the last added such added. */
   public final String get(String name) {
     Field field = getField(name);
     if (field != null)
@@ -135,48 +101,6 @@ public final class Document implements java.io.Serializable {
   /** Returns an Enumeration of all the fields in a document. */
   public final Enumeration fields() {
     return new DocumentFieldEnumeration(this);
-  }
-
-  /**
-   * Returns an array of {@link Field}s with the given name.
-   * This method can return <code>null</code>.
-   *
-   * @param name the name of the field
-   * @return a <code>Field[]</code> array
-   */
-   public final Field[] getFields(String name) {
-     List tempFieldList = new ArrayList();
-     for (DocumentFieldList list = fieldList; list != null; list = list.next) {
-       if (list.field.name().equals(name)) {
-         tempFieldList.add(list.field);
-       }
-     }
-     int fieldCount = tempFieldList.size();
-     if (fieldCount == 0) {
-       return null;
-     }
-     else {
-       return (Field[])tempFieldList.toArray(new Field[] {});
-     }
-   }
-
-  /**
-   * Returns an array of values of the field specified as the method parameter.
-   * This method can return <code>null</code>.
-   * UnStored fields' values cannot be returned by this method.
-   *
-   * @param name the name of the field
-   * @return a <code>String[]</code> of field values
-   */
-  public final String[] getValues(String name) {
-    Field[] namedFields = getFields(name);
-    if (namedFields == null)
-      return null;
-    String[] values = new String[namedFields.length];
-    for (int i = 0; i < namedFields.length; i++) {
-      values[i] = namedFields[i].stringValue();
-    }
-    return values;
   }
 
   /** Prints the fields of a document for human consumption. */
@@ -191,9 +115,10 @@ public final class Document implements java.io.Serializable {
     buffer.append(">");
     return buffer.toString();
   }
+
 }
 
-final class DocumentFieldList implements java.io.Serializable {
+final class DocumentFieldList {
   DocumentFieldList(Field f, DocumentFieldList n) {
     field = f;
     next = n;

@@ -62,22 +62,24 @@ package org.apache.lucene.analysis.de;
  * @author    Gerhard Schwarz
  * @version   $Id$
  */
-public class GermanStemmer
-{
+
+public class GermanStemmer {
+
     /**
      * Buffer for the terms while stemming them.
      */
     private StringBuffer sb = new StringBuffer();
-
     /**
      * Indicates if a term is handled as a noun.
      */
     private boolean uppercase = false;
-
     /**
      * Amount of characters that are removed with <tt>substitute()</tt> while stemming.
      */
     private int substCount = 0;
+
+    public GermanStemmer() {
+    }
 
     /**
      * Stemms the given term to an unique <tt>discriminator</tt>.
@@ -85,113 +87,110 @@ public class GermanStemmer
      * @param term  The term that should be stemmed.
      * @return      Discriminator for <tt>term</tt>
      */
-    protected String stem( String term )
-    {
+    protected String stem( String term ) {
+	if ( !isStemmable( term ) ) {
+	    return term;
+	}
 	// Mark a possible noun.
-	uppercase = Character.isUpperCase( term.charAt( 0 ) );
+	if ( Character.isUpperCase( term.charAt( 0 ) ) ) {
+	    uppercase = true;
+	}
+	else {
+	    uppercase = false;
+	}
 	// Use lowercase for medium stemming.
 	term = term.toLowerCase();
-	if ( !isStemmable( term ) )
-	    return term;
 	// Reset the StringBuffer.
 	sb.delete( 0, sb.length() );
 	sb.insert( 0, term );
-	// Stemming starts here...
-	substitute( sb );
-	strip( sb );
-	optimize( sb );
-	resubstitute( sb );
-	removeParticleDenotion( sb );
+	sb = substitute( sb );
+	// Nouns have only seven possible suffixes.
+	if ( uppercase && sb.length() > 3 ) {
+	    if ( sb.substring( sb.length() - 3, sb.length() ).equals( "ern" ) ) {
+		sb.delete( sb.length() - 3, sb.length() );
+	    }
+	    else if ( sb.substring( sb.length() - 2, sb.length() ).equals( "en" ) ) {
+		sb.delete( sb.length() - 2, sb.length() );
+	    }
+	    else if ( sb.substring( sb.length() - 2, sb.length() ).equals( "er" ) ) {
+		sb.delete( sb.length() - 2, sb.length() );
+	    }
+	    else if ( sb.substring( sb.length() - 2, sb.length() ).equals( "es" ) ) {
+		sb.delete( sb.length() - 2, sb.length() );
+	    }
+	    else if ( sb.charAt( sb.length() - 1 ) == 'e' ) {
+		sb.deleteCharAt( sb.length() - 1 );
+	    }
+	    else if ( sb.charAt( sb.length() - 1 ) == 'n' ) {
+		sb.deleteCharAt( sb.length() - 1 );
+	    }
+	    else if ( sb.charAt( sb.length() - 1 ) == 's' ) {
+		sb.deleteCharAt( sb.length() - 1 );
+	    }
+	    // Additional step for female plurals of professions and inhabitants.
+	    if ( sb.length() > 5 && sb.substring( sb.length() - 3, sb.length() ).equals( "erin*" ) ) {
+		sb.deleteCharAt( sb.length() -1 );
+	    }
+	    // Additional step for irregular plural nouns like "Matrizen -> Matrix".
+	    if ( sb.charAt( sb.length() - 1 ) == ( 'z' ) ) {
+		sb.setCharAt( sb.length() - 1, 'x' );
+	    }
+	}
+	// Strip the 7 "base" suffixes: "e", "s", "n", "t", "em", "er", "nd" from all
+	// other terms. Adjectives, Verbs and Adverbs have a total of 52 different
+	// possible suffixes, stripping only the characters from they are build
+	// does mostly the same
+	else {
+	    // Strip base suffixes as long as enough characters remain.
+	    boolean doMore = true;
+	    while ( sb.length() > 3 && doMore ) {
+		if ( ( sb.length() + substCount > 5 ) && sb.substring( sb.length() - 2, sb.length() ).equals( "nd" ) ) {
+		    sb.delete( sb.length() - 2, sb.length() );
+		}
+		else if ( ( sb.length() + substCount > 4 ) && sb.substring( sb.length() - 2, sb.length() ).equals( "er" ) ) {
+		    sb.delete( sb.length() - 2, sb.length() );
+		}
+		else if ( ( sb.length() + substCount > 4 ) && sb.substring( sb.length() - 2, sb.length() ).equals( "em" ) ) {
+		    sb.delete( sb.length() - 2, sb.length() );
+		}
+		else if ( sb.charAt( sb.length() - 1 ) == 't' ) {
+		    sb.deleteCharAt( sb.length() - 1 );
+		}
+		else if ( sb.charAt( sb.length() - 1 ) == 'n' ) {
+		    sb.deleteCharAt( sb.length() - 1 );
+		}
+		else if ( sb.charAt( sb.length() - 1 ) == 's' ) {
+		    sb.deleteCharAt( sb.length() - 1 );
+		}
+		else if ( sb.charAt( sb.length() - 1 ) == 'e' ) {
+		    sb.deleteCharAt( sb.length() - 1 );
+		}
+		else {
+		    doMore = false;
+		}
+	    }
+	}
+	sb = resubstitute( sb );
+	if ( !uppercase ) {
+	    sb = removeParticleDenotion( sb );
+	}
 	return sb.toString();
     }
 
     /**
-     * Checks if a term could be stemmed.
+     * Removes a particle denotion ("ge") from a term, but only if at least 3
+     * characters will remain.
      *
-     * @return  true if, and only if, the given term consists in letters.
+     * @return  The term without particle denotion, if there was one.
      */
-    private boolean isStemmable( String term )
-    {
-	for ( int c = 0; c < term.length(); c++ ) {
-	    if ( !Character.isLetter( term.charAt( c ) ) ) return false;
-	}
-	return true;
-    }
-
-    /**
-     * suffix stripping (stemming) on the current term. The stripping is reduced
-     * to the seven "base" suffixes "e", "s", "n", "t", "em", "er" and * "nd",
-     * from which all regular suffixes are build of. The simplification causes
-     * some overstemming, and way more irregular stems, but still provides unique.
-     * discriminators in the most of those cases.
-     * The algorithm is context free, except of the length restrictions.
-     */
-    private void strip( StringBuffer buffer )
-    {
-	boolean doMore = true;
-	while ( doMore && buffer.length() > 3 ) {
-	    if ( ( buffer.length() + substCount > 5 ) &&
-		buffer.substring( buffer.length() - 2, buffer.length() ).equals( "nd" ) )
-	    {
-		buffer.delete( buffer.length() - 2, buffer.length() );
-	    }
-	    else if ( ( buffer.length() + substCount > 4 ) &&
-		buffer.substring( buffer.length() - 2, buffer.length() ).equals( "em" ) ) {
-		buffer.delete( buffer.length() - 2, buffer.length() );
-	    }
-	    else if ( ( buffer.length() + substCount > 4 ) &&
-		buffer.substring( buffer.length() - 2, buffer.length() ).equals( "er" ) ) {
-		buffer.delete( buffer.length() - 2, buffer.length() );
-	    }
-	    else if ( buffer.charAt( buffer.length() - 1 ) == 'e' ) {
-		buffer.deleteCharAt( buffer.length() - 1 );
-	    }
-	    else if ( buffer.charAt( buffer.length() - 1 ) == 's' ) {
-		buffer.deleteCharAt( buffer.length() - 1 );
-	    }
-	    else if ( buffer.charAt( buffer.length() - 1 ) == 'n' ) {
-		buffer.deleteCharAt( buffer.length() - 1 );
-	    }
-	    // "t" occurs only as suffix of verbs.
-	    else if ( buffer.charAt( buffer.length() - 1 ) == 't' && !uppercase ) {
-		buffer.deleteCharAt( buffer.length() - 1 );
-	    }
-	    else {
-		doMore = false;
+    private StringBuffer removeParticleDenotion( StringBuffer buffer ) {
+	for ( int c = 0; c < buffer.length(); c++ ) {
+	    // Strip from the beginning of the string to the "ge" inclusive
+	    if ( c < ( buffer.length() - 4 ) && buffer.charAt( c ) == 'g' && buffer.charAt ( c + 1 ) == 'e' ) {
+		buffer.delete( 0, c + 2 );
 	    }
 	}
-    }
-
-    /**
-     * Does some optimizations on the term. This optimisations are
-     * contextual.
-     */
-    private void optimize( StringBuffer buffer )
-    {
-	// Additional step for female plurals of professions and inhabitants.
-	if ( buffer.length() > 5 && buffer.substring( buffer.length() - 5, buffer.length() ).equals( "erin*" ) ) {
-	    buffer.deleteCharAt( buffer.length() -1 );
-	    strip( buffer );
-	}
-	// Additional step for irregular plural nouns like "Matrizen -> Matrix".
-	if ( buffer.charAt( buffer.length() - 1 ) == ( 'z' ) ) {
-	    buffer.setCharAt( buffer.length() - 1, 'x' );
-	}
-    }
-
-    /**
-     * Removes a particle denotion ("ge") from a term.
-     */
-    private void removeParticleDenotion( StringBuffer buffer )
-    {
-	if ( buffer.length() > 4 ) {
-	    for ( int c = 0; c < buffer.length() - 3; c++ ) {
-		if ( buffer.substring( c, c + 4 ).equals( "gege" ) ) {
-		    buffer.delete( c, c + 2 );
-		    return;
-		}
-	    }
-	}
+	return sb;
     }
 
     /**
@@ -199,13 +198,14 @@ public class GermanStemmer
      *
      * - Substitute Umlauts with their corresponding vowel: äöü -> aou,
      *   "ß" is substituted by "ss"
-     * - Substitute a second char of a pair of equal characters with
+     * - Substitute a second char of an pair of equal characters with
      *   an asterisk: ?? -> ?*
      * - Substitute some common character combinations with a token:
      *   sch/ch/ei/ie/ig/st -> $/§/%/&/#/!
+     *
+     * @return  The term with all needed substitutions.
      */
-    private void substitute( StringBuffer buffer )
-    {
+    private StringBuffer substitute( StringBuffer buffer ) {
 	substCount = 0;
 	for ( int c = 0; c < buffer.length(); c++ ) {
 	    // Replace the second char of a pair of the equal characters with an asterisk
@@ -230,9 +230,7 @@ public class GermanStemmer
 		    substCount++;
 		}
 		// Masking several common character combinations with an token
-		else if ( ( c < buffer.length() - 2 ) && buffer.charAt( c ) == 's' &&
-		    buffer.charAt( c + 1 ) == 'c' && buffer.charAt( c + 2 ) == 'h' )
-		{
+		else if ( ( c < buffer.length() - 2 ) && buffer.charAt( c ) == 's' && buffer.charAt( c + 1 ) == 'c' && buffer.charAt( c + 2 ) == 'h' ) {
 		    buffer.setCharAt( c, '$' );
 		    buffer.delete( c + 1, c + 3 );
 		    substCount =+ 2;
@@ -264,15 +262,50 @@ public class GermanStemmer
 		}
 	    }
 	}
+	return buffer;
     }
 
+    /**
+     * Checks a term if it can be processed correctly.
+     *
+     * @return  true if, and only if, the given term consists in letters.
+     */
+    private boolean isStemmable( String term ) {
+	boolean upper = false;
+	int first = -1;
+	for ( int c = 0; c < term.length(); c++ ) {
+	    // Discard terms that contain non-letter characters.
+	    if ( !Character.isLetter( term.charAt( c ) ) ) {
+		return false;
+	    }
+	    // Discard terms that contain multiple uppercase letters.
+	    if ( Character.isUpperCase( term.charAt( c ) ) ) {
+		if ( upper ) {
+		    return false;
+		}
+		// First encountered uppercase letter, set flag and save
+		// position.
+		else {
+		    first = c;
+		    upper = true;
+		}
+	    }
+	}
+	// Discard the term if it contains a single uppercase letter that
+	// is not starting the term.
+	if ( first > 0 ) {
+	    return false;
+	}
+	return true;
+    }
     /**
      * Undoes the changes made by substitute(). That are character pairs and
      * character combinations. Umlauts will remain as their corresponding vowel,
      * as "ß" remains as "ss".
+     *
+     * @return  The term without the not human readable substitutions.
      */
-    private void resubstitute( StringBuffer buffer )
-    {
+    private StringBuffer resubstitute( StringBuffer buffer ) {
 	for ( int c = 0; c < buffer.length(); c++ ) {
 	    if ( buffer.charAt( c ) == '*' ) {
 		char x = buffer.charAt( c - 1 );
@@ -303,5 +336,6 @@ public class GermanStemmer
 		buffer.insert( c + 1, 't' );
 	    }
 	}
+	return buffer;
     }
 }

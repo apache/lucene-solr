@@ -74,8 +74,6 @@ public final class Token {
   int endOffset;				  // end in source text
   String type = "word";				  // lexical type
 
-  private int positionIncrement = 1;
-
   /** Constructs a Token with the given term text, and start & end offsets.
       The type defaults to "word." */
   public Token(String text, int start, int end) {
@@ -91,43 +89,6 @@ public final class Token {
     endOffset = end;
     type = typ;
   }
-
-  /** Set the position increment.  This determines the position of this token
-   * relative to the previous Token in a {@link TokenStream}, used in phrase
-   * searching.
-   *
-   * <p>The default value is one.
-   *
-   * <p>Some common uses for this are:<ul>
-   *
-   * <li>Set it to zero to put multiple terms in the same position.  This is
-   * useful if, e.g., a word has multiple stems.  Searches for phrases
-   * including either stem will match.  In this case, all but the first stem's
-   * increment should be set to zero: the increment of the first instance
-   * should be one.  Repeating a token with an increment of zero can also be
-   * used to boost the scores of matches on that token.
-   *
-   * <li>Set it to values greater than one to inhibit exact phrase matches.
-   * If, for example, one does not want phrases to match across removed stop
-   * words, then one could build a stop word filter that removes stop words and
-   * also sets the increment to the number of stop words removed before each
-   * non-stop word.  Then exact phrase queries will only match when the terms
-   * occur with no intervening stop words.
-   *
-   * </ul>
-   * @see org.apache.lucene.index.TermPositions
-   */
-  public void setPositionIncrement(int positionIncrement) {
-    if (positionIncrement < 0)
-      throw new IllegalArgumentException
-        ("Increment must be zero or greater: " + positionIncrement);
-    this.positionIncrement = positionIncrement;
-  }
-
-  /** Returns the position increment of this Token.
-   * @see #setPositionIncrement
-   */
-  public int getPositionIncrement() { return positionIncrement; }
 
   /** Returns the Token's term text. */
   public final String termText() { return termText; }

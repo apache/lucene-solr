@@ -55,14 +55,15 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Vector;
 import org.apache.lucene.util.*;
 import org.apache.lucene.index.*;
 
 final class ExactPhraseScorer extends PhraseScorer {
 
-  ExactPhraseScorer(Weight weight, TermPositions[] tps, Similarity similarity,
-                    byte[] norms) throws IOException {
-    super(weight, tps, similarity, norms);
+  ExactPhraseScorer(TermPositions[] tps, byte[] n, float w)
+       throws IOException {
+    super(tps, n, w);
   }
 
   protected final float phraseFreq() throws IOException {

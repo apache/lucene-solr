@@ -22,10 +22,11 @@ several information retrieval <a
 href="http://lucene.sourceforge.net/publications.html">papers and
 patents</a>.</p>
 
-<p>Recently Doug has worked on peer-to-peer search at Infrasearch
-(aquired by Sun's JXTA project) and on web services at Grand Central.
-Currently he continues to help develop Lucene and is available for
-contract work.</p>
+<p>Doug currently works for <a href="http://www.grandcentral.com/">Grand
+Central</a>.</p>
+
+<p>Please do not email Doug directly about Lucene. Instead use
+the <a href="http://jakarta.apache.org/site/mail.html">Jakarta-Lucene mailing lists</a>.</p>
 
 </li>
 <li><b>Otis Gospodnetic</b> (otis at apache.org)</li>
@@ -39,9 +40,6 @@ contract work.</p>
 <li><b>Tal Dayan</b> (zapta at apache.org)</li>
 <li><a href="http://www.trilug.org/~acoliver">Andrew C. Oliver</a> (acoliver at apache dot org)</li>
 <li><b>Peter Carlson</b> (carlson at apache.org)</li>
-<li><b>Erik Hatcher</b> (ehatcher at apache.org)</li>
-<li><b>Dmitry Serebrennikov</b> (dmitrys at apache.org)</li>
-<li><b>Christoph Goller</b> (goller at apache.org)</li>
 </ul>
 </section>
 
@@ -54,3 +52,4 @@ contract work.</p>
 
 </body>
 </document>
+

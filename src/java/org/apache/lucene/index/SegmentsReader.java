@@ -3,8 +3,8 @@ package org.apache.lucene.index;
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
- * Copyright (c) 2001, 2002, 2003 The Apache Software Foundation.
- * All rights reserved.
+ * Copyright (c) 2001 The Apache Software Foundation.  All rights
+ * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,45 +55,30 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Set;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.document.Document;
 
-/**
- * FIXME: Describe class <code>SegmentsReader</code> here.
- *
- * @version $Id$
- */
-final class SegmentsReader extends IndexReader
-{
+final class SegmentsReader extends IndexReader {
   protected SegmentReader[] readers;
   protected int[] starts;			  // 1st docno for each segment
   private Hashtable normsCache = new Hashtable();
   private int maxDoc = 0;
   private int numDocs = -1;
-  private boolean hasDeletions = false;
-  
-  SegmentsReader(SegmentInfos sis, Directory directory, SegmentReader[] r) throws IOException {
+
+  SegmentsReader(Directory directory, SegmentReader[] r) throws IOException {
     super(directory);
-    segmentInfos = sis;
     readers = r;
     starts = new int[readers.length + 1];	  // build starts array
     for (int i = 0; i < readers.length; i++) {
       starts[i] = maxDoc;
       maxDoc += readers[i].maxDoc();		  // compute maxDocs
-
-      if (readers[i].hasDeletions())
-        hasDeletions = true;
     }
     starts[readers.length] = maxDoc;
   }
 
-  public final synchronized int numDocs() {
+  public synchronized final int numDocs() {
     if (numDocs == -1) {			  // check cache
       int n = 0;				  // cache miss--recompute
       for (int i = 0; i < readers.length; i++)
@@ -117,25 +102,16 @@ final class SegmentsReader extends IndexReader
     return readers[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
   }
 
-  public boolean hasDeletions() { return hasDeletions; }
-
-  protected final synchronized void doDelete(int n) throws IOException {
+  synchronized final void doDelete(int n) throws IOException {
     numDocs = -1;				  // invalidate cache
     int i = readerIndex(n);			  // find segment num
     readers[i].doDelete(n - starts[i]);		  // dispatch to segment reader
-    hasDeletions = true;
-  }
-
-  public void undeleteAll() throws IOException {
-    for (int i = 0; i < readers.length; i++)
-      readers[i].undeleteAll();
-    hasDeletions = false;
   }
 
   private final int readerIndex(int n) {	  // find reader for doc n:
     int lo = 0;					  // search starts array
-    int hi = readers.length - 1;                  // for first element less
-
+    int hi = readers.length - 1;		  // for first element less
+						  // than n, return its index
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
       int midValue = starts[mid];
@@ -143,12 +119,8 @@ final class SegmentsReader extends IndexReader
 	hi = mid - 1;
       else if (n > midValue)
 	lo = mid + 1;
-      else {                                      // found a match
-        while (mid+1 < readers.length && starts[mid+1] == midValue) {
-          mid++;                                  // scan to last match
-        }
+      else
 	return mid;
-      }
     }
     return hi;
   }
@@ -163,13 +135,6 @@ final class SegmentsReader extends IndexReader
       readers[i].norms(field, bytes, starts[i]);
     normsCache.put(field, bytes);		  // update cache
     return bytes;
-  }
-
-  public synchronized void setNorm(int n, String field, byte value)
-    throws IOException {
-    normsCache.remove(field);                     // clear cache
-    int i = readerIndex(n);			  // find segment num
-    readers[i].setNorm(n-starts[i], field, value); // dispatch
   }
 
   public final TermEnum terms() throws IOException {
@@ -195,41 +160,9 @@ final class SegmentsReader extends IndexReader
     return new SegmentsTermPositions(readers, starts);
   }
 
-  protected final synchronized void doClose() throws IOException {
+  final synchronized void doClose() throws IOException {
     for (int i = 0; i < readers.length; i++)
       readers[i].close();
-  }
-
-  /**
-   * @see IndexReader#getFieldNames()
-   */
-  public Collection getFieldNames() throws IOException {
-    // maintain a unique set of field names
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.length; i++) {
-        SegmentReader reader = readers[i];
-        Collection names = reader.getFieldNames();
-        // iterate through the field names and add them to the set
-        for (Iterator iterator = names.iterator(); iterator.hasNext();) {
-            String s = (String) iterator.next();
-            fieldSet.add(s);
-        }
-    }
-    return fieldSet;
-  }
-
-  /**
-   * @see IndexReader#getFieldNames(boolean)
-   */
-  public Collection getFieldNames(boolean indexed) throws IOException {
-    // maintain a unique set of field names
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.length; i++) {
-        SegmentReader reader = readers[i];
-        Collection names = reader.getFieldNames(indexed);
-        fieldSet.addAll(names);
-    }
-    return fieldSet;
   }
 }
 
@@ -250,7 +183,7 @@ class SegmentsTermEnum extends TermEnum {
 	termEnum = (SegmentTermEnum)reader.terms(t);
       } else
 	termEnum = (SegmentTermEnum)reader.terms();
-
+      
       SegmentMergeInfo smi = new SegmentMergeInfo(starts[i], termEnum, reader);
       if (t == null ? smi.next() : termEnum.term() != null)
 	queue.put(smi);				  // initialize queue
@@ -259,7 +192,9 @@ class SegmentsTermEnum extends TermEnum {
     }
 
     if (t != null && queue.size() > 0) {
-      next();
+      SegmentMergeInfo top = (SegmentMergeInfo)queue.top();
+      term = top.termEnum.term();
+      docFreq = top.termEnum.docFreq();
     }
   }
 
@@ -269,10 +204,10 @@ class SegmentsTermEnum extends TermEnum {
       term = null;
       return false;
     }
-
+      
     term = top.term;
     docFreq = 0;
-
+    
     while (top != null && term.compareTo(top.term) == 0) {
       queue.pop();
       docFreq += top.termEnum.docFreq();	  // increment freq
@@ -308,7 +243,7 @@ class SegmentsTermDocs implements TermDocs {
 
   private SegmentTermDocs[] segTermDocs;
   protected SegmentTermDocs current;              // == segTermDocs[pointer]
-
+  
   SegmentsTermDocs(SegmentReader[] r, int[] s) {
     readers = r;
     starts = s;
@@ -328,10 +263,6 @@ class SegmentsTermDocs implements TermDocs {
     this.base = 0;
     this.pointer = 0;
     this.current = null;
-  }
-
-  public void seek(TermEnum termEnum) throws IOException {
-    seek(termEnum.term());
   }
 
   public final boolean next() throws IOException {
@@ -414,5 +345,4 @@ class SegmentsTermPositions extends SegmentsTermDocs implements TermPositions {
   public final int nextPosition() throws IOException {
     return ((SegmentTermPositions)current).nextPosition();
   }
-
 }

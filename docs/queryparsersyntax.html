@@ -5,7 +5,6 @@
         
 <!-- start the processing -->
     <!-- ====================================================================== -->
-    <!-- GENERATED FILE, DO NOT EDIT, EDIT THE XML FILE IN xdocs INSTEAD! -->
     <!-- Main Page Section -->
     <!-- ====================================================================== -->
     <html>
@@ -17,9 +16,8 @@
             
            
                                     
-                        
             <title>Jakarta Lucene - 
-            Query Parser Syntax - Jakarta Lucene
+            Query Parser Syntax - Jakarta Lucene 
         </title>
         </head>
 
@@ -43,10 +41,7 @@
                 <tr>
                     <!-- LEFT SIDE NAVIGATION -->
                     <td width="20%" valign="top" nowrap="true">
-                    
-    <!-- ============================================================ -->
-
-                <p><strong>About</strong></p>
+                                <p><strong>About</strong></p>
         <ul>
                     <li>    <a href="./index.html">Overview</a>
 </li>
@@ -61,33 +56,26 @@
         <ul>
                     <li>    <a href="http://lucene.sourceforge.net/cgi-bin/faq/faqmanager.cgi">FAQ (Official)</a>
 </li>
-                    <li>    <a href="http://www.jguru.com/faq/Lucene">jGuru FAQ</a>
-</li>
                     <li>    <a href="./gettingstarted.html">Getting Started</a>
 </li>
-                    <li>    <a href="./queryparsersyntax.html">Query Syntax</a>
-</li>
-                    <li>    <a href="./fileformats.html">File Formats</a>
-</li>
-                    <li>    <a href="./api/index.html">Javadoc</a>
-</li>
-                    <li>    <a href="./contributions.html">Contributions</a>
-</li>
-                    <li>    <a href="./resources.html">Articles, etc.</a>
-</li>
-                    <li>    <a href="./benchmarks.html">Benchmarks</a>
-</li>
-                    <li>    <a href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&bugidtype=include&bug_id=&changedin=&votes=&chfieldfrom=&chfieldto=Now&chfieldvalue=&product=Lucene&short_desc=%5BPATCH%5D&short_desc_type=allwordssubstr&long_desc=&long_desc_type=allwordssubstr&bug_file_loc=&bug_file_loc_type=allwordssubstr&keywords=&keywords_type=anywords&field0-0-0=noop&type0-0-0=noop&value0-0-0=&cmdtype=doit&order=%27Importance%27">Patches</a>
+                    <li>    <a href="http://www.jguru.com/faq/Lucene">JGuru FAQ</a>
 </li>
                     <li>    <a href="http://jakarta.apache.org/site/bugs.html">Bugs</a>
 </li>
                     <li>    <a href="http://nagoya.apache.org/bugzilla/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&bugidtype=include&bug_id=&changedin=&votes=&chfieldfrom=&chfieldto=Now&chfieldvalue=&product=Lucene&short_desc=&short_desc_type=allwordssubstr&long_desc=&long_desc_type=allwordssubstr&bug_file_loc=&bug_file_loc_type=allwordssubstr&keywords=&keywords_type=anywords&field0-0-0=noop&type0-0-0=noop&value0-0-0=&cmdtype=doit&order=%27Importance%27">Lucene Bugs</a>
 </li>
-                    <li>    <a href="http://nagoya.apache.org/eyebrowse/SummarizeList?listId=30">Lucene-user</a>
+                    <li>    <a href="./resources.html">Articles</a>
 </li>
-                    <li>    <a href="http://nagoya.apache.org/eyebrowse/SummarizeList?listId=29">Lucene-dev</a>
+                    <li>    <a href="./queryparsersyntax.html">Query Syntax</a>
 </li>
-                    <li>    <a href="./lucene-sandbox/">Lucene Sandbox</a>
+                    <li>    <a href="./api/index.html">Javadoc</a>
+</li>
+                    <li>    <a href="./contributions.html">Contributions</a>
+</li>
+                </ul>
+            <p><strong>Plans</strong></p>
+        <ul>
+                    <li>    <a href="./luceneplan.html">Application Extensions</a>
 </li>
                 </ul>
             <p><strong>Download</strong></p>
@@ -120,36 +108,8 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>Although Lucene provides the ability to create your own
-            queries through its API, it also provides a rich query
-            language through the Query Parser.</p>
-                                                <p>This page
-            provides syntax of Lucene's Query Parser, a lexer which
-            interprets a string into a Lucene Query using JavaCC.</p>
-                                                <p>
-            Before choosing to use the provided Query Parser, please consider the following:
-            <ol>
-            <li>If you are programmatically generating a query string and then
-            parsing it with the query parser then you should seriously consider building
-            your queries directly with the query API.  In other words, the query
-            parser is designed for human-entered text, not for program-generated
-            text.</li>
-
-            <li>Untokenized fields are best added directly to queries, and not
-            through the query parser.  If a field's values are generated programmatically
-            by the application, then so should query clauses for this field.
-            An analyzer, which the query parser uses, is designed to convert human-entered
-            text to terms.  Program-generated values, like dates, keywords, etc.,
-            should be consistently program-generated.</li>
-
-            <li>In a query form, fields which are general text should use the query
-            parser.  All others, such as date ranges, keywords, etc. are better added
-            directly through the query API.  A field with a limit set of values,
-            that can be specified with a pull-down menu should not be added to a
-            query string which is subsequently parsed, but rather added as a
-            TermQuery clause.</li>
-            </ol>
-            </p>
+                                    <p>Although Lucene provides the ability to create your own query's though its API, it also provides a rich query language through the QueryParser.</p>
+                                                <p>This page provides syntax of Lucene's Query Parser, a lexer which interprets a string into a Lucene Query using JavaCC.</p>
                             </blockquote>
         </p>
       </td></tr>
@@ -184,7 +144,7 @@
         <blockquote>
                                     <p>Lucene supports fielded data. When performing a search you can either specify a field, or use the default field. The field names and default field is implementation specific.</p>
                                                 <p>You can search any field by typing the field name followed by a colon ":" and then the term you are looking for. </p>
-                                                <p>As an example, let's assume a Lucene index contains two fields, title and text and text is the default field.
+                                                <p>As an example, let's assume a Lucene index contains two fields, title and text and text is the default field. 
         If you want to find the document entitled "The Right Way" which contains the text "don't go this way", you can enter: </p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
@@ -366,6 +326,7 @@
     </table>
     </div>
                                                 <p>This search will find terms like foam and roams</p>
+                                                <p>Note:Terms found by the fuzzy search will automatically get a boost factor of 0.2</p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
@@ -405,65 +366,6 @@
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
         <font color="#ffffff" face="arial,helvetica,sanserif">
-          <a name="Range Searches"><strong>Range Searches</strong></a>
-        </font>
-      </td></tr>
-      <tr><td>
-        <blockquote>
-                                    <p>Range Queries allow one to match documents whose field(s) values
-            are between the lower and upper bound specified by the Range Query.
-            Range Queries can be inclusive or exclusive of the upper and lower bounds.
-            Sorting is done lexicographically.</p>
-                                                    <div align="left">
-    <table cellspacing="4" cellpadding="0" border="0">
-    <tr>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>mod_date:[20020101 TO 20030101]</pre></td>
-      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    </table>
-    </div>
-                                                <p>This will find documents whose mod_date fields have values between 20020101 and 20030101, inclusive.
-            Note that Range Queries are not reserved for date fields.  You could also use range queries with non-date fields:</p>
-                                                    <div align="left">
-    <table cellspacing="4" cellpadding="0" border="0">
-    <tr>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>title:{Aida TO Carmen}</pre></td>
-      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    </table>
-    </div>
-                                                <p>This will find all documents whose titles are between Aida and Carmen, but not including Aida and Carmen.</p>
-                                                <p>Inclusive range queries are denoted by square brackets.  Exclusive range queries are denoted by
-            curly brackets.</p>
-                            </blockquote>
-      </td></tr>
-      <tr><td><br/></td></tr>
-    </table>
-                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
-      <tr><td bgcolor="#828DA6">
-        <font color="#ffffff" face="arial,helvetica,sanserif">
           <a name="Boosting a Term"><strong>Boosting a Term</strong></a>
         </font>
       </td></tr>
@@ -490,7 +392,7 @@
     </tr>
     </table>
     </div>
-                                                <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term.
+                                                <p>and you want the term "jakarta" to be more relevant boost it using the ^ symbol along with the boost factor next to the term. 
         You would type:</p>
                                                     <div align="left">
     <table cellspacing="4" cellpadding="0" border="0">
@@ -531,7 +433,7 @@
     </tr>
     </table>
     </div>
-                                                <p>By default, the boost factor is 1. Although the boost factor must be positive, it can be less than 1 (e.g. 0.2)</p>
+                                                <p>By default, the boost factor is 1. Although, the boost factor must be positive, it can be less than 1 (i.e. .2)</p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
@@ -559,7 +461,7 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used.
+                                    <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. 
         The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets.
         The symbol || can be used in place of the word OR.</p>
                                                 <p>To search for documents that contain either "jakarta apache" or just "jakarta" use the query:</p>
@@ -614,7 +516,7 @@
       </td></tr>
       <tr><td>
         <blockquote>
-                                    <p>The AND operator matches documents where both terms exist anywhere in the text of a single document.
+                                    <p>The AND operator matches documents where both terms exist anywhere in the text of a single document. 
         This is equivalent to an intersection using sets. The symbol &amp;&amp; can be used in place of the word AND.</p>
                                                 <p>To search for documents that contain "jakarta apache" and "jakarta lucene" use the query: </p>
                                                     <div align="left">
@@ -803,40 +705,6 @@
                                                 <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#525D76">
         <font color="#ffffff" face="arial,helvetica,sanserif">
-          <a name="Field Grouping"><strong>Field Grouping</strong></a>
-        </font>
-      </td></tr>
-      <tr><td>
-        <blockquote>
-                                    <p>Lucene supports using parentheses to group multiple clauses to a single field.</p>
-                                                <p>To search for a title that contains both the word "return" and the phrase "pink panther" use the query:</p>
-                                                    <div align="left">
-    <table cellspacing="4" cellpadding="0" border="0">
-    <tr>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#ffffff"><pre>title:(+return +&quot;pink panther&quot;)</pre></td>
-      <td bgcolor="#023264" width="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    <tr>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-      <td bgcolor="#023264" width="1" height="1"><img src="/images/void.gif" width="1" height="1" vspace="0" hspace="0" border="0"/></td>
-    </tr>
-    </table>
-    </div>
-                            </blockquote>
-        </p>
-      </td></tr>
-      <tr><td><br/></td></tr>
-    </table>
-                                                <table border="0" cellspacing="0" cellpadding="2" width="100%">
-      <tr><td bgcolor="#525D76">
-        <font color="#ffffff" face="arial,helvetica,sanserif">
           <a name="Escaping Special Characters"><strong>Escaping Special Characters</strong></a>
         </font>
       </td></tr>
@@ -878,7 +746,7 @@
                 </td></tr>
                 <tr><td colspan="2">
                     <div align="center"><font color="#525D76" size="-1"><em>
-                    Copyright &#169; 1999-2003, Apache Software Foundation
+                    Copyright &#169; 1999-2002, Apache Software Foundation
                     </em></font></div>
                 </td></tr>
             </table>

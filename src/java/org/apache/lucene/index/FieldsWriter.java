@@ -55,6 +55,7 @@ package org.apache.lucene.index;
  */
 
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;

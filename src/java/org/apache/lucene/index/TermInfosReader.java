@@ -57,6 +57,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.InputStream;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
@@ -67,7 +68,7 @@ final class TermInfosReader {
   private String segment;
   private FieldInfos fieldInfos;
 
-  private SegmentTermEnum enumerator;
+  private SegmentTermEnum enum;
   private int size;
 
   TermInfosReader(Directory dir, String seg, FieldInfos fis)
@@ -76,15 +77,15 @@ final class TermInfosReader {
     segment = seg;
     fieldInfos = fis;
 
-    enumerator = new SegmentTermEnum(directory.openFile(segment + ".tis"),
+    enum = new SegmentTermEnum(directory.openFile(segment + ".tis"),
 			       fieldInfos, false);
-    size = enumerator.size;
+    size = enum.size;
     readIndex();
   }
 
   final void close() throws IOException {
-    if (enumerator != null)
-      enumerator.close();
+    if (enum != null)
+      enum.close();
   }
 
   /** Returns the number of term/value pairs in the set. */
@@ -136,7 +137,7 @@ final class TermInfosReader {
   }
 
   private final void seekEnum(int indexOffset) throws IOException {
-    enumerator.seek(indexPointers[indexOffset],
+    enum.seek(indexPointers[indexOffset],
 	      (indexOffset * TermInfosWriter.INDEX_INTERVAL) - 1,
 	      indexTerms[indexOffset], indexInfos[indexOffset]);
   }
@@ -144,27 +145,27 @@ final class TermInfosReader {
   /** Returns the TermInfo for a Term in the set, or null. */
   final synchronized TermInfo get(Term term) throws IOException {
     if (size == 0) return null;
-
-    // optimize sequential access: first try scanning cached enumerator w/o seeking
-    if (enumerator.term() != null			  // term is at or past current
-	&& ((enumerator.prev != null && term.compareTo(enumerator.prev) > 0)
-	    || term.compareTo(enumerator.term()) >= 0)) {
-      int enumOffset = (enumerator.position/TermInfosWriter.INDEX_INTERVAL)+1;
+    
+    // optimize sequential access: first try scanning cached enum w/o seeking
+    if (enum.term() != null			  // term is at or past current
+	&& ((enum.prev != null && term.compareTo(enum.prev) > 0)
+	    || term.compareTo(enum.term()) >= 0)) { 
+      int enumOffset = (enum.position/TermInfosWriter.INDEX_INTERVAL)+1;
       if (indexTerms.length == enumOffset	  // but before end of block
 	  || term.compareTo(indexTerms[enumOffset]) < 0)
 	return scanEnum(term);			  // no need to seek
     }
-
+    
     // random-access: must seek
     seekEnum(getIndexOffset(term));
     return scanEnum(term);
   }
-
+  
   /** Scans within block for matching term. */
   private final TermInfo scanEnum(Term term) throws IOException {
-    while (term.compareTo(enumerator.term()) > 0 && enumerator.next()) {}
-    if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0)
-      return enumerator.termInfo();
+    while (term.compareTo(enum.term()) > 0 && enum.next()) {}
+    if (enum.term() != null && term.compareTo(enum.term()) == 0)
+      return enum.termInfo();
     else
       return null;
   }
@@ -173,8 +174,8 @@ final class TermInfosReader {
   final synchronized Term get(int position) throws IOException {
     if (size == 0) return null;
 
-    if (enumerator != null && enumerator.term() != null && position >= enumerator.position &&
-	position < (enumerator.position + TermInfosWriter.INDEX_INTERVAL))
+    if (enum != null && enum.term() != null && position >= enum.position &&
+	position < (enum.position + TermInfosWriter.INDEX_INTERVAL))
       return scanEnum(position);		  // can avoid seek
 
     seekEnum(position / TermInfosWriter.INDEX_INTERVAL); // must seek
@@ -182,11 +183,11 @@ final class TermInfosReader {
   }
 
   private final Term scanEnum(int position) throws IOException {
-    while(enumerator.position < position)
-      if (!enumerator.next())
+    while(enum.position < position)
+      if (!enum.next())
 	return null;
 
-    return enumerator.term();
+    return enum.term();
   }
 
   /** Returns the position of a Term in the set or -1. */
@@ -196,25 +197,25 @@ final class TermInfosReader {
     int indexOffset = getIndexOffset(term);
     seekEnum(indexOffset);
 
-    while(term.compareTo(enumerator.term()) > 0 && enumerator.next()) {}
+    while(term.compareTo(enum.term()) > 0 && enum.next()) {}
 
-    if (term.compareTo(enumerator.term()) == 0)
-      return enumerator.position;
+    if (term.compareTo(enum.term()) == 0)
+      return enum.position;
     else
       return -1;
   }
 
   /** Returns an enumeration of all the Terms and TermInfos in the set. */
   final synchronized SegmentTermEnum terms() throws IOException {
-    if (enumerator.position != -1)			  // if not at start
+    if (enum.position != -1)			  // if not at start
       seekEnum(0);				  // reset to start
-    return (SegmentTermEnum)enumerator.clone();
+    return (SegmentTermEnum)enum.clone();
   }
 
   /** Returns an enumeration of terms starting at or after the named term. */
   final synchronized SegmentTermEnum terms(Term term) throws IOException {
-    get(term);					  // seek enumerator to term
-    return (SegmentTermEnum)enumerator.clone();
+    get(term);					  // seek enum to term
+    return (SegmentTermEnum)enum.clone();
   }
 
 

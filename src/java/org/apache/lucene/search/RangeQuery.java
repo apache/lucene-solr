@@ -55,27 +55,25 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
 
-/**
- * A Query that matches documents within an exclusive range.
- *
- * @version $Id$
- */
-public class RangeQuery extends Query
+/** A Query that matches documents within an exclusive range. */
+public final class RangeQuery extends Query
 {
     private Term lowerTerm;
     private Term upperTerm;
     private boolean inclusive;
-
-    /** Constructs a query selecting all terms greater than
+    private IndexReader reader;
+    private BooleanQuery query;
+    
+    /** Constructs a query selecting all terms greater than 
      * <code>lowerTerm</code> but less than <code>upperTerm</code>.
-     * There must be at least one term and either term may be null,
-     * in which case there is no bound on that side, but if there are
-     * two terms, both terms <b>must</b> be for the same field.
+     * There must be at least one term and either term may be null--
+     * in which case there is no bound on that side, but if there are 
+     * two term, both terms <b>must</b> be for the same field.
      */
     public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive)
     {
@@ -87,77 +85,108 @@ public class RangeQuery extends Query
         {
             throw new IllegalArgumentException("Both terms must be for the same field");
         }
-
-        // if we have a lowerTerm, start there. otherwise, start at beginning
-        if (lowerTerm != null) {
-            this.lowerTerm = lowerTerm;
-        }
-        else {
-            this.lowerTerm = new Term(upperTerm.field(), "");
-        }
-
+        this.lowerTerm = lowerTerm;
         this.upperTerm = upperTerm;
         this.inclusive = inclusive;
     }
-
-    /**
-     * FIXME: Describe <code>rewrite</code> method here.
-     *
-     * @param reader an <code>IndexReader</code> value
-     * @return a <code>Query</code> value
-     * @exception IOException if an error occurs
-     */
-    public Query rewrite(IndexReader reader) throws IOException {
-
-        BooleanQuery query = new BooleanQuery();
-        TermEnum enumerator = reader.terms(lowerTerm);
-
-        try {
-
-            boolean checkLower = false;
-            if (!inclusive) // make adjustments to set to exclusive
-                checkLower = true;
-
-            String testField = getField();
-
-            do {
-                Term term = enumerator.term();
-                if (term != null && term.field() == testField) {
-                    if (!checkLower || term.text().compareTo(lowerTerm.text()) > 0) {
-                        checkLower = false;
-                        if (upperTerm != null) {
-                            int compare = upperTerm.text().compareTo(term.text());
-                            /* if beyond the upper term, or is exclusive and
-                             * this is equal to the upper term, break out */
-                            if ((compare < 0) || (!inclusive && compare == 0))
-                                break;
-                        }
-                        TermQuery tq = new TermQuery(term); // found a match
-                        tq.setBoost(getBoost()); // set the boost
-                        query.add(tq, false, false); // add to query
+    
+    final void prepare(IndexReader reader)
+    {
+        this.query = null;
+        this.reader = reader;
+    }
+    
+    final float sumOfSquaredWeights(Searcher searcher) throws IOException
+    {
+        return getQuery().sumOfSquaredWeights(searcher);
+    }
+    
+    void normalize(float norm)
+    {
+        try
+        {
+            getQuery().normalize(norm);
+        } 
+        catch (IOException e)
+        {
+            throw new RuntimeException(e.toString());
+        }
+    }
+    
+    Scorer scorer(IndexReader reader) throws IOException
+    {
+        return getQuery().scorer(reader);
+    }
+    
+    private BooleanQuery getQuery() throws IOException
+    {
+        if (query == null)
+        {
+            BooleanQuery q = new BooleanQuery();
+            // if we have a lowerTerm, start there. otherwise, start at beginning
+            if (lowerTerm == null) lowerTerm = new Term(getField(), "");
+            TermEnum enum = reader.terms(lowerTerm);
+            try
+            {
+                String lowerText = null;
+                String field;
+                boolean checkLower = false;
+                if (!inclusive) // make adjustments to set to exclusive
+                {
+                    if (lowerTerm != null)
+                    {
+                        lowerText = lowerTerm.text();
+                        checkLower = true;
+                    }
+                    if (upperTerm != null)
+                    {
+                        // set upperTerm to an actual term in the index
+                        TermEnum uppEnum = reader.terms(upperTerm);
+                        upperTerm = uppEnum.term();
                     }
                 }
-                else {
-                    break;
+                String testField = getField();
+                do
+                {
+                    Term term = enum.term();
+                    if (term != null && term.field() == testField)
+                    {
+                        if (!checkLower || term.text().compareTo(lowerText) > 0) 
+                        {
+                            checkLower = false;
+                            if (upperTerm != null)
+                            {
+                                int compare = upperTerm.compareTo(term);
+                                /* if beyond the upper term, or is exclusive and
+                                 * this is equal to the upper term, break out */
+                                if ((compare < 0) || (!inclusive && compare == 0)) break;
+                            }
+                            TermQuery tq = new TermQuery(term);	  // found a match
+                            tq.setBoost(boost);               // set the boost
+                            q.add(tq, false, false);		  // add to q
+                        }
+                    } 
+                    else
+                    {
+                        break;
+                    }
                 }
+                while (enum.next());
+            } 
+            finally
+            {
+                enum.close();
             }
-            while (enumerator.next());
-        }
-        finally {
-            enumerator.close();
+            query = q;
         }
         return query;
     }
-
-    public Query combine(Query[] queries) {
-      return Query.mergeBooleanQueries(queries);
-    }
-
+    
     private String getField()
     {
         return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
     }
-
+    
     /** Prints a user-readable version of this query. */
     public String toString(String field)
     {
@@ -169,13 +198,13 @@ public class RangeQuery extends Query
         }
         buffer.append(inclusive ? "[" : "{");
         buffer.append(lowerTerm != null ? lowerTerm.text() : "null");
-        buffer.append(" TO ");
+        buffer.append("-");
         buffer.append(upperTerm != null ? upperTerm.text() : "null");
         buffer.append(inclusive ? "]" : "}");
-        if (getBoost() != 1.0f)
+        if (boost != 1.0f)
         {
             buffer.append("^");
-            buffer.append(Float.toString(getBoost()));
+            buffer.append(Float.toString(boost));
         }
         return buffer.toString();
     }

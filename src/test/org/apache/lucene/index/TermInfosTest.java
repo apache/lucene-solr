@@ -75,10 +75,9 @@ class TermInfosTest {
     }
   }
 
-  // FIXME: OG: remove hard-coded file names
   public static void test()
        throws Exception {
-
+    
     File file = new File("words.txt");
     System.out.println(" reading word file containing " +
 		       file.length() + " bytes");
@@ -152,15 +151,15 @@ class TermInfosTest {
 
     start = new Date();
 
-    SegmentTermEnum enumerator = reader.terms();
+    SegmentTermEnum enum = (SegmentTermEnum)reader.terms();
     for (int i = 0; i < keys.size(); i++) {
-      enumerator.next();
+      enum.next();
       Term key = (Term)keys.elementAt(i);
-      if (!key.equals(enumerator.term()))
-	throw new Exception("wrong term: " + enumerator.term()
+      if (!key.equals(enum.term()))
+	throw new Exception("wrong term: " + enum.term()
 			    + ", expected: " + key
 			    + " at " + i);
-      TermInfo ti = enumerator.termInfo();
+      TermInfo ti = enum.termInfo();
       if (ti.docFreq != docFreqs[i])
 	throw
 	  new Exception("wrong value: " + Long.toString(ti.docFreq, 16)

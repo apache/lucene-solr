@@ -55,34 +55,29 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
 import org.apache.lucene.index.TermDocs;
 
 final class TermScorer extends Scorer {
-  private Weight weight;
   private TermDocs termDocs;
   private byte[] norms;
-  private float weightValue;
+  private float weight;
   private int doc;
 
-  private final int[] docs = new int[32];	  // buffered doc numbers
-  private final int[] freqs = new int[32];	  // buffered term freqs
+  private final int[] docs = new int[128];	  // buffered doc numbers
+  private final int[] freqs = new int[128];	  // buffered term freqs
   private int pointer;
   private int pointerMax;
 
   private static final int SCORE_CACHE_SIZE = 32;
   private float[] scoreCache = new float[SCORE_CACHE_SIZE];
 
-  TermScorer(Weight weight, TermDocs td, Similarity similarity,
-             byte[] norms) throws IOException {
-    super(similarity);
-    this.weight = weight;
-    this.termDocs = td;
-    this.norms = norms;
-    this.weightValue = weight.getValue();
+  TermScorer(TermDocs td, byte[] n, float w) throws IOException {
+    termDocs = td;
+    norms = n;
+    weight = w;
 
     for (int i = 0; i < SCORE_CACHE_SIZE; i++)
-      scoreCache[i] = getSimilarity().tf(i) * weightValue;
+      scoreCache[i] = Similarity.tf(i) * weight;
 
     pointerMax = termDocs.read(docs, freqs);	  // fill buffers
 
@@ -94,17 +89,16 @@ final class TermScorer extends Scorer {
     }
   }
 
-  public final void score(HitCollector c, final int end) throws IOException {
+  final void score(HitCollector c, final int end) throws IOException {
     int d = doc;				  // cache doc in local
-    Similarity similarity = getSimilarity();      // cache sim in local
     while (d < end) {				  // for docs in window
       final int f = freqs[pointer];
       float score =				  // compute tf(f)*weight
 	f < SCORE_CACHE_SIZE			  // check cache
 	 ? scoreCache[f]			  // cache hit
-	 : similarity.tf(f)*weightValue;          // cache miss
+	 : Similarity.tf(f)*weight;		  // cache miss
 
-      score *= Similarity.decodeNorm(norms[d]);	  // normalize for field
+      score *= Similarity.norm(norms[d]);	  // normalize for field
 
       c.collect(d, score);			  // collect score
 
@@ -121,28 +115,5 @@ final class TermScorer extends Scorer {
       d = docs[pointer];
     }
     doc = d;					  // flush cache
-  }
-
-  public Explanation explain(int doc) throws IOException {
-    TermQuery query = (TermQuery)weight.getQuery();
-    Explanation tfExplanation = new Explanation();
-    int tf = 0;
-    while (pointer < pointerMax) {
-      if (docs[pointer] == doc)
-        tf = freqs[pointer];
-      pointer++;
-    }
-    if (tf == 0) {
-      while (termDocs.next()) {
-        if (termDocs.doc() == doc) {
-          tf = termDocs.freq();
-        }
-      }
-    }
-    termDocs.close();
-    tfExplanation.setValue(getSimilarity().tf(tf));
-    tfExplanation.setDescription("tf(termFreq("+query.getTerm()+")="+tf+")");
-    
-    return tfExplanation;
   }
 }

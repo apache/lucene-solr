@@ -56,6 +56,8 @@ package org.apache.lucene;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.File;
@@ -65,13 +67,12 @@ class IndexTest {
   public static void main(String[] args) {
     try {
       Date start = new Date();
-      // FIXME: OG: what's with this hard-coded dirs??
+
       IndexWriter writer = new IndexWriter("F:\\test", new SimpleAnalyzer(),
 					   true);
 
       writer.mergeFactor = 20;
 
-      // FIXME: OG: what's with this hard-coded dirs??
       indexDocs(writer, new File("F:\\recipes"));
 
       writer.optimize();

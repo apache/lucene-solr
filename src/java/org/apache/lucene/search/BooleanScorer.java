@@ -70,10 +70,6 @@ final class BooleanScorer extends Scorer {
   private int prohibitedMask = 0;
   private int nextMask = 1;
 
-  BooleanScorer(Similarity similarity) {
-    super(similarity);
-  }
-
   static final class SubScorer {
     public Scorer scorer;
     public boolean required = false;
@@ -117,11 +113,10 @@ final class BooleanScorer extends Scorer {
   private final void computeCoordFactors() throws IOException {
     coordFactors = new float[maxCoord];
     for (int i = 0; i < maxCoord; i++)
-      coordFactors[i] = getSimilarity().coord(i, maxCoord-1);
+      coordFactors[i] = Similarity.coord(i, maxCoord);
   }
 
-  public final void score(HitCollector results, int maxDoc)
-    throws IOException {
+  final void score(HitCollector results, int maxDoc) throws IOException {
     if (coordFactors == null)
       computeCoordFactors();
 
@@ -206,9 +201,4 @@ final class BooleanScorer extends Scorer {
       }
     }
   }
-
-  public Explanation explain(int doc) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
 }

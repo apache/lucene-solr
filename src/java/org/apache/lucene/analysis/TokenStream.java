@@ -68,9 +68,9 @@ import java.io.IOException;
   </ul>
   */
 
-public abstract class TokenStream {
+abstract public class TokenStream {
   /** Returns the next token in the stream, or null at EOS. */
-  public abstract Token next() throws IOException;
+  abstract public Token next() throws IOException;
 
   /** Releases resources associated with this stream. */
   public void close() throws IOException {}

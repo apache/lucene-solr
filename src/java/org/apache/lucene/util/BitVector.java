@@ -55,25 +55,21 @@ package org.apache.lucene.util;
  */
 
 import java.io.IOException;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.InputStream;
 import org.apache.lucene.store.OutputStream;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
   java.util.BitSet, but also includes the following:
-  <ul>
-  <li>a count() method, which efficiently computes the number of one bits;</li>
-  <li>optimized read from and write to disk;</li>
-  <li>inlinable get() method;</li>
-  </ul>
-
-  @author Doug Cutting
-  @version $Id$
+  <UL>
+  <LI>a count() method, which efficiently computes the number of one bits;</LI>
+  <LI>optimized read from and write to disk;</LI>
+  <LI>inlinable get() method;</LI>
+  </UL>
   */
 public final class BitVector {
-
-  private byte[] bits;
+  /** This is public just so that methods will inline.  Please don't touch.*/
+  public byte[] bits;
   private int size;
   private int count = -1;
 
@@ -111,12 +107,11 @@ public final class BitVector {
     computed and cached, so that, if the vector is not changed, no
     recomputation is done for repeated calls. */
   public final int count() {
-    // if the vector has been modified
     if (count == -1) {
       int c = 0;
       int end = bits.length;
       for (int i = 0; i < end; i++)
-        c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
+	c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
       count = c;
     }
     return count;

@@ -106,7 +106,6 @@ extends SegmentTermDocs implements TermPositions {
 
   public final int read(final int[] docs, final int[] freqs)
       throws IOException {
-    throw new UnsupportedOperationException();
+    throw new RuntimeException();
   }
-
 }

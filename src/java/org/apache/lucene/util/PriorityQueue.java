@@ -60,50 +60,24 @@ package org.apache.lucene.util;
 public abstract class PriorityQueue {
   private Object[] heap;
   private int size;
-  private int maxSize;
 
   /** Determines the ordering of objects in this priority queue.  Subclasses
     must define this one method. */
-  protected abstract boolean lessThan(Object a, Object b);
+  abstract protected boolean lessThan(Object a, Object b);
 
   /** Subclass constructors must call this. */
   protected final void initialize(int maxSize) {
     size = 0;
-    int heapSize = maxSize + 1;
+    int heapSize = (maxSize * 2) + 1;
     heap = new Object[heapSize];
-    this.maxSize = maxSize;
   }
 
-  /**
-   * Adds an Object to a PriorityQueue in log(size) time.
-   * If one tries to add more objects than maxSize from initialize
-   * a RuntimeException (ArrayIndexOutOfBound) is thrown.
-   */
+  /** Adds an Object to a PriorityQueue in log(size) time. */ 
   public final void put(Object element) {
-    size++;
+    size++;	
     heap[size] = element;
     upHeap();
   }
-
-  /**
-   * Adds element to the PriorityQueue in log(size) time if either
-   * the PriorityQueue is not full, or not lessThan(element, top()).
-   * @param element
-   * @return true if element is added, false otherwise.
-   */
-  public boolean insert(Object element){
-    if(size < maxSize){
-        put(element);
-        return true;
-    }
-    else if(size > 0 && !lessThan(element, top())){
-        heap[1] = element;
-        adjustTop();
-        return true;
-    }
-    else
-        return false;
-   }
 
   /** Returns the least element of the PriorityQueue in constant time. */
   public final Object top() {
@@ -114,7 +88,7 @@ public abstract class PriorityQueue {
   }
 
   /** Removes and returns the least element of the PriorityQueue in log(size)
-    time. */
+    time. */ 
   public final Object pop() {
     if (size > 0) {
       Object result = heap[1];			  // save first value
@@ -137,16 +111,16 @@ public abstract class PriorityQueue {
   public final void adjustTop() {
     downHeap();
   }
-
+    
 
   /** Returns the number of elements currently stored in the PriorityQueue. */
   public final int size() {
     return size;
   }
-
+  
   /** Removes all entries from the PriorityQueue. */
   public final void clear() {
-    for (int i = 0; i <= size; i++)
+    for (int i = 0; i < size; i++)
       heap[i] = null;
     size = 0;
   }
@@ -162,7 +136,7 @@ public abstract class PriorityQueue {
     }
     heap[i] = node;				  // install saved node
   }
-
+  
   private final void downHeap() {
     int i = 1;
     Object node = heap[i];			  // save top node

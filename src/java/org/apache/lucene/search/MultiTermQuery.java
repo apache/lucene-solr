@@ -55,9 +55,10 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-
+import java.util.Vector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 
 /**
  * A {@link Query} that matches documents containing a subset of terms provided
@@ -72,55 +73,82 @@ import org.apache.lucene.index.Term;
  * <code>MultiTermQuery</code> to provide {@link WildcardTermEnum} and
  * {@link FuzzyTermEnum}, respectively.
  */
-public abstract class MultiTermQuery extends Query {
+public class MultiTermQuery extends Query {
     private Term term;
-
+    private FilteredTermEnum enum;
+    private IndexReader reader;
+    private BooleanQuery query;
+    
+    /** Enable or disable lucene style toString(field) format */
+    private static boolean LUCENE_STYLE_TOSTRING = false;
+    
     /** Constructs a query for terms matching <code>term</code>. */
     public MultiTermQuery(Term term) {
         this.term = term;
+        this.query = query;
     }
-
-    /** Returns the pattern term. */
-    public Term getTerm() { return term; }
-
-    /** Construct the enumeration to be used, expanding the pattern term. */
-    protected abstract FilteredTermEnum getEnum(IndexReader reader)
-      throws IOException;
-
-    public Query rewrite(IndexReader reader) throws IOException {
-      FilteredTermEnum enumerator = getEnum(reader);
-      BooleanQuery query = new BooleanQuery();
-      try {
-        do {
-          Term t = enumerator.term();
-          if (t != null) {
-            TermQuery tq = new TermQuery(t);      // found a match
-            tq.setBoost(getBoost() * enumerator.difference()); // set the boost
-            query.add(tq, false, false);          // add to query
-          }
-        } while (enumerator.next());
-      } finally {
-        enumerator.close();
-      }
-      return query;
+    
+    /** Set the TermEnum to be used */
+    protected void setEnum(FilteredTermEnum enum) {
+        this.enum = enum;
     }
-
-    public Query combine(Query[] queries) {
-      return Query.mergeBooleanQueries(queries);
+    
+    final float sumOfSquaredWeights(Searcher searcher) throws IOException {
+        return getQuery().sumOfSquaredWeights(searcher);
     }
-
-
+    
+    final void normalize(float norm) {
+        try {
+            getQuery().normalize(norm);
+        } catch (IOException e) {
+            throw new RuntimeException(e.toString());
+        }
+    }
+    
+    final Scorer scorer(IndexReader reader) throws IOException {
+        return getQuery().scorer(reader);
+    }
+    
+    final private BooleanQuery getQuery() throws IOException {
+        if (query == null) {
+            BooleanQuery q = new BooleanQuery();
+            try {
+                do {
+                    Term t = enum.term();
+                    if (t != null) {
+                        TermQuery tq = new TermQuery(t);	// found a match
+                        tq.setBoost(boost * enum.difference()); // set the boost
+                        q.add(tq, false, false);		// add to q
+                    }
+                } while (enum.next());
+            } finally {
+                enum.close();
+            }
+            query = q;
+        }
+        return query;
+    }
+    
     /** Prints a user-readable version of this query. */
     public String toString(String field) {
+        if (!LUCENE_STYLE_TOSTRING) {
+            Query q = null;
+            try {
+                q = getQuery();
+            } catch (Exception e) {}
+            if (q != null) {
+                return "(" + q.toString(field) + ")";
+            }
+        }
         StringBuffer buffer = new StringBuffer();
         if (!term.field().equals(field)) {
             buffer.append(term.field());
             buffer.append(":");
         }
         buffer.append(term.text());
-        if (getBoost() != 1.0f) {
+        if (boost != 1.0f) {
             buffer.append("^");
-            buffer.append(Float.toString(getBoost()));
+            buffer.append(Float.toString(boost));
         }
         return buffer.toString();
     }

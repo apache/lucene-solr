@@ -66,12 +66,12 @@ import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Date;
+import java.util.Random;
 
 class AnalysisTest {
   public static void main(String[] args) {
     try {
       test("This is a test", true);
-      // FIXME: OG: what's with this hard-coded file name??
       test(new File("words.txt"), false);
     } catch (Exception e) {
       System.out.println(" caught a " + e.getClass() +

@@ -58,19 +58,25 @@ import java.io.IOException;
 import java.util.Vector;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents containing a particular sequence of terms.
   This may be combined with other terms with a {@link BooleanQuery}.
   */
-public class PhraseQuery extends Query {
+final public class PhraseQuery extends Query {
   private String field;
   private Vector terms = new Vector();
+  private float idf = 0.0f;
+  private float weight = 0.0f;
+
   private int slop = 0;
 
+
   /** Constructs an empty phrase query. */
-  public PhraseQuery() {}
+  public PhraseQuery() {
+  }
 
   /** Sets the number of other words permitted between words in query phrase.
     If zero, then this is an exact phrase search.  For larger values this works
@@ -86,12 +92,12 @@ public class PhraseQuery extends Query {
     results are sorted by exactness.
 
     <p>The slop is zero by default, requiring exact matches.*/
-  public void setSlop(int s) { slop = s; }
+  public final void setSlop(int s) { slop = s; }
   /** Returns the slop.  See setSlop(). */
-  public int getSlop() { return slop; }
+  public final int getSlop() { return slop; }
 
   /** Adds a term to the end of the query phrase. */
-  public void add(Term term) {
+  public final void add(Term term) {
     if (terms.size() == 0)
       field = term.field();
     else if (term.field() != field)
@@ -101,151 +107,48 @@ public class PhraseQuery extends Query {
     terms.addElement(term);
   }
 
-  /** Returns the set of terms in this phrase. */
-  public Term[] getTerms() {
-    return (Term[])terms.toArray(new Term[0]);
+  final float sumOfSquaredWeights(Searcher searcher) throws IOException {
+    for (int i = 0; i < terms.size(); i++)	  // sum term IDFs
+      idf += Similarity.idf((Term)terms.elementAt(i), searcher);
+
+    weight = idf * boost;
+    return weight * weight;			  // square term weights
   }
 
-  private class PhraseWeight implements Weight {
-    private Searcher searcher;
-    private float value;
-    private float idf;
-    private float queryNorm;
-    private float queryWeight;
-
-    public PhraseWeight(Searcher searcher) {
-      this.searcher = searcher;
-    }
-
-    public Query getQuery() { return PhraseQuery.this; }
-    public float getValue() { return value; }
-
-    public float sumOfSquaredWeights() throws IOException {
-      idf = searcher.getSimilarity().idf(terms, searcher);
-      queryWeight = idf * getBoost();             // compute query weight
-      return queryWeight * queryWeight;           // square it
-    }
-
-    public void normalize(float queryNorm) {
-      this.queryNorm = queryNorm;
-      queryWeight *= queryNorm;                   // normalize query weight
-      value = queryWeight * idf;                  // idf for document 
-    }
-
-    public Scorer scorer(IndexReader reader) throws IOException {
-      if (terms.size() == 0)			  // optimize zero-term case
-        return null;
-
-      TermPositions[] tps = new TermPositions[terms.size()];
-      for (int i = 0; i < terms.size(); i++) {
-        TermPositions p = reader.termPositions((Term)terms.elementAt(i));
-        if (p == null)
-          return null;
-        tps[i] = p;
-      }
-
-      if (slop == 0)				  // optimize exact case
-        return new ExactPhraseScorer(this, tps, searcher.getSimilarity(),
-                                     reader.norms(field));
-      else
-        return
-          new SloppyPhraseScorer(this, tps, searcher.getSimilarity(), slop,
-                                 reader.norms(field));
-      
-    }
-
-    public Explanation explain(IndexReader reader, int doc)
-      throws IOException {
-
-      Explanation result = new Explanation();
-      result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
-
-      StringBuffer docFreqs = new StringBuffer();
-      StringBuffer query = new StringBuffer();
-      query.append('\"');
-      for (int i = 0; i < terms.size(); i++) {
-        if (i != 0) {
-          docFreqs.append(" ");
-          query.append(" ");
-        }
-
-        Term term = (Term)terms.elementAt(i);
-
-        docFreqs.append(term.text());
-        docFreqs.append("=");
-        docFreqs.append(searcher.docFreq(term));
-
-        query.append(term.text());
-      }
-      query.append('\"');
-
-      Explanation idfExpl =
-        new Explanation(idf, "idf(" + field + ": " + docFreqs + ")");
-      
-      // explain query weight
-      Explanation queryExpl = new Explanation();
-      queryExpl.setDescription("queryWeight(" + getQuery() + "), product of:");
-
-      Explanation boostExpl = new Explanation(getBoost(), "boost");
-      if (getBoost() != 1.0f)
-        queryExpl.addDetail(boostExpl);
-      queryExpl.addDetail(idfExpl);
-      
-      Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
-      queryExpl.addDetail(queryNormExpl);
-      
-      queryExpl.setValue(boostExpl.getValue() *
-                         idfExpl.getValue() *
-                         queryNormExpl.getValue());
-
-      result.addDetail(queryExpl);
-     
-      // explain field weight
-      Explanation fieldExpl = new Explanation();
-      fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
-                               "), product of:");
-
-      Explanation tfExpl = scorer(reader).explain(doc);
-      fieldExpl.addDetail(tfExpl);
-      fieldExpl.addDetail(idfExpl);
-
-      Explanation fieldNormExpl = new Explanation();
-      byte[] fieldNorms = reader.norms(field);
-      float fieldNorm =
-        fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 0.0f;
-      fieldNormExpl.setValue(fieldNorm);
-      fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
-      fieldExpl.addDetail(fieldNormExpl);
-
-      fieldExpl.setValue(tfExpl.getValue() *
-                         idfExpl.getValue() *
-                         fieldNormExpl.getValue());
-      
-      result.addDetail(fieldExpl);
-
-      // combine them
-      result.setValue(queryExpl.getValue() * fieldExpl.getValue());
-
-      if (queryExpl.getValue() == 1.0f)
-        return fieldExpl;
-
-      return result;
-    }
+  final void normalize(float norm) {
+    weight *= norm;				  // normalize for query
+    weight *= idf;				  // factor from document
   }
 
-  protected Weight createWeight(Searcher searcher) {
+  final Scorer scorer(IndexReader reader) throws IOException {
+    if (terms.size() == 0)			  // optimize zero-term case
+      return null;
     if (terms.size() == 1) {			  // optimize one-term case
       Term term = (Term)terms.elementAt(0);
-      Query termQuery = new TermQuery(term);
-      termQuery.setBoost(getBoost());
-      return termQuery.createWeight(searcher);
+      TermDocs docs = reader.termDocs(term);
+      if (docs == null)
+	return null;
+      return new TermScorer(docs, reader.norms(term.field()), weight);
     }
-    return new PhraseWeight(searcher);
+
+    TermPositions[] tps = new TermPositions[terms.size()];
+    for (int i = 0; i < terms.size(); i++) {
+      TermPositions p = reader.termPositions((Term)terms.elementAt(i));
+      if (p == null)
+	return null;
+      tps[i] = p;
+    }
+
+    if (slop == 0)				  // optimize exact case
+      return new ExactPhraseScorer(tps, reader.norms(field), weight);
+    else
+      return
+	new SloppyPhraseScorer(tps, slop, reader.norms(field), weight);
+
   }
 
-
   /** Prints a user-readable version of this query. */
-  public String toString(String f) {
+  public final String toString(String f) {
     StringBuffer buffer = new StringBuffer();
     if (!field.equals(f)) {
       buffer.append(field);
@@ -265,29 +168,11 @@ public class PhraseQuery extends Query {
       buffer.append(slop);
     }
 
-    if (getBoost() != 1.0f) {
+    if (boost != 1.0f) {
       buffer.append("^");
-      buffer.append(Float.toString(getBoost()));
+      buffer.append(Float.toString(boost));
     }
 
     return buffer.toString();
   }
-
-  /** Returns true iff <code>o</code> is equal to this. */
-  public boolean equals(Object o) {
-    if (!(o instanceof PhraseQuery))
-      return false;
-    PhraseQuery other = (PhraseQuery)o;
-    return (this.getBoost() == other.getBoost())
-      && (this.slop == other.slop)
-      &&  this.terms.equals(other.terms);
-  }
-
-  /** Returns a hash code value for this object.*/
-  public int hashCode() {
-    return Float.floatToIntBits(getBoost())
-      ^ Float.floatToIntBits(slop)
-      ^ terms.hashCode();
-  }
-
 }

@@ -59,13 +59,18 @@ import org.apache.lucene.index.Term;
 import java.io.IOException;
 
 /** Implements the wildcard search query */
-public class WildcardQuery extends MultiTermQuery {
-  public WildcardQuery(Term term) {
-    super(term);
-  }
+final public class WildcardQuery extends MultiTermQuery {
+    private Term wildcardTerm;
 
-  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new WildcardTermEnum(reader, getTerm());
-  }
+    public WildcardQuery(Term term) {
+        super(term);
+        wildcardTerm = term;
+    }
+
+    final void prepare(IndexReader reader) {
+        try {
+            setEnum(new WildcardTermEnum(reader, wildcardTerm));
+        } catch (IOException e) {}
+    }
     
 }
