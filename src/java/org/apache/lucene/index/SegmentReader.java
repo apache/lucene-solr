@@ -68,6 +68,11 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 
+/**
+ * FIXME: Describe class <code>SegmentReader</code> here.
+ *
+ * @version $Id$
+ */
 final class SegmentReader extends IndexReader {
   private boolean closeDirectory = false;
   private String segment;
@@ -82,7 +87,7 @@ final class SegmentReader extends IndexReader {
 
   InputStream freqStream;
   InputStream proxStream;
-  
+
   // Compound File Reader when based on a compound file segment
   CompoundFileReader cfsReader;
 
@@ -94,21 +99,21 @@ final class SegmentReader extends IndexReader {
   private Hashtable norms = new Hashtable();
 
   SegmentReader(SegmentInfo si, boolean closeDir)
-       throws IOException {
+    throws IOException {
     this(si);
     closeDirectory = closeDir;
   }
 
   SegmentReader(SegmentInfo si)
-       throws IOException {
+    throws IOException {
     super(si.dir);
     segment = si.name;
 
     // Use compound file directory for some files, if it exists
     Directory cfsDir = directory;
     if (directory.fileExists(segment + ".cfs")) {
-        cfsReader = new CompoundFileReader(directory, segment + ".cfs");
-        cfsDir = cfsReader;
+      cfsReader = new CompoundFileReader(directory, segment + ".cfs");
+      cfsDir = cfsReader;
     }
 
     // No compound file exists - use the multi-file format
@@ -128,18 +133,19 @@ final class SegmentReader extends IndexReader {
     openNorms(cfsDir);
   }
 
-  
+
   final synchronized void doClose() throws IOException {
     if (deletedDocsDirty) {
       synchronized (directory) {		  // in- & inter-process sync
-        new Lock.With(directory.makeLock("commit.lock"), IndexWriter.COMMIT_LOCK_TIMEOUT) {
-            public Object doBody() throws IOException {
-              deletedDocs.write(directory, segment + ".tmp");
-              directory.renameFile(segment + ".tmp", segment + ".del");
-              directory.touchFile("segments");
-              return null;
-            }
-          }.run();
+        new Lock.With(directory.makeLock("IndexWriter.COMMIT_LOCK_NAME"),
+          IndexWriter.COMMIT_LOCK_TIMEOUT) {
+          public Object doBody() throws IOException {
+            deletedDocs.write(directory, segment + ".tmp");
+            directory.renameFile(segment + ".tmp", segment + ".del");
+            directory.touchFile("segments");
+            return null;
+          }
+        }.run();
       }
       deletedDocsDirty = false;
     }
@@ -153,7 +159,7 @@ final class SegmentReader extends IndexReader {
       proxStream.close();
 
     closeNorms();
-    
+
     if (cfsReader != null)
       cfsReader.close();
 
@@ -168,7 +174,7 @@ final class SegmentReader extends IndexReader {
   static final boolean usesCompoundFile(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".cfs");
   }
-  
+
   final synchronized void doDelete(int docNum) throws IOException {
     if (deletedDocs == null)
       deletedDocs = new BitVector(maxDoc());
@@ -179,15 +185,15 @@ final class SegmentReader extends IndexReader {
   final Vector files() throws IOException {
     Vector files = new Vector(16);
     final String ext[] = new String[] {
-        "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del"
+      "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del"
     };
-    
+
     for (int i=0; i<ext.length; i++) {
-        String name = segment + "." + ext[i];
-        if (directory.fileExists(name)) 
-            files.addElement(name);
+      String name = segment + "." + ext[i];
+      if (directory.fileExists(name))
+        files.addElement(name);
     }
-    
+
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed)
