@@ -117,7 +117,8 @@ public class IndexWriter {
    * may also cause file handle problems.
    */
   private boolean useCompoundFile = true;
-
+  
+  private boolean closeDir;
 
   /** Setting to turn on usage of a compound file. When on, multiple files
    *  for each segment are merged into a single file once the segment creation
@@ -169,7 +170,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, boolean create)
        throws IOException {
-    this(FSDirectory.getDirectory(path, create), a, create);
+    this(FSDirectory.getDirectory(path, create), a, create, true);
   }
 
   /**
@@ -189,7 +190,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, boolean create)
        throws IOException {
-    this(FSDirectory.getDirectory(path, create), a, create);
+    this(FSDirectory.getDirectory(path, create), a, create, true);
   }
 
   /**
@@ -207,37 +208,43 @@ public class IndexWriter {
    *  if it does not exist, and <code>create</code> is
    *  <code>false</code>
    */
-  public IndexWriter(Directory d, Analyzer a, final boolean create)
+  public IndexWriter(Directory d, Analyzer a, boolean create)
        throws IOException {
-    directory = d;
-    analyzer = a;
+    this(d, a, create, false);
+  }
+  
+  private IndexWriter(Directory d, Analyzer a, final boolean create, boolean closeDir)
+    throws IOException {
+      this.closeDir = closeDir;
+      directory = d;
+      analyzer = a;
 
-    Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-    if (!writeLock.obtain(WRITE_LOCK_TIMEOUT)) // obtain write lock
-      throw new IOException("Index locked for write: " + writeLock);
-    this.writeLock = writeLock;                   // save it
+      Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
+      if (!writeLock.obtain(WRITE_LOCK_TIMEOUT)) // obtain write lock
+        throw new IOException("Index locked for write: " + writeLock);
+      this.writeLock = writeLock;                   // save it
 
-    synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
-          public Object doBody() throws IOException {
-            if (create)
-              segmentInfos.write(directory);
-            else
-              segmentInfos.read(directory);
-            return null;
-          }
-        }.run();
-    }
+      synchronized (directory) {        // in- & inter-process sync
+        new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+            public Object doBody() throws IOException {
+              if (create)
+                segmentInfos.write(directory);
+              else
+                segmentInfos.read(directory);
+              return null;
+            }
+          }.run();
+      }
   }
 
-  /** Flushes all changes to an index, closes all associated files, and closes
-    the directory that the index is stored in. */
+  /** Flushes all changes to an index and closes all associated files. */
   public synchronized void close() throws IOException {
     flushRamSegments();
     ramDirectory.close();
     writeLock.release();                          // release write lock
     writeLock = null;
-    directory.close();
+    if(closeDir)
+      directory.close();
   }
 
   /** Release the write lock, if needed. */
@@ -379,7 +386,9 @@ public class IndexWriter {
   }
 
   /** Merges the provided indexes into this index.
-   * <p>After this completes, the index is optimized. */
+   * <p>After this completes, the index is optimized. </p>
+   * <p>The provided IndexReaders are not closed.</p>
+   */
   public synchronized void addIndexes(IndexReader[] readers)
     throws IOException {
 
@@ -490,6 +499,8 @@ public class IndexWriter {
           }
         }.run();
     }
+    
+    merger.closeReaders();
   }
 
   /* Some operating systems (e.g. Windows) don't permit a file to be deleted

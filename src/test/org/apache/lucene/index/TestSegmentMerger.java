@@ -77,6 +77,7 @@ public class TestSegmentMerger extends TestCase {
     merger.add(reader2);
     try {
       int docsMerged = merger.merge();
+      merger.closeReaders();
       assertTrue(docsMerged == 2);
       //Should be able to open a new SegmentReader against the new directory
       SegmentReader mergedReader = new SegmentReader(new SegmentInfo(mergedSegment, docsMerged, mergedDir));

@@ -186,6 +186,7 @@ public class TestDoc extends TestCase {
       merger.add(r1);
       merger.add(r2);
       merger.merge();
+      merger.closeReaders();
 
       directory.close();
    }

@@ -88,25 +88,30 @@ final class SegmentMerger {
    */
   final int merge() throws IOException {
     int value;
-    try {
-      value = mergeFields();
-      mergeTerms();
-      mergeNorms();
+    
+    value = mergeFields();
+    mergeTerms();
+    mergeNorms();
 
-      if (fieldInfos.hasVectors())
-        mergeVectors();
-
-    } finally {
-      for (int i = 0; i < readers.size(); i++) {  // close readers
-        IndexReader reader = (IndexReader) readers.elementAt(i);
-        reader.close();
-      }
-    }
+    if (fieldInfos.hasVectors())
+      mergeVectors();
 
     if (useCompoundFile)
       createCompoundFile();
 
     return value;
+  }
+  
+  /**
+   * close all IndexReaders that have been added.
+   * Should not be called before merge().
+   * @throws IOException
+   */
+  final void closeReaders() throws IOException {
+    for (int i = 0; i < readers.size(); i++) {  // close readers
+      IndexReader reader = (IndexReader) readers.elementAt(i);
+      reader.close();
+    }
   }
 
   private final void createCompoundFile()
