@@ -42,7 +42,7 @@ public class HitsIterator {
     private int totalPages = -1; // set by constructor
     
     private int endPagePosition = 0; // position currentPage ends
-    
+        
     /** Creates new HitsIterator */
     private HitsIterator() {
     }
@@ -54,7 +54,7 @@ public class HitsIterator {
     public HitsIterator(Hits hits, String sortFlag) throws IOException{
         this.hitsCollection = hits;
         if (sortFlag != null){
-            if ((sortFlag != "") && (sortFlag !="relevance")){
+            if ((sortFlag != "") && (sortFlag.equals(SearchBean.SORT_FIELD_RELEVANCE))){
                 //logger.debug("Sorting hits by field "+sortFlag);
                 sortByField(sortFlag);
                 //logger.debug("Completed sorting by field "+sortFlag);
@@ -80,7 +80,9 @@ public class HitsIterator {
         if (sf !=null){
             c = (Comparator) new CompareDocumentsByField();
         } else {
-            //logger.error("Sort field not found");
+            //logger.error("Sort field not found"); 
+            // use default sort of Lucene -- Relevance
+            // Should I throw an exception here?
             arrayOfIndividualHits = null;
             return;
         }
@@ -100,14 +102,17 @@ public class HitsIterator {
     
     
     private void setPageCount() {
-        
-        totalPages = totalHits / pageSize;
-        
-        //account for remainder if not exaxtly divisable
-        if (totalHits % pageSize != 0)
-        { totalPages++;}
-        
-        setCurrentPage(1); // reset currentPage to make sure not over the limit
+        if (totalHits == 0){
+            totalPages = 0;
+            setCurrentPage(0);
+        } else {
+            totalPages = totalHits / pageSize;
+            
+            //account for remainder if not exaxtly divisable
+            if (totalHits % pageSize != 0)
+            { totalPages++;}
+            setCurrentPage(1); // reset currentPage to make sure not over the limit
+        }
     }
     
     public int getPageCount() {
@@ -151,6 +156,7 @@ public class HitsIterator {
     }
     
     public org.apache.lucene.document.Document getDoc() throws IOException {
+        // Determine if using relevnace or sorting by another field
         if (arrayOfIndividualHits == null)
             return hitsCollection.doc(currentPosition - 1);
         else {
@@ -160,6 +166,7 @@ public class HitsIterator {
     }
     
     public int getScore() throws Exception{
+        // Determine if using relevnace or sorting by another field
         if (arrayOfIndividualHits == null)
             return (int) (hitsCollection.score(currentPosition - 1)*100.0f);
         else
@@ -184,8 +191,9 @@ public class HitsIterator {
     }
     
     public void setCurrentPage(int currentPage) throws IndexOutOfBoundsException{
-        if (currentPage > totalPages){ 
-            throw new IndexOutOfBoundsException("currentPage greater than total pages"); 
+        if (currentPage > totalPages){
+            currentPage = totalPages; // don't allow to go over max
+            //throw new IndexOutOfBoundsException("currentPage greater than total pages");
         }
         
         this.currentPage = currentPage;
