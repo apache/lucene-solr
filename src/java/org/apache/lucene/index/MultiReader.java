@@ -57,13 +57,13 @@ public class MultiReader extends IndexReader {
     super(directory, sis, closeDirectory);
     initialize(subReaders);
   }
-    
+
   private void initialize(IndexReader[] subReaders) throws IOException{
     this.subReaders = subReaders;
-    starts = new int[subReaders.length + 1];	  // build starts array
-    for (int i = 0; i < subReaders.length; i++) { 
+    starts = new int[subReaders.length + 1];    // build starts array
+    for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
-      maxDoc += subReaders[i].maxDoc();		  // compute maxDocs
+      maxDoc += subReaders[i].maxDoc();      // compute maxDocs
 
       if (subReaders[i].hasDeletions())
         hasDeletions = true;
@@ -78,23 +78,22 @@ public class MultiReader extends IndexReader {
    *  in a given vectorized field.
    *  If no such fields existed, the method returns null.
    */
-  public TermFreqVector[] getTermFreqVectors(int n)
-          throws IOException {
-    int i = readerIndex(n);			  // find segment num
+  public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
+    int i = readerIndex(n);        // find segment num
     return subReaders[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
   }
 
   public TermFreqVector getTermFreqVector(int n, String field)
-          throws IOException {
-    int i = readerIndex(n);			  // find segment num
+      throws IOException {
+    int i = readerIndex(n);        // find segment num
     return subReaders[i].getTermFreqVector(n - starts[i], field);
   }
 
   public synchronized int numDocs() {
-    if (numDocs == -1) {			  // check cache
-      int n = 0;				  // cache miss--recompute
+    if (numDocs == -1) {        // check cache
+      int n = 0;                // cache miss--recompute
       for (int i = 0; i < subReaders.length; i++)
-	n += subReaders[i].numDocs();		  // sum from readers
+        n += subReaders[i].numDocs();      // sum from readers
       numDocs = n;
     }
     return numDocs;
@@ -105,21 +104,21 @@ public class MultiReader extends IndexReader {
   }
 
   public Document document(int n) throws IOException {
-    int i = readerIndex(n);			  // find segment num
-    return subReaders[i].document(n - starts[i]);	  // dispatch to segment reader
+    int i = readerIndex(n);                          // find segment num
+    return subReaders[i].document(n - starts[i]);    // dispatch to segment reader
   }
 
   public boolean isDeleted(int n) {
-    int i = readerIndex(n);			  // find segment num
-    return subReaders[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
+    int i = readerIndex(n);                           // find segment num
+    return subReaders[i].isDeleted(n - starts[i]);    // dispatch to segment reader
   }
 
   public boolean hasDeletions() { return hasDeletions; }
 
   protected void doDelete(int n) throws IOException {
-    numDocs = -1;				  // invalidate cache
-    int i = readerIndex(n);			  // find segment num
-    subReaders[i].delete(n - starts[i]);		  // dispatch to segment reader
+    numDocs = -1;                             // invalidate cache
+    int i = readerIndex(n);                   // find segment num
+    subReaders[i].delete(n - starts[i]);      // dispatch to segment reader
     hasDeletions = true;
   }
 
@@ -129,22 +128,22 @@ public class MultiReader extends IndexReader {
     hasDeletions = false;
   }
 
-  private int readerIndex(int n) {	  // find reader for doc n:
-    int lo = 0;					  // search starts array
+  private int readerIndex(int n) {    // find reader for doc n:
+    int lo = 0;                                      // search starts array
     int hi = subReaders.length - 1;                  // for first element less
 
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
       int midValue = starts[mid];
       if (n < midValue)
-	hi = mid - 1;
+        hi = mid - 1;
       else if (n > midValue)
-	lo = mid + 1;
+        lo = mid + 1;
       else {                                      // found a match
         while (mid+1 < subReaders.length && starts[mid+1] == midValue) {
           mid++;                                  // scan to last match
         }
-	return mid;
+        return mid;
       }
     }
     return hi;
@@ -153,12 +152,12 @@ public class MultiReader extends IndexReader {
   public synchronized byte[] norms(String field) throws IOException {
     byte[] bytes = (byte[])normsCache.get(field);
     if (bytes != null)
-      return bytes;				  // cache hit
+      return bytes;          // cache hit
 
     bytes = new byte[maxDoc()];
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].norms(field, bytes, starts[i]);
-    normsCache.put(field, bytes);		  // update cache
+    normsCache.put(field, bytes);      // update cache
     return bytes;
   }
 
@@ -174,8 +173,8 @@ public class MultiReader extends IndexReader {
 
   protected void doSetNorm(int n, String field, byte value)
     throws IOException {
-    normsCache.remove(field);                     // clear cache
-    int i = readerIndex(n);			  // find segment num
+    normsCache.remove(field);                         // clear cache
+    int i = readerIndex(n);                           // find segment num
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }
 
@@ -188,7 +187,7 @@ public class MultiReader extends IndexReader {
   }
 
   public int docFreq(Term t) throws IOException {
-    int total = 0;				  // sum freqs in segments
+    int total = 0;          // sum freqs in segments
     for (int i = 0; i < subReaders.length; i++)
       total += subReaders[i].docFreq(t);
     return total;
@@ -201,7 +200,7 @@ public class MultiReader extends IndexReader {
   public TermPositions termPositions() throws IOException {
     return new MultiTermPositions(subReaders, starts);
   }
-  
+
   protected void doCommit() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit();
@@ -248,9 +247,9 @@ public class MultiReader extends IndexReader {
     // maintain a unique set of field names
     Set fieldSet = new HashSet();
     for (int i = 0; i < subReaders.length; i++) {
-        IndexReader reader = subReaders[i];
-        Collection names = reader.getIndexedFieldNames(storedTermVector);
-        fieldSet.addAll(names);
+      IndexReader reader = subReaders[i];
+      Collection names = reader.getIndexedFieldNames(storedTermVector);
+      fieldSet.addAll(names);
     }
     return fieldSet;
   }
@@ -271,15 +270,15 @@ class MultiTermEnum extends TermEnum {
       SegmentTermEnum termEnum;
 
       if (t != null) {
-	termEnum = (SegmentTermEnum)reader.terms(t);
+        termEnum = (SegmentTermEnum)reader.terms(t);
       } else
-	termEnum = (SegmentTermEnum)reader.terms();
+        termEnum = (SegmentTermEnum)reader.terms();
 
       SegmentMergeInfo smi = new SegmentMergeInfo(starts[i], termEnum, reader);
       if (t == null ? smi.next() : termEnum.term() != null)
-	queue.put(smi);				  // initialize queue
+        queue.put(smi);          // initialize queue
       else
-	smi.close();
+        smi.close();
     }
 
     if (t != null && queue.size() > 0) {
@@ -299,11 +298,11 @@ class MultiTermEnum extends TermEnum {
 
     while (top != null && term.compareTo(top.term) == 0) {
       queue.pop();
-      docFreq += top.termEnum.docFreq();	  // increment freq
+      docFreq += top.termEnum.docFreq();    // increment freq
       if (top.next())
-	queue.put(top);				  // restore queue
+        queue.put(top);          // restore queue
       else
-	top.close();				  // done with a segment
+        top.close();          // done with a segment
       top = (SegmentMergeInfo)queue.top();
     }
     return true;
@@ -370,25 +369,24 @@ class MultiTermDocs implements TermDocs {
   }
 
   /** Optimized implementation. */
-  public int read(final int[] docs, final int[] freqs)
-      throws IOException {
+  public int read(final int[] docs, final int[] freqs) throws IOException {
     while (true) {
       while (current == null) {
-	if (pointer < readers.length) {		  // try next segment
-	  base = starts[pointer];
-	  current = termDocs(pointer++);
-	} else {
-	  return 0;
-	}
+        if (pointer < readers.length) {      // try next segment
+          base = starts[pointer];
+          current = termDocs(pointer++);
+        } else {
+          return 0;
+        }
       }
       int end = current.read(docs, freqs);
-      if (end == 0) {				  // none left in segment
-	current = null;
-      } else {					  // got some
-	final int b = base;			  // adjust doc numbers
-	for (int i = 0; i < end; i++)
-	  docs[i] += b;
-	return end;
+      if (end == 0) {          // none left in segment
+        current = null;
+      } else {            // got some
+        final int b = base;        // adjust doc numbers
+        for (int i = 0; i < end; i++)
+         docs[i] += b;
+        return end;
       }
     }
   }
@@ -397,9 +395,9 @@ class MultiTermDocs implements TermDocs {
   public boolean skipTo(int target) throws IOException {
     do {
       if (!next())
-	return false;
+        return false;
     } while (target > doc());
-    return true;
+      return true;
   }
 
   private SegmentTermDocs termDocs(int i) throws IOException {
@@ -430,8 +428,7 @@ class MultiTermPositions extends MultiTermDocs implements TermPositions {
     super(r,s);
   }
 
-  protected SegmentTermDocs termDocs(IndexReader reader)
-       throws IOException {
+  protected SegmentTermDocs termDocs(IndexReader reader) throws IOException {
     return (SegmentTermDocs)reader.termPositions();
   }
 
