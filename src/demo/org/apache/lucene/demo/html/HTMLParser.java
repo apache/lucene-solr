@@ -20,8 +20,25 @@ public class HTMLParser implements HTMLParserConstants {
   boolean afterTag = false;
   boolean afterSpace = false;
   String eol = System.getProperty("line.separator");
-  PipedReader pipeIn = null;
-  PipedWriter pipeOut;
+  Reader pipeIn = null;
+  Writer pipeOut;
+  private MyPipedInputStream pipeInStream = null;
+  private PipedOutputStream pipeOutStream = null;
+
+  private class MyPipedInputStream extends PipedInputStream{
+
+    public MyPipedInputStream(){
+      super();
+    }
+
+    public MyPipedInputStream(PipedOutputStream src) throws IOException{
+      super(src);
+    }
+
+    public boolean full() throws IOException{
+      return this.available() >= PipedInputStream.PIPE_SIZE;
+    }
+  }
 
   public HTMLParser(File file) throws FileNotFoundException {
     this(new FileInputStream(file));
@@ -32,7 +49,7 @@ public class HTMLParser implements HTMLParserConstants {
       getReader();                                // spawn parsing thread
     while (true) {
       synchronized(this) {
-        if (titleComplete || (length > SUMMARY_LENGTH))
+        if (titleComplete || pipeInStream.full())
           break;
         wait(10);
       }
@@ -46,7 +63,7 @@ InterruptedException {
       getReader();                                // spawn parsing thread
     while (true) {
       synchronized(this) {
-        if (titleComplete || (length > SUMMARY_LENGTH))
+        if (titleComplete || pipeInStream.full())
           break;
         wait(10);
       }
@@ -60,7 +77,7 @@ InterruptedException {
       getReader();                                // spawn parsing thread
     while (true) {
       synchronized(this) {
-        if (summary.length() >= SUMMARY_LENGTH)
+        if (summary.length() >= SUMMARY_LENGTH || pipeInStream.full())
           break;
         wait(10);
       }
@@ -70,16 +87,18 @@ InterruptedException {
 
     String sum = summary.toString().trim();
     String tit = getTitle();
-    if (sum.startsWith(tit))
-      return sum.substring(tit.length());
+    if (sum.startsWith(tit) || sum.equals(""))
+      return tit;
     else
       return sum;
   }
 
   public Reader getReader() throws IOException {
     if (pipeIn == null) {
-      pipeIn = new PipedReader();
-      pipeOut = new PipedWriter(pipeIn);
+      pipeInStream = new MyPipedInputStream();
+      pipeOutStream = new PipedOutputStream(pipeInStream);
+      pipeIn = new InputStreamReader(pipeInStream);
+      pipeOut = new OutputStreamWriter(pipeOutStream);
 
       Thread thread = new ParserThread(this);
       thread.start();                             // start parsing
@@ -405,15 +424,15 @@ null)
     finally { jj_save(1, xla); }
   }
 
-  final private boolean jj_3_1() {
-    if (jj_scan_token(ArgQuote1)) return true;
-    if (jj_scan_token(CloseQuote1)) return true;
-    return false;
-  }
-
   final private boolean jj_3_2() {
     if (jj_scan_token(ArgQuote2)) return true;
     if (jj_scan_token(CloseQuote2)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1() {
+    if (jj_scan_token(ArgQuote1)) return true;
+    if (jj_scan_token(CloseQuote1)) return true;
     return false;
   }
 
