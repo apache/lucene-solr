@@ -28,7 +28,7 @@ import java.io.IOException;
 public final class FuzzyQuery extends MultiTermQuery {
   
   public final static float defaultMinSimilarity = 0.5f;
-  public final static int defaultPrefixLength = 2;
+  public final static int defaultPrefixLength = 0;
   
   private float minimumSimilarity;
   private int prefixLength;
