@@ -1,0 +1,221 @@
+<?xml version="1.0"?>
+
+<document>
+
+  <properties>
+    <title>Indyo Tutorial</title>
+    <author email="kelvint@apache.org">Kelvin Tan</author>
+  </properties>
+
+  <body>
+
+<section name="About this Tutorial">
+
+<p>
+  This tutorial is intended to give first-time users an
+  introduction to using Indyo, a datasource-independent 
+  Lucene indexing framework.
+</p>
+
+<p>
+  This will include how to obtain Indyo, configuring Indyo
+  and indexing a directory on a filesystem.
+</p>
+
+</section>
+
+<section name="Step 1: Obtaining Indyo">
+
+<p>
+  First, you need to obtain Indyo.  As
+  of this writing, Indyo is only available via CVS, from the 
+  "jakarta-lucene-sandbox" repository. See 
+  <a href="http://jakarta.apache.org/cvsindex.html">Jakarta CVS</a> 
+  on accessing files via CVS.</p>
+
+
+</section>
+
+<section name="Step 2: Building Indyo">
+
+<p>
+  Get a copy of <a href="http://jakarta.apache.org/ant">Ant</a> if 
+  you don't already have it installed. Then simply type "ant" in the 
+  directory where the local copy of the Indyo sources reside.
+</p>
+
+<p>
+	Voila! You should now have a jar file "indyo-<version number>.jar".
+</p>
+
+</section>
+
+<section name="Step 3: Configuring Indyo">
+
+<p>
+  The "src/conf" folder contains a default configuration file which is 
+  sufficient for normal use. 
+</p>
+
+</section>
+
+<section name="Step 4: Using Indyo">
+
+<p>
+	Congratulations, you have finally reached the fun the
+	part of this tutorial.  This is where you'll discover
+	the power of Indyo.  
+</p>
+
+<p>
+  To index a datasource, first instantiate the respective 
+  datasource, then hand it to IndyoIndexer for indexing. 
+  For example:
+</p>
+
+<source><![CDATA[
+IndexDataSource ds = new FSDataSource("/usr/local/lucene/docs");
+IndyoIndexer indexer = new IndyoIndexer("/usr/local/index", 
+										"/usr/local/indyo/default.config.xml");
+indexer.index(ds);										
+]]></source>
+
+<p>
+  FSDataSource is a simple datasource which indexes both files 
+  and directories. The metadata FSDataSource adds to each document is: 
+  filePath, fileName, fileSize, fileFormat, fileContents, 
+  fileLastModifiedDate. Based on the file extension of the files indexed, 
+  Indyo will use file content-handlers according to the mappings found in the 
+  configuration file. If you're not happy with this list of file 
+  metadata, feel free to subclass FSDataSource, or, as we're about 
+  to cover next, write your own custom IndexDataSource.
+</p>
+
+<p>
+	Get familiar with FSDataSource. You'll find it very handy, both for indexing 
+	files directly, as well as nesting it within another datasource. For example, 
+	you might need to index a database table, in which one of the rows represent 
+	the location of a file, and you may want to use FSDataSource to index this 
+	file as well.
+</p>
+
+<subsection name="Writing your custom IndexDataSource">
+
+<p>
+  To write a custom IndexDataSource, you need to write a class 
+  which implements IndexDataSource, and provides an implementation 
+  for the getData() method which returns a Map[]. The javadoc of the 
+  getData() method reads:
+</p>
+
+<source><![CDATA[
+/**
+ * Retrieve a array of Maps. Each map represents the
+ * a document to be indexed. The key:value pair of the map
+ * is the metadata of the document.
+ */
+]]></source>
+
+<p>
+  So, the getData() method provides a way for Indyo to retrieve document 
+  metadata from each IndexDataSource. A simple example of a custom 
+  IndexDataSource, HashMapDataSource is provided below.
+</p>
+
+<source><![CDATA[
+public class HashMapDataSource implements IndexDataSource
+{
+    private Map data;
+
+    public HashMapDataSource(Map data)
+    {
+        this.data = data;
+    }
+
+    public Map[] getData() throws Exception
+    {
+        return new Map[1]{data};
+    }
+}
+]]></source>
+
+<p>
+  As you can see, HashMapDataSource doesn't do anything very useful. It 
+  always results in one Document being indexed, and the document's fields 
+  depend on the contents of the map that HashMapDataSource was initialized 
+  with.
+</p>
+
+<p>
+	A slightly more useful IndexDataSource, SingleDocumentFSDataSource 
+	provides an example of how to nest datasources. Given a directory, 
+	SingleDocumentFSDataSource recursively indexes all directories 
+	and files within that directory <i>as the same Document</i>. In other 
+	words, only one Document is created in the index. This is accomplished 
+	by the use of a nested datasource. The code for 
+	SingleDocumentFSDataSource is listed below:
+</p>
+
+<source><![CDATA[	
+public class SingleDocumentFSDataSource
+        implements IndexDataSource
+{
+    private File file;
+
+    public SingleDocumentFSDataSource(File file)
+    {
+        this.file = file;
+    }
+
+    public Map[] getData() throws Exception
+    {
+        Map data = new HashMap(1);
+        data.put(NESTED_DATASOURCE, new FSDataSource(file));
+        return new Map[1]{data};
+    }
+}
+]]></source>
+
+<p>
+	Nested datasources don't result in a separate Document being created. 
+	Use them when working with complex datasources, i.e., datasources 
+	which are an aggregation of multiple datasources. The current way to 
+	add a nested datasource is using the key "NESTED_DATASOURCE". Indyo 
+	accepts an IndexDataSource object, a List of IndexDataSources, 
+	or an IndexDataSource[] for this key.
+</p>
+
+</subsection>
+
+</section>
+
+<section name="Where to Go From Here">
+
+<p>
+  Congratulations!  You have completed the Indyo
+  tutorial.  Although this has only been an introduction
+  to Torque, it should be sufficient to get you started
+  with Indyo in your applications.  For those of you
+  seeking additional information, there are several other
+  documents on this site that can provide details on
+  various subjects.  Lastly, the source code is an
+  invaluable resource when all else fails to provide
+  answers!
+</p>
+
+</section>
+
+<section name="Acknowledgements">
+
+<p>
+	This document was shamelessly ripped from the extremely well-written 
+	and well-organized 
+	<a href="http://jakarta.apache.org/turbine/torque/tutorial.html">Torque
+	</a> tutorial. Thanks Pete!
+</p>
+
+</section>
+
+  </body>
+</document>
+
