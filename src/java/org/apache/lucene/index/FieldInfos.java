@@ -73,7 +73,6 @@ final class FieldInfos {
    */
   public void addIndexed(Collection names, boolean storeTermVectors) {
     Iterator i = names.iterator();
-    int j = 0;
     while (i.hasNext()) {
       add((String)i.next(), true, storeTermVectors);
     }
@@ -88,7 +87,6 @@ final class FieldInfos {
    */
   public void add(Collection names, boolean isIndexed) {
     Iterator i = names.iterator();
-    int j = 0;
     while (i.hasNext()) {
       add((String)i.next(), isIndexed);
     }
