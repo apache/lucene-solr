@@ -74,7 +74,7 @@ import java.util.Hashtable;
  * @author    Gerhard Schwarz
  * @version   $Id$
  */
-public final class GermanAnalyzer extends Analyzer {
+public class GermanAnalyzer extends Analyzer {
 
 	/**
 	 * List of typical german stopwords.
@@ -156,13 +156,11 @@ public final class GermanAnalyzer extends Analyzer {
 	 * @return  A TokenStream build from a StandardTokenizer filtered with
 	 * 			StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter
 	 */
-	public final TokenStream tokenStream( String fieldName, Reader reader ) {
+	public TokenStream tokenStream( String fieldName, Reader reader ) {
 		TokenStream result = new StandardTokenizer( reader );
 		result = new StandardFilter( result );
 		result = new StopFilter( result, stoptable );
 		result = new GermanStemFilter( result, excltable );
-		// Convert to lowercase after stemming!
-		result = new LowerCaseFilter( result );
 		return result;
 	}
 }
