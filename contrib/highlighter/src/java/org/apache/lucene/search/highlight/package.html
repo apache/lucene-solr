@@ -4,7 +4,7 @@ The highlight package contains classes to provide "keyword in context" features
 typically used to highlight search terms in the text of results pages. <br>
 The Highlighter class is the central component and can be used to extract the
 most interesting sections of a piece of text and highlight them, with the help of
-Fragmenter, FragmentScorer and Formatter classes.
+Fragmenter, FragmentScorer, Formatter classes.
 <h2>Example Usage</h2>
 
 <pre>
@@ -18,11 +18,13 @@ Fragmenter, FragmentScorer and Formatter classes.
 		{
 			String text = hits.doc(i).get(FIELD_NAME);
 			TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(text));
-			// Get 3 best fragments and seperate with a "..." 
+			// Get 3 best fragments and seperate with a "..."
 			String result = highlighter.getBestFragments(tokenStream,text,3,"...");
 			System.out.println(result);
 		}
 </pre>
+<h2>New features 06/02/2005</h2>
+This release adds options for encoding (thanks to Nicko Cadell)
 
 <h2>New features 22/12/2004</h2>
 This release adds some new capabilities:
@@ -35,15 +37,15 @@ This release adds some new capabilities:
 The highlighter takes a TokenStream as input. Until now these streams have typically been produced
 using an Analyzer but the new class TokenSources provides helper methods for obtaining TokenStreams from
 the new TermVector position support (see latest CVS version).</p>
-<p>The new class GradientFormatter can use a scale of colors to highlight terms according to their score. 
+<p>The new class GradientFormatter can use a scale of colors to highlight terms according to their score.
 A subtle use of color can help emphasise the reasons for matching (useful when doing "MoreLikeThis" queries and
 you want to see what the basis of the similarities are)</p>
 <p>The QueryScorer class has a new constructor which can use an IndexReader to derive the IDF (inverse document frequency)
 for each term in order to influcence the score. This is useful for helping to extracting the most significant sections
-of a document and in supplying scores used by the new GradientFormatter to color significant words more strongly. 
+of a document and in supplying scores used by the new GradientFormatter to color significant words more strongly.
 The QueryScorer.getMaxWeight method is useful when passed to the GradientFormatter constructor to define the top score
 which is associated with the top color.</p>
-	
+
 
 
 
