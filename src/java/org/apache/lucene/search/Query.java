@@ -68,7 +68,7 @@ import org.apache.lucene.index.IndexReader;
   </ul>
   <p>A parser for queries is contained in:
   <ul>
-  <li><a href="doc/lucene.queryParser.QueryParser.html">QueryParser</a>
+  <li><a href="/lucene/docs/api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a>
   </ul>
   */
 abstract public class Query implements java.io.Serializable {
@@ -103,7 +103,7 @@ abstract public class Query implements java.io.Serializable {
     this term will (in addition to the normal weightings) have their score
     multiplied by <code>b</code>.   The boost is 1.0 by default.  */
   public float getBoost() { return boost; }
-  
+
   /** Prints a query to a string, with <code>field</code> as the default field
     for terms.
     <p>The representation used is one that is readable by
