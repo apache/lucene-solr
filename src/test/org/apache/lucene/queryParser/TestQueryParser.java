@@ -305,16 +305,16 @@ public class TestQueryParser extends TestCase {
     }
 
     public void testRange() throws Exception {
-	assertQueryEquals("[ a TO z]", null, "[a-z]");
+	assertQueryEquals("[ a TO z]", null, "[a TO z]");
 	assertTrue(getQuery("[ a TO z]", null) instanceof RangeQuery);
-	assertQueryEquals("[ a TO z ]", null, "[a-z]");
-	assertQueryEquals("{ a TO z}", null, "{a-z}");
-	assertQueryEquals("{ a TO z }", null, "{a-z}");
-	assertQueryEquals("{ a TO z }^2.0", null, "{a-z}^2.0");
-	assertQueryEquals("[ a TO z] OR bar", null, "[a-z] bar");
-	assertQueryEquals("[ a TO z] AND bar", null, "+[a-z] +bar");
-	assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a-z}");
-	assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a-z})");
+	assertQueryEquals("[ a TO z ]", null, "[a TO z]");
+	assertQueryEquals("{ a TO z}", null, "{a TO z}");
+	assertQueryEquals("{ a TO z }", null, "{a TO z}");
+	assertQueryEquals("{ a TO z }^2.0", null, "{a TO z}^2.0");
+	assertQueryEquals("[ a TO z] OR bar", null, "[a TO z] bar");
+	assertQueryEquals("[ a TO z] AND bar", null, "+[a TO z] +bar");
+	assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
+	assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
     }
 
     public String getDate(String s) throws Exception {
@@ -333,9 +333,9 @@ public class TestQueryParser extends TestCase {
     String startDate = getLocalizedDate(2002, 1, 1);
     String endDate = getLocalizedDate(2002, 1, 4);
 	assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null,
-	    "[" + getDate(startDate) + "-" + getDate(endDate) + "]");
+	    "[" + getDate(startDate) + " TO " + getDate(endDate) + "]");
 	assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null,
-	    "{" + getDate(startDate) + "-" + getDate(endDate) + "}");
+	    "{" + getDate(startDate) + " TO " + getDate(endDate) + "}");
     }
 
     public void testEscaped() throws Exception {

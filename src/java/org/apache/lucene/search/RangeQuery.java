@@ -156,7 +156,7 @@ public class RangeQuery extends Query
         }
         buffer.append(inclusive ? "[" : "{");
         buffer.append(lowerTerm != null ? lowerTerm.text() : "null");
-        buffer.append("-");
+        buffer.append(" TO ");
         buffer.append(upperTerm != null ? upperTerm.text() : "null");
         buffer.append(inclusive ? "]" : "}");
         if (getBoost() != 1.0f)
