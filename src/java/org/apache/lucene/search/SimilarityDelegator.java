@@ -17,13 +17,13 @@ package org.apache.lucene.search;
  */
 
 /** Expert: Delegating scoring implementation.  Useful in {@link
- * Query#getSimilarity(Searcher) implementations, to override only certain
+ * Query#getSimilarity(Searcher)} implementations, to override only certain
  * methods of a Searcher's Similiarty implementation.. */
 public class SimilarityDelegator extends Similarity {
 
   private Similarity delegee;
 
-  /** Construct a {@link Similiarity} that delegates all methods to another.
+  /** Construct a {@link Similarity} that delegates all methods to another.
    *
    * @param delegee the Similarity implementation to delegate to
    */

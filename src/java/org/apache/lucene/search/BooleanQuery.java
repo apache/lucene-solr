@@ -83,7 +83,7 @@ public class BooleanQuery extends Query {
 
   /** Returns true iff {@link Similarity#coord(int,int)} is disabled in
    * scoring for this query instance.
-   * @see BooleanQuery(boolean)
+   * @see #BooleanQuery(boolean)
    */
   public boolean isCoordDisabled() { return disableCoord; }
 
