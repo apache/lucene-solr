@@ -162,8 +162,11 @@ public class BooleanQuery extends Query {
   protected Weight createWeight(Searcher searcher) {
     if (clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.elementAt(0);
-      if (!c.prohibited)			  // just return clause weight
-        return c.query.createWeight(searcher);
+      if (!c.prohibited) {			  // just return clause weight
+        Query clone = (Query)c.query.clone();
+        clone.setBoost(getBoost() * clone.getBoost());
+        return clone.createWeight(searcher);
+      }
     }
     return new BooleanWeight(searcher);
   }

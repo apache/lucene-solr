@@ -78,7 +78,7 @@ import org.apache.lucene.index.IndexReader;
     <li>{@link org.apache.lucene.queryParser.QueryParser QueryParser}
     </ul>
 */
-public abstract class Query implements java.io.Serializable {
+public abstract class Query implements java.io.Serializable, Cloneable {
   private float boost = 1.0f;                     // query boost factor
 
   /** Sets the boost for this query clause to <code>b</code>.  Documents
@@ -167,4 +167,12 @@ public abstract class Query implements java.io.Serializable {
   }
 
 
+  /** Returns a clone of this query. */
+  public Object clone() {
+    try {
+      return (Query)super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }

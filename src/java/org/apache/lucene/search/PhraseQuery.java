@@ -189,7 +189,9 @@ public class PhraseQuery extends Query {
   protected Weight createWeight(Searcher searcher) {
     if (terms.size() == 1) {			  // optimize one-term case
       Term term = (Term)terms.elementAt(0);
-      return new TermQuery(term).createWeight(searcher);
+      Query termQuery = new TermQuery(term);
+      termQuery.setBoost(getBoost());
+      return termQuery.createWeight(searcher);
     }
     return new PhraseWeight(searcher);
   }

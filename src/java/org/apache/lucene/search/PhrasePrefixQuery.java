@@ -210,6 +210,7 @@ public class PhrasePrefixQuery extends Query {
       for (int i=0; i<terms.length; i++) {
         boq.add(new TermQuery(terms[i]), false, false);
       }
+      boq.setBoost(getBoost());
       return boq.createWeight(searcher);
     }
     return new PhrasePrefixWeight(searcher);
