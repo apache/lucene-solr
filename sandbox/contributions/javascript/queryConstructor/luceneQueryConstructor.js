@@ -52,7 +52,7 @@ function doMakeQuery( query )
           else if(subElement.type == "radio")
           {
             // radio button elements often have the same element name, 
-            // so ensure we have the right one
+            // so ensure we have the right one            
             if(subElement.checked)
             {
               subElementValue = subElement.value;              
@@ -101,6 +101,8 @@ function doMakeQuery( query )
 
 function addFieldWithModifier(query, modifier, field, fieldValue)
 {
+  fieldValue = trim(fieldValue);
+  
   if(query.value.length == 0)
   {
     query.value = modifier + '(' + field + ':(' + fieldValue + '))';
@@ -109,4 +111,19 @@ function addFieldWithModifier(query, modifier, field, fieldValue)
   {
     query.value = query.value + ' ' + modifier + '(' + field + ':(' + fieldValue + '))';
   }  
+}
+
+function trim(inputString) {
+   if (typeof inputString != "string") { return inputString; }
+   
+   var temp = inputString;
+   
+   // Replace whitespace with a single space
+   var pattern = /\s/ig;
+   temp = temp.replace(pattern, " ");
+  
+   // Trim 
+   pattern = /^(\s*)([\w\W]*)(\b\s*$)/;
+   if (pattern.test(temp)) { temp = temp.replace(pattern, "$2"); }
+   return temp; // Return the trimmed string back to the user
 }
