@@ -414,27 +414,27 @@ public class TestIndexReader extends TestCase
     private void addDocumentWithFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(Field.Keyword("keyword","test1"));
-        doc.add(Field.Text("text","test1"));
-        doc.add(Field.UnIndexed("unindexed","test1"));
-        doc.add(Field.UnStored("unstored","test1"));
+        doc.add(new Field("keyword","test1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("text","test1", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("unindexed","test1", Field.Store.YES, Field.Index.NO));
+        doc.add(new Field("unstored","test1", Field.Store.NO, Field.Index.TOKENIZED));
         writer.addDocument(doc);
     }
 
     private void addDocumentWithDifferentFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(Field.Keyword("keyword2","test1"));
-        doc.add(Field.Text("text2","test1"));
-        doc.add(Field.UnIndexed("unindexed2","test1"));
-        doc.add(Field.UnStored("unstored2","test1"));
+        doc.add(new Field("keyword2","test1", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("text2","test1", Field.Store.YES, Field.Index.TOKENIZED));
+        doc.add(new Field("unindexed2","test1", Field.Store.YES, Field.Index.NO));
+        doc.add(new Field("unstored2","test1", Field.Store.NO, Field.Index.TOKENIZED));
         writer.addDocument(doc);
     }
 
     private void addDoc(IndexWriter writer, String value)
     {
         Document doc = new Document();
-        doc.add(Field.UnStored("content", value));
+        doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
 
         try
         {

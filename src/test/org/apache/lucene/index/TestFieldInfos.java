@@ -25,7 +25,7 @@ public class TestFieldInfos extends TestCase {
   protected void tearDown() {
   }
 
-  public void test() throws IOException {
+  public void test() {
     //Positive test of FieldInfos
     assertTrue(testDoc != null);
     FieldInfos fieldInfos = new FieldInfos();

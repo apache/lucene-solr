@@ -98,7 +98,7 @@ public class TestSegmentTermEnum extends TestCase
   private void addDoc(IndexWriter writer, String value)
   {
     Document doc = new Document();
-    doc.add(Field.UnStored("content", value));
+    doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
 
     try {
       writer.addDocument(doc);

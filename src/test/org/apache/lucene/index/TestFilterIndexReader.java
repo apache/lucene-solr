@@ -95,15 +95,15 @@ public class TestFilterIndexReader extends TestCase {
       new IndexWriter(directory, new WhitespaceAnalyzer(), true);
 
     Document d1 = new Document();
-    d1.add(Field.Text("default","one two"));
+    d1.add(new Field("default","one two", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(Field.Text("default","one three"));
+    d2.add(new Field("default","one three", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(Field.Text("default","two four"));
+    d3.add(new Field("default","two four", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(d3);
 
     writer.close();

@@ -226,7 +226,7 @@ public class TestSegmentTermDocs extends TestCase {
   private void addDoc(IndexWriter writer, String value) throws IOException
   {
       Document doc = new Document();
-      doc.add(Field.UnStored("content", value));
+      doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
       writer.addDocument(doc);
   }
 }

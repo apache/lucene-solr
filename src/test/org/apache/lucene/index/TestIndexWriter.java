@@ -74,7 +74,7 @@ public class TestIndexWriter extends TestCase
     private void addDoc(IndexWriter writer)
     {
         Document doc = new Document();
-        doc.add(Field.UnStored("content", "aaa"));
+        doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
 
         try {
             writer.addDocument(doc);
