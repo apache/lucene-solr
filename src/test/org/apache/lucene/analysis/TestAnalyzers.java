@@ -101,7 +101,7 @@ public class TestAnalyzers extends TestCase {
   }
 
   public void testNull() throws Exception {
-    Analyzer a = new NullAnalyzer();
+    Analyzer a = new WhitespaceAnalyzer();
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "FOO", "BAR" });
     assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", 

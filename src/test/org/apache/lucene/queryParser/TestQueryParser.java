@@ -178,7 +178,7 @@ public class TestQueryParser extends TestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new NullAnalyzer();
+    Analyzer a = new WhitespaceAnalyzer();
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
