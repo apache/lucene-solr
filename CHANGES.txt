@@ -10,6 +10,10 @@ $Id$
     brings the build process closer to Scarab's build process.
     (jon)
 
+ 2. Added MultiFieldQueryParser class. (Kelvin Tan, via otis)
+
+ 3. Updated "powered by" links. (otis)
+
 1.2 RC4
 
  1. Updated contributions section of website.
@@ -47,7 +51,7 @@ $Id$
 
  3. Fix query parser so it accepts queries with unicode characters.
     (briangoetz)
- 
+
  4. Fix query parser so that PrefixQuery is used in preference to
     WildcardQuery when there's only an asterisk at the end of the
     term.  Previously PrefixQuery would never be used.
