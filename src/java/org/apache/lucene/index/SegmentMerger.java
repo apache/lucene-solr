@@ -158,12 +158,12 @@ final class SegmentMerger {
     int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.WITH_POSITIONS_OFFSETS), true, true, true);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.WITH_POSITIONS), true, true, false);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.WITH_OFFSETS), true, false, true);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.YES), true, false, false);
-      fieldInfos.addIndexed(reader.getIndexedFieldNames(Field.TermVector.NO), false, false, false);
-      fieldInfos.add(reader.getFieldNames(false), false);
+      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true);
+      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false);
+      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true);
+      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false);
+      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false);
+      fieldInfos.add(reader.getFieldNames(IndexReader.FieldOption.UNINDEXED), false);
     }
     fieldInfos.write(directory, segment + ".fnm");
 
