@@ -55,17 +55,16 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.File;
 
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-
-import org.apache.lucene.store.*;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.OutputStream;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store._TestHelper;
 
 
 /**
@@ -92,20 +91,12 @@ public class TestCompoundFile extends TestCase
     }
 
 
-    public TestCompoundFile() {
-        super();
-    }
-
-    public TestCompoundFile(String name) {
-        super(name);
-    }
-
     private Directory dir;
 
 
     public void setUp() throws IOException {
         //dir = new RAMDirectory();
-        dir = FSDirectory.getDirectory("testIndex", true);
+        dir = FSDirectory.getDirectory(new File(System.getProperty("tempDir"), "testIndex"), true);
     }
 
 

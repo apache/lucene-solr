@@ -75,79 +75,79 @@ import java.util.*;
  * @version $Id$
  */
 public class TestDoc extends TestCase {
-    
+
     /** Main for running test case by itself. */
     public static void main(String args[]) {
         TestRunner.run (new TestSuite(TestDoc.class));
     }
-    
-    
+
+
     private File workDir;
     private File indexDir;
     private LinkedList files;
-    
-    
-    /** Set the test case. This test case needs 
+
+
+    /** Set the test case. This test case needs
      *  a few text files created in the current working directory.
      */
     public void setUp() throws IOException {
-        workDir = new File("TestDoc");
+        workDir = new File(System.getProperty("tempDir"),"TestDoc");
         workDir.mkdirs();
-        
+
         indexDir = new File(workDir, "testIndex");
         indexDir.mkdirs();
-        
+
         Directory directory = FSDirectory.getDirectory(indexDir, true);
         directory.close();
-        
+
         files = new LinkedList();
-        files.add(createFile("test.txt", 
+        files.add(createFile("test.txt",
             "This is the first test file"
         ));
-        
+
         files.add(createFile("test2.txt",
             "This is the second test file"
         ));
     }
-    
+
     private File createFile(String name, String text) throws IOException {
         FileWriter fw = null;
         PrintWriter pw = null;
-        
+
         try {
             File f = new File(workDir, name);
             if (f.exists()) f.delete();
-            
+
             fw = new FileWriter(f);
             pw = new PrintWriter(fw);
             pw.println(text);
             return f;
-            
+
         } finally {
             if (pw != null) pw.close();
             if (fw != null) fw.close();
         }
     }
-    
-    
+
+
     /** This test executes a number of merges and compares the contents of
      *  the segments created when using compound file or not using one.
-     *  
+     *
      *  TODO: the original test used to print the segment contents to System.out
      *        for visual validation. To have the same effect, a new method
-     *        checkSegment(String name, ...) should be created that would 
+     *        checkSegment(String name, ...) should be created that would
      *        assert various things about the segment.
      */
     public void testIndexAndMerge() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
-      
+
       Directory directory = FSDirectory.getDirectory(indexDir, true);
       directory.close();
 
       indexDoc("one", "test.txt");
       printSegment(out, "one");
-      
+
       indexDoc("two", "test2.txt");
       printSegment(out, "two");
 
@@ -164,16 +164,16 @@ public class TestDoc extends TestCase {
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
       System.out.println(multiFileOutput);
-      
+
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
-      
+
       directory = FSDirectory.getDirectory(indexDir, true);
       directory.close();
 
       indexDoc("one", "test.txt");
       printSegment(out, "one");
-      
+
       indexDoc("two", "test2.txt");
       printSegment(out, "two");
 
@@ -193,9 +193,9 @@ public class TestDoc extends TestCase {
       assertEquals(multiFileOutput, singleFileOutput);
    }
 
-   
+
    private void indexDoc(String segment, String fileName)
-   throws Exception 
+   throws Exception
    {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
       Analyzer analyzer = new SimpleAnalyzer();
@@ -210,7 +210,7 @@ public class TestDoc extends TestCase {
       directory.close();
    }
 
-   
+
    private void merge(String seg1, String seg2, String merged, boolean useCompoundFile)
    throws Exception {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
@@ -218,9 +218,9 @@ public class TestDoc extends TestCase {
       SegmentReader r1 = new SegmentReader(new SegmentInfo(seg1, 1, directory));
       SegmentReader r2 = new SegmentReader(new SegmentInfo(seg2, 1, directory));
 
-      SegmentMerger merger = 
+      SegmentMerger merger =
         new SegmentMerger(directory, merged, useCompoundFile);
-        
+
       merger.add(r1);
       merger.add(r2);
       merger.merge();
@@ -228,7 +228,7 @@ public class TestDoc extends TestCase {
       directory.close();
    }
 
-   
+
    private void printSegment(PrintWriter out, String segment)
    throws Exception {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
