@@ -1,7 +1,6 @@
 import org.apache.log4j.Category;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Hits;
-import search.SearchResultFactory;
 
 import java.io.IOException;
 
@@ -14,10 +13,6 @@ import java.io.IOException;
  * <p>
  * SearchResults also provides a way of retrieving Java objects from
  * Documents (via {@link search.SearchResultsFactory}).
- * </p>
- * <p>
- * <b>Note that this implementation uses code from
- * /projects/appex/search.</b>
  * </p>
  */
 public class SearchResults
@@ -67,6 +62,11 @@ public class SearchResults
      */
     public Object[] getResultsAsObjects()
     {
+        /**
+         * At this point, use some mechanism of retrieving
+         * the objects via a UUID or something.
+         */
+        /*
         if (objectResults == null)
         {
             objectResults = new Object[hitsDocuments.length];
@@ -83,6 +83,7 @@ public class SearchResults
                 }
             }
         }
+        */
         return objectResults;
     }
 }

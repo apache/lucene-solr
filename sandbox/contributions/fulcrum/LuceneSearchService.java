@@ -5,16 +5,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.*;
 
-import search.SearchIndexer;
-
 import java.io.IOException;
 
 /**
  * Implementation of {@link SearchService}.
- * <p>
- * <b>Note that this implementation uses code from
- * /projects/appex/search.</b>
- * </p>
  */
 public class LuceneSearchService
         extends org.apache.fulcrum.BaseService implements SearchService
@@ -42,8 +36,7 @@ public class LuceneSearchService
 
     public void init() throws InitializationException
     {
-        searchIndexLocation = getConfiguration().getString(
-                SearchService.INDEX_LOCATION_KEY);
+        searchIndexLocation = getConfiguration().getString(SearchService.INDEX_LOCATION_KEY);
         setInit(true);
     }
 
@@ -113,19 +106,7 @@ public class LuceneSearchService
 
     public void batchIndex() throws ServiceException
     {
-        try
-        {
-            acquireIndexLock();
-            new IndexerThread(new SearchIndexer(), this);
-        }
-        catch (IOException ioe)
-        {
-            throw new ServiceException("Error encountered indexing!", ioe);
-        }
-        catch (InterruptedException ie)
-        {
-            throw new ServiceException("Error encountered indexing!", ie);
-        }
+        throw new UnsupportedOperationException();
     }
 
     public boolean isIndexing()
@@ -154,42 +135,5 @@ public class LuceneSearchService
     protected synchronized void releaseIndexLock()
     {
         indexLocked = false;
-    }
-}
-
-class IndexerThread extends Thread
-{
-    private static Category cat = Category.getInstance(IndexerThread.class);
-
-    private SearchIndexer indexer;
-    private LuceneSearchService service;
-
-    public IndexerThread()
-    {
-        super();
-    }
-
-    public IndexerThread(SearchIndexer indexer, LuceneSearchService service)
-        throws InterruptedException
-    {
-        service.acquireIndexLock();
-        this.indexer = indexer;
-        start();
-    }
-
-    public void run()
-    {
-        try
-        {
-            indexer.index();
-        }
-        catch (Exception e)
-        {
-            cat.error("Error indexing: " + e.getMessage(), e);
-        }
-        finally
-        {
-            service.releaseIndexLock();
-        }
     }
 }
