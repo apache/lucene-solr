@@ -74,25 +74,24 @@ import java.io.IOException;
     }
     </PRE>
 */
-
 public final class PorterStemFilter extends TokenFilter {
-    private PorterStemmer stemmer;
+  private PorterStemmer stemmer;
 
-    public PorterStemFilter(TokenStream in) {
-      super(in);
-      stemmer = new PorterStemmer();
-    }
+  public PorterStemFilter(TokenStream in) {
+    super(in);
+    stemmer = new PorterStemmer();
+  }
 
-    /** Returns the next input Token, after being stemmed */
-    public final Token next() throws IOException {
-	Token token = input.next();
-	if (token == null)
-	    return null;
-	else {
-	    String s = stemmer.stem(token.termText);
-	    if (s != token.termText) // Yes, I mean object reference comparison here
-		token.termText = s;
-	    return token;
-	}
+  /** Returns the next input Token, after being stemmed */
+  public final Token next() throws IOException {
+    Token token = input.next();
+    if (token == null)
+      return null;
+    else {
+      String s = stemmer.stem(token.termText);
+      if (s != token.termText) // Yes, I mean object reference comparison here
+  	    token.termText = s;
+      return token;
     }
+  }
 }
