@@ -1,4 +1,5 @@
-bin
+build
+dist
 *~
 velocity.log
 build.properties
