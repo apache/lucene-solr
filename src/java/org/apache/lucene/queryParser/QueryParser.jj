@@ -65,8 +65,11 @@ package org.apache.lucene.queryParser;
 
 import java.util.Vector;
 import java.io.*;
+import java.text.*;
+import java.util.*;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.*;
 
 /**
@@ -218,35 +221,30 @@ public class QueryParser {
 
   private Query getRangeQuery(String field, 
                               Analyzer analyzer, 
-                              String queryText, 
+                              String part1, 
+                              String part2,
                               boolean inclusive) 
   {
-    // Use the analyzer to get all the tokens.  There should be 1 or 2.
-    TokenStream source = analyzer.tokenStream(field, 
-                                              new StringReader(queryText));
-    Term[] terms = new Term[2];
-    org.apache.lucene.analysis.Token t;
+    boolean isDate = false, isNumber = false;
 
-    for (int i = 0; i < 2; i++)
-    {
-      try 
-      {
-        t = source.next();
-      } 
-      catch (IOException e) 
-      {
-        t = null;
-      }
-      if (t != null)
-      {
-        String text = t.termText();
-        if (!text.equalsIgnoreCase("NULL"))
-        {
-          terms[i] = new Term(field, text);
-        }
-      }
+    try {
+      DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+      df.setLenient(true);
+      Date d1 = df.parse(part1);
+      Date d2 = df.parse(part2);
+      part1 = DateField.dateToString(d1);
+      part2 = DateField.dateToString(d2);
+      isDate = true;
     }
-    return new RangeQuery(terms[0], terms[1], inclusive);
+    catch (Exception e) { }
+
+    if (!isDate) {
+      // @@@ Add number support
+    }
+
+    return new RangeQuery(new Term(field, part1), 
+                          new Term(field, part2), 
+                          inclusive);
   }
 
   public static void main(String[] args) throws Exception {
@@ -282,7 +280,7 @@ PARSER_END(QueryParser)
 | <#_WHITESPACE: ( " " | "\t" ) >
 }
 
-<DEFAULT> SKIP : {
+<DEFAULT, RangeIn, RangeEx> SKIP : {
   <<_WHITESPACE>>
 }
 
@@ -303,12 +301,26 @@ PARSER_END(QueryParser)
 | <PREFIXTERM:  <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" >
 | <WILDTERM:  <_TERM_START_CHAR> 
               (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
-| <RANGEIN:   "[" ( ~[ "]" ] )+ "]">
-| <RANGEEX:   "{" ( ~[ "}" ] )+ "}">
+| <RANGEIN_START: "[" > : RangeIn
+| <RANGEEX_START: "{" > : RangeEx
 }
 
 <Boost> TOKEN : {
 <NUMBER:    (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? > : DEFAULT
+}
+
+<RangeIn> TOKEN : {
+<RANGEIN_TO: "TO">
+| <RANGEIN_END: "]"> : DEFAULT
+| <RANGEIN_QUOTED: "\"" (~["\""])+ "\"">
+| <RANGEIN_GOOP: (~[ " ", "]" ])+ >
+}
+
+<RangeEx> TOKEN : {
+<RANGEEX_TO: "TO">
+| <RANGEEX_END: "}"> : DEFAULT
+| <RANGEEX_QUOTED: "\"" (~["\""])+ "\"">
+| <RANGEEX_GOOP: (~[ " ", "}" ])+ >
 }
 
 // *   Query  ::= ( Clause )*
@@ -387,7 +399,7 @@ Query Clause(String field) : {
     
 
 Query Term(String field) : { 
-  Token term, boost=null, slop=null;
+  Token term, boost=null, slop=null, goop1, goop2;
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
@@ -415,12 +427,29 @@ Query Term(String field) : {
        else
          q = getFieldQuery(field, analyzer, term.image); 
      }
-     | ( term=<RANGEIN> { rangein=true; } | term=<RANGEEX> )
+     | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
+         [ <RANGEIN_TO> ] ( goop2=<RANGEIN_GOOP>|goop2=<RANGEIN_QUOTED> ) 
+         <RANGEIN_END> )
        [ <CARAT> boost=<NUMBER> ]
         {
-          q = getRangeQuery(field, analyzer, 
-                            term.image.substring(1, term.image.length()-1), 
-                            rangein);
+          if (goop1.kind == RANGEIN_QUOTED)
+            goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+          if (goop2.kind == RANGEIN_QUOTED)
+            goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+
+          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
+        }
+     | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
+         [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> ) 
+         <RANGEEX_END> )
+       [ <CARAT> boost=<NUMBER> ]
+        {
+          if (goop1.kind == RANGEEX_QUOTED)
+            goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+          if (goop2.kind == RANGEEX_QUOTED)
+            goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+
+          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
         }
      | term=<QUOTED> 
        [ slop=<SLOP> ]

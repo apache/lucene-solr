@@ -55,11 +55,14 @@ package org.apache.lucene.queryParser;
  */
 
 import java.io.*;
+import java.text.*;
+import java.util.*;
 import junit.framework.*;
 
 import org.apache.lucene.*;
 import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.document.DateField;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.Token;
@@ -235,16 +238,28 @@ public class TestQueryParser extends TestCase {
   }
 
   public void testRange() throws Exception {
-    assertQueryEquals("[ a z]", null, "[a-z]");
-    assertTrue(getQuery("[ a z]", null) instanceof RangeQuery);
-    assertQueryEquals("[ a z ]", null, "[a-z]");
-    assertQueryEquals("{ a z}", null, "{a-z}");
-    assertQueryEquals("{ a z }", null, "{a-z}");
-    assertQueryEquals("{ a z }^2.0", null, "{a-z}^2.0");
-    assertQueryEquals("[ a z] OR bar", null, "[a-z] bar");
-    assertQueryEquals("[ a z] AND bar", null, "+[a-z] +bar");
-    assertQueryEquals("( bar blar { a z}) ", null, "bar blar {a-z}");
-    assertQueryEquals("gack ( bar blar { a z}) ", null, "gack (bar blar {a-z})");
+    assertQueryEquals("[ a TO z]", null, "[a-z]");
+    assertTrue(getQuery("[ a TO z]", null) instanceof RangeQuery);
+    assertQueryEquals("[ a TO z ]", null, "[a-z]");
+    assertQueryEquals("{ a TO z}", null, "{a-z}");
+    assertQueryEquals("{ a TO z }", null, "{a-z}");
+    assertQueryEquals("{ a TO z }^2.0", null, "{a-z}^2.0");
+    assertQueryEquals("[ a TO z] OR bar", null, "[a-z] bar");
+    assertQueryEquals("[ a TO z] AND bar", null, "+[a-z] +bar");
+    assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a-z}");
+    assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a-z})");
+  }
+
+  public String getDate(String s) throws Exception {
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    return DateField.dateToString(df.parse(s));
+  }
+
+  public void testDateRange() throws Exception {
+    assertQueryEquals("[ 1/1/02 TO 1/4/02]", null, 
+                      "[" + getDate("1/1/02") + "-" + getDate("1/4/02") + "]");
+    assertQueryEquals("{  1/1/02    1/4/02   }", null, 
+                      "{" + getDate("1/1/02") + "-" + getDate("1/4/02") + "}");
   }
 
   public void testEscaped() throws Exception {

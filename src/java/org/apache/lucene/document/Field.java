@@ -55,6 +55,7 @@ package org.apache.lucene.document;
  */
 
 import java.io.Reader;
+import java.util.Date;
 
 /**
   A field is a section of a Document.  Each field has two parts, a name and a
@@ -89,6 +90,13 @@ public final class Field {
     fields, like "title" or "subject". */
   public static final Field Text(String name, String value) {
     return new Field(name, value, true, true, true);
+  }
+
+  /** Constructs a Date-valued Field that is tokenized and indexed,
+    and is stored in the index, for return with hits.  Useful for short text
+    fields, like "title" or "subject". */
+  public static final Field Keyword(String name, Date value) {
+    return new Field(name, DateField.dateToString(value), true, true, true);
   }
 
   /** Constructs a String-valued Field that is tokenized and indexed,

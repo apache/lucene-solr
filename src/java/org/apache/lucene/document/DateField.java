@@ -105,8 +105,13 @@ public class DateField {
     if (s.length() > DATE_LEN)
       throw new RuntimeException("time too late");
 
-    while (s.length() < DATE_LEN)
-      s = "0" + s;				  // pad with leading zeros
+    // Pad with leading zeros
+    if (s.length() < DATE_LEN) {
+      StringBuffer sb = new StringBuffer(s);
+      while (sb.length() < DATE_LEN)
+        sb.insert(0, ' ');
+      s = sb.toString();
+    }
 
     return s;
   }
