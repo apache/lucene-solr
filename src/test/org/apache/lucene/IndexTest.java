@@ -27,14 +27,12 @@ class IndexTest {
   public static void main(String[] args) {
     try {
       Date start = new Date();
-      // FIXME: OG: what's with this hard-coded dirs??
-      IndexWriter writer = new IndexWriter("F:\\test", new SimpleAnalyzer(),
-					   true);
+      IndexWriter writer = new IndexWriter(File.createTempFile("luceneTest", "idx"),
+        new SimpleAnalyzer(), true);
 
       writer.setMergeFactor(20);
 
-      // FIXME: OG: what's with this hard-coded dirs??
-      indexDocs(writer, new File("F:\\recipes"));
+      indexDocs(writer, new File("/tmp"));
 
       writer.optimize();
       writer.close();
@@ -60,16 +58,16 @@ class IndexTest {
 
     } catch (Exception e) {
       System.out.println(" caught a " + e.getClass() +
-			 "\n with message: " + e.getMessage());
+          "\n with message: " + e.getMessage());
     }
   }
 
   public static void indexDocs(IndexWriter writer, File file)
-       throws Exception {
+    throws Exception {
     if (file.isDirectory()) {
       String[] files = file.list();
       for (int i = 0; i < files.length; i++)
-	indexDocs(writer, new File(file, files[i]));
+        indexDocs(writer, new File(file, files[i]));
     } else {
       System.out.println("adding " + file);
       writer.addDocument(FileDocument.Document(file));
