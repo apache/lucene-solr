@@ -16,7 +16,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -66,29 +69,77 @@ final class FieldsReader {
       FieldInfo fi = fieldInfos.fieldInfo(fieldNumber);
 
       byte bits = fieldsStream.readByte();
-
-      if ((bits & 2) != 0) {
+      
+      boolean compressed = (bits & FieldsWriter.FIELD_IS_COMPRESSED) != 0;
+      boolean tokenize = (bits & FieldsWriter.FIELD_IS_TOKENIZED) != 0;
+      
+      if ((bits & FieldsWriter.FIELD_IS_BINARY) != 0) {
         final byte[] b = new byte[fieldsStream.readVInt()];
         fieldsStream.readBytes(b, 0, b.length);
-        doc.add(new Field(fi.name, b));
+        if (compressed)
+          doc.add(new Field(fi.name, uncompress(b), Field.Store.COMPRESS));
+        else
+          doc.add(new Field(fi.name, b, Field.Store.YES));
       }
       else {
         Field.Index index;
-        boolean tokenize = (bits & 1) != 0;
+        Field.Store store = Field.Store.YES;
+        
         if (fi.isIndexed && tokenize)
           index = Field.Index.TOKENIZED;
         else if (fi.isIndexed && !tokenize)
           index = Field.Index.UN_TOKENIZED;
         else
           index = Field.Index.NO;
-        doc.add(new Field(fi.name,		  // name
-  			fieldsStream.readString(), // read value
-  			Field.Store.YES, index,
-  			fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
+        
+        if (compressed) {
+          store = Field.Store.COMPRESS;
+          final byte[] b = new byte[fieldsStream.readVInt()];
+          fieldsStream.readBytes(b, 0, b.length);
+          doc.add(new Field(fi.name,      // field name
+              new String(uncompress(b), "UTF-8"), // uncompress the value and add as string
+              store,
+              index,
+              fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
+        }
+        else
+          doc.add(new Field(fi.name,      // name
+                fieldsStream.readString(), // read value
+                store,
+                index,
+                fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
       }
     }
 
     return doc;
   }
   
+  private final byte[] uncompress(final byte[] input)
+    throws IOException
+  {
+  
+    Inflater decompressor = new Inflater();
+    decompressor.setInput(input);
+  
+    // Create an expandable byte array to hold the decompressed data
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length);
+  
+    // Decompress the data
+    byte[] buf = new byte[1024];
+    while (!decompressor.finished()) {
+      try {
+        int count = decompressor.inflate(buf);
+        bos.write(buf, 0, count);
+      }
+      catch (DataFormatException e) {
+        // this will happen if the field is not compressed
+        throw new IOException ("field data are in wrong format: " + e.toString());
+      }
+    }
+  
+    decompressor.end();
+    
+    // Get the decompressed data
+    return bos.toByteArray();
+  }
 }

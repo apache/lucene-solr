@@ -33,15 +33,16 @@ import org.apache.lucene.search.Similarity;
 
 public final class Field implements java.io.Serializable {
   private String name = "body";
-  private String stringValue = null;
-  private Reader readerValue = null;
-  private byte[] binaryValue = null;
+  
+  // the one and only data object for all different kind of field values
+  private Object fieldsData = null;
   
   private boolean storeTermVector = false;
   private boolean isStored = false;
   private boolean isIndexed = true;
   private boolean isTokenized = true;
   private boolean isBinary = false;
+  private boolean isCompressed = false;
   
   private float boost = 1.0f;
   
@@ -54,6 +55,10 @@ public final class Field implements java.io.Serializable {
     public String toString() {
       return name;
     }
+    /** Store the original field value in the index in a compressed form. This is
+     * useful for long documents and for binary valued fields.
+     */
+    public static final Store COMPRESS = new Store("COMPRESS");
     /** Store the original field value in the index. This is useful for short texts
      * like a document's title which should be displayed with the results. The
      * value is stored in its original form, i.e. no analyzer is used before it is
@@ -220,18 +225,22 @@ public final class Field implements java.io.Serializable {
   
   /** The name of the field (e.g., "date", "title", "body", ...)
     as an interned string. */
-  public String name() 		{ return name; }
+  public String name()    { return name; }
 
   /** The value of the field as a String, or null.  If null, the Reader value
-    is used.  Exactly one of stringValue() and readerValue() must be set. */
-  public String stringValue()		{ return stringValue; }
+   * or binary value is used.  Exactly one of stringValue(), readerValue(), and
+   * binaryValue() must be set. */
+  public String stringValue()   { try { return (String)fieldsData; } catch (ClassCastException ignore) { return null; } }
+  
   /** The value of the field as a Reader, or null.  If null, the String value
-    is used.  Exactly one of stringValue() and readerValue() must be set. */
-  public Reader readerValue()	{ return readerValue; }
+   * or binary value is  used.  Exactly one of stringValue(), readerValue(),
+   * and binaryValue() must be set. */
+  public Reader readerValue()   { try { return (Reader)fieldsData; } catch (ClassCastException ignore) { return null; } }
+  
   /** The value of the field in Binary, or null.  If null, the Reader or
-     String value is used.  Exactly one of stringValue(), readerValue() and
-     binaryValue() must be set. */
-  public byte[] binaryValue() { return binaryValue; }
+   * String value is used.  Exactly one of stringValue(), readerValue() and
+   * binaryValue() must be set. */
+  public byte[] binaryValue()   { try { return (byte[])fieldsData; } catch (ClassCastException ignore) { return null; } }
   
   /**
    * Create a field by specifying its name, value and how it will
@@ -277,12 +286,16 @@ public final class Field implements java.io.Serializable {
     if (index == Index.NO && termVector != TermVector.NO)
       throw new IllegalArgumentException("cannot store term vector information "
          + "for a field that is not indexed");
-
+          
     this.name = name.intern();        // field names are interned
-    this.stringValue = value;
+    this.fieldsData = value;
 
     if (store == Store.YES)
       this.isStored = true;
+    else if (store == Store.COMPRESS) {
+      this.isStored = true;
+      this.isCompressed = true;
+    }
     else if (store == Store.NO)
       this.isStored = false;
     else
@@ -331,7 +344,7 @@ public final class Field implements java.io.Serializable {
     if (reader == null)
       throw new NullPointerException("reader cannot be null");
     this.name = name.intern();        // field names are interned
-    this.readerValue = reader;
+    this.fieldsData = reader;
     this.isStored = false;
     this.isIndexed = true;
     this.isTokenized = true;
@@ -344,18 +357,31 @@ public final class Field implements java.io.Serializable {
    * @deprecated use {@link #Field(String, String, Field.Store, Field.Index)} instead
    */
   public Field(String name, String string,
-	       boolean store, boolean index, boolean token) {
+         boolean store, boolean index, boolean token) {
     this(name, string, store, index, token, false);
   }
 
-  public Field(String name, byte[] value) {
+  
+  /**
+   * Create a stored field with binary value. Optionally the value may be compressed.
+   * 
+   * @param name The name of the field
+   * @param value The binary value
+   * @param store How <code>value</code> should be stored (compressed or not.)
+   */
+  public Field(String name, byte[] value, Store store) {
     if (name == null)
       throw new IllegalArgumentException("name cannot be null");
     if (value == null)
       throw new IllegalArgumentException("value cannot be null");
+    if (store == Store.NO)
+      throw new IllegalArgumentException("binary values can't be unstored");
+    if (store == Store.COMPRESS)
+      this.isCompressed = true;
     
     this.name = name.intern();
-    this.binaryValue = value;
+    //wrap the byte[] to a ByteBuffer object
+    this.fieldsData = value;
     
     this.isBinary    = true;
     this.isStored    = true;
@@ -377,7 +403,7 @@ public final class Field implements java.io.Serializable {
    * @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)} instead
    */ 
   public Field(String name, String string,
-	       boolean store, boolean index, boolean token, boolean storeTermVector) {
+         boolean store, boolean index, boolean token, boolean storeTermVector) {
     if (name == null)
       throw new NullPointerException("name cannot be null");
     if (string == null)
@@ -385,8 +411,8 @@ public final class Field implements java.io.Serializable {
     if (!index && storeTermVector)
       throw new IllegalArgumentException("cannot store a term vector for fields that are not indexed");
 
-    this.name = name.intern();			  // field names are interned
-    this.stringValue = string;
+    this.name = name.intern();        // field names are interned
+    this.fieldsData = string;
     this.isStored = store;
     this.isIndexed = index;
     this.isTokenized = token;
@@ -406,16 +432,19 @@ public final class Field implements java.io.Serializable {
   /** True iff the value of the field is to be stored in the index for return
     with search hits.  It is an error for this to be true if a field is
     Reader-valued. */
-  public final boolean	isStored() 	{ return isStored; }
+  public final boolean  isStored()  { return isStored; }
 
   /** True iff the value of the field is to be indexed, so that it may be
     searched on. */
-  public final boolean 	isIndexed() 	{ return isIndexed; }
+  public final boolean  isIndexed()   { return isIndexed; }
 
   /** True iff the value of the field should be tokenized as text prior to
     indexing.  Un-tokenized fields are indexed as a single word and may not be
     Reader-valued. */
-  public final boolean 	isTokenized() 	{ return isTokenized; }
+  public final boolean  isTokenized()   { return isTokenized; }
+  
+  /** True if the value of the field is stored and compressed within the index */
+  public final boolean  isCompressed()   { return isCompressed; }
 
   /** True iff the term or terms used to index this field are stored as a term
    *  vector, available from {@link IndexReader#getTermFreqVector(int,String)}.
@@ -456,14 +485,20 @@ public final class Field implements java.io.Serializable {
       result.append("binary");
     }
     
+    if (isCompressed) {
+      if (result.length() > 0)
+        result.append(",");
+      result.append("compressed");
+    }
+    
     result.append('<');
     result.append(name);
     result.append(':');
-    if (readerValue != null) {
-      result.append(readerValue.toString());
-    } else {
-      result.append(stringValue);
+    
+    if (fieldsData != null) {
+      result.append(fieldsData);
     }
+    
     result.append('>');
     return result.toString();
   }

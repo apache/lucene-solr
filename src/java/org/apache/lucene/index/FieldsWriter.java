@@ -16,8 +16,10 @@ package org.apache.lucene.index;
  * the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.zip.Deflater;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -26,6 +28,10 @@ import org.apache.lucene.store.IndexOutput;
 
 final class FieldsWriter
 {
+  static final short FIELD_IS_TOKENIZED = 1;
+  static final short FIELD_IS_BINARY = 2;
+  static final short FIELD_IS_COMPRESSED = 4;
+  
     private FieldInfos fieldInfos;
 
     private IndexOutput fieldsStream;
@@ -63,21 +69,72 @@ final class FieldsWriter
 
                 byte bits = 0;
                 if (field.isTokenized())
-                    bits |= 1;
+                    bits |= FieldsWriter.FIELD_IS_TOKENIZED;
                 if (field.isBinary())
-                    bits |= 2;
+                    bits |= FieldsWriter.FIELD_IS_BINARY;
+                if (field.isCompressed())
+                    bits |= FieldsWriter.FIELD_IS_COMPRESSED;
+                
                 fieldsStream.writeByte(bits);
-
-                if (field.isBinary()) {
+                
+                if (field.isCompressed()) {
+                  // compression is enabled for the current field
+                  byte[] data = null;
+                  // check if it is a binary field
+                  if (field.isBinary()) {
+                    data = compress(field.binaryValue());
+                  }
+                  else {
+                    data = compress(field.stringValue().getBytes("UTF-8"));
+                  }
+                  final int len = data.length;
+                  fieldsStream.writeVInt(len);
+                  fieldsStream.writeBytes(data, len);
+                }
+                else {
+                  // compression is disabled for the current field
+                  if (field.isBinary()) {
                     byte[] data = field.binaryValue();
                     final int len = data.length;
                     fieldsStream.writeVInt(len);
                     fieldsStream.writeBytes(data, len);
-                } else {
+                  }
+                  else {
                     fieldsStream.writeString(field.stringValue());
+                  }
                 }
             }
         }
     }
 
+    private final byte[] compress (byte[] input) {
+
+      // Create the compressor with highest level of compression
+      Deflater compressor = new Deflater();
+      compressor.setLevel(Deflater.BEST_COMPRESSION);
+
+      // Give the compressor the data to compress
+      compressor.setInput(input);
+      compressor.finish();
+
+      /*
+       * Create an expandable byte array to hold the compressed data.
+       * You cannot use an array that's the same size as the orginal because
+       * there is no guarantee that the compressed data will be smaller than
+       * the uncompressed data.
+       */
+      ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length);
+
+      // Compress the data
+      byte[] buf = new byte[1024];
+      while (!compressor.finished()) {
+        int count = compressor.deflate(buf);
+        bos.write(buf, 0, count);
+      }
+      
+      compressor.end();
+
+      // Get the compressed data
+      return bos.toByteArray();
+    }
 }

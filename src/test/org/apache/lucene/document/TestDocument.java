@@ -47,8 +47,8 @@ public class TestDocument extends TestCase
   {
     Document doc = new Document();
     Field stringFld = new Field("string", binaryVal, Field.Store.YES, Field.Index.NO);
-    Field binaryFld = new Field("binary", binaryVal.getBytes());
-    Field binaryFld2 = new Field("binary", binaryVal2.getBytes());
+    Field binaryFld = new Field("binary", binaryVal.getBytes(), Field.Store.YES);
+    Field binaryFld2 = new Field("binary", binaryVal2.getBytes(), Field.Store.YES);
     
     doc.add(stringFld);
     doc.add(binaryFld);
