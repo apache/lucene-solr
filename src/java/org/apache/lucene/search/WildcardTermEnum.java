@@ -36,7 +36,6 @@ public class WildcardTermEnum extends FilteredTermEnum {
   String text = "";
   String pre = "";
   int preLen = 0;
-  boolean fieldMatch = false;
   boolean endEnum = false;
 
   /**
