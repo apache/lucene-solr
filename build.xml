@@ -364,9 +364,8 @@
     <mkdir dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
-    <mkdir dir="${dist.dir}/demo"/>
-    <mkdir dir="${dist.dir}/demo/classes"/>
-    <mkdir dir="${dist.dir}/src"/>
+    <mkdir dir="${dist.dir}/src/demo"/>
+    <mkdir dir="${dist.dir}/src/jsp"/>
 
     <copy todir="${dist.dir}/docs">
       <fileset dir="${docs.dir}"/>
@@ -374,19 +373,16 @@
     <copy todir="${dist.dir}/docs/api">
       <fileset dir="${build.javadocs}"/>
     </copy>
-    <copy todir="${dist.dir}/demo/classes">
-      <fileset dir="${build.demo.classes}"/>
+
+    <copy todir="${dist.dir}/src/demo">
+      <fileset dir="src/demo"/>
     </copy>
-
-
-    <copy todir="${dist.dir}/src">
-      <fileset dir="src"/>
+    <copy todir="${dist.dir}/src/jsp">
+      <fileset dir="src/jsp"/>
     </copy>
     <copy todir="${dist.dir}/lib">
       <fileset dir="lib"/>
     </copy>
-    <copy todir="${dist.dir}/" file="build.xml"/>
-    <copy todir="${dist.dir}/" file="build.properties"/>
     <copy todir="${dist.dir}">
       <fileset dir=".">
         <include name="*.txt" />
@@ -541,5 +537,9 @@
     <delete file="${basedir}/${final.name}.tar"/>
     <delete file="${basedir}/${final.name}.tar.gz"/>
     <delete file="${basedir}/${final.name}.zip"/>
+    <delete dir="${dist.dir}-src"/>
+    <delete file="${basedir}/${final.name}-src.tar"/>
+    <delete file="${basedir}/${final.name}-src.tar.gz"/>
+    <delete file="${basedir}/${final.name}-src.zip"/>
   </target>
 </project>
