@@ -138,7 +138,7 @@ public class BooleanQuery extends Query {
       BooleanScorer result = new BooleanScorer(searcher.getSimilarity());
 
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(0);
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
         Scorer subScorer = w.scorer(reader);
         if (subScorer != null)
@@ -158,7 +158,7 @@ public class BooleanQuery extends Query {
       int maxCoord = 0;
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(0);
+        BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
         Explanation e = w.explain(reader, doc);
         if (!c.prohibited) maxCoord++;
