@@ -103,7 +103,7 @@
                     </tr>
                     <tr valign="TOP">
                         <td width="25%">
-                            <a href="api/org/apache/lucene/store/FSDirectory.html#lockDir">mergeFactor</a>
+                            <a href="api/org/apache/lucene/store/FSDirectory.html#lockDir">lockDir</a>
                         </td>
                         <td width="25%">
                             org.apache.lucene.lockDir
