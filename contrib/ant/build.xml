@@ -15,8 +15,6 @@
                refid="additional.dependencies"
   />
 
-  <property name="src.dir" location="src/main"/>
-
   <!-- alias classpath for cleaner example in index target -->
   <path id="index.classpath">
     <path refid="test.classpath"/>
