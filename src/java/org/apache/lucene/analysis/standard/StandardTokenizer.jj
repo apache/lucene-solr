@@ -103,7 +103,7 @@ TOKEN : {					  // token patterns
 | <COMPANY: <ALPHA> ("&"|"@") <ALPHA> >
 
   // email addresses
-| <EMAIL: <ALPHANUM> "@" <ALPHANUM> ("." <ALPHANUM>)+ >
+| <EMAIL: <ALPHANUM> ("."|"-"|"_" <ALPHANUM>)+ "@" <ALPHANUM> ("."|"-" <ALPHANUM>)+ >
 
   // hostname
 | <HOST: <ALPHANUM> ("." <ALPHANUM>)+ >
