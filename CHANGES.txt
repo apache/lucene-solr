@@ -81,7 +81,7 @@ New features
 13. Add IndexWriter.setTermIndexInterval() method.  See javadocs.
     (Doug Cutting)
 
-14. Aded LucenePackage, whose static get() method returns java.util.Package,
+14. Added LucenePackage, whose static get() method returns java.util.Package,
     which lets the caller get the Lucene version information specified in
     the Lucene Jar.
     (Doug Cutting via Otis)
