@@ -1,8 +1,29 @@
-Indyo is a datasource-independent Lucene indexing framework. What this means, is that Indyo allows a myriad of sources from which data is fed to the search engine to be indexed. Datasources can take the form of traditional storage mediums (filesystem, database, web site, etc), objects, complex datasources which consist of a mixture of objects and storage medium, and pretty much anything which implements com.relevanz.indyo.IndexDataSource. If it's a file that's being indexed (via com.relevanz.indyo.FSDataSource), the contents of the file can be indexed by a class which implements com.relevanz.indyo.contenthandler.FileContentHandler (e.g. TextHandler, ZIPHandler, etc). Via the datasource, applications can also associate a search result object with the object that was indexed (or optionally use Peter's SearchBean contribution), for display purposes.
+Indyo is a datasource-independent Lucene indexing framework.
+
+What this means, is that Indyo allows a myriad of sources from which
+data is fed to the search engine to be indexed. Datasources can take
+the form of traditional storage mediums (filesystem, database, web
+site, etc), objects, complex datasources which consist of a mixture of
+objects and storage medium, and pretty much anything which implements
+com.relevanz.indyo.IndexDataSource. If it's a file that's being
+indexed (via com.relevanz.indyo.FSDataSource), the contents of the
+file can be indexed by a class which implements
+com.relevanz.indyo.contenthandler.FileContentHandler (e.g.
+TextHandler, ZIPHandler, etc). Via the datasource, applications can
+also associate a search result object with the object that was indexed
+(or optionally use Peter's SearchBean contribution), for display
+purposes.
 
 To summarize, if you:
-a) Want a way of indexing various sources of data, and even nested datasources (like indexing a HTML file, which spawns a custom datasource, say RemoteHTMLDataSource, for every link it encounters)
-b) Simply want a pluggable system of indexing different types of file content (currently plain text, Zip, Tar, GZip file formats are supported, but writing new file content handlers are easy)
+
+a) Want a way of indexing various sources of data, and even nested
+datasources (like indexing a HTML file, which spawns a custom
+datasource, say RemoteHTMLDataSource, for every link it encounters)
+
+b) Simply want a pluggable system of indexing different types of file
+content (currently plain text, Zip, Tar, GZip file formats are
+supported, but writing new file content handlers are easy)
 
 then Indyo may be worth checking out.
+
 
