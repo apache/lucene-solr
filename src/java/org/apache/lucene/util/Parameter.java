@@ -36,7 +36,7 @@ public abstract class Parameter implements Serializable
   }
   
   protected Parameter(String name) {
-    //  typesafe enum pattern, no public constructor
+    // typesafe enum pattern, no public constructor
     this.name = name;
     String key = makeKey(name);
     
@@ -68,6 +68,6 @@ public abstract class Parameter implements Serializable
       throw new StreamCorruptedException("Unknown parameter value: " + name);
       
     return par;
-    }
+  }
   
  }
