@@ -58,6 +58,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
 import org.apache.lucene.index.IndexReader;       // for javadoc
+import org.apache.lucene.search.Hits;             // for javadoc
 
 /** Documents are the unit of indexing and search.
  *
@@ -93,9 +94,9 @@ public final class Document implements java.io.Serializable {
    * <p>The default value is 1.0.
    *
    * <p>Note: This value is not stored directly with the document in the index.
-   * Documents returned from {@link IndexReader#document(int)} and {@link
-   * Hits#doc(int)} may thus not have the same value present as when this
-   * document was indexed.
+   * Documents returned from {@link IndexReader#document(int)} and
+   * {@link Hits#doc(int)} may thus not have the same value present as when
+   * this document was indexed.
    *
    * @see #setBoost(float)
    */
