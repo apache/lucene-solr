@@ -258,37 +258,37 @@ public class DutchStemmer {
   }
 
   /**
-   * Substitute ä, ë, ï, ö, ü, á , é, í, ó, ú
+   * Substitute Ã¤, Ã«, Ã¯, Ã¶, Ã¼, Ã¡ , Ã©, Ã­, Ã³, Ãº
    */
   private void substitute(StringBuffer buffer) {
     for (int i = 0; i < buffer.length(); i++) {
       switch (buffer.charAt(i)) {
-        case 'ä':
-        case 'á':
+        case 'Ã¤':
+        case 'Ã¡':
           {
             buffer.setCharAt(i, 'a');
             break;
           }
-        case 'ë':
-        case 'é':
+        case 'Ã«':
+        case 'Ã©':
           {
             buffer.setCharAt(i, 'e');
             break;
           }
-        case 'ü':
-        case 'ú':
+        case 'Ã¼':
+        case 'Ãº':
           {
             buffer.setCharAt(i, 'u');
             break;
           }
-        case 'ï':
+        case 'Ã¯':
         case 'i':
           {
             buffer.setCharAt(i, 'i');
             break;
           }
-        case 'ö':
-        case 'ó':
+        case 'Ã¶':
+        case 'Ã³':
           {
             buffer.setCharAt(i, 'o');
             break;
@@ -391,7 +391,7 @@ public class DutchStemmer {
       case 'i':
       case 'u':
       case 'y':
-      case 'è':
+      case 'Ã¨':
         {
           return true;
         }
