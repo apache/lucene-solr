@@ -192,6 +192,10 @@
       <fileset dir="${docs.dest}/"/>
     </copy>
 
+    <copy todir="${dist.dir}/lib">
+      <fileset dir="lib"/>
+    </copy>
+
     <copy todir="${dist.dir}">
       <fileset dir=".">
         <include name="*.txt" />
@@ -239,6 +243,17 @@
       <arg value="${build.dir}/${final.name}.jar"/>
       <arg value="${build.dir}/${final.name}.tar.gz"/>
       <arg value="${release.host}:${release.path}/${final.name}"/>
+    </exec>
+    <exec executable="ssh">
+      <arg value="${web.host}"/>
+      <arg value="rm"/>
+      <arg value="-rf"/>
+      <arg value="${web.path}/api"/>
+    </exec>
+    <exec executable="scp">
+      <arg value="-r"/>
+      <arg value="${build.javadoc}"/>
+      <arg value="${web.host}:${web.path}/api"/>
     </exec>
   </target>
 
