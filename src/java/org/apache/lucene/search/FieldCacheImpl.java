@@ -389,7 +389,7 @@ implements FieldCache {
       store (reader, field, SortField.CUSTOM, retArray);
       return retArray;
     }
-    return (String[]) ret;
+    return (Comparable[]) ret;
   }
 
 }
