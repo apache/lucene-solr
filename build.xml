@@ -33,8 +33,6 @@
 
   <property name="javacc.home" location="."/>
 
-  <property name="asf.site.home" location="../../../site"/>
-
   <property name="junit.output.dir" location="${build.dir}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
 
@@ -81,12 +79,6 @@
       <include name="*.jar"/>
     </fileset>
     <pathelement path="${java.class.path}"/>
-  </path>
-
-  <path id="anakia.classpath">
-    <fileset dir="${asf.site.home}/lib">
-      <include name="*.jar"/>
-    </fileset>
   </path>
 
   <!-- ================================================================== -->
@@ -370,25 +362,35 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="docs-prepare">
+    <fail unless="asf.site.home">
+      Set the property asf.site.home.  This can be done using one of the following methods:
+
+        * run Ant with the switch -Dasf.site.home=/path/to/asf/site/module
+        * Add asf.site.home to a build.properties file in the top-level Lucene directory
+      
+    </fail>
     <available
       classname="org.apache.velocity.anakia.AnakiaTask"
-      property="AnakiaTask.present"
-      classpathref="anakia.classpath"
-      />
+      property="AnakiaTask.present">
+      <classpath id="anakia.classpath">
+        <fileset dir="${asf.site.home}/lib">
+          <include name="*.jar"/>
+        </fileset>
+      </classpath>
+    </available>
   </target>
 
   <target name="prepare-error" depends="docs-prepare" unless="AnakiaTask.present">
     <echo>
       AnakiaTask is not present! Please check to make sure that
-      you have asf.site.home set correctly.
+      you have asf.site.home (currently ${asf.site.home}) set correctly.
     </echo>
   </target>
 
   <target name="docs" depends="prepare-error" if="AnakiaTask.present">
     <taskdef
       name="anakia"
-      classname="org.apache.velocity.anakia.AnakiaTask"
-      >
+      classname="org.apache.velocity.anakia.AnakiaTask">
       <classpath refid="anakia.classpath"/>
     </taskdef>
 
