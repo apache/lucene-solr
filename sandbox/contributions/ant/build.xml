@@ -16,5 +16,7 @@
                refid="additional.dependencies"
   />
 
+  <property name="src.dir" location="src/main"/>
+
   <import file="../common.xml"/>
 </project>

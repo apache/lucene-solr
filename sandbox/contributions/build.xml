@@ -1,8 +1,22 @@
 <project name="sandbox" default="build-tree">
 
+  <target name="clean">
+    <subant target="clean">
+      <fileset dir="."
+               includes="*/build.xml"
+      />
+    </subant>
+  </target>
+
   <target name="build-tree">
     <subant target="">
-      <fileset dir="." includes="*/build.xml" excludes="./build.xml"/>
+      <!-- Exclude LARM for now,
+           until its build is brought up to speed
+      -->
+      <fileset dir="."
+               includes="*/build.xml"
+               excludes="webcrawler-LARM/build.xml"
+      />
     </subant>
   </target>
 </project>

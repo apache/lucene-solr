@@ -2,10 +2,14 @@
 
 <project name="common">
 
+  <property name="src.dir" location="src/java"/>
   <property name="build.dir" location="build"/>
   <property name="build.classes.dir" location="${build.dir}/classes"/>
-  <property name="test.dir" location="${build.dir}/test"/>
-  <property name="test.classes.dir" location="${test.dir}/classes"/>
+
+  <property name="test.src.dir" location="src/test"/>
+  <property name="test.output.dir" location="${build.dir}/test"/>
+  <property name="test.classes.dir" location="${test.output.dir}/classes"/>
+
   <property name="dist.dir" location="dist"/>
 
   <property name="junit.jar" location="${ant.home}/lib/junit.jar"/>
@@ -39,9 +43,10 @@
     <mkdir dir="${build.classes.dir}"/>
     <mkdir dir="${dist.dir}"/>
 
-    <mkdir dir="${test.dir}"/>
+    <mkdir dir="${test.output.dir}"/>
     <mkdir dir="${test.classes.dir}"/>
-    <echoproperties/>
+
+    <available property="has.tests" file="${test.src.dir}" type="dir"/>
   </target>
 
   <target name="clean"
@@ -50,7 +55,7 @@
     <delete dir="${build.classes.dir}"/>
     <delete dir="${dist.dir}"/>
 
-    <delete dir="${test.dir}"/>
+    <delete dir="${test.output.dir}"/>
     <delete dir="${test.classes.dir}"/>
   </target>
 
@@ -66,12 +71,12 @@
       debug="${build.debug}"
       includeAntRuntime="yes"
       deprecation="true"
-      srcdir="src/main"
+      srcdir="${src.dir}"
       classpathref="compile.classpath"
       />
   </target>
 
-  <target name="test-compile" depends="compile">
+  <target name="test-compile" depends="compile" if="has.tests">
     <javac destdir="${test.classes.dir}"
       debug="${build.debug}"
       includeAntRuntime="yes"
@@ -84,19 +89,19 @@
     </copy>
   </target>
 
-  <target name="test" depends="test-compile">
+  <target name="test" depends="test-compile" if="has.tests">
     <junit printsummary="no"
       errorProperty="test.failed"
       failureProperty="test.failed"
       fork="${junit.fork}">
       <classpath refid="test.classpath"/>
       <sysproperty key="docs.dir" file="${test.classes.dir}"/>
-      <sysproperty key="index.dir" file="${test.dir}/index"/>
+      <sysproperty key="index.dir" file="${test.output.dir}/index"/>
       <formatter type="brief" usefile="false"/>
       <test name="${testcase}" if="testcase"/>
       <batchtest todir="${test.data.dir}" unless="testcase">
         <fileset dir="${test.classes.dir}"
-          includes="**/*Test.class"
+          includes="**/*Test.class,**/Test*.class"
           />
       </batchtest>
     </junit>
