@@ -34,7 +34,7 @@
     <menu name="Download">
         <item name="Binaries"           href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/binaries/"/>
         <item name="Source Code"        href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/source/"/>
-        <item name="Source Repository"   href="http://svn.apache.org/repos/asf/lucene"/>
+        <item name="Source Repository"  href="http://svn.apache.org/viewcvs.cgi/lucene/"/>
     </menu>
 
     </body>
