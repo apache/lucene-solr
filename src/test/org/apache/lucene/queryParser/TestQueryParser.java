@@ -281,11 +281,20 @@ public class TestQueryParser extends TestCase {
 	return DateField.dateToString(df.parse(s));
     }
 
+	public String getLocalizedDate(int year, int month, int day) {
+		DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(year, month, day);
+		return df.format(calendar.getTime());
+	}
+
     public void testDateRange() throws Exception {
-	assertQueryEquals("[ 1/1/02 TO 1/4/02]", null,
-	    "[" + getDate("1/1/02") + "-" + getDate("1/4/02") + "]");
-	assertQueryEquals("{  1/1/02    1/4/02   }", null,
-	    "{" + getDate("1/1/02") + "-" + getDate("1/4/02") + "}");
+    String startDate = getLocalizedDate(2002, 1, 1);
+    String endDate = getLocalizedDate(2002, 1, 4); 
+	assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null,
+	    "[" + getDate(startDate) + "-" + getDate(endDate) + "]");
+	assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null,
+	    "{" + getDate(startDate) + "-" + getDate(endDate) + "}");
     }
 
     public void testEscaped() throws Exception {
