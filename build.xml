@@ -23,7 +23,7 @@
   <property name="javac.debug" value="on"/>
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
-  <property name="build.encoding" value="ISO-8859-1"/>
+  <property name="build.encoding" value="utf-8"/>
 
   <property name="build.dir" location="build"/>
   <property name="dist.dir" location="dist"/>

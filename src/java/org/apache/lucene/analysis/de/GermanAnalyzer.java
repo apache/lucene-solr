@@ -47,14 +47,14 @@ public class GermanAnalyzer extends Analyzer {
    */
   private String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
-    "der", "die", "das", "dass", "daß",
+    "der", "die", "das", "dass", "daÃŸ",
     "du", "er", "sie", "es",
     "was", "wer", "wie", "wir",
     "und", "oder", "ohne", "mit",
     "am", "im", "in", "aus", "auf",
     "ist", "sein", "war", "wird",
     "ihr", "ihre", "ihres",
-    "als", "für", "von", "mit",
+    "als", "fÃ¼r", "von", "mit",
     "dich", "dir", "mich", "mir",
     "mein", "sein", "kein",
     "durch", "wegen", "wird"

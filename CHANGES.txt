@@ -17,6 +17,10 @@ $Id$
     methods to replace a PhraseQuery with a SpanNearQuery instead,
     keeping the proper slop factor. (Erik Hatcher)
 
+ 4. Changed the encoding of GermanAnalyzer.java and GermanStemmer.java to
+    UTF-8 and changed the build encoding to UTF-8, to make changed files
+    compile. (Otis Gospodnetic)
+
 
 1.4 RC3
 

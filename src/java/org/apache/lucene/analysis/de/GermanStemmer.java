@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.de;
 
 /**
  * A stemmer for German words. The algorithm is based on the report
- * "A Fast and Simple Stemming Algorithm for German Words" by Jörg
+ * "A Fast and Simple Stemming Algorithm for German Words" by JÃ¶rg
  * Caumanns (joerg.caumanns@isst.fhg.de).
  *
  * @author    Gerhard Schwarz
@@ -153,12 +153,12 @@ public class GermanStemmer
     /**
      * Do some substitutions for the term to reduce overstemming:
      *
-     * - Substitute Umlauts with their corresponding vowel: äöü -> aou,
-     *   "ß" is substituted by "ss"
+     * - Substitute Umlauts with their corresponding vowel: Ã¤Ã¶Ã¼ -> aou,
+     *   "ÃŸ" is substituted by "ss"
      * - Substitute a second char of a pair of equal characters with
      *   an asterisk: ?? -> ?*
      * - Substitute some common character combinations with a token:
-     *   sch/ch/ei/ie/ig/st -> $/§/%/&/#/!
+     *   sch/ch/ei/ie/ig/st -> $/Â§/%/&/#/!
      */
     private void substitute( StringBuffer buffer )
     {
@@ -169,18 +169,18 @@ public class GermanStemmer
           buffer.setCharAt( c, '*' );
         }
         // Substitute Umlauts.
-        else if ( buffer.charAt( c ) == 'ä' ) {
+        else if ( buffer.charAt( c ) == 'Ã¤' ) {
           buffer.setCharAt( c, 'a' );
         }
-        else if ( buffer.charAt( c ) == 'ö' ) {
+        else if ( buffer.charAt( c ) == 'Ã¶' ) {
           buffer.setCharAt( c, 'o' );
         }
-        else if ( buffer.charAt( c ) == 'ü' ) {
+        else if ( buffer.charAt( c ) == 'Ã¼' ) {
           buffer.setCharAt( c, 'u' );
         }
         // Take care that at least one character is left left side from the current one
         if ( c < buffer.length() - 1 ) {
-          if ( buffer.charAt( c ) == 'ß' ) {
+          if ( buffer.charAt( c ) == 'ÃŸ' ) {
             buffer.setCharAt( c, 's' );
             buffer.insert( c + 1, 's' );
             substCount++;
@@ -194,7 +194,7 @@ public class GermanStemmer
             substCount =+ 2;
           }
           else if ( buffer.charAt( c ) == 'c' && buffer.charAt( c + 1 ) == 'h' ) {
-            buffer.setCharAt( c, '§' );
+            buffer.setCharAt( c, 'Â§' );
             buffer.deleteCharAt( c + 1 );
             substCount++;
           }
@@ -225,7 +225,7 @@ public class GermanStemmer
     /**
      * Undoes the changes made by substitute(). That are character pairs and
      * character combinations. Umlauts will remain as their corresponding vowel,
-     * as "ß" remains as "ss".
+     * as "ÃŸ" remains as "ss".
      */
     private void resubstitute( StringBuffer buffer )
     {
@@ -238,7 +238,7 @@ public class GermanStemmer
           buffer.setCharAt( c, 's' );
           buffer.insert( c + 1, new char[]{'c', 'h'}, 0, 2 );
         }
-        else if ( buffer.charAt( c ) == '§' ) {
+        else if ( buffer.charAt( c ) == 'Â§' ) {
           buffer.setCharAt( c, 'c' );
           buffer.insert( c + 1, 'h' );
         }

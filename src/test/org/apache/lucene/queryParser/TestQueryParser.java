@@ -159,8 +159,8 @@ public class TestQueryParser extends TestCase {
 
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("türm term term", null, "türm term term");
-    assertQueryEquals("ümlaut", null, "ümlaut");
+    assertQueryEquals("tÃ¼rm term term", null, "tÃ¼rm term term");
+    assertQueryEquals("Ã¼mlaut", null, "Ã¼mlaut");
 
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
