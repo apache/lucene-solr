@@ -254,15 +254,10 @@ PARSER_END(QueryParser)
 /* ***************** */
 
 <*> TOKEN : {
-  <#_ALPHA_CHAR: ["a"-"z", "A"-"Z"] >
-| <#_NUM_CHAR:   ["0"-"9"] >
-| <#_ALPHANUM_CHAR: [ "a"-"z", "A"-"Z", "0"-"9" ] >
+  <#_NUM_CHAR:   ["0"-"9"] >
 | <#_TERM_START_CHAR: [ "a"-"z", "A"-"Z", "_", "\u0080"-"\uFFFE" ] >
 | <#_TERM_CHAR: [ "a"-"z", "A"-"Z", "0"-"9", "_", "\u0080"-"\uFFFE" ] >
-| <#_NEWLINE:    ( "\r\n" | "\r" | "\n" ) >
 | <#_WHITESPACE: ( " " | "\t" ) >
-| <#_QCHAR:      ( "\\" (<_NEWLINE> | ~["a"-"z", "A"-"Z", "0"-"9"] ) ) >
-| <#_RESTOFLINE: (~["\r", "\n"])* >
 }
 
 <DEFAULT> TOKEN : {
@@ -275,11 +270,11 @@ PARSER_END(QueryParser)
 | <RPAREN:    ")" >
 | <COLON:     ":" >
 | <CARAT:     "^" >
-| <STAR:      "*" >
 | <QUOTED:     "\"" (~["\""])+ "\"">
 | <NUMBER:    (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? >
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY:     "~" >
+| <PREFIXTERM:  <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" >
 | <WILDTERM:  <_TERM_START_CHAR> 
               (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
 | <RANGEIN:   "[" (~["]"])+ "]">
@@ -369,16 +364,18 @@ Query Term(String field) : {
   ( 
      (
        term=<TERM>
+       | term=<PREFIXTERM> { prefix=true; }
        | term=<WILDTERM> { wildcard=true; }
        | term=<NUMBER>
      )
-     [ <STAR> { prefix=true; } | <FUZZY> { fuzzy=true; } ]
+     [ <FUZZY> { fuzzy=true; } ]
      [ <CARAT> boost=<NUMBER> ]
      { 
        if (wildcard)
          q = new WildcardQuery(new Term(field, term.image));
        else if (prefix) 
-         q = new PrefixQuery(new Term(field, term.image));
+         q = new PrefixQuery(new Term(field, term.image.substring
+                                      (0, term.image.length()-1)));
        else if (fuzzy)
          q = new FuzzyQuery(new Term(field, term.image));
        else
