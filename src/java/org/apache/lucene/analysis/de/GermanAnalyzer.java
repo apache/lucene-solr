@@ -17,12 +17,14 @@ package org.apache.lucene.analysis.de;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.IOException;
 import java.util.HashSet;
@@ -93,7 +95,7 @@ public class GermanAnalyzer extends Analyzer {
    * Builds an analyzer with the given stop words.
    */
   public GermanAnalyzer(File stopwords) throws IOException {
-    stopSet = new HashSet(WordlistLoader.getWordtable(stopwords).keySet());
+    stopSet = WordlistLoader.getWordSet(stopwords);
   }
 
   /**
@@ -114,19 +116,19 @@ public class GermanAnalyzer extends Analyzer {
    * Builds an exclusionlist from the words contained in the given file.
    */
   public void setStemExclusionTable(File exclusionlist) throws IOException {
-    exclusionSet = new HashSet(WordlistLoader.getWordtable(exclusionlist).keySet());
+    exclusionSet = WordlistLoader.getWordSet(exclusionlist);
   }
 
   /**
    * Creates a TokenStream which tokenizes all the text in the provided Reader.
    *
    * @return A TokenStream build from a StandardTokenizer filtered with
-   *         StandardFilter, StopFilter, GermanStemFilter
+   *         StandardFilter, LowerCaseFilter, StopFilter, GermanStemFilter
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
-// shouldn't there be a lowercaser before stop word filtering?
+    result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopSet);
     result = new GermanStemFilter(result, exclusionSet);
     return result;

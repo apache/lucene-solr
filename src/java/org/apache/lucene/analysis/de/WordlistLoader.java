@@ -20,66 +20,42 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 /**
- * Loads a text file and adds every line as an entry to a Hashtable. Every line
- * should contain only one word.
+ * Loader for text files that represent a list of stopwords.
  *
  * @author Gerhard Schwarz
  * @version $Id$
- * @todo refactor to convert to Sets instead of Hashtable
+ *
+ * @todo this is not specific to German, it should be moved up
  */
 public class WordlistLoader {
-  /**
-   * @param path     Path to the wordlist
-   * @param wordfile Name of the wordlist
-   */
-  public static Hashtable getWordtable(String path, String wordfile) throws IOException {
-    if (path == null || wordfile == null) {
-      return new Hashtable();
-    }
-    return getWordtable(new File(path, wordfile));
-  }
 
   /**
-   * @param wordfile Complete path to the wordlist
-   */
-  public static Hashtable getWordtable(String wordfile) throws IOException {
-    if (wordfile == null) {
-      return new Hashtable();
-    }
-    return getWordtable(new File(wordfile));
-  }
-
-  /**
+   * Loads a text file and adds every line as an entry to a HashSet (omitting
+   * leading and trailing whitespace). Every line of the file should contain only 
+   * one word. The words need to be in lowercase if you make use of an
+   * Analyzer which uses LowerCaseFilter (like GermanAnalyzer).
+   * 
    * @param wordfile File containing the wordlist
-   * @todo Create a Set version of this method
+   * @return A HashSet with the file's words
    */
-  public static Hashtable getWordtable(File wordfile) throws IOException {
-    if (wordfile == null) {
-      return new Hashtable();
-    }
-    Hashtable result = null;
+  public static HashSet getWordSet(File wordfile) throws IOException {
+    HashSet result = new HashSet();
     FileReader freader = null;
     LineNumberReader lnr = null;
     try {
       freader = new FileReader(wordfile);
       lnr = new LineNumberReader(freader);
       String word = null;
-      String[] stopwords = new String[100];
-      int wordcount = 0;
       while ((word = lnr.readLine()) != null) {
-        wordcount++;
-        if (wordcount == stopwords.length) {
-          String[] tmp = new String[stopwords.length + 50];
-          System.arraycopy(stopwords, 0, tmp, 0, wordcount);
-          stopwords = tmp;
+        result.add(word.trim());
         }
-        stopwords[wordcount - 1] = word;
       }
-      result = makeWordTable(stopwords, wordcount);
-    } finally {
+    finally {
       if (lnr != null)
         lnr.close();
       if (freader != null)
@@ -89,15 +65,46 @@ public class WordlistLoader {
   }
 
   /**
-   * Builds the wordlist table.
-   *
-   * @param words  Word that where read
-   * @param length Amount of words that where read into <tt>words</tt>
+   * @param path      Path to the wordlist
+   * @param wordfile  Name of the wordlist
+   * 
+   * @deprecated Use {@link #getWordSet(File)} getWordSet(File)} instead
    */
-  private static Hashtable makeWordTable(String[] words, int length) {
-    Hashtable table = new Hashtable(length);
-    for (int i = 0; i < length; i++) {
-      table.put(words[i], words[i]);
+  public static Hashtable getWordtable(String path, String wordfile) throws IOException {
+    return getWordtable(new File(path, wordfile));
+  }
+
+  /**
+   * @param wordfile  Complete path to the wordlist
+   * 
+   * @deprecated Use {@link #getWordSet(File)} getWordSet(File)} instead
+   */
+  public static Hashtable getWordtable(String wordfile) throws IOException {
+    return getWordtable(new File(wordfile));
+  }
+
+  /**
+   * @param wordfile  File object that points to the wordlist
+   *
+   * @deprecated Use {@link #getWordSet(File)} getWordSet(File)} instead
+   */
+  public static Hashtable getWordtable(File wordfile) throws IOException {
+    HashSet wordSet = (HashSet)getWordSet(wordfile);
+    Hashtable result = makeWordTable(wordSet);
+    return result;
+  }
+
+  /**
+   * Builds a wordlist table, using words as both keys and values
+   * for backward compatibility.
+   *
+   * @param wordSet   stopword set
+   */
+  private static Hashtable makeWordTable(HashSet wordSet) {
+    Hashtable table = new Hashtable();
+    for (Iterator iter = wordSet.iterator(); iter.hasNext();) {
+      String word = (String)iter.next();
+      table.put(word, word);
     }
     return table;
   }

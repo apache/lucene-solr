@@ -32,11 +32,6 @@ public class GermanStemmer
     private StringBuffer sb = new StringBuffer();
 
     /**
-     * Indicates if a term is handled as a noun.
-     */
-    private boolean uppercase = false;
-
-    /**
      * Amount of characters that are removed with <tt>substitute()</tt> while stemming.
      */
     private int substCount = 0;
@@ -49,8 +44,6 @@ public class GermanStemmer
      */
     protected String stem( String term )
     {
-	// Mark a possible noun.
-	uppercase = Character.isUpperCase( term.charAt( 0 ) );
 	// Use lowercase for medium stemming.
 	term = term.toLowerCase();
 	if ( !isStemmable( term ) )
@@ -115,7 +108,7 @@ public class GermanStemmer
 		buffer.deleteCharAt( buffer.length() - 1 );
 	    }
 	    // "t" occurs only as suffix of verbs.
-	    else if ( buffer.charAt( buffer.length() - 1 ) == 't' && !uppercase ) {
+	    else if ( buffer.charAt( buffer.length() - 1 ) == 't' ) {
 		buffer.deleteCharAt( buffer.length() - 1 );
 	    }
 	    else {
