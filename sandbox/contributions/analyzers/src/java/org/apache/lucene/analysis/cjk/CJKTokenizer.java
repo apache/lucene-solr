@@ -61,9 +61,8 @@ import java.io.Reader;
 
 
 /**
- * <p>
  * CJKTokenizer was modified from StopTokenizer which does a decent job for
- * most European languages. and it perferm other token method for double-byte
+ * most European languages. It performs other token methods for double-byte
  * Characters: the token will return at each two charactors with overlap match.<br>
  * Example: "java C1C2C3C4" will be segment to: "java" "C1C2" "C2C3" "C3C4" it
  * also need filter filter zero length token ""<br>
@@ -71,7 +70,6 @@ import java.io.Reader;
  * for more info on Asia language(Chinese Japanese Korean) text segmentation:
  * please search  <a
  * href="http://www.google.com/search?q=word+chinese+segment">google</a>
- * </p>
  *
  * @author Che, Dong
  */
@@ -132,14 +130,14 @@ public final class CJKTokenizer extends Tokenizer {
 
     /**
      * Returns the next token in the stream, or null at EOS.
+     * See http://java.sun.com/j2se/1.3/docs/api/java/lang/Character.UnicodeBlock.html
+     * for detail.
      *
      * @return Token
      *
      * @throws java.io.IOException - throw IOException when read error <br>
      *         hanppened in the InputStream
      *
-     * @see "http://java.sun.com/j2se/1.3/docs/api/java/lang/Character.UnicodeBlock.html"
-     *      for detail
      */
     public final Token next() throws java.io.IOException {
         /** how many character(s) has been stored in buffer */
