@@ -200,9 +200,8 @@ extends PriorityQueue {
   static ScoreDocComparator comparatorInt (final IndexReader reader, final String fieldname)
   throws IOException {
     final String field = fieldname.intern();
+    final int[] fieldOrder = FieldCache.DEFAULT.getInts (reader, field);
     return new ScoreDocComparator() {
-
-      final int[] fieldOrder = FieldCache.DEFAULT.getInts (reader, field);
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
         final int fi = fieldOrder[i.doc];
@@ -232,9 +231,8 @@ extends PriorityQueue {
   static ScoreDocComparator comparatorFloat (final IndexReader reader, final String fieldname)
   throws IOException {
     final String field = fieldname.intern();
+    final float[] fieldOrder = FieldCache.DEFAULT.getFloats (reader, field);
     return new ScoreDocComparator () {
-
-      protected final float[] fieldOrder = FieldCache.DEFAULT.getFloats (reader, field);
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
         final float fi = fieldOrder[i.doc];
@@ -264,8 +262,8 @@ extends PriorityQueue {
   static ScoreDocComparator comparatorString (final IndexReader reader, final String fieldname)
   throws IOException {
     final String field = fieldname.intern();
+    final FieldCache.StringIndex index = FieldCache.DEFAULT.getStringIndex (reader, field);
     return new ScoreDocComparator () {
-      final FieldCache.StringIndex index = FieldCache.DEFAULT.getStringIndex (reader, field);
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
         final int fi = index.order[i.doc];
@@ -296,8 +294,8 @@ extends PriorityQueue {
   throws IOException {
     final Collator collator = Collator.getInstance (locale);
     final String field = fieldname.intern();
+    final String[] index = FieldCache.DEFAULT.getStrings (reader, field);
     return new ScoreDocComparator() {
-      final String[] index = FieldCache.DEFAULT.getStrings (reader, field);
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
         return collator.compare (index[i.doc], index[j.doc]);

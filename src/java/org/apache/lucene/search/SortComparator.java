@@ -29,8 +29,9 @@ implements SortComparatorSource {
   public ScoreDocComparator newComparator (final IndexReader reader, final String fieldname)
   throws IOException {
     final String field = fieldname.intern();
+    final Comparable[] cachedValues = FieldCache.DEFAULT.getCustom (reader, field, SortComparator.this);
+    
     return new ScoreDocComparator() {
-      protected Comparable[] cachedValues = FieldCache.DEFAULT.getCustom (reader, field, SortComparator.this);
 
       public int compare (ScoreDoc i, ScoreDoc j) {
         return cachedValues[i.doc].compareTo (cachedValues[j.doc]);
