@@ -27,7 +27,7 @@ final class PhrasePositions {
   TermPositions tp;				  // stream of positions
   PhrasePositions next;				  // used to make lists
 
-  PhrasePositions(TermPositions t, int o) throws IOException {
+  PhrasePositions(TermPositions t, int o) {
     tp = t;
     offset = o;
   }

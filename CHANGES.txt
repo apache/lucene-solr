@@ -2,10 +2,43 @@ Lucene Change Log
 
 $Id$
 
-1.5 RC1
+1.4.2
+
+ 1. Fixed bug #31241: Sorting could lead to incorrect results (documents
+    missing, others duplicated) if the sort keys were not unique and there
+    were more than 100 matches. (Daniel Naber)
+
+ 2. Memory leak in Sort code (bug #31240) eliminated.
+    (Rafal Krzewski via Christoph and Daniel)
+    
+ 3. FuzzyQuery now takes an additional parameter that specifies the
+    minimum similarity that is required for a term to match the query.
+    The QueryParser syntax for this is term~x, where x is a floating 
+    point number between 0 and 1 (a bigger number means that a higher
+    similarity is required). Furthermore, a prefix can be specified
+    for FuzzyQuerys so that only those terms are considered similar that 
+    start with this prefix. This can speed up FuzzyQuery greatly.
+    (Daniel Naber, Christoph Goller)
+    
+ 4. PhraseQuery and PhrasePrefixQuery now allow the explicit specification
+    of relative positions. (Christoph Goller)
+    
+ 5. QueryParser changes: Fix for ArrayIndexOutOfBoundsExceptions 
+    (patch #9110); some unused method parameters removed; The ability
+    to specify a minimum similarity for FuzzyQuery has been added.
+    (Christoph Goller)
+
+ 6. IndexSearcher optimization: a new ScoreDoc is no longer allocated
+    for every non-zero-scoring hit.  This makes 'OR' queries that
+    contain common terms substantially faster.  (cutting)
+
+
+1.4.1
 
  1. Fixed a performance bug in hit sorting code, where values were not
     correctly cached.  (Aviran via cutting)
+
+ 2. Fixed errors in file format documentation. (Daniel Naber)
 
 
 1.4 final

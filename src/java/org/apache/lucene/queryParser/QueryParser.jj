@@ -96,6 +96,7 @@ public class QueryParser {
   Analyzer analyzer;
   String field;
   int phraseSlop = 0;
+  float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   Locale locale = Locale.getDefault();
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
@@ -136,6 +137,33 @@ public class QueryParser {
     catch (BooleanQuery.TooManyClauses tmc) {
       throw new ParseException("Too many boolean clauses");
     }
+  }
+  
+   /**
+   * @return Returns the analyzer.
+   */
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
+  
+  /**
+   * @return Returns the field.
+   */
+  public String getField() {
+    return field;
+  }
+  
+   /**
+   * Get the default minimal similarity for fuzzy queries.
+   */
+  public float getFuzzyMinSim() {
+      return fuzzyMinSim;
+  }
+  /**
+   *Set the default minimum similarity for fuzzy queries.
+   */
+  public void setFuzzyMinSim(float fuzzyMinSim) {
+      this.fuzzyMinSim = fuzzyMinSim;
   }
 
   /**
@@ -194,19 +222,19 @@ public class QueryParser {
   public Locale getLocale() {
     return locale;
   }
-
-  protected void addClause(Vector clauses, int conj, int mods, Query q) {
+  
+   protected void addClause(Vector clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
     // If this term is introduced by AND, make the preceding term required,
     // unless it's already prohibited
-    if (conj == CONJ_AND) {
+    if (clauses.size() > 0 && conj == CONJ_AND) {
       BooleanClause c = (BooleanClause) clauses.elementAt(clauses.size()-1);
       if (!c.prohibited)
         c.required = true;
     }
 
-    if (operator == DEFAULT_OPERATOR_AND && conj == CONJ_OR) {
+    if (clauses.size() > 0 && operator == DEFAULT_OPERATOR_AND && conj == CONJ_OR) {
       // If this term is introduced by OR, make the preceding term optional,
       // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
       // notice if the input is a OR b, first term is parsed as required; without
@@ -241,9 +269,7 @@ public class QueryParser {
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field,
-                                Analyzer analyzer,
-                                String queryText)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -285,17 +311,15 @@ public class QueryParser {
   }
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,Analyzer,String)}.
+   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field,
-                                Analyzer analyzer,
-                                String queryText,
-                                int slop)  throws ParseException {
-    Query query = getFieldQuery(field, analyzer, queryText);
+  protected Query getFieldQuery(String field, String queryText, int slop) 
+  	throws ParseException {
+    Query query = getFieldQuery(field, queryText);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -308,7 +332,6 @@ public class QueryParser {
    * @exception ParseException throw in overridden method to disallow
    */
   protected Query getRangeQuery(String field,
-                                Analyzer analyzer,
                                 String part1,
                                 String part2,
                                 boolean inclusive) throws ParseException
@@ -423,10 +446,10 @@ public class QueryParser {
    * @return Resulting {@link Query} built for the term
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFuzzyQuery(String field, String termStr) throws ParseException
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     Term t = new Term(field, termStr);
-    return new FuzzyQuery(t);
+    return new FuzzyQuery(t, minSimilarity);
   }
 
   /**
@@ -445,6 +468,25 @@ public class QueryParser {
     return new String(caDest, 0, j);
   }
 
+  /**
+   * Returns a String where those characters that QueryParser
+   * expects to be escaped are escaped, i.e. preceded by a <code>\</code>.
+   */
+  public static String escape(String s) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      // NOTE: keep this in sync with _ESCAPED_CHAR below!
+      if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+        || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+        || c == '*' || c == '?') {
+        sb.append('\\');
+      }
+      sb.append(c);
+    }
+    return sb.toString();
+  }
+
   public static void main(String[] args) throws Exception {
     QueryParser qp = new QueryParser("field",
                            new org.apache.lucene.analysis.SimpleAnalyzer());
@@ -461,6 +503,7 @@ PARSER_END(QueryParser)
 
 <*> TOKEN : {
   <#_NUM_CHAR:   ["0"-"9"] >
+// NOTE: keep this in sync with escape(String) above!
 | <#_ESCAPED_CHAR: "\\" [ "\\", "+", "-", "!", "(", ")", ":", "^",
                           "[", "]", "\"", "{", "}", "~", "*", "?" ] >
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "+", "-", "!", "(", ")", ":", "^",
@@ -495,8 +538,7 @@ PARSER_END(QueryParser)
 | <CARAT:     "^" > : Boost
 | <QUOTED:     "\"" (~["\""])+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
-| <FUZZY:     "~" >
-| <SLOP:      "~" (<_NUM_CHAR>)+ >
+| <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <PREFIXTERM:  <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" >
 | <WILDTERM:  <_TERM_START_CHAR>
               (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
@@ -605,7 +647,7 @@ Query Clause(String field) : {
 
 
 Query Term(String field) : {
-  Token term, boost=null, slop=null, goop1, goop2;
+  Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
@@ -620,8 +662,8 @@ Query Term(String field) : {
        | term=<WILDTERM> { wildcard=true; }
        | term=<NUMBER>
      )
-     [ <FUZZY> { fuzzy=true; } ]
-     [ <CARAT> boost=<NUMBER> [ <FUZZY> { fuzzy=true; } ] ]
+     [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
+     [ <CARAT> boost=<NUMBER> [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ] ]
      {
        String termImage=discardEscapeChar(term.image);
        if (wildcard) {
@@ -631,9 +673,16 @@ Query Term(String field) : {
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
        } else if (fuzzy) {
-         q = getFuzzyQuery(field, termImage);
+       	  float fms = fuzzyMinSim;
+       	  try {
+            fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
+       	  } catch (Exception ignored) { }
+       	 if(fms < 0.0f || fms > 1.0f){
+       	   throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
+       	 }
+         q = getFuzzyQuery(field, termImage, fms);
        } else {
-         q = getFieldQuery(field, analyzer, termImage);
+         q = getFieldQuery(field, termImage);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
@@ -651,7 +700,7 @@ Query Term(String field) : {
       } else {
         goop2.image = discardEscapeChar(goop2.image);
       }
-          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
+          q = getRangeQuery(field, goop1.image, goop2.image, true);
         }
      | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
          [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> )
@@ -669,23 +718,21 @@ Query Term(String field) : {
         goop2.image = discardEscapeChar(goop2.image);
       }
 
-          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, goop1.image, goop2.image, false);
         }
      | term=<QUOTED>
-       [ slop=<SLOP> ]
+       [ fuzzySlop=<FUZZY_SLOP> ]
        [ <CARAT> boost=<NUMBER> ]
        {
          int s = phraseSlop;
 
-         if (slop != null) {
+         if (fuzzySlop != null) {
            try {
-             s = Float.valueOf(slop.image.substring(1)).intValue();
+             s = Float.valueOf(fuzzySlop.image.substring(1)).intValue();
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, analyzer,
-                           term.image.substring(1, term.image.length()-1),
-                           s);
+         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
        }
   )
   {
