@@ -65,7 +65,7 @@ class IndexHTML {
       }
 
       writer = new IndexWriter(index, new StandardAnalyzer(), create);
-      writer.maxFieldLength = 1000000;
+      writer.setMaxFieldLength(1000000);
 
       indexDocs(root, index, create);		  // add new docs
 
