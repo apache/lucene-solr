@@ -68,7 +68,6 @@ import java.util.Collection;
  */
 public class StoragePipeline implements DocumentStorage, LinkStorage
 {
-
     private boolean isOpen;
     private boolean isLinkStorageOpen;
     private ArrayList docStorages;
@@ -86,7 +85,6 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         linkStorages = new ArrayList();
     }
 
-
     /**
      * open all docStorages
      */
@@ -100,7 +98,6 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         }
         isOpen = true;
     }
-
 
     /**
      * store the doc into all docStorages
@@ -152,6 +149,10 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         linkStorages.add(storage);
     }
 
+    /**
+     * Describe <code>openLinkStorage</code> method here.
+     *
+     */
     public void openLinkStorage()
     {
         for (Iterator it = linkStorages.iterator(); it.hasNext(); )
@@ -161,6 +162,12 @@ public class StoragePipeline implements DocumentStorage, LinkStorage
         isLinkStorageOpen = true;
     }
 
+    /**
+     * Describe <code>storeLinks</code> method here.
+     *
+     * @param c a <code>Collection</code> value
+     * @return a <code>Collection</code> value
+     */
     public Collection storeLinks(Collection c)
     {
         for(Iterator it = linkStorages.iterator(); it.hasNext();)
