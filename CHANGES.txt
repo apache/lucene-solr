@@ -99,6 +99,9 @@ Bug fixes
 
  2. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
     prevented deletion of obsolete segments. (Christoph Goller)
+  
+ 3. Fix in FieldInfos to avoid the return of an extra blank field in
+    IndexReader.getFieldNames() (Patch #19058). (Mark Harwood via Bernhard)
     
 Optimizations
      
