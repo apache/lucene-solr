@@ -99,7 +99,6 @@ public final class StopFilter extends TokenFilter {
     for (Token token = input.next(); token != null; token = input.next()) {
       if (table.get(token.termText) == null) {
         token.setPositionIncrement(position);
-        position = 1;
         return token;
       }
 
