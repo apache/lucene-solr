@@ -116,7 +116,7 @@ final class SegmentsReader extends IndexReader
 
   private final int readerIndex(int n) {	  // find reader for doc n:
     int lo = 0;					  // search starts array
-    int hi = readers.length - 1                   // for first element less
+    int hi = readers.length - 1;                  // for first element less
 
     while (hi >= lo) {
       int mid = (lo + hi) >> 1;
