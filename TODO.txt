@@ -31,6 +31,7 @@ $Revision$
   c.f.
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114749
   http://nagoya.apache.org/eyebrowse/ReadMsg?listName=lucene-dev@jakarta.apache.org&msgId=114757
+  Status: COMPLETED
 
 - Add to FSDirectory the ability to disable the use of lock files altogether (for read-only media).
   Status: COMPLETED
