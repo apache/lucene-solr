@@ -63,9 +63,9 @@ import java.util.Hashtable;
 import org.apache.lucene.util.Constants;
 
 /**
- * Straight forward implementation of Directory as a directory of files.
- * If the system property 'disableLocks' has the String value of "true", lock
- * creation will be disabled.
+ * Straightforward implementation of Directory as a directory of files.
+ * If the system property 'disableLuceneLocks' has the String value of "true",
+ * lock creation will be disabled.
  *
  * @see Directory
  * @author Doug Cutting
@@ -81,7 +81,7 @@ final public class FSDirectory extends Directory {
   private static final Hashtable DIRECTORIES = new Hashtable();
 
   private static final boolean DISABLE_LOCKS =
-      Boolean.getBoolean("disableLocks") || Constants.JAVA_1_1;
+      Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
 
   /** Returns the directory instance for the named location.
    *
@@ -220,7 +220,7 @@ final public class FSDirectory extends Directory {
   /**
    * Constructs a {@link Lock} with the specified name.
    * If JDK 1.1 is used the lock file is not really made.
-   * If system property <I>disableLocks</I> has the value of 'true'
+   * If system property <I>disableLuceneLocks</I> has the value of 'true'
    * the lock will not be created.  Assigning this property any other value
    * will <B>not</B> prevent creation of locks.
    * <BR>
