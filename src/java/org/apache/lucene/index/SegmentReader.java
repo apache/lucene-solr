@@ -337,25 +337,6 @@ class SegmentReader extends IndexReader {
     }
     return fieldSet;
   }
-
-  /**
-   * 
-   * @param storedTermVector if true, returns only Indexed fields that have term vector info, 
-   *                        else only indexed fields without term vector info 
-   * @return Collection of Strings indicating the names of the fields
-   */
-  public Collection getIndexedFieldNames(boolean storedTermVector) {
-    if(storedTermVector){
-      Set fieldSet = new HashSet();
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.YES));
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS));
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_OFFSETS));
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS_OFFSETS));
-      return fieldSet;
-    }
-    else
-      return getIndexedFieldNames(Field.TermVector.NO);
-  }
   
   public Collection getIndexedFieldNames (Field.TermVector tvSpec){
     boolean storedTermVector;

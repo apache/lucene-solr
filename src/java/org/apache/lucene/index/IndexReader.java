@@ -26,6 +26,8 @@ import org.apache.lucene.store.Lock;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -564,7 +566,18 @@ public abstract class IndexReader {
    * 
    * @deprecated  Replaced by {@link #getIndexedFieldNames (Field.TermVector tvSpec)}
    */ 
-  public abstract Collection getIndexedFieldNames(boolean storedTermVector);
+  public Collection getIndexedFieldNames(boolean storedTermVector){
+    if(storedTermVector){
+      Set fieldSet = new HashSet();
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.YES));
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS));
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_OFFSETS));
+      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS_OFFSETS));
+      return fieldSet;
+    }
+    else
+      return getIndexedFieldNames(Field.TermVector.NO);
+  }
   
   /**
    * Get a list of unique field names that exist in this index, are indexed, and have

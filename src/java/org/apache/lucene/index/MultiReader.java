@@ -235,17 +235,6 @@ public class MultiReader extends IndexReader {
     return fieldSet;
   }
 
-  public Collection getIndexedFieldNames(boolean storedTermVector) {
-    // maintain a unique set of field names
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < subReaders.length; i++) {
-      IndexReader reader = subReaders[i];
-      Collection names = reader.getIndexedFieldNames(storedTermVector);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  }
-
   public Collection getIndexedFieldNames (Field.TermVector tvSpec){
     // maintain a unique set of field names
     Set fieldSet = new HashSet();

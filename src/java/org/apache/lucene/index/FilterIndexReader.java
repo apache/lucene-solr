@@ -138,16 +138,6 @@ public class FilterIndexReader extends IndexReader {
     return in.getFieldNames(indexed);
   }
 
-  /**
-   * 
-   * @param storedTermVector if true, returns only Indexed fields that have term vector info, 
-   *                        else only indexed fields without term vector info 
-   * @return Collection of Strings indicating the names of the fields
-   */
-  public Collection getIndexedFieldNames(boolean storedTermVector) {
-    return in.getIndexedFieldNames(storedTermVector);
-  }
-
   public Collection getIndexedFieldNames (Field.TermVector tvSpec){
     return in.getIndexedFieldNames(tvSpec);
   }
