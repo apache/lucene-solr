@@ -10,6 +10,11 @@
           Crawler, Fetcher"/>
 
     <body>
+        <section name="LARM Relocated">
+          <p>LARM is now maintained at
+            <a href="http://larm.sourceforge.net/">http://larm.sourceforge.net/</a>.
+          </p>
+        </section>
 
         <section name="The LARM Web Crawler - Technical Overview">
 
