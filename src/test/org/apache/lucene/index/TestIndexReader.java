@@ -1,14 +1,5 @@
 package org.apache.lucene.index;
 
-import junit.framework.TestCase;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-
-import java.util.Collection;
-import java.io.IOException;
-
 /* ====================================================================
  * The Apache Software License, Version 1.1
  *
@@ -62,6 +53,23 @@ import java.io.IOException;
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  */
+
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+
+import java.util.Collection;
+import java.io.IOException;
 
 public class TestIndexReader extends TestCase
 {
@@ -123,6 +131,151 @@ public class TestIndexReader extends TestCase
         assertTrue(fieldNames.contains("unindexed"));
     }
 
+    public void testDeleteReaderWriterConflict()
+    {
+        Directory dir = new RAMDirectory();
+        IndexWriter writer = null;
+        IndexReader reader = null;
+        Searcher searcher = null;
+        Term searchTerm = new Term("content", "aaa");
+        Hits hits = null;
+
+        try
+        {
+            //  add 100 documents with term : aaa
+            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+            for (int i = 0; i < 100; i++)
+            {
+                addDoc(writer, "aaa");
+            }
+            writer.close();
+            reader = IndexReader.open(dir);
+
+            //  add 100 documents with term : bbb
+            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+            for (int i = 0; i < 100; i++)
+            {
+                addDoc(writer, "bbb");
+            }
+            writer.optimize();
+            writer.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        try
+        {
+            // delete documents containing term: aaa
+            reader.delete(searchTerm);
+            reader.close();
+        }
+        catch (IOException e)
+        {
+            try
+            {
+                // if reader throws IOException try once more to delete documents with a new reader
+                reader.close();
+                reader = IndexReader.open(dir);
+                reader.delete(searchTerm);
+                reader.close();
+            }
+            catch (IOException e1)
+            {
+                e1.printStackTrace();
+            }
+        }
+
+        try
+        {
+            searcher = new IndexSearcher(dir);
+            hits = searcher.search(new TermQuery(searchTerm));
+            assertEquals(0, hits.length());
+            searcher.close();
+        }
+        catch (IOException e1)
+        {
+            e1.printStackTrace();
+        }
+    }
+
+    public void testDeleteReaderReaderConflict()
+    {
+        Directory dir = new RAMDirectory();
+        IndexWriter writer = null;
+        IndexReader reader1 = null;
+        IndexReader reader2 = null;
+        Searcher searcher = null;
+        Hits hits = null;
+        Term searchTerm1 = new Term("content", "aaa");
+        Term searchTerm2 = new Term("content", "bbb");
+
+        try
+        {
+            //  add 100 documents with term : aaa
+            //  add 100 documents with term : bbb
+            //  add 100 documents with term : ccc
+            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+            for (int i = 0; i < 100; i++)
+            {
+                addDoc(writer, "aaa");
+                addDoc(writer, "bbb");
+                addDoc(writer, "ccc");
+            }
+            writer.optimize();
+            writer.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        try
+        {
+            reader1 = IndexReader.open(dir);
+            reader2 = IndexReader.open(dir);
+
+            // delete documents containing term: aaa
+            reader2.delete(searchTerm1);
+            reader2.close();
+
+            // delete documents containing term: bbb
+            reader1.delete(searchTerm2);
+            reader1.close();
+        }
+        catch (IOException e)
+        {
+            try
+            {
+                // if reader throws IOException try once more to delete documents with a new reader
+                reader1.close();
+                reader1 = IndexReader.open(dir);
+                reader1.delete(searchTerm2);
+                reader1.close();
+            }
+            catch (IOException e1)
+            {
+                e1.printStackTrace();
+            }
+        }
+
+        try
+        {
+            searcher = new IndexSearcher(dir);
+            hits = searcher.search(new TermQuery(searchTerm1));
+            assertEquals(0, hits.length());
+            hits = searcher.search(new TermQuery(searchTerm2));
+            assertEquals(0, hits.length());
+            searcher.close();
+        }
+        catch (IOException e1)
+        {
+            e1.printStackTrace();
+        }
+    }
+
+
     private void addDocumentWithFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
@@ -141,5 +294,20 @@ public class TestIndexReader extends TestCase
         doc.add(Field.UnIndexed("unindexed2","test1"));
         doc.add(Field.UnStored("unstored2","test1"));
         writer.addDocument(doc);
+    }
+
+    private void addDoc(IndexWriter writer, String value)
+    {
+        Document doc = new Document();
+        doc.add(Field.UnStored("content", value));
+
+        try
+        {
+            writer.addDocument(doc);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 }
