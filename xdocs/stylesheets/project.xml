@@ -18,7 +18,6 @@
         <item name="jGuru FAQ"         href="http://www.jguru.com/faq/Lucene"/>
         <item name="Getting Started"   href="/gettingstarted.html"/>
         <item name="Query Syntax"      href="/queryparsersyntax.html"/>
-        <item name="System Properties" href="/systemproperties.html"/>
         <item name="File Formats"      href="/fileformats.html"/>
         <item name="Javadoc"           href="/api/index.html"/>
         <item name="Contributions"     href="/contributions.html"/>
