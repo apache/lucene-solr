@@ -1071,12 +1071,13 @@
                 </p>
             </subsection>
             <subsection name="Normalization Factors">
-                <p>The .nrm file contains,
+                <p>There's a norm file for each indexed field with a byte for
+                   each document.  The .n[0-9]* file contains,
                     for each document, a byte that encodes a value that is multiplied
                     into the score for hits on that field:
                 </p>
                 <p>Norms
-                    (.nrm)    --&gt; &lt;Byte&gt;<sup>SegSize</sup>
+                    (.n[0-9]*)    --&gt; &lt;Byte&gt;<sup>SegSize</sup>
                 </p>
                 <p>Each
                     byte encodes a floating point value.  Bits 0-2 contain the 3-bit
