@@ -243,14 +243,14 @@ public final class FSDirectory extends Directory {
           try {
             in.close();
           } catch (IOException e) {
-            throw new RuntimeException("could not close input stream", e);
+            throw new RuntimeException("could not close input stream: " + e.getMessage());
           }
         }
         if (out != null) {
           try {
             out.close();
           } catch (IOException e) {
-            throw new RuntimeException("could not close output stream", e);
+            throw new RuntimeException("could not close output stream: " + e.getMessage());
           }
         }
       }
