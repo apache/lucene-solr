@@ -125,7 +125,6 @@ TOKEN : {					  // token patterns
     (<LETTER>|<DIGIT>)*
   >
 
-| < SIGRAM: (<CJK>)+ >
 | < #ALPHA: (<LETTER>)+>
 | < #LETTER:					  // unicode letters
       [
@@ -137,7 +136,7 @@ TOKEN : {					  // token patterns
        "\u0100"-"\u1fff"
       ]
   >
-| < #CJK:             // non-alphabets
+| < CJK:                                          // non-alphabets
       [
        "\u3040"-"\u318f",
        "\u3300"-"\u337f",
@@ -187,7 +186,7 @@ org.apache.lucene.analysis.Token next() throws IOException :
     token = <EMAIL> |
     token = <HOST> |
     token = <NUM> |
-    token = <SIGRAM> |
+    token = <CJK> |
     token = <EOF>
    )
     {

@@ -47,8 +47,8 @@ public class StandardTokenizer extends org.apache.lucene.analysis.Tokenizer impl
     case NUM:
       token = jj_consume_token(NUM);
       break;
-    case SIGRAM:
-      token = jj_consume_token(SIGRAM);
+    case CJK:
+      token = jj_consume_token(CJK);
       break;
     case 0:
       token = jj_consume_token(0);
@@ -79,7 +79,7 @@ public class StandardTokenizer extends org.apache.lucene.analysis.Tokenizer impl
       jj_la1_0();
    }
    private static void jj_la1_0() {
-      jj_la1_0 = new int[] {0x4ff,};
+      jj_la1_0 = new int[] {0x10ff,};
    }
 
   public StandardTokenizer(CharStream stream) {
@@ -158,8 +158,8 @@ public class StandardTokenizer extends org.apache.lucene.analysis.Tokenizer impl
 
   public ParseException generateParseException() {
     jj_expentries.removeAllElements();
-    boolean[] la1tokens = new boolean[16];
-    for (int i = 0; i < 16; i++) {
+    boolean[] la1tokens = new boolean[15];
+    for (int i = 0; i < 15; i++) {
       la1tokens[i] = false;
     }
     if (jj_kind >= 0) {
@@ -175,7 +175,7 @@ public class StandardTokenizer extends org.apache.lucene.analysis.Tokenizer impl
         }
       }
     }
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 15; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

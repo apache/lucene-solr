@@ -8,7 +8,7 @@ public class StandardTokenizerTokenManager implements StandardTokenizerConstants
   public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }
 private final int jjMoveStringLiteralDfa0_0()
 {
-   return jjMoveNfa_0(1, 0);
+   return jjMoveNfa_0(0, 0);
 }
 private final void jjCheckNAdd(int state)
 {
@@ -101,13 +101,17 @@ private final int jjMoveNfa_0(int startState, int curPos)
          {
             switch(jjstateSet[--i])
             {
-               case 1:
+               case 0:
                   if ((0x3ff000000000000L & l) != 0L)
                   {
                      if (kind > 1)
                         kind = 1;
                      jjCheckNAddStates(0, 17);
                   }
+                  if ((0x3ff000000000000L & l) != 0L)
+                     jjCheckNAddStates(18, 23);
+                  break;
+               case 1:
                   if ((0x3ff000000000000L & l) != 0L)
                      jjCheckNAddStates(18, 23);
                   break;
@@ -380,7 +384,7 @@ private final int jjMoveNfa_0(int startState, int curPos)
          {
             switch(jjstateSet[--i])
             {
-               case 1:
+               case 0:
                   if ((0x7fffffe07fffffeL & l) != 0L)
                      jjCheckNAddStates(30, 35);
                   if ((0x7fffffe07fffffeL & l) != 0L)
@@ -669,12 +673,11 @@ private final int jjMoveNfa_0(int startState, int curPos)
          {
             switch(jjstateSet[--i])
             {
-               case 1:
+               case 0:
                   if (jjCanMove_0(hiByte, i1, i2, l1, l2))
                   {
-                     if (kind > 10)
-                        kind = 10;
-                     jjCheckNAdd(0);
+                     if (kind > 12)
+                        kind = 12;
                   }
                   if (jjCanMove_1(hiByte, i1, i2, l1, l2))
                      jjCheckNAddStates(18, 23);
@@ -687,12 +690,9 @@ private final int jjMoveNfa_0(int startState, int curPos)
                   if (jjCanMove_2(hiByte, i1, i2, l1, l2))
                      jjCheckNAddStates(30, 35);
                   break;
-               case 0:
-                  if (!jjCanMove_0(hiByte, i1, i2, l1, l2))
-                     break;
-                  if (kind > 10)
-                     kind = 10;
-                  jjCheckNAdd(0);
+               case 1:
+                  if (jjCanMove_1(hiByte, i1, i2, l1, l2))
+                     jjCheckNAddStates(18, 23);
                   break;
                case 2:
                   if (jjCanMove_2(hiByte, i1, i2, l1, l2))
@@ -1021,15 +1021,15 @@ private static final boolean jjCanMove_2(int hiByte, int i1, int i2, long l1, lo
 }
 public static final String[] jjstrLiteralImages = {
 "", null, null, null, null, null, null, null, null, null, null, null, null, 
-null, null, null, };
+null, null, };
 public static final String[] lexStateNames = {
    "DEFAULT", 
 };
 static final long[] jjtoToken = {
-   0x4ffL, 
+   0x10ffL, 
 };
 static final long[] jjtoSkip = {
-   0x8000L, 
+   0x4000L, 
 };
 protected CharStream input_stream;
 private final int[] jjrounds = new int[73];
@@ -1115,9 +1115,9 @@ public Token getNextToken()
    jjmatchedKind = 0x7fffffff;
    jjmatchedPos = 0;
    curPos = jjMoveStringLiteralDfa0_0();
-   if (jjmatchedPos == 0 && jjmatchedKind > 15)
+   if (jjmatchedPos == 0 && jjmatchedKind > 14)
    {
-      jjmatchedKind = 15;
+      jjmatchedKind = 14;
    }
    if (jjmatchedKind != 0x7fffffff)
    {
