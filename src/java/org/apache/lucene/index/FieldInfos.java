@@ -57,6 +57,8 @@ package org.apache.lucene.index;
 import java.util.Hashtable;
 import java.util.Vector;
 import java.util.Enumeration;
+import java.util.Collection;
+import java.util.Iterator;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
@@ -92,11 +94,10 @@ final class FieldInfos {
     }
   }
 
-  /** Merges in information from another FieldInfos. */
-  final void add(FieldInfos other) {
-    for (int i = 0; i < other.size(); i++) {
-      FieldInfo fi = other.fieldInfo(i);
-      add(fi.name, fi.isIndexed);
+  final void add(Collection names, boolean isIndexed) {
+    Iterator i = names.iterator();
+    while (i.hasNext()) {
+      add((String)i.next(), isIndexed);
     }
   }
 

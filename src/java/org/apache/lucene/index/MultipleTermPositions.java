@@ -297,6 +297,11 @@ public class MultipleTermPositions
 	throw new UnsupportedOperationException();
     }
 
+    public void seek(TermEnum termEnum) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+
     /**
      * Describe <code>read</code> method here.
      *
@@ -311,4 +316,5 @@ public class MultipleTermPositions
     {
 	throw new UnsupportedOperationException();
     }
+
 }

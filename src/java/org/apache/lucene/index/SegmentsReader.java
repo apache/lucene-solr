@@ -76,6 +76,7 @@ final class SegmentsReader extends IndexReader
   private Hashtable normsCache = new Hashtable();
   private int maxDoc = 0;
   private int numDocs = -1;
+  private boolean hasDeletions = false;
 
   SegmentsReader(Directory directory, SegmentReader[] r) throws IOException {
     super(directory);
@@ -84,6 +85,9 @@ final class SegmentsReader extends IndexReader
     for (int i = 0; i < readers.length; i++) {
       starts[i] = maxDoc;
       maxDoc += readers[i].maxDoc();		  // compute maxDocs
+
+      if (readers[i].hasDeletions())
+        hasDeletions = true;
     }
     starts[readers.length] = maxDoc;
   }
@@ -112,10 +116,13 @@ final class SegmentsReader extends IndexReader
     return readers[i].isDeleted(n - starts[i]);	  // dispatch to segment reader
   }
 
-  final synchronized void doDelete(int n) throws IOException {
+  public boolean hasDeletions() { return hasDeletions; }
+
+  protected final synchronized void doDelete(int n) throws IOException {
     numDocs = -1;				  // invalidate cache
     int i = readerIndex(n);			  // find segment num
     readers[i].doDelete(n - starts[i]);		  // dispatch to segment reader
+    hasDeletions = true;
   }
 
   private final int readerIndex(int n) {	  // find reader for doc n:
@@ -174,7 +181,7 @@ final class SegmentsReader extends IndexReader
     return new SegmentsTermPositions(readers, starts);
   }
 
-  final synchronized void doClose() throws IOException {
+  protected final synchronized void doClose() throws IOException {
     for (int i = 0; i < readers.length; i++)
       readers[i].close();
   }
@@ -309,6 +316,10 @@ class SegmentsTermDocs implements TermDocs {
     this.current = null;
   }
 
+  public void seek(TermEnum termEnum) throws IOException {
+    seek(termEnum.term());
+  }
+
   public final boolean next() throws IOException {
     if (current != null && current.next()) {
       return true;
@@ -389,4 +400,5 @@ class SegmentsTermPositions extends SegmentsTermDocs implements TermPositions {
   public final int nextPosition() throws IOException {
     return ((SegmentTermPositions)current).nextPosition();
   }
+
 }

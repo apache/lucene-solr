@@ -110,9 +110,9 @@ final class SegmentReader extends IndexReader {
     segment = si.name;
 
     // Use compound file directory for some files, if it exists
-    Directory cfsDir = directory;
-    if (directory.fileExists(segment + ".cfs")) {
-      cfsReader = new CompoundFileReader(directory, segment + ".cfs");
+    Directory cfsDir = directory();
+    if (directory().fileExists(segment + ".cfs")) {
+      cfsReader = new CompoundFileReader(directory(), segment + ".cfs");
       cfsDir = cfsReader;
     }
 
@@ -124,7 +124,7 @@ final class SegmentReader extends IndexReader {
 
     // NOTE: the bitvector is stored using the regular directory, not cfs
     if (hasDeletions(si))
-      deletedDocs = new BitVector(directory, segment + ".del");
+      deletedDocs = new BitVector(directory(), segment + ".del");
 
     // make sure that all index files have been read or are kept open
     // so that if an index update removes them we'll still have them
@@ -133,16 +133,15 @@ final class SegmentReader extends IndexReader {
     openNorms(cfsDir);
   }
 
-
-  final synchronized void doClose() throws IOException {
+  protected final synchronized void doClose() throws IOException {
     if (deletedDocsDirty) {
-      synchronized (directory) {		  // in- & inter-process sync
-        new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
+      synchronized (directory()) {		  // in- & inter-process sync
+        new Lock.With(directory().makeLock(IndexWriter.COMMIT_LOCK_NAME),
           IndexWriter.COMMIT_LOCK_TIMEOUT) {
           public Object doBody() throws IOException {
-            deletedDocs.write(directory, segment + ".tmp");
-            directory.renameFile(segment + ".tmp", segment + ".del");
-            directory.touchFile("segments");
+            deletedDocs.write(directory(), segment + ".tmp");
+            directory().renameFile(segment + ".tmp", segment + ".del");
+            directory().touchFile("segments");
             return null;
           }
         }.run();
@@ -164,18 +163,22 @@ final class SegmentReader extends IndexReader {
       cfsReader.close();
 
     if (closeDirectory)
-      directory.close();
+      directory().close();
   }
 
   static final boolean hasDeletions(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".del");
   }
 
+  public boolean hasDeletions() {
+    return deletedDocs != null;
+  }
+
   static final boolean usesCompoundFile(SegmentInfo si) throws IOException {
     return si.dir.fileExists(si.name + ".cfs");
   }
 
-  final synchronized void doDelete(int docNum) throws IOException {
+  protected final synchronized void doDelete(int docNum) throws IOException {
     if (deletedDocs == null)
       deletedDocs = new BitVector(maxDoc());
     deletedDocsDirty = true;
@@ -190,7 +193,7 @@ final class SegmentReader extends IndexReader {
 
     for (int i=0; i<ext.length; i++) {
       String name = segment + "." + ext[i];
-      if (directory.fileExists(name))
+      if (directory().fileExists(name))
         files.addElement(name);
     }
 

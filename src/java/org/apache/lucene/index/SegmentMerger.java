@@ -83,29 +83,32 @@ final class SegmentMerger {
     useCompoundFile = compoundFile;
   }
 
-  final void add(SegmentReader reader) {
+  final void add(IndexReader reader) {
     readers.addElement(reader);
   }
 
-  final SegmentReader segmentReader(int i) {
-    return (SegmentReader)readers.elementAt(i);
+  final IndexReader segmentReader(int i) {
+    return (IndexReader)readers.elementAt(i);
   }
 
-  final void merge() throws IOException {
+  final int merge() throws IOException {
+    int value;
     try {
       mergeFields();
       mergeTerms();
-      mergeNorms();
+      value = mergeNorms();
       
     } finally {
       for (int i = 0; i < readers.size(); i++) {  // close readers
-        SegmentReader reader = (SegmentReader)readers.elementAt(i);
-        reader.close();
+	IndexReader reader = (IndexReader)readers.elementAt(i);
+	reader.close();
       }
     }
     
     if (useCompoundFile)
         createCompoundFile();
+
+    return value;
   }
 
   private final void createCompoundFile() 
@@ -149,8 +152,9 @@ final class SegmentMerger {
   private final void mergeFields() throws IOException {
     fieldInfos = new FieldInfos();		  // merge field names
     for (int i = 0; i < readers.size(); i++) {
-      SegmentReader reader = (SegmentReader)readers.elementAt(i);
-      fieldInfos.add(reader.fieldInfos);
+      IndexReader reader = (IndexReader)readers.elementAt(i);
+      fieldInfos.add(reader.getFieldNames(true), true);
+      fieldInfos.add(reader.getFieldNames(false), false);
     }
     fieldInfos.write(directory, segment + ".fnm");
     
@@ -158,12 +162,11 @@ final class SegmentMerger {
       new FieldsWriter(directory, segment, fieldInfos);
     try {
       for (int i = 0; i < readers.size(); i++) {
-        SegmentReader reader = (SegmentReader)readers.elementAt(i);
-        BitVector deletedDocs = reader.deletedDocs;
-        int maxDoc = reader.maxDoc();
-        for (int j = 0; j < maxDoc; j++)
-          if (deletedDocs == null || !deletedDocs.get(j)) // skip deleted docs
-            fieldsWriter.addDocument(reader.document(j));
+	IndexReader reader = (IndexReader)readers.elementAt(i);
+	int maxDoc = reader.maxDoc();
+	for (int j = 0; j < maxDoc; j++)
+	  if (!reader.isDeleted(j))               // skip deleted docs
+	    fieldsWriter.addDocument(reader.document(j));
       }
     } finally {
       fieldsWriter.close();
@@ -196,8 +199,8 @@ final class SegmentMerger {
     queue = new SegmentMergeQueue(readers.size());
     int base = 0;
     for (int i = 0; i < readers.size(); i++) {
-      SegmentReader reader = (SegmentReader)readers.elementAt(i);
-      SegmentTermEnum termEnum = (SegmentTermEnum)reader.terms();
+      IndexReader reader = (IndexReader)readers.elementAt(i);
+      TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
       base += reader.numDocs();
       if (smi.next())
@@ -246,42 +249,40 @@ final class SegmentMerger {
       termInfosWriter.add(smis[0].term, termInfo);
     }
   }
-       
+
   private final int appendPostings(SegmentMergeInfo[] smis, int n)
        throws IOException {
     int lastDoc = 0;
     int df = 0;					  // number of docs w/ term
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
-      SegmentTermPositions postings = smi.postings;
+      TermPositions postings = smi.postings;
       int base = smi.base;
       int[] docMap = smi.docMap;
-      smi.termEnum.termInfo(termInfo);
-      postings.seek(termInfo);
+      postings.seek(smi.termEnum);
       while (postings.next()) {
-        int doc;
-        if (docMap == null)
-          doc = base + postings.doc;		  // no deletions
-        else
-          doc = base + docMap[postings.doc];	  // re-map around deletions
+        int doc = postings.doc();
+        if (docMap != null)
+          doc = docMap[doc];                      // map around deletions
+        doc += base;                              // convert to merged space
 
         if (doc < lastDoc)
           throw new IllegalStateException("docs out of order");
 
         int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
         lastDoc = doc;
-
-        int freq = postings.freq;
+        
+        int freq = postings.freq();
         if (freq == 1) {
           freqOutput.writeVInt(docCode | 1);	  // write doc & freq=1
         } else {
           freqOutput.writeVInt(docCode);	  // write doc
           freqOutput.writeVInt(freq);		  // write frequency in doc
         }
-          
+	  
         int lastPosition = 0;			  // write position deltas
-        for (int j = 0; j < freq; j++) {
-          int position = postings.nextPosition();
+	for (int j = 0; j < freq; j++) {
+	  int position = postings.nextPosition();
           proxOutput.writeVInt(position - lastPosition);
           lastPosition = position;
         }
@@ -291,33 +292,31 @@ final class SegmentMerger {
     }
     return df;
   }
-
-  private final void mergeNorms() throws IOException {
+  private final int mergeNorms() throws IOException {
+    int docCount = 0;
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed) {
-        OutputStream output = directory.createFile(segment + ".f" + i);
-        try {
-          for (int j = 0; j < readers.size(); j++) {
-            SegmentReader reader = (SegmentReader)readers.elementAt(j);
-            BitVector deletedDocs = reader.deletedDocs;
-            InputStream input = reader.normStream(fi.name);
+	OutputStream output = directory.createFile(segment + ".f" + i);
+	try {
+	  for (int j = 0; j < readers.size(); j++) {
+	    IndexReader reader = (IndexReader)readers.elementAt(j);
+	    byte[] input = reader.norms(fi.name);
             int maxDoc = reader.maxDoc();
-            try {
-              for (int k = 0; k < maxDoc; k++) {
-                byte norm = input != null ? input.readByte() : (byte)0;
-                if (deletedDocs == null || !deletedDocs.get(k))
-                  output.writeByte(norm);
+            for (int k = 0; k < maxDoc; k++) {
+              byte norm = input != null ? input[k] : (byte)0;
+              if (!reader.isDeleted(k)) {
+                output.writeByte(norm);
+                docCount++;
               }
-            } finally {
-              if (input != null)
-                input.close();
-            }
-          }
-        } finally {
-          output.close();
-        }
+	    }
+	  }
+	} finally {
+	  output.close();
+	}
       }
     }
+    return docCount;
   }
+
 }

@@ -86,7 +86,7 @@ public abstract class IndexReader {
     segmentInfosAge = Long.MAX_VALUE;
   }
 
-  Directory directory;
+  private Directory directory;
   private Lock writeLock;
 
   //used to determine whether index has chaged since reader was opened
@@ -130,6 +130,9 @@ public abstract class IndexReader {
         }.run();
     }
   }
+
+  /** Returns the directory this index resides in. */
+  public Directory directory() { return directory; }
 
   /** Returns the time the index in the named directory was last modified. */
   public static long lastModified(String directory) throws IOException {
@@ -193,6 +196,9 @@ public abstract class IndexReader {
 
   /** Returns true if document <i>n</i> has been deleted */
   public abstract boolean isDeleted(int n);
+
+  /** Returns true if any documents have been deleted */
+  public abstract boolean hasDeletions();
 
   /** Returns the byte-encoded normalization factor for the named field of
    * every document.  This is used by the search code to score documents.
@@ -286,7 +292,10 @@ public abstract class IndexReader {
     doDelete(docNum);
   }
 
-  abstract void doDelete(int docNum) throws IOException;
+  /** Implements deletion of the document numbered <code>docNum</code>.
+   * Applications should call {@link #delete(int)} or {@link #delete(Term)}.
+   */
+  protected abstract void doDelete(int docNum) throws IOException;
 
   /** Deletes all documents containing <code>term</code>.
     This is useful if one uses a document field to hold a unique ID string for
@@ -323,7 +332,7 @@ public abstract class IndexReader {
   }
 
   /** Implements close. */
-  abstract void doClose() throws IOException;
+  protected abstract void doClose() throws IOException;
 
   /** Release the write lock, if needed. */
   protected final void finalize() throws IOException {

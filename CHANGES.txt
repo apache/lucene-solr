@@ -40,6 +40,18 @@ $Id$
 
 10. Added Locale setting to QueryParser, for use by date range parsing.
 
+11. Changed IndexReader so that it can be subclassed by classes
+    outside of its package.  Previously it had package-private
+    abstract methods.  Also modified the index merging code so that it
+    can work on an arbitrary IndexReader implementation, and added a
+    new method, IndexWriter.addIndexes(IndexReader[]), to take
+    advantage of this. (cutting)
+
+12. Added a limit to the number of clauses which may be added to a
+    BooleanQuery.  The default limit is 1024 clauses.  This should
+    stop most OutOfMemoryExceptions by prefix, wildcard and fuzzy
+    queries which run amok. (cutting)
+
 
 1.3 RC1
 

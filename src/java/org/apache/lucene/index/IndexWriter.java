@@ -324,6 +324,37 @@ public class IndexWriter {
     optimize();					  // final cleanup
   }
 
+  /** Merges the provided indexes into this index.
+   * <p>After this completes, the index is optimized. */
+  public synchronized void addIndexes(IndexReader[] readers)
+    throws IOException {
+
+    optimize();					  // start with zero or 1 seg
+
+    String mergedName = newSegmentName();
+    SegmentMerger merger = new SegmentMerger(directory, mergedName, false);
+
+    if (segmentInfos.size() == 1)                 // add existing index, if any
+      merger.add(new SegmentReader(segmentInfos.info(0)));
+
+    for (int i = 0; i < readers.length; i++)      // add new indexes
+      merger.add(readers[i]);
+
+    int docCount = merger.merge();                // merge 'em
+
+    segmentInfos.setSize(0);                      // pop old infos & add new
+    segmentInfos.addElement(new SegmentInfo(mergedName, docCount, directory));
+
+    synchronized (directory) {			  // in- & inter-process sync
+      new Lock.With(directory.makeLock("commit.lock")) {
+	  public Object doBody() throws IOException {
+	    segmentInfos.write(directory);	  // commit changes
+	    return null;
+	  }
+	}.run();
+    }
+  }
+
   /** Merges all RAM-resident segments. */
   private final void flushRamSegments() throws IOException {
     int minSegment = segmentInfos.size()-1;
@@ -379,12 +410,12 @@ public class IndexWriter {
     for (int i = minSegment; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
       if (infoStream != null)
-        infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-      SegmentReader reader = new SegmentReader(si);
+	infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
+      IndexReader reader = new SegmentReader(si);
       merger.add(reader);
-      if ((reader.directory == this.directory) || // if we own the directory
-          (reader.directory == this.ramDirectory))
-        segmentsToDelete.addElement(reader);	  // queue segment for deletion
+      if ((reader.directory()==this.directory) || // if we own the directory
+          (reader.directory()==this.ramDirectory))
+	segmentsToDelete.addElement(reader);	  // queue segment for deletion
       mergedDocCount += reader.numDocs();
     }
     if (infoStream != null) {
@@ -420,10 +451,10 @@ public class IndexWriter {
 
     for (int i = 0; i < segments.size(); i++) {
       SegmentReader reader = (SegmentReader)segments.elementAt(i);
-      if (reader.directory == this.directory)
-        deleteFiles(reader.files(), deletable);	  // try to delete our files
+      if (reader.directory() == this.directory)
+	deleteFiles(reader.files(), deletable);	  // try to delete our files
       else
-        deleteFiles(reader.files(), reader.directory); // delete, eg, RAM files
+	deleteFiles(reader.files(), reader.directory()); // delete other files
     }
 
     writeDeleteableFiles(deletable);		  // note files we can't delete

@@ -71,6 +71,11 @@ public interface TermDocs {
    */
   void seek(Term term) throws IOException;
 
+  /** Sets this to the data for the current term in a {@link TermEnum}.
+   * This may be optimized in some implementations.
+   */
+  void seek(TermEnum termEnum) throws IOException;
+
   /** Returns the current document number.  <p> This is invalid until {@link
       #next()} is called for the first time.*/
   int doc();
