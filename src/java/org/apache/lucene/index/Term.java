@@ -62,7 +62,7 @@ package org.apache.lucene.index;
   Note that terms may represent more than words from text fields, but also
   things like dates, email addresses, urls, etc.  */
 
-public final class Term implements java.io.Serializable {
+public final class Term implements Comparable, java.io.Serializable {
   String field;
   String text;
   
@@ -96,6 +96,10 @@ public final class Term implements java.io.Serializable {
   /** Combines the hashCode() of the field and the text. */
   public final int hashCode() {
     return field.hashCode() + text.hashCode();
+  }
+
+  public int compareTo(Object other) {
+    return compareTo((Term)other);
   }
 
   /** Compares two terms, returning an integer which is less than zero iff this
