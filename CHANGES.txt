@@ -98,6 +98,8 @@ $Id$
  
  19. Fixed return of Hits.id() from float to int. (Terry Steichen via Peter).
 
+ 20. Added getAllFieldNames() to IndexReader and Segment(s)Reader classes.
+     (Peter Mularien via otis)
 
 1.2 RC6
 
