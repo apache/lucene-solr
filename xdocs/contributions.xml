@@ -18,12 +18,63 @@
             this software, please use the author's contact information
             to get help.</p>
         </section>
-        <section name="Lucene Documents">
+
+        <section name="Lucene Tools">
+            <p>
+                Software that works with Lucene indices.
+            </p>
+            <subsection name="Luke">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.getopt.org/luke/">
+                                http://www.getopt.org/luke/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Andrzej Bialecki
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="LIMO (Lucene Index Monitor)">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.jnioche.freesurf.fr/LIMO/">
+                                http://www.jnioche.freesurf.fr/LIMO/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Julien Nioche
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+        </section>
+
+        <section name="Lucene Document Converters">
             <p>
                 Lucene requires information you want to index to be
                 converted into a Document class.  Here are
-                contributions for various Document classes for
-                different formats.
+                contributions for various solutions that convert different
+                content types to Lucene's Document classes.
             </p>
             <subsection name="RTF->XML->Lucene">
                 <table>
@@ -113,6 +164,29 @@
                     </tr>
                 </table>
             </subsection>
+
+            <subsection name="PDF Box">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.pdfbox.org/">
+                                http://www.pdfbox.org/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Ben Litchfield - ben@csh.rit.edu
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="XPDF - PDF Document Conversion">
                 <table>
                     <tr>
@@ -157,30 +231,9 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="PDF Box">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.pdfbox.org/">
-                                http://www.pdfbox.org/
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Ben Litchfield - ben@csh.rit.edu
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
         </section>
-        <section name="Lucene Analyzers">
+
+        <section name="Lucene Analyzers and Filters">
             <p>
             </p>
             <subsection name="Chinese Analyzer, Tokenizer, Filter">
@@ -201,35 +254,6 @@
                         </th>
                         <td>
                             Yiyi Sun - yiyisun@yahoo.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-        </section>
-        <section name="Misc">
-            <p>
-            </p>
-
-            <subsection name="Term Highlighter">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.iq-computing.de/lucene/highlight.htm">
-                                http://www.iq-computing.de/lucene/highlight.htm
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Maik Schreiber - info@iq-computing.de
                         </td>
                     </tr>
                 </table>
@@ -258,6 +282,82 @@
                     </tr>
                 </table>
             </subsection>
+        </section>
+
+        <section name="Miscellaneous">
+            <p>
+            </p>
+
+            <subsection name="Term Highlighter">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://home.clara.net/markharwood/lucene/highlight.htm">
+                                http://home.clara.net/markharwood/lucene/highlight.htm
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Mark Harwood
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="Phonetix">
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html">
+                                http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            tangentum technologies
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
+            <subsection name="ejIndex - JBoss MBean for Lucene">
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th>
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://ejindex.sourceforge.net/">
+                                http://ejindex.sourceforge.net/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            author
+                        </th>
+                        <td>
+                            Andy Scholz
+                        </td>
+                    </tr>
+                </table>
+            </subsection>
             <subsection name="Lucene Tutorial">
                 <p>
                 </p>
@@ -282,30 +382,6 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="HTML Syntax Checker and Pretty Printer">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://sourceforge.net/projects/jtidy/">
-                                http://sourceforge.net/projects/jtidy/
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            N/A
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
             <subsection name="JavaCC">
                 <table>
                     <tr>
@@ -324,28 +400,6 @@
                         </th>
                         <td>
                             N/A
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-             <subsection name="Phonetix">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html">
-                                http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            tangentum technologies
                         </td>
                     </tr>
                 </table>
