@@ -13,10 +13,12 @@ public interface StandardTokenizerConstants {
   int NUM = 7;
   int P = 8;
   int HAS_DIGIT = 9;
-  int ALPHA = 10;
-  int LETTER = 11;
-  int DIGIT = 12;
-  int NOISE = 13;
+  int SIGRAM = 10;
+  int ALPHA = 11;
+  int LETTER = 12;
+  int CJK = 13;
+  int DIGIT = 14;
+  int NOISE = 15;
 
   int DEFAULT = 0;
 
@@ -31,8 +33,10 @@ public interface StandardTokenizerConstants {
     "<NUM>",
     "<P>",
     "<HAS_DIGIT>",
+    "<SIGRAM>",
     "<ALPHA>",
     "<LETTER>",
+    "<CJK>",
     "<DIGIT>",
     "<NOISE>",
   };
