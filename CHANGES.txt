@@ -48,7 +48,11 @@ New features
  9. Added javadocs-internal to build.xml - bug #30360
     (Paul Elschot via Otis)
     
-10. Added RangeFilter. (Chris M Hostetter via Erik)
+10. Added RangeFilter, a more generically useful filter than DateFilter.
+    (Chris M Hostetter via Erik)
+
+11. Added NumberTools, a utility class indexing numeric fields.
+    (adapted from code contributed by Matt Quail; committed by Erik)
 
 API Changes
 
