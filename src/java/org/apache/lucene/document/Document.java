@@ -75,17 +75,29 @@ public final class Document implements java.io.Serializable {
     return boost;
   }
 
-  /** Adds a field to a document.  Several fields may be added with
+  /**
+   * <p>Adds a field to a document.  Several fields may be added with
    * the same name.  In this case, if the fields are indexed, their text is
-   * treated as though appended for the purposes of search. */
+   * treated as though appended for the purposes of search.</p>
+   * <p> Note that add like the removeField(s) methods only makes sense 
+   * prior to adding a document to an index. These methods cannot
+   * be used to change the content of an existing index! In order to achieve this,
+   * a document has to be deleted from an index and a new changed version of that
+   * document has to be added.</p>
+   */
   public final void add(Field field) {
     fields.add(field);
   }
   
   /**
-   * Removes field with the given name from the document.
+   * <p>Removes field with the given name from the document.
    * If multiple fields exist with this name, this method returns the first value added.
-   * If there is no field with the specified name, the document remains unchanged.
+   * If there is no field with the specified name, the document remains unchanged.</p>
+   * <p> Note that the removeField(s) methods like the add method only make sense 
+   * prior to adding a document to an index. These methods cannot
+   * be used to change the content of an existing index! In order to achieve this,
+   * a document has to be deleted from an index and a new changed version of that
+   * document has to be added.</p>
    */
   public final void removeField(String name) {
     Iterator it = fields.iterator();
@@ -99,8 +111,13 @@ public final class Document implements java.io.Serializable {
   }
   
   /**
-   * Removes all fields with the given name from the document.
-   * If there is no field with the specified name, the document remains unchanged.
+   * <p>Removes all fields with the given name from the document.
+   * If there is no field with the specified name, the document remains unchanged.</p>
+   * <p> Note that the removeField(s) methods like the add method only make sense 
+   * prior to adding a document to an index. These methods cannot
+   * be used to change the content of an existing index! In order to achieve this,
+   * a document has to be deleted from an index and a new changed version of that
+   * document has to be added.</p>
    */
   public final void removeFields(String name) {
     Iterator it = fields.iterator();
