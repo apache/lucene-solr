@@ -8,6 +8,9 @@ $Id$
     the existing "a" there.  Fix for bug 28960
      (http://issues.apache.org/bugzilla/show_bug.cgi?id=28960). (Otis)
 
+ 2. Added new class FieldCache to manage in-memory caches of field term
+    values.  (Tim Jones)
+
 1.4 RC3
 
  1. Fixed several search bugs introduced by the skipTo() changes in
