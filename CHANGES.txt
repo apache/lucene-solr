@@ -66,7 +66,23 @@ $Id$
     missing, others duplicated) if the sort keys were not unique and there
     were more than 100 matches. (Daniel Naber)
 
-14. Add native Directory implementation that works under GCJ.  (cutting)
+14. Add native Directory and TermDocs implementations that work under
+    GCJ.  These require GCC 3.4.0 or later and have only been tested
+    on Linux.  Use 'ant gcj' to build demo applications. (cutting)
+
+15. Add MMapDirectory, which uses nio to mmap input files.  This is
+    still somewhat slower than FSDirectory.  However it uses less
+    memory per query term, since a new buffer is not allocated per
+    term, which may help applications which use, e.g., wildcard
+    queries.  It also should, in theory, someday be faster.  A
+    downside is, due to limitations of the nio APIs, this does not
+    work with indexes containing files larger than 2^31 bytes. (cutting)
+
+16. Optimize the performance of certain uses of BooleanScorer,
+    TermScorer and IndexSearcher.  In particular, a BooleanQuery
+    composed of TermQuery, with not all terms required, that returns a
+    TopDocs (e.g., through a Hits with no Sort specified) runs much
+    faster.  (cutting)
 
 
 1.4.1
