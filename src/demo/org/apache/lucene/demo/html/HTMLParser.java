@@ -16,7 +16,6 @@ public class HTMLParser implements HTMLParserConstants {
   boolean inTitle = false;
   boolean inMetaTag = false;
   boolean inStyle = false;
-  boolean inScript = false;
   boolean afterTag = false;
   boolean afterSpace = false;
   String eol = System.getProperty("line.separator");
@@ -119,8 +118,6 @@ InterruptedException {
   }
 
   void addText(String text) throws IOException {
-    if (inScript)
-      return;
     if (inStyle)
       return;
     if (inMetaTag)
@@ -147,8 +144,6 @@ InterruptedException {
   }
 
   void addSpace() throws IOException {
-    if (inScript)
-      return;
     if (!afterSpace) {
       if (inTitle)
         title.append(" ");
@@ -167,6 +162,7 @@ InterruptedException {
     label_1:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case ScriptStart:
       case TagName:
       case DeclName:
       case Comment1:
@@ -194,6 +190,10 @@ InterruptedException {
       case Comment2:
         CommentTag();
                       afterTag = true;
+        break;
+      case ScriptStart:
+        ScriptTag();
+                     afterTag = true;
         break;
       case Word:
         t = jj_consume_token(Word);
@@ -232,11 +232,7 @@ InterruptedException {
     inMetaTag = tagName.equalsIgnoreCase("<META"); // keep track if in <META>
     inStyle = tagName.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
     inImg = tagName.equalsIgnoreCase("<img");     // keep track if in <IMG>
-    if (inScript) {                               // keep track if in <SCRIPT>
-      inScript = !tagName.equalsIgnoreCase("</script");
-    } else {
-      inScript = tagName.equalsIgnoreCase("<script");
-    }
+
     label_2:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -414,6 +410,23 @@ null)
     }
   }
 
+  final public void ScriptTag() throws ParseException {
+    jj_consume_token(ScriptStart);
+    label_6:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case ScriptText:
+        ;
+        break;
+      default:
+        jj_la1[13] = jj_gen;
+        break label_6;
+      }
+      jj_consume_token(ScriptText);
+    }
+    jj_consume_token(ScriptEnd);
+  }
+
   final private boolean jj_2_1(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_1(); }
@@ -428,15 +441,15 @@ null)
     finally { jj_save(1, xla); }
   }
 
-  final private boolean jj_3_1() {
-    if (jj_scan_token(ArgQuote1)) return true;
-    if (jj_scan_token(CloseQuote1)) return true;
-    return false;
-  }
-
   final private boolean jj_3_2() {
     if (jj_scan_token(ArgQuote2)) return true;
     if (jj_scan_token(CloseQuote2)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1() {
+    if (jj_scan_token(ArgQuote1)) return true;
+    if (jj_scan_token(CloseQuote1)) return true;
     return false;
   }
 
@@ -449,13 +462,13 @@ null)
   public boolean lookingAhead = false;
   private boolean jj_semLA;
   private int jj_gen;
-  final private int[] jj_la1 = new int[13];
+  final private int[] jj_la1 = new int[14];
   static private int[] jj_la1_0;
   static {
       jj_la1_0();
    }
    private static void jj_la1_0() {
-      jj_la1_0 = new int[] {0xb3e,0xb3e,0x1000,0x38000,0x2000,0x8000,0x10000,0x20000,0x3b000,0x3b000,0x800000,0x2000000,0x18,};
+      jj_la1_0 = new int[] {0x167e,0x167e,0x8000,0x1c0000,0x10000,0x40000,0x80000,0x100000,0x1d8000,0x1d8000,0x4000000,0x10000000,0x30,0x2000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[2];
   private boolean jj_rescan = false;
@@ -467,7 +480,7 @@ null)
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 13; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -477,7 +490,7 @@ null)
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 13; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -487,7 +500,7 @@ null)
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 13; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -497,7 +510,7 @@ null)
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 13; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -506,7 +519,7 @@ null)
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 13; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -515,7 +528,7 @@ null)
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 13; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 14; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -626,15 +639,15 @@ null)
 
   public ParseException generateParseException() {
     jj_expentries.removeAllElements();
-    boolean[] la1tokens = new boolean[27];
-    for (int i = 0; i < 27; i++) {
+    boolean[] la1tokens = new boolean[30];
+    for (int i = 0; i < 30; i++) {
       la1tokens[i] = false;
     }
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < 14; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
@@ -643,7 +656,7 @@ null)
         }
       }
     }
-    for (int i = 0; i < 27; i++) {
+    for (int i = 0; i < 30; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

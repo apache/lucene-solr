@@ -4,42 +4,47 @@ package org.apache.lucene.demo.html;
 public interface HTMLParserConstants {
 
   int EOF = 0;
-  int TagName = 1;
-  int DeclName = 2;
-  int Comment1 = 3;
-  int Comment2 = 4;
-  int Word = 5;
-  int LET = 6;
-  int NUM = 7;
-  int Entity = 8;
-  int Space = 9;
-  int SP = 10;
-  int Punct = 11;
-  int ArgName = 12;
-  int ArgEquals = 13;
-  int TagEnd = 14;
-  int ArgValue = 15;
-  int ArgQuote1 = 16;
-  int ArgQuote2 = 17;
-  int Quote1Text = 19;
-  int CloseQuote1 = 20;
-  int Quote2Text = 21;
-  int CloseQuote2 = 22;
-  int CommentText1 = 23;
-  int CommentEnd1 = 24;
-  int CommentText2 = 25;
-  int CommentEnd2 = 26;
+  int ScriptStart = 1;
+  int TagName = 2;
+  int DeclName = 3;
+  int Comment1 = 4;
+  int Comment2 = 5;
+  int Word = 6;
+  int LET = 7;
+  int NUM = 8;
+  int Entity = 9;
+  int Space = 10;
+  int SP = 11;
+  int Punct = 12;
+  int ScriptText = 13;
+  int ScriptEnd = 14;
+  int ArgName = 15;
+  int ArgEquals = 16;
+  int TagEnd = 17;
+  int ArgValue = 18;
+  int ArgQuote1 = 19;
+  int ArgQuote2 = 20;
+  int Quote1Text = 22;
+  int CloseQuote1 = 23;
+  int Quote2Text = 24;
+  int CloseQuote2 = 25;
+  int CommentText1 = 26;
+  int CommentEnd1 = 27;
+  int CommentText2 = 28;
+  int CommentEnd2 = 29;
 
   int DEFAULT = 0;
-  int WithinTag = 1;
-  int AfterEquals = 2;
-  int WithinQuote1 = 3;
-  int WithinQuote2 = 4;
-  int WithinComment1 = 5;
-  int WithinComment2 = 6;
+  int WithinScript = 1;
+  int WithinTag = 2;
+  int AfterEquals = 3;
+  int WithinQuote1 = 4;
+  int WithinQuote2 = 5;
+  int WithinComment1 = 6;
+  int WithinComment2 = 7;
 
   String[] tokenImage = {
     "<EOF>",
+    "\"<script\"",
     "<TagName>",
     "<DeclName>",
     "\"<!--\"",
@@ -51,13 +56,15 @@ public interface HTMLParserConstants {
     "<Space>",
     "<SP>",
     "<Punct>",
+    "<ScriptText>",
+    "<ScriptEnd>",
     "<ArgName>",
     "\"=\"",
     "<TagEnd>",
     "<ArgValue>",
     "\"\\\'\"",
     "\"\\\"\"",
-    "<token of kind 18>",
+    "<token of kind 21>",
     "<Quote1Text>",
     "<CloseQuote1>",
     "<Quote2Text>",

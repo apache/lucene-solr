@@ -80,7 +80,6 @@ public class HTMLParser {
   boolean inTitle = false;
   boolean inMetaTag = false;
   boolean inStyle = false;
-  boolean inScript = false;
   boolean afterTag = false;
   boolean afterSpace = false;
   String eol = System.getProperty("line.separator");
@@ -183,8 +182,6 @@ InterruptedException {
   }
 
   void addText(String text) throws IOException {
-    if (inScript)
-      return;
     if (inStyle)
       return;
     if (inMetaTag)
@@ -211,8 +208,6 @@ InterruptedException {
   }
 
   void addSpace() throws IOException {
-    if (inScript)
-      return;
     if (!afterSpace) {
       if (inTitle)
 	title.append(" ");
@@ -248,6 +243,7 @@ void HTMLDocument() throws IOException :
     ( Tag()         { afterTag = true; }
     | t=Decl()      { afterTag = true; }
     | CommentTag()  { afterTag = true; }
+    | ScriptTag()  { afterTag = true; }
     | t=<Word>      { addText(t.image); afterTag = false; }
     | t=<Entity>    { addText(Entities.decode(t.image)); afterTag = false; }
     | t=<Punct>     { addText(t.image); afterTag = false; }
@@ -273,11 +269,6 @@ void Tag() throws IOException :
     inMetaTag = tagName.equalsIgnoreCase("<META"); // keep track if in <META>
     inStyle = tagName.equalsIgnoreCase("<STYLE"); // keep track if in <STYLE>
     inImg = tagName.equalsIgnoreCase("<img");	  // keep track if in <IMG>
-    if (inScript) {				  // keep track if in <SCRIPT>
-      inScript = !tagName.equalsIgnoreCase("</script");
-    } else {
-      inScript = tagName.equalsIgnoreCase("<script");
-    }
   }
   (t1=<ArgName>
    (<ArgEquals>
@@ -339,10 +330,17 @@ void CommentTag() :
   (<Comment2> ( <CommentText2> )* <CommentEnd2>)
 }
 
+void ScriptTag() :
+{}
+{
+  <ScriptStart> ( <ScriptText> )* <ScriptEnd>
+}
+
 
 TOKEN :
 {
-  < TagName:  "<" ("/")? ["A"-"Z","a"-"z"] (<ArgName>)? > : WithinTag
+  < ScriptStart: "<script" > : WithinScript
+| < TagName:  "<" ("/")? ["A"-"Z","a"-"z"] (<ArgName>)? > : WithinTag
 | < DeclName: "<"  "!"   ["A"-"Z","a"-"z"] (<ArgName>)? > : WithinTag
 
 | < Comment1:  "<!--" > : WithinComment1
@@ -361,6 +359,11 @@ TOKEN :
 | < Punct:    ~[] > // Keep this last.  It is a catch-all.
 }
 
+<WithinScript> TOKEN:
+{
+  < ScriptText:  (~["<",">"])+ | "<" | ">" >
+| < ScriptEnd: "</script" (~["<",">"])* ">" > : DEFAULT
+}
 
 <WithinTag> TOKEN:
 {
