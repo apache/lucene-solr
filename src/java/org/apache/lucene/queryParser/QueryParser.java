@@ -110,6 +110,9 @@ public class QueryParser implements QueryParserConstants {
     catch (TokenMgrError tme) {
       throw new ParseException(tme.getMessage());
     }
+    catch (BooleanQuery.TooManyClauses tmc) {
+      throw new ParseException("Too many boolean clauses");
+    }
   }
 
   /**
