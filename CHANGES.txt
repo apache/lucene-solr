@@ -146,6 +146,10 @@ Optimizations
     only of optional clauses it is probably slower. The new BooleanScorer is now the 
     default. (Patch 31785 by Paul Elschot via Christoph)
 
+ Infrastructure
+
+ 1. Lucene's source code repository has converted from CVS to Subversion.  The new
+    repository is at http://svn.apache.org/repos/asf/lucene/java/trunk
 
 1.4.3
 
