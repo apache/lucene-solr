@@ -21,7 +21,7 @@
         <item name="Query Syntax"      href="/queryparsersyntax.html"/>
         <item name="Javadoc"           href="/api/index.html"/>
         <item name="Contributions"     href="/contributions.html"/>
-        <item name="Lucene Sandbox"    href="/lucenesandbox.html"/>
+        <item name="Lucene Sandbox"    href="/lucene-sandbox/"/>
         <item name="Articles, etc."    href="/resources.html"/>
     </menu>
     
