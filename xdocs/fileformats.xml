@@ -2,6 +2,13 @@
 
 <document>
 
+  <properties>
+   <title>Index File Formats</title>
+   <authors>
+    <person email="cutting@apache.org" name="Doug Cutting"/>
+   </authors>
+  </properties>
+
     <body>
         <section name="Index File Formats">
 
