@@ -245,9 +245,7 @@ public class IndexTask extends Task {
     IndexWriter writer =
       new IndexWriter(indexDir, analyzer, create);
 
-    if (create && useCompoundIndex) {
-      writer.setUseCompoundFile(useCompoundIndex);
-    }
+    writer.setUseCompoundFile(useCompoundIndex);
     int totalFiles = 0;
     int totalIndexed = 0;
     int totalIgnored = 0;
@@ -292,6 +290,7 @@ public class IndexTask extends Task {
                 if (indexModified != null) {
                   if (DateField.stringToTime(indexModified)
                     == file.lastModified()) {
+                    // TODO: remove existing document
                     indexIt = false;
                   }
                 }
