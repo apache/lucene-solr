@@ -93,7 +93,7 @@ public final class IndexWriter {
 
   /** Constructs an IndexWriter for the index in <code>path</code>.  Text will
     be analyzed with <code>a</code>.  If <code>create</code> is true, then a
-    new, empty index will be created in <code>d</code>, replacing the index
+    new, empty index will be created in <code>path</code>, replacing the index
     already there, if any. */
   public IndexWriter(String path, Analyzer a, boolean create)
        throws IOException {
@@ -102,7 +102,7 @@ public final class IndexWriter {
 
   /** Constructs an IndexWriter for the index in <code>path</code>.  Text will
     be analyzed with <code>a</code>.  If <code>create</code> is true, then a
-    new, empty index will be created in <code>d</code>, replacing the index
+    new, empty index will be created in <code>path</code>, replacing the index
     already there, if any. */
   public IndexWriter(File path, Analyzer a, boolean create)
        throws IOException {
