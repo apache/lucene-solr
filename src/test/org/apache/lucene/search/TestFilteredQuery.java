@@ -95,24 +95,36 @@ extends TestCase {
   throws Exception {
     Query filteredquery = new FilteredQuery (query, filter);
     Hits hits = searcher.search (filteredquery);
-    assertEquals (hits.length(), 1);
-    assertEquals (hits.id(0), 1);
+    assertEquals (1, hits.length());
+    assertEquals (1, hits.id(0));
 
     hits = searcher.search (filteredquery, new Sort("sorter"));
-    assertEquals (hits.length(), 1);
-    assertEquals (hits.id(0), 1);
+    assertEquals (1, hits.length());
+    assertEquals (1, hits.id(0));
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "one")), filter);
     hits = searcher.search (filteredquery);
-    assertEquals (hits.length(), 2);
+    assertEquals (2, hits.length());
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "x")), filter);
     hits = searcher.search (filteredquery);
-    assertEquals (hits.length(), 1);
-    assertEquals (hits.id(0), 3);
+    assertEquals (1, hits.length());
+    assertEquals (3, hits.id(0));
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "y")), filter);
     hits = searcher.search (filteredquery);
-    assertEquals (hits.length(), 0);
+    assertEquals (0, hits.length());
   }
+
+  public void testRangeQuery() throws Exception {
+    RangeQuery rq = new RangeQuery(
+        new Term("sorter", "b"), new Term("sorter", "d"), true);
+
+    // rq = rq.rewrite(searcher.reader) // makes the test pass
+
+    Query filteredquery = new FilteredQuery(rq, filter);
+    Hits hits = searcher.search(filteredquery);
+    assertEquals(2, hits.length());
+  }
+
 }
