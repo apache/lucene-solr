@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
   queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
   */
 public class BooleanQuery extends Query {
-
+  
   /**
    * Default value is 1024.  Use <code>org.apache.lucene.maxClauseCount</code>
    * system property to override.
@@ -65,14 +65,29 @@ public class BooleanQuery extends Query {
    * It is an error to specify a clause as both <code>required</code> and
    * <code>prohibited</code>.
    *
-   * @see #getMaxClauseCount()
+   * @deprecated use {@link #add(Query, BooleanClause.Occur)} instead:
+   * <ul>
+   *  <li>For add(query, true, false) use add(query, BooleanClause.Occur.MUST)
+   *  <li>For add(query, false, false) use add(query, BooleanClause.Occur.SHOULD)
+   *  <li>For add(query, false, true) use add(query, BooleanClause.Occur.MUST_NOT)
+   * </ul>
    */
   public void add(Query query, boolean required, boolean prohibited) {
     add(new BooleanClause(query, required, prohibited));
   }
 
   /** Adds a clause to a boolean query.
-    * @see #getMaxClauseCount()
+   *
+   * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
+   * @see #getMaxClauseCount()
+   */
+  public void add(Query query, BooleanClause.Occur occur) {
+    add(new BooleanClause(query, occur));
+  }
+
+  /** Adds a clause to a boolean query.
+   * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
+   * @see #getMaxClauseCount()
    */
   public void add(BooleanClause clause) {
     if (clauses.size() >= maxClauseCount)
@@ -94,7 +109,7 @@ public class BooleanQuery extends Query {
       this.searcher = searcher;
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
-        weights.add(c.query.createWeight(searcher));
+        weights.add(c.getQuery().createWeight(searcher));
       }
     }
 
@@ -106,7 +121,7 @@ public class BooleanQuery extends Query {
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
-        if (!c.prohibited)
+        if (!c.isProhibited())
           sum += w.sumOfSquaredWeights();         // sum sub weights
       }
 
@@ -121,7 +136,7 @@ public class BooleanQuery extends Query {
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
-        if (!c.prohibited)
+        if (!c.isProhibited())
           w.normalize(norm);
       }
     }
@@ -137,9 +152,9 @@ public class BooleanQuery extends Query {
       boolean noneBoolean = true;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
-        if (!c.required)
+        if (!c.isRequired())
           allRequired = false;
-        if (c.query instanceof BooleanQuery)
+        if (c.getQuery() instanceof BooleanQuery)
           noneBoolean = false;
       }
 
@@ -164,8 +179,8 @@ public class BooleanQuery extends Query {
         Weight w = (Weight)weights.elementAt(i);
         Scorer subScorer = w.scorer(reader);
         if (subScorer != null)
-          result.add(subScorer, c.required, c.prohibited);
-        else if (c.required)
+          result.add(subScorer, c.isRequired(), c.isProhibited());
+        else if (c.isRequired())
           return null;
       }
 
@@ -183,16 +198,16 @@ public class BooleanQuery extends Query {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
         Explanation e = w.explain(reader, doc);
-        if (!c.prohibited) maxCoord++;
+        if (!c.isProhibited()) maxCoord++;
         if (e.getValue() > 0) {
-          if (!c.prohibited) {
+          if (!c.isProhibited()) {
             sumExpl.addDetail(e);
             sum += e.getValue();
             coord++;
           } else {
             return new Explanation(0.0f, "match prohibited");
           }
-        } else if (c.required) {
+        } else if (c.isRequired()) {
           return new Explanation(0.0f, "match required");
         }
       }
@@ -223,12 +238,12 @@ public class BooleanQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     if (clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.elementAt(0);
-      if (!c.prohibited) {			  // just return clause
+      if (!c.isProhibited()) {			  // just return clause
 
-        Query query = c.query.rewrite(reader);    // rewrite first
+        Query query = c.getQuery().rewrite(reader);    // rewrite first
 
         if (getBoost() != 1.0f) {                 // incorporate boost
-          if (query == c.query)                   // if rewrite was no-op
+          if (query == c.getQuery())                   // if rewrite was no-op
             query = (Query)query.clone();         // then clone before boost
           query.setBoost(getBoost() * query.getBoost());
         }
@@ -240,12 +255,12 @@ public class BooleanQuery extends Query {
     BooleanQuery clone = null;                    // recursively rewrite
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      Query query = c.query.rewrite(reader);
-      if (query != c.query) {                     // clause rewrote: must clone
+      Query query = c.getQuery().rewrite(reader);
+      if (query != c.getQuery()) {                     // clause rewrote: must clone
         if (clone == null)
           clone = (BooleanQuery)this.clone();
         clone.clauses.setElementAt
-          (new BooleanClause(query, c.required, c.prohibited), i);
+          (new BooleanClause(query, c.getOccur()), i);
       }
     }
     if (clone != null) {
@@ -270,18 +285,18 @@ public class BooleanQuery extends Query {
 
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
-      if (c.prohibited)
+      if (c.isProhibited())
 	buffer.append("-");
-      else if (c.required)
+      else if (c.isRequired())
 	buffer.append("+");
 
-      Query subQuery = c.query;
+      Query subQuery = c.getQuery();
       if (subQuery instanceof BooleanQuery) {	  // wrap sub-bools in parens
 	buffer.append("(");
-	buffer.append(c.query.toString(field));
+	buffer.append(c.getQuery().toString(field));
 	buffer.append(")");
       } else
-	buffer.append(c.query.toString(field));
+	buffer.append(c.getQuery().toString(field));
 
       if (i != clauses.size()-1)
 	buffer.append(" ");

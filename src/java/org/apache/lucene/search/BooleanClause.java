@@ -18,21 +18,115 @@ package org.apache.lucene.search;
 
 /** A clause in a BooleanQuery. */
 public class BooleanClause implements java.io.Serializable {
-  /** The query whose matching documents are combined by the boolean query. */
-  public Query query;
-  /** If true, documents documents which <i>do not</i>
-    match this sub-query will <i>not</i> match the boolean query. */
-  public boolean required = false;
-  /** If true, documents documents which <i>do</i>
-    match this sub-query will <i>not</i> match the boolean query. */
-  public boolean prohibited = false;
   
+  public static final class Occur {
+    
+    private String name;
+    
+    private Occur() {
+      // typesafe enum pattern, no public constructor
+    }
+    
+    private Occur(String name) {
+      // typesafe enum pattern, no public constructor
+      this.name = name;
+    }
+    
+    public String toString() {
+      return name;
+    }
+
+    /** Use this operator for terms that <i>must</i> appear in the matching documents. */
+    public static final Occur MUST = new Occur("MUST");
+    /** Use this operator for terms of which <i>should</i> appear in the 
+     * matching documents. For a BooleanQuery with two <code>SHOULD</code> 
+     * subqueries, at least one of the queries must appear in the matching documents. */
+    public static final Occur SHOULD = new Occur("SHOULD");
+    /** Use this operator for terms that <i>must not</i> appear in the matching documents.
+     * Note that it is not possible to search for queries that only consist
+     * of a <code>MUST_NOT</code> query. */
+    public static final Occur MUST_NOT = new Occur("MUST_NOT");
+    
+  }
+
+  /** The query whose matching documents are combined by the boolean query.
+   *     @deprecated use {@link #setQuery(Query)} instead */
+  public Query query;    // TODO: decrease visibility for Lucene 2.0
+
+  /** If true, documents documents which <i>do not</i>
+    match this sub-query will <i>not</i> match the boolean query.
+    @deprecated use {@link #setOccur(BooleanClause.Occur)} instead */
+  public boolean required = false;  // TODO: decrease visibility for Lucene 2.0
+  
+  /** If true, documents documents which <i>do</i>
+    match this sub-query will <i>not</i> match the boolean query.
+    @deprecated use {@link #setOccur(BooleanClause.Occur)} instead */
+  public boolean prohibited = false;  // TODO: decrease visibility for Lucene 2.0
+
+  private Occur occur;
+
   /** Constructs a BooleanClause with query <code>q</code>, required
-    <code>r</code> and prohibited <code>p</code>. */ 
+   * <code>r</code> and prohibited <code>p</code>.
+   * @deprecated use BooleanClause(Query, Occur) instead
+   * <ul>
+   *  <li>For BooleanClause(query, true, false) use BooleanClause(query, BooleanClause.Occur.MUST)
+   *  <li>For BooleanClause(query, false, false) use BooleanClause(query, BooleanClause.Occur.SHOULD)
+   *  <li>For BooleanClause(query, false, true) use BooleanClause(query, BooleanClause.Occur.MUST_NOT)
+   * </ul>
+   */ 
   public BooleanClause(Query q, boolean r, boolean p) {
+    // TODO: remove for Lucene 2.0
     query = q;
     required = r;
     prohibited = p;
+  }
+
+  /** Constructs a BooleanClause.
+  */ 
+  public BooleanClause(Query query, Occur occur) {
+    this.query = query;
+    this.occur = occur;
+    setFields(occur);
+  }
+
+  public Occur getOccur() {
+    return occur;
+  }
+
+  public void setOccur(Occur occur) {
+    this.occur = occur;
+    setFields(occur);
+  }
+
+  public Query getQuery() {
+    return query;
+  }
+
+  public void setQuery(Query query) {
+    this.query = query;
+  }
+  
+  public boolean isProhibited() {
+    return prohibited;
+  }
+
+  public boolean isRequired() {
+    return required;
+  }
+
+  private void setFields(Occur occur) {
+    if (occur == Occur.MUST) {
+      required = true;
+      prohibited = false;
+    } else if (occur == Occur.SHOULD) {
+      required = false;
+      prohibited = false;
+    } else if (occur == Occur.MUST_NOT) {
+      required = false;
+      prohibited = true;
+    } else {
+      throw new IllegalArgumentException("Unknown operator " + occur);
+    }
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
