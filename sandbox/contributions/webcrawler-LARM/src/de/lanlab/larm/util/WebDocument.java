@@ -56,6 +56,9 @@ package de.lanlab.larm.util;
 
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Date;
+import java.util.Set;
 import de.lanlab.larm.fetcher.URLMessage;
 import de.lanlab.larm.net.HostManager;
 
@@ -65,20 +68,55 @@ import de.lanlab.larm.net.HostManager;
 public class WebDocument extends URLMessage
 {
     protected String mimeType;
-    protected byte[] document;
+    // protected byte[] document;
     protected int resultCode;
     protected int size;
     protected String title;
+    protected Date lastModified;
+    HashMap fields;
 
-    public  WebDocument(URL url, String mimeType, byte[] document, int resultCode, URL referer, int size, String title, HostManager hm)
+    public  WebDocument(URL url, String mimeType, int resultCode, URL referer, int size, String title, Date lastModified, HostManager hm)
     {
         super(url, referer, false, null, hm);
         this.url = url;
         this.mimeType = mimeType;
-        this.document = document;
+        //this.document = document;
         this.resultCode = resultCode;
         this.size = size;
         this.title = title;
+        this.lastModified = lastModified;
+        this.fields = new HashMap(7);       // expect ~4 fields
+    }
+
+    public Set getFieldNames()
+    {
+        return fields.keySet();
+    }
+
+    public Object getField(String name)
+    {
+        return fields.get(name);
+    }
+
+    public void addField(String name, Object value)
+    {
+        fields.put(name, value);
+    }
+
+    public void removeField(String name)
+    {
+        fields.remove(name);
+    }
+
+    public int getNumFields()
+    {
+        return fields.size();
+    }
+
+
+    public Date getLastModified()
+    {
+        return lastModified;
     }
 
     public String getTitle()
@@ -101,11 +139,13 @@ public class WebDocument extends URLMessage
         this.size = size;
     }
 
-
+/*
     public void setDocument(byte[] document)
     {
         this.document = document;
     }
+*/
+
     public int getResultCode()
     {
         return resultCode;
@@ -116,10 +156,12 @@ public class WebDocument extends URLMessage
         this.resultCode = resultCode;
     }
 
+/*
     public byte[] getDocumentBytes()
     {
         return this.document;
     }
+*/
 
     public void setUrl(URL url)
     {
@@ -142,7 +184,7 @@ public class WebDocument extends URLMessage
         this.resultCode + "\t" +
         this.mimeType + "\t" +
         this.size + "\t" +
-        "\"" + this.title.replace('\t',' ').replace('\"', (char)0xff ).replace('\n',' ').replace('\r',' ') + "\"";
+        "\"" + this.title.replace('\t',' ').replace('\"', (char)0xff ).replace('\n',' ').replace('\r',' ') + "\"\t" + (this.lastModified != null ? java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(this.lastModified) : "");
     }
 
 
