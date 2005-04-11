@@ -45,7 +45,7 @@ public class PlainTextDictionary implements Dictionary {
 
 
     public PlainTextDictionary (InputStream dictFile) {
-        in=new BufferedReader(new InputStreamReader(System.in));
+        in=new BufferedReader(new InputStreamReader(dictFile));
     }
 
 
