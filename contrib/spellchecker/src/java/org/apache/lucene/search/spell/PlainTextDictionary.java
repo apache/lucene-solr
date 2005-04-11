@@ -1,7 +1,7 @@
 package org.apache.lucene.search.spell;
 
 /**
- * Copyright 2002-2004 The Apache Software Foundation
+ * Copyright 2002-2005 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,52 +35,48 @@ import java.io.*;
  */
 public class PlainTextDictionary implements Dictionary {
 
-    private BufferedReader in;
-    private String line;
-    private boolean has_next_called;
+  private BufferedReader in;
+  private String line;
+  private boolean has_next_called;
 
-    public PlainTextDictionary (File file) throws FileNotFoundException {
-        in=new BufferedReader(new FileReader(file));
+  public PlainTextDictionary(File file) throws FileNotFoundException {
+    in = new BufferedReader(new FileReader(file));
+  }
+
+  public PlainTextDictionary(InputStream dictFile) {
+    in = new BufferedReader(new InputStreamReader(dictFile));
+  }
+
+  public Iterator getWordsIterator() {
+    return new fileIterator();
+  }
+
+
+  final class fileIterator implements Iterator {
+    public Object next() {
+      if (!has_next_called) {
+        hasNext();
+      }
+      has_next_called = false;
+      return line;
     }
 
 
-    public PlainTextDictionary (InputStream dictFile) {
-        in=new BufferedReader(new InputStreamReader(dictFile));
+    public boolean hasNext() {
+      has_next_called = true;
+      try {
+        line = in.readLine();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+        line = null;
+        return false;
+      }
+      return (line != null) ? true : false;
     }
 
 
-    public Iterator getWordsIterator () {
-
-        return new fileIterator();
-    }
-
-
-    final class fileIterator
-    implements Iterator {
-        public Object next () {
-            if (!has_next_called) {
-                hasNext();
-            }
-            has_next_called=false;
-            return line;
-        }
-
-
-        public boolean hasNext () {
-            has_next_called=true;
-            try {
-                line=in.readLine();
-            }
-            catch (IOException ex) {
-                ex.printStackTrace();
-                line=null;
-                return false;
-            }
-            return (line!=null)?true:false;
-        }
-
-
-        public void remove () {};
-    }
+    public void remove() {
+    };
+  }
 
 }

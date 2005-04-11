@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Hits;
@@ -113,7 +112,7 @@ public class SpellChecker {
      * Suggest similar words (restricted or not of a field of a user index)
      * @param word String the word you want a spell check done on
      * @param num_sug int the number of suggest words
-     * @param IndexReader the indexReader of the user index (can be null see field param)
+     * @param ir the indexReader of the user index (can be null see field param)
      * @param field String the field of the user index: if field is not null ,the suggest
      * words are restricted to the words present in this field.
      * @param morePopular boolean return only the suggest words that are more frequent than the searched word
@@ -214,7 +213,7 @@ public class SpellChecker {
     private static void add (BooleanQuery q, String k, String v, float boost) {
         Query tq=new TermQuery(new Term(k, v));
         tq.setBoost(boost);
-        q.add(new BooleanClause(tq, false, false));
+        q.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
     }
 
 
@@ -222,7 +221,7 @@ public class SpellChecker {
      * Add a clause to a boolean query.
      */
     private static void add (BooleanQuery q, String k, String v) {
-        q.add(new BooleanClause(new TermQuery(new Term(k, v)), false, false));
+        q.add(new BooleanClause(new TermQuery(new Term(k, v)), BooleanClause.Occur.SHOULD));
     }
 
 
@@ -269,12 +268,10 @@ public class SpellChecker {
      * @throws IOException
      */
     public void indexDictionnary (Dictionary dict) throws IOException {
-
-        int ng1, ng2;
         IndexReader.unlock(spellindex);
         IndexWriter writer=new IndexWriter(spellindex, new WhitespaceAnalyzer(), !IndexReader.indexExists(spellindex));
-        writer.mergeFactor=300;
-        writer.minMergeDocs=150;
+        writer.setMergeFactor(300);
+        writer.setMaxBufferedDocs(150);
 
         Iterator iter=dict.getWordsIterator();
         while (iter.hasNext()) {
@@ -328,7 +325,7 @@ public class SpellChecker {
 
     private static Document createDocument (String text, int ng1, int ng2) {
         Document doc=new Document();
-        doc.add(Field.Keyword(F_WORD, text)); // orig term
+        doc.add(new Field(F_WORD, text, Field.Store.YES, Field.Index.UN_TOKENIZED)); // orig term
         addGram(text, doc, ng1, ng2);
         return doc;
     }
@@ -341,14 +338,14 @@ public class SpellChecker {
             String end=null;
             for (int i=0; i<len-ng+1; i++) {
                 String gram=text.substring(i, i+ng);
-                doc.add(Field.Keyword(key, gram));
+                doc.add(new Field(key, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
                 if (i==0) {
-                    doc.add(Field.Keyword("start"+ng, gram));
+                    doc.add(new Field("start"+ng, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
                 }
                 end=gram;
             }
             if (end!=null) { // may not be present if len==ng1
-                doc.add(Field.Keyword("end"+ng, end));
+                doc.add(new Field("end"+ng, end, Field.Store.YES, Field.Index.UN_TOKENIZED));
             }
         }
     }

@@ -1,7 +1,7 @@
 package org.apache.lucene.search.spell;
 
 /**
- * Copyright 2002-2004 The Apache Software Foundation
+ * Copyright 2002-2005 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,78 +17,79 @@ package org.apache.lucene.search.spell;
  */
 
 import org.apache.lucene.index.IndexReader;
+
 import java.util.Iterator;
+
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
+
 import java.io.*;
 
 /**
- *  Lucene Dictionnary
+ * Lucene Dictionnary
+ *
  * @author Nicolas Maisonneuve
  */
-public class LuceneDictionary
-implements Dictionary {
-    IndexReader reader;
-    String field;
+public class LuceneDictionary implements Dictionary {
+  IndexReader reader;
+  String field;
 
-    public LuceneDictionary (IndexReader reader, String field) {
-        this.reader=reader;
-        this.field=field;
+  public LuceneDictionary(IndexReader reader, String field) {
+    this.reader = reader;
+    this.field = field;
+  }
 
+  public final Iterator getWordsIterator() {
+    return new LuceneIterator();
+  }
+
+
+  final class LuceneIterator implements Iterator {
+    private TermEnum enum;
+    private Term actualTerm;
+    private boolean has_next_called;
+
+    public LuceneIterator() {
+      try {
+        enum = reader.terms(new Term(field, ""));
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
     }
 
 
-    public final Iterator getWordsIterator () {
-        return new LuceneIterator();
+    public Object next() {
+      if (!has_next_called) {
+        hasNext();
+      }
+      has_next_called = false;
+      return (actualTerm != null) ? actualTerm.text() : null;
     }
 
 
-final  class LuceneIterator    implements Iterator {
-      private  TermEnum enum;
-      private  Term actualTerm;
-      private  boolean has_next_called;
-
-        public LuceneIterator () {
-            try {
-                enum=reader.terms(new Term(field, ""));
-            }
-            catch (IOException ex) {
-                ex.printStackTrace();
-            }
+    public boolean hasNext() {
+      has_next_called = true;
+      try {
+        // if there is still words
+        if (!enum.next()) {
+          actualTerm = null;
+          return false;
         }
-
-
-        public Object next () {
-            if (!has_next_called)  {hasNext();}
-             has_next_called=false;
-            return (actualTerm!=null) ? actualTerm.text(): null;
+        //  if the next word are in the field
+        actualTerm = enum.term();
+        String fieldt = actualTerm.field();
+        if (fieldt != field) {
+          actualTerm = null;
+          return false;
         }
-
-
-        public boolean hasNext () {
-             has_next_called=true;
-            try {
-                // if there is still words
-                if (!enum.next()) {
-                    actualTerm=null;
-                    return false;
-                }
-                //  if the next word are in the field
-                actualTerm=enum.term();
-                String fieldt=actualTerm.field();
-                if (fieldt!=field) {
-                    actualTerm=null;
-                    return false;
-                }
-                return true;
-            }
-            catch (IOException ex) {
-                ex.printStackTrace();
-                return false;
-            }
-        }
-
-
-        public void remove () {};
+        return true;
+      } catch (IOException ex) {
+        ex.printStackTrace();
+        return false;
+      }
     }
+
+    public void remove() {
+    };
+  }
 }
