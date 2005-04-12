@@ -263,11 +263,11 @@ public class SpellChecker {
 
 
     /**
-     * Index a Dictionnary
-     * @param dict the dictionnary to index
+     * Index a Dictionary
+     * @param dict the dictionary to index
      * @throws IOException
      */
-    public void indexDictionnary (Dictionary dict) throws IOException {
+    public void indexDictionary (Dictionary dict) throws IOException {
         IndexReader.unlock(spellindex);
         IndexWriter writer=new IndexWriter(spellindex, new WhitespaceAnalyzer(), !IndexReader.indexExists(spellindex));
         writer.setMergeFactor(300);

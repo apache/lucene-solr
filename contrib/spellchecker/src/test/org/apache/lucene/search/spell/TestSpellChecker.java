@@ -94,7 +94,7 @@ public class TestSpellChecker extends TestCase {
 
   private void addwords(IndexReader r, String field) throws IOException {
     long time = System.currentTimeMillis();
-    spellChecker.indexDictionnary(new LuceneDictionary(r, field));
+    spellChecker.indexDictionary(new LuceneDictionary(r, field));
     time = System.currentTimeMillis() - time;
     System.out.println("time to build " + field + ": " + time);
   }
