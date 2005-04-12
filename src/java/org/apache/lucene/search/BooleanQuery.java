@@ -405,7 +405,7 @@ public class BooleanQuery extends Query {
       return false;
     BooleanQuery other = (BooleanQuery)o;
     return (this.getBoost() == other.getBoost())
-      &&  Arrays.equals(this.getClauses(), other.getClauses());
+        && this.clauses.equals(other.clauses);
   }
 
   /** Returns a hash code value for this object.*/
