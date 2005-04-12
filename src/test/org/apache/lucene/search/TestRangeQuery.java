@@ -69,6 +69,51 @@ public class TestRangeQuery extends TestCase {
     searcher.close();
   }
 
+  public void testEqualsHashcode() {
+    Query query = new RangeQuery(new Term("content", "A"),
+                                 new Term("content", "C"),
+                                 true);
+    query.setBoost(1.0f);
+    Query other = new RangeQuery(new Term("content", "A"),
+                                 new Term("content", "C"),
+                                 true);
+    other.setBoost(1.0f);
+
+    assertEquals("query equals itself is true", query, query);
+    assertEquals("equivalent queries are equal", query, other);
+    assertEquals("hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
+
+    other.setBoost(2.0f);
+    assertFalse("Different boost queries are not equal", query.equals(other));
+
+    other = new RangeQuery(new Term("notcontent", "A"), new Term("notcontent", "C"), true);
+    assertFalse("Different fields are not equal", query.equals(other));
+
+    other = new RangeQuery(new Term("content", "X"), new Term("content", "C"), true);
+    assertFalse("Different lower terms are not equal", query.equals(other));
+
+    other = new RangeQuery(new Term("content", "A"), new Term("content", "Z"), true);
+    assertFalse("Different upper terms are not equal", query.equals(other));
+
+    query = new RangeQuery(null, new Term("content", "C"), true);
+    other = new RangeQuery(null, new Term("content", "C"), true);
+    assertEquals("equivalent queries with null lowerterms are equal()", query, other);
+    assertEquals("hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
+
+    query = new RangeQuery(new Term("content", "C"), null, true);
+    other = new RangeQuery(new Term("content", "C"), null, true);
+    assertEquals("equivalent queries with null upperterms are equal()", query, other);
+    assertEquals("hashcode returns same value", query.hashCode(), other.hashCode());
+
+    query = new RangeQuery(null, new Term("content", "C"), true);
+    other = new RangeQuery(new Term("content", "C"), null, true);
+    assertFalse("queries with different upper and lower terms are not equal", query.equals(other));
+
+    query = new RangeQuery(new Term("content", "A"), new Term("content", "C"), false);
+    other = new RangeQuery(new Term("content", "A"), new Term("content", "C"), true);
+    assertFalse("queries with different inclusive are not equal", query.equals(other));
+  }
+
   private void initializeIndex(String[] values) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     for (int i = 0; i < values.length; i++) {

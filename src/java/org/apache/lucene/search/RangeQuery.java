@@ -144,4 +144,26 @@ public class RangeQuery extends Query
         }
         return buffer.toString();
     }
+
+    /** Returns true iff <code>o</code> is equal to this. */
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RangeQuery)) return false;
+
+        final RangeQuery other = (RangeQuery) o;
+        if (this.getBoost() != other.getBoost()) return false;
+        if (this.inclusive != other.inclusive) return false;
+        // one of lowerTerm and upperTerm can be null
+        if (this.lowerTerm != null ? !this.lowerTerm.equals(other.lowerTerm) : other.lowerTerm != null) return false;
+        if (this.upperTerm != null ? !this.upperTerm.equals(other.upperTerm) : other.upperTerm != null) return false;
+        return true;
+    }
+
+    /** Returns a hash code value for this object.*/
+    public int hashCode() {
+        return Float.floatToIntBits(getBoost()) ^
+            (lowerTerm != null ? lowerTerm.hashCode() : 0) ^
+            (upperTerm != null ? upperTerm.hashCode() : 0) ^
+            (this.inclusive ? 1 : 0);
+    }
 }
