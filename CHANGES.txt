@@ -26,7 +26,7 @@ Changes in runtime behavior
     computed correctly and "globally" across subsearchers and indices, while
     before it used to be computed locally to each index, which caused
     ranking across multiple indices not to be equivalent.
-    (Chuck Williams, Wolf Siberski via Otis)
+    (Chuck Williams, Wolf Siberski via Otis, bug #31841)
 
 New features
 
