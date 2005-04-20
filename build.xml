@@ -420,45 +420,44 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
+  <macrodef name="invoke-javadoc">
+    <attribute name="access"/>
+    <attribute name="destdir"/>
+    <sequential>
+      <javadoc
+        sourcepath="src/java"
+        overview="src/java/overview.html"
+        packagenames="org.apache.lucene.*"
+        destdir="@{destdir}"
+        access="@{access}"
+        encoding="${build.encoding}"
+        author="true"
+        version="true"
+        use="true"
+        link="${javadoc.link}"
+        windowtitle="${Name} ${version} API"
+        doctitle="${Name} ${version} API"
+        bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
+      >
+        <tag name="todo" description="To Do:"/>
+      </javadoc>
+    </sequential>
+  </macrodef>
+
   <target name="javadocs">
     <mkdir dir="${build.dir}/docs/api"/>
-    <javadoc
-      sourcepath="src/java"
-      overview="src/java/overview.html"
-      packagenames="org.apache.lucene.*"
+    <invoke-javadoc
+      access="public"
       destdir="${build.dir}/docs/api"
-      encoding="${build.encoding}"
-      author="true"
-      version="true"
-      use="true"
-      link="${javadoc.link}"
-      windowtitle="${Name} ${version} API"
-      doctitle="${Name} ${version} API"
-      bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
-      >
-      <tag name="todo" description="To Do:"/>
-    </javadoc>
+    />
   </target>
 
   <target name="javadocs-internal">
     <mkdir dir="${build.dir}/docs/api-internal"/>
-    <javadoc
-      sourcepath="src/java"
-      overview="src/java/overview.html"
-      packagenames="org.apache.lucene.*"
-      access="package"
+    <invoke-javadoc
+      access="private"
       destdir="${build.dir}/docs/api-internal"
-      encoding="${build.encoding}"
-      author="true"
-      version="true"
-      use="true"
-      link="${javadoc.link}"
-      windowtitle="${Name} ${version} public and internal API"
-      doctitle="${Name} ${version} public and internal API"
-      bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
-      >
-      <tag name="todo" description="To Do:"/>
-    </javadoc>
+    />
   </target>
 
   <!-- ================================================================== -->
