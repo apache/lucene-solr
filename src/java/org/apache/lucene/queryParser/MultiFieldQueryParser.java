@@ -37,7 +37,7 @@ public class MultiFieldQueryParser extends QueryParser
   /**
    * Creates a MultiFieldQueryParser.
    *
-   * <p>It that will, when parse(String query)
+   * <p>It will, when parse(String query)
    * is called, construct a query like this (assuming the query consists of
    * two terms and you specify the two fields <code>title</code> and <code>body</code>):</p>
    * 
