@@ -22,7 +22,7 @@ import java.util.Set;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
- * LowerCaseFilter} and {@link StopFilter}.
+ * LowerCaseFilter} and {@link StopFilter}, using a list of English stop words.
  *
  * @version $Id$
  */
