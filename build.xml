@@ -447,7 +447,7 @@
   <target name="javadocs">
     <mkdir dir="${build.dir}/docs/api"/>
     <invoke-javadoc
-      access="public"
+      access="protected"
       destdir="${build.dir}/docs/api"
     />
   </target>
@@ -455,7 +455,7 @@
   <target name="javadocs-internal">
     <mkdir dir="${build.dir}/docs/api-internal"/>
     <invoke-javadoc
-      access="private"
+      access="package"
       destdir="${build.dir}/docs/api-internal"
     />
   </target>
