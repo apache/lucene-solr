@@ -24,10 +24,18 @@ public class TestBooleanQuery extends TestCase {
     BooleanQuery bq1 = new BooleanQuery();
     bq1.add(new TermQuery(new Term("field", "value1")), BooleanClause.Occur.SHOULD);
     bq1.add(new TermQuery(new Term("field", "value2")), BooleanClause.Occur.SHOULD);
+    BooleanQuery nested1 = new BooleanQuery();
+    nested1.add(new TermQuery(new Term("field", "nestedvalue1")), BooleanClause.Occur.SHOULD);
+    nested1.add(new TermQuery(new Term("field", "nestedvalue2")), BooleanClause.Occur.SHOULD);
+    bq1.add(nested1, BooleanClause.Occur.SHOULD);
 
     BooleanQuery bq2 = new BooleanQuery();
     bq2.add(new TermQuery(new Term("field", "value1")), BooleanClause.Occur.SHOULD);
     bq2.add(new TermQuery(new Term("field", "value2")), BooleanClause.Occur.SHOULD);
+    BooleanQuery nested2 = new BooleanQuery();
+    nested2.add(new TermQuery(new Term("field", "nestedvalue1")), BooleanClause.Occur.SHOULD);
+    nested2.add(new TermQuery(new Term("field", "nestedvalue2")), BooleanClause.Occur.SHOULD);
+    bq2.add(nested2, BooleanClause.Occur.SHOULD);
 
     assertEquals(bq1, bq2);
   }
