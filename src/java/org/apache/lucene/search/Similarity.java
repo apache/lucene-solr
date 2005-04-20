@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -84,7 +85,7 @@ import org.apache.lucene.document.Field;          // for javadoc
  * @see IndexWriter#setSimilarity(Similarity)
  * @see Searcher#setSimilarity(Similarity)
  */
-public abstract class Similarity {
+public abstract class Similarity implements Serializable {
   /** The Similarity implementation used by default. */
   private static Similarity defaultImpl = new DefaultSimilarity();
 

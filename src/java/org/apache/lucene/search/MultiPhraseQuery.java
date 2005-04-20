@@ -107,27 +107,30 @@ public class MultiPhraseQuery extends Query {
   }
 
   private class MultiPhraseWeight implements Weight {
-    private Searcher searcher;
+    private Similarity similarity;
     private float value;
     private float idf;
     private float queryNorm;
     private float queryWeight;
 
-    public MultiPhraseWeight(Searcher searcher) {
-      this.searcher = searcher;
+    public MultiPhraseWeight(Searcher searcher)
+      throws IOException {
+      this.similarity = getSimilarity(searcher);
+
+      // compute idf
+      Iterator i = termArrays.iterator();
+      while (i.hasNext()) {
+        Term[] terms = (Term[])i.next();
+        for (int j=0; j<terms.length; j++) {
+          idf += getSimilarity(searcher).idf(terms[j], searcher);
+        }
+      }
     }
 
     public Query getQuery() { return MultiPhraseQuery.this; }
     public float getValue() { return value; }
 
     public float sumOfSquaredWeights() throws IOException {
-      Iterator i = termArrays.iterator();
-      while (i.hasNext()) {
-        Term[] terms = (Term[])i.next();
-        for (int j=0; j<terms.length; j++)
-          idf += getSimilarity(searcher).idf(terms[j], searcher);
-      }
-
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
@@ -159,10 +162,10 @@ public class MultiPhraseQuery extends Query {
       }
     
       if (slop == 0)
-        return new ExactPhraseScorer(this, tps, getPositions(), getSimilarity(searcher),
+        return new ExactPhraseScorer(this, tps, getPositions(), similarity,
                                      reader.norms(field));
       else
-        return new SloppyPhraseScorer(this, tps, getPositions(), getSimilarity(searcher),
+        return new SloppyPhraseScorer(this, tps, getPositions(), similarity,
                                       slop, reader.norms(field));
     }
     
@@ -239,7 +242,7 @@ public class MultiPhraseQuery extends Query {
     }
   }
   
-  protected Weight createWeight(Searcher searcher) {
+  protected Weight createWeight(Searcher searcher) throws IOException {
     return new MultiPhraseWeight(searcher);
   }
 

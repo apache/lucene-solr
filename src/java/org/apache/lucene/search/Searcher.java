@@ -18,6 +18,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.Term;
+
 /** An abstract base class for search implementations.
  * Implements some common utility methods.
  */
@@ -93,4 +95,15 @@ public abstract class Searcher implements Searchable {
   public Similarity getSimilarity() {
     return this.similarity;
   }
+
+
+  // inherit javadoc
+  public int[] docFreqs(Term[] terms) throws IOException {
+    int[] result = new int[terms.length];
+    for (int i = 0; i < terms.length; i++) {
+      result[i] = docFreq(terms[i]);
+    }
+    return result;
+  }
+
 }

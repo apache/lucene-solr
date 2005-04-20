@@ -37,7 +37,7 @@ public abstract class SpanQuery extends Query {
   /** Returns a collection of all terms matched by this query.*/
   public abstract Collection getTerms();
 
-  protected Weight createWeight(Searcher searcher) {
+  protected Weight createWeight(Searcher searcher) throws IOException {
     return new SpanWeight(this, searcher);
   }
 

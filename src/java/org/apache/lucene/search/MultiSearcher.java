@@ -17,6 +17,10 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
@@ -27,6 +31,93 @@ import org.apache.lucene.index.Term;
  * or {@link #search(Query,Filter)} methods.
  */
 public class MultiSearcher extends Searcher {
+    /**
+     * Document Frequency cache acting as a Dummy-Searcher.
+     * This class is no full-fledged Searcher, but only supports
+     * the methods necessary to initialize Weights.
+     */
+  private static class CachedDfSource extends Searcher {
+    private Map dfMap; // Map from Terms to corresponding doc freqs
+    private int maxDoc; // document count
+
+    public CachedDfSource(Map dfMap, int maxDoc) {
+      this.dfMap = dfMap;
+      this.maxDoc = maxDoc;
+    }
+
+    public int docFreq(Term term) {
+      int df;
+      try {
+        df = ((Integer) dfMap.get(term)).intValue();
+      } catch (NullPointerException e) {
+        throw new IllegalArgumentException("df for term " + term.text()
+            + " not available");
+      }
+      return df;
+    }
+
+    public int[] docFreqs(Term[] terms) throws IOException {
+      int[] result = new int[terms.length];
+      for (int i = 0; i < terms.length; i++) {
+        result[i] = docFreq(terms[i]);
+      }
+      return result;
+    }
+
+    public int maxDoc() {
+      return maxDoc;
+    }
+
+    public Query rewrite(Query query) throws IOException {
+      // this is a bit of a hack. We know that a query which
+      // creates a Weight based on this Dummy-Searcher is
+      // always already rewritten (see preparedWeight()).
+      // Therefore we just return the unmodified query here
+      return query;
+    }
+
+    public void close() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public Document doc(int i) throws IOException{
+      throw new UnsupportedOperationException();
+    }
+
+    public Explanation explain(Query query,int doc) throws IOException{
+      throw new UnsupportedOperationException();
+    }
+
+    public Explanation explain(Weight weight,int doc) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public void search(Query query, Filter filter, HitCollector results) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public void search(Weight weight, Filter filter, HitCollector results) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public TopDocs search(Query query,Filter filter,int n) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public TopDocs search(Weight weight,Filter filter,int n) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public TopFieldDocs search(Query query,Filter filter,int n,Sort sort) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  };
+
+
   private Searchable[] searchables;
   private int[] starts;
   private int maxDoc = 0;
@@ -114,11 +205,18 @@ public class MultiSearcher extends Searcher {
 
   public TopDocs search(Query query, Filter filter, int nDocs)
       throws IOException {
+    Weight weight = prepareWeight(query);
+    return search(weight, filter, nDocs);
+  }
+
+  public TopDocs search(Weight weight, Filter filter, int nDocs)
+  throws IOException {
+
     HitQueue hq = new HitQueue(nDocs);
     int totalHits = 0;
 
     for (int i = 0; i < searchables.length; i++) { // search each searcher
-      TopDocs docs = searchables[i].search(query, filter, nDocs);
+      TopDocs docs = searchables[i].search(weight, filter, nDocs);
       totalHits += docs.totalHits;		  // update totalHits
       ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
@@ -139,11 +237,17 @@ public class MultiSearcher extends Searcher {
 
   public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
     throws IOException {
+    Weight weight = prepareWeight(query);
+    return search(weight, filter, n, sort);
+  }
+
+  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
+  throws IOException {
     FieldDocSortedHitQueue hq = null;
     int totalHits = 0;
 
     for (int i = 0; i < searchables.length; i++) { // search each searcher
-      TopFieldDocs docs = searchables[i].search (query, filter, n, sort);
+      TopFieldDocs docs = searchables[i].search (weight, filter, n, sort);
       if (hq == null) hq = new FieldDocSortedHitQueue (docs.fields, n);
       totalHits += docs.totalHits;		  // update totalHits
       ScoreDoc[] scoreDocs = docs.scoreDocs;
@@ -166,11 +270,18 @@ public class MultiSearcher extends Searcher {
   // inherit javadoc
   public void search(Query query, Filter filter, final HitCollector results)
     throws IOException {
+      Weight weight = prepareWeight(query);
+      search(weight, filter, results);
+  }
+
+  // inherit javadoc
+  public void search(Weight weight, Filter filter, final HitCollector results)
+    throws IOException {
     for (int i = 0; i < searchables.length; i++) {
 
       final int start = starts[i];
 
-      searchables[i].search(query, filter, new HitCollector() {
+      searchables[i].search(weight, filter, new HitCollector() {
 	  public void collect(int doc, float score) {
 	    results.collect(doc + start, score);
 	  }
@@ -184,12 +295,62 @@ public class MultiSearcher extends Searcher {
     for (int i = 0; i < searchables.length; i++) {
       queries[i] = searchables[i].rewrite(original);
     }
-    return original.combine(queries);
+    return queries[0].combine(queries);
   }
 
   public Explanation explain(Query query, int doc) throws IOException {
+    Weight weight = prepareWeight(query);
+    return explain(weight, doc);
+  }
+
+
+  public Explanation explain(Weight weight, int doc) throws IOException {
     int i = subSearcher(doc);			  // find searcher index
-    return searchables[i].explain(query,doc-starts[i]); // dispatch to searcher
+    return searchables[i].explain(weight,doc-starts[i]); // dispatch to searcher
+  }
+
+  /**
+   * Distributed query processing is done in the following steps:
+   * 1. rewrite query
+   * 2. extract necessary terms
+   * 3. collect dfs for these terms from the Searchables
+   * 4. create query weight using aggregate dfs.
+   * 5. distribute that weight to Searchables
+   * 6. merge results
+   *
+   * Steps 1-4 are done here, 5+6 in the search() methods
+   *
+   * @return rewritten queries
+   */
+  private Weight prepareWeight(Query original) throws IOException {
+    // step 1
+    Query rewrittenQuery = rewrite(original);
+
+    // step 2
+    Set terms = new HashSet();
+    rewrittenQuery.extractTerms(terms);
+
+    // step3
+    Term[] allTermsArray = new Term[terms.size()];
+    terms.toArray(allTermsArray);
+    int[] aggregatedDfs = new int[terms.size()];
+    for (int i = 0; i < searchables.length; i++) {
+      int[] dfs = searchables[i].docFreqs(allTermsArray);
+      for(int j=0; j<aggregatedDfs.length; j++){
+        aggregatedDfs[j] += dfs[j];
+      }
+    }
+
+    HashMap dfMap = new HashMap();
+    for(int i=0; i<allTermsArray.length; i++) {
+      dfMap.put(allTermsArray[i], new Integer(aggregatedDfs[i]));
+    }
+
+    // step4
+    int numDocs = maxDoc();
+    CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs);
+
+    return rewrittenQuery.weight(cacheSim);
   }
 
 }

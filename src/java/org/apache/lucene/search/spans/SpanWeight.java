@@ -32,7 +32,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Similarity;
 
 class SpanWeight implements Weight {
-  private Searcher searcher;
+  private Similarity similarity;
   private float value;
   private float idf;
   private float queryNorm;
@@ -41,17 +41,19 @@ class SpanWeight implements Weight {
   private Collection terms;
   private SpanQuery query;
 
-  public SpanWeight(SpanQuery query, Searcher searcher) {
-    this.searcher = searcher;
+  public SpanWeight(SpanQuery query, Searcher searcher)
+    throws IOException {
+    this.similarity = query.getSimilarity(searcher);
     this.query = query;
     this.terms = query.getTerms();
+
+    idf = this.query.getSimilarity(searcher).idf(terms, searcher);
   }
 
   public Query getQuery() { return query; }
   public float getValue() { return value; }
 
   public float sumOfSquaredWeights() throws IOException {
-    idf = this.query.getSimilarity(searcher).idf(terms, searcher);
     queryWeight = idf * query.getBoost();         // compute query weight
     return queryWeight * queryWeight;             // square it
   }
@@ -64,7 +66,7 @@ class SpanWeight implements Weight {
 
   public Scorer scorer(IndexReader reader) throws IOException {
     return new SpanScorer(query.getSpans(reader), this,
-                          query.getSimilarity(searcher),
+                          similarity,
                           reader.norms(query.getField()));
   }
 
@@ -81,7 +83,7 @@ class SpanWeight implements Weight {
       Term term = (Term)i.next();
       docFreqs.append(term.text());
       docFreqs.append("=");
-      docFreqs.append(searcher.docFreq(term));
+      docFreqs.append(reader.docFreq(term));
 
       if (i.hasNext()) {
         docFreqs.append(" ");

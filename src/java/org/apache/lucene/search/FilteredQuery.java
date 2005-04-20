@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.Set;
 
 
 /**
@@ -56,8 +57,9 @@ extends Query {
    * Returns a Weight that applies the filter to the enclosed query's Weight.
    * This is accomplished by overriding the Scorer returned by the Weight.
    */
-  protected Weight createWeight (final Searcher searcher) {
+  protected Weight createWeight (final Searcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
+    final Similarity similarity = query.getSimilarity(searcher);
     return new Weight() {
 
       // pass these methods through to enclosed query's weight
@@ -74,7 +76,7 @@ extends Query {
       public Scorer scorer (IndexReader indexReader) throws IOException {
         final Scorer scorer = weight.scorer (indexReader);
         final BitSet bitset = filter.bits (indexReader);
-        return new Scorer (query.getSimilarity (searcher)) {
+        return new Scorer (similarity) {
 
           // pass these methods through to the enclosed scorer
           public boolean next() throws IOException { return scorer.next(); }
@@ -114,6 +116,11 @@ extends Query {
 
   public Query getQuery() {
     return query;
+  }
+
+  // inherit javadoc
+  public void extractTerms(Set terms) {
+      getQuery().extractTerms(terms);
   }
 
   /** Prints a user-readable version of this query. */

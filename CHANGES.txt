@@ -21,7 +21,13 @@ Changes in runtime behavior
     and WildcardQueries before). Use setLowercaseExpandedTerms(false)
     to disable that behavior but note that this also affects
     PrefixQueries and WildcardQueries. (Daniel Naber)
- 
+
+ 4. Document frequency that is computed when MultiSearcher is used is now
+    computed correctly and "globally" across subsearchers and indices, while
+    before it used to be computed locally to each index, which caused
+    ranking across multiple indices not to be equivalent.
+    (Chuck Williams, Wolf Siberski via Otis)
+
 New features
 
  1. Added support for stored compressed fields (patch #31149)

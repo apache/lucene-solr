@@ -44,12 +44,22 @@ public class RemoteSearchable
     local.search(query, filter, results);
   }
 
+  public void search(Weight weight, Filter filter, HitCollector results)
+    throws IOException {
+    local.search(weight, filter, results);
+  }
+
   public void close() throws IOException {
     local.close();
   }
 
   public int docFreq(Term term) throws IOException {
     return local.docFreq(term);
+  }
+
+
+  public int[] docFreqs(Term[] terms) throws IOException {
+    return local.docFreqs(terms);
   }
 
   public int maxDoc() throws IOException {
@@ -60,9 +70,18 @@ public class RemoteSearchable
     return local.search(query, filter, n);
   }
 
+  public TopDocs search(Weight weight, Filter filter, int n) throws IOException {
+    return local.search(weight, filter, n);
+  }
+
   public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
     throws IOException {
     return local.search (query, filter, n, sort);
+  }
+
+  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
+  throws IOException {
+    return local.search (weight, filter, n, sort);
   }
 
   public Document doc(int i) throws IOException {
@@ -75,6 +94,10 @@ public class RemoteSearchable
 
   public Explanation explain(Query query, int doc) throws IOException {
     return local.explain(query, doc);
+  }
+
+  public Explanation explain(Weight weight, int doc) throws IOException {
+    return local.explain(weight, doc);
   }
 
   /** Exports a searcher for the index in args[0] named

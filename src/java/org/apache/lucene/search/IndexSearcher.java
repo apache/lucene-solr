@@ -88,11 +88,17 @@ public class IndexSearcher extends Searcher {
   // inherit javadoc
   public TopDocs search(Query query, Filter filter, final int nDocs)
        throws IOException {
+    return search(query.weight(this), filter, nDocs);
+  }
+
+  // inherit javadoc
+  public TopDocs search(Weight weight, Filter filter, final int nDocs)
+       throws IOException {
 
     if (nDocs <= 0)  // null might be returned from hq.top() below.
       throw new IllegalArgumentException("nDocs must be > 0");
 
-    Scorer scorer = query.weight(this).scorer(reader);
+    Scorer scorer = weight.scorer(reader);
     if (scorer == null)
       return new TopDocs(0, new ScoreDoc[0]);
 
@@ -124,7 +130,14 @@ public class IndexSearcher extends Searcher {
   public TopFieldDocs search(Query query, Filter filter, final int nDocs,
                              Sort sort)
     throws IOException {
-    Scorer scorer = query.weight(this).scorer(reader);
+    return search(query.weight(this), filter, nDocs, sort);
+  }
+
+  // inherit javadoc
+  public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
+                             Sort sort)
+      throws IOException {
+    Scorer scorer = weight.scorer(reader);
     if (scorer == null)
       return new TopFieldDocs(0, new ScoreDoc[0], sort.fields);
 
@@ -153,6 +166,12 @@ public class IndexSearcher extends Searcher {
   // inherit javadoc
   public void search(Query query, Filter filter,
                      final HitCollector results) throws IOException {
+    search(query.weight(this), filter, results);
+  }
+
+  // inherit javadoc
+  public void search(Weight weight, Filter filter,
+                     final HitCollector results) throws IOException {
     HitCollector collector = results;
     if (filter != null) {
       final BitSet bits = filter.bits(reader);
@@ -165,7 +184,7 @@ public class IndexSearcher extends Searcher {
         };
     }
 
-    Scorer scorer = query.weight(this).scorer(reader);
+    Scorer scorer = weight.scorer(reader);
     if (scorer == null)
       return;
     scorer.score(collector);
@@ -181,7 +200,10 @@ public class IndexSearcher extends Searcher {
   }
 
   public Explanation explain(Query query, int doc) throws IOException {
-    return query.weight(this).explain(reader, doc);
+    return explain(query.weight(this), doc);
   }
 
+  public Explanation explain(Weight weight, int doc) throws IOException {
+    return weight.explain(reader, doc);
+  }
 }

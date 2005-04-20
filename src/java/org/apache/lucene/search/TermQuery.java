@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
@@ -28,14 +30,17 @@ public class TermQuery extends Query {
   private Term term;
 
   private class TermWeight implements Weight {
+    private Similarity similarity;
     private Searcher searcher;
     private float value;
     private float idf;
     private float queryNorm;
     private float queryWeight;
 
-    public TermWeight(Searcher searcher) {
-      this.searcher = searcher;
+    public TermWeight(Searcher searcher)
+      throws IOException {
+      this.similarity = getSimilarity(searcher);
+      idf = similarity.idf(term, searcher); // compute idf
     }
 
     public String toString() { return "weight(" + TermQuery.this + ")"; }
@@ -44,7 +49,6 @@ public class TermQuery extends Query {
     public float getValue() { return value; }
 
     public float sumOfSquaredWeights() throws IOException {
-      idf = getSimilarity(searcher).idf(term, searcher); // compute idf
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
@@ -52,16 +56,16 @@ public class TermQuery extends Query {
     public void normalize(float queryNorm) {
       this.queryNorm = queryNorm;
       queryWeight *= queryNorm;                   // normalize query weight
-      value = queryWeight * idf;                  // idf for document 
+      value = queryWeight * idf;                  // idf for document
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
       TermDocs termDocs = reader.termDocs(term);
-      
+
       if (termDocs == null)
         return null;
-      
-      return new TermScorer(this, termDocs, getSimilarity(searcher),
+
+      return new TermScorer(this, termDocs, similarity,
                             reader.norms(term.field()));
     }
 
@@ -72,7 +76,7 @@ public class TermQuery extends Query {
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
       Explanation idfExpl =
-        new Explanation(idf, "idf(docFreq=" + searcher.docFreq(term) + ")");
+        new Explanation(idf, "idf(docFreq=" + reader.docFreq(term) + ")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();
@@ -82,16 +86,16 @@ public class TermQuery extends Query {
       if (getBoost() != 1.0f)
         queryExpl.addDetail(boostExpl);
       queryExpl.addDetail(idfExpl);
-      
+
       Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
       queryExpl.addDetail(queryNormExpl);
-      
+
       queryExpl.setValue(boostExpl.getValue() *
                          idfExpl.getValue() *
                          queryNormExpl.getValue());
 
       result.addDetail(queryExpl);
-     
+
       // explain field weight
       String field = term.field();
       Explanation fieldExpl = new Explanation();
@@ -113,7 +117,7 @@ public class TermQuery extends Query {
       fieldExpl.setValue(tfExpl.getValue() *
                          idfExpl.getValue() *
                          fieldNormExpl.getValue());
-      
+
       result.addDetail(fieldExpl);
 
       // combine them
@@ -134,8 +138,12 @@ public class TermQuery extends Query {
   /** Returns the term of this query. */
   public Term getTerm() { return term; }
 
-  protected Weight createWeight(Searcher searcher) {
+  protected Weight createWeight(Searcher searcher) throws IOException {
     return new TermWeight(searcher);
+  }
+
+  public void extractTerms(Set terms) {
+    terms.add(getTerm());
   }
 
   /** Prints a user-readable version of this query. */

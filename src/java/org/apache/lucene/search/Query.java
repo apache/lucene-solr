@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -81,7 +82,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    *
    * <p>Only implemented by primitive queries, which re-write to themselves.
    */
-  protected Weight createWeight(Searcher searcher) {
+  protected Weight createWeight(Searcher searcher) throws IOException {
     throw new UnsupportedOperationException();
   }
 
@@ -107,6 +108,19 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * {@link #createWeight(Searcher)} implementatation.
    */
   public Query combine(Query[] queries) {
+        for (int i = 0; i < queries.length; i++) {
+            if (!this.equals(queries[i])) {
+                throw new IllegalArgumentException();
+            }
+        }
+        return this;
+  }
+
+  /**
+   * Expert: adds all terms occuring in this query to the terms set
+   */
+  public void extractTerms(Set terms) {
+    // needs to be implemented by query subclasses
     throw new UnsupportedOperationException();
   }
 

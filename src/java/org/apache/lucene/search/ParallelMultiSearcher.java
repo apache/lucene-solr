@@ -42,10 +42,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * TODO: parallelize this one too
    */
   public int docFreq(Term term) throws IOException {
-    int docFreq = 0;
-    for (int i = 0; i < searchables.length; i++)
-      docFreq += searchables[i].docFreq(term);
-    return docFreq;
+    return super.docFreq(term);
   }
 
   /**
@@ -53,7 +50,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merge
    * the results back together.
    */
-  public TopDocs search(Query query, Filter filter, int nDocs)
+  public TopDocs search(Weight weight, Filter filter, int nDocs)
     throws IOException {
     HitQueue hq = new HitQueue(nDocs);
     int totalHits = 0;
@@ -64,7 +61,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
       msta[i] =
         new MultiSearcherThread(
                                 searchables[i],
-                                query,
+                                weight,
                                 filter,
                                 nDocs,
                                 hq,
@@ -101,7 +98,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merges
    * the results back together.
    */
-  public TopFieldDocs search(Query query, Filter filter, int nDocs, Sort sort)
+  public TopFieldDocs search(Weight weight, Filter filter, int nDocs, Sort sort)
     throws IOException {
     // don't specify the fields - we'll wait to do this until we get results
     FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue (null, nDocs);
@@ -112,7 +109,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
       msta[i] =
         new MultiSearcherThread(
                                 searchables[i],
-                                query,
+                                weight,
                                 filter,
                                 nDocs,
                                 hq,
@@ -181,11 +178,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * @see org.apache.lucene.search.Searchable#rewrite(org.apache.lucene.search.Query)
    */
   public Query rewrite(Query original) throws IOException {
-    Query[] queries = new Query[searchables.length];
-    for (int i = 0; i < searchables.length; i++) {
-      queries[i] = searchables[i].rewrite(original);
-    }
-    return original.combine(queries);
+    return super.rewrite(original);
   }
 
 }
@@ -196,7 +189,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
 class MultiSearcherThread extends Thread {
 
   private Searchable searchable;
-  private Query query;
+  private Weight weight;
   private Filter filter;
   private int nDocs;
   private TopDocs docs;
@@ -208,7 +201,7 @@ class MultiSearcherThread extends Thread {
 
   public MultiSearcherThread(
                              Searchable searchable,
-                             Query query,
+                             Weight weight,
                              Filter filter,
                              int nDocs,
                              HitQueue hq,
@@ -217,7 +210,7 @@ class MultiSearcherThread extends Thread {
                              String name) {
     super(name);
     this.searchable = searchable;
-    this.query = query;
+    this.weight = weight;
     this.filter = filter;
     this.nDocs = nDocs;
     this.hq = hq;
@@ -227,7 +220,7 @@ class MultiSearcherThread extends Thread {
 
   public MultiSearcherThread(
                              Searchable searchable,
-                             Query query,
+                             Weight weight,
                              Filter filter,
                              int nDocs,
                              FieldDocSortedHitQueue hq,
@@ -237,7 +230,7 @@ class MultiSearcherThread extends Thread {
                              String name) {
     super(name);
     this.searchable = searchable;
-    this.query = query;
+    this.weight = weight;
     this.filter = filter;
     this.nDocs = nDocs;
     this.hq = hq;
@@ -248,8 +241,8 @@ class MultiSearcherThread extends Thread {
 
   public void run() {
     try {
-      docs = (sort == null) ? searchable.search (query, filter, nDocs)
-        : searchable.search (query, filter, nDocs, sort);
+      docs = (sort == null) ? searchable.search (weight, filter, nDocs)
+        : searchable.search (weight, filter, nDocs, sort);
     }
     // Store the IOException for later use by the caller of this thread
     catch (IOException ioe) {

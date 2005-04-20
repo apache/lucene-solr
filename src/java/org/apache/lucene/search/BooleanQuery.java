@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 import java.util.Arrays;
 
@@ -153,16 +155,16 @@ public class BooleanQuery extends Query {
   }
 
   private class BooleanWeight implements Weight {
-    protected Searcher searcher;
+    protected Similarity similarity;
     protected Vector weights = new Vector();
 
-    public BooleanWeight(Searcher searcher) {
-      this.searcher = searcher;
+    public BooleanWeight(Searcher searcher)
+      throws IOException {
+      this.similarity = getSimilarity(searcher);
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         weights.add(c.getQuery().createWeight(searcher));
       }
-  //System.out.println("Creating " + getClass().getName());
     }
 
     public Query getQuery() { return BooleanQuery.this; }
@@ -213,7 +215,7 @@ public class BooleanQuery extends Query {
 
       if (allRequired && noneBoolean) {           // ConjunctionScorer is okay
         ConjunctionScorer result =
-          new ConjunctionScorer(getSimilarity(searcher));
+          new ConjunctionScorer(similarity);
         for (int i = 0 ; i < weights.size(); i++) {
           Weight w = (Weight)weights.elementAt(i);
           Scorer subScorer = w.scorer(reader);
@@ -225,7 +227,7 @@ public class BooleanQuery extends Query {
       }
 
       // Use good-old BooleanScorer instead.
-      BooleanScorer result = new BooleanScorer(getSimilarity(searcher));
+      BooleanScorer result = new BooleanScorer(similarity);
 
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
@@ -269,7 +271,7 @@ public class BooleanQuery extends Query {
       if (coord == 1)                               // only one clause matched
         sumExpl = sumExpl.getDetails()[0];          // eliminate wrapper
 
-      float coordFactor = getSimilarity(searcher).coord(coord, maxCoord);
+      float coordFactor = similarity.coord(coord, maxCoord);
       if (coordFactor == 1.0f)                      // coord is no-op
         return sumExpl;                             // eliminate wrapper
       else {
@@ -286,13 +288,16 @@ public class BooleanQuery extends Query {
 
   private class BooleanWeight2 extends BooleanWeight {
     /* Merge into BooleanWeight in case the 1.4 BooleanScorer is dropped */
-    public BooleanWeight2(Searcher searcher) {  super(searcher); }
+    public BooleanWeight2(Searcher searcher)
+      throws IOException {
+        super(searcher);
+    }
 
     /** @return An alternative Scorer that uses and provides skipTo(),
      *          and scores documents in document number order.
      */
     public Scorer scorer(IndexReader reader) throws IOException {
-      BooleanScorer2 result = new BooleanScorer2(getSimilarity(searcher));
+      BooleanScorer2 result = new BooleanScorer2(similarity);
 
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
@@ -319,7 +324,7 @@ public class BooleanQuery extends Query {
     return useScorer14;
   }
   
-  protected Weight createWeight(Searcher searcher) {
+  protected Weight createWeight(Searcher searcher) throws IOException {
     return getUseScorer14() ? (Weight) new BooleanWeight(searcher)
                             : (Weight) new BooleanWeight2(searcher);
   }
@@ -358,6 +363,18 @@ public class BooleanQuery extends Query {
       return this;                                // no clauses rewrote
   }
 
+  // inherit javadoc
+  public void extractTerms(Set terms) {
+      for (Iterator i = clauses.iterator(); i.hasNext();) {
+          BooleanClause clause = (BooleanClause) i.next();
+          clause.getQuery().extractTerms(terms);
+        }
+  }
+
+  // inherit javadoc
+  public Query combine(Query[] queries) {
+    return Query.mergeBooleanQueries(queries);
+  }
 
   public Object clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();

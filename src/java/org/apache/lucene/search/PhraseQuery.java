@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.Vector;
 
 import org.apache.lucene.index.Term;
@@ -100,14 +101,17 @@ public class PhraseQuery extends Query {
   }
 
   private class PhraseWeight implements Weight {
-    private Searcher searcher;
+    private Similarity similarity;
     private float value;
     private float idf;
     private float queryNorm;
     private float queryWeight;
 
-    public PhraseWeight(Searcher searcher) {
-      this.searcher = searcher;
+    public PhraseWeight(Searcher searcher)
+      throws IOException {
+      this.similarity = getSimilarity(searcher);
+
+      idf = similarity.idf(terms, searcher);
     }
 
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
@@ -116,7 +120,6 @@ public class PhraseQuery extends Query {
     public float getValue() { return value; }
 
     public float sumOfSquaredWeights() throws IOException {
-      idf = getSimilarity(searcher).idf(terms, searcher);
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
@@ -140,11 +143,11 @@ public class PhraseQuery extends Query {
       }
 
       if (slop == 0)				  // optimize exact case
-        return new ExactPhraseScorer(this, tps, getPositions(), getSimilarity(searcher),
+        return new ExactPhraseScorer(this, tps, getPositions(), similarity,
                                      reader.norms(field));
       else
         return
-          new SloppyPhraseScorer(this, tps, getPositions(), getSimilarity(searcher), slop,
+          new SloppyPhraseScorer(this, tps, getPositions(), similarity, slop,
                                  reader.norms(field));
       
     }
@@ -168,7 +171,7 @@ public class PhraseQuery extends Query {
 
         docFreqs.append(term.text());
         docFreqs.append("=");
-        docFreqs.append(searcher.docFreq(term));
+        docFreqs.append(reader.docFreq(term));
 
         query.append(term.text());
       }
@@ -228,7 +231,7 @@ public class PhraseQuery extends Query {
     }
   }
 
-  protected Weight createWeight(Searcher searcher) {
+  protected Weight createWeight(Searcher searcher) throws IOException {
     if (terms.size() == 1) {			  // optimize one-term case
       Term term = (Term)terms.elementAt(0);
       Query termQuery = new TermQuery(term);
@@ -238,6 +241,12 @@ public class PhraseQuery extends Query {
     return new PhraseWeight(searcher);
   }
 
+  /**
+   * @see org.apache.lucene.search.Query#extractTerms(java.util.Set)
+   */
+  public void extractTerms(Set queryTerms) {
+    queryTerms.addAll(terms);
+  }
 
   /** Prints a user-readable version of this query. */
   public String toString(String f) {

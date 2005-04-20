@@ -48,9 +48,18 @@ public interface Searchable extends java.rmi.Remote {
    * @param filter if non-null, a bitset used to eliminate some documents
    * @param results to receive hits
    * @throws BooleanQuery.TooManyClauses
+   *
+   * @deprecated
    */
   void search(Query query, Filter filter, HitCollector results)
     throws IOException;
+
+  /** Expert: Low-level search implementation.
+   * Identical to {@link #search(Query, Filter, HitCollector)}, but takes
+   * a Weight instead of a query.
+   */
+  void search(Weight weight, Filter filter, HitCollector results)
+  throws IOException;
 
   /** Frees resources associated with this Searcher.
    * Be careful not to call this method while you are still using objects
@@ -63,6 +72,12 @@ public interface Searchable extends java.rmi.Remote {
    * @see IndexReader#docFreq(Term)
    */
   int docFreq(Term term) throws IOException;
+
+  /** Expert: For each term in the terms array, calculates the number of
+   * documents containing <code>term</code>. Returns an array with these
+   * document frequencies. Used to minimize number of remote calls.
+   */
+  int[] docFreqs(Term[] terms) throws IOException;
 
   /** Expert: Returns one greater than the largest possible document number.
    * Called by search code to compute term weights.
@@ -78,8 +93,16 @@ public interface Searchable extends java.rmi.Remote {
    * <p>Applications should usually call {@link Searcher#search(Query)} or
    * {@link Searcher#search(Query,Filter)} instead.
    * @throws BooleanQuery.TooManyClauses
+   *
+   * @deprecated
    */
   TopDocs search(Query query, Filter filter, int n) throws IOException;
+
+  /** Expert: Low-level search implementation.
+   * Identical to {@link #search(Query, Filter, int)}, but takes
+   * a Weight instead of a query.
+   */
+  TopDocs search(Weight weight, Filter filter, int n) throws IOException;
 
   /** Expert: Returns the stored fields of document <code>i</code>.
    * Called by {@link HitCollector} implementations.
@@ -103,6 +126,12 @@ public interface Searchable extends java.rmi.Remote {
    */
   Explanation explain(Query query, int doc) throws IOException;
 
+  /**
+   * Identical to {@link #search(Query, Filter, HitCollector)}, but takes
+   * a Weight instead of a query.
+   */
+  Explanation explain(Weight weight, int doc) throws IOException;
+
   /** Expert: Low-level search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
    * <code>filter</code> if non-null, and sorting the hits by the criteria in
@@ -111,7 +140,16 @@ public interface Searchable extends java.rmi.Remote {
    * <p>Applications should usually call {@link
    * Searcher#search(Query,Filter,Sort)} instead.
    * @throws BooleanQuery.TooManyClauses
+   *
+   * @deprecated
    */
   TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
     throws IOException;
+
+  /** Expert: Low-level search implementation.
+   * Identical to {@link #search(Query, Filter, int, Sort)}, but takes
+   * a Weight instead of a query.
+   */
+  TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
+  throws IOException;
 }

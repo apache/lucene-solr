@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 
 /** A ranked list of documents, used to hold search results. */
 public final class Hits {
-  private Query query;
+  private Weight weight;
   private Searcher searcher;
   private Filter filter = null;
   private Sort sort = null;
@@ -37,14 +37,14 @@ public final class Hits {
   private int maxDocs = 200;    // max to cache
 
   Hits(Searcher s, Query q, Filter f) throws IOException {
-    query = q;
+    weight = q.weight(s);
     searcher = s;
     filter = f;
     getMoreDocs(50); // retrieve 100 initially
   }
 
   Hits(Searcher s, Query q, Filter f, Sort o) throws IOException {
-    query = q;
+    weight = q.weight(s);
     searcher = s;
     filter = f;
     sort = o;
@@ -61,7 +61,7 @@ public final class Hits {
     }
 
     int n = min * 2;	// double # retrieved
-    TopDocs topDocs = (sort == null) ? searcher.search(query, filter, n) : searcher.search(query, filter, n, sort);
+    TopDocs topDocs = (sort == null) ? searcher.search(weight, filter, n) : searcher.search(weight, filter, n, sort);
     length = topDocs.totalHits;
     ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 
