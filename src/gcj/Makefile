@@ -26,6 +26,10 @@ JAVA_OBJ:=$(DEST)/lucene-gcj.a
 CNI:=$(wildcard $(SRC)/org/apache/lucene/*/*.cc)
 CNI_OBJ:=$(subst $(SRC)/,$(DEST)/,$(subst .cc,.o,$(CNI)))
 
+GCJ ?= gcj
+GCJH ?= gcjh
+GPLUSPLUS ?= g++
+
 CFLAGS ?= -O3 -ffast-math 
 GCJFLAGS ?= $(CFLAGS) -fno-bounds-check -fno-store-check
 
@@ -51,47 +55,47 @@ all: $(BUILD)/indexFiles $(BUILD)/searchFiles
 # yet accept from .class files.
 # NOTE: Change when http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15501 is fixed.
 $(CORE_OBJ) : $(CORE_JAVA)
-	gcj $(GCJFLAGS) -c -I $(CORE) -o $@ `find $(ROOT)/src/java -name '*.java' -not -name '*Sort*' -not -name 'Span*'` `find $(CORE) -name '*.class' -name '*Sort*' -or -name 'Span*'`
+	$(GCJ) $(GCJFLAGS) -c -I $(CORE) -o $@ `find $(ROOT)/src/java -name '*.java' -not -name '*Sort*' -not -name 'Span*'` `find $(CORE) -name '*.class' -name '*Sort*' -or -name 'Span*'`
 
 # generate object code from jar files using gcj
 %.a : %.jar
-	gcj $(GCJFLAGS) -c -I $(CORE) -o $@ $<
+	$(GCJ) $(GCJFLAGS) -c -I $(CORE) -o $@ $<
 
 # don't delete generated headers -- they're handy for debugging
 .PRECIOUS : $(CORE)/%.h $(DEST)/%.h
 
 # generate headers from .class files using gcjh
 $(CORE)/%.h : $(CORE)/%.class
-	gcjh --classpath=$(CORE) -d $(CORE) \
+	$(GCJH) --classpath=$(CORE) -d $(CORE) \
 	 $(subst /,.,$(subst .class,,$(subst $(CORE)/,,$<)))
 
 # generate headers from .class files using gcjh
 $(DEST)/%.h : $(DEST)/%.class
-	gcjh --classpath=$(DEST) -d $(DEST) \
+	$(GCJH) --classpath=$(DEST) -d $(DEST) \
 	 $(subst /,.,$(subst .class,,$(subst $(DEST)/,,$<)))
 
 # generate object code for c++ code using g++
 $(DEST)/%.o : $(SRC)/%.cc $(DEST)/%.h $(CORE_HEADERS) $(JAVA_HEADERS)
-	g++ $(CFLAGS) -c -I $(CORE) -I $(DEST) -o $@ $<
+	$(GPLUSPLUS) $(CFLAGS) -c -I $(CORE) -I $(DEST) -o $@ $<
 
 # generate class from java using gcj
 $(DEST)/%.class : $(SRC)/%.java
 	mkdir -p $(dir $@)
-	gcj -C -I $(CORE) -d $(DEST) $<
+	$(GCJ) -C -I $(CORE) -d $(DEST) $<
 
 # generate object code for .java files using gcj
 $(JAVA_OBJ) : $(JAVA)
 	mkdir -p $(dir $@)
-	gcj $(GCJFLAGS) -c -I $(CORE) -I $(DEST) -o $@ $^
+	$(GCJ) $(GCJFLAGS) -c -I $(CORE) -I $(DEST) -o $@ $^
 
 # generate c++ stubs for a class using gcjh
 $(DEST)/%.cc : $(DEST)/%.class
-	gcjh -stubs --classpath=$(DEST) -d $(DEST) \
+	$(GCJH) -stubs --classpath=$(DEST) -d $(DEST) \
 	 $(subst /,.,$(subst .class,,$(subst $(DEST)/,,$<)))
 
 # generate assembly code from c++ code for perusal
 $(DEST)/%.s : $(SRC)/%.cc $(DEST)/%.h $(CORE_HEADERS) $(JAVA_HEADERS)
-	g++ $(CFLAGS) -S -I $(CORE) -I $(DEST) -o $@ $<
+	$(GPLUSPLUS) $(CFLAGS) -S -I $(CORE) -I $(DEST) -o $@ $<
 
 # list of all object code to be linked
 OBJ = $(CORE_OBJ) $(DEMO_OBJ) $(JAVA_OBJ) $(CNI_OBJ)
@@ -106,11 +110,11 @@ PROPS = $(USE_GCJ_DIRECTORY) $(USE_GCJ_SEGMENT_READER)
 
 # link together various applications
 $(BUILD)/indexFiles: $(OBJ)
-	gcj $(GCJFLAGS) $(PROPS) $(LIBS) $^ -o $@ \
+	$(GCJ) $(GCJFLAGS) $(PROPS) $(LIBS) $^ -o $@ \
          --main=org.apache.lucene.demo.IndexFiles
 
 $(BUILD)/searchFiles: $(OBJ)
-	gcj $(GCJFLAGS) $(PROPS) $(LIBS) $^ -o $@ \
+	$(GCJ) $(GCJFLAGS) $(PROPS) $(LIBS) $^ -o $@ \
          --main=org.apache.lucene.demo.SearchFiles
 
 # remove generated files
