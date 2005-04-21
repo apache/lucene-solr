@@ -26,8 +26,6 @@
         <item name="Bugs"              href="/site/bugs.html"/>
         <item name="Lucene Bugs"
               href="http://issues.apache.org/bugzilla/buglist.cgi?bug_status=NEW&amp;bug_status=ASSIGNED&amp;bug_status=REOPENED&amp;email1=&amp;emailtype1=substring&amp;emailassigned_to1=1&amp;email2=&amp;emailtype2=substring&amp;emailreporter2=1&amp;bugidtype=include&amp;bug_id=&amp;changedin=&amp;votes=&amp;chfieldfrom=&amp;chfieldto=Now&amp;chfieldvalue=&amp;product=Lucene&amp;short_desc=&amp;short_desc_type=allwordssubstr&amp;long_desc=&amp;long_desc_type=allwordssubstr&amp;bug_file_loc=&amp;bug_file_loc_type=allwordssubstr&amp;keywords=&amp;keywords_type=anywords&amp;field0-0-0=noop&amp;type0-0-0=noop&amp;value0-0-0=&amp;cmdtype=doit&amp;order=Importance"/>
-        <item name="Lucene-user"       href="http://mail-archives.apache.org/eyebrowse/SummarizeList?listId=30"/>
-        <item name="Lucene-dev"        href="http://mail-archives.apache.org/eyebrowse/SummarizeList?listId=29"/>
         <item name="Lucene Sandbox"    href="/lucene-sandbox/"/>
     </menu>
 
