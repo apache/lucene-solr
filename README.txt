@@ -9,10 +9,10 @@ application, but rather a code library and API that can easily be used
 to add search capabilities to applications.
 
 The Lucene web site is at:
-  http://jakarta.apache.org/lucene
+  http://lucene.apache.org/
 
 Please join the Lucene-User mailing list by sending a message to:
-  lucene-user-subscribe@jakarta.apache.org
+  java-user-subscribe@lucene.apache.org
 
 FILES
 
