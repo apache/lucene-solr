@@ -46,7 +46,7 @@ the user's home directory).
 The <b>IndexWriter</b> is the main class responsible for creating indicies. To use it you
 must instantiate it with a path that it can write the index into, if this path does not 
 exist it will create it, otherwise it will refresh the index living at that path.  You 
-must a also pass an instance of <b>org.apache.analysis.Analyzer</b>. 
+must a also pass an instance of <b>org.apache.lucene.analysis.Analyzer</b>. 
 </p>
 <p>
 The <b>Analyzer</b>, in this case, the <b>StandardAnalyzer</b> is little more than a standard Java
