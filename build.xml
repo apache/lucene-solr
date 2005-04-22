@@ -155,17 +155,11 @@
   <target name="compile-core" depends="init"
     description="Compiles core classes">
     <mkdir dir="${build.dir}/classes/java"/>
-    <javac
-      encoding="${build.encoding}"
+    <compile
       srcdir="src/java"
-      includes="org/**/*.java"
-      destdir="${build.dir}/classes/java"
-      deprecation="${javac.deprecation}"
-      debug="${javac.debug}"
-      source="${javac.source}"
-      target="${javac.target}">
+      destdir="${build.dir}/classes/java">
       <classpath refid="classpath"/>
-    </javac>
+    </compile>
 
     <rmic classname="org.apache.lucene.search.RemoteSearchable"
       base="${build.dir}/classes/java">
@@ -235,16 +229,11 @@
   <target name="compile-demo" depends="compile-core">
     <mkdir dir="${build.dir}/classes/demo"/>
 
-    <javac
-      encoding="${build.encoding}"
+    <compile
       srcdir="src/demo"
-      includes="**/*.java"
-      destdir="${build.dir}/classes/demo"
-      debug="${javac.debug}"
-      source="${javac.source}"
-      target="${javac.target}">
+      destdir="${build.dir}/classes/demo">
       <classpath refid="demo.classpath"/>
-    </javac>
+    </compile>
   </target>
 
   <!-- GCJ -->
@@ -260,16 +249,11 @@
   <!-- ================================================================== -->
   <target name="compile-test-deprecated" depends="compile-core,compile-demo">
     <mkdir dir="${build.dir}/classes/test-deprecated"/>
-    <javac
-      encoding="${build.encoding}"
+    <compile
       srcdir="src/test-deprecated"
-      includes="**/*.java"
-      destdir="${build.dir}/classes/test-deprecated"
-      debug="true"
-      source="${javac.source}"
-      target="${javac.target}">
+      destdir="${build.dir}/classes/test-deprecated">
       <classpath refid="test-deprecated.classpath"/>
-    </javac>
+    </compile>
   </target>
 
   <!-- ================================================================== -->
@@ -311,16 +295,11 @@
 	  <!-- ================================================================== -->
 	  <target name="compile-test" depends="compile-core,compile-demo">
 	    <mkdir dir="${build.dir}/classes/test"/>
-	    <javac
-	      encoding="${build.encoding}"
+	    <compile
 	      srcdir="src/test"
-	      includes="**/*.java"
-	      destdir="${build.dir}/classes/test"
-	      debug="true"
-	      source="${javac.source}"
-	      target="${javac.target}">
+	      destdir="${build.dir}/classes/test">
 	      <classpath refid="test.classpath"/>
-	    </javac>
+	    </compile>
 	  </target>
 
 	  <!-- ================================================================== -->
@@ -648,6 +627,25 @@
           debuglookahead="${javacc.debug.lookahead}"
           javacchome="${javacc.home}"
       />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="compile">
+    <attribute name="srcdir"/>
+    <attribute name="destdir"/>
+    <element name="nested" implicit="yes" optional="yes"/>
+
+    <sequential>
+      <javac
+        encoding="${build.encoding}"
+        srcdir="@{srcdir}"
+        destdir="@{destdir}"
+        deprecation="${javac.deprecation}"
+        debug="${javac.debug}"
+        source="${javac.source}"
+        target="${javac.target}">
+        <nested/>
+      </javac>
     </sequential>
   </macrodef>
 
