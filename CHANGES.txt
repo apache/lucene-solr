@@ -91,6 +91,11 @@ New features
     which lets the caller get the Lucene version information specified in
     the Lucene Jar.
     (Doug Cutting via Otis)
+
+15. Added Hits.iterator() method and corresponding HitIterator and Hit objects.
+    This provides standard java.util.Iterator iteration over Hits.
+    Each call to the iterator's next() method returns a Hit object.
+    (Jeremy Rayner via Erik)
     
 API Changes
 

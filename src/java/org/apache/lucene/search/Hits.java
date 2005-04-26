@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Vector;
+import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 
@@ -114,6 +115,13 @@ public final class Hits {
     return hitDoc(n).id;
   }
 
+  /**
+   * Returns an {@link Iterator} to navigate the Hits.  Each item returned
+   * from {@link Iterator#next()} is a {@link Hit}.
+   */
+  public Iterator iterator() {
+    return new HitIterator(this);
+  }
 
   private final HitDoc hitDoc(int n) throws IOException {
     if (n >= length) {
