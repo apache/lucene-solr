@@ -86,7 +86,8 @@ class TermInfosTest {
     Directory store = FSDirectory.getDirectory("test.store", true);
     FieldInfos fis = new FieldInfos();
 
-    TermInfosWriter writer = new TermInfosWriter(store, "words", fis);
+    TermInfosWriter writer = new TermInfosWriter(store, "words", fis,
+    		IndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
     fis.add("word", false);
 
     for (int i = 0; i < keys.size(); i++)
