@@ -21,7 +21,8 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 
 /**
- * a lazy future for a hit, useful for iterators over instances of Hits
+ * Wrapper used by {@link HitIterator} to provide a lazily loaded hit
+ * from {@link Hits}.
  *
  * @author Jeremy Rayner
  */
