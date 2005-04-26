@@ -6,8 +6,12 @@
   </description>
 
   <path id="additional.dependencies">
-    <pathelement location="lib/db.jar"/>
+    <fileset dir="lib"/>
   </path>
+
+  <available classname="com.sleepycat.db.internal.Db" property="db.jar.exists">
+    <classpath refid="additional.dependencies"/>
+  </available>
 
   <pathconvert property="project.classpath"
                targetos="unix"
@@ -15,4 +19,18 @@
   />
 
   <import file="../common.xml"/>
+
+  <target name="get-db-jar" unless="db.jar.exists">
+    <mkdir dir="lib"/>
+    <get src="http://www.ibiblio.org/maven/berkeleydb/jars/berkeleydb-native-4.2.jar"
+         dest="lib/db.jar"
+    />
+  </target>
+
+  <target name="check-and-get-db-jar" depends="get-db-jar">
+  </target>
+
+  <target name="init" depends="common.init,check-and-get-db-jar">
+    
+  </target>
 </project>
