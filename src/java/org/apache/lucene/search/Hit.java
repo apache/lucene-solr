@@ -49,7 +49,7 @@ public class Hit implements java.io.Serializable {
   /**
    * Returns document for this hit.
    *
-   * @see {@link Hits#doc(int)}
+   * @see Hits#doc(int)
    */
   public Document getDocument() throws IOException {
     if (!resolved) fetchTheHit();
@@ -59,7 +59,7 @@ public class Hit implements java.io.Serializable {
   /**
    * Returns score for this hit.
    *
-   * @see {@link Hits#score(int)}
+   * @see Hits#score(int)
    */
   public float getScore() throws IOException {
     if (!resolved) fetchTheHit();
@@ -69,7 +69,7 @@ public class Hit implements java.io.Serializable {
   /**
    * Returns id for this hit.
    *
-   * @see {@link Hits#id(int)}
+   * @see Hits#id(int)
    */
   public int getId() throws IOException {
     if (!resolved) fetchTheHit();
@@ -88,7 +88,7 @@ public class Hit implements java.io.Serializable {
   /**
    * Returns the boost factor for this hit on any field of the underlying document.
    *
-   * @see {@link Document#getBoost()}
+   * @see Document#getBoost()
    */
   public float getBoost() throws IOException {
     return getDocument().getBoost();
@@ -100,7 +100,7 @@ public class Hit implements java.io.Serializable {
    * method returns the first value added. If only binary fields with this name
    * exist, returns null.
    *
-   * @see {@link Document#get(String)}
+   * @see Document#get(String)
    */
   public String get(String name) throws IOException {
     return getDocument().get(name);
@@ -111,7 +111,7 @@ public class Hit implements java.io.Serializable {
    * <p/>
    * If an IOException occurs whilst getting the document, returns null
    *
-   * @see {@link Document#toString()} 
+   * @see Document#toString()
    */
   public String toString() {
     try {

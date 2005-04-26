@@ -116,7 +116,7 @@ public final class Hits {
   }
 
   /**
-   * Returns an {@link Iterator} to navigate the Hits.  Each item returned
+   * Returns a {@link HitIterator} to navigate the Hits.  Each item returned
    * from {@link Iterator#next()} is a {@link Hit}.
    * <p>
    * <b>Caution:</b> Iterate only over the hits needed.  Iterating over all
