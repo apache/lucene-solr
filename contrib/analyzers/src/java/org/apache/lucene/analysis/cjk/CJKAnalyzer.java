@@ -74,7 +74,7 @@ public class CJKAnalyzer extends Analyzer {
 
   /**
    * An array containing some common English words that are not usually
-   * useful for searching. and some double-byte interpunctions.....
+   * useful for searching and some double-byte interpunctions.
    */
   public final static String[] STOP_WORDS = {
     "a", "and", "are", "as", "at", "be",

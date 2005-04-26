@@ -12,7 +12,7 @@ import java.util.*;
 
 /**
  * Expand a query by looking up synonyms for every term.
- * You need to invoke {@see Syns2Index} first to build the synonym index.
+ * You need to invoke {@link Syns2Index} first to build the synonym index.
  *
  * @see Syns2Index
  */
@@ -58,9 +58,9 @@ public final class SynExpand {
 	 *
 	 * @param query users query that is assumed to not have any "special" query syntax, thus it should be just normal words, so "big dog" makes sense, but a query like "title:foo^1.2" doesn't as this should presumably be passed directly to the default query parser.
 	 *
-	 * @param syns a opened to the Lucene index you previously created with {@see Syns2Index}. The searcher is not closed or otherwise altered.
+	 * @param syns a opened to the Lucene index you previously created with {@link Syns2Index}. The searcher is not closed or otherwise altered.
 	 *
-	 * @param a optional analyzer used to parse the users query else {@see StandardAnalzyer} is used
+	 * @param a optional analyzer used to parse the users query else {@link StandardAnalyzer} is used
 	 *
 	 * @param field optional field name to search in or null if you want the default of "contents"
 	 *

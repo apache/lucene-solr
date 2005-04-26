@@ -416,21 +416,38 @@
     <attribute name="destdir"/>
     <sequential>
       <javadoc
-        sourcepath="src/java"
-        overview="src/java/overview.html"
-        packagenames="org.apache.lucene.*"
-        destdir="@{destdir}"
-        access="@{access}"
-        encoding="${build.encoding}"
-        author="true"
-        version="true"
-        use="true"
-        link="${javadoc.link}"
-        windowtitle="${Name} ${version} API"
-        doctitle="${Name} ${version} API"
-        bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved."
-      >
+          overview="src/java/overview.html"
+          packagenames="org.apache.lucene.*"
+          destdir="@{destdir}"
+          access="@{access}"
+          encoding="${build.encoding}"
+          author="true"
+          version="true"
+          use="true"
+          link="${javadoc.link}"
+          windowtitle="${Name} ${version} API"
+          doctitle="${Name} ${version} API"
+          bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
+
+        <!-- TODO: find a dynamic way to do include multiple source roots -->
+        <packageset dir="src/java"/>
+        <packageset dir="contrib/analyzers/src/java"/>
+        <packageset dir="contrib/WordNet/src/java"/>
+        <packageset dir="contrib/highlighter/src/java"/>
+        <packageset dir="contrib/similarity/src/java"/>
+        <packageset dir="contrib/spellchecker/src/java"/>
+        <packageset dir="contrib/snowball/src/java"/>
+        <packageset dir="contrib/swing/src/java"/>
+
+        <group title="Core" packages="org.apache.*:org.apache.lucene.analysis.standard.*"/>
+        <group title="Snowball" packages="org.apache.lucene.analysis.snowball.*:net.sf.*"/>
+        <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
+        <group title="Highlighter" packages="org.apache.lucene.search.highlight.*"/>
+        <group title="MorLikeThis" packages="org.apache.lucene.search.similar.*"/>
+        <group title="SpellChecker" packages="org.apache.lucene.search.spell.*"/>
+        <group title="Swing" packages="org.apache.lucene.swing.*"/>
+        <group title="WordNet" packages="org.apache.lucene.wordnet.*"/>
       </javadoc>
     </sequential>
   </macrodef>
@@ -680,6 +697,13 @@
     <invoke-javacc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
                    outputDir="src/demo/org/apache/lucene/demo/html"
     />
+  </target>
+  
+  <target name="build-contrib" depends="compile-test">
+    <mkdir dir="${build.dir}/contrib"/>
+    <ant antfile="contrib/build.xml" inheritall="false">
+      <property name="dist.dir" location="${build.dir}/contrib"/>
+    </ant>
   </target>
 
   <target name="default" depends="jar-core"/>

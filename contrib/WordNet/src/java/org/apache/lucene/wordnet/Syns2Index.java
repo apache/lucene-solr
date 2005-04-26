@@ -24,18 +24,18 @@ import java.util.TreeMap;
 
 /**
  * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">WordNet prolog download</a>
- * into a Lucene index suitable for looking up synonyms and performing query expansion ({@see SynExpand#expand SynExpand.expand(...)}).
+ * into a Lucene index suitable for looking up synonyms and performing query expansion ({@link SynExpand#expand SynExpand.expand(...)}).
  *
  * This has been tested with WordNet 2.0.
  *
- * The index has fields named "word" ({@see #F_WORD})
- * and "syn" ({@see #F_SYN}).
+ * The index has fields named "word" ({@link #F_WORD})
+ * and "syn" ({@link #F_SYN}).
  * <p>
  * The source word (such as 'big') can be looked up in the
  * "word" field, and if present there will be fields named "syn"
  * for every synonym. What's tricky here is that there could be <b>multiple</b>
  * fields with the same name, in the general case for words that have multiple synonyms.
- * That's not a problem with Lucene, you just use {@see org.apache.lucene.document.Document#getValues}
+ * That's not a problem with Lucene, you just use {@link org.apache.lucene.document.Document#getValues}
  * </p>
  * <p>
  * While the WordNet file distinguishes groups of synonyms with

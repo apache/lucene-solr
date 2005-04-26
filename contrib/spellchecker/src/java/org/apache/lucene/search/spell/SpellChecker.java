@@ -39,7 +39,7 @@ import java.util.*;
 /**
  *  <p>
  *	Spell Checker class  (Main class) <br/>
- * (initially inspired by the David Spencer code)
+ * (initially inspired by the David Spencer code).
  *  </p>
  *  
  *  <p>
