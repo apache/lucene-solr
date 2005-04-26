@@ -84,15 +84,7 @@ public class MultiSearcher extends Searcher {
       throw new UnsupportedOperationException();
     }
 
-    public Explanation explain(Query query,int doc) throws IOException{
-      throw new UnsupportedOperationException();
-    }
-
     public Explanation explain(Weight weight,int doc) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    public void search(Query query, Filter filter, HitCollector results) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -100,15 +92,7 @@ public class MultiSearcher extends Searcher {
       throw new UnsupportedOperationException();
     }
 
-    public TopDocs search(Query query,Filter filter,int n) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
     public TopDocs search(Weight weight,Filter filter,int n) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    public TopFieldDocs search(Query query,Filter filter,int n,Sort sort) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -203,12 +187,6 @@ public class MultiSearcher extends Searcher {
     return maxDoc;
   }
 
-  public TopDocs search(Query query, Filter filter, int nDocs)
-      throws IOException {
-    Weight weight = prepareWeight(query);
-    return search(weight, filter, nDocs);
-  }
-
   public TopDocs search(Weight weight, Filter filter, int nDocs)
   throws IOException {
 
@@ -232,13 +210,6 @@ public class MultiSearcher extends Searcher {
       scoreDocs[i] = (ScoreDoc)hq.pop();
 
     return new TopDocs(totalHits, scoreDocs);
-  }
-
-
-  public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
-    throws IOException {
-    Weight weight = prepareWeight(query);
-    return search(weight, filter, n, sort);
   }
 
   public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
@@ -268,13 +239,6 @@ public class MultiSearcher extends Searcher {
 
 
   // inherit javadoc
-  public void search(Query query, Filter filter, final HitCollector results)
-    throws IOException {
-      Weight weight = prepareWeight(query);
-      search(weight, filter, results);
-  }
-
-  // inherit javadoc
   public void search(Weight weight, Filter filter, final HitCollector results)
     throws IOException {
     for (int i = 0; i < searchables.length; i++) {
@@ -298,12 +262,6 @@ public class MultiSearcher extends Searcher {
     return queries[0].combine(queries);
   }
 
-  public Explanation explain(Query query, int doc) throws IOException {
-    Weight weight = prepareWeight(query);
-    return explain(weight, doc);
-  }
-
-
   public Explanation explain(Weight weight, int doc) throws IOException {
     int i = subSearcher(doc);			  // find searcher index
     return searchables[i].explain(weight,doc-starts[i]); // dispatch to searcher
@@ -322,7 +280,7 @@ public class MultiSearcher extends Searcher {
    *
    * @return rewritten queries
    */
-  private Weight prepareWeight(Query original) throws IOException {
+  protected Weight createWeight(Query original) throws IOException {
     // step 1
     Query rewrittenQuery = rewrite(original);
 

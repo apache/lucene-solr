@@ -86,12 +86,6 @@ public class IndexSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public TopDocs search(Query query, Filter filter, final int nDocs)
-       throws IOException {
-    return search(query.weight(this), filter, nDocs);
-  }
-
-  // inherit javadoc
   public TopDocs search(Weight weight, Filter filter, final int nDocs)
        throws IOException {
 
@@ -127,13 +121,6 @@ public class IndexSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public TopFieldDocs search(Query query, Filter filter, final int nDocs,
-                             Sort sort)
-    throws IOException {
-    return search(query.weight(this), filter, nDocs, sort);
-  }
-
-  // inherit javadoc
   public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
                              Sort sort)
       throws IOException {
@@ -160,13 +147,6 @@ public class IndexSearcher extends Searcher {
       scoreDocs[i] = hq.fillFields ((FieldDoc) hq.pop());
 
     return new TopFieldDocs(totalHits[0], scoreDocs, hq.getFields());
-  }
-
-
-  // inherit javadoc
-  public void search(Query query, Filter filter,
-                     final HitCollector results) throws IOException {
-    search(query.weight(this), filter, results);
   }
 
   // inherit javadoc
@@ -197,10 +177,6 @@ public class IndexSearcher extends Searcher {
       query = rewrittenQuery;
     }
     return query;
-  }
-
-  public Explanation explain(Query query, int doc) throws IOException {
-    return explain(query.weight(this), doc);
   }
 
   public Explanation explain(Weight weight, int doc) throws IOException {

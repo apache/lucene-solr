@@ -39,6 +39,8 @@ public class RemoteSearchable
     this.local = local;
   }
   
+  // this implementation should be removed when the deprecated
+  // Searchable#search(Query,Filter,HitCollector) is removed
   public void search(Query query, Filter filter, HitCollector results)
     throws IOException {
     local.search(query, filter, results);
@@ -66,6 +68,8 @@ public class RemoteSearchable
     return local.maxDoc();
   }
 
+  // this implementation should be removed when the deprecated
+  // Searchable#search(Query,Filter,int) is removed
   public TopDocs search(Query query, Filter filter, int n) throws IOException {
     return local.search(query, filter, n);
   }
@@ -74,6 +78,8 @@ public class RemoteSearchable
     return local.search(weight, filter, n);
   }
 
+  // this implementation should be removed when the deprecated
+  // Searchable#search(Query,Filter,int,Sort) is removed
   public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
     throws IOException {
     return local.search (query, filter, n, sort);
@@ -92,6 +98,8 @@ public class RemoteSearchable
     return local.rewrite(original);
   }
 
+  // this implementation should be removed when the deprecated
+  // Searchable#explain(Query,int) is removed
   public Explanation explain(Query query, int doc) throws IOException {
     return local.explain(query, doc);
   }

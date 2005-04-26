@@ -46,7 +46,7 @@ extends ScoreDoc {
 	 * Sort object.  Each Object will be either an Integer, Float or String,
 	 * depending on the type of values in the terms of the original field.
 	 * @see Sort
-	 * @see Searchable#search(Query,Filter,int,Sort)
+	 * @see Searcher#search(Query,Filter,int,Sort)
 	 */
 	public Comparable[] fields;
 

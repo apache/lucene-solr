@@ -344,12 +344,8 @@ implements Serializable {
 		HashMap scoresA = getScores (full.search (queryA));
 
 		// we'll test searching locally, remote and multi
-		// note: the multi test depends on each separate index containing
-		// the same documents as our local index, so the computed normalization
-		// will be the same.  so we make a multi searcher over two equal document
-		// sets - not realistic, but necessary for testing.
 		MultiSearcher remote = new MultiSearcher (new Searchable[] { getRemote() });
-		MultiSearcher multi  = new MultiSearcher (new Searchable[] { full, full });
+		MultiSearcher multi  = new MultiSearcher (new Searchable[] { searchX, searchY });
 
 		// change sorting and make sure relevancy stays the same
 

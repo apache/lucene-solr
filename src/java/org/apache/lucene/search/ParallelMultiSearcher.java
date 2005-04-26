@@ -158,13 +158,13 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * 
    * TODO: parallelize this one too
    */
-  public void search(Query query, Filter filter, final HitCollector results)
+  public void search(Weight weight, Filter filter, final HitCollector results)
     throws IOException {
     for (int i = 0; i < searchables.length; i++) {
 
       final int start = starts[i];
 
-      searchables[i].search(query, filter, new HitCollector() {
+      searchables[i].search(weight, filter, new HitCollector() {
           public void collect(int doc, float score) {
             results.collect(doc + start, score);
           }

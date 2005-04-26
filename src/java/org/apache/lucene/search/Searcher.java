@@ -58,6 +58,20 @@ public abstract class Searcher implements Searchable {
     return new Hits(this, query, filter, sort);
   }
 
+  /** Expert: Low-level search implementation with arbitrary sorting.  Finds
+   * the top <code>n</code> hits for <code>query</code>, applying
+   * <code>filter</code> if non-null, and sorting the hits by the criteria in
+   * <code>sort</code>.
+   *
+   * <p>Applications should usually call {@link
+   * Searcher#search(Query,Filter,Sort)} instead.
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopFieldDocs search(Query query, Filter filter, int n,
+                                      Sort sort) throws IOException {
+    return search(createWeight(query), filter, n, sort);
+  }
+
   /** Lower-level search API.
    *
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
@@ -76,6 +90,53 @@ public abstract class Searcher implements Searchable {
     throws IOException {
     search(query, (Filter)null, results);
   }    
+
+  /** Lower-level search API.
+   *
+   * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
+   * scoring document.
+   * <br>HitCollector-based access to remote indexes is discouraged.
+   *
+   * <p>Applications should only use this if they need <i>all</i> of the
+   * matching documents.  The high-level search API ({@link
+   * Searcher#search(Query)}) is usually more efficient, as it skips
+   * non-high-scoring hits.
+   *
+   * @param query to match documents
+   * @param filter if non-null, a bitset used to eliminate some documents
+   * @param results to receive hits
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public void search(Query query, Filter filter, HitCollector results)
+    throws IOException {
+    search(createWeight(query), filter, results);
+  }
+
+  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null.
+   *
+   * <p>Called by {@link Hits}.
+   *
+   * <p>Applications should usually call {@link Searcher#search(Query)} or
+   * {@link Searcher#search(Query,Filter)} instead.
+   * @throws BooleanQuery.TooManyClauses
+   */
+  public TopDocs search(Query query, Filter filter, int n)
+    throws IOException {
+    return search(createWeight(query), filter, n);
+  }
+
+  /** Returns an Explanation that describes how <code>doc</code> scored against
+   * <code>query</code>.
+   *
+   * <p>This is intended to be used in developing Similarity implementations,
+   * and, for good performance, should not be displayed with every hit.
+   * Computing an explanation is as expensive as executing the query over the
+   * entire index.
+   */
+  public Explanation explain(Query query, int doc) throws IOException {
+    return explain(createWeight(query), doc);
+  }
 
   /** The Similarity implementation used by this searcher. */
   private Similarity similarity = Similarity.getDefault();
@@ -96,6 +157,13 @@ public abstract class Searcher implements Searchable {
     return this.similarity;
   }
 
+  /**
+   * creates a weight for <code>query</code>
+   * @return new weight
+   */
+  protected Weight createWeight(Query query) throws IOException {
+      return query.weight(this);
+  }
 
   // inherit javadoc
   public int[] docFreqs(Term[] terms) throws IOException {
@@ -105,5 +173,4 @@ public abstract class Searcher implements Searchable {
     }
     return result;
   }
-
 }

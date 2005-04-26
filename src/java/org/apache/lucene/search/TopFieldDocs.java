@@ -25,7 +25,7 @@ package org.apache.lucene.search;
  * @author  Tim Jones (Nacimiento Software)
  * @since   lucene 1.4
  * @version $Id$
- * @see Searchable#search(Query,Filter,int,Sort)
+ * @see Searcher#search(Query,Filter,int,Sort)
  */
 public class TopFieldDocs
 extends TopDocs {
