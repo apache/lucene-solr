@@ -15,6 +15,18 @@
             </p>
         </section>
 
+        <section name="Java User list">
+            <p>
+              This list is for users of Java Lucene to ask questions, share knowledge,
+              and discuss issues.
+            </p>
+            <p>
+              <a href="mailto:java-user-subscribe@lucene.apache.org">Subscribe</a>
+              <a href="mailto:java-user-unsubscribe@lucene.apache.org">Unsubscribe</a>
+              <a href="http://mail-archives.apache.org/mod_mbox/lucene-java-user/">Archive</a>
+            </p>
+        </section>
+
         <section name="Java Developer List">
             <p>
               This is the list where participating developers of the Java Lucene project meet
