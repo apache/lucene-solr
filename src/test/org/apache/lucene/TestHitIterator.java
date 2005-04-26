@@ -13,6 +13,8 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.Hit;
 import org.apache.lucene.search.HitIterator;
 
+import java.util.NoSuchElementException;
+
 /**
  * This test intentionally not put in the search package in order
  * to test HitIterator and Hit package protection.
@@ -46,5 +48,15 @@ public class TestHitIterator extends TestCase {
     assertEquals("iterator test doc 2", hit.getDocument().get("field"));
 
     assertFalse(iterator.hasNext());
+
+    boolean caughtException = false;
+    try {
+      iterator.next();
+    } catch (NoSuchElementException e) {
+      assertTrue(true);
+      caughtException = true;
+    }
+
+    assertTrue(caughtException);
   }
 }

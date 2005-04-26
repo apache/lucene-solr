@@ -50,13 +50,12 @@ public class HitIterator implements Iterator {
    * @return Next {@link Hit}.
    */
   public Object next() {
-    try {
-      Object next = new Hit(hits, hitNumber);
-      hitNumber++;
-      return next;
-    } catch (IndexOutOfBoundsException e) {
+    if (hitNumber == hits.length())
       throw new NoSuchElementException();
-    }
+
+    Object next = new Hit(hits, hitNumber);
+    hitNumber++;
+    return next;
   }
 
   /**
