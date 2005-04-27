@@ -108,18 +108,22 @@ public class Hit implements java.io.Serializable {
   }
 
   /**
-   * Prints the fields of the underlying document for human consumption.
-   * <p/>
-   * If an IOException occurs whilst getting the document, returns null
-   *
-   * @see Document#toString()
+   * Prints the parameters to be used to discover the promised result.
    */
   public String toString() {
-    try {
-      return getDocument().toString();
-    } catch (IOException e) {
-      return null;
+    StringBuffer buffer = new StringBuffer();
+    buffer.append("Hit<");
+    buffer.append(hits.toString());
+    buffer.append(" [");
+    buffer.append(hitNumber);
+    buffer.append("] ");
+    if (resolved) {
+        buffer.append("resolved");
+    } else {
+        buffer.append("unresolved");
     }
+    buffer.append(">");
+    return buffer.toString();
   }
 
 
