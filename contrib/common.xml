@@ -62,6 +62,7 @@
     <pathelement location="${junit.jar}"/>
     <pathelement location="${build.classes.dir}"/>
     <pathelement location="${test.classes.dir}"/>
+    <pathelement location="${lucene.dir}/build/classes/test"/>
   </path>
 
 
