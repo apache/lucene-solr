@@ -437,17 +437,17 @@
         <packageset dir="contrib/highlighter/src/java"/>
         <packageset dir="contrib/similarity/src/java"/>
         <packageset dir="contrib/spellchecker/src/java"/>
-        <packageset dir="contrib/snowball/src/java"/>
+        <packageset dir="contrib/snowball/src/java" excludes="net/"/>
         <packageset dir="contrib/swing/src/java"/>
 
-        <group title="Core" packages="org.apache.*:org.apache.lucene.analysis.standard.*"/>
-        <group title="Snowball" packages="org.apache.lucene.analysis.snowball.*:net.sf.*"/>
+        <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
         <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
-        <group title="Highlighter" packages="org.apache.lucene.search.highlight.*"/>
-        <group title="MorLikeThis" packages="org.apache.lucene.search.similar.*"/>
-        <group title="SpellChecker" packages="org.apache.lucene.search.spell.*"/>
-        <group title="Swing" packages="org.apache.lucene.swing.*"/>
-        <group title="WordNet" packages="org.apache.lucene.wordnet.*"/>
+        <group title="Snowball" packages="org.apache.lucene.analysis.snowball*"/>
+        <group title="Highlighter" packages="org.apache.lucene.search.highlight*"/>
+        <group title="MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
+        <group title="SpellChecker" packages="org.apache.lucene.search.spell*"/>
+        <group title="WordNet" packages="org.apache.lucene.wordnet*"/>
+        <group title="Swing" packages="org.apache.lucene.swing*"/>
       </javadoc>
     </sequential>
   </macrodef>
