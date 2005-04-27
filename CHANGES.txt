@@ -104,7 +104,7 @@ API Changes
     that most of the deprecated methods and fields will be removed in 
     Lucene 2.0. (Daniel Naber)
 
- 2. The Russian and the German analyzers have been moved to Sandbox.
+ 2. The Russian and the German analyzers have been moved to contrib/analyzers.
     Also, the WordlistLoader class has been moved one level up in the
     hierarchy and is now org.apache.lucene.analysis.WordlistLoader
     (Daniel Naber)
