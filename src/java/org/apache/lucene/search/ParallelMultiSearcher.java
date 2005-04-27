@@ -152,11 +152,11 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searcher#search(Query)}) is usually more efficient, as it skips
    * non-high-scoring hits.
    *
-   * @param query to match documents
+   * @param weight to match documents
    * @param filter if non-null, a bitset used to eliminate some documents
    * @param results to receive hits
    * 
-   * TODO: parallelize this one too
+   * @todo parallelize this one too
    */
   public void search(Weight weight, Filter filter, final HitCollector results)
     throws IOException {

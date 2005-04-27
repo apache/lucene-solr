@@ -268,6 +268,8 @@ public class MultiSearcher extends Searcher {
   }
 
   /**
+   * Create weight in multiple index scenario.
+   * 
    * Distributed query processing is done in the following steps:
    * 1. rewrite query
    * 2. extract necessary terms
