@@ -76,28 +76,6 @@
                 contributions for various solutions that convert different
                 content types to Lucene's Document classes.
             </p>
-            <subsection name="RTF->XML->Lucene">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.tetrasix.com/">
-                                http://www.tetrasix.com/
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            N/A
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
             <subsection name="XML Document #1">
                 <table>
                     <tr>
@@ -142,29 +120,6 @@
                     </tr>
                 </table>
             </subsection>
-            <subsection name="XML Document #3">
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.isogen.com/downloads/demos/demos.jsp#xml_searching_demo">
-                                http://www.isogen.com/downloads/demos/demos.jsp#xml_searching_demo
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            W. Eliot Kimber - eliot@isogen.com
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-
             <subsection name="PDF Box">
                 <table>
                     <tr>
@@ -322,30 +277,6 @@
                         </th>
                         <td>
                             Andy Scholz
-                        </td>
-                    </tr>
-                </table>
-            </subsection>
-            <subsection name="Lindex">
-                <p>
-                </p>
-                <table>
-                    <tr>
-                        <th>
-                            URL
-                        </th>
-                        <td>
-                            <a href="http://www.macromedia.com/software/drk/productinfo/product_overview/volume3/coldfusionmx.html#lindex">
-                                http://www.macromedia.com/software/drk/productinfo/product_overview/volume3/coldfusionmx.html#lindex
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            author
-                        </th>
-                        <td>
-                            Macromedia
                         </td>
                     </tr>
                 </table>
