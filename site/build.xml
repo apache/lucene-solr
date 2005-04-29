@@ -1,7 +1,7 @@
 <project name="site" default="docs" basedir=".">
 
     <!-- Initialization properties -->
-    <property name="project.name"   value="httpd-site"/>
+    <property name="project.name" value="lucene-site"/>
     <property name="docs.src" value="../xdocs"/>
     <property name="docs.dest" value="../docs"/>
 
