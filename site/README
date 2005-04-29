@@ -1,0 +1,23 @@
+Building the website:
+---------------------
+
+All you need to do is cd into this directory and type:
+
+    ant
+
+Modifying the website:
+----------------------
+
+To modify the website, all you need to do is edit the files in the xdocs 
+directory and then rebuild the website. The format of the files is fairly 
+straightforward. You should only add XHTML tags because the .xml files 
+need to be parsed by an XML parser.
+
+Changing the look and feel of the entire website is easy. Just modify the 
+site.vsl file located in the xdocs/stylesheets directory and rebuild.
+
+If you would like to add links to the left side navigation, simply edit 
+the project.xml file in the xdocs/stylesheets directory and rebuild.
+
+Place your images in the xdocs/images directory. When you rebuild, the 
+modified images will be copied over to the docs/images directory.
