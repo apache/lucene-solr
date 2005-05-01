@@ -1,5 +1,5 @@
 package org.apache.lucene.store;
-import java.io.RandomAccessFile;
+
 import java.io.IOException;
 
 /** This class provides access to package-level features defined in the
