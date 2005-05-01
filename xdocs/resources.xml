@@ -6,95 +6,10 @@
     </properties>
     <body>
 
-        <section name="Articles">
-            <ul>
-              <li>
-                <a href="http://today.java.net/pub/a/today/2003/11/07/QueryParserRules.html">QueryParser Rules</a>
-                <br/> - java.net, November 2003
-              </li>
-              <li>
-                <a
-                  href="http://builder.com.com/5100-6389-5054799.html">Give your Web site its own search engine using Lucene</a>
-                <br/> - Builder.com, July 2003
-              </li>
-              <li>
-                <a href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Intro</a>
-                <br/> - java.net, July 2003
-              </li>
-              <li>
-                <a
-                  href="http://www-106.ibm.com/developerworks/library/j-lucene/">Parsing, indexing, and searching XML with Digester and Lucene</a>
-                <br/> - IBM developerWorks, June 2003
-              </li>
-              <li>
-                <a
-                  href="http://www.onjava.com/pub/a/onjava/2003/03/05/lucene.html">Advanced Text Indexing with Lucene</a>
-                <br/> - Onjava.com, March 2003
-              </li>
-              <li>
-                <a
-                  href="http://www.onjava.com/pub/a/onjava/2003/01/15/lucene.html">Introduction to Text Indexing with Apache Apache Lucene</a>
-                <br/> - Onjava.com, January 2003
-              </li>
-              <li><a
-                      href="http://www.javaworld.com/javaworld/jw-09-2000/jw-0915-lucene.html">The Lucene search engine Powerful flexible and free</a>
-                  <br/> - JavaWorld, September 2000
-              </li>
-            </ul>
-        </section>
-
-        <section name="Tutorials">
-            <ul>
-                <li><a
-                        href="http://www.darksleep.com/lucene/">Lucene Tutorial</a>
-                </li>
-                <li><a
-                        href="http://www.chedong.com/tech/lucene.html">Lucene introduction in Chinese</a>
-                </li>
-            </ul>
-        </section>
-
-        <section name="Related Resources">
-            <ul>
-                <li><a
-                        href="http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-cooltools.html">Build your own languages with JavaCC</a>
-                    <br/> - JavaWorld December 2000
-                </li>
-                <li><a href="http://sourceforge.net/projects/clucene/">CLucene</a>
-                    <br/> - C++ implementation of Lucene
-                </li>
-                <li><a href="http://sourceforge.net/projects/nlucene/">NLucene</a>
-                    <br/> - .NET implementation of Lucene
-                </li>
-                <li><a href="http://sourceforge.net/projects/lucenedotnet">Lucene.net</a>
-                    <br/> - .NET implementation of Lucene
-                </li>
-                <li><a href="http://pylucene.osafoundation.org">pylucene</a><br/> - Python implementation of Lucene
-                </li>
-                <li><a href="http://www.divmod.org/Lupy/">Lupy</a>
-                    <br/> - Python implementation of Lucene
-                </li>
-                <li><a href="http://search.cpan.org/dist/Plucene/">Plucene</a>
-                    <br/> - Perl implementation of Lucene
-                </li>
-                <li><a href="http://search.cpan.org/author/SIMON/Lucene-QueryParser-1.01/">Lucene::QueryParser</a>
-                    <br/> - Perl implementation of Lucene QueryParser
-                </li>
-                <li><a href="http://rubyforge.org/projects/rubylucene/">RubyLucene</a>
-                    <br/> - Ruby implementation of Lucene (under development)
-                </li>
-            </ul>
-        </section>
-
-        <section name="Related Books">
-            <ul>
-                <li><a href="http://www.amazon.com/exec/obidos/tg/detail/-/1861007817/qid=1047858790/sr=1-1/ref=sr_1_1/103-2490464-6993410?v=glance&amp;s=books">
-                        Professional Struts Applications</a>: Building Web Sites with Struts, Object Relational Bridge, Lucene, and Velocity, by John Carnell,
-                    Jeff Linwood, and Maciej Zawadzki.
-                    <br/> - Contains a chapter on using Lucene with Struts, including incremental indexing, architecture, and creating an index from
-                    a data access layer.
-                </li>
-            </ul>
+        <section name="Page moved">
+        
+	        <a href="http://wiki.apache.org/jakarta-lucene/Resources">This page is now part of the Wiki</a>
+        
         </section>
 
     </body>
