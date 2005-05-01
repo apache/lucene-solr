@@ -79,19 +79,6 @@
                 </p>
             </subsection>
 
-            <subsection name="SAX/DOM XML Indexing demo">
-                <p>
-                    This contribution is some sample code that demonstrates adding simple XML documents into the index.  It creates
-                    a new Document object for each file, and then populates the Document with a Field for each XML element, recursively.
-                    There are examples included for both SAX and DOM.
-                </p>
-                <p>
-
-                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/sandbox/contributions/XML-Indexing-Demo/">
-                        for the XML Indexing Demo.</a>
-                </p>
-            </subsection>
-
             <subsection name="Lucli - Lucene Command-line Interface">
                 <p>
                   The Lucli application allows index manipulation from the
@@ -146,7 +133,7 @@
                 </p>
                 <p>
 
-                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/sandbox/contributions/miscellaneous/">
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/miscellaneous/">
                         for miscellaneous classes.</a>
                 </p>
             </subsection>
