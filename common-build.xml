@@ -1,0 +1,253 @@
+<?xml version="1.0"?>
+<project name="common">
+  <description>
+    This file is designed for importing into a main build file, and not intended
+    for standalone use.
+  </description>
+
+  <dirname file="${ant.file.common}" property="common.dir"/>
+
+  <!-- Give user a chance to override without editing this file
+      (and without typing -D each time it compiles it -->
+  <property file="${user.home}/lucene.build.properties"/>
+  <property file="${user.home}/build.properties"/>
+  <property file="${basedir}/build.properties"/>
+
+  <tstamp>
+    <format property="current.year" pattern="yyyy"/>
+    <format property="DSTAMP" pattern="yyyy-MM-dd"/>
+    <format property="TSTAMP" pattern="HH:mm:ss"/>
+  </tstamp>
+
+  <property name="name" value="${ant.project.name}"/>
+  <property name="Name" value="Lucene"/>
+  <property name="version" value="1.9-rc1-dev"/>
+  <property name="year" value="2000-${current.year}"/>
+  <property name="final.name" value="${name}-${version}"/>
+
+  <property name="javac.deprecation" value="on"/>
+  <property name="javac.debug" value="on"/>
+  <property name="javac.source" value="1.3"/>
+  <property name="javac.target" value="1.3"/>
+
+  <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
+  <property name="build.encoding" value="utf-8"/>
+
+  <property name="src.dir" location="src/java"/>
+  <property name="build.dir" location="build"/>
+  <property name="dist.dir" location="dist"/>
+
+  <property name="javacc.home" location="."/>
+
+  <property name="junit.output.dir" location="${build.dir}/test"/>
+  <property name="junit.reports" location="${build.dir}/test/reports"/>
+
+
+  <available
+    property="javacc.present"
+    classname="org.javacc.parser.Main"
+    classpath="${javacc.home}/bin/lib/javacc.jar"
+    />
+
+  <available
+    property="junit.present"
+    classname="junit.framework.TestCase"
+    />
+
+  <target name="clean"
+    description="Removes contents of build and dist directories">
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+    <delete file="velocity.log"/>
+  </target>
+
+  <!-- TODO: maybe make JavaCC checking specific to only the projects
+             that use it (Lucene core and contrib/miscellaneous
+  -->
+  <target name="javacc-uptodate-check">
+    <uptodate property="javacc.files.uptodate">
+      <srcfiles dir="src" includes="**/*.jj" />
+      <mapper type="glob" from="*.jj" to="*.java"/>
+    </uptodate>
+  </target>
+
+  <target name="javacc-notice" unless="javacc.files.uptodate">
+    <echo>
+      One or more of the JavaCC .jj files is newer than its corresponding
+      .java file.  Run the "javacc" target to regenerate the artifacts.
+    </echo>
+  </target>
+
+  <target name="init" depends="javacc-uptodate-check, javacc-notice">
+  </target>
+
+  <target name="javacc-check">
+    <fail unless="javacc.present">
+      ##################################################################
+      JavaCC not found.
+      JavaCC Home: ${javacc.home}
+      JavaCC JAR: ${javacc.jar}
+
+      Please download and install JavaCC from:
+
+      &lt;http://javacc.dev.java.net&gt;
+
+      Then, create a build.properties file either in your home
+      directory, or within the Lucene directory and set the javacc.home
+      property to the path where JavaCC is installed. For example,
+      if you installed JavaCC in /usr/local/java/javacc-3.2, then set the
+      javacc.home property to:
+
+      javacc.home=/usr/local/java/javacc-3.2
+
+      If you get an error like the one below, then you have not installed
+      things correctly. Please check all your paths and try again.
+
+      java.lang.NoClassDefFoundError: org.javacc.parser.Main
+      ##################################################################
+    </fail>
+
+  </target>
+
+
+  <target name="compile-core" depends="init"
+          description="Compiles core classes">
+    <compile
+      srcdir="src/java"
+      destdir="${build.dir}/classes/java">
+      <classpath refid="classpath"/>
+    </compile>
+  </target>
+
+  <target name="compile" depends="compile-core">
+    <!-- convenience target to compile core -->
+  </target>
+
+  <target name="jar-core" depends="compile-core"
+    description="Packages the JAR file">
+    <jar
+      destfile="${build.dir}/${final.name}.jar"
+      basedir="${build.dir}/classes/java">
+      <manifest>
+        <attribute name="Created-By" value="Apache Jakarta"/>
+        <section name="org/apache/lucene/">
+          <attribute name="Specification-Title" value="Lucene Search Engine"/>
+          <attribute name="Specification-Version" value="${version}"/>
+          <attribute name="Specification-Vendor" value="Lucene"/>
+          <attribute name="Implementation-Title" value="org.apache.lucene"/>
+          <attribute name="Implementation-Version" value="build ${DSTAMP}"/>
+          <attribute name="Implementation-Vendor" value="Lucene"/>
+        </section>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="compile-test" depends="compile-core">
+    <compile
+      srcdir="src/test"
+      destdir="${build.dir}/classes/test">
+      <classpath refid="test.classpath"/>
+    </compile>
+
+    <!-- Copy any data files present to the classpath -->
+    <copy todir="${build.dir}/classes/test">
+      <fileset dir="src/test" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <target name="test" depends="compile-test" description="Runs unit tests">
+    <fail unless="junit.present">
+      ##################################################################
+      JUnit not found.
+      Please make sure junit.jar is in ANT_HOME/lib, or made available
+      to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+    </fail>
+    <mkdir dir="${junit.output.dir}"/>
+    <junit printsummary="off" haltonfailure="no"
+      errorProperty="tests.failed" failureProperty="tests.failed">
+      <classpath refid="junit.classpath"/>
+      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
+      <sysproperty key="dataDir" file="src/test"/>
+      <sysproperty key="tempDir" file="${build.dir}/test"/>
+
+      <!-- contrib/ant IndexTaskTest needs these two system properties -->
+      <sysproperty key="docs.dir" file="src/test"/>
+      <sysproperty key="index.dir" file="${build.dir}/test/index"/>
+
+      <formatter type="xml"/>
+      <formatter type="brief" usefile="false"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/test" includes="**/Test*.java"/>
+        <fileset dir="src/test" includes="**/*Test.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/test" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+
+  <target name="generate-test-reports" description="Generates test reports">
+    <mkdir dir="${junit.reports}"/>
+    <junitreport todir="${junit.output.dir}">
+      <fileset dir="${junit.output.dir}">
+        <include name="TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${junit.reports}"/>
+    </junitreport>
+  </target>
+
+  <target name="jar" depends="jar-core">
+    <!-- convenience target to package core JAR -->
+  </target>
+
+  <target name="jar-src" depends="init">
+    <jar destfile="${build.dir}/${final.name}-src.jar">
+      <fileset dir="." includes="src/"/>
+    </jar>
+  </target>
+
+  <target name="default" depends="jar-core"/>
+
+  <!--+
+      | M A C R O S
+      +-->
+  <macrodef name="compile">
+    <attribute name="srcdir"/>
+    <attribute name="destdir"/>
+    <element name="nested" implicit="yes" optional="yes"/>
+
+    <sequential>
+      <mkdir dir="@{destdir}"/>
+      <javac
+        encoding="${build.encoding}"
+        srcdir="@{srcdir}"
+        destdir="@{destdir}"
+        deprecation="${javac.deprecation}"
+        debug="${javac.debug}"
+        source="${javac.source}"
+        target="${javac.target}">
+        <nested/>
+      </javac>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="invoke-javacc">
+    <attribute name="target"/>
+    <attribute name="outputDir"/>
+    <sequential>
+      <javacc
+          target="@{target}"
+          outputDirectory="@{outputDir}"
+          debugTokenManager="${javacc.debug.tokenmgr}"
+          debugParser="${javacc.debug.parser}"
+          debuglookahead="${javacc.debug.lookahead}"
+          javacchome="${javacc.home}"
+      />
+    </sequential>
+  </macrodef>
+
+</project>
+

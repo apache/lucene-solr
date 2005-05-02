@@ -18,7 +18,7 @@
                refid="db-4.3.27"
   />
 
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 
   <target name="get-db-jar" unless="db.jar.exists">
     <mkdir dir="lib"/>

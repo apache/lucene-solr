@@ -6,10 +6,7 @@
     Snowball Analyzers
   </description>
 
-  <property name="version" value="1.1-dev"/>
-  <property name="Name" value="Snowball Analyzers"/>
-
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 
   <property name="snowball.cvsroot" value=":pserver:cvsuser@cvs.tartarus.org:/home/cvs"/>
   <property name="snowball.cvs.password" value="anonymous"/>

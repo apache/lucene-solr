@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<project name="contrib-build">
+  <echo>Building ${ant.project.name}...</echo>
+
+  <!-- TODO: adjust build.dir appropriately when a contrib project is run individually -->
+  <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
+
+  <import file="../common-build.xml"/>
+
+  <property name="lucene.jar" location="${common.dir}/build/lucene-${version}.jar"/>
+  <available property="lucene.jar.present" type="file" file="${lucene.jar}"/>
+
+  <path id="classpath">
+   <pathelement path="${lucene.jar}"/>
+   <pathelement path="${project.classpath}"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${junit.jar}"/>
+    <pathelement location="${build.dir}/classes/java"/>
+  </path>
+
+  <path id="junit.classpath">
+    <path refid="test.classpath"/>
+    <pathelement location="${build.dir}/classes/test"/>
+    <pathelement location="${build.dir}/classes/java"/>
+  </path>
+
+  <target name="build-lucene" unless="lucene.jar.present">
+    <!-- TODO: some tests need some of Lucene's own test classes too -->
+    <ant antfile="${common.dir}/build.xml" target="jar-core" inheritall="false"/>
+  </target>
+
+  <target name="init" depends="common.init,build-lucene"/>
+</project>

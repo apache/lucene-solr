@@ -1,51 +1,22 @@
 <?xml version="1.0"?>
 
-<project name="Lucene" default="default" basedir=".">
+<project name="lucene" default="default" basedir=".">
 
-  <!-- Give user a chance to override without editing this file
-      (and without typing -D each time it compiles it -->
-  <property file="${user.home}/lucene.build.properties"/>
-  <property file="${user.home}/build.properties"/>
-  <property file="${basedir}/build.properties"/>
 
-  <tstamp>
-    <format property="current.year" pattern="yyyy"/>
-    <format property="DSTAMP" pattern="yyyy-MM-dd"/>
-    <format property="TSTAMP" pattern="HH:mm:ss"/>
-  </tstamp>
+  <import file="common-build.xml"/>
 
-  <property name="name" value="lucene"/>
-  <property name="Name" value="Lucene"/>
-  <property name="version" value="1.9-rc1-dev"/>
-  <property name="year" value="2000-${current.year}"/>
-  <property name="final.name" value="${name}-${version}"/>
-
-  <property name="javac.deprecation" value="on"/>
-  <property name="javac.debug" value="on"/>
-  <property name="javac.source" value="1.3"/>
-  <property name="javac.target" value="1.3"/>
-
-  <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
-  <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
-  <property name="build.encoding" value="utf-8"/>
-
-  <property name="build.dir" location="build"/>
-  <property name="dist.dir" location="dist"/>
+  <!-- Import tests for deprecation compliance.
+       This will be removed for Lucene 2.0
+   -->
+  <import file="build-deprecated.xml"/>
 
   <property name="demo.name" value="${name}-demos-${version}"/>
   <property name="demo.war.name" value="luceneweb"/>
-
-  <property name="javacc.home" location="."/>
-
-  <property name="junit.output.dir" location="${build.dir}/test"/>
-  <property name="junit.reports" location="${build.dir}/test/reports"/>
+  <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
 
   <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.dir}/classes/java"/>
-    <fileset dir="lib">
-      <include name="*.jar"/>
-    </fileset>
   </path>
 
   <path id="demo.classpath">
@@ -58,11 +29,6 @@
     <pathelement location="${build.dir}/classes/test"/>
   </path>
 
-  <!-- classpath for deprecated test cases, should be removed when moving from 1.9 to 2.0 -->
-  <path id="test-deprecated.classpath">
-    <path refid="demo.classpath"/>
-    <pathelement location="${build.dir}/classes/test-deprecated"/>
-  </path>
 
   <path id="junit.classpath">
     <pathelement location="${build.dir}/classes/test"/>
@@ -74,93 +40,14 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <!-- junit classpath for deprecated test cases, should be removed when moving from 1.9 to 2.0 -->	
-  <path id="junit-deprecated.classpath">
-    <pathelement location="${build.dir}/classes/test-deprecated"/>
-    <pathelement location="${build.dir}/classes/java"/>
-    <pathelement location="${build.dir}/classes/demo"/>
-    <fileset dir="lib">
-      <include name="*.jar"/>
-    </fileset>
-    <pathelement path="${java.class.path}"/>
-  </path>
 
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
-  <target name="javacc-uptodate-check">
-    <uptodate property="javacc.files.uptodate">
-      <srcfiles dir="src" includes="**/*.jj" />
-      <mapper type="glob" from="*.jj" to="*.java"/>
-    </uptodate>
-  </target>
 
-  <target name="javacc-notice" unless="javacc.files.uptodate">
-    <echo>
-      One or more of the JavaCC .jj files is newer than its corresponding
-      .java file.  Run the "javacc" target to regenerate the artifacts.
-    </echo>
-  </target>
-
-  <target name="init" depends="javacc-uptodate-check, javacc-notice">
-    <mkdir dir="${build.dir}"/>
-    <mkdir dir="${dist.dir}"/>
-
-    <available
-      property="javacc.present"
-      classname="org.javacc.parser.Main"
-      classpath="${javacc.home}/bin/lib/javacc.jar"
-      />
-
-    <available
-      property="junit.present"
-      classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask"
-      />
-  </target>
-
-  <target name="javacc-check" depends="init">
-    <fail unless="javacc.present">
-      ##################################################################
-      JavaCC not found.
-      JavaCC Home: ${javacc.home}
-      JavaCC JAR: ${javacc.jar}
-
-      Please download and install JavaCC from:
-
-      &lt;http://javacc.dev.java.net&gt;
-
-      Then, create a build.properties file either in your home
-      directory, or within the Lucene directory and set the javacc.home
-      property to the path where JavaCC is installed. For example,
-      if you installed JavaCC in /usr/local/java/javacc-3.2, then set the
-      javacc.home property to:
-
-      javacc.home=/usr/local/java/javacc-3.2
-
-      If you get an error like the one below, then you have not installed
-      things correctly. Please check all your paths and try again.
-
-      java.lang.NoClassDefFoundError: org.javacc.parser.Main
-      ##################################################################
-    </fail>
-
-  </target>
-
-  <!-- ================================================================== -->
-  <!-- C O M P I L E                                                      -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="compile" depends="compile-core"/>
-  <target name="compile-core" depends="init"
-    description="Compiles core classes">
-    <mkdir dir="${build.dir}/classes/java"/>
-    <compile
-      srcdir="src/java"
-      destdir="${build.dir}/classes/java">
-      <classpath refid="classpath"/>
-    </compile>
-
+  <!-- Overrides common.compile-core to add rmic -->
+  <target name="compile-core" depends="common.compile-core"
+          description="Compiles core classes, including rmic">
     <rmic classname="org.apache.lucene.search.RemoteSearchable"
       base="${build.dir}/classes/java">
       <classpath refid="classpath"/>
@@ -172,26 +59,6 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="jar" depends="jar-core"/>
-  <target name="jar-core" depends="compile-core"
-    description="Generates the Jar file">
-    <jar
-      destfile="${build.dir}/${final.name}.jar"
-      basedir="${build.dir}/classes/java"
-      excludes="**/*.java">
-      <manifest>
-        <attribute name="Created-By" value="Apache Jakarta"/>
-        <section name="org/apache/lucene/">
-          <attribute name="Specification-Title" value="Lucene Search Engine"/>
-          <attribute name="Specification-Version" value="${version}"/>
-          <attribute name="Specification-Vendor" value="Lucene"/>
-          <attribute name="Implementation-Title" value="org.apache.lucene"/>
-          <attribute name="Implementation-Version" value="build ${DSTAMP}"/>
-          <attribute name="Implementation-Vendor" value="Lucene"/>
-        </section>
-      </manifest>
-    </jar>
-  </target>
 
   <target name="jar-demo" depends="compile-demo">
     <jar
@@ -208,17 +75,6 @@
       <lib dir="${build.dir}" includes="${demo.name}.jar"/>
       <lib dir="${build.dir}" includes="${final.name}.jar"/>
     </war>
-  </target>
-
-  <!-- ================================================================== -->
-  <!-- J A R  S O U R C E                                                 -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="jar-src" depends="init">
-    <jar destfile="${build.dir}/${final.name}-src.jar">
-      <fileset dir="." includes="src/"/>
-    </jar>
   </target>
 
   <!-- ================================================================== -->
@@ -242,110 +98,10 @@
   </target>
 
 
-  <!-- ================================================================== -->
-  <!-- B U I L D  D E P R E C A T E D  T E S T                            -->
-  <!-- ================================================================== -->
-  <!-- should be removed when moving from lucene 1.9 to 2.0               -->
-  <!-- ================================================================== -->
-  <target name="compile-test-deprecated" depends="compile-core,compile-demo">
-    <mkdir dir="${build.dir}/classes/test-deprecated"/>
-    <compile
-      srcdir="src/test-deprecated"
-      destdir="${build.dir}/classes/test-deprecated">
-      <classpath refid="test-deprecated.classpath"/>
-    </compile>
-  </target>
+  <!-- TODO: Remove dependency on demo from test -->
+	<target name="compile-test" depends="compile-demo,common.compile-test"/>
 
-  <!-- ================================================================== -->
-  <!-- R U N  D E P R E C A T E D  T E S T S                              -->
-  <!-- ================================================================== -->
-  <!-- should be removed when moving from lucene 1.9 to 2.0               -->
-  <!-- ================================================================== -->
-  <target name="test-deprecated" depends="compile-test-deprecated" description="Runs deprecated unit tests">
-    <fail unless="junit.present">
-      ##################################################################
-      JUnit not found.
-      Please make sure junit.jar is in ANT_HOME/lib, or made available
-      to Ant using other mechanisms like -lib or CLASSPATH.
-      ##################################################################
-	  </fail>
-    <mkdir dir="${junit.output.dir}"/>
-    <junit printsummary="off" haltonfailure="no"
-      errorProperty="tests.failed" failureProperty="tests.failed">
-      <classpath refid="junit-deprecated.classpath"/>
-      <sysproperty key="dataDir" file="src/test-deprecated"/>
-      <sysproperty key="tempDir" file="${build.dir}/test-deprecated"/>
-      <formatter type="xml"/>
-      <formatter type="brief" usefile="false"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-        <fileset dir="src/test-deprecated" includes="**/Test*.java"/>
-      </batchtest>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
-        <fileset dir="src/test-deprecated" includes="**/${testcase}.java"/>
-      </batchtest>
-    </junit>
 
-    <fail if="tests.failed">Tests failed!</fail>
-  </target>
-
-	<!-- ================================================================== -->
-	  <!-- B U I L D  T E S T                                                 -->
-	  <!-- ================================================================== -->
-	  <!--                                                                    -->
-	  <!-- ================================================================== -->
-	  <target name="compile-test" depends="compile-core,compile-demo">
-	    <mkdir dir="${build.dir}/classes/test"/>
-	    <compile
-	      srcdir="src/test"
-	      destdir="${build.dir}/classes/test">
-	      <classpath refid="test.classpath"/>
-	    </compile>
-	  </target>
-
-	  <!-- ================================================================== -->
-	  <!-- R U N  T E S T S                                                   -->
-	  <!-- ================================================================== -->
-	  <!--                                                                    -->
-	  <!-- ================================================================== -->
-	  <target name="test" depends="compile-test" description="Runs unit tests">
-	    <fail unless="junit.present">
-	      ##################################################################
-	      JUnit not found.
-	      Please make sure junit.jar is in ANT_HOME/lib, or made available
-	      to Ant using other mechanisms like -lib or CLASSPATH.
-	      ##################################################################
-		  </fail>
-	    <mkdir dir="${junit.output.dir}"/>
-	    <junit printsummary="off" haltonfailure="no"
-	      errorProperty="tests.failed" failureProperty="tests.failed">
-	      <classpath refid="junit.classpath"/>
-	      <sysproperty key="dataDir" file="src/test"/>
-	      <sysproperty key="tempDir" file="${build.dir}/test"/>
-	      <formatter type="xml"/>
-	      <formatter type="brief" usefile="false"/>
-	      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-	        <fileset dir="src/test" includes="**/Test*.java" excludes="**/TestPrecedenceQueryParser.java"/>
-	      </batchtest>
-	      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
-	        <fileset dir="src/test" includes="**/${testcase}.java"/>
-	      </batchtest>
-	    </junit>
-
-	    <fail if="tests.failed">Tests failed!</fail>
-	  </target>
-	
-  <!-- backwards compatible target - may be removed -->
-  <target name="test-unit" depends="test"/>
-
-  <target name="generate-test-reports" description="Generates test reports">
-    <mkdir dir="${junit.reports}"/>
-    <junitreport todir="${junit.output.dir}">
-      <fileset dir="${junit.output.dir}">
-        <include name="TEST-*.xml"/>
-      </fileset>
-      <report format="frames" todir="${junit.reports}"/>
-    </junitreport>
-  </target>
 
   <!-- ================================================================== -->
   <!-- D O C U M E N T A T I O N                                          -->
@@ -406,52 +162,6 @@
 
   </target>
 
-  <!-- ================================================================== -->
-  <!-- J A V A D O C                                                      -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <macrodef name="invoke-javadoc">
-    <attribute name="access"/>
-    <attribute name="destdir"/>
-    <sequential>
-      <javadoc
-          overview="src/java/overview.html"
-          packagenames="org.apache.lucene.*"
-          destdir="@{destdir}"
-          access="@{access}"
-          encoding="${build.encoding}"
-          author="true"
-          version="true"
-          use="true"
-          link="${javadoc.link}"
-          windowtitle="${Name} ${version} API"
-          doctitle="${Name} ${version} API"
-          bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
-        <tag name="todo" description="To Do:"/>
-
-        <!-- TODO: find a dynamic way to do include multiple source roots -->
-        <packageset dir="src/java"/>
-        <packageset dir="contrib/analyzers/src/java"/>
-        <packageset dir="contrib/WordNet/src/java"/>
-        <packageset dir="contrib/highlighter/src/java"/>
-        <packageset dir="contrib/similarity/src/java"/>
-        <packageset dir="contrib/spellchecker/src/java"/>
-        <packageset dir="contrib/snowball/src/java" excludes="net/"/>
-        <packageset dir="contrib/swing/src/java"/>
-
-        <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
-        <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
-        <group title="Snowball" packages="org.apache.lucene.analysis.snowball*"/>
-        <group title="Highlighter" packages="org.apache.lucene.search.highlight*"/>
-        <group title="MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
-        <group title="SpellChecker" packages="org.apache.lucene.search.spell*"/>
-        <group title="WordNet" packages="org.apache.lucene.wordnet*"/>
-        <group title="Swing" packages="org.apache.lucene.swing*"/>
-      </javadoc>
-    </sequential>
-  </macrodef>
-
   <target name="javadocs">
     <mkdir dir="${build.dir}/docs/api"/>
     <invoke-javadoc
@@ -467,6 +177,7 @@
       destdir="${build.dir}/docs/api-internal"
     />
   </target>
+
 
   <!-- ================================================================== -->
   <!-- D I S T R I B U T I O N                                            -->
@@ -585,18 +296,6 @@
   <target name="dist-all" depends="dist, dist-src"/>
 
   <!-- ================================================================== -->
-  <!-- C L E A N                                                          -->
-  <!-- ================================================================== -->
-  <!--                                                                    -->
-  <!-- ================================================================== -->
-  <target name="clean"
-    description="Removes contents of build and dist directories">
-    <delete dir="${build.dir}"/>
-    <delete dir="${dist.dir}"/>
-    <delete file="velocity.log"/>
-  </target>
-
-  <!-- ================================================================== -->
   <!-- Build the JavaCC files into the source tree                        -->
   <!-- ================================================================== -->
   <target name="jjdoc">
@@ -632,39 +331,7 @@
 
   <target name="javacc" depends="clean-javacc,javacc-StandardAnalyzer,javacc-QueryParser,javacc-PrecedenceQueryParser,javacc-HTMLParser"/>
 
-  <macrodef name="invoke-javacc">
-    <attribute name="target"/>
-    <attribute name="outputDir"/>
-    <sequential>
-      <javacc
-          target="@{target}"
-          outputDirectory="@{outputDir}"
-          debugTokenManager="${javacc.debug.tokenmgr}"
-          debugParser="${javacc.debug.parser}"
-          debuglookahead="${javacc.debug.lookahead}"
-          javacchome="${javacc.home}"
-      />
-    </sequential>
-  </macrodef>
 
-  <macrodef name="compile">
-    <attribute name="srcdir"/>
-    <attribute name="destdir"/>
-    <element name="nested" implicit="yes" optional="yes"/>
-
-    <sequential>
-      <javac
-        encoding="${build.encoding}"
-        srcdir="@{srcdir}"
-        destdir="@{destdir}"
-        deprecation="${javac.deprecation}"
-        debug="${javac.debug}"
-        source="${javac.source}"
-        target="${javac.target}">
-        <nested/>
-      </javac>
-    </sequential>
-  </macrodef>
 
   <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
     <!-- generate this in a build directory so we can exclude ParseException -->
@@ -699,13 +366,63 @@
     />
   </target>
   
+  <macrodef name="contrib-crawl">
+    <attribute name="target" default=""/>
+    <sequential>
+      <subant target="@{target}" failonerror="true">
+        <property name="dist.dir" location="${dist.dir}"/>
+
+        <fileset dir="."
+                 includes="contrib/*/build.xml"
+        />
+      </subant>
+    </sequential>
+  </macrodef>
+
   <target name="build-contrib" depends="compile-test">
-    <mkdir dir="${build.dir}/contrib"/>
-    <ant antfile="contrib/build.xml" inheritall="false">
-      <property name="dist.dir" location="${build.dir}/contrib"/>
-    </ant>
+    <contrib-crawl/>
   </target>
 
-  <target name="default" depends="jar-core"/>
+  <macrodef name="invoke-javadoc">
+    <attribute name="access"/>
+    <attribute name="destdir"/>
+    <sequential>
+      <javadoc
+          overview="src/java/overview.html"
+          packagenames="org.apache.lucene.*"
+          destdir="@{destdir}"
+          access="@{access}"
+          encoding="${build.encoding}"
+          author="true"
+          version="true"
+          use="true"
+          link="${javadoc.link}"
+          windowtitle="${Name} ${version} API"
+          doctitle="${Name} ${version} API"
+          bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
+        <tag name="todo" description="To Do:"/>
+
+        <!-- TODO: find a dynamic way to do include multiple source roots -->
+        <packageset dir="src/java"/>
+        <packageset dir="contrib/analyzers/src/java"/>
+        <packageset dir="contrib/WordNet/src/java"/>
+        <packageset dir="contrib/highlighter/src/java"/>
+        <packageset dir="contrib/similarity/src/java"/>
+        <packageset dir="contrib/spellchecker/src/java"/>
+        <packageset dir="contrib/snowball/src/java" excludes="net/"/>
+        <packageset dir="contrib/swing/src/java"/>
+
+        <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
+        <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
+        <group title="Snowball" packages="org.apache.lucene.analysis.snowball*"/>
+        <group title="Highlighter" packages="org.apache.lucene.search.highlight*"/>
+        <group title="MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
+        <group title="SpellChecker" packages="org.apache.lucene.search.spell*"/>
+        <group title="WordNet" packages="org.apache.lucene.wordnet*"/>
+        <group title="Swing" packages="org.apache.lucene.swing*"/>
+      </javadoc>
+    </sequential>
+  </macrodef>
+
 
 </project>

@@ -20,10 +20,10 @@
 
   <target name="dist" depends="compile" description="Create JAR">
     <jar jarfile="${dist.dir}/${dist.name}.jar"
-         basedir="${build.classes.dir}"
+         basedir="${build.dir}/classes"
          manifest="META-INF/MANIFEST.MF"
     />
   </target>
 
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 </project>

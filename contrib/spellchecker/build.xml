@@ -6,5 +6,5 @@
     Spell Checker
   </description>
 
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 </project>

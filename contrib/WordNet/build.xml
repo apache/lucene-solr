@@ -11,7 +11,7 @@
 
   <available property="synindex.exists" file="${synindex.dir}" type="dir"/>
 
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 
   <target name="index" depends="compile" description="Build WordNet index">
     <fail if="synindex.exists">
@@ -21,7 +21,7 @@
     <java classname="org.apache.lucene.wordnet.Syns2Index">
       <classpath>
         <path refid="compile.classpath"/>
-        <pathelement location="${build.classes.dir}"/>
+        <pathelement location="${build.dir}/classes"/>
       </classpath>
 
       <arg file="${prolog.file}"/>
@@ -42,7 +42,7 @@
     <java classname="org.apache.lucene.wordnet.SynLookup">
       <classpath>
         <path refid="compile.classpath"/>
-        <pathelement location="${build.classes.dir}"/>
+        <pathelement location="${build.dir}/classes"/>
       </classpath>
 
       <arg file="${synindex.dir}"/>
@@ -62,7 +62,7 @@
     <java classname="org.apache.lucene.wordnet.SynExpand">
       <classpath>
         <path refid="compile.classpath"/>
-        <pathelement location="${build.classes.dir}"/>
+        <pathelement location="${build.dir}/classes"/>
       </classpath>
 
       <arg file="${synindex.dir}"/>

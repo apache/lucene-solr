@@ -3,8 +3,8 @@
 <project name="similarity" default="default">
 
   <description>
-    Hits highlighter
+    Similarity - MoreLikeThis
   </description>
 
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 </project>

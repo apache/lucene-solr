@@ -6,7 +6,7 @@
     Swing Models
   </description>
 
-  <import file="../common.xml"/>
+  <import file="../contrib-build.xml"/>
 
   <target name="list-demo" depends="compile">
     <java classname="org.apache.lucene.swing.models.ListSearcherSimulator"
