@@ -17,17 +17,14 @@ package org.apache.lucene.store.db;
  */
 
 import java.io.IOException;
+import org.apache.lucene.store.IndexOutput;
 
-import org.apache.lucene.store.OutputStream;
-
-import com.sleepycat.db.internal.Db;
-import com.sleepycat.db.internal.DbTxn;
 
 /**
  * @author Andi Vajda
  */
 
-public class DbOutputStream extends OutputStream {
+public class DbIndexOutput extends IndexOutput {
 
     /**
      * The size of data blocks, currently 16k (2^14), is determined by this
@@ -38,42 +35,62 @@ public class DbOutputStream extends OutputStream {
     static public final int BLOCK_MASK = BLOCK_LEN - 1;
 
     protected long position = 0L, length = 0L;
-    protected File file;
+    protected DbDirectory directory;
     protected Block block;
-    protected DbTxn txn;
-    protected Db files, blocks;
-    protected int flags;
+    protected File file;
 
-    protected DbOutputStream(Db files, Db blocks, DbTxn txn, int flags,
-                             String name, boolean create)
+    protected DbIndexOutput(DbDirectory directory, String name, boolean create)
         throws IOException
     {
         super();
 
-        this.files = files;
-        this.blocks = blocks;
-        this.txn = txn;
-        this.flags = flags;
+        this.directory = directory;
 
-        file = new File(files, blocks, txn, flags, name, create);
+        file = new File(directory, name, create);
         block = new Block(file);
         length = file.getLength();
 
         seek(length);
-        block.get(blocks, txn, flags);
+        block.get(directory);
+
+        directory.openFiles.add(this);
     }
 
     public void close()
         throws IOException
     {
         flush();
-        if (length > 0)
-            block.put(blocks, txn, flags);
+        file.modify(directory, length, System.currentTimeMillis());
 
-        file.modify(files, txn, flags, length, System.currentTimeMillis());
+        directory.openFiles.remove(this);
     }
 
-    protected void flushBuffer(byte[] b, int len)
+    public void flush()
+        throws IOException
+    {
+        if (length > 0)
+            block.put(directory);
+    }
+
+    public void writeByte(byte b)
+        throws IOException
+    {
+        int blockPos = (int) (position++ & BLOCK_MASK);
+
+        block.getData()[blockPos] = b;
+
+        if (blockPos + 1 == BLOCK_LEN)
+        {
+            block.put(directory);
+            block.seek(position);
+            block.get(directory);
+        }
+
+        if (position > length)
+            length = position;
+    }
+
+    public void writeBytes(byte[] b, int len)
         throws IOException
     {
         int blockPos = (int) (position & BLOCK_MASK);
@@ -83,14 +100,14 @@ public class DbOutputStream extends OutputStream {
             int blockLen = BLOCK_LEN - blockPos;
 
             System.arraycopy(b, offset, block.getData(), blockPos, blockLen);
-            block.put(blocks, txn, flags);
+            block.put(directory);
 
             len -= blockLen;
             offset += blockLen;
             position += blockLen;
 
             block.seek(position);
-            block.get(blocks, txn, flags);
+            block.get(directory);
             blockPos = 0;
         }
 
@@ -113,13 +130,6 @@ public class DbOutputStream extends OutputStream {
     public void seek(long pos)
         throws IOException
     {
-        super.seek(pos);
-        seekInternal(pos);
-    }
-
-    protected void seekInternal(long pos)
-        throws IOException
-    {
         if (pos > length)
             throw new IOException("seeking past end of file");
 
@@ -127,10 +137,15 @@ public class DbOutputStream extends OutputStream {
             position = pos;
         else
         {
-            block.put(blocks, txn, flags);
+            block.put(directory);
             block.seek(pos);
-            block.get(blocks, txn, flags);
+            block.get(directory);
             position = pos;
         }
+    }
+
+    public long getFilePointer()
+    {
+        return position;
     }
 }

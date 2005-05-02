@@ -19,13 +19,17 @@ package org.apache.lucene.store.db;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Collections;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.OutputStream;
-import org.apache.lucene.store.InputStream;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.IndexInput;
 
 import com.sleepycat.db.internal.DbEnv;
 import com.sleepycat.db.internal.Db;
@@ -50,6 +54,7 @@ import com.sleepycat.db.DbHandleExtractor;
 
 public class DbDirectory extends Directory {
 
+    protected Set openFiles = Collections.synchronizedSet(new HashSet());
     protected Db files, blocks;
     protected DbTxn txn;
     protected int flags;
@@ -95,24 +100,40 @@ public class DbDirectory extends Directory {
     public void close()
         throws IOException
     {
+        flush();
     }
 
-    public OutputStream createFile(String name)
+    /**
+     * Flush the currently open files. After they have been flushed it is
+     * safe to commit the transaction without closing this DbDirectory
+     * instance first.
+     * @see setTransaction
+     */
+    public void flush()
         throws IOException
     {
-        return new DbOutputStream(files, blocks, txn, flags, name, true);
+        Iterator iterator = openFiles.iterator();
+        
+        while (iterator.hasNext())
+            ((IndexOutput) iterator.next()).flush();
+    }
+
+    public IndexOutput createOutput(String name)
+        throws IOException
+    {
+        return new DbIndexOutput(this, name, true);
     }
 
     public void deleteFile(String name)
         throws IOException
     {
-        new File(name).delete(files, blocks, txn, flags);
+        new File(name).delete(this);
     }
 
     public boolean fileExists(String name)
         throws IOException
     {
-        return new File(name).exists(files, txn, flags);
+        return new File(name).exists(this);
     }
 
     public long fileLength(String name)
@@ -120,7 +141,7 @@ public class DbDirectory extends Directory {
     {
         File file = new File(name);
 
-        if (file.exists(files, txn, flags))
+        if (file.exists(this))
             return file.getLength();
 
         throw new IOException("File does not exist: " + name);
@@ -131,7 +152,7 @@ public class DbDirectory extends Directory {
     {
         File file = new File(name);
 
-        if (file.exists(files, txn, flags))
+        if (file.exists(this))
             return file.getTimeModified();
 
         throw new IOException("File does not exist: " + name);
@@ -184,10 +205,10 @@ public class DbDirectory extends Directory {
         return (String[]) list.toArray(new String[list.size()]);
     }
 
-    public InputStream openFile(String name)
+    public IndexInput openInput(String name)
         throws IOException
     {
-        return new DbInputStream(files, blocks, txn, flags, name);
+        return new DbIndexInput(this, name);
     }
 
     public Lock makeLock(String name)
@@ -198,7 +219,7 @@ public class DbDirectory extends Directory {
     public void renameFile(String from, String to)
         throws IOException
     {
-        new File(from).rename(files, blocks, txn, flags, to);
+        new File(from).rename(this, to);
     }
 
     public void touchFile(String name)
@@ -207,9 +228,31 @@ public class DbDirectory extends Directory {
         File file = new File(name);
         long length = 0L;
 
-        if (file.exists(files, txn, flags))
+        if (file.exists(this))
             length = file.getLength();
 
-        file.modify(files, txn, flags, length, System.currentTimeMillis());
+        file.modify(this, length, System.currentTimeMillis());
+    }
+
+    /**
+     * Once a transaction handle was committed it is no longer valid. In
+     * order to continue using this DbDirectory instance after a commit, the
+     * transaction handle has to be replaced.
+     * @param txn the new transaction handle to use
+     */
+    public void setTransaction(Transaction txn)
+    {
+        setTransaction(txn != null ? DbHandleExtractor.getDbTxn(txn) : null);
+    }
+
+    /**
+     * Once a transaction handle was committed it is no longer valid. In
+     * order to continue using this DbDirectory instance after a commit, the
+     * transaction handle has to be replaced.
+     * @param txn the new transaction handle to use
+     */
+    public void setTransaction(DbTxn txn)
+    {
+        this.txn = txn;
     }
 }

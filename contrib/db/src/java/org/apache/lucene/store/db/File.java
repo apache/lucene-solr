@@ -52,13 +52,12 @@ public class File extends Object {
         data.setUserBuffer(data.getSize(), true);
     }
 
-    protected File(Db files, Db blocks, DbTxn txn, int flags,
-                   String name, boolean create)
+    protected File(DbDirectory directory, String name, boolean create)
         throws IOException
     {
         this(name);
 
-        if (!exists(files, txn, flags))
+        if (!exists(directory))
         {
             if (!create)
                 throw new IOException("File does not exist: " + name);
@@ -66,6 +65,9 @@ public class File extends Object {
             {
                 DatabaseEntry key = new DatabaseEntry(new byte[24]);
                 DatabaseEntry data = new DatabaseEntry(null);
+                Db blocks = directory.blocks;
+                DbTxn txn = directory.txn;
+                int flags = directory.flags;
 
                 key.setUserBuffer(24, true);
                 data.setPartial(true);
@@ -131,9 +133,13 @@ public class File extends Object {
         return timeModified;
     }
 
-    protected boolean exists(Db files, DbTxn txn, int flags)
+    protected boolean exists(DbDirectory directory)
         throws IOException
     {
+        Db files = directory.files;
+        DbTxn txn = directory.txn;
+        int flags = directory.flags;
+
         try {
             if (files.get(txn, key, data, flags) == DbConstants.DB_NOTFOUND)
                 return false;
@@ -155,12 +161,13 @@ public class File extends Object {
         return true;
     }
 
-    protected void modify(Db files, DbTxn txn, int flags,
-                          long length, long timeModified)
+    protected void modify(DbDirectory directory, long length, long timeModified)
         throws IOException
     {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(32);
         DataOutputStream out = new DataOutputStream(buffer);
+        Db files = directory.files;
+        DbTxn txn = directory.txn;
 
         out.writeLong(length);
         out.writeLong(timeModified);
@@ -179,10 +186,10 @@ public class File extends Object {
         this.timeModified = timeModified;
     }
 
-    protected void delete(Db files, Db blocks, DbTxn txn, int flags)
+    protected void delete(DbDirectory directory)
         throws IOException
     {
-        if (!exists(files, txn, flags))
+        if (!exists(directory))
             throw new IOException("File does not exist: " + getName());
 
         Dbc cursor = null;
@@ -194,6 +201,10 @@ public class File extends Object {
                 byte[] cursorBytes = new byte[ulen];
                 DatabaseEntry cursorKey = new DatabaseEntry(cursorBytes);
                 DatabaseEntry cursorData = new DatabaseEntry(null);
+                Db files = directory.files;
+                Db blocks = directory.blocks;
+                DbTxn txn = directory.txn;
+                int flags = directory.flags;
 
                 System.arraycopy(bytes, 0, cursorBytes, 0, bytes.length);
                 cursorKey.setUserBuffer(ulen, true);
@@ -226,19 +237,21 @@ public class File extends Object {
         }
     }
 
-    protected void rename(Db files, Db blocks, DbTxn txn, int flags,
-                          String name)
+    protected void rename(DbDirectory directory, String name)
         throws IOException
     {
-        if (!exists(files, txn, flags))
+        if (!exists(directory))
             throw new IOException("File does not exist: " + getName());
 
         File newFile = new File(name);
 
-        if (newFile.exists(files, txn, flags))
-            newFile.delete(files, blocks, txn, flags);
+        if (newFile.exists(directory))
+            newFile.delete(directory);
 
         try {
+            Db files = directory.files;
+            DbTxn txn = directory.txn;
+
             files.del(txn, key, 0);
             setName(name);
             files.put(txn, key, data, 0);

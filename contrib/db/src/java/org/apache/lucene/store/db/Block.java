@@ -38,7 +38,7 @@ public class Block extends Object {
         key = new DatabaseEntry(new byte[fileKey.length + 8]);
         key.setUserBuffer(fileKey.length + 8, true);
 
-        data = new DatabaseEntry(new byte[DbOutputStream.BLOCK_LEN]);
+        data = new DatabaseEntry(new byte[DbIndexOutput.BLOCK_LEN]);
         data.setUserBuffer(data.getSize(), true);
 
         System.arraycopy(fileKey, 0, key.getData(), 0, fileKey.length);
@@ -61,7 +61,7 @@ public class Block extends Object {
         byte[] data = key.getData();
         int index = data.length - 8;
 
-        position >>>= DbOutputStream.BLOCK_SHIFT;
+        position >>>= DbIndexOutput.BLOCK_SHIFT;
 
         data[index + 0] = (byte) (0xff & (position >>> 56));
         data[index + 1] = (byte) (0xff & (position >>> 48));
@@ -73,21 +73,21 @@ public class Block extends Object {
         data[index + 7] = (byte) (0xff & (position >>>  0));
     }
 
-    protected void get(Db blocks, DbTxn txn, int flags)
+    protected void get(DbDirectory directory)
         throws IOException
     {
         try {
-            blocks.get(txn, key, data, flags);
+            directory.blocks.get(directory.txn, key, data, directory.flags);
         } catch (DatabaseException e) {
             throw new IOException(e.getMessage());
         }
     }
 
-    protected void put(Db blocks, DbTxn txn, int flags)
+    protected void put(DbDirectory directory)
         throws IOException
     {
         try {
-            blocks.put(txn, key, data, 0);
+            directory.blocks.put(directory.txn, key, data, 0);
         } catch (DatabaseException e) {
             throw new IOException(e.getMessage());
         }
