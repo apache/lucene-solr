@@ -1,17 +1,14 @@
 package org.apache.lucene.analysis;
 
-import java.io.IOException;
-import java.io.Reader;
-
 /**
- * Copyright 2005 The Apache Software Foundation
- * <p/>
+ * Copyright 2004-2005 The Apache Software Foundation
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +16,12 @@ import java.io.Reader;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Reader;
+
+/**
+ * Emits the entire input as a single token.
+ */
 public class KeywordTokenizer extends Tokenizer {
   private static final int DEFAULT_BUFFER_SIZE=256;
 
