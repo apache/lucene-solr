@@ -41,7 +41,7 @@
   </path>
 
   <patternset id="src.dist.patterns"
-              includes="src/,build.xml,lib/,docs/,*.txt,contrib/"
+              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,"
               excludes="contrib/*/lib/"
   />
   <patternset id="binary.build.dist.patterns"
@@ -226,7 +226,6 @@
   <target name="package-tgz" depends="package"
     description="--> Generates the lucene distribution as .tar.gz">
 
-    <!-- todo: make includes patterns below into property to reuse in package-zip -->
     <delete file="${build.dir}/${final.name}.tar"/>
     <delete file="${dist.dir}/${final.name}.tar.gz"/>
     <tar tarfile="${build.dir}/${final.name}.tar">
@@ -428,6 +427,7 @@
         <packageset dir="contrib/spellchecker/src/java"/>
         <packageset dir="contrib/snowball/src/java" excludes="net/"/>
         <packageset dir="contrib/swing/src/java"/>
+        <packageset dir="contrib/memory/src/java"/>
 
         <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
         <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
@@ -437,6 +437,7 @@
         <group title="SpellChecker" packages="org.apache.lucene.search.spell*"/>
         <group title="WordNet" packages="org.apache.lucene.wordnet*"/>
         <group title="Swing" packages="org.apache.lucene.swing*"/>
+        <group title="Memory" packages="org.apache.lucene.index.memory*"/>
       </javadoc>
     </sequential>
   </macrodef>
