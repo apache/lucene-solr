@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="memory" default="default">
+
+  <description>
+    High-performance single-document index to compare against Query
+  </description>
+
+  <import file="../contrib-build.xml"/>
+</project>
