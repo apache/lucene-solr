@@ -184,7 +184,9 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, war-demo"/>
+  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib">
+    <mkdir dir="${dist.dir}"/>
+  </target>
 
   <!-- ================================================================== -->
   <!-- Packages the distribution with zip                                 -->
@@ -199,7 +201,7 @@
       <zipfileset prefix="${final.name}" dir="."
         includes="src/demo/,src/jsp/,build.xml,docs/,*.txt"/>
       <zipfileset prefix="${final.name}" dir="${build.dir}"
-        includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/"/>
+        includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar"/>
     </zip>
   </target>
 
@@ -218,7 +220,7 @@
       <tarfileset prefix="${final.name}" dir="."
         includes="src/demo/,src/jsp/,build.xml,docs/,*.txt"/>
       <tarfileset prefix="${final.name}" dir="${build.dir}"
-        includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/"/>
+        includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar"/>
     </tar>
 
     <gzip zipfile="${dist.dir}/${final.name}.tar.gz"
@@ -254,7 +256,8 @@
     description="--> Generates the Lucene sources as .zip">
     <zip destfile="${dist.dir}/${final.name}-src.zip">
       <zipfileset prefix="${final.name}" dir="."
-        includes="src/,build.xml,lib/,docs/,*.txt"/>
+        includes="src/,build.xml,lib/,docs/,*.txt,contrib/"
+        excludes="contrib/*/lib/"/>
     </zip>
   </target>
 
@@ -270,7 +273,8 @@
     <delete file="${dist.dir}/${final.name}-src.tar.gz"/>
     <tar tarfile="${build.dir}/${final.name}-src.tar">
       <tarfileset prefix="${final.name}" dir="."
-        includes="src/,build.xml,lib/,docs/,*.txt"/>
+        includes="src/,build.xml,lib/,docs/,*.txt,contrib/"
+        excludes="contrib/*/lib/"/>
     </tar>
 
     <gzip zipfile="${dist.dir}/${final.name}-src.tar.gz"
@@ -370,8 +374,6 @@
     <attribute name="target" default=""/>
     <sequential>
       <subant target="@{target}" failonerror="true">
-        <property name="dist.dir" location="${dist.dir}"/>
-
         <fileset dir="."
                  includes="contrib/*/build.xml"
         />
