@@ -886,14 +886,29 @@ public class MemoryIndex {
 			this.searcher = searcher;
 		}
 		
-		public byte[] norms(String fieldName) {
-			if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName);
-			Info info = getInfo(fieldName);
-			int numTokens = info != null ? info.numTokens : 0;
-			byte norm = Similarity.encodeNorm(getSimilarity().lengthNorm(fieldName, numTokens));
-			return new byte[] {norm};
-		}
-	
+                /** performance hack: cache norms to avoid repeated expensive calculations */
+                private byte[] cachedNorms;
+                private String cachedFieldName;
+                private Similarity cachedSimilarity;
+	    
+                public byte[] norms(String fieldName) {
+                  byte[] norms = cachedNorms;
+                  Similarity sim = getSimilarity();
+                  if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
+                    Info info = getInfo(fieldName);
+                    int numTokens = info != null ? info.numTokens : 0;
+                    float n = sim.lengthNorm(fieldName, numTokens);
+                    byte norm = Similarity.encodeNorm(n);
+                    norms = new byte[] {norm};
+		    
+                    cachedNorms = norms;
+                    cachedFieldName = fieldName;
+                    cachedSimilarity = sim;
+                    if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + n + ":" + norm + ":" + numTokens);
+                  }
+                  return norms;
+                }
+
 		public void norms(String fieldName, byte[] bytes, int offset) {
 			if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + "*");
 			byte[] norms = norms(fieldName);
