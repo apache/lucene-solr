@@ -773,10 +773,10 @@ public class MemoryIndex {
 				}
 	
 				public boolean skipTo(int target) {
-					if (DEBUG) System.err.println(".skipTo");
-					return false;
+					if (DEBUG) System.err.println(".skipTo: " + target);
+					return next();
 				}
-	
+        
 				public void close() {
 					if (DEBUG) System.err.println(".close");
 				}
