@@ -32,6 +32,11 @@ Changes in runtime behavior
     ranking across multiple indices not to be equivalent.
     (Chuck Williams, Wolf Siberski via Otis, bug #31841)
 
+ 5. When opening an IndexWriter with create=true, Lucene now only deletes
+    its own files from the index directory (looking at the file name suffixes
+    to decide if a file belongs to Lucene). The old behavior was to delete
+    all files. (Daniel Naber, bug #34695)
+ 
 New features
 
  1. Added support for stored compressed fields (patch #31149)

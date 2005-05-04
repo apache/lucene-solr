@@ -16,6 +16,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -36,6 +37,36 @@ import org.apache.lucene.util.Constants;
  * @author Doug Cutting
  */
 public class FSDirectory extends Directory {
+
+  /**
+   * Filter that only accepts filenames created by Lucene.
+   */
+  private class LuceneFileFilter implements FilenameFilter {
+
+    /* (non-Javadoc)
+     * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
+     */
+    public boolean accept(File dir, String name) {
+      if (name.endsWith(".cfs")) return true;
+      else if (name.endsWith(".fnm")) return true;
+      else if (name.endsWith(".fdt")) return true;
+      else if (name.endsWith(".fdx")) return true;
+      else if (name.endsWith(".frq")) return true;
+      else if (name.endsWith(".prx")) return true;
+      else if (name.endsWith(".tii")) return true;
+      else if (name.endsWith(".tis")) return true;
+      else if (name.endsWith(".tvd")) return true;
+      else if (name.endsWith(".tvf")) return true;
+      else if (name.endsWith(".tvx")) return true;
+      else if (name.endsWith(".del")) return true;
+      else if (name.equals("deletable")) return true;
+      else if (name.equals("segments")) return true;
+      else if (name.matches(".+\\.f\\d+")) return true;
+      return false;
+    }
+
+  }
+
   /** This cache of directories ensures that there is a unique Directory
    * instance per path, so that synchronization on the Directory can be used to
    * synchronize access between readers and writers.
@@ -157,7 +188,7 @@ public class FSDirectory extends Directory {
       if (!directory.mkdirs())
         throw new IOException("Cannot create directory: " + directory);
 
-    String[] files = directory.list();            // clear old files
+    String[] files = directory.list(new LuceneFileFilter());            // clear old files
     for (int i = 0; i < files.length; i++) {
       File file = new File(directory, files[i]);
       if (!file.delete())
