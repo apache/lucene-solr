@@ -4,6 +4,10 @@ $Id$
 
 1.9 RC1
 
+Requirements
+
+ 1. To compile and use Lucene you now need Java 1.4 or later.
+ 
 Changes in runtime behavior
 
  1. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
@@ -143,7 +147,6 @@ Bug fixes
     on such automatically generated queries are no longer penalized
     for not matching all terms.  (Doug Cutting, Patch #33472)
 
-
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
@@ -184,12 +187,12 @@ Optimizations
     term index is now read into memory lazily at the first
     random-access.  (Doug Cutting)
 
-
- Infrastructure
+Infrastructure
 
  1. Lucene's source code repository has converted from CVS to
     Subversion.  The new repository is at
     http://svn.apache.org/repos/asf/lucene/java/trunk
+
 
 1.4.3
 
