@@ -431,7 +431,42 @@ public class MemoryIndex {
 		if (size > 1) Arrays.sort(entries, termComparator);
 		return entries;
 	}
-	
+
+  /**
+  * Convenience method; Creates and returns a token stream that generates a
+  * token for each keyword in the given collection, "as is", without any
+  * transforming text analysis. The resulting token stream can be fed into
+  * {@link #addField(String, TokenStream)}, perhaps wrapped into another
+  * {@link org.apache.lucene.analysis.TokenFilter}, as desired.
+  *
+  * @param keywords
+  *            the keywords to generate tokens for
+  * @return the corresponding token stream
+  */
+  public TokenStream keywordTokenStream(final Collection keywords) {
+    if (keywords == null)
+      throw new IllegalArgumentException("keywords must not be null");
+
+    return new TokenStream() {
+      Iterator iter = keywords.iterator();
+      int pos = 0;
+      int start = 0;
+      public Token next() {
+        if (!iter.hasNext()) return null;
+
+        Object obj = iter.next();
+        if (obj == null)
+          throw new IllegalArgumentException("keyword must not be null");
+
+        String term = obj.toString();
+        Token token = new Token(term, start, start + term.length());
+        start += term.length() + 1; // separate words by 1 (blank) character
+        pos++;
+        return token;
+      }
+    };
+  }
+
 	/** Returns a String representation of the index data for debugging purposes. */
 	public String toString() {
 		StringBuffer result = new StringBuffer(256);		
