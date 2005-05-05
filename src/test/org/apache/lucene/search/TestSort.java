@@ -260,6 +260,11 @@ implements Serializable {
 		sort.setSort ("float");
 		assertMatches (full, queryF, sort, "ZJI");
 
+		// using a nonexisting field as first sort key shouldn't make a difference:
+		sort.setSort (new SortField[] { new SortField ("nosuchfield", SortField.STRING),
+				new SortField ("float") });
+		assertMatches (full, queryF, sort, "ZJI");
+
 		sort.setSort ("float", true);
 		assertMatches (full, queryF, sort, "IJZ");
 	}
