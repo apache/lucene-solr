@@ -31,7 +31,6 @@ public class TermQuery extends Query {
 
   private class TermWeight implements Weight {
     private Similarity similarity;
-    private Searcher searcher;
     private float value;
     private float idf;
     private float queryNorm;
@@ -48,7 +47,7 @@ public class TermQuery extends Query {
     public Query getQuery() { return TermQuery.this; }
     public float getValue() { return value; }
 
-    public float sumOfSquaredWeights() throws IOException {
+    public float sumOfSquaredWeights() {
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }

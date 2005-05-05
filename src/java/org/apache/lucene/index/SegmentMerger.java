@@ -365,7 +365,7 @@ final class SegmentMerger {
   private long lastSkipFreqPointer;
   private long lastSkipProxPointer;
 
-  private void resetSkip() throws IOException {
+  private void resetSkip() {
     skipBuffer.reset();
     lastSkipDoc = 0;
     lastSkipFreqPointer = freqOutput.getFilePointer();

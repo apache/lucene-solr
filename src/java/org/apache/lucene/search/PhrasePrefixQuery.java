@@ -131,7 +131,7 @@ public class PhrasePrefixQuery extends Query {
     public Query getQuery() { return PhrasePrefixQuery.this; }
     public float getValue() { return value; }
 
-    public float sumOfSquaredWeights() throws IOException {
+    public float sumOfSquaredWeights() {
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }

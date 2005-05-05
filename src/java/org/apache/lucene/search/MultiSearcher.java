@@ -56,7 +56,7 @@ public class MultiSearcher extends Searcher {
       return df;
     }
 
-    public int[] docFreqs(Term[] terms) throws IOException {
+    public int[] docFreqs(Term[] terms) {
       int[] result = new int[terms.length];
       for (int i = 0; i < terms.length; i++) {
         result[i] = docFreq(terms[i]);
@@ -68,7 +68,7 @@ public class MultiSearcher extends Searcher {
       return maxDoc;
     }
 
-    public Query rewrite(Query query) throws IOException {
+    public Query rewrite(Query query) {
       // this is a bit of a hack. We know that a query which
       // creates a Weight based on this Dummy-Searcher is
       // always already rewritten (see preparedWeight()).
@@ -76,27 +76,27 @@ public class MultiSearcher extends Searcher {
       return query;
     }
 
-    public void close() throws IOException {
+    public void close() {
       throw new UnsupportedOperationException();
     }
 
-    public Document doc(int i) throws IOException{
+    public Document doc(int i) {
       throw new UnsupportedOperationException();
     }
 
-    public Explanation explain(Weight weight,int doc) throws IOException {
+    public Explanation explain(Weight weight,int doc) {
       throw new UnsupportedOperationException();
     }
 
-    public void search(Weight weight, Filter filter, HitCollector results) throws IOException {
+    public void search(Weight weight, Filter filter, HitCollector results) {
       throw new UnsupportedOperationException();
     }
 
-    public TopDocs search(Weight weight,Filter filter,int n) throws IOException {
+    public TopDocs search(Weight weight,Filter filter,int n) {
       throw new UnsupportedOperationException();
     }
 
-    public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) throws IOException {
+    public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) {
       throw new UnsupportedOperationException();
     }
   };
