@@ -251,8 +251,8 @@ public class Highlighter
 			}
 
 			// append text after end of last token
-			if (lastEndOffset < text.length())
-				newText.append(encoder.encodeText(text.substring(lastEndOffset)));
+//			if (lastEndOffset < text.length())
+//				newText.append(encoder.encodeText(text.substring(lastEndOffset)));
 
 			currentFrag.textEndPos = newText.length();
 
