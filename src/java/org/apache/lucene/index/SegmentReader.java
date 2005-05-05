@@ -247,12 +247,9 @@ class SegmentReader extends IndexReader {
 
   Vector files() throws IOException {
     Vector files = new Vector(16);
-    final String ext[] = new String[]{
-      "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
-      "tvx", "tvd", "tvf", "tvp" };
 
-    for (int i = 0; i < ext.length; i++) {
-      String name = segment + "." + ext[i];
+    for (int i = 0; i < FILENAME_EXTENSIONS.length; i++) {
+      String name = segment + "." + FILENAME_EXTENSIONS[i];
       if (directory().fileExists(name))
         files.addElement(name);
     }

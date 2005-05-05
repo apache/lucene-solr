@@ -26,6 +26,7 @@ import java.util.Hashtable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.Constants;
 
 /**
@@ -47,19 +48,11 @@ public class FSDirectory extends Directory {
      * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
      */
     public boolean accept(File dir, String name) {
-      if (name.endsWith(".cfs")) return true;
-      else if (name.endsWith(".fnm")) return true;
-      else if (name.endsWith(".fdt")) return true;
-      else if (name.endsWith(".fdx")) return true;
-      else if (name.endsWith(".frq")) return true;
-      else if (name.endsWith(".prx")) return true;
-      else if (name.endsWith(".tii")) return true;
-      else if (name.endsWith(".tis")) return true;
-      else if (name.endsWith(".tvd")) return true;
-      else if (name.endsWith(".tvf")) return true;
-      else if (name.endsWith(".tvx")) return true;
-      else if (name.endsWith(".del")) return true;
-      else if (name.equals("deletable")) return true;
+      for (int i = 0; i < IndexReader.FILENAME_EXTENSIONS.length; i++) {
+        if (name.endsWith("."+IndexReader.FILENAME_EXTENSIONS[i]))
+          return true;
+      }
+      if (name.equals("deletable")) return true;
       else if (name.equals("segments")) return true;
       else if (name.matches(".+\\.f\\d+")) return true;
       return false;
