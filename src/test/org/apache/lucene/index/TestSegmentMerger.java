@@ -97,7 +97,7 @@ public class TestSegmentMerger extends TestCase {
       
       Collection stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
       assertTrue(stored != null);
-      System.out.println("stored size: " + stored.size());
+      //System.out.println("stored size: " + stored.size());
       assertTrue(stored.size() == 2);
       
       TermFreqVector vector = mergedReader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
