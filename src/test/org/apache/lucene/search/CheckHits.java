@@ -44,15 +44,15 @@ public class CheckHits {
       actual.add(new Integer(hits.id(i)));
     }
 
-    testCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+    TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
   }
 
   /** Tests that a Hits has an expected order of documents */
   public static void checkDocIds(String mes, int[] results, Hits hits, TestCase testCase)
   throws IOException {
-    testCase.assertEquals(mes + " nr of hits", results.length, hits.length());
+    TestCase.assertEquals(mes + " nr of hits", results.length, hits.length());
     for (int i = 0; i < results.length; i++) {
-      testCase.assertEquals(mes + " doc nrs for hit " + i, results[i], hits.id(i));
+      TestCase.assertEquals(mes + " doc nrs for hit " + i, results[i], hits.id(i));
     }
   }
 
@@ -73,7 +73,7 @@ public class CheckHits {
     final float scoreTolerance = 1.0e-7f;
     for (int i = 0; i < results.length; i++) {
       if (Math.abs(hits1.score(i) -  hits2.score(i)) > scoreTolerance) {
-        testCase.fail("Hit " + i + ", doc nrs " + hits1.id(i) + " and " + hits2.id(i)
+        TestCase.fail("Hit " + i + ", doc nrs " + hits1.id(i) + " and " + hits2.id(i)
                       + "\nunequal scores: " + hits1.score(i)
                       + "\n           and: " + hits2.score(i)
                       + "\nfor query:" + query.toString());
