@@ -45,13 +45,13 @@ public class LuceneDictionary implements Dictionary {
 
 
   final class LuceneIterator implements Iterator {
-    private TermEnum enum;
+    private TermEnum termEnum;
     private Term actualTerm;
     private boolean has_next_called;
 
     public LuceneIterator() {
       try {
-        enum = reader.terms(new Term(field, ""));
+        termEnum = reader.terms(new Term(field, ""));
       } catch (IOException ex) {
         ex.printStackTrace();
       }
@@ -71,12 +71,12 @@ public class LuceneDictionary implements Dictionary {
       has_next_called = true;
       try {
         // if there is still words
-        if (!enum.next()) {
+        if (!termEnum.next()) {
           actualTerm = null;
           return false;
         }
         //  if the next word are in the field
-        actualTerm = enum.term();
+        actualTerm = termEnum.term();
         String fieldt = actualTerm.field();
         if (fieldt != field) {
           actualTerm = null;

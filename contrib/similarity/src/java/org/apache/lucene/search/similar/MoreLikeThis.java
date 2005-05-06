@@ -1,5 +1,5 @@
 /**
- * Copyright 2004 The Apache Software Foundation.
+ * Copyright 2004-2005 The Apache Software Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,35 @@
  */
 package org.apache.lucene.search.similar;
 
-import java.io.*;
-import java.util.*;
-import java.net.*;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.standard.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Collection;
+import java.util.Iterator;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.File;
+import java.io.PrintStream;
+import java.io.StringReader;
+import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.net.URL;
+
 
 /**
  * Generate "more like this" similarity queries. 
