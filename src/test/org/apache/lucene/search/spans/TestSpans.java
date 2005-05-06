@@ -39,7 +39,7 @@ public class TestSpans extends TestCase {
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(Field.Text(field, docFields[i]));
+      doc.add(new Field(field, docFields[i], Field.Store.YES, Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
     writer.close();

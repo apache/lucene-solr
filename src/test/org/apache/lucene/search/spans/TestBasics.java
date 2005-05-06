@@ -53,7 +53,7 @@ public class TestBasics extends TestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(Field.Text("field", English.intToEnglish(i)));
+      doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
 
@@ -96,8 +96,8 @@ public class TestBasics extends TestCase {
 
   public void testBoolean() throws Exception {
     BooleanQuery query = new BooleanQuery();
-    query.add(new TermQuery(new Term("field", "seventy")), true, false);
-    query.add(new TermQuery(new Term("field", "seven")), true, false);
+    query.add(new TermQuery(new Term("field", "seventy")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term("field", "seven")), BooleanClause.Occur.MUST);
     checkHits(query, new int[]
       {77, 777, 177, 277, 377, 477, 577, 677, 770, 771, 772, 773, 774, 775,
        776, 778, 779, 877, 977});
@@ -105,8 +105,8 @@ public class TestBasics extends TestCase {
 
   public void testBoolean2() throws Exception {
     BooleanQuery query = new BooleanQuery();
-    query.add(new TermQuery(new Term("field", "sevento")), true, false);
-    query.add(new TermQuery(new Term("field", "sevenly")), true, false);
+    query.add(new TermQuery(new Term("field", "sevento")), BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term("field", "sevenly")), BooleanClause.Occur.MUST);
     checkHits(query, new int[] {});
   }
 
