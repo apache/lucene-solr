@@ -73,7 +73,7 @@ public class TestBoolean2 extends TestCase {
     BooleanQuery.setUseScorer14(false);
     Hits hits2 = searcher.search(query2);
 
-    CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs, this);
+    CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
   }
 
   public void testQueries01() throws Exception {

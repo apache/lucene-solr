@@ -29,8 +29,7 @@ public class CheckHits {
         Query query,
         String defaultFieldName,
         Searcher searcher,
-        int[] results,
-        TestCase testCase)
+        int[] results)
           throws IOException {
     Hits hits = searcher.search(query);
 
@@ -48,7 +47,7 @@ public class CheckHits {
   }
 
   /** Tests that a Hits has an expected order of documents */
-  public static void checkDocIds(String mes, int[] results, Hits hits, TestCase testCase)
+  public static void checkDocIds(String mes, int[] results, Hits hits)
   throws IOException {
     TestCase.assertEquals(mes + " nr of hits", results.length, hits.length());
     for (int i = 0; i < results.length; i++) {
@@ -63,12 +62,11 @@ public class CheckHits {
         Query query,
         Hits hits1,
         Hits hits2,
-        int[] results,
-        TestCase testCase)
+        int[] results)
           throws IOException {
 
-    checkDocIds("hits1", results, hits1, testCase);
-    checkDocIds("hits2", results, hits2, testCase);
+    checkDocIds("hits1", results, hits1);
+    checkDocIds("hits2", results, hits2);
     
     final float scoreTolerance = 1.0e-7f;
     for (int i = 0; i < results.length; i++) {

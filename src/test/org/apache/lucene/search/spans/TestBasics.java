@@ -263,6 +263,6 @@ public class TestBasics extends TestCase {
 
 
   private void checkHits(Query query, int[] results) throws IOException {
-    CheckHits.checkHits(query, "field", searcher, results, this);
+    CheckHits.checkHits(query, "field", searcher, results);
   }
 }
