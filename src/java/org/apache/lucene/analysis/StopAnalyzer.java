@@ -16,6 +16,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
@@ -42,6 +44,11 @@ public final class StopAnalyzer extends Analyzer {
   /** Builds an analyzer which removes words in the provided array. */
   public StopAnalyzer(String[] stopWords) {
     this.stopWords = StopFilter.makeStopSet(stopWords);
+  }
+  
+  /** Builds an analyzer with the stop words from the given file. */
+  public StopAnalyzer(File stopwordsFile) throws IOException {
+    stopWords = WordlistLoader.getWordSet(stopwordsFile);
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */

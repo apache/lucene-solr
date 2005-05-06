@@ -17,6 +17,9 @@ package org.apache.lucene.analysis.standard;
  */
 
 import org.apache.lucene.analysis.*;
+
+import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
@@ -41,6 +44,11 @@ public class StandardAnalyzer extends Analyzer {
   /** Builds an analyzer with the given stop words. */
   public StandardAnalyzer(String[] stopWords) {
     stopSet = StopFilter.makeStopSet(stopWords);
+  }
+
+  /** Builds an analyzer with the stop words from the given file. */
+  public StandardAnalyzer(File stopwords) throws IOException {
+    stopSet = WordlistLoader.getWordSet(stopwords);
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
