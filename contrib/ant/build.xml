@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<project name="lucene-ant" default="default">
+<project name="ant" default="default">
 
   <description>
     Lucene Ant integration

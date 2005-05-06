@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="lucene-wordnet" default="default">
+<project name="wordnet" default="default">
 
   <description>
     WordNet
