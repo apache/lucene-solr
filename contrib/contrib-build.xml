@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
-
 <project name="contrib-build">
   <echo>Building ${ant.project.name}...</echo>
 
-  <!-- TODO: adjust build.dir appropriately when a contrib project is run individually -->
+  <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->
   <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
+  <property name="dist.dir" location="../../dist/contrib/${ant.project.name}"/>
 
   <import file="../common-build.xml"/>
 
-  <property name="lucene.jar" location="${common.dir}/build/lucene-${version}.jar"/>
+  <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
   <available property="lucene.jar.present" type="file" file="${lucene.jar}"/>
 
   <path id="classpath">

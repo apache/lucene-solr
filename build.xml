@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="lucene" default="default" basedir=".">
+<project name="core" default="default" basedir=".">
 
 
   <import file="common-build.xml"/>
@@ -10,7 +10,7 @@
    -->
   <import file="build-deprecated.xml"/>
 
-  <property name="demo.name" value="${name}-demos-${version}"/>
+  <property name="demo.name" value="lucene-demos-${version}"/>
   <property name="demo.war.name" value="luceneweb"/>
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
 
@@ -195,7 +195,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib">
+  <target name="package" depends="jar-core, javadocs, jjdoc, war-demo, build-contrib">
     <mkdir dir="${dist.dir}"/>
   </target>
 
@@ -207,12 +207,12 @@
   <target name="package-zip" depends="package"
     description="--> Generates the Lucene distribution as .zip">
 
-    <delete file="${dist.dir}/${final.name}.zip"/>
-    <zip destfile="${dist.dir}/${final.name}.zip">
-      <zipfileset prefix="${final.name}" dir=".">
+    <delete file="${dist.dir}/lucene-${version}.zip"/>
+    <zip destfile="${dist.dir}/lucene-${version}.zip">
+      <zipfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </zipfileset>
-      <zipfileset prefix="${final.name}" dir="${build.dir}">
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
     </zip>
@@ -226,19 +226,19 @@
   <target name="package-tgz" depends="package"
     description="--> Generates the lucene distribution as .tar.gz">
 
-    <delete file="${build.dir}/${final.name}.tar"/>
-    <delete file="${dist.dir}/${final.name}.tar.gz"/>
-    <tar tarfile="${build.dir}/${final.name}.tar">
-      <tarfileset prefix="${final.name}" dir=".">
+    <delete file="${build.dir}/lucene-${version}.tar"/>
+    <delete file="${dist.dir}/lucene-${version}.tar.gz"/>
+    <tar tarfile="${build.dir}/lucene-${version}.tar">
+      <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
-      <tarfileset prefix="${final.name}" dir="${build.dir}">
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
     </tar>
 
-    <gzip zipfile="${dist.dir}/${final.name}.tar.gz"
-      src="${build.dir}/${final.name}.tar"
+    <gzip zipfile="${dist.dir}/lucene-${version}.tar.gz"
+      src="${build.dir}/lucene-${version}.tar"
       />
   </target>
 
@@ -268,8 +268,8 @@
   <!-- ================================================================== -->
   <target name="package-zip-src" depends="init"
     description="--> Generates the Lucene sources as .zip">
-    <zip destfile="${dist.dir}/${final.name}-src.zip">
-      <zipfileset prefix="${final.name}" dir=".">
+    <zip destfile="${dist.dir}/lucene-${version}-src.zip">
+      <zipfileset prefix="lucene-${version}" dir=".">
         <patternset refid="src.dist.patterns"/>
       </zipfileset>
     </zip>
@@ -283,16 +283,16 @@
   <target name="package-tgz-src" depends="init"
     description="--> Generates the Lucene distribution as .tar.gz">
 
-    <delete file="${build.dir}/${final.name}-src.tar"/>
-    <delete file="${dist.dir}/${final.name}-src.tar.gz"/>
-    <tar tarfile="${build.dir}/${final.name}-src.tar">
-      <tarfileset prefix="${final.name}" dir=".">
+    <delete file="${build.dir}/lucene-${version}-src.tar"/>
+    <delete file="${dist.dir}/lucene-${version}-src.tar.gz"/>
+    <tar tarfile="${build.dir}/lucene-${version}-src.tar">
+      <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="src.dist.patterns"/>
       </tarfileset>
     </tar>
 
-    <gzip zipfile="${dist.dir}/${final.name}-src.tar.gz"
-          src="${build.dir}/${final.name}-src.tar"
+    <gzip zipfile="${dist.dir}/lucene-${version}-src.tar.gz"
+          src="${build.dir}/lucene-${version}-src.tar"
     />
   </target>
 
@@ -322,10 +322,6 @@
            outputfile="${build.dir}/docs/grammars/QueryParser.html"
            javacchome="${javacc.home}"
     />
-    <jjdoc target="src/java/org/apache/lucene/queryParser/precedence/PrecedenceQueryParser.jj"
-           outputfile="${build.dir}/docs/grammars/PrecedenceQueryParser.html"
-           javacchome="${javacc.home}"
-    />
     <jjdoc target="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
            outputfile="${build.dir}/docs/grammars/StandardTokenizer.html"
            javacchome="${javacc.home}"
@@ -348,8 +344,6 @@
   </target>
 
   <target name="javacc" depends="clean-javacc,javacc-StandardAnalyzer,javacc-QueryParser,javacc-PrecedenceQueryParser,javacc-HTMLParser"/>
-
-
 
   <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
     <!-- generate this in a build directory so we can exclude ParseException -->
