@@ -181,6 +181,9 @@ public class FSDirectory extends Directory {
       if (!directory.mkdirs())
         throw new IOException("Cannot create directory: " + directory);
 
+    if (!directory.isDirectory())
+      throw new IOException(directory + " not a directory");
+
     String[] files = directory.list(new LuceneFileFilter());            // clear old files
     for (int i = 0; i < files.length; i++) {
       File file = new File(directory, files[i]);
