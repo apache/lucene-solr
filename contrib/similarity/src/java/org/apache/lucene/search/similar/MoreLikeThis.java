@@ -19,6 +19,7 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.search.BooleanClause;	
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
@@ -464,7 +465,7 @@ public final class MoreLikeThis {
     public Query like(int docNum) throws IOException {
         if (fieldNames == null) {
             // gather list of valid fields from lucene
-            Collection fields = ir.getFieldNames(true);
+            Collection fields = ir.getFieldNames( IndexReader.FieldOption.INDEXED);
             fieldNames = (String[]) fields.toArray(new String[fields.size()]);
         }
 
@@ -479,7 +480,7 @@ public final class MoreLikeThis {
     public Query like(File f) throws IOException {
         if (fieldNames == null) {
             // gather list of valid fields from lucene
-            Collection fields = ir.getFieldNames(true);
+            Collection fields = ir.getFieldNames( IndexReader.FieldOption.INDEXED);
             fieldNames = (String[]) fields.toArray(new String[fields.size()]);
         }
 
@@ -536,7 +537,7 @@ public final class MoreLikeThis {
             }
 
             try {
-                query.add(tq, false, false);
+                query.add(tq, BooleanClause.Occur.SHOULD);
             }
             catch (BooleanQuery.TooManyClauses ignore) {
                 break;
