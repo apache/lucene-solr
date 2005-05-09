@@ -675,10 +675,12 @@ public final class MoreLikeThis {
         o.println();
         for (int i = 0; i < Math.min(25, len); i++) {
             Document d = hits.doc(i);
+			String summary = d.get( "summary");
             o.println("score  : " + hits.score(i));
             o.println("url    : " + d.get("url"));
             o.println("\ttitle  : " + d.get("title"));
-            o.println("\tsummary: " + d.get("summary"));
+			if ( summary != null)
+				o.println("\tsummary: " + d.get("summary"));
             o.println();
         }
     }
