@@ -44,6 +44,7 @@ import java.io.StringReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
 
 
 /**
@@ -798,8 +799,24 @@ public final class MoreLikeThis {
 
     /**
      * Find words for a more-like-this query former.
+	 * The result is a priority queue of arrays.
+	 * Each array has 6 elements.
+	 * The elements are:
+	 * <ol>
+	 * <li> The word (String)
+	 * <li> The top field that this word comes from (String)
+	 * <li> The score for this word (Float)
+	 * <li> The IDF value (Float)
+	 * <li> The frequency of this word in the index (Integer)
+	 * <li> The frequency of this word in the source document (Integer)	 	 
+	 * </ol>
+	 * This is a somewhat "advanced" routine, and in general only the 1st entry in the array is of interest.
+	 * This method is exposed so that you can identify the "interesting words" in a document.
+	 * For an easier method to call see {@link #retrieveInterestingTerms retrieveInterestingTerms()}.
      *
      * @param r the reader that has the content of the document
+	 * @return the most intresting words in the document
+	 * @see #retrieveInterestingTerms
      */
     public PriorityQueue retrieveTerms(Reader r) throws IOException {
         Map words = new HashMap();
@@ -809,6 +826,27 @@ public final class MoreLikeThis {
         }
         return createQueue(words);
     }
+
+	/**
+	 * Convenience routine to make it easy to return the most interesting words in a document.
+	 * More advanced users will call {@link #retrieveTerms(java.io.Reader) retrieveTerms()} directly.
+	 * @param r the source document
+	 * @return the most interesting words in the document
+	 *
+	 * @see #retrieveTerms(java.io.Reader)
+	 * @see #setMaxQueryTerms
+	 */
+	public String[] retrieveInterestingTerms( Reader r) throws IOException {
+		ArrayList al = new ArrayList( maxQueryTerms);
+		PriorityQueue pq = retrieveTerms( r);
+		Object cur;
+		while (((cur = pq.pop()) != null)) {
+            Object[] ar = (Object[]) cur;
+			al.add( ar[ 0]); // the 1st entry is the interesting word
+		}
+		String[] res = new String[ al.size()];
+		return (String[]) al.toArray( res);
+	}
 
     /**
      * PriorityQueue that orders words by score.
