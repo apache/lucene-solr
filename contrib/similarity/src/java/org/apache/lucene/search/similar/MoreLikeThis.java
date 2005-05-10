@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Collection;
@@ -128,6 +129,7 @@ import java.util.ArrayList;
  * <li> {@link #setMaxWordLen setMaxWordLen(...)}
  * <li> {@link #setMaxQueryTerms setMaxQueryTerms(...)}
  * <li> {@link #setMaxNumTokensParsed setMaxNumTokensParsed(...)}
+ * <li> {@link #setStopWords setStopWord(...)} 
  * </ul> 
  *
  * <hr>
@@ -200,6 +202,20 @@ public final class MoreLikeThis {
 	 * @see #setMaxWordLen	 
      */
     public static final int DEFAULT_MAX_WORD_LENGTH = 0;
+
+	/**
+	 * Default set of stopwords.
+	 * If null means to allow stop words.
+	 *
+	 * @see #setStopWords
+	 * @see #getStopWords
+	 */
+	public static final Set DEFAULT_STOP_WORDS = null;
+
+	/**
+	 * Current set of stop words.
+	 */
+	private Set stopWords = DEFAULT_STOP_WORDS;
 
     /**
      * Return a Query with no more than this many terms.
@@ -416,6 +432,30 @@ public final class MoreLikeThis {
     public void setMaxWordLen(int maxWordLen) {
         this.maxWordLen = maxWordLen;
     }
+
+	/**
+	 * Set the set of stopwords.
+	 * Any word in this set is considered "uninteresting" and ignored.
+	 * Even if your Analyzer allows stopwords, you might want to tell the MoreLikeThis code to ignore them, as
+	 * for the purposes of document similarity it seems reasonable to assume that "a stop word is never interesting".
+	 * 
+	 * @param stopWords set of stopwords, if null it means to allow stop words
+	 *
+	 * @see org.apache.lucene.analysis.StopFilter#makeStopSet StopFilter.makeStopSet()
+	 * @see #getStopWords	 
+	 */
+	public void setStopWords(Set stopWords) {
+		this.stopWords = stopWords;
+	}
+
+	/**
+	 * Get the current stop words being used.
+	 * @see #setStopWords
+	 */
+	public Set getStopWords() {
+		return stopWords;
+	}
+		
 
     /**
      * Returns the maximum number of query terms that will be included in any generated query.
@@ -791,6 +831,9 @@ public final class MoreLikeThis {
 			return true;
 		}
 		if (maxWordLen > 0 && len > maxWordLen) {
+			return true;
+		}
+		if (stopWords != null && stopWords.contains( term)) {
 			return true;
 		}
 		return false;
