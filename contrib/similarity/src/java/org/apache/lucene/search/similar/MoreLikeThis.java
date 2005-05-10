@@ -799,7 +799,7 @@ public final class MoreLikeThis {
 
     /**
      * Find words for a more-like-this query former.
-	 * The result is a priority queue of arrays.
+	 * The result is a priority queue of arrays with one entry for <b>every word</b> in the document.
 	 * Each array has 6 elements.
 	 * The elements are:
 	 * <ol>
@@ -815,7 +815,8 @@ public final class MoreLikeThis {
 	 * For an easier method to call see {@link #retrieveInterestingTerms retrieveInterestingTerms()}.
      *
      * @param r the reader that has the content of the document
-	 * @return the most intresting words in the document
+	 * @return the most intresting words in the document ordered by score, with the highest scoring, or best entry, first
+	 *
 	 * @see #retrieveInterestingTerms
      */
     public PriorityQueue retrieveTerms(Reader r) throws IOException {
@@ -840,7 +841,9 @@ public final class MoreLikeThis {
 		ArrayList al = new ArrayList( maxQueryTerms);
 		PriorityQueue pq = retrieveTerms( r);
 		Object cur;
-		while (((cur = pq.pop()) != null)) {
+		int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
+		// we just want to return the top words
+		while (((cur = pq.pop()) != null) && lim-- > 0) {
             Object[] ar = (Object[]) cur;
 			al.add( ar[ 0]); // the 1st entry is the interesting word
 		}
