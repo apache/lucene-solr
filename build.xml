@@ -415,7 +415,7 @@
         <!-- TODO: find a dynamic way to do include multiple source roots -->
         <packageset dir="src/java"/>
         <packageset dir="contrib/analyzers/src/java"/>
-        <packageset dir="contrib/WordNet/src/java"/>
+        <packageset dir="contrib/wordnet/src/java"/>
         <packageset dir="contrib/highlighter/src/java"/>
         <packageset dir="contrib/similarity/src/java"/>
         <packageset dir="contrib/spellchecker/src/java"/>
