@@ -17,10 +17,10 @@ package org.apache.lucene.analysis;
  */
 
 /**
- * A filter that replace accented characters in the ISO Latin 1 character set by
+ * A filter that replaces accented characters in the ISO Latin 1 character set by
  * their unaccented equivalent. The case will not be altered.
  * <p>
- * For instance, 'à' will be replaced by 'a'.
+ * For instance, '&agrave;' will be replaced by 'a'.
  * <p>
  */
 public class ISOLatin1AccentFilter extends TokenFilter {
