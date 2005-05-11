@@ -66,7 +66,7 @@ public class WordlistLoader {
    * @param path      Path to the wordlist
    * @param wordfile  Name of the wordlist
    * 
-   * @deprecated Use {@link #getWordSet(File)} getWordSet(File)} instead
+   * @deprecated Use {@link #getWordSet(File)} instead
    */
   public static Hashtable getWordtable(String path, String wordfile) throws IOException {
     return getWordtable(new File(path, wordfile));
@@ -75,7 +75,7 @@ public class WordlistLoader {
   /**
    * @param wordfile  Complete path to the wordlist
    * 
-   * @deprecated Use {@link #getWordSet(File)} getWordSet(File)} instead
+   * @deprecated Use {@link #getWordSet(File)} instead
    */
   public static Hashtable getWordtable(String wordfile) throws IOException {
     return getWordtable(new File(wordfile));
@@ -84,7 +84,7 @@ public class WordlistLoader {
   /**
    * @param wordfile  File object that points to the wordlist
    *
-   * @deprecated Use {@link #getWordSet(File)} getWordSet(File)} instead
+   * @deprecated Use {@link #getWordSet(File)} instead
    */
   public static Hashtable getWordtable(File wordfile) throws IOException {
     HashSet wordSet = (HashSet)getWordSet(wordfile);
