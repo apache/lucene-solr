@@ -2,6 +2,7 @@
 
 <project name="core" default="default" basedir=".">
 
+  <property name="junit.includes" value="**/Test*.java"/>
 
   <import file="common-build.xml"/>
 
@@ -391,6 +392,10 @@
 
   <target name="build-contrib" depends="compile-test">
     <contrib-crawl/>
+  </target>
+
+  <target name="test-contrib" depends="compile-test">
+    <contrib-crawl target="test"/>
   </target>
 
   <macrodef name="invoke-javadoc">
