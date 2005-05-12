@@ -1,0 +1,128 @@
+package org.apache.lucene.index;
+
+/**
+ * Copyright 2005 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.IOException;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.*;
+
+public class TestParallelReader extends TestCase {
+
+  private Searcher parallel;
+  private Searcher single;
+  
+  protected void setUp() throws Exception {
+    single = single();
+    parallel = parallel();
+  }
+
+  public void testQueries() throws Exception {
+    queryTest(new TermQuery(new Term("f1", "v1")));
+    queryTest(new TermQuery(new Term("f1", "v2")));
+    queryTest(new TermQuery(new Term("f2", "v1")));
+    queryTest(new TermQuery(new Term("f2", "v2")));
+    queryTest(new TermQuery(new Term("f3", "v1")));
+    queryTest(new TermQuery(new Term("f3", "v2")));
+    queryTest(new TermQuery(new Term("f4", "v1")));
+    queryTest(new TermQuery(new Term("f4", "v2")));
+
+    BooleanQuery bq1 = new BooleanQuery();
+    bq1.add(new TermQuery(new Term("f1", "v1")), Occur.MUST);
+    bq1.add(new TermQuery(new Term("f4", "v1")), Occur.MUST);
+    queryTest(bq1);
+
+  }
+
+  private void queryTest(Query query) throws IOException {
+    Hits parallelHits = parallel.search(query);
+    Hits singleHits = single.search(query);
+    assertEquals(parallelHits.length(), singleHits.length());
+    for(int i = 0; i < parallelHits.length(); i++) {
+      assertEquals(parallelHits.score(i), singleHits.score(i), 0.001f);
+      Document docParallel = parallelHits.doc(i);
+      Document docSingle = singleHits.doc(i);
+      assertEquals(docParallel.get("f1"), docSingle.get("f1"));
+      assertEquals(docParallel.get("f2"), docSingle.get("f2"));
+      assertEquals(docParallel.get("f3"), docSingle.get("f3"));
+      assertEquals(docParallel.get("f4"), docSingle.get("f4"));
+    }
+  }
+
+  // Fiels 1-4 indexed together:
+  private Searcher single() throws IOException {
+    Directory dir = new RAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), true);
+    Document d1 = new Document();
+    d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("f4", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    w.addDocument(d1);
+    Document d2 = new Document();
+    d2.add(new Field("f1", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("f3", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("f4", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    w.addDocument(d2);
+    w.close();
+
+    return new IndexSearcher(dir);
+  }
+
+  // Fields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:
+  private Searcher parallel() throws IOException {
+    Directory dir1 = new RAMDirectory();
+    IndexWriter w1 = new IndexWriter(dir1, new StandardAnalyzer(), true);
+    Document d1 = new Document();
+    d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    w1.addDocument(d1);
+    Document d2 = new Document();
+    d2.add(new Field("f1", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    w1.addDocument(d2);
+    w1.close();
+
+    Directory dir2 = new RAMDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(), true);
+    Document d3 = new Document();
+    d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    d3.add(new Field("f4", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    w2.addDocument(d3);
+    Document d4 = new Document();
+    d4.add(new Field("f3", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    d4.add(new Field("f4", "v2", Field.Store.YES, Field.Index.TOKENIZED));
+    w2.addDocument(d4);
+    w2.close();
+    
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+
+    return new IndexSearcher(pr);
+  }
+}

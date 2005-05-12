@@ -106,6 +106,9 @@ New features
     Each call to the iterator's next() method returns a Hit object.
     (Jeremy Rayner via Erik)
     
+16. Add ParallelReader, an IndexReader that combines separate indexes
+    over different fields into a single virtual index.  (Doug Cutting)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
