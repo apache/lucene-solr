@@ -234,35 +234,35 @@ public class ParallelReader extends IndexReader {
 
   private class ParallelTermEnum extends TermEnum {
     private String field;
-    private TermEnum enum;
+    private TermEnum termEnum;
 
     public ParallelTermEnum() throws IOException {
       field = (String)fieldToReader.firstKey();
       if (field != null)
-        enum = ((IndexReader)fieldToReader.get(field)).terms();
+        termEnum = ((IndexReader)fieldToReader.get(field)).terms();
     }
     
     public ParallelTermEnum(Term term) throws IOException {
       field = term.field();
-      enum = ((IndexReader)fieldToReader.get(field)).terms(term);
+      termEnum = ((IndexReader)fieldToReader.get(field)).terms(term);
     }
     
     public boolean next() throws IOException {
       if (field == null)
         return false;
 
-      boolean next = enum.next();
+      boolean next = termEnum.next();
 
       // still within field?
-      if (next && enum.term().field() == field)
+      if (next && termEnum.term().field() == field)
         return true;                              // yes, keep going
       
-      enum.close();                               // close old enum
+      termEnum.close();                           // close old termEnum
 
       // find the next field, if any
       field = (String)fieldToReader.tailMap(field).firstKey();
       if (field != null) {
-        enum = ((IndexReader)fieldToReader.get(field)).terms();
+        termEnum = ((IndexReader)fieldToReader.get(field)).terms();
         return true;
       }
 
@@ -270,9 +270,9 @@ public class ParallelReader extends IndexReader {
         
     }
 
-    public Term term() { return enum.term(); }
-    public int docFreq() { return enum.docFreq(); }
-    public void close() throws IOException { enum.close(); }
+    public Term term() { return termEnum.term(); }
+    public int docFreq() { return termEnum.docFreq(); }
+    public void close() throws IOException { termEnum.close(); }
 
   }
 
