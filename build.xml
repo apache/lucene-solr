@@ -382,7 +382,7 @@
   <macrodef name="contrib-crawl">
     <attribute name="target" default=""/>
     <sequential>
-      <subant target="@{target}" failonerror="true">
+      <subant target="@{target}" failonerror="false">
         <fileset dir="."
                  includes="contrib/*/build.xml"
         />
