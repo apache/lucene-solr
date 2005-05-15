@@ -241,22 +241,24 @@ class TermVectorsReader implements Cloneable {
     int start = 0;
     int deltaLength = 0;
     int totalLength = 0;
-    char [] buffer = {};
-    String previousString = "";
+    char [] buffer = new char[10];    // init the buffer with a length of 10 character
+    char[] previousBuffer = {};
     
     for (int i = 0; i < numTerms; i++) {
       start = tvf.readVInt();
       deltaLength = tvf.readVInt();
       totalLength = start + deltaLength;
-      if (buffer.length < totalLength)
-      {
+      if (buffer.length < totalLength) {  // increase buffer
+        buffer = null;    // give a hint to garbage collector
         buffer = new char[totalLength];
-        for (int j = 0; j < previousString.length(); j++)  // copy contents
-          buffer[j] = previousString.charAt(j);
+        
+        if (start > 0)  // just copy if necessary
+          System.arraycopy(previousBuffer, 0, buffer, 0, start);
       }
+      
       tvf.readChars(buffer, start, deltaLength);
       terms[i] = new String(buffer, 0, totalLength);
-      previousString = terms[i];
+      previousBuffer = buffer;
       int freq = tvf.readVInt();
       termFreqs[i] = freq;
       
