@@ -50,6 +50,20 @@ public class SpanTermQuery extends SpanQuery {
       return term.toString();
   }
 
+  /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (!(o instanceof SpanTermQuery))
+      return false;
+    SpanTermQuery other = (SpanTermQuery)o;
+    return (this.getBoost() == other.getBoost())
+      && this.term.equals(other.term);
+  }
+
+  /** Returns a hash code value for this object.*/
+  public int hashCode() {
+    return Float.floatToIntBits(getBoost()) ^ term.hashCode();
+  }
+
   public Spans getSpans(final IndexReader reader) throws IOException {
     return new Spans() {
         private TermPositions positions = reader.termPositions(term);
