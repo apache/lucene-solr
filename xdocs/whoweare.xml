@@ -13,7 +13,7 @@
 
 <section name="Committers">
 <ul>
-<li><b><a href="http://www.nutch.org/blog/cutting.html">Doug Cutting</a></b> (cutting at apache.org)
+<li><b><a href="http://www.nutch.org/blog/cutting.html">Doug Cutting</a></b> (cutting@...)
 
 <p>Lucene was originally written in Doug's spare time during late 1997
 and early 1998.  Doug had previously written search engines at Xerox's
@@ -27,24 +27,27 @@ href="http://www.nutch.org/">Nutch</a>, and is also available for
 limited contract work.</p>
 
 </li>
-<li><b><a href="http://www.jroller.com/page/otis">Otis Gospodnetic</a></b> (otis at apache.org)</li>
-<li><b>Brian Goetz</b> (briangoetz at apache.org)</li>
-<li><b>Scott Ganyo</b> (scottganyo at apache.org)</li>
-<li><b>Eugene Gluzberg</b> (drag0n at apache.org)</li>
-<li><b>Matt Tucker</b> (mtucker at apache.org)</li>
-<li><b>Cory Hubert</b> (clhubert at apache.org)</li>
-<li><b>Dave Kor</b> (davekor at apache.org)</li>
+<li><b><a href="http://www.jroller.com/page/otis">Otis Gospodnetic</a></b> (otis@...)</li>
+<li><b>Brian Goetz</b> (briangoetz@...)</li>
+<li><b>Scott Ganyo</b> (scottganyo@...)</li>
+<li><b>Eugene Gluzberg</b> (drag0n@...)</li>
+<li><b>Matt Tucker</b> (mtucker@...)</li>
+<li><b>Cory Hubert</b> (clhubert@...)</li>
+<li><b>Dave Kor</b> (davekor@...)</li>
 <li><b>Jon Stevens</b> (jon at latchkey.com)</li>
-<li><b>Tal Dayan</b> (zapta at apache.org)</li>
-<li><b>Andrew C. Oliver</b> (acoliver at apache dot org)</li>
-<li><b>Peter Carlson</b> (carlson at apache.org)</li>
-<li><b>Erik Hatcher</b> (ehatcher at apache.org)</li>
-<li><b>Dmitry Serebrennikov</b> (dmitrys at apache.org)</li>
-<li><b>Christoph Goller</b> (goller at apache.org)</li>
-<li><b>Tim Jones</b> (tjones at apache.org)</li>
-<li><b>Daniel Naber</b> (dnaber at apache.org)</li>
-<li><b>Bernhard Messer</b> (bmesser at apache.org)</li>
+<li><b>Tal Dayan</b> (zapta@...)</li>
+<li><b>Andrew C. Oliver</b> (acoliver@...)</li>
+<li><b>Peter Carlson</b> (carlson@...)</li>
+<li><b>Erik Hatcher</b> (ehatcher@...)</li>
+<li><b>Dmitry Serebrennikov</b> (dmitrys@...)</li>
+<li><b>Christoph Goller</b> (goller@...)</li>
+<li><b>Tim Jones</b> (tjones@...)</li>
+<li><b>Daniel Naber</b> (dnaber@...)</li>
+<li><b>Bernhard Messer</b> (bmesser@...)</li>
 </ul>
+
+<p>Note that the email addresses above end with @apache.org.</p>
+
 </section>
 
 <section name="Other Contributors">
