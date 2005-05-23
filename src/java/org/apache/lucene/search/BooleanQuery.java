@@ -20,12 +20,12 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
-import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents matching boolean combinations of other
-  * queries, typically {@link TermQuery}s or {@link PhraseQuery}s.
+  * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
+  * BooleanQuerys.
   */
 public class BooleanQuery extends Query {
   
