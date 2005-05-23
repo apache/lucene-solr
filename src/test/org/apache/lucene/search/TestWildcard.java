@@ -27,7 +27,7 @@ import org.apache.lucene.store.RAMDirectory;
 import java.io.IOException;
 
 /**
- * TestWildcard tests the '*' and '?' wildard characters.
+ * TestWildcard tests the '*' and '?' wildcard characters.
  *
  * @author Otis Gospodnetic
  */
@@ -74,7 +74,7 @@ public class TestWildcard
     query7.add(query3, BooleanClause.Occur.SHOULD);
     query7.add(query5, BooleanClause.Occur.SHOULD);
 
-// Queries do not automatically lower-case search terms:
+    // Queries do not automatically lower-case search terms:
     Query query8 = new WildcardQuery(new Term("body", "M*tal*"));
 
     assertMatches(searcher, query1, 1);
@@ -85,6 +85,9 @@ public class TestWildcard
     assertMatches(searcher, query6, 1);
     assertMatches(searcher, query7, 2);
     assertMatches(searcher, query8, 0);
+    assertMatches(searcher, new WildcardQuery(new Term("body", "*tall")), 0);
+    assertMatches(searcher, new WildcardQuery(new Term("body", "*tal")), 1);
+    assertMatches(searcher, new WildcardQuery(new Term("body", "*tal*")), 2);
   }
 
   /**
