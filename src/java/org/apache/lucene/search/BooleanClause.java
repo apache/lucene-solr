@@ -36,7 +36,7 @@ public class BooleanClause implements java.io.Serializable {
 
     /** Use this operator for terms that <i>must</i> appear in the matching documents. */
     public static final Occur MUST = new Occur("MUST");
-    /** Use this operator for terms of which <i>should</i> appear in the 
+    /** Use this operator for terms that <i>should</i> appear in the 
      * matching documents. For a BooleanQuery with two <code>SHOULD</code> 
      * subqueries, at least one of the queries must appear in the matching documents. */
     public static final Occur SHOULD = new Occur("SHOULD");
