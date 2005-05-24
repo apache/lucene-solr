@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.de;
 
 /**
  * A stemmer for German words. The algorithm is based on the report
- * "A Fast and Simple Stemming Algorithm for German Words" by Jörg
- * Caumanns (joerg.caumanns@isst.fhg.de).
+ * "A Fast and Simple Stemming Algorithm for German Words" by J&ouml;rg
+ * Caumanns (joerg.caumanns at isst.fhg.de).
  *
  * @author    Gerhard Schwarz
  * @version   $Id$
