@@ -128,9 +128,9 @@ public class SpanNearQuery extends SpanQuery {
   public int hashCode() {
     int result;
     result = clauses.hashCode();
-    result = 29 * result + slop;
-    result = 29 * result + (inOrder ? 1 : 0);
-    result = 29 * result + field.hashCode();
+    result += slop * 29;
+    result +=  (inOrder ? 1 : 0);
+    result ^= field.hashCode();
     return result;
   }
 }
