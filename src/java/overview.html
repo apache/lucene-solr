@@ -1,10 +1,10 @@
 <html>
 <head>
-   <title>Jakarta Lucene API</title>
+   <title>Apache Lucene API</title>
 </head>
 <body>
 
-<p>Jakarta Lucene is a high-performance, full-featured text search engine library.
+<p>Apache Lucene is a high-performance, full-featured text search engine library.
 Here's a simple example how to use Lucene for indexing and searching (using JUnit
 to check if the results are what we expect):</p>
 
@@ -27,6 +27,7 @@ to check if the results are what we expect):</p>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;if&nbsp;one&nbsp;exists):</font><br/>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//Directory&nbsp;directory&nbsp;=&nbsp;FSDirectory.getDirectory(&#34;/tmp/testindex&#34;,&nbsp;true);</font><br/>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">IndexWriter&nbsp;iwriter&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexWriter</font><font color="#000000">(</font><font color="#000000">directory,&nbsp;analyzer,&nbsp;</font><font color="#7f0055"><b>true</b></font><font color="#000000">)</font><font color="#000000">;</font><br/>
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.setMaxFieldLength</font><font color="#000000">(</font><font color="#990000">25000</font><font color="#000000">)</font><font color="#000000">;</font><br/>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Document&nbsp;doc&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Document</font><font color="#000000">()</font><font color="#000000">;</font><br/>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">String&nbsp;text&nbsp;=&nbsp;</font><font color="#2a00ff">&#34;This&nbsp;is&nbsp;the&nbsp;text&nbsp;to&nbsp;be&nbsp;indexed.&#34;</font><font color="#000000">;</font><br/>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">doc.add</font><font color="#000000">(</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Field</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">,&nbsp;text,&nbsp;Field.Store.YES,</font><br/>
