@@ -110,4 +110,27 @@ public class SpanNearQuery extends SpanQuery {
     return new NearSpans(this, reader);
   }
 
+  /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    final SpanNearQuery spanNearQuery = (SpanNearQuery) o;
+
+    if (inOrder != spanNearQuery.inOrder) return false;
+    if (slop != spanNearQuery.slop) return false;
+    if (!clauses.equals(spanNearQuery.clauses)) return false;
+    if (!field.equals(spanNearQuery.field)) return false;
+
+    return true;
+  }
+  
+  public int hashCode() {
+    int result;
+    result = clauses.hashCode();
+    result = 29 * result + slop;
+    result = 29 * result + (inOrder ? 1 : 0);
+    result = 29 * result + field.hashCode();
+    return result;
+  }
 }
