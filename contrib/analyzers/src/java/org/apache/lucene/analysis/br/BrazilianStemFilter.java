@@ -26,14 +26,9 @@ import java.util.Hashtable;
 import java.util.Set;
 
 /**
- * Based on (copied) the GermanStemFilter
+ * Based on GermanStemFilter
  *
- * @author João Kramer
- *         <p/>
- *         <p/>
- *         A filter that stemms german words. It supports a table of words that should
- *         not be stemmed at all.
- * @author Gerhard Schwarz
+ * @author Jo&atilde;o Kramer
  */
 public final class BrazilianStemFilter extends TokenFilter {
 

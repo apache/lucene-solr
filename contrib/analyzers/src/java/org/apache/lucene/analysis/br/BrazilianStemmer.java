@@ -17,11 +17,7 @@ package org.apache.lucene.analysis.br;
  */
 
 /**
- * A stemmer for brazilian words. The algorithm is based on the report
- * "A Fast and Simple Stemming Algorithm for German Words" by Jörg
- * Caumanns (joerg.caumanns@isst.fhg.de).
- *
- * @author    Gerhard Schwarz
+ * A stemmer for Brazilian words.
  */
 public class BrazilianStemmer {
 
