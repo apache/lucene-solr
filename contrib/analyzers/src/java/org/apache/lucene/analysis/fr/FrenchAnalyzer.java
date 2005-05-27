@@ -32,19 +32,19 @@ import java.util.Hashtable;
 import java.util.Set;
 
 /**
- * Analyzer for french language. Supports an external list of stopwords (words that
+ * Analyzer for French language. Supports an external list of stopwords (words that
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
- * A default set of stopwords is used unless an other list is specified, the
- * exclusionlist is empty by default.
+ * A default set of stopwords is used unless an alternative list is specified, the
+ * exclusion list is empty by default.
  *
- * @author Patrick Talbot (based on Gerhard Schwarz work for German)
+ * @author Patrick Talbot (based on Gerhard Schwarz's work for German)
  * @version $Id$
  */
 public final class FrenchAnalyzer extends Analyzer {
 
   /**
-   * Extended list of typical french stopwords.
+   * Extended list of typical French stopwords.
    */
   public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
@@ -142,7 +142,7 @@ public final class FrenchAnalyzer extends Analyzer {
   public final TokenStream tokenStream(String fieldName, Reader reader) {
 
     if (fieldName == null) throw new IllegalArgumentException("fieldName must not be null");
-    if (reader == null) throw new IllegalArgumentException("readermust not be null");
+    if (reader == null) throw new IllegalArgumentException("reader must not be null");
 
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);

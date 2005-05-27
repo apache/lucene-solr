@@ -31,16 +31,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Analyzer for brazilian language. Supports an external list of stopwords (words that
+ * Analyzer for Brazilian language. Supports an external list of stopwords (words that
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
  *
- * @author    Jo�o Kramer
+ * @author    Jo&atilde;o Kramer
  */
 public final class BrazilianAnalyzer extends Analyzer {
 
 	/**
-	 * List of typical german stopwords.
+	 * List of typical Brazilian stopwords.
 	 */
 	public final static String[] BRAZILIAN_STOP_WORDS = {
       "a","ainda","alem","ambas","ambos","antes",
@@ -68,6 +68,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	 * Contains the stopwords used with the StopFilter.
 	 */
 	private Set stoptable = new HashSet();
+	
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */

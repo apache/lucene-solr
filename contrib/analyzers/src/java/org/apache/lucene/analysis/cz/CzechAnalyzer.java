@@ -105,7 +105,7 @@ public final class CzechAnalyzer extends Analyzer {
     /**
      * Loads stopwords hash from resource stream (file, database...).
      * @param   wordfile    File containing the wordlist
-     * @param   encoding    Encoding used (win-1250, iso-8859-2, ...}, null for default system encoding
+     * @param   encoding    Encoding used (win-1250, iso-8859-2, ...), null for default system encoding
      */
     public void loadStopWords( InputStream wordfile, String encoding ) {
         if ( wordfile == null ) {
@@ -122,7 +122,6 @@ public final class CzechAnalyzer extends Analyzer {
             else
                 isr = new InputStreamReader(wordfile, encoding);
 
-
             LineNumberReader lnr = new LineNumberReader(isr);
             String word;
             while ( ( word = lnr.readLine() ) != null ) {
@@ -138,7 +137,7 @@ public final class CzechAnalyzer extends Analyzer {
 	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
 	 *
 	 * @return  A TokenStream build from a StandardTokenizer filtered with
-	 * 			StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter
+	 * 			StandardFilter, LowerCaseFilter, and StopFilter
 	 */
 	public final TokenStream tokenStream( String fieldName, Reader reader ) {
 		TokenStream result = new StandardTokenizer( reader );
