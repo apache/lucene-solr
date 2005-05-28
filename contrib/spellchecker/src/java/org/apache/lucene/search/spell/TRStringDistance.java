@@ -20,7 +20,7 @@ package org.apache.lucene.search.spell;
 /**
  * Edit distance  class
  */
-public final class TRStringDistance {
+final class TRStringDistance {
 
     final char[] sa;
     final int n;
