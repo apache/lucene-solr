@@ -25,8 +25,10 @@ import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.IndexReader;
 
 /** A Query that matches documents containing a particular sequence of terms.
-  This may be combined with other terms with a {@link BooleanQuery}.
-  */
+ * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
+ * 
+ * <p>This query may be combined with other terms or queries with a {@link BooleanQuery}.
+ */
 public class PhraseQuery extends Query {
   private String field;
   private Vector terms = new Vector();

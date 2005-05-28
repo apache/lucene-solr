@@ -22,7 +22,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
 
-/** A Query that matches documents containing terms with a specified prefix. */
+/** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
+ * is built by QueryParser for input like <code>app*</code>. */
 public class PrefixQuery extends Query {
   private Term prefix;
 

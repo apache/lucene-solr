@@ -23,7 +23,8 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
 
 /**
- * A Query that matches documents within an exclusive range.
+ * A Query that matches documents within an exclusive range. A RangeQuery
+ * is built by QueryParser for input like <code>[010 TO 120]</code>.
  *
  * @version $Id$
  */
