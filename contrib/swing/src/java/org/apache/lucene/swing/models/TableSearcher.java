@@ -49,18 +49,18 @@ import javax.swing.table.*;
  * easy to add searching functionaliy to existing JTables -- or
  * making new search capable table lucene.
  *
- * This decorator works by holding a reference to a decorated ot inner
+ * <p>This decorator works by holding a reference to a decorated ot inner
  * TableModel. All data is stored within that table model, not this
  * table model. Rather, this table model simply manages links to
  * data in the inner table model according to the search. All methods on
  * TableSearcher forward to the inner table model with subtle filtering
  * or alteration according to the search criteria.
  *
- * Using the table model:
+ * <p>Using the table model:
  *
  * Pass the TableModel you want to decorate in at the constructor. When
  * the TableModel initializes, it displays all search results. Call
- * the search methid with any vaid Lucene search String and the data
+ * the search method with any valid Lucene search String and the data
  * will be filtered by the search string. Users can always clear the search
  * at any time by searching with an empty string. Additionally, you can
  * add a button calling the clearSearch() method.
