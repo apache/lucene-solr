@@ -26,7 +26,7 @@ import org.apache.lucene.index.Term;
 import java.io.*;
 
 /**
- * Lucene Dictionnary
+ * Lucene Dictionary
  *
  * @author Nicolas Maisonneuve
  */

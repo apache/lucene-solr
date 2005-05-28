@@ -18,8 +18,8 @@ package org.apache.lucene.search.spell;
  */
 
 /**
- *  SuggestWord Class
- *  used in suggestSimilat method in SpellChecker class
+ *  SuggestWord Class, used in suggestSimilar method in SpellChecker class.
+ * 
  *  @author Nicolas Maisonneuve
  */
  final class SuggestWord {

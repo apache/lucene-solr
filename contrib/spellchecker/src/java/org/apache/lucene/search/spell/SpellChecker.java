@@ -42,15 +42,16 @@ import java.util.*;
  * (initially inspired by the David Spencer code).
  *  </p>
  *  
- *  <p>
- *  Spell Checker spellchecker= new SpellChecker (spellDirectory);<br/>
- *  <br/>
- *  //To index a field of a user index <br/>
- *  spellchecker.indexDictionary(new LuceneDictionary(my_lucene_reader, a_field));<br/>
- *<br/>
- *   //To index a file containing words  <br/>
- *  spellchecker.indexDictionary(new PlainTextDictionary(new File("myfile.txt")));<br/>
- *</p>
+ *  <p>Example Usage:
+ * 
+ * <pre>
+ *  SpellChecker spellchecker = new SpellChecker(spellIndexDirectory);
+ *  // To index a field of a user index:
+ *  spellchecker.indexDictionary(new LuceneDictionary(my_lucene_reader, a_field));
+ *  // To index a file containing words:
+ *  spellchecker.indexDictionary(new PlainTextDictionary(new File("myfile.txt")));
+ *  String[] suggestions = spellchecker.suggestSimilar("misspelt", 5);
+ * </pre>
  * 
  * @author Nicolas Maisonneuve
  * @version 1.0
@@ -83,8 +84,7 @@ public class SpellChecker {
 
 
     /**
-     *  Set the accuraty 0<min<1 default 0.5
-     * @param min float
+     *  Set the accuracy 0 &lt; min &lt; 1; default 0.5
      */
     public void setAccuraty (float min) {
         this.min=min;
@@ -109,17 +109,17 @@ public class SpellChecker {
 
 
     /**
-     * Suggest similar words (restricted or not of a field of a user index)
+     * Suggest similar words (restricted or not to a field of a user index)
      * @param word String the word you want a spell check done on
      * @param num_sug int the number of suggest words
      * @param ir the indexReader of the user index (can be null see field param)
-     * @param field String the field of the user index: if field is not null ,the suggest
+     * @param field String the field of the user index: if field is not null, the suggested
      * words are restricted to the words present in this field.
      * @param morePopular boolean return only the suggest words that are more frequent than the searched word
      * (only if restricted mode = (indexReader!=null and field!=null)
      * @throws IOException
-     * @return String[] the sorted list of the suggest words with this 2 criteri
-     * first criteria : the edit distance, second criteria (only if restricted mode): the popularity
+     * @return String[] the sorted list of the suggest words with this 2 criteria:
+     * first criteria: the edit distance, second criteria (only if restricted mode): the popularity
      * of the suggest words in the field of the user index
      */
     public String[] suggestSimilar (String word, int num_sug, IndexReader ir, String field
@@ -249,10 +249,10 @@ public class SpellChecker {
 
 
     /**
-     * if the word exist in the index
+     * Check whether the word exists in the index.
      * @param word String
      * @throws IOException
-     * @return boolean
+     * @return true iff the word exists in the index
      */
     public boolean exist (String word) throws IOException {
         if (reader==null) {
@@ -319,7 +319,6 @@ public class SpellChecker {
             return 3;
         }
         return 2;
-
     }
 
 

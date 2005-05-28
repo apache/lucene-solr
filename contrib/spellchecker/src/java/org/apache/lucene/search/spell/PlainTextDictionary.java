@@ -25,11 +25,12 @@ import java.io.*;
 
 
 /**
- * dictionary represented by a file text
- * Format allowed: 1 word per line:
- * word1
- * word2
- * word3
+ * Dictionary represented by a file text.
+ * 
+ * <p>Format allowed: 1 word per line:<br>
+ * word1<br>
+ * word2<br>
+ * word3<br>
  *
  * @author Nicolas Maisonneuve
  */
