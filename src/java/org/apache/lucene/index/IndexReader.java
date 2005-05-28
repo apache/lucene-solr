@@ -44,6 +44,9 @@ import java.util.Set;
  document in the index.  These document numbers are ephemeral--they may change
  as documents are added to and deleted from an index.  Clients should thus not
  rely on a given document having the same number between sessions.
+ 
+ <p> An IndexReader can be opened on a directory for which an IndexWriter is
+ opened already, but it cannot be used to delete documents from the index then.
 
  @author Doug Cutting
  @version $Id$

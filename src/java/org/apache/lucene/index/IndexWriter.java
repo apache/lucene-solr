@@ -44,9 +44,14 @@ import org.apache.lucene.analysis.Analyzer;
   href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a> method.  
   When finished adding documents, <a href="#close()"><b>close</b></a> should be called.
 
-  If an index will not have more documents added for a while and optimal search
+  <p>If an index will not have more documents added for a while and optimal search
   performance is desired, then the <a href="#optimize()"><b>optimize</b></a>
   method should be called before the index is closed.
+  
+  <p>Opening an IndexWriter creates a lock file for the directory in use. Trying to open
+  another IndexWriter on the same directory will lead to an IOException. The IOException
+  is also thrown if an IndexReader on the same directory is used to delete documents
+  from the index.
   */
 
 public class IndexWriter {
