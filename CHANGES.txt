@@ -155,6 +155,10 @@ Bug fixes
     on such automatically generated queries are no longer penalized
     for not matching all terms.  (Doug Cutting, Patch #33472)
 
+ 7. Getting a lock file with Lock.obtain(long) was supposed to wait for
+    a given amount of milliseconds, but this didn't work.
+    (John Wang via Daniel Naber, Bug #33799)
+ 
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)

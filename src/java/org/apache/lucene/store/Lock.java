@@ -54,7 +54,7 @@ public abstract class Lock {
     int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
     int sleepCount = 0;
     while (!locked) {
-      if (++sleepCount == maxSleepCount) {
+      if (sleepCount++ == maxSleepCount) {
         throw new IOException("Lock obtain timed out: " + this.toString());
       }
       try {
