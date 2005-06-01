@@ -1177,6 +1177,26 @@ limitations under the License.
       </td></tr>
       <tr><td><br/></td></tr>
     </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Compound Files"><strong>Compound Files</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>Starting with Lucene 1.4 the compound file format became default. This
+            	is simply a container for all files described in the next section.</p>
+                                                <p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;<sup>FileCount</sup>,
+            		FileData<sup>FileCount</sup></p>
+                                                <p>FileCount --&gt; VInt</p>
+                                                <p>DataOffset --&gt; Long</p>
+                                                <p>FileName --&gt; String</p>
+                                                <p>FileData --&gt; raw file data</p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
                             </blockquote>
         </p>
       </td></tr>

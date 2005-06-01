@@ -789,6 +789,25 @@
                     String
                 </p>
             </subsection>
+
+            <subsection name="Compound Files">
+            
+            	<p>Starting with Lucene 1.4 the compound file format became default. This
+            	is simply a container for all files described in the next section.</p>
+            	
+            	<p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;<sup>FileCount</sup>,
+            		FileData<sup>FileCount</sup></p>
+            	
+            	<p>FileCount --&gt; VInt</p>
+            	
+            	<p>DataOffset --&gt; Long</p>
+
+            	<p>FileName --&gt; String</p>
+
+            	<p>FileData --&gt; raw file data</p>
+            	
+            </subsection>
+
         </section>
 
         <section name="Per-Segment Files">
