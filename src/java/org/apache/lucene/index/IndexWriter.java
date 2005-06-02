@@ -547,6 +547,9 @@ public class IndexWriter {
   public synchronized void addIndexes(Directory[] dirs)
       throws IOException {
     optimize();					  // start with zero or 1 seg
+
+    int start = segmentInfos.size();
+
     for (int i = 0; i < dirs.length; i++) {
       SegmentInfos sis = new SegmentInfos();	  // read infos from dir
       sis.read(dirs[i]);
@@ -554,6 +557,16 @@ public class IndexWriter {
         segmentInfos.addElement(sis.info(j));	  // add each info
       }
     }
+    
+    // merge newly added segments in log(n) passes
+    while (segmentInfos.size() > start+mergeFactor) {
+      for (int base = start+1; base < segmentInfos.size(); base++) {
+        int end = Math.min(segmentInfos.size(), base+mergeFactor);
+        if (end-base > 1)
+          mergeSegments(base, end);
+      }
+    }
+
     optimize();					  // final cleanup
   }
 
@@ -659,12 +672,19 @@ public class IndexWriter {
     and pushes the merged index onto the top of the segmentInfos stack. */
   private final void mergeSegments(int minSegment)
       throws IOException {
+    mergeSegments(minSegment, segmentInfos.size());
+  }
+
+  /** Merges the named range of segments, replacing them in the stack with a
+   * single segment. */
+  private final void mergeSegments(int minSegment, int end)
+    throws IOException {
     final String mergedName = newSegmentName();
     if (infoStream != null) infoStream.print("merging segments");
     SegmentMerger merger = new SegmentMerger(this, mergedName);
 
     final Vector segmentsToDelete = new Vector();
-    for (int i = minSegment; i < segmentInfos.size(); i++) {
+    for (int i = minSegment; i < end; i++) {
       SegmentInfo si = segmentInfos.info(i);
       if (infoStream != null)
         infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
@@ -681,7 +701,8 @@ public class IndexWriter {
       infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
     }
 
-    segmentInfos.setSize(minSegment);          // pop old infos & add new
+    for (int i = end-1; i >= minSegment; i--)     // remove old infos & add new
+      segmentInfos.remove(i);
     segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
                                             directory));
 

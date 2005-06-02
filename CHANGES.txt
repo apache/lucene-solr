@@ -113,7 +113,6 @@ New features
     fields in arbitrarily formats can be cached as ints and floats.
     (Doug Cutting)
 
-
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
@@ -169,7 +168,6 @@ Bug fixes
     corrupted when the old version of a file was longer than the new.
     Now any existing file is first removed.  (Doug Cutting)
 
-
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
@@ -209,6 +207,11 @@ Optimizations
     random access is not required, e.g., when merging segments.  The
     term index is now read into memory lazily at the first
     random-access.  (Doug Cutting)
+
+ 9. Optimize IndexWriter.addIndexes(Directory[]) when the number of
+    added indexes is larger than mergeFactor.  Previously this could
+    result in quadratic performance.  Now performance is n log(n).
+    (Doug Cutting)
 
 Infrastructure
 
