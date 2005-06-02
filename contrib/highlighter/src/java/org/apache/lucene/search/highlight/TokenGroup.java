@@ -34,19 +34,22 @@ public class TokenGroup
 
 	void addToken(Token token, float score)
 	{
-		if(numTokens==0)
-		{
-			startOffset=token.startOffset();		
-			endOffset=token.endOffset();		
-		}
-		else
-		{
-			startOffset=Math.min(startOffset,token.startOffset());		
-			endOffset=Math.max(endOffset,token.endOffset());		
-		}
-		tokens[numTokens]=token;
-		scores[numTokens]=score;
-		numTokens++;
+	    if(numTokens < MAX_NUM_TOKENS_PER_GROUP)
+        {	    
+			if(numTokens==0)
+			{
+				startOffset=token.startOffset();		
+				endOffset=token.endOffset();		
+			}
+			else
+			{
+				startOffset=Math.min(startOffset,token.startOffset());		
+				endOffset=Math.max(endOffset,token.endOffset());		
+			}
+			tokens[numTokens]=token;
+			scores[numTokens]=score;
+			numTokens++;
+        }
 	}
 	
 	boolean isDistinct(Token token)
@@ -116,5 +119,4 @@ public class TokenGroup
 		}
 		return total;
 	}
-
 }
