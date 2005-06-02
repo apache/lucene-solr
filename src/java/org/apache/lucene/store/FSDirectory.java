@@ -241,7 +241,7 @@ public class FSDirectory extends Directory {
   public void deleteFile(String name) throws IOException {
     File file = new File(directory, name);
     if (!file.delete())
-      throw new IOException("Cannot delete " + name);
+      throw new IOException("Cannot delete " + file);
   }
 
   /** Renames an existing file in the directory. */
@@ -256,7 +256,7 @@ public class FSDirectory extends Directory {
 
     if (nu.exists())
       if (!nu.delete())
-        throw new IOException("Cannot delete " + to);
+        throw new IOException("Cannot delete " + nu);
 
     // Rename the old file to the new one. Unfortunately, the renameTo()
     // method does not work reliably under some JVMs.  Therefore, if the
@@ -282,7 +282,7 @@ public class FSDirectory extends Directory {
         old.delete();
       }
       catch (IOException ioe) {
-        throw new IOException("Cannot rename " + from + " to " + to);
+        throw new IOException("Cannot rename " + old + " to " + nu);
       }
       finally {
         if (in != null) {
@@ -306,7 +306,11 @@ public class FSDirectory extends Directory {
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
   public IndexOutput createOutput(String name) throws IOException {
-    return new FSIndexOutput(new File(directory, name));
+    File file = new File(directory, name);
+    if (file.exists() && !file.delete())          // delete existing, if any
+      throw new IOException("Cannot overwrite: " + file);
+
+    return new FSIndexOutput(file);
   }
 
   /** Returns a stream reading an existing file. */

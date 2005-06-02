@@ -164,6 +164,12 @@ Bug fixes
     a given amount of milliseconds, but this didn't work.
     (John Wang via Daniel Naber, Bug #33799)
  
+ 8. Fix FSDirectory.createOutput() to always create new files.
+    Previously, existing files were overwritten, and an index could be
+    corrupted when the old version of a file was longer than the new.
+    Now any existing file is first removed.  (Doug Cutting)
+
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
