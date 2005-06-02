@@ -34,7 +34,7 @@ import java.io.IOException;
  *         fileCount entries with the following structure:</li>
  *         <ul>
  *             <li>long dataOffset</li>
- *             <li>UTFString extension</li>
+ *             <li>String fileName</li>
  *         </ul>
  *     <li>{File Data}
  *         fileCount entries with the raw data of the corresponding file</li>
@@ -42,8 +42,8 @@ import java.io.IOException;
  *
  * The fileCount integer indicates how many files are contained in this compound
  * file. The {directory} that follows has that many entries. Each directory entry
- * contains an encoding identifier, a long pointer to the start of this file's
- * data section, and a UTF String with that file's extension.
+ * contains a long pointer to the start of this file's data section, and a String
+ * with that file's name.
  *
  * @author Dmitry Serebrennikov
  * @version $Id$
