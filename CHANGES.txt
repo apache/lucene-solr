@@ -109,6 +109,11 @@ New features
 16. Add ParallelReader, an IndexReader that combines separate indexes
     over different fields into a single virtual index.  (Doug Cutting)
 
+17. Add IntParser and FloatParser interfaces to FieldCache, so that
+    fields in arbitrarily formats can be cached as ints and floats.
+    (Doug Cutting)
+
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 

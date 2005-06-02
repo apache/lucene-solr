@@ -52,6 +52,22 @@ public interface FieldCache {
     }
   }
 
+  /** Interface to parse ints from document fields.
+   * @see #getInts(IndexReader, String, IntParser)
+   */
+  public interface IntParser {
+    /** Return an integer representation of this field's value. */
+    public int parseInt(String string);
+  }
+
+
+  /** Interface to parse floats from document fields.
+   * @see #getFloats(IndexReader, String, FloatParser)
+   */
+  public interface FloatParser {
+    /** Return an float representation of this field's value. */
+    public float parseFloat(String string);
+  }
 
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
@@ -69,6 +85,19 @@ public interface FieldCache {
   public int[] getInts (IndexReader reader, String field)
   throws IOException;
 
+  /** Checks the internal cache for an appropriate entry, and if none is found,
+   * reads the terms in <code>field</code> as integers and returns an array of
+   * size <code>reader.maxDoc()</code> of the value each document has in the
+   * given field.
+   * @param reader  Used to get field values.
+   * @param field   Which field contains the integers.
+   * @param parser  Computes integer for string values.
+   * @return The values in the given field for each document.
+   * @throws IOException  If any error occurs.
+   */
+  public int[] getInts (IndexReader reader, String field, IntParser parser)
+  throws IOException;
+
   /** Checks the internal cache for an appropriate entry, and if
    * none is found, reads the terms in <code>field</code> as floats and returns an array
    * of size <code>reader.maxDoc()</code> of the value each document
@@ -80,6 +109,19 @@ public interface FieldCache {
    */
   public float[] getFloats (IndexReader reader, String field)
   throws IOException;
+
+  /** Checks the internal cache for an appropriate entry, and if
+   * none is found, reads the terms in <code>field</code> as floats and returns an array
+   * of size <code>reader.maxDoc()</code> of the value each document
+   * has in the given field.
+   * @param reader  Used to get field values.
+   * @param field   Which field contains the floats.
+   * @param parser  Computes float for string values.
+   * @return The values in the given field for each document.
+   * @throws IOException  If any error occurs.
+   */
+  public float[] getFloats (IndexReader reader, String field,
+                            FloatParser parser) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code> and returns an array

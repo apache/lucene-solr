@@ -81,6 +81,17 @@ implements FieldCache {
     }
   }
 
+  private static final IntParser INT_PARSER = new IntParser() {
+      public int parseInt(String value) {
+        return Integer.parseInt(value);
+      }
+    };
+
+  private static final FloatParser FLOAT_PARSER = new FloatParser() {
+      public float parseFloat(String value) {
+        return Float.parseFloat(value);
+      }
+    };
 
   /** The internal cache. Maps Entry to array of interpreted term values. **/
   final Map cache = new WeakHashMap();
@@ -132,10 +143,15 @@ implements FieldCache {
   }
 
   // inherit javadocs
-  public int[] getInts (IndexReader reader, String field)
+  public int[] getInts (IndexReader reader, String field) throws IOException {
+    return getInts(reader, field, INT_PARSER);
+  }
+
+  // inherit javadocs
+  public int[] getInts (IndexReader reader, String field, IntParser parser)
   throws IOException {
     field = field.intern();
-    Object ret = lookup (reader, field, SortField.INT);
+    Object ret = lookup (reader, field, parser);
     if (ret == null) {
       final int[] retArray = new int[reader.maxDoc()];
       if (retArray.length > 0) {
@@ -159,7 +175,7 @@ implements FieldCache {
           termEnum.close();
         }
       }
-      store (reader, field, SortField.INT, retArray);
+      store (reader, field, parser, retArray);
       return retArray;
     }
     return (int[]) ret;
@@ -167,9 +183,15 @@ implements FieldCache {
 
   // inherit javadocs
   public float[] getFloats (IndexReader reader, String field)
-  throws IOException {
+    throws IOException {
+    return getFloats(reader, field, FLOAT_PARSER);
+  }
+
+  // inherit javadocs
+  public float[] getFloats (IndexReader reader, String field,
+                            FloatParser parser) throws IOException {
     field = field.intern();
-    Object ret = lookup (reader, field, SortField.FLOAT);
+    Object ret = lookup (reader, field, parser);
     if (ret == null) {
       final float[] retArray = new float[reader.maxDoc()];
       if (retArray.length > 0) {
@@ -193,7 +215,7 @@ implements FieldCache {
           termEnum.close();
         }
       }
-      store (reader, field, SortField.FLOAT, retArray);
+      store (reader, field, parser, retArray);
       return retArray;
     }
     return (float[]) ret;
@@ -388,7 +410,7 @@ implements FieldCache {
           termEnum.close();
         }
       }
-      store (reader, field, SortField.CUSTOM, retArray);
+      store (reader, field, comparator, retArray);
       return retArray;
     }
     return (Comparable[]) ret;
