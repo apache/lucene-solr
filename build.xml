@@ -120,58 +120,8 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="docs-prepare">
-    <fail unless="asf.site.home">
-      Set the property asf.site.home.  This can be done using one of the following methods:
-
-        * run Ant with the switch -Dasf.site.home=/path/to/asf/site/module
-        * Add asf.site.home to a build.properties file in the top-level Lucene directory
-      
-    </fail>
-    <available
-      classname="org.apache.velocity.anakia.AnakiaTask"
-      property="AnakiaTask.present">
-      <classpath id="anakia.classpath">
-        <fileset dir="${asf.site.home}/lib">
-          <include name="*.jar"/>
-        </fileset>
-      </classpath>
-    </available>
-  </target>
-
-  <target name="prepare-error" depends="docs-prepare" unless="AnakiaTask.present">
-    <echo>
-      AnakiaTask is not present! Please check to make sure that
-      you have asf.site.home (currently ${asf.site.home}) set correctly.
-    </echo>
-  </target>
-
-  <target name="docs" depends="prepare-error" if="AnakiaTask.present">
-    <taskdef
-      name="anakia"
-      classname="org.apache.velocity.anakia.AnakiaTask">
-      <classpath refid="anakia.classpath"/>
-    </taskdef>
-
-    <anakia
-      basedir="xdocs"
-      destdir="docs/"
-      extension=".html" style="./site.vsl"
-      projectFile="stylesheets/project.xml"
-      excludes="**/stylesheets/** empty.xml"
-      includes="**/*.xml"
-      lastModifiedCheck="true"
-      templatePath="${asf.site.home}/xdocs/stylesheets"
-    />
-
-    <copy todir="docs/images" filtering="no">
-      <fileset dir="xdocs/images">
-        <include name="**/*.gif"/>
-        <include name="**/*.jpeg"/>
-        <include name="**/*.jpg"/>
-      </fileset>
-    </copy>
-
+  <target name="docs">
+    <ant dir="site" inheritAll="false"/>
   </target>
 
   <target name="javadocs">
