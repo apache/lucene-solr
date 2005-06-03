@@ -90,9 +90,6 @@ public class TestSpansAdvanced extends TestCase {
     /**
      * Tests two span queries.
      *
-     * ERROR: Lucene returns the incorrect number of results and the scoring for
-     * the results is incorrect.
-     *
      * @throws IOException
      */
     public void testBooleanQueryWithSpanQueries() throws IOException {
@@ -102,9 +99,6 @@ public class TestSpansAdvanced extends TestCase {
 
     /**
      * Tests two span queries.
-     *
-     * ERROR: Lucene returns the incorrect number of results and the scoring for
-     * the results is incorrect.
      *
      * @throws IOException
      */
