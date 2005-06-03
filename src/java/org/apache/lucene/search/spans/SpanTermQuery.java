@@ -89,6 +89,11 @@ public class SpanTermQuery extends SpanQuery {
         }
 
         public boolean skipTo(int target) throws IOException {
+          // are we already at the correct position?
+          if (doc >= target) {
+            return true;
+          }
+
           if (!positions.skipTo(target)) {
             doc = Integer.MAX_VALUE;
             return false;

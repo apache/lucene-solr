@@ -168,6 +168,10 @@ Bug fixes
     corrupted when the old version of a file was longer than the new.
     Now any existing file is first removed.  (Doug Cutting)
 
+ 9. Fix BooleanQuery containing nested SpanTermQuery's, which previously
+    could return an incorrect number of hits.
+    (Reece Wilton via Erik Hatcher, Bug #35157)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
