@@ -446,7 +446,7 @@ public class IndexWriter {
 
   /**
    * Adds a document to this index.  If the document contains more than
-   * {@link #maxFieldLength} terms for a given field, the remainder are
+   * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
    */
   public void addDocument(Document doc) throws IOException {
@@ -456,7 +456,7 @@ public class IndexWriter {
   /**
    * Adds a document to this index, using the provided analyzer instead of the
    * value of {@link #getAnalyzer()}.  If the document contains more than
-   * {@link #maxFieldLength} terms for a given field, the remainder are
+   * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
    */
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
