@@ -48,6 +48,27 @@ public class TestIndexReader extends TestCase
         super(name);
     }
 
+    public void testIsCurrent() throws Exception
+    {
+      RAMDirectory d = new RAMDirectory();
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true);
+      addDocumentWithFields(writer);
+      writer.close();
+      // set up reader:
+      IndexReader reader = IndexReader.open(d);
+      assertTrue(reader.isCurrent());
+      // modify index by adding another document:
+      writer = new IndexWriter(d, new StandardAnalyzer(), false);
+      addDocumentWithFields(writer);
+      writer.close();
+      assertFalse(reader.isCurrent());
+      // re-create index:
+      writer = new IndexWriter(d, new StandardAnalyzer(), true);
+      addDocumentWithFields(writer);
+      writer.close();
+      assertFalse(reader.isCurrent());
+      reader.close();
+    }
 
     /**
      * Tests the IndexReader.getFieldNames implementation

@@ -29,7 +29,11 @@ final class SegmentInfos extends Vector {
   public static final int FORMAT = -1;
   
   public int counter = 0;    // used to name new segments
-  private long version = 0; //counts how often the index has been changed by adding or deleting docs
+  /**
+   * counts how often the index has been changed by adding or deleting docs.
+   * starting with the current time in milliseconds forces to create unique version numbers.
+   */
+  private long version = System.currentTimeMillis();
 
   public final SegmentInfo info(int i) {
     return (SegmentInfo) elementAt(i);
@@ -59,7 +63,7 @@ final class SegmentInfos extends Vector {
       
       if(format >= 0){    // in old format the version number may be at the end of the file
         if (input.getFilePointer() >= input.length())
-          version = 0; // old file format without version number
+          version = System.currentTimeMillis(); // old file format without version number
         else
           version = input.readLong(); // read version
       }

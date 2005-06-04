@@ -224,6 +224,7 @@ public abstract class IndexReader {
    * @param directory where the index resides.
    * @return version number.
    * @throws IOException if segments file cannot be read
+   * @deprecated use {@link #isCurrent()} instead
    */
   public static long getCurrentVersion(String directory) throws IOException {
     return getCurrentVersion(new File(directory));
@@ -236,6 +237,7 @@ public abstract class IndexReader {
    * @param directory where the index resides.
    * @return version number.
    * @throws IOException if segments file cannot be read
+   * @deprecated use {@link #isCurrent()} instead
    */
   public static long getCurrentVersion(File directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory, false);
@@ -251,9 +253,24 @@ public abstract class IndexReader {
    * @param directory where the index resides.
    * @return version number.
    * @throws IOException if segments file cannot be read.
+   * @deprecated use {@link #isCurrent()} instead
    */
   public static long getCurrentVersion(Directory directory) throws IOException {
     return SegmentInfos.readCurrentVersion(directory);
+  }
+
+  /**
+   * Check whether this IndexReader still works on a current version of the index.
+   * If this is not the case you will need to re-open the IndexReader to
+   * make sure you see the latest changes made to the index.
+   * 
+   * @throws IOException
+   */
+  public boolean isCurrent() throws IOException {
+    if (SegmentInfos.readCurrentVersion(directory) != segmentInfos.getVersion()) {
+      return false;
+    }
+    return true;
   }
 
   /**
