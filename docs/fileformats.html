@@ -120,7 +120,7 @@ limitations under the License.
         <blockquote>
                                     <p>
                 This document defines the index file formats used
-                in Lucene version 1.4.
+                in Lucene version 1.4 and above.
             </p>
                                                 <p>
                 Apache Lucene is written in Java, but several
@@ -1458,23 +1458,32 @@ limitations under the License.
 
                         <p>
                             TermInfoIndex (.tii)--&gt;
-                            IndexTermCount, TermIndices
+                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, TermIndices 
+                        </p>
+                        <p>TIVersion --&gt;
+                        	UInt32
                         </p>
                         <p>IndexTermCount    --&gt;
-                            UInt32
+                            UInt64
+                        </p>
+                        <p>IndexInterval --&gt;
+                        	UInt32
+                        </p>
+                        <p>SkipInterval --&gt;
+                        	UInt32
                         </p>
                         <p>TermIndices    --&gt;
                             &lt;TermInfo, IndexDelta&gt;<sup>IndexTermCount</sup>
                         </p>
                         <p>IndexDelta    --&gt;
-                            VInt
+                            VLong
                         </p>
                         <p>IndexDelta
                             determines the position of this term's TermInfo within the .tis file.  In
                             particular, it is the difference between the position of this term's
-                            entry in that file and the position of the previous term's entry (or
-                            zero for the first term in the file).
+                            entry in that file and the position of the previous term's entry.
                         </p>
+                        <p>TODO: document skipInterval information</p>
                     </li>
                 </ol>
                             </blockquote>
