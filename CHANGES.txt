@@ -112,6 +112,11 @@ New features
 17. Add IntParser and FloatParser interfaces to FieldCache, so that
     fields in arbitrarily formats can be cached as ints and floats.
     (Doug Cutting)
+    
+18. Added class org.apache.lucene.index.IndexModifier which combines
+    IndexWriter and IndexReader, so you can add and delete documents without
+    worrying about synchronisation/locking issues.
+    (Daniel Naber)
 
 API Changes
 
