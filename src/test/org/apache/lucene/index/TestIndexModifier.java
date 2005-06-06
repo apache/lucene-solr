@@ -38,7 +38,7 @@ import org.apache.lucene.store.RAMDirectory;
  * 
  * @author Daniel Naber
  */
-public class TestIndex extends TestCase {
+public class TestIndexModifier extends TestCase {
 
   private final int ITERATIONS = 500;		// iterations of thread test
 
@@ -76,6 +76,7 @@ public class TestIndex extends TestCase {
     assertEquals(10, i.getMaxBufferedDocs());
     assertEquals(10000, i.getMaxFieldLength());
     assertEquals(10, i.getMergeFactor());
+    // test setting properties:
     i.setMaxBufferedDocs(100);
     i.setMergeFactor(25);
     i.setMaxFieldLength(250000);
@@ -86,7 +87,20 @@ public class TestIndex extends TestCase {
     assertEquals(25, i.getMergeFactor());
     assertEquals(250000, i.getMaxFieldLength());
     assertFalse(i.getUseCompoundFile());
-    
+
+    // test setting properties when internally the reader is opened:
+    i.delete(allDocTerm);
+    i.setMaxBufferedDocs(100);
+    i.setMergeFactor(25);
+    i.setMaxFieldLength(250000);
+    i.addDocument(getDoc());
+    i.setUseCompoundFile(false);
+    i.optimize();
+    assertEquals(100, i.getMaxBufferedDocs());
+    assertEquals(25, i.getMergeFactor());
+    assertEquals(250000, i.getMaxFieldLength());
+    assertFalse(i.getUseCompoundFile());
+
     i.close();
     try {
       i.docCount();
