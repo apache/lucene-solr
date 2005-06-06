@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.util.Constants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -199,7 +200,7 @@ public abstract class IndexReader {
    * @deprecated  Replaced by {@link #getCurrentVersion(File)}
    * */
   public static long lastModified(File directory) throws IOException {
-    return FSDirectory.fileModified(directory, "segments");
+    return FSDirectory.fileModified(directory, Constants.INDEX_SEGMENTS_FILENAME);
   }
 
   /** 
@@ -214,7 +215,7 @@ public abstract class IndexReader {
    * @deprecated  Replaced by {@link #getCurrentVersion(Directory)}
    * */
   public static long lastModified(Directory directory) throws IOException {
-    return directory.fileModified("segments");
+    return directory.fileModified(Constants.INDEX_SEGMENTS_FILENAME);
   }
 
   /**
@@ -316,7 +317,7 @@ public abstract class IndexReader {
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
   public static boolean indexExists(String directory) {
-    return (new File(directory, "segments")).exists();
+    return (new File(directory, Constants.INDEX_SEGMENTS_FILENAME)).exists();
   }
 
   /**
@@ -326,7 +327,7 @@ public abstract class IndexReader {
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
   public static boolean indexExists(File directory) {
-    return (new File(directory, "segments")).exists();
+    return (new File(directory, Constants.INDEX_SEGMENTS_FILENAME)).exists();
   }
 
   /**
@@ -337,7 +338,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    return directory.fileExists("segments");
+    return directory.fileExists(Constants.INDEX_SEGMENTS_FILENAME);
   }
 
   /** Returns the number of documents in this index. */

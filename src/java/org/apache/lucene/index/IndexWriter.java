@@ -28,6 +28,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
 
@@ -789,10 +790,10 @@ public class IndexWriter {
 
   private final Vector readDeleteableFiles() throws IOException {
     Vector result = new Vector();
-    if (!directory.fileExists("deletable"))
+    if (!directory.fileExists(Constants.INDEX_DELETABLE_FILENAME))
       return result;
 
-    IndexInput input = directory.openInput("deletable");
+    IndexInput input = directory.openInput(Constants.INDEX_DELETABLE_FILENAME);
     try {
       for (int i = input.readInt(); i > 0; i--)	  // read file names
         result.addElement(input.readString());
@@ -811,6 +812,6 @@ public class IndexWriter {
     } finally {
       output.close();
     }
-    directory.renameFile("deleteable.new", "deletable");
+    directory.renameFile("deleteable.new", Constants.INDEX_DELETABLE_FILENAME);
   }
 }

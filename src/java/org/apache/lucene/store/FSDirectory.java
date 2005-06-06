@@ -52,8 +52,8 @@ public class FSDirectory extends Directory {
         if (name.endsWith("."+IndexReader.FILENAME_EXTENSIONS[i]))
           return true;
       }
-      if (name.equals("deletable")) return true;
-      else if (name.equals("segments")) return true;
+      if (name.equals(Constants.INDEX_DELETABLE_FILENAME)) return true;
+      else if (name.equals(Constants.INDEX_SEGMENTS_FILENAME)) return true;
       else if (name.matches(".+\\.f\\d+")) return true;
       return false;
     }
