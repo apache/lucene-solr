@@ -311,11 +311,12 @@ public class IndexModifier {
    * @see IndexWriter#setInfoStream(PrintStream)
    * @throws IllegalStateException if the index is closed
    */
-  public void setInfoStream(PrintStream infoStream) throws IOException {
+  public void setInfoStream(PrintStream infoStream) {
     synchronized(directory) {
       assureOpen();
-      createIndexWriter();
-      indexWriter.setInfoStream(infoStream);
+      if (indexWriter != null) {
+        indexWriter.setInfoStream(infoStream);
+      }
       this.infoStream = infoStream;
     }
   }
@@ -339,11 +340,12 @@ public class IndexModifier {
    * @see IndexWriter#setUseCompoundFile(boolean)
    * @throws IllegalStateException if the index is closed
    */
-  public void setUseCompoundFile(boolean useCompoundFile) throws IOException {
+  public void setUseCompoundFile(boolean useCompoundFile) {
     synchronized(directory) {
       assureOpen();
-      createIndexWriter();
-      indexWriter.setUseCompoundFile(useCompoundFile);
+      if (indexWriter != null) {
+        indexWriter.setUseCompoundFile(useCompoundFile);
+      }
       this.useCompoundFile = useCompoundFile;
     }
   }
@@ -374,11 +376,12 @@ public class IndexModifier {
    * @see IndexWriter#setMaxFieldLength(int)
    * @throws IllegalStateException if the index is closed
    */
-  public void setMaxFieldLength(int maxFieldLength) throws IOException {
+  public void setMaxFieldLength(int maxFieldLength) {
     synchronized(directory) {
       assureOpen();
-      createIndexWriter();
-      indexWriter.setMaxFieldLength(maxFieldLength);
+      if (indexWriter != null) {
+        indexWriter.setMaxFieldLength(maxFieldLength);
+      }
       this.maxFieldLength = maxFieldLength;
     }
   }
@@ -409,11 +412,12 @@ public class IndexModifier {
    * @see IndexWriter#setMaxBufferedDocs(int)
    * @throws IllegalStateException if the index is closed
    */
-  public void setMaxBufferedDocs(int maxBufferedDocs) throws IOException {
+  public void setMaxBufferedDocs(int maxBufferedDocs) {
     synchronized(directory) {
       assureOpen();
-      createIndexWriter();
-      indexWriter.setMaxBufferedDocs(maxBufferedDocs);
+      if (indexWriter != null) {
+        indexWriter.setMaxBufferedDocs(maxBufferedDocs);
+      }
       this.maxBufferedDocs = maxBufferedDocs;
     }
   }
@@ -443,11 +447,12 @@ public class IndexModifier {
    * @see IndexWriter#setMergeFactor(int)
    * @throws IllegalStateException if the index is closed
    */
-  public void setMergeFactor(int mergeFactor) throws IOException {
+  public void setMergeFactor(int mergeFactor) {
     synchronized(directory) {
       assureOpen();
-      createIndexWriter();
-      indexWriter.setMergeFactor(mergeFactor);
+      if (indexWriter != null) {
+        indexWriter.setMergeFactor(mergeFactor);
+      }
       this.mergeFactor = mergeFactor;
     }
   }
