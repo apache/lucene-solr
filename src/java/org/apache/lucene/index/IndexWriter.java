@@ -53,6 +53,8 @@ import org.apache.lucene.analysis.Analyzer;
   another IndexWriter on the same directory will lead to an IOException. The IOException
   is also thrown if an IndexReader on the same directory is used to delete documents
   from the index.
+  
+  @see IndexModifier IndexModifier supports the important methods of IndexWriter plus deletion
   */
 
 public class IndexWriter {
