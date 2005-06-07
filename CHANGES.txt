@@ -36,6 +36,11 @@ Changes in runtime behavior
     its own files from the index directory (looking at the file name suffixes
     to decide if a file belongs to Lucene). The old behavior was to delete
     all files. (Daniel Naber, bug #34695)
+    
+ 6. The version of an IndexReader, as returned by getCurrentVersion()
+    and getVersion() doesn't start at 0 anymore for new indexes. Instead, it
+    is now initialized by the system time in milliseconds.
+    (Bernhard Messer via Daniel Naber)
  
 New features
 
