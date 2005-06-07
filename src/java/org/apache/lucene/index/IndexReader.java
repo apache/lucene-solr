@@ -241,6 +241,13 @@ public abstract class IndexReader {
   public static long getCurrentVersion(Directory directory) throws IOException {
     return SegmentInfos.readCurrentVersion(directory);
   }
+  
+  /**
+   * Version number when this IndexReader was opened.
+   */
+  public long getVersion() {
+    return segmentInfos.getVersion();
+  }
 
   /**
    * Check whether this IndexReader still works on a current version of the index.
