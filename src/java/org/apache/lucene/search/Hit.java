@@ -28,8 +28,6 @@ import org.apache.lucene.document.Document;
  */
 public class Hit implements java.io.Serializable {
 
-  private float score;
-  private int id;
   private Document doc = null;
 
   private boolean resolved = false;
@@ -63,8 +61,7 @@ public class Hit implements java.io.Serializable {
    * @see Hits#score(int)
    */
   public float getScore() throws IOException {
-    if (!resolved) fetchTheHit();
-    return score;
+    return hits.score(hitNumber);
   }
 
   /**
@@ -73,14 +70,11 @@ public class Hit implements java.io.Serializable {
    * @see Hits#id(int)
    */
   public int getId() throws IOException {
-    if (!resolved) fetchTheHit();
-    return id;
+    return hits.id(hitNumber);
   }
 
   private void fetchTheHit() throws IOException {
     doc = hits.doc(hitNumber);
-    score = hits.score(hitNumber);
-    id = hits.id(hitNumber);
     resolved = true;
   }
 
