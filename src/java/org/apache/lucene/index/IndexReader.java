@@ -174,71 +174,53 @@ public abstract class IndexReader {
   public Directory directory() { return directory; }
 
   /** 
-   * Returns the time the index in the named directory was last modified. 
-   * 
-   * <p>Synchronization of IndexReader and IndexWriter instances is 
-   * no longer done via time stamps of the segments file since the time resolution 
-   * depends on the hardware platform. Instead, a version number is maintained
-   * within the segments file, which is incremented everytime when the index is
-   * changed.</p>
-   * 
-   * @deprecated  Replaced by {@link #getCurrentVersion(String)}
-   * */
+   * Returns the time the index in the named directory was last modified.
+   * Do not use this to check whether the reader is still up-to-date, use
+   * {@link #isCurrent()} instead. 
+   */
   public static long lastModified(String directory) throws IOException {
     return lastModified(new File(directory));
   }
 
   /** 
    * Returns the time the index in the named directory was last modified. 
-   * 
-   * <p>Synchronization of IndexReader and IndexWriter instances is 
-   * no longer done via time stamps of the segments file since the time resolution 
-   * depends on the hardware platform. Instead, a version number is maintained
-   * within the segments file, which is incremented everytime when the index is
-   * changed.</p>
-   * 
-   * @deprecated  Replaced by {@link #getCurrentVersion(File)}
-   * */
+   * Do not use this to check whether the reader is still up-to-date, use
+   * {@link #isCurrent()} instead. 
+   */
   public static long lastModified(File directory) throws IOException {
     return FSDirectory.fileModified(directory, Constants.INDEX_SEGMENTS_FILENAME);
   }
 
   /** 
    * Returns the time the index in the named directory was last modified. 
-   * 
-   * <p>Synchronization of IndexReader and IndexWriter instances is 
-   * no longer done via time stamps of the segments file since the time resolution 
-   * depends on the hardware platform. Instead, a version number is maintained
-   * within the segments file, which is incremented everytime when the index is
-   * changed.</p>
-   * 
-   * @deprecated  Replaced by {@link #getCurrentVersion(Directory)}
-   * */
+   * Do not use this to check whether the reader is still up-to-date, use
+   * {@link #isCurrent()} instead. 
+   */
   public static long lastModified(Directory directory) throws IOException {
     return directory.fileModified(Constants.INDEX_SEGMENTS_FILENAME);
   }
 
   /**
-   * Reads version number from segments files. The version number counts the
-   * number of changes of the index.
+   * Reads version number from segments files. The version number is
+   * initialized with a timestamp and then increased by one for each change of
+   * the index.
    * 
    * @param directory where the index resides.
    * @return version number.
    * @throws IOException if segments file cannot be read
-   * @deprecated use {@link #isCurrent()} instead
    */
   public static long getCurrentVersion(String directory) throws IOException {
     return getCurrentVersion(new File(directory));
   }
 
   /**
-   * Reads version number from segments files. The version number counts the
-   * number of changes of the index.
+   * Reads version number from segments files. The version number is
+   * initialized with a timestamp and then increased by one for each change of
+   * the index.
    * 
    * @param directory where the index resides.
    * @return version number.
    * @throws IOException if segments file cannot be read
-   * @deprecated use {@link #isCurrent()} instead
    */
   public static long getCurrentVersion(File directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory, false);
@@ -248,13 +230,13 @@ public abstract class IndexReader {
   }
 
   /**
-   * Reads version number from segments files. The version number counts the
-   * number of changes of the index.
+   * Reads version number from segments files. The version number is
+   * initialized with a timestamp and then increased by one for each change of
+   * the index.
    * 
    * @param directory where the index resides.
    * @return version number.
    * @throws IOException if segments file cannot be read.
-   * @deprecated use {@link #isCurrent()} instead
    */
   public static long getCurrentVersion(Directory directory) throws IOException {
     return SegmentInfos.readCurrentVersion(directory);
