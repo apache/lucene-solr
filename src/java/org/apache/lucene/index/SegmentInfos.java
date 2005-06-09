@@ -42,7 +42,7 @@ final class SegmentInfos extends Vector {
 
   public final void read(Directory directory) throws IOException {
     
-    IndexInput input = directory.openInput(Constants.INDEX_SEGMENTS_FILENAME);
+    IndexInput input = directory.openInput(IndexFileNames.SEGMENTS);
     try {
       int format = input.readInt();
       if(format < 0){     // file contains explicit format info
@@ -92,7 +92,7 @@ final class SegmentInfos extends Vector {
     }
 
     // install new segment info
-    directory.renameFile("segments.new", Constants.INDEX_SEGMENTS_FILENAME);
+    directory.renameFile("segments.new", IndexFileNames.SEGMENTS);
   }
 
   /**
@@ -108,7 +108,7 @@ final class SegmentInfos extends Vector {
   public static long readCurrentVersion(Directory directory)
     throws IOException {
       
-    IndexInput input = directory.openInput(Constants.INDEX_SEGMENTS_FILENAME);
+    IndexInput input = directory.openInput(IndexFileNames.SEGMENTS);
     int format = 0;
     long version = 0;
     try {

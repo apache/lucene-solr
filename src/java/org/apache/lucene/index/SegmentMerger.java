@@ -43,14 +43,6 @@ final class SegmentMerger {
   private Vector readers = new Vector();
   private FieldInfos fieldInfos;
 
-  // File extensions of old-style index files
-  private static final String COMPOUND_EXTENSIONS[] = new String[] {
-    "fnm", "frq", "prx", "fdx", "fdt", "tii", "tis"
-  };
-  private static final String VECTOR_EXTENSIONS[] = new String[] {
-    "tvx", "tvd", "tvf"
-  };
-
   /** This ctor used only by test code.
    * 
    * @param dir The Directory to merge the other segments into
@@ -120,11 +112,11 @@ final class SegmentMerger {
             new CompoundFileWriter(directory, fileName);
 
     Vector files =
-      new Vector(COMPOUND_EXTENSIONS.length + fieldInfos.size());    
+      new Vector(IndexFileNames.COMPOUND_EXTENSIONS.length + fieldInfos.size());    
     
     // Basic files
-    for (int i = 0; i < COMPOUND_EXTENSIONS.length; i++) {
-      files.add(segment + "." + COMPOUND_EXTENSIONS[i]);
+    for (int i = 0; i < IndexFileNames.COMPOUND_EXTENSIONS.length; i++) {
+      files.add(segment + "." + IndexFileNames.COMPOUND_EXTENSIONS[i]);
     }
 
     // Field norm files
@@ -137,8 +129,8 @@ final class SegmentMerger {
 
     // Vector files
     if (fieldInfos.hasVectors()) {
-      for (int i = 0; i < VECTOR_EXTENSIONS.length; i++) {
-        files.add(segment + "." + VECTOR_EXTENSIONS[i]);
+      for (int i = 0; i < IndexFileNames.VECTOR_EXTENSIONS.length; i++) {
+        files.add(segment + "." + IndexFileNames.VECTOR_EXTENSIONS[i]);
       }
     }
 

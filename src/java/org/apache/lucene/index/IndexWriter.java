@@ -792,10 +792,10 @@ public class IndexWriter {
 
   private final Vector readDeleteableFiles() throws IOException {
     Vector result = new Vector();
-    if (!directory.fileExists(Constants.INDEX_DELETABLE_FILENAME))
+    if (!directory.fileExists(IndexFileNames.DELETABLE))
       return result;
 
-    IndexInput input = directory.openInput(Constants.INDEX_DELETABLE_FILENAME);
+    IndexInput input = directory.openInput(IndexFileNames.DELETABLE);
     try {
       for (int i = input.readInt(); i > 0; i--)	  // read file names
         result.addElement(input.readString());
@@ -814,6 +814,6 @@ public class IndexWriter {
     } finally {
       output.close();
     }
-    directory.renameFile("deleteable.new", Constants.INDEX_DELETABLE_FILENAME);
+    directory.renameFile("deleteable.new", IndexFileNames.DELETABLE);
   }
 }

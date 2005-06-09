@@ -54,16 +54,6 @@ import java.util.Set;
 */
 public abstract class IndexReader {
   
-  /**
-   * This array contains all filename extensions used by Lucene's index files, with
-   * one exception, namely the extension made up from <code>.f</code> + a number.
-   * Also note that two of Lucene's files (<code>deletable</code> and
-   * <code>segments</code>) don't have any filename extension.
-   */
-  public final static String FILENAME_EXTENSIONS[] = new String[] {
-      "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
-      "tvx", "tvd", "tvf", "tvp" };
-  
   public static final class FieldOption {
     private String option;
     private FieldOption() { }
@@ -188,7 +178,7 @@ public abstract class IndexReader {
    * {@link #isCurrent()} instead. 
    */
   public static long lastModified(File directory) throws IOException {
-    return FSDirectory.fileModified(directory, Constants.INDEX_SEGMENTS_FILENAME);
+    return FSDirectory.fileModified(directory, IndexFileNames.SEGMENTS);
   }
 
   /** 
@@ -197,7 +187,7 @@ public abstract class IndexReader {
    * {@link #isCurrent()} instead. 
    */
   public static long lastModified(Directory directory) throws IOException {
-    return directory.fileModified(Constants.INDEX_SEGMENTS_FILENAME);
+    return directory.fileModified(IndexFileNames.SEGMENTS);
   }
 
   /**
@@ -306,7 +296,7 @@ public abstract class IndexReader {
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
   public static boolean indexExists(String directory) {
-    return (new File(directory, Constants.INDEX_SEGMENTS_FILENAME)).exists();
+    return (new File(directory, IndexFileNames.SEGMENTS)).exists();
   }
 
   /**
@@ -316,7 +306,7 @@ public abstract class IndexReader {
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
   public static boolean indexExists(File directory) {
-    return (new File(directory, Constants.INDEX_SEGMENTS_FILENAME)).exists();
+    return (new File(directory, IndexFileNames.SEGMENTS)).exists();
   }
 
   /**
@@ -327,7 +317,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    return directory.fileExists(Constants.INDEX_SEGMENTS_FILENAME);
+    return directory.fileExists(IndexFileNames.SEGMENTS);
   }
 
   /** Returns the number of documents in this index. */
