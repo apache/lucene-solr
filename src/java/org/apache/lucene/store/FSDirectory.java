@@ -16,17 +16,16 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.FilenameFilter;
-import java.io.IOException;
 import java.io.File;
-import java.io.RandomAccessFile;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.Hashtable;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Hashtable;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.util.Constants;
 
 /**
@@ -38,28 +37,7 @@ import org.apache.lucene.util.Constants;
  * @author Doug Cutting
  */
 public class FSDirectory extends Directory {
-
-  /**
-   * Filter that only accepts filenames created by Lucene.
-   */
-  private class LuceneFileFilter implements FilenameFilter {
-
-    /* (non-Javadoc)
-     * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
-     */
-    public boolean accept(File dir, String name) {
-      for (int i = 0; i < IndexReader.FILENAME_EXTENSIONS.length; i++) {
-        if (name.endsWith("."+IndexReader.FILENAME_EXTENSIONS[i]))
-          return true;
-      }
-      if (name.equals(Constants.INDEX_DELETABLE_FILENAME)) return true;
-      else if (name.equals(Constants.INDEX_SEGMENTS_FILENAME)) return true;
-      else if (name.matches(".+\\.f\\d+")) return true;
-      return false;
-    }
-
-  }
-
+    
   /** This cache of directories ensures that there is a unique Directory
    * instance per path, so that synchronization on the Directory can be used to
    * synchronize access between readers and writers.
@@ -184,7 +162,7 @@ public class FSDirectory extends Directory {
     if (!directory.isDirectory())
       throw new IOException(directory + " not a directory");
 
-    String[] files = directory.list(new LuceneFileFilter());            // clear old files
+    String[] files = directory.list(new IndexFileNameFilter());            // clear old files
     for (int i = 0; i < files.length; i++) {
       File file = new File(directory, files[i]);
       if (!file.delete())
