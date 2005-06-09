@@ -26,11 +26,6 @@ package org.apache.lucene.util;
 public final class Constants {
   private Constants() {}			  // can't construct
 
-  /** Name of the index segment file */
-  public static final String INDEX_SEGMENTS_FILENAME = "segments";
-  /** Name of the index deletable file */
-  public static final String INDEX_DELETABLE_FILENAME = "deletable";
-  
   /** The value of <tt>System.getProperty("java.version")<tt>. **/
   public static final String JAVA_VERSION = System.getProperty("java.version");
   /** True iff this is Java version 1.1. */
