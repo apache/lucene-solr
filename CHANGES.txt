@@ -41,6 +41,11 @@ Changes in runtime behavior
     and getVersion() doesn't start at 0 anymore for new indexes. Instead, it
     is now initialized by the system time in milliseconds.
     (Bernhard Messer via Daniel Naber)
+    
+ 7. It is now possible to create a new lucene index within a directory which
+    already contains custom files. Files located in the index directory, will
+    not be deleted during index creation.
+    (Bernhard Messer and Daniel Naber)
  
 New features
 
