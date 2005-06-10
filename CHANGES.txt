@@ -35,17 +35,12 @@ Changes in runtime behavior
  5. When opening an IndexWriter with create=true, Lucene now only deletes
     its own files from the index directory (looking at the file name suffixes
     to decide if a file belongs to Lucene). The old behavior was to delete
-    all files. (Daniel Naber, bug #34695)
+    all files. (Daniel Naber and Bernhard Messer, bug #34695)
     
  6. The version of an IndexReader, as returned by getCurrentVersion()
     and getVersion() doesn't start at 0 anymore for new indexes. Instead, it
     is now initialized by the system time in milliseconds.
     (Bernhard Messer via Daniel Naber)
-    
- 7. It is now possible to create a new lucene index within a directory which
-    already contains custom files. Files located in the index directory, will
-    not be deleted during index creation.
-    (Bernhard Messer and Daniel Naber)
  
 New features
 
