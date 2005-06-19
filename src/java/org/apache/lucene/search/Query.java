@@ -105,7 +105,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   /** Expert: called when re-writing queries under MultiSearcher.
    *
    * <p>Only implemented by derived queries, with no
-   * {@link #createWeight(Searcher)} implementatation.
+   * {@link #createWeight(Searcher)} implementation.
    */
   public Query combine(Query[] queries) {
         for (int i = 0; i < queries.length; i++) {
