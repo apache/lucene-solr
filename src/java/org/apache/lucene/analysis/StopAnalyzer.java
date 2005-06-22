@@ -46,9 +46,18 @@ public final class StopAnalyzer extends Analyzer {
     this.stopWords = StopFilter.makeStopSet(stopWords);
   }
   
-  /** Builds an analyzer with the stop words from the given file. */
+  /** Builds an analyzer with the stop words from the given file.
+   * @see WordlistLoader#getWordSet(File)
+   */
   public StopAnalyzer(File stopwordsFile) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwordsFile);
+  }
+
+  /** Builds an analyzer with the stop words from the given reader.
+   * @see WordlistLoader#getWordSet(Reader)
+   */
+  public StopAnalyzer(Reader stopwords) throws IOException {
+    stopWords = WordlistLoader.getWordSet(stopwords);
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */
