@@ -19,7 +19,8 @@ package org.apache.lucene.analysis;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.LineNumberReader;
+import java.io.Reader;
+import java.io.BufferedReader;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -34,30 +35,44 @@ public class WordlistLoader {
 
   /**
    * Loads a text file and adds every line as an entry to a HashSet (omitting
-   * leading and trailing whitespace). Every line of the file should contain only 
+   * leading and trailing whitespace). Every line of the file should contain only
    * one word. The words need to be in lowercase if you make use of an
    * Analyzer which uses LowerCaseFilter (like GermanAnalyzer).
-   * 
+   *
    * @param wordfile File containing the wordlist
    * @return A HashSet with the file's words
    */
   public static HashSet getWordSet(File wordfile) throws IOException {
     HashSet result = new HashSet();
-    FileReader freader = null;
-    LineNumberReader lnr = null;
+    FileReader reader = null;
     try {
-      freader = new FileReader(wordfile);
-      lnr = new LineNumberReader(freader);
+      reader = new FileReader(wordfile);
+      result = getWordSet(reader);
+    }
+    finally {
+      if (reader != null)
+        reader.close();
+    }
+    return result;
+  }
+
+  public static HashSet getWordSet(Reader reader) throws IOException {
+    HashSet result = new HashSet();
+    BufferedReader br = null;
+    try {
+      if (reader instanceof BufferedReader) {
+        br = (BufferedReader) reader;
+      } else {
+        br = new BufferedReader(reader);
+      }
       String word = null;
-      while ((word = lnr.readLine()) != null) {
+      while ((word = br.readLine()) != null) {
         result.add(word.trim());
       }
     }
     finally {
-      if (lnr != null)
-        lnr.close();
-      if (freader != null)
-        freader.close();
+      if (br != null)
+        br.close();
     }
     return result;
   }
@@ -65,7 +80,7 @@ public class WordlistLoader {
   /**
    * @param path      Path to the wordlist
    * @param wordfile  Name of the wordlist
-   * 
+   *
    * @deprecated Use {@link #getWordSet(File)} instead
    */
   public static Hashtable getWordtable(String path, String wordfile) throws IOException {
@@ -74,7 +89,7 @@ public class WordlistLoader {
 
   /**
    * @param wordfile  Complete path to the wordlist
-   * 
+   *
    * @deprecated Use {@link #getWordSet(File)} instead
    */
   public static Hashtable getWordtable(String wordfile) throws IOException {

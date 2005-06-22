@@ -51,6 +51,10 @@ public class StandardAnalyzer extends Analyzer {
     stopSet = WordlistLoader.getWordSet(stopwords);
   }
 
+  public StandardAnalyzer(Reader stopwords) throws IOException {
+    stopSet = WordlistLoader.getWordSet(stopwords);
+  }
+
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
   StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
   public TokenStream tokenStream(String fieldName, Reader reader) {
