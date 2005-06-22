@@ -37,7 +37,7 @@ public class WordlistLoader {
    * Loads a text file and adds every line as an entry to a HashSet (omitting
    * leading and trailing whitespace). Every line of the file should contain only
    * one word. The words need to be in lowercase if you make use of an
-   * Analyzer which uses LowerCaseFilter (like GermanAnalyzer).
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
    *
    * @param wordfile File containing the wordlist
    * @return A HashSet with the file's words
@@ -56,6 +56,15 @@ public class WordlistLoader {
     return result;
   }
 
+  /**
+   * Reads lines from a Reader and adds every line as an entry to a HashSet (omitting
+   * leading and trailing whitespace). Every line of the Reader should contain only
+   * one word. The words need to be in lowercase if you make use of an
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   *
+   * @param reader Reader containing the wordlist
+   * @return A HashSet with the reader's words
+   */
   public static HashSet getWordSet(Reader reader) throws IOException {
     HashSet result = new HashSet();
     BufferedReader br = null;

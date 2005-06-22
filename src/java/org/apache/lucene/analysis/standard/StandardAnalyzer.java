@@ -46,11 +46,16 @@ public class StandardAnalyzer extends Analyzer {
     stopSet = StopFilter.makeStopSet(stopWords);
   }
 
-  /** Builds an analyzer with the stop words from the given file. */
+  /** Builds an analyzer with the stop words from the given file.
+   * @see WordlistLoader#getWordSet(File)
+   */
   public StandardAnalyzer(File stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
   }
 
+  /** Builds an analyzer with the stop words from the given reader.
+   * @see WordlistLoader#getWordSet(Reader)
+   */
   public StandardAnalyzer(Reader stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
   }
