@@ -1,7 +1,7 @@
 package org.apache.lucene.search;
 
 /**
- * Copyright 2005 The Apache Software Foundation
+ * Copyright 2004 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -34,70 +35,128 @@ import org.apache.lucene.store.RAMDirectory;
  *
  * @version $Id: TestMultiSearcher.java 150492 2004-09-06 22:01:49Z dnaber $
  */
-public class TestMultiSearcherRanking extends TestCase
-{
-
-  private final Query query = new TermQuery(new Term("body", "three"));
+public class TestMultiSearcherRanking extends TestCase {
   
-  public void testMultiSearcherRanking() throws IOException {
-    Hits multiSearcherHits = multi();
-    Hits singleSearcherHits = single();
-    assertEquals(multiSearcherHits.length(), singleSearcherHits.length());
-    for(int i = 0; i < multiSearcherHits.length(); i++) {
-      assertEquals(multiSearcherHits.score(i), singleSearcherHits.score(i), 0.001f);
-      Document docMulti = multiSearcherHits.doc(i);
-      Document docSingle = singleSearcherHits.doc(i);
-      assertEquals(docMulti.get("body"), docSingle.get("body"));
-    }
+  private final boolean verbose = false;  // set to true to output hits
+  private final String FIELD_NAME = "body";
+  private Searcher multiSearcher;
+  private Searcher singleSearcher;
+
+  public void testOneTermQuery() throws IOException, ParseException {
+    checkQuery("three");
   }
 
-  // Collection 1+2 searched with MultiSearcher:
-  private Hits multi() throws IOException {
-		Directory d1 = new RAMDirectory();
-  	IndexWriter iw = new IndexWriter(d1, new StandardAnalyzer(), true);
-    addCollection1(iw);
-    iw.close();
+  public void testTwoTermQuery() throws IOException, ParseException {
+    checkQuery("three foo");
+  }
 
+  public void testPrefixQuery() throws IOException, ParseException {
+    checkQuery("multi*");
+  }
+
+  public void testFuzzyQuery() throws IOException, ParseException {
+    checkQuery("multiThree~");
+  }
+
+  public void testRangeQuery() throws IOException, ParseException {
+    checkQuery("{multiA TO multiP}");
+  }
+
+  public void testMultiPhraseQuery() throws IOException, ParseException {
+      checkQuery("\"blueberry pi*\"");
+  }
+
+  public void testNoMatchQuery() throws IOException, ParseException {
+    checkQuery("+three +nomatch");
+  }
+
+  /*
+  public void testTermRepeatedQuery() throws IOException, ParseException {
+    // TODO: this corner case yields different results.
+    checkQuery("multi* multi* foo");
+  }
+  */
+
+  /**
+   * checks if a query yields the same result when executed on
+   * a single IndexSearcher containing all documents and on a
+   * MultiSearcher aggregating sub-searchers
+   * @param queryStr  the query to check.
+   * @throws IOException
+   * @throws ParseException
+   */
+  private void checkQuery(String queryStr) throws IOException, ParseException {
+    // check result hit ranking
+    if(verbose) System.out.println("Query: " + queryStr);
+    Query query = QueryParser.parse(queryStr, FIELD_NAME,
+        new StandardAnalyzer());
+    Hits multiSearcherHits = multiSearcher.search(query);
+    Hits singleSearcherHits = singleSearcher.search(query);
+    assertEquals(multiSearcherHits.length(), singleSearcherHits.length());
+    for (int i = 0; i < multiSearcherHits.length(); i++) {
+      Document docMulti = multiSearcherHits.doc(i);
+      Document docSingle = singleSearcherHits.doc(i);
+      if(verbose) System.out.println("Multi:  " + docMulti.get(FIELD_NAME) + " score="
+          + multiSearcherHits.score(i));
+      if(verbose) System.out.println("Single: " + docSingle.get(FIELD_NAME) + " score="
+          + singleSearcherHits.score(i));
+      assertEquals(multiSearcherHits.score(i), singleSearcherHits.score(i),
+          0.001f);
+      assertEquals(docMulti.get(FIELD_NAME), docSingle.get(FIELD_NAME));
+    }
+    if(verbose) System.out.println();
+  }
+  
+  /**
+   * initializes multiSearcher and singleSearcher with the same document set
+   */
+  protected void setUp() throws Exception {
+    // create MultiSearcher from two seperate searchers
+    Directory d1 = new RAMDirectory();
+    IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(), true);
+    addCollection1(iw1);
+    iw1.close();
     Directory d2 = new RAMDirectory();
-    iw = new IndexWriter(d2, new StandardAnalyzer(), true);
-    addCollection2(iw);
-    iw.close();
-    
+    IndexWriter iw2 = new IndexWriter(d2, new StandardAnalyzer(), true);
+    addCollection2(iw2);
+    iw2.close();
+
     Searchable[] s = new Searchable[2];
     s[0] = new IndexSearcher(d1);
     s[1] = new IndexSearcher(d2);
-    MultiSearcher ms = new MultiSearcher(s);
-    Hits hits = ms.search(query);
-    return hits;
-  }
-  
-  // Collection 1+2 indexed together:
-  private Hits single() throws IOException {
+    multiSearcher = new MultiSearcher(s);
+
+    // create IndexSearcher which contains all documents
     Directory d = new RAMDirectory();
     IndexWriter iw = new IndexWriter(d, new StandardAnalyzer(), true);
     addCollection1(iw);
     addCollection2(iw);
     iw.close();
-    IndexSearcher is = new IndexSearcher(d);
-    Hits hits = is.search(query);
-    return hits;
-  }
-
-  private void addCollection1(IndexWriter iw) throws IOException {
-    add("one blah three", iw);
-    add("one foo three", iw);
-    add("one foobar three", iw);
+    singleSearcher = new IndexSearcher(d);
   }
   
-  private void addCollection2(IndexWriter iw) throws IOException {
-    add("two blah three", iw);
-    add("two foo xxx", iw);
-    add("two foobar xxx", iw);
+  private void addCollection1(IndexWriter iw) throws IOException {
+    add("one blah three", iw);
+    add("one foo three multiOne", iw);
+    add("one foobar three multiThree", iw);
+    add("blueberry pie", iw);
+    add("blueberry strudel", iw);
+    add("blueberry pizza", iw);
   }
 
+  private void addCollection2(IndexWriter iw) throws IOException {
+    add("two blah three", iw);
+    add("two foo xxx multiTwo", iw);
+    add("two foobar xxx multiThreee", iw);
+    add("blueberry chewing gum", iw);
+    add("bluebird pizza", iw);
+    add("bluebird foobar pizza", iw);
+    add("piccadilly circus", iw);
+  }
+  
   private void add(String value, IndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field("body", value, Field.Store.YES, Field.Index.TOKENIZED));
+    d.add(new Field(FIELD_NAME, value, Field.Store.YES, Field.Index.TOKENIZED));
     iw.addDocument(d);
   }
   

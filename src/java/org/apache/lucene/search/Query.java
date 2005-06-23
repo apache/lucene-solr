@@ -104,16 +104,47 @@ public abstract class Query implements java.io.Serializable, Cloneable {
 
   /** Expert: called when re-writing queries under MultiSearcher.
    *
-   * <p>Only implemented by derived queries, with no
-   * {@link #createWeight(Searcher)} implementation.
-   */
+   * Create a single query suitable for use by all subsearchers (in 1-1
+   * correspondence with queries). This is an optimization of the OR of
+   * all queries. We handle the common optimization cases of equal
+   * queries and overlapping clauses of boolean OR queries (as generated
+   * by MultiTermQuery.rewrite() and RangeQuery.rewrite()).
+   * Be careful overriding this method as queries[0] determines which
+   * method will be called and is not necessarily of the same type as
+   * the other queries.
+  */
   public Query combine(Query[] queries) {
-        for (int i = 0; i < queries.length; i++) {
-            if (!this.equals(queries[i])) {
-                throw new IllegalArgumentException();
-            }
+    HashSet uniques = new HashSet();
+    for (int i = 0; i < queries.length; i++) {
+      Query query = queries[i];
+      BooleanClause[] clauses = null;
+      // check if we can split the query into clauses
+      boolean splittable = (query instanceof BooleanQuery);
+      if(splittable){
+        BooleanQuery bq = (BooleanQuery) query;
+        splittable = bq.isCoordDisabled();
+        clauses = bq.getClauses();
+        for (int j = 0; splittable && j < clauses.length; j++) {
+          splittable = (clauses[j].getOccur() == BooleanClause.Occur.SHOULD);
         }
-        return this;
+      }
+      if(splittable){
+        for (int j = 0; j < clauses.length; j++) {
+          uniques.add(clauses[j].getQuery());
+        }
+      } else {
+        uniques.add(query);
+      }
+    }
+    // optimization: if we have just one query, just return it
+    if(uniques.size() == 1){
+        return (Query)uniques.iterator().next();
+    }
+    Iterator it = uniques.iterator();
+    BooleanQuery result = new BooleanQuery(true);
+    while (it.hasNext())
+      result.add((Query) it.next(), BooleanClause.Occur.SHOULD);
+    return result;
   }
 
   /**

@@ -371,11 +371,6 @@ public class BooleanQuery extends Query {
         }
   }
 
-  // inherit javadoc
-  public Query combine(Query[] queries) {
-    return Query.mergeBooleanQueries(queries);
-  }
-
   public Object clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();
     clone.clauses = (Vector)this.clauses.clone();

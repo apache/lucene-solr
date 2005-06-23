@@ -67,11 +67,6 @@ public abstract class MultiTermQuery extends Query {
       return query;
     }
 
-    public Query combine(Query[] queries) {
-      return Query.mergeBooleanQueries(queries);
-    }
-
-
     /** Prints a user-readable version of this query. */
     public String toString(String field) {
         StringBuffer buffer = new StringBuffer();

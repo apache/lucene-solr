@@ -105,10 +105,6 @@ public class RangeQuery extends Query
         return query;
     }
 
-    public Query combine(Query[] queries) {
-      return Query.mergeBooleanQueries(queries);
-    }
-
     /** Returns the field name for this query */
     public String getField() {
       return (lowerTerm != null ? lowerTerm.field() : upperTerm.field());
