@@ -16,8 +16,13 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
+import java.io.Reader;
+
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.Query;
 
@@ -153,6 +158,44 @@ public class TestMultiFieldQueryParser extends TestCase {
       fail();
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
+    }
+  }
+
+  public void testAnalyzerReturningNull() throws ParseException {
+    String[] fields = new String[] { "f1", "f2", "f3" };
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new AnalyzerReturningNull());
+    Query q = parser.parse("bla AND blo");
+    assertEquals("+(f2:bla f3:bla) +(f2:blo f3:blo)", q.toString());
+    // the following queries are not affected as their terms are not analyzed anyway:
+    q = parser.parse("bla*");
+    assertEquals("f1:bla* f2:bla* f3:bla*", q.toString());
+    q = parser.parse("bla~");
+    assertEquals("f1:bla~0.5 f2:bla~0.5 f3:bla~0.5", q.toString());
+    q = parser.parse("[a TO c]");
+    assertEquals("f1:[a TO c] f2:[a TO c] f3:[a TO c]", q.toString());
+  }
+
+  /**
+   * Return empty tokens for field "f1".
+   */
+  private static class AnalyzerReturningNull extends Analyzer {
+    StandardAnalyzer stdAnalyzer = new StandardAnalyzer();
+
+    public AnalyzerReturningNull() {
+    }
+
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      if ("f1".equals(fieldName)) {
+        return new EmptyTokenStream();
+      } else {
+        return stdAnalyzer.tokenStream(fieldName, reader);
+      }
+    }
+
+    private static class EmptyTokenStream extends TokenStream {
+      public Token next() {
+        return null;
+      }
     }
   }
 

@@ -62,9 +62,11 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getFieldQuery(String field, String queryText) throws ParseException {
     if (field == null) {
       Vector clauses = new Vector();
-      for (int i = 0; i < fields.length; i++)
-        clauses.add(new BooleanClause(super.getFieldQuery(fields[i], queryText),
-            BooleanClause.Occur.SHOULD));
+      for (int i = 0; i < fields.length; i++) {
+        Query q = super.getFieldQuery(fields[i], queryText);
+        if (q != null)
+          clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
+      }
       return getBooleanQuery(clauses, true);
     }
     return super.getFieldQuery(field, queryText);
