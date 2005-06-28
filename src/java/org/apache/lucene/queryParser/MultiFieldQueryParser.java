@@ -70,16 +70,12 @@ public class MultiFieldQueryParser extends QueryParser
     return super.getFieldQuery(field, queryText);
   }
   
+  /**
+   * @deprecated use {@link #getFieldQuery(String, String)}
+   */
   protected Query getFieldQuery(String field, Analyzer analyzer, String queryText)
       throws ParseException {
-    if (field == null) {
-      Vector clauses = new Vector();
-      for (int i = 0; i < fields.length; i++)
-        clauses.add(new BooleanClause(super.getFieldQuery(fields[i], queryText),
-            BooleanClause.Occur.SHOULD));
-      return getBooleanQuery(clauses, true);
-    }
-    return super.getFieldQuery(field, queryText);
+    return getFieldQuery(field, queryText);
   }
   
   /**
