@@ -79,14 +79,5 @@ public class CheckHits {
     }
   }
 
-  public static void printDocNrs(Hits hits) throws IOException {
-    System.out.print("new int[] {");
-    for (int i = 0; i < hits.length(); i++) {
-      System.out.print(hits.id(i));
-      if (i != hits.length()-1)
-        System.out.print(", ");
-    }
-    System.out.println("}");
-  }
 }
 
