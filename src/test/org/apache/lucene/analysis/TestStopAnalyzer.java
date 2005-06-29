@@ -24,9 +24,10 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class TestStopAnalyzer extends TestCase {
+  
   private StopAnalyzer stop = new StopAnalyzer();
-
   private Set inValidTokens = new HashSet();
+  
   public TestStopAnalyzer(String s) {
     super(s);
   }
@@ -37,23 +38,18 @@ public class TestStopAnalyzer extends TestCase {
     }
   }
 
-  public void testDefaults() {
+  public void testDefaults() throws IOException {
     assertTrue(stop != null);
     StringReader reader = new StringReader("This is a test of the english stop analyzer");
     TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
     Token token = null;
-    try {
-      while ((token = stream.next()) != null)
-      {
-        assertTrue(inValidTokens.contains(token.termText()) == false);
-      }
-    } catch (IOException e) {
-      assertTrue(false);
+    while ((token = stream.next()) != null) {
+      assertFalse(inValidTokens.contains(token.termText()));
     }
   }
 
-  public void testStopList() {
+  public void testStopList() throws IOException {
     Set stopWordsSet = new HashSet();
     stopWordsSet.add("good");
     stopWordsSet.add("test");
@@ -61,16 +57,12 @@ public class TestStopAnalyzer extends TestCase {
     StopAnalyzer newStop = new StopAnalyzer((String[])stopWordsSet.toArray(new String[3]));
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
-    assertTrue(stream != null);
+    assertNotNull(stream);
     Token token = null;
-    try {
-      while ((token = stream.next()) != null)
-      {
-        String text = token.termText();
-        assertTrue(stopWordsSet.contains(text) == false);
-      }
-    } catch (IOException e) {
-      assertTrue(false);
+    while ((token = stream.next()) != null) {
+      String text = token.termText();
+      assertFalse(stopWordsSet.contains(text));
     }
   }
+  
 }
