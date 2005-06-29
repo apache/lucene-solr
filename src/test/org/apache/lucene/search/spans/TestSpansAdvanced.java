@@ -143,10 +143,10 @@ public class TestSpansAdvanced extends TestCase {
             final float[] expectedScores) throws IOException {
 
         // display the hits
-        System.out.println(hits.length() + " hits for search: \"" + description + '\"');
+        /*System.out.println(hits.length() + " hits for search: \"" + description + '\"');
         for (int i = 0; i < hits.length(); i++) {
             System.out.println("  " + FIELD_ID + ':' + hits.doc(i).get(FIELD_ID) + " (score:" + hits.score(i) + ')');
-        }
+        }*/
 
         // did we get the hits we expected
         assertEquals(expectedIds.length, hits.length());
