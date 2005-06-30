@@ -18,6 +18,9 @@ package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -31,7 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Efficient Lucene analyzer/tokenizer that preferably operates on a String rather than a
- * {@link java.io.Reader}, that can flexibly separate on a regular expression {@link Pattern}
+ * {@link java.io.Reader}, that can flexibly separate text into terms via a regular expression {@link Pattern}
  * (with behaviour identical to {@link String#split(String)}),
  * and that combines the functionality of
  * {@link org.apache.lucene.analysis.LetterTokenizer},
@@ -58,23 +61,74 @@ import org.apache.lucene.analysis.TokenStream;
  * </pre>
  * 
  * @author whoschek.AT.lbl.DOT.gov
- * @author $Author: hoschek3 $
- * @version $Revision: 1.10 $, $Date: 2005/04/29 08:51:02 $
  */
 public class PatternAnalyzer extends Analyzer {
 	
 	/** <code>"\\W+"</code>; Divides text at non-letters (Character.isLetter(c)) */
 	public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");
 	
-	/** <code>"\\s+"</code>; Divides text at whitespaces (Character.isWhitespace(c) */
+	/** <code>"\\s+"</code>; Divides text at whitespaces (Character.isWhitespace(c)) */
 	public static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 	
+	private static final Set EXTENDED_ENGLISH_STOP_WORDS = makeStopSet(new String[] {
+		"a", "about", "above", "across", "adj", "after", "afterwards",
+		"again", "against", "albeit", "all", "almost", "alone", "along",
+		"already", "also", "although", "always", "among", "amongst", "an",
+		"and", "another", "any", "anyhow", "anyone", "anything",
+		"anywhere", "are", "around", "as", "at", "be", "became", "because",
+		"become", "becomes", "becoming", "been", "before", "beforehand",
+		"behind", "being", "below", "beside", "besides", "between",
+		"beyond", "both", "but", "by", "can", "cannot", "co", "could",
+		"down", "during", "each", "eg", "either", "else", "elsewhere",
+		"enough", "etc", "even", "ever", "every", "everyone", "everything",
+		"everywhere", "except", "few", "first", "for", "former",
+		"formerly", "from", "further", "had", "has", "have", "he", "hence",
+		"her", "here", "hereafter", "hereby", "herein", "hereupon", "hers",
+		"herself", "him", "himself", "his", "how", "however", "i", "ie", "if",
+		"in", "inc", "indeed", "into", "is", "it", "its", "itself", "last",
+		"latter", "latterly", "least", "less", "ltd", "many", "may", "me",
+		"meanwhile", "might", "more", "moreover", "most", "mostly", "much",
+		"must", "my", "myself", "namely", "neither", "never",
+		"nevertheless", "next", "no", "nobody", "none", "noone", "nor",
+		"not", "nothing", "now", "nowhere", "of", "off", "often", "on",
+		"once one", "only", "onto", "or", "other", "others", "otherwise",
+		"our", "ours", "ourselves", "out", "over", "own", "per", "perhaps",
+		"rather", "s", "same", "seem", "seemed", "seeming", "seems",
+		"several", "she", "should", "since", "so", "some", "somehow",
+		"someone", "something", "sometime", "sometimes", "somewhere",
+		"still", "such", "t", "than", "that", "the", "their", "them",
+		"themselves", "then", "thence", "there", "thereafter", "thereby",
+		"therefor", "therein", "thereupon", "these", "they", "this",
+		"those", "though", "through", "throughout", "thru", "thus", "to",
+		"together", "too", "toward", "towards", "under", "until", "up",
+		"upon", "us", "very", "via", "was", "we", "well", "were", "what",
+		"whatever", "whatsoever", "when", "whence", "whenever",
+		"whensoever", "where", "whereafter", "whereas", "whereat",
+		"whereby", "wherefrom", "wherein", "whereinto", "whereof",
+		"whereon", "whereto", "whereunto", "whereupon", "wherever",
+		"wherewith", "whether", "which", "whichever", "whichsoever",
+		"while", "whilst", "whither", "who", "whoever", "whole", "whom",
+		"whomever", "whomsoever", "whose", "whosoever", "why", "will",
+		"with", "within", "without", "would", "xsubj", "xcal", "xauthor",
+		"xother ", "xnote", "yet", "you", "your", "yours", "yourself",
+		"yourselves"});
+		
 	/**
 	 * A lower-casing word analyzer with English stop words (can be shared
 	 * freely across threads without harm); global per class loader.
 	 */
 	public static final PatternAnalyzer DEFAULT_ANALYZER = new PatternAnalyzer(
-		NON_WORD_PATTERN, true, StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS));
+		NON_WORD_PATTERN, true, makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS));
+		
+	/**
+	 * A lower-casing word analyzer with <b>extended </b> English stop words
+	 * (can be shared freely across threads without harm); global per class
+	 * loader. The stop words are borrowed from
+	 * http://thomas.loc.gov/home/stopwords.html, see
+	 * http://thomas.loc.gov/home/all.about.inquery.html
+	 */
+	public static final PatternAnalyzer EXTENDED_ANALYZER = new PatternAnalyzer(
+		NON_WORD_PATTERN, true, EXTENDED_ENGLISH_STOP_WORDS);
 		
 	private final Pattern pattern;
 	private final boolean toLowerCase;
@@ -93,7 +147,10 @@ public class PatternAnalyzer extends Analyzer {
 	 *            given stop set (after previously having applied toLowerCase()
 	 *            if applicable). For example, created via
 	 *            {@link StopFilter#makeStopSet(String[])}and/or
-	 *            {@link org.apache.lucene.analysis.WordlistLoader}.
+	 *            {@link org.apache.lucene.analysis.WordlistLoader}as in
+	 *            <code>WordlistLoader.getWordSet(new File("samples/fulltext/stopwords.txt")</code>
+	 *            or <a href="http://www.unine.ch/info/clef/">other stop words
+	 *            lists </a>.
 	 */
 	public PatternAnalyzer(Pattern pattern, boolean toLowerCase, Set stopWords) {
 		if (pattern == null) 
@@ -101,6 +158,8 @@ public class PatternAnalyzer extends Analyzer {
 		
 		if (eqPattern(NON_WORD_PATTERN, pattern)) pattern = NON_WORD_PATTERN;
 		else if (eqPattern(WHITESPACE_PATTERN, pattern)) pattern = WHITESPACE_PATTERN;
+		
+		if (stopWords != null && stopWords.size() == 0) stopWords = null;
 		
 		this.pattern = pattern;
 		this.toLowerCase = toLowerCase;
@@ -143,6 +202,10 @@ public class PatternAnalyzer extends Analyzer {
 	 * less efficient than <code>tokenStream(String, String)</code>.
 	 */
 	public TokenStream tokenStream(String fieldName, Reader reader) {
+		if (reader instanceof FastStringReader) { // fast path
+			return tokenStream(fieldName, ((FastStringReader)reader).getString());
+		}
+		
 		try {
 			String text = toString(reader);
 			return tokenStream(fieldName, text);
@@ -153,7 +216,10 @@ public class PatternAnalyzer extends Analyzer {
 	
 	/**  Indicates whether some other object is "equal to" this one. */
 	public boolean equals(Object other) {
-		if (this == other) return true;
+		if (this  == other) return true;
+		if (this  == DEFAULT_ANALYZER && other == EXTENDED_ANALYZER) return false;
+		if (other == DEFAULT_ANALYZER && this  == EXTENDED_ANALYZER) return false;
+		
 		if (other instanceof PatternAnalyzer) {
 			PatternAnalyzer p2 = (PatternAnalyzer) other;
 			return 
@@ -167,6 +233,8 @@ public class PatternAnalyzer extends Analyzer {
 	/** Returns a hash code value for the object. */
 	public int hashCode() {
 		if (this == DEFAULT_ANALYZER) return -1218418418; // fast path
+		if (this == EXTENDED_ANALYZER) return 1303507063; // fast path
+		
 		int h = 1;
 		h = 31*h + pattern.pattern().hashCode();
 		h = 31*h + pattern.flags();
@@ -182,7 +250,7 @@ public class PatternAnalyzer extends Analyzer {
 	
 	/** assumes p1 and p2 are not null */
 	private static boolean eqPattern(Pattern p1, Pattern p2) {
-		return p1.flags() == p2.flags() && p1.pattern().equals(p2.pattern());
+		return p1 == p2 || (p1.flags() == p2.flags() && p1.pattern().equals(p2.pattern()));
 	}
 		
 	/**
@@ -218,6 +286,14 @@ public class PatternAnalyzer extends Analyzer {
 		}
 	}
 		
+	// somewhat oversized to minimize hash collisions
+	private static Set makeStopSet(String[] stopWords) {
+		Set stops = new HashSet(stopWords.length * 2, 0.3f); 
+		stops.addAll(Arrays.asList(stopWords));
+		return stops;
+//		return Collections.unmodifiableSet(stops);
+	}
+
 	
 	///////////////////////////////////////////////////////////////////////////////
 	// Nested classes:
@@ -316,6 +392,7 @@ public class PatternAnalyzer extends Analyzer {
 					if (toLowerCase) text = text.toLowerCase(locale);
 //					if (toLowerCase) {						
 ////						use next line once JDK 1.5 String.toLowerCase() performance regression is fixed
+////						see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6265809
 //						text = s.substring(start, i).toLowerCase(); 
 ////						char[] chars = new char[i-start];
 ////						for (int j=start; j < i; j++) chars[j-start] = Character.toLowerCase(s.charAt(j));
@@ -339,5 +416,27 @@ public class PatternAnalyzer extends Analyzer {
 		}
 		
 	}
+
+	
+	///////////////////////////////////////////////////////////////////////////////
+	// Nested classes:
+	///////////////////////////////////////////////////////////////////////////////
+	/**
+	 * A StringReader that exposes it's contained string for fast direct access.
+	 */
+	static final class FastStringReader extends StringReader {
+
+		private final String s;
 		
+		FastStringReader(String s) {
+			super(s);
+			this.s = s;
+		}
+		
+		String getString() {
+			return s;
+		}
+	}
+	
 }
+

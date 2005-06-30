@@ -18,7 +18,6 @@ package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,14 +51,18 @@ import org.apache.lucene.search.Similarity;
  * This class is a replacement/substitute for a large subset of
  * {@link org.apache.lucene.store.RAMDirectory} functionality. It is designed to
  * enable maximum efficiency for on-the-fly matchmaking combining structured and 
- * fuzzy full-text search in streaming applications such as Nux XQuery based XML 
- * message queues, publish-subscribe systems for newsfeeds, data acquisition and 
+ * fuzzy fulltext search in realtime streaming applications such as Nux XQuery based XML 
+ * message queues, publish-subscribe systems for Blogs/newsfeeds, text chat, data acquisition and 
  * distribution systems, application level routers, firewalls, classifiers, etc. 
- * For example as in <code>float score = query(String text, Query query)</code>.
+ * Rather than targetting fulltext search of infrequent queries over huge persistent 
+ * data archives (historic search), this class targets fulltext search of huge 
+ * numbers of queries over comparatively small transient realtime data (prospective 
+ * search). 
+ * For example as in <code>float score = search(String text, Query query)</code>.
  * <p>
  * Each instance can hold at most one Lucene "document", with a document containing
- * zero or more "fields", each field having a name and a free text value. The
- * free text value is tokenized (split and transformed) into zero or more index terms 
+ * zero or more "fields", each field having a name and a fulltext value. The
+ * fulltext value is tokenized (split and transformed) into zero or more index terms 
  * (aka words) on <code>addField()</code>, according to the policy implemented by an
  * Analyzer. For example, Lucene analyzers can split on whitespace, normalize to lower case
  * for case insensitivity, ignore common terms with little discriminatory value such as "he", "in", "and" (stop
@@ -73,10 +76,15 @@ import org.apache.lucene.search.Similarity;
  * as well as <a target="_blank" 
  * href="http://today.java.net/pub/a/today/2003/11/07/QueryParserRules.html">Query Parser Rules</a>.
  * Note that a Lucene query selects on the field names and associated (indexed) 
- * tokenized terms, not on the original free text(s) - the latter are not stored 
+ * tokenized terms, not on the original fulltext(s) - the latter are not stored 
  * but rather thrown away immediately after tokenization.
  * <p>
- * For some interesting background information on search technology, see 
+ * For some interesting background information on search technology, see Bob Wyman's
+ * <a target="_blank" 
+ * href="http://bobwyman.pubsub.com/main/2005/05/mary_hodder_poi.html">Prospective Search</a>, 
+ * Jim Gray's
+ * <a target="_blank" href="http://www.acmqueue.org/modules.php?name=Content&pa=showpage&pid=293&page=4">
+ * A Call to Arms - Custom subscriptions</a>, and Tim Bray's
  * <a target="_blank" 
  * href="http://www.tbray.org/ongoing/When/200x/2003/07/30/OnSearchTOC">On Search, the Series</a>.
  * 
@@ -84,19 +92,17 @@ import org.apache.lucene.search.Similarity;
  * <h4>Example Usage</h4> 
  * 
  * <pre>
- * Analyzer analyzer = new PatternAnalyzer.DEFAULT_ANALYZER;
+ * Analyzer analyzer = PatternAnalyzer.DEFAULT_ANALYZER;
  * //Analyzer analyzer = new SimpleAnalyzer();
  * MemoryIndex index = new MemoryIndex();
- * index.addField("content", "James is in the woods", analyzer);
- * index.addField("title", "Tales of James", analyzer);
- * float score = index.query(QueryParser.parse("woods AND title:tales", "content", analyzer));
+ * index.addField("content", "Readings about Salmons and other select Alaska fishing Manuals", analyzer);
+ * index.addField("author", "Tales of James", analyzer);
+ * float score = index.search(QueryParser.parse("+author:james +salmon~ +fish* manual~", "content", analyzer));
  * if (score &gt; 0.0f) {
  *     System.out.println("it's a match");
  * } else {
  *     System.out.println("no match found");
  * }
- * score = index.query(QueryParser.parse("wood* AND title:tale~0.2", "content", analyzer));
- * System.out.println("score=" + score);
  * System.out.println("indexData=" + index.toString());
  * </pre>
  * 
@@ -104,14 +110,14 @@ import org.apache.lucene.search.Similarity;
  * <h4>Example XQuery Usage</h4> 
  * 
  * <pre>
- * (: An XQuery that finds all books authored by James that have something to do with "fish", sorted by relevance :)
+ * (: An XQuery that finds all books authored by James that have something to do with "salmon fishing manuals", sorted by relevance :)
  * declare namespace lucene = "java:nux.xom.pool.FullTextUtil";
- * declare variable $query := "fish~"; (: any arbitrary Lucene query can go here :)
+ * declare variable $query := "+salmon~ +fish* manual~"; (: any arbitrary Lucene query can go here :)
  * 
- * for $book in /books/book[author="James" and lucene:match(string(./abstract), $query) > 0.0]
- * let $score := lucene:match(string($book/abstract), $query)
+ * for $book in /books/book[author="James" and lucene:match(abstract, $query) > 0.0]
+ * let $score := lucene:match($book/abstract, $query)
  * order by $score descending
- * return (&lt;score>{$score}</score>, $book)
+ * return $book
  * </pre>
  * 
  * 
@@ -159,7 +165,10 @@ public class MemoryIndex {
 	/** fields sorted ascending by fieldName; lazily computed on demand */
 	private transient Map.Entry[] sortedFields; 
 	
-	/** pos: positions[3*i], startOffset: positions[3*(i+1)], endOffset: positions[3*(i+2)] */
+	/** template terms sorted ascending by fieldName; lazily computed on demand */
+	private transient Term[] sortedTemplates;
+	
+	/** pos: positions[3*i], startOffset: positions[3*i +1], endOffset: positions[3*i +2] */
 	private final int stride;
 	
 	private static final long serialVersionUID = 2782195016849084649L;
@@ -172,25 +181,22 @@ public class MemoryIndex {
 	 */
 	private static final Comparator termComparator = new Comparator() {
 		public int compare(Object o1, Object o2) {
-			if (o1 instanceof Map.Entry) { 
-				o1 = ((Map.Entry) o1).getKey();
-			}
-			if (o2 instanceof Map.Entry) { 
-				o2 = ((Map.Entry) o2).getKey();
-			}
+			if (o1 instanceof Map.Entry) o1 = ((Map.Entry) o1).getKey();
+			if (o2 instanceof Map.Entry) o2 = ((Map.Entry) o2).getKey();
+			if (o1 == o2) return 0;
 			return ((String) o1).compareTo((String) o2);
 		}
 	};
 
 	/**
-	 * Constructs an instance.
+	 * Constructs an empty instance.
 	 */
 	public MemoryIndex() {
 		this(false);
 	}
 	
 	/**
-	 * Constructs an instance that can optionally store the start and end
+	 * Constructs an empty instance that can optionally store the start and end
 	 * character offset of each token term in the text. This can be useful for
 	 * highlighting of hit locations with the Lucene highlighter package.
 	 * Private until the highlighter package matures, so that this can actually
@@ -229,9 +235,43 @@ public class MemoryIndex {
 		if (analyzer instanceof PatternAnalyzer) {
 			stream = ((PatternAnalyzer) analyzer).tokenStream(fieldName, text);
 		} else {
-			stream = analyzer.tokenStream(fieldName, new StringReader(text));
+			stream = analyzer.tokenStream(fieldName, 
+					new PatternAnalyzer.FastStringReader(text));
 		}
 		addField(fieldName, stream);
+	}
+	
+	/**
+	 * Convenience method; Creates and returns a token stream that generates a
+	 * token for each keyword in the given collection, "as is", without any
+	 * transforming text analysis. The resulting token stream can be fed into
+	 * {@link #addField(String, TokenStream)}, perhaps wrapped into another
+	 * {@link org.apache.lucene.analysis.TokenFilter}, as desired.
+	 * 
+	 * @param keywords
+	 *            the keywords to generate tokens for
+	 * @return the corresponding token stream
+	 */
+	public TokenStream keywordTokenStream(final Collection keywords) {
+		if (keywords == null)
+			throw new IllegalArgumentException("keywords must not be null");
+		
+		return new TokenStream() {
+			private Iterator iter = keywords.iterator();
+			private int start = 0;
+			public Token next() {
+				if (!iter.hasNext()) return null;
+				
+				Object obj = iter.next();
+				if (obj == null) 
+					throw new IllegalArgumentException("keyword must not be null");
+				
+				String term = obj.toString();
+				Token token = new Token(term, start, start + term.length());
+				start += term.length() + 1; // separate words by 1 (blank) character
+				return token;
+			}
+		};
 	}
 	
 	/**
@@ -239,7 +279,7 @@ public class MemoryIndex {
 	 * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
 	 * Lucene {@link org.apache.lucene.document.Field}.
 	 * Finally closes the token stream. Note that untokenized keywords can be added with this method via 
-	 * the Lucene contrib <code>KeywordTokenizer</code> or similar utilities.
+	 * {@link #keywordTokenStream(Collection)}, the Lucene contrib <code>KeywordTokenizer</code> or similar utilities.
 	 * 
 	 * @param fieldName
 	 *            a name to be associated with the text
@@ -283,7 +323,7 @@ public class MemoryIndex {
 				pos += token.getPositionIncrement();
 				
 				String term = token.termText();
-				if (DEBUG) System.err.println("token='" + term + "'");
+//				if (DEBUG) System.err.println("token='" + term + "'");
 				ArrayIntList positions = (ArrayIntList) terms.get(term);
 				if (positions == null) { // term not seen before
 					positions = new ArrayIntList(stride);
@@ -298,7 +338,8 @@ public class MemoryIndex {
 			// ensure infos.numTokens > 0 invariant; needed for correct operation of terms()
 			if (numTokens > 0) {
 				fields.put(fieldName, new Info(terms, numTokens));
-				sortedFields = null; // invalidate sorted view, if any
+				sortedFields = null;    // invalidate sorted view, if any
+				sortedTemplates = null; // invalidate sorted view, if any
 			}
 		} catch (IOException e) { // can never happen
 			throw new RuntimeException(e);
@@ -309,6 +350,11 @@ public class MemoryIndex {
 				throw new RuntimeException(e2);
 			}
 		}
+	}
+	
+	
+	public IndexReader createReader(){
+	    return new MemoryIndexReader();
 	}
 	
 	/**
@@ -338,7 +384,6 @@ public class MemoryIndex {
 		if (query == null) 
 			throw new IllegalArgumentException("query must not be null");
 		
-		if (fields.size() == 0) return 0.0f; // nothing to do
 		Searcher searcher = createSearcher();
 		try {
 			final float[] scores = new float[1]; // inits to 0.0f (no match)
@@ -386,6 +431,7 @@ public class MemoryIndex {
 		int size = 0;
 		size += HEADER + 3*PTR; // memory index
 		if (sortedFields != null) size += ARR + PTR * sortedFields.length;
+		if (sortedTemplates != null) size += ARR + PTR * sortedTemplates.length;
 		
 		size += HASHMAP + fields.size() * (PTR + HEADER + 3*PTR + 4); // Map.entries
 		Iterator iter = fields.entrySet().iterator();
@@ -431,41 +477,23 @@ public class MemoryIndex {
 		if (size > 1) Arrays.sort(entries, termComparator);
 		return entries;
 	}
-
-  /**
-  * Convenience method; Creates and returns a token stream that generates a
-  * token for each keyword in the given collection, "as is", without any
-  * transforming text analysis. The resulting token stream can be fed into
-  * {@link #addField(String, TokenStream)}, perhaps wrapped into another
-  * {@link org.apache.lucene.analysis.TokenFilter}, as desired.
-  *
-  * @param keywords
-  *            the keywords to generate tokens for
-  * @return the corresponding token stream
-  */
-  public TokenStream keywordTokenStream(final Collection keywords) {
-    if (keywords == null)
-      throw new IllegalArgumentException("keywords must not be null");
-
-    return new TokenStream() {
-      Iterator iter = keywords.iterator();
-      int pos = 0;
-      int start = 0;
-      public Token next() {
-        if (!iter.hasNext()) return null;
-
-        Object obj = iter.next();
-        if (obj == null)
-          throw new IllegalArgumentException("keyword must not be null");
-
-        String term = obj.toString();
-        Token token = new Token(term, start, start + term.length());
-        start += term.length() + 1; // separate words by 1 (blank) character
-        pos++;
-        return token;
-      }
-    };
-  }
+	
+	/** Returns a new Term object, minimizing String.intern() overheads. */
+	private Term createTerm(int pos, String text) { 
+		// used by MemoryIndexReader.terms().term()
+		// Assertion: sortFields has already been called before
+		Term[] templates = sortedTemplates;
+		if (templates == null) { // not yet initialized?
+			templates = new Term[sortedFields.length];
+			sortedTemplates = templates;
+		}
+		if (templates[pos] == null) { // not yet cached?
+			String fieldName = (String) sortedFields[pos].getKey();
+			templates[pos] = new Term(fieldName, "");
+		}
+		
+		return templates[pos].createTerm(text);
+	}
 
 	/** Returns a String representation of the index data for debugging purposes. */
 	public String toString() {
@@ -695,7 +723,12 @@ public class MemoryIndex {
 			int j; // index into sortedFields
 			
 			sortFields();
-			j = Arrays.binarySearch(sortedFields, term.field(), termComparator);
+			if (sortedFields.length == 1 && sortedFields[0].getKey() == term.field()) {
+				j = 0; // fast path
+			} else {
+				j = Arrays.binarySearch(sortedFields, term.field(), termComparator);
+			}
+			
 			if (j < 0) { // not found; choose successor
 				j = -j -1; 
 				i = 0;
@@ -721,7 +754,7 @@ public class MemoryIndex {
 	
 				private int i = ix; // index into info.sortedTerms
 				private int j = jx; // index into sortedFields
-	
+					
 				public boolean next() {
 					if (DEBUG) System.err.println("TermEnum.next");
 					if (j >= sortedFields.length) return false;
@@ -732,7 +765,7 @@ public class MemoryIndex {
 					j++;
 					i = 0;
 					if (j >= sortedFields.length) return false;
-					info.sortTerms();
+					getInfo(j).sortTerms();
 					return true;
 				}
 	
@@ -741,10 +774,10 @@ public class MemoryIndex {
 					if (j >= sortedFields.length) return null;
 					Info info = getInfo(j);
 					if (i >= info.sortedTerms.length) return null;
-					String fieldName = (String) sortedFields[j].getKey();
-					return new Term(fieldName, (String) info.sortedTerms[i].getKey());
+//					if (DEBUG) System.err.println("TermEnum.term: " + i + ", " + info.sortedTerms[i].getKey());
+					return createTerm(j, (String) info.sortedTerms[i].getKey());
 				}
-	
+				
 				public int docFreq() {
 					if (DEBUG) System.err.println("TermEnum.docFreq");
 					if (j >= sortedFields.length) return 0;
@@ -777,6 +810,7 @@ public class MemoryIndex {
 				}
 	
 				public void seek(TermEnum termEnum) {
+					if (DEBUG) System.err.println(".seekEnum");
 					seek(termEnum.term());
 				}
 	
@@ -811,7 +845,7 @@ public class MemoryIndex {
 					if (DEBUG) System.err.println(".skipTo: " + target);
 					return next();
 				}
-        
+	
 				public void close() {
 					if (DEBUG) System.err.println(".close");
 				}
@@ -849,7 +883,7 @@ public class MemoryIndex {
 			
 			return new TermPositionVector() { 
 	
-				final Map.Entry[] sortedTerms = info.sortedTerms;
+				private final Map.Entry[] sortedTerms = info.sortedTerms;
 				
 				public String getField() {
 					return fieldName;
@@ -861,7 +895,7 @@ public class MemoryIndex {
 	
 				public String[] getTerms() {
 					String[] terms = new String[sortedTerms.length];
-					for (int i=0; i < sortedTerms.length; i++) {
+					for (int i=sortedTerms.length; --i >= 0; ) {
 						terms[i] = (String) sortedTerms[i].getKey();
 					}
 					return terms;
@@ -869,7 +903,7 @@ public class MemoryIndex {
 	
 				public int[] getTermFrequencies() {
 					int[] freqs = new int[sortedTerms.length];
-					for (int i=0; i < sortedTerms.length; i++) {
+					for (int i=sortedTerms.length; --i >= 0; ) {
 						freqs[i] = numPositions((ArrayIntList) sortedTerms[i].getValue());
 					}
 					return freqs;
@@ -921,31 +955,31 @@ public class MemoryIndex {
 			this.searcher = searcher;
 		}
 		
-                /** performance hack: cache norms to avoid repeated expensive calculations */
-                private byte[] cachedNorms;
-                private String cachedFieldName;
-                private Similarity cachedSimilarity;
-	    
-                public byte[] norms(String fieldName) {
-                  byte[] norms = cachedNorms;
-                  Similarity sim = getSimilarity();
-                  if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
-                    Info info = getInfo(fieldName);
-                    int numTokens = info != null ? info.numTokens : 0;
-                    float n = sim.lengthNorm(fieldName, numTokens);
-                    byte norm = Similarity.encodeNorm(n);
-                    norms = new byte[] {norm};
-		    
-                    cachedNorms = norms;
-                    cachedFieldName = fieldName;
-                    cachedSimilarity = sim;
-                    if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + n + ":" + norm + ":" + numTokens);
-                  }
-                  return norms;
-                }
-
+		/** performance hack: cache norms to avoid repeated expensive calculations */
+		private byte[] cachedNorms;
+		private String cachedFieldName;
+		private Similarity cachedSimilarity;
+		
+		public byte[] norms(String fieldName) {
+			byte[] norms = cachedNorms;
+			Similarity sim = getSimilarity();
+			if (fieldName != cachedFieldName || sim != cachedSimilarity) { // not cached?
+				Info info = getInfo(fieldName);
+				int numTokens = info != null ? info.numTokens : 0;
+				float n = sim.lengthNorm(fieldName, numTokens);
+				byte norm = Similarity.encodeNorm(n);
+				norms = new byte[] {norm};
+				
+				cachedNorms = norms;
+				cachedFieldName = fieldName;
+				cachedSimilarity = sim;
+				if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + ":" + n + ":" + norm + ":" + numTokens);
+			}
+			return norms;
+		}
+	
 		public void norms(String fieldName, byte[] bytes, int offset) {
-			if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldName + "*");
+			if (DEBUG) System.err.println("MemoryIndexReader.norms*: " + fieldName);
 			byte[] norms = norms(fieldName);
 			System.arraycopy(norms, 0, bytes, offset, norms.length);
 		}
@@ -1036,3 +1070,4 @@ public class MemoryIndex {
 	}
 
 }
+
