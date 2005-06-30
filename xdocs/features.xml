@@ -21,19 +21,24 @@
 <section name="Powerful, Accurate and Efficient Search Algorithms">
 <ul>
 <li>ranked searching -- best results returned first</li>
-<li>sorting by any field</li>
 <li>many powerful query types: phrase queries, wildcard queries, proximity
 	queries, range queries and more</li>
 <li>fielded searching (e.g., title, author, contents)</li>
 <li>date-range searching</li>
+<li>sorting by any field</li>
 <li>multiple-index searching with merged results</li>
+<li>allows simultaneous update and searching</li>
 </ul>
 </section>
 
 <section name="Cross-Platform Solution">
 <ul>
+<li>Available as Open Source software under the
+	<a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License</a>
+	which lets you use Lucene in both commercial and Open Source programs</li>
 <li>100%-pure Java</li>
-<li>implementations in other programming languages available that are index-compatible</li>
+<li>implementations <a href="http://wiki.apache.org/jakarta-lucene/LuceneImplementations">in other
+	programming languages available</a> that are index-compatible</li>
 </ul>
 </section>
 
