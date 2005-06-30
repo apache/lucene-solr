@@ -45,6 +45,17 @@ public final class Term implements Comparable, java.io.Serializable {
     text of the word.  In the case of dates and other types, this is an
     encoding of the object as a string.  */
   public final String text() { return text; }
+  
+  /**
+   * Optimized construction of new Terms by reusing same field as this Term
+   * - avoids field.intern() overhead 
+   * @param text The text of the new term (field is implicitly same as this Term instance)
+   * @return A new Term
+   */
+  public Term createTerm(String text)
+  {
+      return new Term(field,text,false);
+  }
 
   /** Compares two terms, returning true iff they have the same
       field and text. */
