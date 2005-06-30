@@ -16,7 +16,9 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -25,6 +27,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
 
 /**
  * Utility class used to extract the terms used in a query, plus any weights.
@@ -101,15 +104,9 @@ public final class QueryTermExtractor
 			else
 				if (query instanceof TermQuery)
 					getTermsFromTermQuery((TermQuery) query, terms);
-//				else
-//					if ((query instanceof PrefixQuery)
-//						|| (query instanceof RangeQuery)
-//						|| (query instanceof MultiTermQuery))
-//					{
-//						//client should call rewrite BEFORE calling highlighter
-//						//						Query expandedQuery = rewrite(reader, query);
-//						//				getTerms(reader, expandedQuery, terms, prohibited);
-//					}
+				else
+		        if(query instanceof SpanNearQuery)
+		            getTermsFromSpanNearQuery((SpanNearQuery) query, terms);
 	}
 
 	private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet terms, boolean prohibited)
@@ -140,5 +137,24 @@ public final class QueryTermExtractor
 		terms.add(new WeightedTerm(query.getBoost(),query.getTerm().text()));
 	}
 
+    private static final void getTermsFromSpanNearQuery(SpanNearQuery query, HashSet terms){
+
+        Collection queryTerms = query.getTerms();
+
+        for(Iterator iterator = queryTerms.iterator(); iterator.hasNext();){
+
+            // break it out for debugging.
+
+            Term term = (Term) iterator.next();
+
+            String text = term.text();
+
+            terms.add(new WeightedTerm(query.getBoost(), text));
+
+ 
+
+        }
+
+    }
 
 }
