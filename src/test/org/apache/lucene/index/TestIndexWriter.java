@@ -19,7 +19,7 @@ import org.apache.lucene.store.RAMDirectory;
  */
 public class TestIndexWriter extends TestCase
 {
-    public void testDocCount()
+    public void testDocCount() throws IOException
     {
         Directory dir = new RAMDirectory();
 
@@ -27,60 +27,49 @@ public class TestIndexWriter extends TestCase
         IndexReader reader = null;
         int i;
 
-        try {
-            writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
 
-            // add 100 documents
-            for (i = 0; i < 100; i++) {
-                addDoc(writer);
-            }
-            assertEquals(100, writer.docCount());
-            writer.close();
-
-            // delete 40 documents
-            reader = IndexReader.open(dir);
-            for (i = 0; i < 40; i++) {
-                reader.delete(i);
-            }
-            reader.close();
-
-            // test doc count before segments are merged/index is optimized
-            writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
-            assertEquals(100, writer.docCount());
-            writer.close();
-
-            reader = IndexReader.open(dir);
-            assertEquals(100, reader.maxDoc());
-            assertEquals(60, reader.numDocs());
-            reader.close();
-
-            // optimize the index and check that the new doc count is correct
-            writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
-            writer.optimize();
-            assertEquals(60, writer.docCount());
-            writer.close();
-
-            // check that the index reader gives the same numbers.
-            reader = IndexReader.open(dir);
-            assertEquals(60, reader.maxDoc());
-            assertEquals(60, reader.numDocs());
-            reader.close();
+        // add 100 documents
+        for (i = 0; i < 100; i++) {
+            addDoc(writer);
         }
-        catch (IOException e) {
-            e.printStackTrace();
+        assertEquals(100, writer.docCount());
+        writer.close();
+
+        // delete 40 documents
+        reader = IndexReader.open(dir);
+        for (i = 0; i < 40; i++) {
+            reader.delete(i);
         }
+        reader.close();
+
+        // test doc count before segments are merged/index is optimized
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+        assertEquals(100, writer.docCount());
+        writer.close();
+
+        reader = IndexReader.open(dir);
+        assertEquals(100, reader.maxDoc());
+        assertEquals(60, reader.numDocs());
+        reader.close();
+
+        // optimize the index and check that the new doc count is correct
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+        writer.optimize();
+        assertEquals(60, writer.docCount());
+        writer.close();
+
+        // check that the index reader gives the same numbers.
+        reader = IndexReader.open(dir);
+        assertEquals(60, reader.maxDoc());
+        assertEquals(60, reader.numDocs());
+        reader.close();
     }
 
-    private void addDoc(IndexWriter writer)
+    private void addDoc(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
         doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
-
-        try {
-            writer.addDocument(doc);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.addDocument(doc);
     }
 }

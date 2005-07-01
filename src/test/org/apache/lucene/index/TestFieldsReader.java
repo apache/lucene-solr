@@ -34,43 +34,28 @@ public class TestFieldsReader extends TestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws IOException {
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
     DocumentWriter writer = new DocumentWriter(dir, new WhitespaceAnalyzer(),
             Similarity.getDefault(), 50);
     assertTrue(writer != null);
-    try {
-      writer.addDocument("test", testDoc);
-    }
-    catch (IOException e)
-    {
-      
-    }
+    writer.addDocument("test", testDoc);
   }
 
-  protected void tearDown() {
-
-  }
-
-  public void test() {
+  public void test() throws IOException {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
-    try {
-      FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
-      assertTrue(reader != null);
-      assertTrue(reader.size() == 1);
-      Document doc = reader.doc(0);
-      assertTrue(doc != null);
-      assertTrue(doc.getField("textField1") != null);
-      Field field = doc.getField("textField2");
-      assertTrue(field != null);
-      assertTrue(field.isTermVectorStored() == true);
-      reader.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }
+    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    assertTrue(reader != null);
+    assertTrue(reader.size() == 1);
+    Document doc = reader.doc(0);
+    assertTrue(doc != null);
+    assertTrue(doc.getField("textField1") != null);
+    Field field = doc.getField("textField2");
+    assertTrue(field != null);
+    assertTrue(field.isTermVectorStored() == true);
+    reader.close();
   }
 }

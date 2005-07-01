@@ -36,15 +36,10 @@ public class TestSegmentReader extends TestCase {
   }
   
   //TODO: Setup the reader w/ multiple documents
-  protected void setUp() {
-
-    try {
-      DocHelper.setupDoc(testDoc);
-      DocHelper.writeDoc(dir, testDoc);
-      reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
-    } catch (IOException e) {
-      
-    }
+  protected void setUp() throws IOException {
+    DocHelper.setupDoc(testDoc);
+    DocHelper.writeDoc(dir, testDoc);
+    reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
   }
 
   protected void tearDown() {
@@ -58,48 +53,38 @@ public class TestSegmentReader extends TestCase {
     assertTrue(DocHelper.numFields(testDoc) == 6);
   }
   
-  public void testDocument() {
-    try {
-      assertTrue(reader.numDocs() == 1);
-      assertTrue(reader.maxDoc() >= 1);
-      Document result = reader.document(0);
-      assertTrue(result != null);
-      //There are 2 unstored fields on the document that are not preserved across writing
-      assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - 2);
-      
-      Enumeration fields = result.fields();
-      while (fields.hasMoreElements()) {
-        Field field = (Field) fields.nextElement();
-        assertTrue(field != null);
-        assertTrue(DocHelper.nameValues.containsKey(field.name()));
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+  public void testDocument() throws IOException {
+    assertTrue(reader.numDocs() == 1);
+    assertTrue(reader.maxDoc() >= 1);
+    Document result = reader.document(0);
+    assertTrue(result != null);
+    //There are 2 unstored fields on the document that are not preserved across writing
+    assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - 2);
+    
+    Enumeration fields = result.fields();
+    while (fields.hasMoreElements()) {
+      Field field = (Field) fields.nextElement();
+      assertTrue(field != null);
+      assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }
   }
   
-  public void testDelete() {
+  public void testDelete() throws IOException {
     Document docToDelete = new Document();
     DocHelper.setupDoc(docToDelete);
     DocHelper.writeDoc(dir, "seg-to-delete", docToDelete);
+    SegmentReader deleteReader = SegmentReader.get(new SegmentInfo("seg-to-delete", 1, dir));
+    assertTrue(deleteReader != null);
+    assertTrue(deleteReader.numDocs() == 1);
+    deleteReader.delete(0);
+    assertTrue(deleteReader.isDeleted(0) == true);
+    assertTrue(deleteReader.hasDeletions() == true);
+    assertTrue(deleteReader.numDocs() == 0);
     try {
-      SegmentReader deleteReader = SegmentReader.get(new SegmentInfo("seg-to-delete", 1, dir));
-      assertTrue(deleteReader != null);
-      assertTrue(deleteReader.numDocs() == 1);
-      deleteReader.delete(0);
-      assertTrue(deleteReader.isDeleted(0) == true);
-      assertTrue(deleteReader.hasDeletions() == true);
-      assertTrue(deleteReader.numDocs() == 0);
-      try {
-        Document test = deleteReader.document(0);
-        assertTrue(false);
-      } catch (IllegalArgumentException e) {
-        assertTrue(true);
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+      Document test = deleteReader.document(0);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // expcected exception
     }
   }    
   
@@ -133,34 +118,28 @@ public class TestSegmentReader extends TestCase {
     assertTrue(result.size() == 3);
   } 
   
-  public void testTerms() {
-    try {
-      TermEnum terms = reader.terms();
-      assertTrue(terms != null);
-      while (terms.next() == true)
-      {
-        Term term = terms.term();
-        assertTrue(term != null);
-        //System.out.println("Term: " + term);
-        String fieldValue = (String)DocHelper.nameValues.get(term.field());
-        assertTrue(fieldValue.indexOf(term.text()) != -1);
-      }
-      
-      TermDocs termDocs = reader.termDocs();
-      assertTrue(termDocs != null);
-      termDocs.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
-      assertTrue(termDocs.next() == true);
-      
-      TermPositions positions = reader.termPositions();
-      positions.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
-      assertTrue(positions != null);
-      assertTrue(positions.doc() == 0);
-      assertTrue(positions.nextPosition() >= 0);
-      
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+  public void testTerms() throws IOException {
+    TermEnum terms = reader.terms();
+    assertTrue(terms != null);
+    while (terms.next() == true)
+    {
+      Term term = terms.term();
+      assertTrue(term != null);
+      //System.out.println("Term: " + term);
+      String fieldValue = (String)DocHelper.nameValues.get(term.field());
+      assertTrue(fieldValue.indexOf(term.text()) != -1);
     }
+    
+    TermDocs termDocs = reader.termDocs();
+    assertTrue(termDocs != null);
+    termDocs.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
+    assertTrue(termDocs.next() == true);
+    
+    TermPositions positions = reader.termPositions();
+    positions.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
+    assertTrue(positions != null);
+    assertTrue(positions.doc() == 0);
+    assertTrue(positions.nextPosition() >= 0);
   }    
   
   public void testNorms() {

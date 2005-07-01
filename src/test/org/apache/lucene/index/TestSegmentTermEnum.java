@@ -21,42 +21,32 @@ public class TestSegmentTermEnum extends TestCase
 {
   Directory dir = new RAMDirectory();
 
-  public void testTermEnum()
+  public void testTermEnum() throws IOException
   {
     IndexWriter writer = null;
 
-    try {
-      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+    writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
 
-      // add 100 documents with term : aaa
-      // add 100 documents with terms: aaa bbb
-      // Therefore, term 'aaa' has document frequency of 200 and term 'bbb' 100
-      for (int i = 0; i < 100; i++) {
-        addDoc(writer, "aaa");
-        addDoc(writer, "aaa bbb");
-      }
-
-      writer.close();
-    }
-    catch (IOException e) {
-      e.printStackTrace();
+    // add 100 documents with term : aaa
+    // add 100 documents with terms: aaa bbb
+    // Therefore, term 'aaa' has document frequency of 200 and term 'bbb' 100
+    for (int i = 0; i < 100; i++) {
+      addDoc(writer, "aaa");
+      addDoc(writer, "aaa bbb");
     }
 
-    try {
-      // verify document frequency of terms in an unoptimized index
-      verifyDocFreq();
+    writer.close();
 
-      // merge segments by optimizing the index
-      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
-      writer.optimize();
-      writer.close();
+    // verify document frequency of terms in an unoptimized index
+    verifyDocFreq();
 
-      // verify document frequency of terms in an optimized index
-      verifyDocFreq();
-    }
-    catch (IOException e2) {
-      e2.printStackTrace();
-    }
+    // merge segments by optimizing the index
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+    writer.optimize();
+    writer.close();
+
+    // verify document frequency of terms in an optimized index
+    verifyDocFreq();
   }
 
   private void verifyDocFreq()
@@ -95,16 +85,10 @@ public class TestSegmentTermEnum extends TestCase
     termEnum.close();
   }
 
-  private void addDoc(IndexWriter writer, String value)
+  private void addDoc(IndexWriter writer, String value) throws IOException
   {
     Document doc = new Document();
     doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
-
-    try {
-      writer.addDocument(doc);
-    }
-    catch (IOException e) {
-      e.printStackTrace();
-    }
+    writer.addDocument(doc);
   }
 }

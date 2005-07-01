@@ -338,7 +338,9 @@ public class TestCompoundFile extends TestCase
             // OK: this call correctly fails. We are now past the 1024 internal
             // buffer, so an actual IO is attempted, which fails
             b = in.readByte();
+            fail("expected readByte() to throw exception");
         } catch (IOException e) {
+          // expected exception
         }
     }
 

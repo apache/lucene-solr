@@ -185,7 +185,7 @@ public class TestIndexReader extends TestCase
 
         } finally {
             if (tdocs != null)
-                try { tdocs.close(); } catch (Exception e) { }
+                tdocs.close();
         }
 
     }
@@ -498,18 +498,10 @@ public class TestIndexReader extends TestCase
         writer.addDocument(doc);
     }
     
-    private void addDoc(IndexWriter writer, String value)
+    private void addDoc(IndexWriter writer, String value) throws IOException
     {
         Document doc = new Document();
         doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
-
-        try
-        {
-            writer.addDocument(doc);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        writer.addDocument(doc);
     }
 }

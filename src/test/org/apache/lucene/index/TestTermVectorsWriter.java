@@ -89,26 +89,21 @@ public class TestTermVectorsWriter extends TestCase {
     }
   }  */  
 
-  public void testWriter() {
-    try {
-      TermVectorsWriter writer = new TermVectorsWriter(dir, seg, fieldInfos);
-      writer.openDocument();
-      assertTrue(writer.isDocumentOpen() == true);
-      writeField(writer, testFields[0]);
-      writer.closeDocument();
-      writer.close();
-      assertTrue(writer.isDocumentOpen() == false);
-      //Check to see the files were created
-      assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
-      assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
-      //Now read it back in
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
-      checkTermVector(reader, 0, testFields[0]);
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }
+  public void testWriter() throws IOException {
+    TermVectorsWriter writer = new TermVectorsWriter(dir, seg, fieldInfos);
+    writer.openDocument();
+    assertTrue(writer.isDocumentOpen() == true);
+    writeField(writer, testFields[0]);
+    writer.closeDocument();
+    writer.close();
+    assertTrue(writer.isDocumentOpen() == false);
+    //Check to see the files were created
+    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
+    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
+    //Now read it back in
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    assertTrue(reader != null);
+    checkTermVector(reader, 0, testFields[0]);
   }
   
   private void checkTermVector(TermVectorsReader reader, int docNum, String field) throws IOException {
@@ -125,28 +120,24 @@ public class TestTermVectorsWriter extends TestCase {
 
   /**
    * Test one document, multiple fields
+   * @throws IOException
    */
-  public void testMultipleFields() {
-    try {
-      TermVectorsWriter writer = new TermVectorsWriter(dir, seg, fieldInfos);
-      writeDocument(writer, testFields.length);
+  public void testMultipleFields() throws IOException {
+    TermVectorsWriter writer = new TermVectorsWriter(dir, seg, fieldInfos);
+    writeDocument(writer, testFields.length);
 
-      writer.close();
+    writer.close();
 
-      assertTrue(writer.isDocumentOpen() == false);
-      //Check to see the files were created
-      assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
-      assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
-      //Now read it back in
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
+    assertTrue(writer.isDocumentOpen() == false);
+    //Check to see the files were created
+    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVD_EXTENSION));
+    assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
+    //Now read it back in
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    assertTrue(reader != null);
 
-      for (int j = 0; j < testFields.length; j++) {
-        checkTermVector(reader, 0, testFields[j]);
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+    for (int j = 0; j < testFields.length; j++) {
+      checkTermVector(reader, 0, testFields[j]);
     }
   }
 
@@ -177,30 +168,19 @@ public class TestTermVectorsWriter extends TestCase {
   }
 
 
-  public void testMultipleDocuments() {
-
-    try {
-      TermVectorsWriter writer = new TermVectorsWriter(dir, seg, fieldInfos);
-      assertTrue(writer != null);
-      for (int i = 0; i < 10; i++) {
-        writeDocument(writer, testFields.length);
-      }
-      writer.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }      
+  public void testMultipleDocuments() throws IOException {
+    TermVectorsWriter writer = new TermVectorsWriter(dir, seg, fieldInfos);
+    assertTrue(writer != null);
+    for (int i = 0; i < 10; i++) {
+      writeDocument(writer, testFields.length);
+    }
+    writer.close();
     //Do some arbitrary tests
-    try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      for (int i = 0; i < 10; i++) {        
-        assertTrue(reader != null);
-        checkTermVector(reader, 5, testFields[0]);
-        checkTermVector(reader, 2, testFields[2]);
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    for (int i = 0; i < 10; i++) {        
+      assertTrue(reader != null);
+      checkTermVector(reader, 5, testFields[0]);
+      checkTermVector(reader, 2, testFields[2]);
     }
   }
   
@@ -208,23 +188,19 @@ public class TestTermVectorsWriter extends TestCase {
    * Test that no NullPointerException will be raised,
    * when adding one document with a single, empty field
    * and term vectors enabled.
+   * @throws IOException
    *
    */
-  public void testBadSegment() {
-    try {
-      dir = new RAMDirectory();
-      IndexWriter ir = new IndexWriter(dir, new StandardAnalyzer(), true);
-      
-      Document document = new Document();
-      document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.TOKENIZED,
-          Field.TermVector.YES));
-      ir.addDocument(document);
-      ir.close();
-      dir.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }
+  public void testBadSegment() throws IOException {
+    dir = new RAMDirectory();
+    IndexWriter ir = new IndexWriter(dir, new StandardAnalyzer(), true);
+    
+    Document document = new Document();
+    document.add(new Field("tvtest", "", Field.Store.NO, Field.Index.TOKENIZED,
+        Field.TermVector.YES));
+    ir.addDocument(document);
+    ir.close();
+    dir.close();
   }
 
 }

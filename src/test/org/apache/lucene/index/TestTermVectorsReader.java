@@ -24,7 +24,7 @@ public class TestTermVectorsReader extends TestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws IOException {
     for (int i = 0; i < testFields.length; i++) {
       fieldInfos.add(testFields[i], true, true, testFieldsStorePos[i], testFieldsStoreOff[i]);
     }
@@ -42,27 +42,21 @@ public class TestTermVectorsReader extends TestCase {
         offsets[i][j] = new TermVectorOffsetInfo(j * 10, j * 10 + testTerms[i].length());
       }        
     }
-    try {
-      Arrays.sort(testTerms);
-      for (int j = 0; j < 5; j++) {
-        writer = new TermVectorsWriter(dir, seg, fieldInfos);
-        writer.openDocument();
+    Arrays.sort(testTerms);
+    for (int j = 0; j < 5; j++) {
+      writer = new TermVectorsWriter(dir, seg, fieldInfos);
+      writer.openDocument();
 
-        for (int k = 0; k < testFields.length; k++) {
-          writer.openField(testFields[k]);
-          for (int i = 0; i < testTerms.length; i++) {
-            writer.addTerm(testTerms[i], 3, positions[i], offsets[i]);      
-          }
-          writer.closeField();
+      for (int k = 0; k < testFields.length; k++) {
+        writer.openField(testFields[k]);
+        for (int i = 0; i < testTerms.length; i++) {
+          writer.addTerm(testTerms[i], 3, positions[i], offsets[i]);      
         }
-        writer.closeDocument();
-        writer.close();
+        writer.closeField();
       }
-
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }    
+      writer.closeDocument();
+      writer.close();
+    }
   }
 
   protected void tearDown() {
@@ -76,120 +70,90 @@ public class TestTermVectorsReader extends TestCase {
       assertTrue(dir.fileExists(seg + TermVectorsWriter.TVX_EXTENSION));
   }
   
-  public void testReader() {
-    try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
-      TermFreqVector vector = reader.get(0, testFields[0]);
-      assertTrue(vector != null);
-      String [] terms = vector.getTerms();
-      assertTrue(terms != null);
-      assertTrue(terms.length == testTerms.length);
-      for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
-        //System.out.println("Term: " + term);
-        assertTrue(term.equals(testTerms[i]));
-      }
-      
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+  public void testReader() throws IOException {
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    assertTrue(reader != null);
+    TermFreqVector vector = reader.get(0, testFields[0]);
+    assertTrue(vector != null);
+    String [] terms = vector.getTerms();
+    assertTrue(terms != null);
+    assertTrue(terms.length == testTerms.length);
+    for (int i = 0; i < terms.length; i++) {
+      String term = terms[i];
+      //System.out.println("Term: " + term);
+      assertTrue(term.equals(testTerms[i]));
     }
   }  
   
-  public void testPositionReader() {
-    try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
-      TermPositionVector vector;
-      String [] terms;
-      vector = (TermPositionVector)reader.get(0, testFields[0]);
-      assertTrue(vector != null);      
-      terms = vector.getTerms();
-      assertTrue(terms != null);
-      assertTrue(terms.length == testTerms.length);
-      for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
-        //System.out.println("Term: " + term);
-        assertTrue(term.equals(testTerms[i]));
-        int [] positions = vector.getTermPositions(i);
-        assertTrue(positions != null);
-        assertTrue(positions.length == this.positions[i].length);
-        for (int j = 0; j < positions.length; j++) {
-          int position = positions[j];
-          assertTrue(position == this.positions[i][j]);
-        }
-        TermVectorOffsetInfo [] offset = vector.getOffsets(i);
-        assertTrue(offset != null);
-        assertTrue(offset.length == this.offsets[i].length);
-        for (int j = 0; j < offset.length; j++) {
-          TermVectorOffsetInfo termVectorOffsetInfo = offset[j];
-          assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
-        }
+  public void testPositionReader() throws IOException {
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    assertTrue(reader != null);
+    TermPositionVector vector;
+    String [] terms;
+    vector = (TermPositionVector)reader.get(0, testFields[0]);
+    assertTrue(vector != null);      
+    terms = vector.getTerms();
+    assertTrue(terms != null);
+    assertTrue(terms.length == testTerms.length);
+    for (int i = 0; i < terms.length; i++) {
+      String term = terms[i];
+      //System.out.println("Term: " + term);
+      assertTrue(term.equals(testTerms[i]));
+      int [] positions = vector.getTermPositions(i);
+      assertTrue(positions != null);
+      assertTrue(positions.length == this.positions[i].length);
+      for (int j = 0; j < positions.length; j++) {
+        int position = positions[j];
+        assertTrue(position == this.positions[i][j]);
       }
-      
-      TermFreqVector freqVector = reader.get(0, testFields[1]); //no pos, no offset
-      assertTrue(freqVector != null);      
-      assertTrue(freqVector instanceof TermPositionVector == false);
-      terms = freqVector.getTerms();
-      assertTrue(terms != null);
-      assertTrue(terms.length == testTerms.length);
-      for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
-        //System.out.println("Term: " + term);
-        assertTrue(term.equals(testTerms[i]));        
+      TermVectorOffsetInfo [] offset = vector.getOffsets(i);
+      assertTrue(offset != null);
+      assertTrue(offset.length == this.offsets[i].length);
+      for (int j = 0; j < offset.length; j++) {
+        TermVectorOffsetInfo termVectorOffsetInfo = offset[j];
+        assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
       }
-      
-      
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
     }
-    catch (ClassCastException cce)
-    {
-      cce.printStackTrace();
-      assertTrue(false);
+    
+    TermFreqVector freqVector = reader.get(0, testFields[1]); //no pos, no offset
+    assertTrue(freqVector != null);      
+    assertTrue(freqVector instanceof TermPositionVector == false);
+    terms = freqVector.getTerms();
+    assertTrue(terms != null);
+    assertTrue(terms.length == testTerms.length);
+    for (int i = 0; i < terms.length; i++) {
+      String term = terms[i];
+      //System.out.println("Term: " + term);
+      assertTrue(term.equals(testTerms[i]));        
     }
   }
   
-  public void testOffsetReader() {
-    try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
-      TermPositionVector vector = (TermPositionVector)reader.get(0, testFields[0]);
-      assertTrue(vector != null);
-      String [] terms = vector.getTerms();
-      assertTrue(terms != null);
-      assertTrue(terms.length == testTerms.length);
-      for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
-        //System.out.println("Term: " + term);
-        assertTrue(term.equals(testTerms[i]));
-        int [] positions = vector.getTermPositions(i);
-        assertTrue(positions != null);
-        assertTrue(positions.length == this.positions[i].length);
-        for (int j = 0; j < positions.length; j++) {
-          int position = positions[j];
-          assertTrue(position == this.positions[i][j]);
-        }
-        TermVectorOffsetInfo [] offset = vector.getOffsets(i);
-        assertTrue(offset != null);
-        assertTrue(offset.length == this.offsets[i].length);
-        for (int j = 0; j < offset.length; j++) {
-          TermVectorOffsetInfo termVectorOffsetInfo = offset[j];
-          assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
-        }
+  public void testOffsetReader() throws IOException {
+    TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+    assertTrue(reader != null);
+    TermPositionVector vector = (TermPositionVector)reader.get(0, testFields[0]);
+    assertTrue(vector != null);
+    String [] terms = vector.getTerms();
+    assertTrue(terms != null);
+    assertTrue(terms.length == testTerms.length);
+    for (int i = 0; i < terms.length; i++) {
+      String term = terms[i];
+      //System.out.println("Term: " + term);
+      assertTrue(term.equals(testTerms[i]));
+      int [] positions = vector.getTermPositions(i);
+      assertTrue(positions != null);
+      assertTrue(positions.length == this.positions[i].length);
+      for (int j = 0; j < positions.length; j++) {
+        int position = positions[j];
+        assertTrue(position == this.positions[i][j]);
       }
-      
-      
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
-    }
-    catch (ClassCastException cce)
-    {
-      cce.printStackTrace();
-      assertTrue(false);
+      TermVectorOffsetInfo [] offset = vector.getOffsets(i);
+      assertTrue(offset != null);
+      assertTrue(offset.length == this.offsets[i].length);
+      for (int j = 0; j < offset.length; j++) {
+        TermVectorOffsetInfo termVectorOffsetInfo = offset[j];
+        assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
+      }
     }
   }
   
@@ -203,18 +167,18 @@ public class TestTermVectorsReader extends TestCase {
       assertTrue(reader != null);
       //Bad document number, good field number
       reader.get(50, testFields[0]);
-      assertTrue(false);      
+      fail();      
     } catch (IOException e) {
-      assertTrue(true);
+      // expected exception
     }
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
       assertTrue(reader != null);
       //Bad document number, no field
       reader.get(50);
-      assertTrue(false);      
+      fail();      
     } catch (IOException e) {
-      assertTrue(true);
+      // expected exception
     }
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
@@ -223,7 +187,7 @@ public class TestTermVectorsReader extends TestCase {
       TermFreqVector vector = reader.get(0, "f50");
       assertTrue(vector == null);      
     } catch (IOException e) {
-      assertTrue(false);
+      fail();
     }
   }    
 }
