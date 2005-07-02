@@ -172,19 +172,8 @@ public class TestDocument extends TestCase
         Hits hits = searcher.search(query);
 	assertEquals(1, hits.length());
 
-        try
-        {
-            doAssert(hits.doc(0), true);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-            System.err.print("\n");
-        }
-        finally
-        {
-            searcher.close();
-        }
+         doAssert(hits.doc(0), true);
+         searcher.close();
     }
 
     private Document makeDocumentWithFields()

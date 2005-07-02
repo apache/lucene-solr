@@ -33,7 +33,7 @@ public class TestSegmentTermDocs extends TestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws IOException {
     DocHelper.setupDoc(testDoc);
     DocHelper.writeDoc(dir, testDoc);
   }

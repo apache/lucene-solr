@@ -40,15 +40,15 @@ public class TestDateTools extends TestCase {
     try {
       d = DateTools.stringToDate("97");    // no date
       fail();
-    } catch(ParseException e) { /* expected excpetion */ }
+    } catch(ParseException e) { /* expected exception */ }
     try {
       d = DateTools.stringToDate("200401011235009999");    // no date
       fail();
-    } catch(ParseException e) { /* expected excpetion */ }
+    } catch(ParseException e) { /* expected exception */ }
     try {
       d = DateTools.stringToDate("aaaa");    // no date
       fail();
-    } catch(ParseException e) { /* expected excpetion */ }
+    } catch(ParseException e) { /* expected exception */ }
 
   }
   

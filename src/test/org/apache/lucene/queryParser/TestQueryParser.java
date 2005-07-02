@@ -497,19 +497,19 @@ public class TestQueryParser extends TestCase {
   public void testCustomQueryParserWildcard() {
     try {
       new QPTestParser("contents", new WhitespaceAnalyzer()).parse("a?t");
+      fail("Wildcard queries should not be allowed");
     } catch (ParseException expected) {
-      return;
+      // expected exception
     }
-    fail("Wildcard queries should not be allowed");
   }
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
       new QPTestParser("contents", new WhitespaceAnalyzer()).parse("xunit~");
+      fail("Fuzzy queries should not be allowed");
     } catch (ParseException expected) {
-      return;
+      // expected exception
     }
-    fail("Fuzzy queries should not be allowed");
   }
 
   public void testBooleanQuery() throws Exception {

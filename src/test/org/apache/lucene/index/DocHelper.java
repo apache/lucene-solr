@@ -87,8 +87,9 @@ class DocHelper {
    * Writes the document to the directory using a segment named "test"
    * @param dir
    * @param doc
+   * @throws IOException
    */ 
-  public static void writeDoc(Directory dir, Document doc)
+  public static void writeDoc(Directory dir, Document doc) throws IOException
   {
     writeDoc(dir, "test", doc);
   }
@@ -98,8 +99,9 @@ class DocHelper {
    * @param dir
    * @param segment
    * @param doc
+   * @throws IOException
    */ 
-  public static void writeDoc(Directory dir, String segment, Document doc)
+  public static void writeDoc(Directory dir, String segment, Document doc) throws IOException
   {
     Analyzer analyzer = new WhitespaceAnalyzer();
     Similarity similarity = Similarity.getDefault();
@@ -112,8 +114,9 @@ class DocHelper {
    * @param analyzer
    * @param similarity
    * @param doc
+   * @throws IOException
    */ 
-  public static void writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, Document doc)
+  public static void writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException
   {
     writeDoc(dir, analyzer, similarity, "test", doc);
   }
@@ -125,15 +128,12 @@ class DocHelper {
    * @param similarity
    * @param segment
    * @param doc
+   * @throws IOException
    */ 
-  public static void writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, String segment, Document doc)
+  public static void writeDoc(Directory dir, Analyzer analyzer, Similarity similarity, String segment, Document doc) throws IOException
   {
     DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
-    try {
-      writer.addDocument(segment, doc);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    writer.addDocument(segment, doc);
   }
 
   public static int numFields(Document doc) {

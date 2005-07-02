@@ -112,19 +112,11 @@ public class TestMultiSearcher extends TestCase
 
         assertEquals(3, hits.length());
 
-        try {
-            // iterating over the hit documents
-            for (int i = 0; i < hits.length(); i++) {
-                Document d = hits.doc(i);
-            }
+        // iterating over the hit documents
+        for (int i = 0; i < hits.length(); i++) {
+            Document d = hits.doc(i);
         }
-        catch (ArrayIndexOutOfBoundsException e)
-        {
-            fail("ArrayIndexOutOfBoundsException thrown: " + e.getMessage());
-            e.printStackTrace();
-        } finally{
-            mSearcher.close();
-        }
+        mSearcher.close();
 
 
         //--------------------------------------------------------------------
@@ -149,20 +141,12 @@ public class TestMultiSearcher extends TestCase
 
         assertEquals(4, hits2.length());
 
-        try {
-            // iterating over the hit documents
-            for (int i = 0; i < hits2.length(); i++) {
-                // no exception should happen at this point
-                Document d = hits2.doc(i);
-            }
+        // iterating over the hit documents
+        for (int i = 0; i < hits2.length(); i++) {
+            // no exception should happen at this point
+            Document d = hits2.doc(i);
         }
-        catch (Exception e)
-        {
-            fail("Exception thrown: " + e.getMessage());
-            e.printStackTrace();
-        } finally{
-            mSearcher2.close();
-        }
+        mSearcher2.close();
 
         //--------------------------------------------------------------------
         // scenario 3
@@ -191,18 +175,10 @@ public class TestMultiSearcher extends TestCase
 
         assertEquals(3, hits3.length());
 
-        try {
-            // iterating over the hit documents
-            for (int i = 0; i < hits3.length(); i++) {
-                Document d = hits3.doc(i);
-            }
+        // iterating over the hit documents
+        for (int i = 0; i < hits3.length(); i++) {
+            Document d = hits3.doc(i);
         }
-        catch (IOException e)
-        {
-            fail("IOException thrown: " + e.getMessage());
-            e.printStackTrace();
-        } finally{
-            mSearcher3.close();
-        }
+        mSearcher3.close();
     }
 }
