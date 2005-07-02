@@ -354,6 +354,63 @@ public class TestIndexReader extends TestCase
         dir = getDirectory(true);
     }
 
+    public void testLastModified() throws IOException {
+      assertFalse(IndexReader.indexExists("there_is_no_such_index"));
+      Directory dir = new RAMDirectory();
+      assertFalse(IndexReader.indexExists(dir));
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      assertTrue(IndexReader.isLocked(dir));		// writer open, so dir is locked
+      writer.close();
+      assertTrue(IndexReader.indexExists(dir));
+      IndexReader reader = IndexReader.open(dir);
+      assertFalse(IndexReader.isLocked(dir));		// reader only, no lock
+      long version = IndexReader.lastModified(dir);
+      reader.close();
+      // modify index and check version has been incremented:
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      writer.close();
+      reader = IndexReader.open(dir);
+      assertTrue(version < IndexReader.getCurrentVersion(dir));
+      reader.close();
+    }
+
+    public void testLock() throws IOException {
+      Directory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      writer.close();
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+      IndexReader reader = IndexReader.open(dir);
+      try {
+        reader.delete(0);
+        fail("expected lock");
+      } catch(IOException e) {
+        // expected exception
+      }
+      IndexReader.unlock(dir);		// this should not be done in the real world! 
+      reader.delete(0);
+      reader.close();
+      writer.close();
+    }
+
+    public void testUndeleteAll() throws IOException {
+      Directory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      addDocumentWithFields(writer);
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+      reader.delete(0);
+      reader.delete(1);
+      reader.undeleteAll();
+      reader.close();
+      reader = IndexReader.open(dir);
+      assertEquals(2, reader.numDocs());	// nothing has really been deleted thanks to undeleteAll()
+      reader.close();
+    }
+
     public void testDeleteReaderReaderConflictUnoptimized() throws IOException{
       deleteReaderReaderConflict(false);
     }
