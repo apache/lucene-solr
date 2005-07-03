@@ -17,16 +17,13 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.io.IOException;
-import java.io.FileOutputStream;
 
 
 /**
@@ -138,12 +135,12 @@ class CompoundFileReader extends Directory {
         return entries.containsKey(name);
     }
 
-    /** Returns the time the named file was last modified. */
+    /** Returns the time the compound file was last modified. */
     public long fileModified(String name) throws IOException {
         return directory.fileModified(fileName);
     }
 
-    /** Set the modified time of an existing file to now. */
+    /** Set the modified time of the compound file to now. */
     public void touchFile(String name) throws IOException {
         directory.touchFile(fileName);
     }
