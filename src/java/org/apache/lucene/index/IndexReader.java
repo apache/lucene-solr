@@ -23,7 +23,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
-import org.apache.lucene.util.Constants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -687,24 +686,22 @@ public abstract class IndexReader {
    * Add the -extract flag to extract files to the current working directory.
    * In order to make the extracted version of the index work, you have to copy
    * the segments file from the compound index into the directory where the extracted files are stored.
-   * @param args
+   * @param args Usage: org.apache.lucene.index.IndexReader [-extract] &lt;cfsfile&gt;
    */
   public static void main(String [] args) {
-    String dirname = null, filename = null;
+    String filename = null;
     boolean extract = false;
 
     for (int i = 0; i < args.length; ++i) {
       if (args[i].equals("-extract")) {
         extract = true;
-      } else if (dirname == null) {
-        dirname = args[i];
       } else if (filename == null) {
         filename = args[i];
       }
     }
 
-    if (dirname == null || filename == null) {
-      System.out.println("Usage: org.apache.lucene.index.IndexReader [-extract] <directory> <cfsfile>");
+    if (filename == null) {
+      System.out.println("Usage: org.apache.lucene.index.IndexReader [-extract] <cfsfile>");
       return;
     }
 
@@ -712,8 +709,10 @@ public abstract class IndexReader {
     CompoundFileReader cfr = null;
       
     try {
+      File file = new File(filename);
+      String dirname = file.getAbsoluteFile().getParent();
+      filename = file.getName();
       dir = FSDirectory.getDirectory(dirname, false);
-
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.list();
