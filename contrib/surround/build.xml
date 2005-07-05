@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<project name="surround" default="default">
+
+  <description>
+    Surround query parser
+  </description>
+
+  <import file="../contrib-build.xml"/>
+
+  <target name="javacc">
+    <invoke-javacc target="src/java/org/apache/lucene/queryParser/surround/parser/QueryParser.jj"
+                   outputDir="${build.dir}/gen/org/apache/lucene/queryParser/surround/parser"
+    />
+  </target>
+</project>
