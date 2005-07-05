@@ -118,6 +118,8 @@ public class QueryParser {
    *  @param field  the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
+   *
+   *  @deprecated Use an instance of QueryParser and the {@link #parse(String)} method instead.
    */
   static public Query parse(String query, String field, Analyzer analyzer)
        throws ParseException {
