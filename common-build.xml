@@ -12,6 +12,7 @@
   <property file="${user.home}/lucene.build.properties"/>
   <property file="${user.home}/build.properties"/>
   <property file="${basedir}/build.properties"/>
+  <property file="${common.dir}/build.properties"/>
 
   <tstamp>
     <format property="current.year" pattern="yyyy"/>
@@ -37,7 +38,7 @@
   <property name="build.dir" location="build"/>
   <property name="dist.dir" location="dist"/>
 
-  <property name="javacc.home" location="."/>
+  <property name="javacc.home" location="${common.dir}"/>
 
   <property name="junit.output.dir" location="${build.dir}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
@@ -237,6 +238,7 @@
     <attribute name="target"/>
     <attribute name="outputDir"/>
     <sequential>
+      <mkdir dir="@{outputDir}"/>
       <javacc
           target="@{target}"
           outputDirectory="@{outputDir}"
