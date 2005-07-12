@@ -73,4 +73,8 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
 
     return analyzer.tokenStream(fieldName, reader);
   }
+  
+  public String toString() {
+    return "PerFieldAnalyzerWrapper(" + analyzerMap + ", default=" + defaultAnalyzer + ")";
+  }
 }
