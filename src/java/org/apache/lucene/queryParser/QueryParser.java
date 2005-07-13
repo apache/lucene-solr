@@ -67,7 +67,9 @@ public class QueryParser implements QueryParserConstants {
 
   // make it possible to call setDefaultOperator() without accessing 
   // the nested class:
+  /** Alternative form of QueryParser.Operator.AND */
   public static final Operator AND_OPERATOR = Operator.AND;
+  /** Alternative form of QueryParser.Operator.OR */
   public static final Operator OR_OPERATOR = Operator.OR;
 
   /** The actual operator that parser uses to combine query terms */
@@ -82,12 +84,15 @@ public class QueryParser implements QueryParserConstants {
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
 
-  static final class Operator extends Parameter {
+  /** The default operator for parsing queries. 
+   * Use {@link QueryParser#setDefaultOperator} to change it.
+   */
+  static public final class Operator extends Parameter {
     private Operator(String name) {
       super(name);
     }
-    static final Operator OR = new Operator("OR");
-    static final Operator AND = new Operator("AND");
+    static public final Operator OR = new Operator("OR");
+    static public final Operator AND = new Operator("AND");
   }
 
   /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
@@ -95,6 +100,8 @@ public class QueryParser implements QueryParserConstants {
    *  @param field  the default field for query terms.
    *  @param analyzer   used to find terms in the query text.
    *  @throws ParseException if the parsing fails
+   *
+   *  @deprecated Use an instance of QueryParser and the {@link #parse(String)} method instead.
    */
   static public Query parse(String query, String field, Analyzer analyzer)
        throws ParseException {
