@@ -28,7 +28,6 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.analysis.Analyzer;
 
@@ -60,67 +59,48 @@ import org.apache.lucene.analysis.Analyzer;
 public class IndexWriter {
 
   /**
-   * Default value is 1000.  Use <code>org.apache.lucene.writeLockTimeout</code>
-   * system property to override.
+   * Default value is 1,000.
    */
-  public static long WRITE_LOCK_TIMEOUT =
-    Integer.parseInt(System.getProperty("org.apache.lucene.writeLockTimeout",
-      "1000"));
+  public final static long WRITE_LOCK_TIMEOUT = 1000;
 
   /**
-   * Default value is 10000.  Use <code>org.apache.lucene.commitLockTimeout</code>
-   * system property to override.
+   * Default value is 10,000.
    */
-  public static long COMMIT_LOCK_TIMEOUT =
-    Integer.parseInt(System.getProperty("org.apache.lucene.commitLockTimeout",
-      "10000"));
+  public final static long COMMIT_LOCK_TIMEOUT = 10000;
 
   public static final String WRITE_LOCK_NAME = "write.lock";
   public static final String COMMIT_LOCK_NAME = "commit.lock";
 
   /**
-   * Default value is 10.  Use <code>org.apache.lucene.mergeFactor</code>
-   * system property to override.
+   * Default value is 10. Change using {@link #setMergeFactor(int)}.
    */
-  public static final int DEFAULT_MERGE_FACTOR =
-    Integer.parseInt(System.getProperty("org.apache.lucene.mergeFactor",
-      "10"));
+  public final static int DEFAULT_MERGE_FACTOR = 10;
 
   /**
-   * Default value is 10.  Use <code>org.apache.lucene.minMergeDocs</code>
-   * system property to override.
+   * Default value is 10. Change using {@link #setMaxBufferedDocs(int)}.
    */
-  public static final int DEFAULT_MIN_MERGE_DOCS =
-    Integer.parseInt(System.getProperty("org.apache.lucene.minMergeDocs",
-      "10"));
+  public final static int DEFAULT_MAX_BUFFERED_DOCS = 10;
 
   /**
-   * Default value is {@link Integer#MAX_VALUE}.
-   * Use <code>org.apache.lucene.maxMergeDocs</code> system property to override.
+   * @deprecated use {@link #DEFAULT_MAX_BUFFERED_DOCS} instead
    */
-  public static final int DEFAULT_MAX_MERGE_DOCS =
-    Integer.parseInt(System.getProperty("org.apache.lucene.maxMergeDocs",
-      String.valueOf(Integer.MAX_VALUE)));
+  public final static int DEFAULT_MIN_MERGE_DOCS = DEFAULT_MAX_BUFFERED_DOCS;
 
   /**
-   * Default value is 10000.  Use <code>org.apache.lucene.maxFieldLength</code>
-   * system property to override.
+   * Default value is {@link Integer#MAX_VALUE}. Change using {@link #setMaxMergeDocs(int)}.
    */
-  public static final int DEFAULT_MAX_FIELD_LENGTH =
-    Integer.parseInt(System.getProperty("org.apache.lucene.maxFieldLength",
-      "10000"));
+  public final static int DEFAULT_MAX_MERGE_DOCS = Integer.MAX_VALUE;
 
-
-  /** The default value for {@link #getTermIndexInterval()}.  This is
-   * determined by the <code>org.apache.lucene.termIndexInterval</code> system
-   * property.  The default is 128.
+  /**
+   * Default value is 10,000. Change using {@link #setMaxFieldLength(int)}.
    */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL =
-    Integer.parseInt(System.getProperty("org.apache.lucene.termIndexInterval",
-                                        "128"));
+  public final static int DEFAULT_MAX_FIELD_LENGTH = 10000;
 
-
-
+  /**
+   * Default value is 128. Change using {@link #setTermIndexInterval(int)}.
+   */
+  public final static int DEFAULT_TERM_INDEX_INTERVAL = 128;
+  
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
 

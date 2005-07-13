@@ -42,6 +42,16 @@ Changes in runtime behavior
     is now initialized by the system time in milliseconds.
     (Bernhard Messer via Daniel Naber)
  
+ 7. Several default values cannot be set via system properties anymore, as
+    this has been considered inappropriate for a library like Lucene. For
+    most properties there are set/get methods available in IndexWriter which
+    you should use instead.
+    This affects the following properties: org.apache.lucene.writeLockTimeout,
+    org.apache.lucene.commitLockTimeout, org.apache.lucene.minMergeDocs, 
+    org.apache.lucene.maxMergeDocs, org.apache.lucene.maxFieldLength, 
+    org.apache.lucene.termIndexInterval, org.apache.lucene.mergeFactor
+    (Daniel Naber)
+ 
 New features
 
  1. Added support for stored compressed fields (patch #31149)
