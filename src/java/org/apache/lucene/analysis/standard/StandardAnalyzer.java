@@ -42,6 +42,11 @@ public class StandardAnalyzer extends Analyzer {
   }
 
   /** Builds an analyzer with the given stop words. */
+  public StandardAnalyzer(Set stopWords) {
+    stopSet = stopWords;
+  }
+
+  /** Builds an analyzer with the given stop words. */
   public StandardAnalyzer(String[] stopWords) {
     stopSet = StopFilter.makeStopSet(stopWords);
   }

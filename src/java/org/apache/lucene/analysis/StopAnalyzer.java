@@ -41,6 +41,12 @@ public final class StopAnalyzer extends Analyzer {
     stopWords = StopFilter.makeStopSet(ENGLISH_STOP_WORDS);
   }
 
+  /** Builds an analyzer with the stop words from the given set.
+   */
+  public StopAnalyzer(Set stopWords) {
+    this.stopWords = stopWords;
+  }
+
   /** Builds an analyzer which removes words in the provided array. */
   public StopAnalyzer(String[] stopWords) {
     this.stopWords = StopFilter.makeStopSet(stopWords);
