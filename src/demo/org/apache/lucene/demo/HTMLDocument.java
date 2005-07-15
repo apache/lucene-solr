@@ -62,25 +62,19 @@ public class HTMLDocument {
     // tokenized prior to indexing.
     doc.add(new Field("uid", uid(f), Field.Store.NO, Field.Index.UN_TOKENIZED));
 
-    FileInputStream fis = null;
-    try {
-      fis = new FileInputStream(f);
-      HTMLParser parser = new HTMLParser(fis);
+    FileInputStream fis = new FileInputStream(f);
+    HTMLParser parser = new HTMLParser(fis);
       
-      // Add the tag-stripped contents as a Reader-valued Text field so it will
-      // get tokenized and indexed.
-      doc.add(new Field("contents", parser.getReader()));
+    // Add the tag-stripped contents as a Reader-valued Text field so it will
+    // get tokenized and indexed.
+    doc.add(new Field("contents", parser.getReader()));
 
-      // Add the summary as a field that is stored and returned with
-      // hit documents for display.
-      doc.add(new Field("summary", parser.getSummary(), Field.Store.YES, Field.Index.NO));
+    // Add the summary as a field that is stored and returned with
+    // hit documents for display.
+    doc.add(new Field("summary", parser.getSummary(), Field.Store.YES, Field.Index.NO));
 
-      // Add the title as a field that it can be searched and that is stored.
-      doc.add(new Field("title", parser.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
-    } finally {
-      if (fis != null)
-        fis.close();
-    }
+    // Add the title as a field that it can be searched and that is stored.
+    doc.add(new Field("title", parser.getTitle(), Field.Store.YES, Field.Index.TOKENIZED));
 
     // return the document
     return doc;
