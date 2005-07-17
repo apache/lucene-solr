@@ -195,6 +195,10 @@ Bug fixes
     could return an incorrect number of hits.
     (Reece Wilton via Erik Hatcher, Bug #35157)
 
+10. Fix NullPointerException that could occur with a MultiPhraseQuery
+    inside a BooleanQuery.
+    (Hans Hjelm and Scotty Allen via Daniel Naber, Bug #35626)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
