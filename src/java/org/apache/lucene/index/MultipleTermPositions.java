@@ -175,7 +175,7 @@ public class MultipleTermPositions
     public final boolean skipTo(int target)
 	throws IOException
     {
-	while (target > _termPositionsQueue.peek().doc())
+	while (_termPositionsQueue.peek() != null && target > _termPositionsQueue.peek().doc())
 	{
 	    TermPositions tp = (TermPositions)_termPositionsQueue.pop();
 
