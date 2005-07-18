@@ -288,13 +288,12 @@
       <fileset dir="src">
         <include name="java/org/apache/lucene/analysis/standard/StandardTokenizer.java"/>
         <include name="java/org/apache/lucene/queryParser/QueryParser.java"/>
-        <include name="java/org/apache/lucene/queryParser/precedence/PrecedenceQueryParser.java"/>
         <include name="demo/org/apache/lucene/demo/html/HTMLParser.java"/>
       </fileset>
     </delete>
   </target>
 
-  <target name="javacc" depends="clean-javacc,javacc-StandardAnalyzer,javacc-QueryParser,javacc-PrecedenceQueryParser,javacc-HTMLParser"/>
+  <target name="javacc" depends="clean-javacc,javacc-StandardAnalyzer,javacc-QueryParser,javacc-HTMLParser"/>
 
   <target name="javacc-StandardAnalyzer" depends="init,javacc-check" if="javacc.present">
     <!-- generate this in a build directory so we can exclude ParseException -->
@@ -317,12 +316,6 @@
     />
   </target>
   
-  <target name="javacc-PrecedenceQueryParser" depends="init,javacc-check" if="javacc.present">
-    <invoke-javacc target="src/java/org/apache/lucene/queryParser/precedence/PrecedenceQueryParser.jj"
-                   outputDir="src/java/org/apache/lucene/queryParser/precedence"
-    />
-  </target>
-
   <target name="javacc-HTMLParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
                    outputDir="src/demo/org/apache/lucene/demo/html"
