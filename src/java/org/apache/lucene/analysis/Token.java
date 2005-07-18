@@ -109,4 +109,14 @@ public final class Token {
   /** Returns this Token's lexical type.  Defaults to "word". */
   public final String type() { return type; }
 
+  public final String toString() {
+    StringBuffer sb = new StringBuffer();
+    sb.append("(" + termText + "," + startOffset + "," + endOffset);
+    if (!type.equals("word"))
+      sb.append(",type="+type);
+    if (positionIncrement != 1)
+      sb.append(",posIncr="+positionIncrement);
+    sb.append(")");
+    return sb.toString();
+  }
 }
