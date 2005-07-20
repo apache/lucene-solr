@@ -63,11 +63,17 @@ public class TestMultiFieldQueryParser extends TestCase {
     q = mfqp.parse("[a TO c] two");
     assertEquals("(b:[a TO c] t:[a TO c]) (b:two t:two)", q.toString());
 
+    q = mfqp.parse("w?ldcard");
+    assertEquals("b:w?ldcard t:w?ldcard", q.toString());
+
     q = mfqp.parse("\"foo bar\"");
     assertEquals("b:\"foo bar\" t:\"foo bar\"", q.toString());
 
     q = mfqp.parse("\"aa bb cc\" \"dd ee\"");
     assertEquals("(b:\"aa bb cc\" t:\"aa bb cc\") (b:\"dd ee\" t:\"dd ee\")", q.toString());
+
+    q = mfqp.parse("\"foo bar\"~4");
+    assertEquals("b:\"foo bar\"~4 t:\"foo bar\"~4", q.toString());
 
     // make sure that terms which have a field are not touched:
     q = mfqp.parse("one f:two");

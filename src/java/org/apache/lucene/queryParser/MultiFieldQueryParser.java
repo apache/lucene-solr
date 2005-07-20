@@ -21,6 +21,8 @@ import java.util.Vector;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 
 /**
@@ -59,17 +61,29 @@ public class MultiFieldQueryParser extends QueryParser
     this.fields = fields;
   }
   
-  protected Query getFieldQuery(String field, String queryText) throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, int slop) throws ParseException {
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText);
-        if (q != null)
+        if (q != null) {
+          if (q instanceof PhraseQuery) {
+            ((PhraseQuery) q).setSlop(slop);
+          }
+          if (q instanceof MultiPhraseQuery) {
+            ((MultiPhraseQuery) q).setSlop(slop);
+          }
           clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
+        }
       }
       return getBooleanQuery(clauses, true);
     }
     return super.getFieldQuery(field, queryText);
+  }
+  
+
+  protected Query getFieldQuery(String field, String queryText) throws ParseException {
+    return getFieldQuery(field, queryText, 0);
   }
   
   /**
@@ -113,6 +127,18 @@ public class MultiFieldQueryParser extends QueryParser
     return super.getPrefixQuery(field, termStr);
   }
 
+  protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+    if (field == null) {
+      Vector clauses = new Vector();
+      for (int i = 0; i < fields.length; i++) {
+        clauses.add(new BooleanClause(super.getWildcardQuery(fields[i], termStr),
+            BooleanClause.Occur.SHOULD));
+      }
+      return getBooleanQuery(clauses, true);
+    }
+    return super.getWildcardQuery(field, termStr);
+  }
+  
   /** @throws ParseException
    * @deprecated use {@link #getRangeQuery(String, String, String, boolean)}
   */
