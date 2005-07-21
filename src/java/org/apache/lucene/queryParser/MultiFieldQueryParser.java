@@ -28,7 +28,7 @@ import org.apache.lucene.search.Query;
 /**
  * A QueryParser which constructs queries to search multiple fields.
  *
- * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>
+ * @author <a href="mailto:kelvin@relevanz.com">Kelvin Tan</a>, Daniel Naber
  * @version $Revision$
  */
 public class MultiFieldQueryParser extends QueryParser
@@ -160,213 +160,211 @@ public class MultiFieldQueryParser extends QueryParser
   }
  
 
-    public static final int NORMAL_FIELD     = 0;
-    public static final int REQUIRED_FIELD   = 1;
-    public static final int PROHIBITED_FIELD = 2;
+  public static final int NORMAL_FIELD     = 0;
+  public static final int REQUIRED_FIELD   = 1;
+  public static final int PROHIBITED_FIELD = 2;
 
-    /**
-     * @deprecated use {@link #MultiFieldQueryParser(String[], Analyzer)} instead
-     */
-    public MultiFieldQueryParser(QueryParserTokenManager tm)
-    {
-        super(tm);
-    }
+  /**
+   * @deprecated use {@link #MultiFieldQueryParser(String[], Analyzer)} instead
+   */
+  public MultiFieldQueryParser(QueryParserTokenManager tm)
+  {
+    super(tm);
+  }
 
-    /**
-     * @deprecated use {@link #MultiFieldQueryParser(String[], Analyzer)} instead
-     */
-    public MultiFieldQueryParser(CharStream stream)
-    {
-        super(stream);
-    }
+  /**
+   * @deprecated use {@link #MultiFieldQueryParser(String[], Analyzer)} instead
+   */
+  public MultiFieldQueryParser(CharStream stream)
+  {
+    super(stream);
+  }
 
-    /**
-     * @deprecated use {@link #MultiFieldQueryParser(String[], Analyzer)} instead
-     */
-    public MultiFieldQueryParser(String f, Analyzer a)
-    {
-        super(f, a);
-    }
+  /**
+   * @deprecated use {@link #MultiFieldQueryParser(String[], Analyzer)} instead
+   */
+  public MultiFieldQueryParser(String f, Analyzer a)
+  {
+    super(f, a);
+  }
 
-    /**
-     * <p>Parses a query which searches on the fields specified.
-     * If x fields are specified, this effectively constructs:</p>
-     *
-     * <code>
-     * (field1:query) (field2:query) (field3:query)...(fieldx:query)
-     * </code>
-     *
-     * @param query Query string to parse
-     * @param fields Fields to search on
-     * @param analyzer Analyzer to use
-     * @throws ParseException if query parsing fails
-     * @throws TokenMgrError if query parsing fails
-     * @deprecated use {@link #parse(String)} instead but note that it
-     *  returns a different query for queries where all terms are required:
-     *  its query excepts all terms, no matter in what field they occur whereas
-     *  the query built by this (deprecated) method expected all terms in all fields 
-     *  at the same time.
-     */
-    public static Query parse(String query, String[] fields, Analyzer analyzer)
+  /**
+   * Parses a query which searches on the fields specified.
+   * If x fields are specified, this effectively constructs:
+   *
+   * <code>
+   * (field1:query) (field2:query) (field3:query)...(fieldx:query)
+   * </code>
+   *
+   * @param query Query string to parse
+   * @param fields Fields to search on
+   * @param analyzer Analyzer to use
+   * @throws ParseException if query parsing fails
+   * @throws TokenMgrError if query parsing fails
+   * @deprecated use {@link #parse(String)} instead but note that it
+   *  returns a different query for queries where all terms are required:
+   *  its query excepts all terms, no matter in what field they occur whereas
+   *  the query built by this (deprecated) method expected all terms in all fields 
+   *  at the same time.
+   */
+  public static Query parse(String query, String[] fields, Analyzer analyzer)
 	throws ParseException
+  {
+    BooleanQuery bQuery = new BooleanQuery();
+    for (int i = 0; i < fields.length; i++)
     {
-        BooleanQuery bQuery = new BooleanQuery();
-        for (int i = 0; i < fields.length; i++)
-        {
-            Query q = parse(query, fields[i], analyzer);
-            bQuery.add(q, BooleanClause.Occur.SHOULD);
-        }
-        return bQuery;
+      Query q = parse(query, fields[i], analyzer);
+      bQuery.add(q, BooleanClause.Occur.SHOULD);
     }
+    return bQuery;
+  }
 
-    /**
-     * <p>
-     * Parses a query which searches on the fields specified.
-     * <p>
-     * If x fields are specified, this effectively constructs:
-     * <pre>
-     * <code>
-     * (field1:query1) (field2:query2) (field3:query3)...(fieldx:queryx)
-     * </code>
-     * </pre>
-     * @param queries Queries strings to parse
-     * @param fields Fields to search on
-     * @param analyzer Analyzer to use
-     * @throws ParseException if query parsing fails
-     * @throws TokenMgrError if query parsing fails
-     * @throws IllegalArgumentException if the length of the queries array differs
-     *  from the length of the fields array
-     */
-    public static Query parse(String[] queries, String[] fields,
-        Analyzer analyzer) throws ParseException
+  /**
+   * Parses a query which searches on the fields specified.
+   * <p>
+   * If x fields are specified, this effectively constructs:
+   * <pre>
+   * <code>
+   * (field1:query1) (field2:query2) (field3:query3)...(fieldx:queryx)
+   * </code>
+   * </pre>
+   * @param queries Queries strings to parse
+   * @param fields Fields to search on
+   * @param analyzer Analyzer to use
+   * @throws ParseException if query parsing fails
+   * @throws TokenMgrError if query parsing fails
+   * @throws IllegalArgumentException if the length of the queries array differs
+   *  from the length of the fields array
+   */
+  public static Query parse(String[] queries, String[] fields,
+      Analyzer analyzer) throws ParseException
+  {
+    if (queries.length != fields.length)
+      throw new IllegalArgumentException("queries.length != fields.length");
+    BooleanQuery bQuery = new BooleanQuery();
+    for (int i = 0; i < fields.length; i++)
     {
-        if (queries.length != fields.length)
-            throw new IllegalArgumentException("queries.length != fields.length");
-        BooleanQuery bQuery = new BooleanQuery();
-        for (int i = 0; i < fields.length; i++)
-        {
-            QueryParser qp = new QueryParser(fields[i], analyzer);
-            Query q = qp.parse(queries[i]);
-            bQuery.add(q, BooleanClause.Occur.SHOULD);
-        }
-        return bQuery;
+      QueryParser qp = new QueryParser(fields[i], analyzer);
+      Query q = qp.parse(queries[i]);
+      bQuery.add(q, BooleanClause.Occur.SHOULD);
     }
+    return bQuery;
+  }
 
-    /**
-     * <p>
-     * Parses a query, searching on the fields specified.
-     * Use this if you need to specify certain fields as required,
-     * and others as prohibited.
-     * <p><pre>
-     * Usage:
-     * <code>
-     * String[] fields = {"filename", "contents", "description"};
-     * int[] flags = {MultiFieldQueryParser.NORMAL_FIELD,
-     *                MultiFieldQueryParser.REQUIRED_FIELD,
-     *                MultiFieldQueryParser.PROHIBITED_FIELD,};
-     * parse(query, fields, flags, analyzer);
-     * </code>
-     * </pre>
-     *<p>
-     * The code above would construct a query:
-     * <pre>
-     * <code>
-     * (filename:query) +(contents:query) -(description:query)
-     * </code>
-     * </pre>
-     *
-     * @param query Query string to parse
-     * @param fields Fields to search on
-     * @param flags Flags describing the fields
-     * @param analyzer Analyzer to use
-     * @throws ParseException if query parsing fails
-     * @throws TokenMgrError if query parsing fails
-     * @throws IllegalArgumentException if the length of the fields array differs
-     *  from the length of the flags array
-     */
-    public static Query parse(String query, String[] fields, int[] flags,
+  /**
+   * Parses a query, searching on the fields specified.
+   * Use this if you need to specify certain fields as required,
+   * and others as prohibited.
+   * <p><pre>
+   * Usage:
+   * <code>
+   * String[] fields = {"filename", "contents", "description"};
+   * int[] flags = {MultiFieldQueryParser.NORMAL_FIELD,
+   *                MultiFieldQueryParser.REQUIRED_FIELD,
+   *                MultiFieldQueryParser.PROHIBITED_FIELD,};
+   * parse(query, fields, flags, analyzer);
+   * </code>
+   * </pre>
+   *<p>
+   * The code above would construct a query:
+   * <pre>
+   * <code>
+   * (filename:query) +(contents:query) -(description:query)
+   * </code>
+   * </pre>
+   *
+   * @param query Query string to parse
+   * @param fields Fields to search on
+   * @param flags Flags describing the fields
+   * @param analyzer Analyzer to use
+   * @throws ParseException if query parsing fails
+   * @throws TokenMgrError if query parsing fails
+   * @throws IllegalArgumentException if the length of the fields array differs
+   *  from the length of the flags array
+   */
+  public static Query parse(String query, String[] fields, int[] flags,
 	Analyzer analyzer) throws ParseException
+  {
+    if (fields.length != flags.length)
+      throw new IllegalArgumentException("fields.length != flags.length");
+    BooleanQuery bQuery = new BooleanQuery();
+    for (int i = 0; i < fields.length; i++)
     {
-        if (fields.length != flags.length)
-          throw new IllegalArgumentException("fields.length != flags.length");
-        BooleanQuery bQuery = new BooleanQuery();
-        for (int i = 0; i < fields.length; i++)
-        {
-            QueryParser qp = new QueryParser(fields[i], analyzer);
-            Query q = qp.parse(query);
-            int flag = flags[i];
-            switch (flag)
-            {
-                case REQUIRED_FIELD:
-                    bQuery.add(q, BooleanClause.Occur.MUST);
-                    break;
-                case PROHIBITED_FIELD:
-                    bQuery.add(q, BooleanClause.Occur.MUST_NOT);
-                    break;
-                default:
-                    bQuery.add(q, BooleanClause.Occur.SHOULD);
-                    break;
-            }
-        }
-        return bQuery;
+      QueryParser qp = new QueryParser(fields[i], analyzer);
+      Query q = qp.parse(query);
+      int flag = flags[i];
+      switch (flag)
+      {
+        case REQUIRED_FIELD:
+          bQuery.add(q, BooleanClause.Occur.MUST);
+          break;
+        case PROHIBITED_FIELD:
+          bQuery.add(q, BooleanClause.Occur.MUST_NOT);
+          break;
+        default:
+          bQuery.add(q, BooleanClause.Occur.SHOULD);
+        break;
+      }
     }
+    return bQuery;
+  }
 
-    /**
-     * <p>
-     * Parses a query, searching on the fields specified.
-     * Use this if you need to specify certain fields as required,
-     * and others as prohibited.
-     * <p><pre>
-     * Usage:
-     * <code>
-     * String[] fields = {"filename", "contents", "description"};
-     * int[] flags = {MultiFieldQueryParser.NORMAL_FIELD,
-     *                MultiFieldQueryParser.REQUIRED_FIELD,
-     *                MultiFieldQueryParser.PROHIBITED_FIELD,};
-     * parse(query, fields, flags, analyzer);
-     * </code>
-     * </pre>
-     *<p>
-     * The code above would construct a query:
-     * <pre>
-     * <code>
-     * (filename:query1) +(contents:query2) -(description:query3)
-     * </code>
-     * </pre>
-     *
-     * @param queries Queries string to parse
-     * @param fields Fields to search on
-     * @param flags Flags describing the fields
-     * @param analyzer Analyzer to use
-     * @throws ParseException if query parsing fails
-     * @throws TokenMgrError if query parsing fails
-     * @throws IllegalArgumentException if the length of the queries, fields,
-     *  and flags array differ
-     */
-    public static Query parse(String[] queries, String[] fields, int[] flags,
-        Analyzer analyzer) throws ParseException
+  /**
+   * Parses a query, searching on the fields specified.
+   * Use this if you need to specify certain fields as required,
+   * and others as prohibited.
+   * <p><pre>
+   * Usage:
+   * <code>
+   * String[] fields = {"filename", "contents", "description"};
+   * int[] flags = {MultiFieldQueryParser.NORMAL_FIELD,
+   *                MultiFieldQueryParser.REQUIRED_FIELD,
+   *                MultiFieldQueryParser.PROHIBITED_FIELD,};
+   * parse(query, fields, flags, analyzer);
+   * </code>
+   * </pre>
+   *<p>
+   * The code above would construct a query:
+   * <pre>
+   * <code>
+   * (filename:query1) +(contents:query2) -(description:query3)
+   * </code>
+   * </pre>
+   *
+   * @param queries Queries string to parse
+   * @param fields Fields to search on
+   * @param flags Flags describing the fields
+   * @param analyzer Analyzer to use
+   * @throws ParseException if query parsing fails
+   * @throws TokenMgrError if query parsing fails
+   * @throws IllegalArgumentException if the length of the queries, fields,
+   *  and flags array differ
+   */
+  public static Query parse(String[] queries, String[] fields, int[] flags,
+      Analyzer analyzer) throws ParseException
+  {
+    if (!(queries.length == fields.length && queries.length == flags.length))
+      throw new IllegalArgumentException("queries, fields, and flags array have have different length");
+    BooleanQuery bQuery = new BooleanQuery();
+    for (int i = 0; i < fields.length; i++)
     {
-        if (!(queries.length == fields.length && queries.length == flags.length))
-            throw new IllegalArgumentException("queries, fields, and flags array have have different length");
-        BooleanQuery bQuery = new BooleanQuery();
-        for (int i = 0; i < fields.length; i++)
-        {
-            QueryParser qp = new QueryParser(fields[i], analyzer);
-            Query q = qp.parse(queries[i]);
-            int flag = flags[i];
-            switch (flag)
-            {
-                case REQUIRED_FIELD:
-                    bQuery.add(q, BooleanClause.Occur.MUST);
-                    break;
-                case PROHIBITED_FIELD:
-                    bQuery.add(q, BooleanClause.Occur.MUST_NOT);
-                    break;
-                default:
-                    bQuery.add(q, BooleanClause.Occur.SHOULD);
-                    break;
-            }
-        }
-        return bQuery;
+      QueryParser qp = new QueryParser(fields[i], analyzer);
+      Query q = qp.parse(queries[i]);
+      int flag = flags[i];
+      switch (flag)
+      {
+        case REQUIRED_FIELD:
+          bQuery.add(q, BooleanClause.Occur.MUST);
+          break;
+        case PROHIBITED_FIELD:
+          bQuery.add(q, BooleanClause.Occur.MUST_NOT);
+          break;
+        default:
+          bQuery.add(q, BooleanClause.Occur.SHOULD);
+          break;
+      }
     }
+    return bQuery;
+  }
+  
 }
