@@ -99,12 +99,17 @@ class BooleanScorer2 extends Scorer {
   /** Count a scorer as a single match. */
   private class SingleMatchScorer extends Scorer {
     private Scorer scorer;
+    private int lastScoredDoc = -1;
+
     SingleMatchScorer(Scorer scorer) {
       super(scorer.getSimilarity());
       this.scorer = scorer;
     }
     public float score() throws IOException {
-      coordinator.nrMatchers++;
+      if (doc() > lastScoredDoc) {
+        lastScoredDoc = doc();
+        coordinator.nrMatchers++;
+      }
       return scorer.score();
     }
     public int doc() {
@@ -125,8 +130,12 @@ class BooleanScorer2 extends Scorer {
   // each scorer from the list counted as a single matcher
   {
     return new DisjunctionSumScorer(scorers) {
+      private int lastScoredDoc = -1;
       public float score() throws IOException {
-        coordinator.nrMatchers += nrMatchers;
+        if (doc() > lastScoredDoc) {
+          lastScoredDoc = doc();
+          coordinator.nrMatchers += super.nrMatchers;
+        }
         return super.score();
       }
     };
@@ -139,8 +148,13 @@ class BooleanScorer2 extends Scorer {
   {
     final int requiredNrMatchers = requiredScorers.size();
     ConjunctionScorer cs = new ConjunctionScorer(defaultSimilarity) {
+      private int lastScoredDoc = -1;
+
       public float score() throws IOException {
-        coordinator.nrMatchers += requiredNrMatchers;
+        if (doc() > lastScoredDoc) {
+          lastScoredDoc = doc();
+          coordinator.nrMatchers += requiredNrMatchers;
+        }
         // All scorers match, so defaultSimilarity super.score() always has 1 as
         // the coordination factor.
         // Therefore the sum of the scores of the requiredScorers
