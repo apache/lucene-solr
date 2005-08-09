@@ -53,6 +53,8 @@ Changes in runtime behavior
       org.apache.lucene.mergeFactor,
     See BooleanQuery for getter/setter methods:
       org.apache.lucene.maxClauseCount
+    See FSDirectory for getter/setter methods:
+      disableLuceneLocks
     (Daniel Naber)
  
 New features

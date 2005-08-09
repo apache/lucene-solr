@@ -26,12 +26,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Hashtable;
 
 import org.apache.lucene.index.IndexFileNameFilter;
-import org.apache.lucene.util.Constants;
 
 /**
  * Straightforward implementation of {@link Directory} as a directory of files.
- * <p>If the system property 'disableLuceneLocks' has the String value of
- * "true", lock creation will be disabled.
  *
  * @see Directory
  * @author Doug Cutting
@@ -47,8 +44,24 @@ public class FSDirectory extends Directory {
    */
   private static final Hashtable DIRECTORIES = new Hashtable();
 
-  private static final boolean DISABLE_LOCKS =
-      Boolean.getBoolean("disableLuceneLocks") || Constants.JAVA_1_1;
+  private static boolean disableLocks = false;
+
+  /**
+   * Set whether Lucene's use of lock files is disabled. By default, 
+   * lock files are enabled. They should only be disabled if the index
+   * is on a read-only medium like a CD-ROM.
+   */
+  public static void setDisableLocks(boolean doDisableLocks) {
+    FSDirectory.disableLocks = doDisableLocks;
+  }
+
+  /**
+   * Returns whether Lucene's use of lock files is disabled.
+   * @return true if locks are disabled, false if locks are enabled.
+   */
+  public static boolean getDisableLocks() {
+    return FSDirectory.disableLocks;
+  }
 
   /**
    * Directory specified by <code>org.apache.lucene.lockDir</code>
@@ -59,7 +72,7 @@ public class FSDirectory extends Directory {
       System.getProperty("java.io.tmpdir"));
 
   /** The default class which implements filesystem-based directories. */
-  private static final Class IMPL;
+  private static Class IMPL;
   static {
     try {
       String name =
@@ -68,6 +81,12 @@ public class FSDirectory extends Directory {
       IMPL = Class.forName(name);
     } catch (ClassNotFoundException e) {
       throw new RuntimeException("cannot load FSDirectory class: " + e.toString());
+    } catch (SecurityException se) {
+      try {
+        IMPL = Class.forName(FSDirectory.class.getName());
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException("cannot load default FSDirectory class: " + e.toString());
+      }
     }
   }
 
@@ -310,12 +329,7 @@ public class FSDirectory extends Directory {
   {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
   /** Constructs a {@link Lock} with the specified name.  Locks are implemented
-   * with {@link File#createNewFile() }.
-   *
-   * <p>In JDK 1.1 or if system property <I>disableLuceneLocks</I> is the
-   * string "true", locks are disabled.  Assigning this property any other
-   * string will <B>not</B> prevent creation of lock files.  This is useful for
-   * using Lucene on read-only medium, such as CD-ROM.
+   * with {@link File#createNewFile()}.
    *
    * @param name the name of the lock file
    * @return an instance of <code>Lock</code> holding the lock
@@ -330,7 +344,7 @@ public class FSDirectory extends Directory {
 
     return new Lock() {
       public boolean obtain() throws IOException {
-        if (DISABLE_LOCKS)
+        if (disableLocks)
           return true;
 
         if (!lockDir.exists()) {
@@ -342,12 +356,12 @@ public class FSDirectory extends Directory {
         return lockFile.createNewFile();
       }
       public void release() {
-        if (DISABLE_LOCKS)
+        if (disableLocks)
           return;
         lockFile.delete();
       }
       public boolean isLocked() {
-        if (DISABLE_LOCKS)
+        if (disableLocks)
           return false;
         return lockFile.exists();
       }
