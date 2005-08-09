@@ -138,6 +138,10 @@ New features
     worrying about synchronisation/locking issues.
     (Daniel Naber)
 
+19. Lucene can now be used inside an unsigned applet, as Lucene's access 
+    to system properties will not cause a SecurityException anymore.
+    (Jon Schuster via Daniel Naber, bug #34359)
+    
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
