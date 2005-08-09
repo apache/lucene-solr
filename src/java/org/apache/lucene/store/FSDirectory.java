@@ -146,6 +146,13 @@ public class FSDirectory extends Directory {
     else {
       lockDir = new File(LOCK_DIR);
     }
+    // Ensure that lockDir exists and is a directory.
+    if (!lockDir.exists()) {
+      if (!lockDir.mkdirs())
+        throw new IOException("Cannot create directory: " + lockDir);
+    } else if (!lockDir.isDirectory()) {
+      throw new IOException("Found regular file where directory expected: " + lockDir);
+    }
     if (create) {
       create();
     }
