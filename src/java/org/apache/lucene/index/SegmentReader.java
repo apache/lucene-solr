@@ -32,8 +32,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 
 /**
- * FIXME: Describe class <code>SegmentReader</code> here.
- *
  * @version $Id$
  */
 class SegmentReader extends IndexReader {
@@ -92,7 +90,7 @@ class SegmentReader extends IndexReader {
   private Hashtable norms = new Hashtable();
 
   /** The class which implements SegmentReader. */
-  private static final Class IMPL;
+  private static Class IMPL;
   static {
     try {
       String name =
@@ -100,7 +98,13 @@ class SegmentReader extends IndexReader {
                            SegmentReader.class.getName());
       IMPL = Class.forName(name);
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e.toString());
+      throw new RuntimeException("cannot load SegmentReader class: " + e);
+    } catch (SecurityException se) {
+      try {
+        IMPL = Class.forName(SegmentReader.class.getName());
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException("cannot load default SegmentReader class: " + e);
+      }
     }
   }
 
@@ -123,7 +127,7 @@ class SegmentReader extends IndexReader {
     try {
       instance = (SegmentReader)IMPL.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e.toString());
+      throw new RuntimeException("cannot load SegmentReader class: " + e);
     }
     instance.init(dir, sis, closeDir, ownDir);
     instance.initialize(si);
