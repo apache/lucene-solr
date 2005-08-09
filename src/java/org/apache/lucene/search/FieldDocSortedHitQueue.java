@@ -107,97 +107,54 @@ extends PriorityQueue {
 		int c = 0;
 		for (int i=0; i<n && c==0; ++i) {
 			final int type = fields[i].getType();
+			switch (type) {
+				case SortField.SCORE:
+					float r1 = ((Float)docA.fields[i]).floatValue();
+					float r2 = ((Float)docB.fields[i]).floatValue();
+					if (r1 > r2) c = -1;
+					if (r1 < r2) c = 1;
+					break;
+				case SortField.DOC:
+				case SortField.INT:
+					int i1 = ((Integer)docA.fields[i]).intValue();
+					int i2 = ((Integer)docB.fields[i]).intValue();
+					if (i1 < i2) c = -1;
+					if (i1 > i2) c = 1;
+					break;
+				case SortField.STRING:
+					String s1 = (String) docA.fields[i];
+					String s2 = (String) docB.fields[i];
+					// null values need to be sorted first, because of how FieldCache.getStringIndex()
+					// works - in that routine, any documents without a value in the given field are
+					// put first.
+					if (s1 == null) c = -1;      // could be null if there are
+					else if (s2 == null) c = 1;  // no terms in the given field
+					else if (fields[i].getLocale() == null) {
+						c = s1.compareTo(s2);
+					} else {
+						c = collators[i].compare (s1, s2);
+					}
+					break;
+				case SortField.FLOAT:
+					float f1 = ((Float)docA.fields[i]).floatValue();
+					float f2 = ((Float)docB.fields[i]).floatValue();
+					if (f1 < f2) c = -1;
+					if (f1 > f2) c = 1;
+					break;
+				case SortField.CUSTOM:
+					c = docA.fields[i].compareTo (docB.fields[i]);
+					break;
+				case SortField.AUTO:
+					// we cannot handle this - even if we determine the type of object (Float or
+					// Integer), we don't necessarily know how to compare them (both SCORE and
+					// FLOAT contain floats, but are sorted opposite of each other). Before
+					// we get here, each AUTO should have been replaced with its actual value.
+					throw new RuntimeException ("FieldDocSortedHitQueue cannot use an AUTO SortField");
+				default:
+					throw new RuntimeException ("invalid SortField type: "+type);
+			}
 			if (fields[i].getReverse()) {
-				switch (type) {
-					case SortField.SCORE:
-						float r1 = ((Float)docA.fields[i]).floatValue();
-						float r2 = ((Float)docB.fields[i]).floatValue();
-						if (r1 < r2) c = -1;
-						if (r1 > r2) c = 1;
-						break;
-					case SortField.DOC:
-					case SortField.INT:
-						int i1 = ((Integer)docA.fields[i]).intValue();
-						int i2 = ((Integer)docB.fields[i]).intValue();
-						if (i1 > i2) c = -1;
-						if (i1 < i2) c = 1;
-						break;
-					case SortField.STRING:
-						String s1 = (String) docA.fields[i];
-						String s2 = (String) docB.fields[i];
-						if (s2 == null) c = -1;      // could be null if there are
-						else if (s1 == null) c = 1;  // no terms in the given field
-						else if (fields[i].getLocale() == null) {
-							c = s2.compareTo(s1);
-						} else {
-							c = collators[i].compare (s2, s1);
-						}
-						break;
-					case SortField.FLOAT:
-						float f1 = ((Float)docA.fields[i]).floatValue();
-						float f2 = ((Float)docB.fields[i]).floatValue();
-						if (f1 > f2) c = -1;
-						if (f1 < f2) c = 1;
-						break;
-					case SortField.CUSTOM:
-						c = docB.fields[i].compareTo (docA.fields[i]);
-						break;
-					case SortField.AUTO:
-						// we cannot handle this - even if we determine the type of object (Float or
-						// Integer), we don't necessarily know how to compare them (both SCORE and
-						// FLOAT both contain floats, but are sorted opposite of each other). Before
-						// we get here, each AUTO should have been replaced with its actual value.
-						throw new RuntimeException ("FieldDocSortedHitQueue cannot use an AUTO SortField");
-					default:
-						throw new RuntimeException ("invalid SortField type: "+type);
-				}
-			} else {
-				switch (type) {
-					case SortField.SCORE:
-						float r1 = ((Float)docA.fields[i]).floatValue();
-						float r2 = ((Float)docB.fields[i]).floatValue();
-						if (r1 > r2) c = -1;
-						if (r1 < r2) c = 1;
-						break;
-					case SortField.DOC:
-					case SortField.INT:
-						int i1 = ((Integer)docA.fields[i]).intValue();
-						int i2 = ((Integer)docB.fields[i]).intValue();
-						if (i1 < i2) c = -1;
-						if (i1 > i2) c = 1;
-						break;
-					case SortField.STRING:
-						String s1 = (String) docA.fields[i];
-						String s2 = (String) docB.fields[i];
-						// null values need to be sorted first, because of how FieldCache.getStringIndex()
-						// works - in that routine, any documents without a value in the given field are
-						// put first.
-						if (s1 == null) c = -1;      // could be null if there are
-						else if (s2 == null) c = 1;  // no terms in the given field
-						else if (fields[i].getLocale() == null) {
-							c = s1.compareTo(s2);
-						} else {
-							c = collators[i].compare (s1, s2);
-						}
-						break;
-					case SortField.FLOAT:
-						float f1 = ((Float)docA.fields[i]).floatValue();
-						float f2 = ((Float)docB.fields[i]).floatValue();
-						if (f1 < f2) c = -1;
-						if (f1 > f2) c = 1;
-						break;
-					case SortField.CUSTOM:
-						c = docA.fields[i].compareTo (docB.fields[i]);
-						break;
-					case SortField.AUTO:
-						// we cannot handle this - even if we determine the type of object (Float or
-						// Integer), we don't necessarily know how to compare them (both SCORE and
-						// FLOAT both contain floats, but are sorted opposite of each other). Before
-						// we get here, each AUTO should have been replaced with its actual value.
-						throw new RuntimeException ("FieldDocSortedHitQueue cannot use an AUTO SortField");
-					default:
-						throw new RuntimeException ("invalid SortField type: "+type);
-				}
+				c = -c;
 			}
 		}
 		return c > 0;
