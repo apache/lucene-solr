@@ -16,12 +16,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.util.*;
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
  * must have the same number of documents, but typically each contains
@@ -33,11 +41,17 @@ import java.util.*;
  * change rarely and small fields that change more frequently.  The smaller
  * fields may be re-indexed in a new index and both indexes may be searched
  * together.
+ * 
+ * <p><strong>Warning:</strong> It is up to you to make sure all indexes
+ * are created and modified the same way. For example, if you add
+ * documents to one index, you need to add the same documents in the
+ * same order to the other indexes. <em>Failure to do so will result in
+ * undefined behavior</em>.
  */
 public class ParallelReader extends IndexReader {
-  private ArrayList readers = new ArrayList();
+  private List readers = new ArrayList();
   private SortedMap fieldToReader = new TreeMap();
-  private ArrayList storedFieldReaders = new ArrayList(); 
+  private List storedFieldReaders = new ArrayList(); 
 
   private int maxDoc;
   private int numDocs;
@@ -53,7 +67,13 @@ public class ParallelReader extends IndexReader {
 
  /** Add an IndexReader whose stored fields will not be returned.  This can
   * accellerate search when stored fields are only needed from a subset of
-  * the IndexReaders. */
+  * the IndexReaders.
+  * 
+  * @throws IllegalArgumentException if not all indexes contain the same number 
+  *     of documents
+  * @throws IllegalArgumentException if not all indexes have the same value 
+  *     of {@link IndexReader#maxDoc()}
+  */
   public void add(IndexReader reader, boolean ignoreStoredFields)
     throws IOException {
 
@@ -70,7 +90,7 @@ public class ParallelReader extends IndexReader {
       throw new IllegalArgumentException
         ("All readers must have same numDocs: "+numDocs+"!="+reader.numDocs());
     
-    Iterator i = reader.getFieldNames().iterator();
+    Iterator i = reader.getFieldNames(IndexReader.FieldOption.ALL).iterator();
     while (i.hasNext()) {                         // update fieldToReader map
       String field = (String)i.next();
       if (fieldToReader.get(field) == null)
@@ -79,9 +99,8 @@ public class ParallelReader extends IndexReader {
 
     if (!ignoreStoredFields)
       storedFieldReaders.add(reader);             // add to storedFieldReaders
-
+    readers.add(reader);
   }
-
 
   public int numDocs() { return numDocs; }
 

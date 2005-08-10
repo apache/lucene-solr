@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 
 import junit.framework.TestCase;
 
@@ -54,7 +55,42 @@ public class TestParallelReader extends TestCase {
     bq1.add(new TermQuery(new Term("f1", "v1")), Occur.MUST);
     bq1.add(new TermQuery(new Term("f4", "v1")), Occur.MUST);
     queryTest(bq1);
+  }
 
+  public void testFieldNames() throws Exception {
+    Directory dir1 = getDir1();
+    Directory dir2 = getDir2();
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    Collection fieldNames = pr.getFieldNames(IndexReader.FieldOption.ALL);
+    assertEquals(4, fieldNames.size());
+    assertTrue(fieldNames.contains("f1"));
+    assertTrue(fieldNames.contains("f2"));
+    assertTrue(fieldNames.contains("f3"));
+    assertTrue(fieldNames.contains("f4"));
+  }
+  
+  public void testIncompatibleIndexes() throws IOException {
+    // two documents:
+    Directory dir1 = getDir1();
+
+    // one document only:
+    Directory dir2 = new RAMDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(), true);
+    Document d3 = new Document();
+    d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
+    w2.addDocument(d3);
+    w2.close();
+    
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    try {
+      pr.add(IndexReader.open(dir2));
+      fail("didn't get exptected exception: indexes don't have same number of documents");
+    } catch (IllegalArgumentException e) {
+      // expected exception
+    }
   }
 
   private void queryTest(Query query) throws IOException {
@@ -95,6 +131,15 @@ public class TestParallelReader extends TestCase {
 
   // Fields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:
   private Searcher parallel() throws IOException {
+    Directory dir1 = getDir1();
+    Directory dir2 = getDir2();
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+    return new IndexSearcher(pr);
+  }
+
+  private Directory getDir1() throws IOException {
     Directory dir1 = new RAMDirectory();
     IndexWriter w1 = new IndexWriter(dir1, new StandardAnalyzer(), true);
     Document d1 = new Document();
@@ -106,7 +151,10 @@ public class TestParallelReader extends TestCase {
     d2.add(new Field("f2", "v2", Field.Store.YES, Field.Index.TOKENIZED));
     w1.addDocument(d2);
     w1.close();
+    return dir1;
+  }
 
+  private Directory getDir2() throws IOException {
     Directory dir2 = new RAMDirectory();
     IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(), true);
     Document d3 = new Document();
@@ -118,11 +166,7 @@ public class TestParallelReader extends TestCase {
     d4.add(new Field("f4", "v2", Field.Store.YES, Field.Index.TOKENIZED));
     w2.addDocument(d4);
     w2.close();
-    
-    ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
-
-    return new IndexSearcher(pr);
+    return dir2;
   }
+
 }
