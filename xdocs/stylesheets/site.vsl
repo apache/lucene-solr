@@ -219,9 +219,6 @@ limitations under the License.
 <td align="left">
 <a href="http://www.apache.org"><img src="http://lucene.apache.org/java/docs/images/asf-logo.gif" width="387" height="100" border="0"/></a>
 </td>
-<td align="center">
-<a href="http://apachecon.com"><img src="http://apache.org/images/ac2005eu_135x50.gif"/></a>
-</td>
 <td align="right">
 #set ( $logoString = $project.getChild("logo").getAttributeValue("href") )
 #if ( $logoString.startsWith("/") )
