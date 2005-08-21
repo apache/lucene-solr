@@ -79,6 +79,25 @@ public class SpanOrQuery extends SpanQuery {
     return buffer.toString();
   }
 
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    final SpanOrQuery that = (SpanOrQuery) o;
+
+    if (!clauses.equals(that.clauses)) return false;
+    if (!field.equals(that.field)) return false;
+
+    return true;
+  }
+
+  public int hashCode() {
+    int result;
+    result = clauses.hashCode();
+    result = 29 * result + field.hashCode();
+    return result;
+  }
+
   private class SpanQueue extends PriorityQueue {
     public SpanQueue(int size) {
       initialize(size);
