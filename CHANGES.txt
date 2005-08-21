@@ -142,6 +142,9 @@ New features
     to system properties will not cause a SecurityException anymore.
     (Jon Schuster via Daniel Naber, bug #34359)
     
+20. Added a new class MatchAllDocsQuery that matches all documents.
+    (John Wang via Daniel Naber, bug #34946)
+    
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
