@@ -482,8 +482,12 @@ public class TestQueryParser extends TestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    q = QueryParser.parse("the^3", "field", new StandardAnalyzer());
+    QueryParser qp2 = new QueryParser("field", new StandardAnalyzer());
+    q = qp2.parse("the^3");
+    // "the" is a stop word so the result is an empty query:
     assertNotNull(q);
+    assertEquals("", q.toString());
+    assertEquals(1.0f, q.getBoost(), 0.01f);
   }
 
   public void testException() throws Exception {
@@ -515,7 +519,8 @@ public class TestQueryParser extends TestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      QueryParser.parse("one two three", "field", new WhitespaceAnalyzer());
+      QueryParser qp = new QueryParser("field", new WhitespaceAnalyzer());
+      qp.parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
       // too many boolean clauses, so ParseException is expected
@@ -526,8 +531,9 @@ public class TestQueryParser extends TestCase {
    * This test differs from TestPrecedenceQueryParser
    */
   public void testPrecedence() throws Exception {
-    Query query1 = QueryParser.parse("A AND B OR C AND D", "field", new WhitespaceAnalyzer());
-    Query query2 = QueryParser.parse("+A +B +C +D", "field", new WhitespaceAnalyzer());
+    QueryParser qp = new QueryParser("field", new WhitespaceAnalyzer());
+    Query query1 = qp.parse("A AND B OR C AND D");
+    Query query2 = qp.parse("+A +B +C +D");
     assertEquals(query1, query2);
   }
 
