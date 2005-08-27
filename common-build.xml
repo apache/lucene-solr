@@ -28,8 +28,8 @@
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
-  <property name="javac.source" value="1.3"/>
-  <property name="javac.target" value="1.3"/>
+  <property name="javac.source" value="1.4"/>
+  <property name="javac.target" value="1.4"/>
 
   <property name="project.name" value="site"/> <!-- todo: is this used by anakia or something else? -->
   <property name="build.encoding" value="utf-8"/>
