@@ -66,7 +66,14 @@ public class SimpleHTMLEncoder implements Encoder
 				break;
 
 			default:
-				result.append(ch);
+				   if (ch < 128) 
+				   {
+			           result.append(ch);
+			       } 
+				   else 
+			       {
+			           result.append("&#").append((int)ch).append(";");
+			       }
 			}
 		}
 
