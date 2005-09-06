@@ -54,7 +54,7 @@ public class TokenGroup
 	
 	boolean isDistinct(Token token)
 	{
-		return token.startOffset()>endOffset;
+		return token.startOffset()>=endOffset;
 	}
 	
 	
