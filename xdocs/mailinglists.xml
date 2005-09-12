@@ -4,20 +4,7 @@
         <title>Apache Lucene - Mailing Lists</title>
     </properties>
     <body>
-        <section name="General Lucene list">
-            <p>
-              General discussion concerning all Lucene subprojects.
-            </p>
-            <p>
-              <a href="mailto:general-subscribe@lucene.apache.org">Subscribe</a>
-              <a href="mailto:general-unsubscribe@lucene.apache.org">Unsubscribe</a>
-              <a href="http://mail-archives.apache.org/mod_mbox/lucene-general/">Archive</a>
-              <a href="http://www.gossamer-threads.com/lists/lucene/general/">Alternative
-                archive with search feature</a>
-            </p>
-        </section>
-
-        <section name="Java User list">
+       <section name="Java User list">
             <p>
               This list is for users of Java Lucene to ask questions, share knowledge,
               and discuss issues.
@@ -85,6 +72,18 @@
           </p>
         </section>
 
+        <section name="General Lucene list">
+            <p>
+              General discussion concerning all Lucene subprojects.
+            </p>
+            <p>
+              <a href="mailto:general-subscribe@lucene.apache.org">Subscribe</a>
+              <a href="mailto:general-unsubscribe@lucene.apache.org">Unsubscribe</a>
+              <a href="http://mail-archives.apache.org/mod_mbox/lucene-general/">Archive</a>
+              <a href="http://www.gossamer-threads.com/lists/lucene/general/">Alternative
+                archive with search feature</a>
+            </p>
+        </section>
 
     </body>
 </document>
