@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Query;
 
 /** Removes matches which overlap with another SpanQuery. */
 public class SpanNotQuery extends SpanQuery {
@@ -125,6 +126,27 @@ public class SpanNotQuery extends SpanQuery {
         }
 
       };
+  }
+
+  public Query rewrite(IndexReader reader) throws IOException {
+    SpanNotQuery clone = null;
+
+    SpanQuery rewrittenInclude = (SpanQuery) include.rewrite(reader);
+    if (rewrittenInclude != include) {
+      clone = (SpanNotQuery) this.clone();
+      clone.include = rewrittenInclude;
+    }
+    SpanQuery rewrittenExclude = (SpanQuery) exclude.rewrite(reader);
+    if (rewrittenExclude != include) {
+      if (clone == null) clone = (SpanNotQuery) this.clone();
+      clone.exclude = rewrittenExclude;
+    }
+
+    if (clone != null) {
+      return clone;                        // some clauses rewrote
+    } else {
+      return this;                         // no clauses rewrote
+    }
   }
 
 }

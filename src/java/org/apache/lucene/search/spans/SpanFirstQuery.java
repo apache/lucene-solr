@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Query;
 
 /** Matches spans near the beginning of a field. */
 public class SpanFirstQuery extends SpanQuery {
@@ -87,4 +88,19 @@ public class SpanFirstQuery extends SpanQuery {
       };
   }
 
+  public Query rewrite(IndexReader reader) throws IOException {
+    SpanFirstQuery clone = null;
+
+    SpanQuery rewritten = (SpanQuery) match.rewrite(reader);
+    if (rewritten != match) {
+      clone = (SpanFirstQuery) this.clone();
+      clone.match = rewritten;
+    }
+
+    if (clone != null) {
+      return clone;                        // some clauses rewrote
+    } else {
+      return this;                         // no clauses rewrote
+    }
+  }
 }

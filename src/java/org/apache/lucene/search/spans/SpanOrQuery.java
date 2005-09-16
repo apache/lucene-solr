@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.search.Query;
 
 /** Matches the union of its clauses.*/
 public class SpanOrQuery extends SpanQuery {
@@ -62,6 +63,24 @@ public class SpanOrQuery extends SpanQuery {
       terms.addAll(clause.getTerms());
     }
     return terms;
+  }
+
+  public Query rewrite(IndexReader reader) throws IOException {
+    SpanOrQuery clone = null;
+    for (int i = 0 ; i < clauses.size(); i++) {
+      SpanQuery c = (SpanQuery)clauses.get(i);
+      SpanQuery query = (SpanQuery) c.rewrite(reader);
+      if (query != c) {                     // clause rewrote: must clone
+        if (clone == null)
+          clone = (SpanOrQuery) this.clone();
+        clone.clauses.set(i,query);
+      }
+    }
+    if (clone != null) {
+      return clone;                        // some clauses rewrote
+    } else {
+      return this;                         // no clauses rewrote
+    }
   }
 
   public String toString(String field) {

@@ -144,7 +144,8 @@ New features
     
 20. Added a new class MatchAllDocsQuery that matches all documents.
     (John Wang via Daniel Naber, bug #34946)
-    
+
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation 
@@ -164,6 +165,10 @@ API Changes
     
  4. Add a serializable Parameter Class to standardize parameter enum
     classes in BooleanClause and Field. (Christoph)
+
+ 5. Added rewrite methods to all SpanQuery subclasses that nest other SpanQuerys.
+    This allows custom SpanQuery subclasses that rewrite (for term expansion, for
+    example) to nest within the built-in SpanQuery classes successfully.
 
 Bug fixes
 
