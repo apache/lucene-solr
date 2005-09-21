@@ -137,7 +137,7 @@ public class SpanNotQuery extends SpanQuery {
       clone.include = rewrittenInclude;
     }
     SpanQuery rewrittenExclude = (SpanQuery) exclude.rewrite(reader);
-    if (rewrittenExclude != include) {
+    if (rewrittenExclude != exclude) {
       if (clone == null) clone = (SpanNotQuery) this.clone();
       clone.exclude = rewrittenExclude;
     }
