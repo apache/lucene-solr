@@ -264,6 +264,9 @@ Infrastructure
     Subversion.  The new repository is at
     http://svn.apache.org/repos/asf/lucene/java/trunk
 
+ 2. Lucene's issue tracker has migrated from Bugzilla to JIRA.
+    Lucene's JIRA is at http://issues.apache.org/jira/browse/LUCENE
+
 
 1.4.3
 
