@@ -69,7 +69,10 @@ public class SnowballFilter extends TokenFilter {
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
-    return new Token(stemmer.getCurrent(),
-                     token.startOffset(), token.endOffset(), token.type());
+    
+    Token newToken = new Token(stemmer.getCurrent(),
+                      token.startOffset(), token.endOffset(), token.type());
+    newToken.setPositionIncrement(token.getPositionIncrement());
+    return newToken;
   }
 }

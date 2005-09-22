@@ -213,6 +213,10 @@ Bug fixes
     inside a BooleanQuery.
     (Hans Hjelm and Scotty Allen via Daniel Naber, Bug #35626)
 
+11. Fixed SnowballFilter to pass through the position increment from
+    the original token.
+    (Yonik Seeley via Erik Hatcher, LUCENE-437)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)

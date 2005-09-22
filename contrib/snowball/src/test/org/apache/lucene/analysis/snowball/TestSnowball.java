@@ -55,6 +55,7 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.*;
+
 import junit.framework.*;
 
 import org.apache.lucene.analysis.*;
@@ -65,7 +66,7 @@ public class TestSnowball extends TestCase {
                                String input,
                                String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    for (int i=0; i<output.length; i++) {
+    for (int i = 0; i < output.length; i++) {
       Token t = ts.next();
       assertNotNull(t);
       assertEquals(output[i], t.termText());
@@ -77,7 +78,30 @@ public class TestSnowball extends TestCase {
   public void testEnglish() throws Exception {
     Analyzer a = new SnowballAnalyzer("English");
     assertAnalyzesTo(a, "he abhorred accents",
-                     new String[] { "he", "abhor", "accent" });
+        new String[]{"he", "abhor", "accent"});
+  }
+
+
+  public void testFilterTokens() throws Exception {
+    final Token tok = new Token("accents", 2, 7, "wrd");
+    tok.setPositionIncrement(3);
+
+    SnowballFilter filter = new SnowballFilter(
+        new TokenStream() {
+          public Token next() {
+            return tok;
+          }
+        },
+        "English"
+    );
+
+    Token newtok = filter.next();
+
+    assertEquals("accent", newtok.termText());
+    assertEquals(2, newtok.startOffset());
+    assertEquals(7, newtok.endOffset());
+    assertEquals("wrd", newtok.type());
+    assertEquals(3, newtok.getPositionIncrement());
   }
 }
 
