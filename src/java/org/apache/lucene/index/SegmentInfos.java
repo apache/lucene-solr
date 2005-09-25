@@ -117,13 +117,13 @@ final class SegmentInfos extends Vector {
         if (format < FORMAT)
           throw new IOException("Unknown format version: " + format);
         version = input.readLong(); // read version
-       }
-     }
-     finally {
-       input.close();
-     }
+      }
+    }
+    finally {
+      input.close();
+    }
      
-     if(format < 0)
+    if(format < 0)
       return version;
 
     // We cannot be sure about the format of the file.
