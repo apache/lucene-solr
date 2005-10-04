@@ -24,7 +24,14 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Tests QueryParser.
@@ -181,6 +188,25 @@ public class TestMultiFieldQueryParser extends TestCase {
     assertEquals("f1:[a TO c] f2:[a TO c] f3:[a TO c]", q.toString());
   }
 
+  public void testStopWordSearching() throws Exception {
+    Analyzer analyzer = new StandardAnalyzer();
+    Directory ramDir = new RAMDirectory();
+    IndexWriter iw =  new IndexWriter(ramDir, analyzer, true);
+    Document doc = new Document();
+    doc.add(new Field("body", "blah the footest blah", Field.Store.NO, Field.Index.TOKENIZED));
+    iw.addDocument(doc);
+    iw.close();
+    
+    MultiFieldQueryParser mfqp = 
+      new MultiFieldQueryParser(new String[] {"body"}, analyzer);
+    mfqp.setDefaultOperator(QueryParser.Operator.AND);
+    Query q = mfqp.parse("the footest");
+    IndexSearcher is = new IndexSearcher(ramDir);
+    Hits hits = is.search(q);
+    assertEquals(1, hits.length());
+    is.close();
+  }
+  
   /**
    * Return empty tokens for field "f1".
    */

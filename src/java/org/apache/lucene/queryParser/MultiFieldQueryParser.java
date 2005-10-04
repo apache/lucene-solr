@@ -76,6 +76,8 @@ public class MultiFieldQueryParser extends QueryParser
           clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
         }
       }
+      if (clauses.size() == 0)  // happens for stopwords
+        return null;
       return getBooleanQuery(clauses, true);
     }
     return super.getFieldQuery(field, queryText);
