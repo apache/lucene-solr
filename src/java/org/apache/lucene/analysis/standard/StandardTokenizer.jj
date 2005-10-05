@@ -112,6 +112,7 @@ TOKEN : {					  // token patterns
        "\u3300"-"\u337f",
        "\u3400"-"\u3d2d",
        "\u4e00"-"\u9fff",
+       "\uac00"-"\ud7af",
        "\uf900"-"\ufaff"
       ]
   >
