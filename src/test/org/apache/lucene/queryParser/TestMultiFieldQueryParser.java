@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -139,8 +140,26 @@ public class TestMultiFieldQueryParser extends TestCase {
       // expected exception, array length differs
     }
   }
-  
+
   public void testStaticMethod2() throws ParseException {
+    String[] fields = {"b", "t"};
+    BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
+    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer());
+    assertEquals("+b:one -t:one", q.toString());
+
+    q = MultiFieldQueryParser.parse("one two", fields, flags, new StandardAnalyzer());
+    assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
+
+    try {
+      BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
+      q = MultiFieldQueryParser.parse("blah", fields, flags2, new StandardAnalyzer());
+      fail();
+    } catch(IllegalArgumentException e) {
+      // expected exception, array length differs
+    }
+  }
+
+  public void testStaticMethod2Old() throws ParseException {
     String[] fields = {"b", "t"};
     int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
     Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer());
@@ -159,6 +178,23 @@ public class TestMultiFieldQueryParser extends TestCase {
   }
 
   public void testStaticMethod3() throws ParseException {
+    String[] queries = {"one", "two", "three"};
+    String[] fields = {"f1", "f2", "f3"};
+    BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST,
+        BooleanClause.Occur.MUST_NOT, BooleanClause.Occur.SHOULD};
+    Query q = MultiFieldQueryParser.parse(queries, fields, flags, new StandardAnalyzer());
+    assertEquals("+f1:one -f2:two f3:three", q.toString());
+
+    try {
+      BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
+      q = MultiFieldQueryParser.parse(queries, fields, flags2, new StandardAnalyzer());
+      fail();
+    } catch(IllegalArgumentException e) {
+      // expected exception, array length differs
+    }
+  }
+
+  public void testStaticMethod3Old() throws ParseException {
     String[] queries = {"one", "two"};
     String[] fields = {"b", "t"};
     int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
