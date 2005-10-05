@@ -21,7 +21,10 @@ import java.io.IOException;
 import org.apache.lucene.index.Term;
 
 /** An abstract base class for search implementations.
- * Implements some common utility methods.
+ * Implements the main search methods.
+ * 
+ * <p>Note that you can only access Hits from a Searcher as long as it is
+ * not yet closed, otherwise an IOException will be thrown. 
  */
 public abstract class Searcher implements Searchable {
 

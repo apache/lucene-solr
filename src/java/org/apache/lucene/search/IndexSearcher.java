@@ -29,6 +29,9 @@ import org.apache.lucene.index.Term;
  * <p>Applications usually need only call the inherited {@link #search(Query)}
  * or {@link #search(Query,Filter)} methods. For performance reasons it is 
  * recommended to open only one IndexSearcher and use it for all of your searches.
+ * 
+ * <p>Note that you can only access Hits from an IndexSearcher as long as it is
+ * not yet closed, otherwise an IOException will be thrown. 
  */
 public class IndexSearcher extends Searcher {
   IndexReader reader;
