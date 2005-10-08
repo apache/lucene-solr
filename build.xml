@@ -120,11 +120,11 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="docs">
+  <target name="docs" description="Build the website">
     <ant dir="site" inheritAll="false"/>
   </target>
 
-  <target name="javadocs">
+  <target name="javadocs" description="Generate javadoc">
     <mkdir dir="${build.dir}/docs/api"/>
     <invoke-javadoc
       access="protected"
