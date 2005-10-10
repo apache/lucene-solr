@@ -197,6 +197,8 @@ public class FSDirectory extends Directory {
 
     String lockPrefix = getLockPrefix().toString(); // clear old locks
     files = lockDir.list();
+    if (files == null)
+      throw new IOException("Cannot read lock directory " + lockDir.getAbsolutePath());
     for (int i = 0; i < files.length; i++) {
       if (!files[i].startsWith(lockPrefix))
         continue;
