@@ -92,6 +92,27 @@ final class FieldsReader {
         else
           index = Field.Index.NO;
         
+        Field.TermVector termVector = null;
+        if (fi.storeTermVector) {
+          if (fi.storeOffsetWithTermVector) {
+            if (fi.storePositionWithTermVector) {
+              termVector = Field.TermVector.WITH_POSITIONS_OFFSETS;
+            }
+            else {
+              termVector = Field.TermVector.WITH_OFFSETS;
+            }
+          }
+          else if (fi.storePositionWithTermVector) {
+            termVector = Field.TermVector.WITH_POSITIONS;
+          }
+          else {
+            termVector = Field.TermVector.YES;
+          }
+        }
+        else {
+          termVector = Field.TermVector.NO;
+        }
+        
         if (compressed) {
           store = Field.Store.COMPRESS;
           final byte[] b = new byte[fieldsStream.readVInt()];
@@ -100,14 +121,14 @@ final class FieldsReader {
               new String(uncompress(b), "UTF-8"), // uncompress the value and add as string
               store,
               index,
-              fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
+              termVector));
         }
         else
           doc.add(new Field(fi.name,      // name
                 fieldsStream.readString(), // read value
                 store,
                 index,
-                fi.storeTermVector ? Field.TermVector.YES : Field.TermVector.NO));
+                termVector));
       }
     }
 
