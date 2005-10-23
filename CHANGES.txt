@@ -217,6 +217,9 @@ Bug fixes
     the original token.
     (Yonik Seeley via Erik Hatcher, LUCENE-437)
 
+12. Added Unicode range to fix tokenization of Korean
+    (Otis, http://issues.apache.org/jira/browse/LUCENE-444)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
@@ -270,6 +273,9 @@ Infrastructure
 
  2. Lucene's issue tracker has migrated from Bugzilla to JIRA.
     Lucene's JIRA is at http://issues.apache.org/jira/browse/LUCENE
+    The old issues are still available at
+    http://issues.apache.org/bugzilla/show_bug.cgi?id=xxxx
+    (use the bug number instead of xxxx)
 
 
 1.4.3
