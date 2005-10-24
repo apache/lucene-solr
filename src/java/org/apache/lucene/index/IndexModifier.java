@@ -95,7 +95,7 @@ public class IndexModifier {
   // Lucene defaults:
   protected PrintStream infoStream = null;
   protected boolean useCompoundFile = true;
-  protected int maxBufferedDocs = IndexWriter.DEFAULT_MIN_MERGE_DOCS;
+  protected int maxBufferedDocs = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
   protected int maxFieldLength = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
   protected int mergeFactor = IndexWriter.DEFAULT_MERGE_FACTOR;
 
