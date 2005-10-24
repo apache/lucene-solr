@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.EmptyStackException;
 import java.util.Random;
 import java.util.Stack;
 
@@ -33,14 +34,12 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
- * Tests for the "Index" class, including accesses from two threads at the
+ * Tests for the "IndexModifier" class, including accesses from two threads at the
  * same time.
  * 
  * @author Daniel Naber
  */
 public class TestIndexModifier extends TestCase {
-
-  private final int ITERATIONS = 500;		// iterations of thread test
 
   private int docCount = 0;
   
@@ -138,7 +137,7 @@ public class TestIndexModifier extends TestCase {
   }
   
   private void testIndexInternal(int maxWait) throws IOException {
-    boolean create = true;
+    final boolean create = true;
     //Directory rd = new RAMDirectory();
     // work on disk to make sure potential lock problems are tested:
     String tempDir = System.getProperty("java.io.tmpdir");
@@ -146,16 +145,18 @@ public class TestIndexModifier extends TestCase {
       throw new IOException("java.io.tmpdir undefined, cannot run test");
     File indexDir = new File(tempDir, "lucenetestindex");
     Directory rd = FSDirectory.getDirectory(indexDir, create);
+    IndexThread.id = 0;
+    IndexThread.idStack.clear();
     IndexModifier index = new IndexModifier(rd, new StandardAnalyzer(), create);
-    IndexThread thread1 = new IndexThread(index, maxWait);
+    IndexThread thread1 = new IndexThread(index, maxWait, 1);
     thread1.start();
-    IndexThread thread2 = new IndexThread(index, maxWait);
+    IndexThread thread2 = new IndexThread(index, maxWait, 2);
     thread2.start();
     while(thread1.isAlive() || thread2.isAlive()) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
     index.optimize();
@@ -180,12 +181,6 @@ public class TestIndexModifier extends TestCase {
     }
     dir.delete();
   }
-
-  private int id = 0;
-  private Stack idStack = new Stack();
-  // TODO: test case is not reproducible despite pseudo-random numbers
-  // used for anything:
-  private Random random = new Random(101);		// constant seed for reproducability
   
   private class PowerIndex extends IndexModifier {
     public PowerIndex(Directory dir, Analyzer analyzer, boolean create) throws IOException {
@@ -199,72 +194,89 @@ public class TestIndexModifier extends TestCase {
       }
     }
   }
+  
+}
 
-  private class IndexThread extends Thread {
-    
-    private int maxWait = 10;
-    private IndexModifier index;
-    private int added = 0;
-    private int deleted = 0;
-    
-    IndexThread(IndexModifier index, int maxWait) {
-      this.index = index;
-      this.maxWait = maxWait;
-      id = 0;
-      idStack.clear();
-    }
-    
-    public void run() {
-      try {
-        for(int i = 0; i < ITERATIONS; i++) {
-          int rand = random.nextInt(101);
-          if (rand < 5) {
-            index.optimize();
-          } else if (rand < 60) {
-            Document doc = getDocument();
-            //System.out.println("add doc id=" + doc.get("id"));
-            index.addDocument(doc);
-            idStack.push(doc.get("id"));
-            added++;
-          } else {
-            if (idStack.size() == 0) {
-              // not enough docs in index, let's wait for next chance
-            } else {
-              // we just delete the last document added and remove it
-              // from the id stack so that it won't be removed twice:
-              String delId = (String)idStack.pop();
-              //System.out.println("delete doc id = " + delId);
-              index.delete(new Term("id", new Integer(delId).toString()));
-              deleted++;
-            }
+class IndexThread extends Thread {
+
+  private final static int ITERATIONS = 500;       // iterations of thread test
+
+  static int id = 0;
+  static Stack idStack = new Stack();
+
+  int added = 0;
+  int deleted = 0;
+
+  private int maxWait = 10;
+  private IndexModifier index;
+  private int threadNumber;
+  private Random random;
+  
+  IndexThread(IndexModifier index, int maxWait, int threadNumber) {
+    this.index = index;
+    this.maxWait = maxWait;
+    this.threadNumber = threadNumber;
+    // TODO: test case is not reproducible despite pseudo-random numbers:
+    random = new Random(101+threadNumber);        // constant seed for better reproducability
+  }
+  
+  public void run() {
+    try {
+      for(int i = 0; i < ITERATIONS; i++) {
+        int rand = random.nextInt(101);
+        if (rand < 5) {
+          index.optimize();
+        } else if (rand < 60) {
+          Document doc = getDocument();
+          index.addDocument(doc);
+          idStack.push(doc.get("id"));
+          added++;
+        } else {
+          // we just delete the last document added and remove it
+          // from the id stack so that it won't be removed twice:
+          String delId = null;
+          try {
+            delId = (String)idStack.pop();
+          } catch (EmptyStackException e) {
+            continue;
           }
-          if (maxWait > 0) {
-            try {
-              rand = random.nextInt(maxWait);
-              //System.out.println("waiting " + rand + "ms");
-              Thread.sleep(rand);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
+          Term delTerm = new Term("id", new Integer(delId).toString());
+          int delCount = index.delete(delTerm);
+          if (delCount != 1) {
+            throw new RuntimeException("Internal error: " + threadNumber + " deleted " + delCount + 
+                " documents, term=" + delTerm);
+          }
+          deleted++;
+        }
+        if (maxWait > 0) {
+          try {
+            rand = random.nextInt(maxWait);
+            //System.out.println("waiting " + rand + "ms");
+            Thread.sleep(rand);
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
           }
         }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
       }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private Document getDocument() {
-      Document doc = new Document();
-      doc.add(new Field("id", new Integer(id++).toString(), Field.Store.YES,
+  private Document getDocument() {
+    Document doc = new Document();
+    synchronized (getClass()) {
+      doc.add(new Field("id", new Integer(id).toString(), Field.Store.YES,
           Field.Index.UN_TOKENIZED));
-      // add random stuff:
-      doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES, 
-          Field.Index.TOKENIZED));
-      doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES, 
-          Field.Index.TOKENIZED));
-      doc.add(new Field("all", "x", Field.Store.YES, Field.Index.TOKENIZED));
-      return doc;
+      id++;
     }
+    // add random stuff:
+    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES, 
+        Field.Index.TOKENIZED));
+    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES, 
+        Field.Index.TOKENIZED));
+    doc.add(new Field("all", "x", Field.Store.YES, Field.Index.TOKENIZED));
+    return doc;
   }
   
 }
