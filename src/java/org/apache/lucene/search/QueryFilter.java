@@ -75,4 +75,13 @@ public class QueryFilter extends Filter {
   public String toString() {
     return "QueryFilter("+query+")";
   }
+
+  public boolean equals(Object o) {
+    if (!(o instanceof QueryFilter)) return false;
+    return this.query.equals(((QueryFilter)o).query);
+  }
+
+  public int hashCode() {
+    return query.hashCode() ^ 0x923F64B9;  
+  }
 }

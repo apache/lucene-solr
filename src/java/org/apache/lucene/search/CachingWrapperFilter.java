@@ -68,4 +68,13 @@ public class CachingWrapperFilter extends Filter {
   public String toString() {
     return "CachingWrapperFilter("+filter+")";
   }
+
+  public boolean equals(Object o) {
+    if (!(o instanceof CachingWrapperFilter)) return false;
+    return this.filter.equals(((CachingWrapperFilter)o).filter);
+  }
+
+  public int hashCode() {
+    return filter.hashCode() ^ 0x1117BF25;  
+  }
 }
