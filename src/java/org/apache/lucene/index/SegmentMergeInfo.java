@@ -23,8 +23,8 @@ final class SegmentMergeInfo {
   int base;
   TermEnum termEnum;
   IndexReader reader;
-  TermPositions postings;
-  int[] docMap = null;				  // maps around deleted docs
+  private TermPositions postings;  // use getPositions()
+  private int[] docMap;  // use getDocMap()
 
   SegmentMergeInfo(int b, TermEnum te, IndexReader r)
     throws IOException {
@@ -32,8 +32,11 @@ final class SegmentMergeInfo {
     reader = r;
     termEnum = te;
     term = te.term();
-    postings = reader.termPositions();
+  }
 
+  // maps around deleted docs
+  int[] getDocMap() {
+    if (docMap == null) {
     // build array which maps document numbers around deletions 
     if (reader.hasDeletions()) {
       int maxDoc = reader.maxDoc();
@@ -46,6 +49,15 @@ final class SegmentMergeInfo {
           docMap[i] = j++;
       }
     }
+  }
+    return docMap;
+  }
+
+  TermPositions getPositions() throws IOException {
+    if (postings == null) {
+      postings = reader.termPositions();
+    }
+    return postings;
   }
 
   final boolean next() throws IOException {
@@ -60,7 +72,9 @@ final class SegmentMergeInfo {
 
   final void close() throws IOException {
     termEnum.close();
+    if (postings != null) {
     postings.close();
   }
+}
 }
 

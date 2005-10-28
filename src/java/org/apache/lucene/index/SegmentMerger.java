@@ -311,9 +311,9 @@ final class SegmentMerger {
     resetSkip();
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
-      TermPositions postings = smi.postings;
+      TermPositions postings = smi.getPositions();
       int base = smi.base;
-      int[] docMap = smi.docMap;
+      int[] docMap = smi.getDocMap();
       postings.seek(smi.termEnum);
       while (postings.next()) {
         int doc = postings.doc();
