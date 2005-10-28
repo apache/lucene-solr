@@ -22,7 +22,23 @@
         </section>
 
         <section name="Lucene News">
-
+          <h3>28 October 2005 - Lucene at ApacheCon</h3>
+            <p><a href="http://www.apachecon.com"><img src="http://apachecon.com/2005/US/logos/Conference135x59.jpg"/></a></p>
+            <p>Monday, December 12, 2005 at 3pm by Grant Ingersoll:<br/>
+                Abstract:<br/>
+                Lucene is a high performance, scalable, cross-platform search engine that contains many advanced features that often go untapped by the majority of users. In this session, designed for those familiar with Lucene, we will examine some of Lucene's more advanced topics and their application, including:
+                <ol>
+                    <li>Term Vectors: Manual and Pseudo relevance feedback; Advanced document collection analysis for
+                        domain specialization</li>
+                    <li>Span Queries: Better phrase matching; Candidate Identification for Question Answering</li>
+                    <li>Tying it all Together: Building a search framework for experimentation and rapid deployment</li>
+                    <li>Case Studies from <a href="http://www.cnlp.org">CNLP</a>: Crosslingual/multilingual retrieval in Arabic, English and Dutch;
+                        Sublanguage specialization for commercial trouble ticket analysis; Passage retrieval and
+                        analysis for Question Answering application</li>                    
+                </ol>     
+      Topics 1 through 3 will provide technical details on implementing the advanced Lucene features, while the fourth topic will provide a broader context for understanding when and where to use these features.
+            </p>
+            
           <h3>14 February 2005 - Lucene moves to Apache top-level</h3>
 
              <p>Lucene has migrated from Apache's Jakarta project to the top-level.  Along with this migration,
