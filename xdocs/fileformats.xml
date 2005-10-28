@@ -698,11 +698,11 @@
                 </p>
 
                 <p>
-                    Segments    --&gt; Format, Version, SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
+                    Segments    --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
                 </p>
 
                 <p>
-                    Format, SegCount, SegSize    --&gt; UInt32
+                    Format, NameCounter, SegCount, SegSize    --&gt; UInt32
                 </p>
 
                 <p>
@@ -720,6 +720,10 @@
                 <p>
                     Version counts how often the index has been
                     changed by adding or deleting documents.
+                </p>
+
+                <p>
+                    NameCounter is used to generate names for new segment files.
                 </p>
 
                 <p>
