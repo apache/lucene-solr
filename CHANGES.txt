@@ -265,6 +265,12 @@ Optimizations
     result in quadratic performance.  Now performance is n log(n).
     (Doug Cutting)
 
+10. Speed up the creation of TermEnum for indicies with multiple
+    segments and deleted documents, and thus speed up PrefixQuery,
+    RangeQuery, WildcardQuery, FuzzyQuery, RangeFilter, DateFilter,
+    and sorting the first time on a field.
+    (Yonik Seeley, LUCENE-454)
+
 Infrastructure
 
  1. Lucene's source code repository has converted from CVS to
