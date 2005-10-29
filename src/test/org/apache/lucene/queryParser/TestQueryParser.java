@@ -255,8 +255,8 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("term*^2", null, "term*^2.0");
     assertQueryEquals("term~", null, "term~0.5");
     assertQueryEquals("term~0.7", null, "term~0.7");
-    assertQueryEquals("term~^2", null, "term^2.0~0.5");
-    assertQueryEquals("term^2~", null, "term^2.0~0.5");
+    assertQueryEquals("term~^2", null, "term~0.5^2.0");
+    assertQueryEquals("term^2~", null, "term~0.5^2.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
