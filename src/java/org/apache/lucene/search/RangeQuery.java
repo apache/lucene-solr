@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A Query that matches documents within an exclusive range. A RangeQuery
@@ -134,11 +135,7 @@ public class RangeQuery extends Query
         buffer.append(" TO ");
         buffer.append(upperTerm != null ? upperTerm.text() : "null");
         buffer.append(inclusive ? "]" : "}");
-        if (getBoost() != 1.0f)
-        {
-            buffer.append("^");
-            buffer.append(Float.toString(getBoost()));
-        }
+        buffer.append(ToStringUtils.boost(getBoost()));
         return buffer.toString();
     }
 

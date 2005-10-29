@@ -22,13 +22,14 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
   * BooleanQuerys.
   */
 public class BooleanQuery extends Query {
-  
+
   /**
    * @deprecated use {@link #setMaxClauseCount(int)} instead
    */
@@ -314,15 +315,15 @@ public class BooleanQuery extends Query {
 
   /** Indicates whether to use good old 1.4 BooleanScorer. */
   private static boolean useScorer14 = false;
-  
+
   public static void setUseScorer14(boolean use14) {
     useScorer14 = use14;
   }
-  
+
   public static boolean getUseScorer14() {
     return useScorer14;
   }
-  
+
   protected Weight createWeight(Searcher searcher) throws IOException {
     return getUseScorer14() ? (Weight) new BooleanWeight(searcher)
                             : (Weight) new BooleanWeight2(searcher);
@@ -386,25 +387,25 @@ public class BooleanQuery extends Query {
     for (int i = 0 ; i < clauses.size(); i++) {
       BooleanClause c = (BooleanClause)clauses.elementAt(i);
       if (c.isProhibited())
-	buffer.append("-");
+        buffer.append("-");
       else if (c.isRequired())
-	buffer.append("+");
+        buffer.append("+");
 
       Query subQuery = c.getQuery();
       if (subQuery instanceof BooleanQuery) {	  // wrap sub-bools in parens
-	buffer.append("(");
-	buffer.append(c.getQuery().toString(field));
-	buffer.append(")");
+        buffer.append("(");
+        buffer.append(c.getQuery().toString(field));
+        buffer.append(")");
       } else
-	buffer.append(c.getQuery().toString(field));
+        buffer.append(c.getQuery().toString(field));
 
       if (i != clauses.size()-1)
-	buffer.append(" ");
+        buffer.append(" ");
     }
 
     if (getBoost() != 1.0) {
-      buffer.append(")^");
-      buffer.append(getBoost());
+      buffer.append(")");
+      buffer.append(ToStringUtils.boost(getBoost()));
     }
 
     return buffer.toString();

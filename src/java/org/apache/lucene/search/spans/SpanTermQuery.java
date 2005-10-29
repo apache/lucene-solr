@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans containing a term. */
 public class SpanTermQuery extends SpanQuery {
@@ -44,10 +45,13 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   public String toString(String field) {
+    StringBuffer buffer = new StringBuffer();
     if (term.field().equals(field))
-      return term.text();
+      buffer.append(term.text());
     else
-      return term.toString();
+      buffer.append(term.toString());
+    buffer.append(ToStringUtils.boost(getBoost()));
+    return buffer.toString();
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

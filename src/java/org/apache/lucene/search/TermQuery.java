@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
   This may be combined with other terms with a {@link BooleanQuery}.
@@ -153,10 +154,7 @@ public class TermQuery extends Query {
       buffer.append(":");
     }
     buffer.append(term.text());
-    if (getBoost() != 1.0f) {
-      buffer.append("^");
-      buffer.append(Float.toString(getBoost()));
-    }
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

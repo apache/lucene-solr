@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans near the beginning of a field. */
 public class SpanFirstQuery extends SpanQuery {
@@ -52,6 +53,7 @@ public class SpanFirstQuery extends SpanQuery {
     buffer.append(", ");
     buffer.append(end);
     buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

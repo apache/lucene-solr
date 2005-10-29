@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
@@ -135,7 +136,17 @@ public final class FuzzyQuery extends MultiTermQuery {
   }
     
   public String toString(String field) {
-    return super.toString(field) + '~' + Float.toString(minimumSimilarity);
+    StringBuffer buffer = new StringBuffer();
+    Term term = getTerm();
+    if (!term.field().equals(field)) {
+        buffer.append(term.field());
+        buffer.append(":");
+    }
+    buffer.append(term.text());
+    buffer.append('~');
+    buffer.append(Float.toString(minimumSimilarity));
+    buffer.append(ToStringUtils.boost(getBoost()));
+    return buffer.toString();
   }
   
   private static class ScoreTerm{

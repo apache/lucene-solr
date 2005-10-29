@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
+
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Set;
@@ -125,7 +127,13 @@ extends Query {
 
   /** Prints a user-readable version of this query. */
   public String toString (String s) {
-    return "filtered("+query.toString(s)+")->"+filter;
+    StringBuffer buffer = new StringBuffer();
+    buffer.append("filtered(");
+    buffer.append(query.toString(s));
+    buffer.append(")->");
+    buffer.append(filter);
+    buffer.append(ToStringUtils.boost(getBoost()));
+    return buffer.toString();
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A {@link Query} that matches documents containing a subset of terms provided
@@ -75,10 +76,7 @@ public abstract class MultiTermQuery extends Query {
             buffer.append(":");
         }
         buffer.append(term.text());
-        if (getBoost() != 1.0f) {
-            buffer.append("^");
-            buffer.append(Float.toString(getBoost()));
-        }
+        buffer.append(ToStringUtils.boost(getBoost()));
         return buffer.toString();
     }
 
@@ -90,7 +88,7 @@ public abstract class MultiTermQuery extends Query {
 
       if (!term.equals(multiTermQuery.term)) return false;
 
-      return true;
+      return getBoost() == multiTermQuery.getBoost();
     }
 
     public int hashCode() {

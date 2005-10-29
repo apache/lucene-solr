@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.Query;
 
 /** Matches the union of its clauses.*/
@@ -95,6 +96,7 @@ public class SpanOrQuery extends SpanQuery {
       }
     }
     buffer.append("])");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 
@@ -107,7 +109,7 @@ public class SpanOrQuery extends SpanQuery {
     if (!clauses.equals(that.clauses)) return false;
     if (!field.equals(that.field)) return false;
 
-    return true;
+    return getBoost() == that.getBoost();
   }
 
   public int hashCode() {

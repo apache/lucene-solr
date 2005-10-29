@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
  * is built by QueryParser for input like <code>app*</code>. */
@@ -69,10 +70,7 @@ public class PrefixQuery extends Query {
     }
     buffer.append(prefix.text());
     buffer.append('*');
-    if (getBoost() != 1.0f) {
-      buffer.append("^");
-      buffer.append(Float.toString(getBoost()));
-    }
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

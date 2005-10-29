@@ -23,6 +23,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
  * A query that matches all documents.
@@ -130,10 +131,7 @@ public class MatchAllDocsQuery extends Query {
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
     buffer.append("MatchAllDocsQuery");
-    if (getBoost() != 1.0f) {
-      buffer.append("^");
-      buffer.append(Float.toString(getBoost()));
-    }
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 

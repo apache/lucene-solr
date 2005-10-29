@@ -23,6 +23,7 @@ import java.util.Vector;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -64,10 +65,10 @@ public class PhraseQuery extends Query {
     int position = 0;
     if(positions.size() > 0)
         position = ((Integer) positions.lastElement()).intValue() + 1;
-    
+
     add(term, position);
   }
-  
+
   /**
    * Adds a term to the end of the query phrase.
    * The relative position of the term within the phrase is specified explicitly.
@@ -82,7 +83,7 @@ public class PhraseQuery extends Query {
           field = term.field();
       else if (term.field() != field)
           throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
-      
+
       terms.addElement(term);
       positions.addElement(new Integer(position));
   }
@@ -91,7 +92,7 @@ public class PhraseQuery extends Query {
   public Term[] getTerms() {
     return (Term[])terms.toArray(new Term[0]);
   }
-  
+
   /**
    * Returns the relative positions of terms in this phrase.
    */
@@ -151,7 +152,7 @@ public class PhraseQuery extends Query {
         return
           new SloppyPhraseScorer(this, tps, getPositions(), similarity, slop,
                                  reader.norms(field));
-      
+
     }
 
     public Explanation explain(IndexReader reader, int doc)
@@ -181,7 +182,7 @@ public class PhraseQuery extends Query {
 
       Explanation idfExpl =
         new Explanation(idf, "idf(" + field + ": " + docFreqs + ")");
-      
+
       // explain query weight
       Explanation queryExpl = new Explanation();
       queryExpl.setDescription("queryWeight(" + getQuery() + "), product of:");
@@ -190,16 +191,16 @@ public class PhraseQuery extends Query {
       if (getBoost() != 1.0f)
         queryExpl.addDetail(boostExpl);
       queryExpl.addDetail(idfExpl);
-      
+
       Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
       queryExpl.addDetail(queryNormExpl);
-      
+
       queryExpl.setValue(boostExpl.getValue() *
                          idfExpl.getValue() *
                          queryNormExpl.getValue());
 
       result.addDetail(queryExpl);
-     
+
       // explain field weight
       Explanation fieldExpl = new Explanation();
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
@@ -220,7 +221,7 @@ public class PhraseQuery extends Query {
       fieldExpl.setValue(tfExpl.getValue() *
                          idfExpl.getValue() *
                          fieldNormExpl.getValue());
-      
+
       result.addDetail(fieldExpl);
 
       // combine them
@@ -262,7 +263,7 @@ public class PhraseQuery extends Query {
     for (int i = 0; i < terms.size(); i++) {
       buffer.append(((Term)terms.elementAt(i)).text());
       if (i != terms.size()-1)
-	buffer.append(" ");
+  buffer.append(" ");
     }
     buffer.append("\"");
 
@@ -271,10 +272,7 @@ public class PhraseQuery extends Query {
       buffer.append(slop);
     }
 
-    if (getBoost() != 1.0f) {
-      buffer.append("^");
-      buffer.append(Float.toString(getBoost()));
-    }
+    buffer.append(ToStringUtils.boost(getBoost()));
 
     return buffer.toString();
   }

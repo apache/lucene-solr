@@ -26,6 +26,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
@@ -98,6 +99,7 @@ public class SpanNearQuery extends SpanQuery {
     buffer.append(", ");
     buffer.append(inOrder);
     buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 
@@ -141,7 +143,7 @@ public class SpanNearQuery extends SpanQuery {
     if (!clauses.equals(spanNearQuery.clauses)) return false;
     if (!field.equals(spanNearQuery.field)) return false;
 
-    return true;
+    return getBoost() == spanNearQuery.getBoost();
   }
 
   public int hashCode() {

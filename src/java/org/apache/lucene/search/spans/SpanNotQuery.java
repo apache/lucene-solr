@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.ToStringUtils;
 
 /** Removes matches which overlap with another SpanQuery. */
 public class SpanNotQuery extends SpanQuery {
@@ -55,6 +56,7 @@ public class SpanNotQuery extends SpanQuery {
     buffer.append(", ");
     buffer.append(exclude.toString(field));
     buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
 
