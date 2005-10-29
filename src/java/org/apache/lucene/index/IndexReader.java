@@ -338,6 +338,13 @@ public abstract class IndexReader {
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
   
+  /** Returns true if there are norms stored for this field. */
+  public boolean hasNorms(String field) throws IOException {
+    // backward compatible implementation.
+    // SegmentReader has an efficient implementation.
+    return norms(field) != null;
+  }
+
   /** Returns the byte-encoded normalization factor for the named field of
    * every document.  This is used by the search code to score documents.
    *

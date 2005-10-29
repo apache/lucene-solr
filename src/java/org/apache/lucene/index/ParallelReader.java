@@ -165,6 +165,10 @@ public class ParallelReader extends IndexReader {
     return ((IndexReader)fieldToReader.get(field)).getTermFreqVector(n, field);
   }
 
+  public boolean hasNorms(String field) throws IOException {
+    return ((IndexReader)fieldToReader.get(field)).hasNorms(field);
+  }
+
   public byte[] norms(String field) throws IOException {
     return ((IndexReader)fieldToReader.get(field)).norms(field);
   }

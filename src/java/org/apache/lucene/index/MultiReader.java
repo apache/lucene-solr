@@ -145,10 +145,25 @@ public class MultiReader extends IndexReader {
     return hi;
   }
 
+  public boolean hasNorms(String field) throws IOException {
+    for (int i = 0; i < subReaders.length; i++) {
+      if (subReaders[i].hasNorms(field)) return true;
+    }
+    return false;
+  }
+
+  private byte[] ones;
+  private synchronized byte[] fakeNorms() {
+    if (ones==null) ones=SegmentReader.createFakeNorms(maxDoc());
+    return ones;
+  }
+
   public synchronized byte[] norms(String field) throws IOException {
     byte[] bytes = (byte[])normsCache.get(field);
     if (bytes != null)
       return bytes;          // cache hit
+    if (!hasNorms(field))
+      return fakeNorms();
 
     bytes = new byte[maxDoc()];
     for (int i = 0; i < subReaders.length; i++)
@@ -160,6 +175,7 @@ public class MultiReader extends IndexReader {
   public synchronized void norms(String field, byte[] result, int offset)
     throws IOException {
     byte[] bytes = (byte[])normsCache.get(field);
+    if (bytes==null && !hasNorms(field)) bytes=fakeNorms();
     if (bytes != null)                            // cache hit
       System.arraycopy(bytes, 0, result, offset, maxDoc());
 

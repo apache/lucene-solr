@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.util.Vector;
 import java.util.Iterator;
+import java.util.Collection;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -122,7 +123,7 @@ final class SegmentMerger {
     // Field norm files
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed) {
+      if (fi.isIndexed && !fi.omitNorms) {
         files.add(segment + ".f" + i);
       }
     }
@@ -146,6 +147,15 @@ final class SegmentMerger {
     return files;
   }
 
+  private void addIndexed(IndexReader reader, FieldInfos fieldInfos, Collection names, boolean storeTermVectors, boolean storePositionWithTermVector,
+                         boolean storeOffsetWithTermVector) throws IOException {
+    Iterator i = names.iterator();
+    while (i.hasNext()) {
+      String field = (String)i.next();
+      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field));
+    }
+  }
+
   /**
    * 
    * @return The number of documents in all of the readers
@@ -156,11 +166,11 @@ final class SegmentMerger {
     int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
-      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true);
-      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false);
-      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true);
-      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false);
-      fieldInfos.addIndexed(reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false);
       fieldInfos.add(reader.getFieldNames(IndexReader.FieldOption.UNINDEXED), false);
     }
     fieldInfos.write(directory, segment + ".fnm");
@@ -386,7 +396,7 @@ final class SegmentMerger {
   private void mergeNorms() throws IOException {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed) {
+      if (fi.isIndexed && !fi.omitNorms) {
         IndexOutput output = directory.createOutput(segment + ".f" + i);
         try {
           for (int j = 0; j < readers.size(); j++) {

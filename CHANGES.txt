@@ -145,6 +145,10 @@ New features
 20. Added a new class MatchAllDocsQuery that matches all documents.
     (John Wang via Daniel Naber, bug #34946)
 
+21. Added ability to omit norms on a per field basis to decrease
+    index size and memory consumption when there are many indexed fields.
+    See Field.setOmitNorms()
+    (Yonik Seeley, LUCENE-448)
 
 API Changes
 

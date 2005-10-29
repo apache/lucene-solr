@@ -107,6 +107,10 @@ public class FilterIndexReader extends IndexReader {
   public boolean hasDeletions() { return in.hasDeletions(); }
   protected void doUndeleteAll() throws IOException { in.undeleteAll(); }
 
+  public boolean hasNorms(String field) throws IOException {
+    return in.hasNorms(field);
+  }
+
   public byte[] norms(String f) throws IOException { return in.norms(f); }
   public void norms(String f, byte[] bytes, int offset) throws IOException {
     in.norms(f, bytes, offset);

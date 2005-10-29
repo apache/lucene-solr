@@ -38,6 +38,7 @@ final class FieldInfos {
   static final byte STORE_TERMVECTOR = 0x2;
   static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x4;
   static final byte STORE_OFFSET_WITH_TERMVECTOR = 0x8;
+  static final byte OMIT_NORMS = 0x10;
   
   private ArrayList byNumber = new ArrayList();
   private HashMap byName = new HashMap();
@@ -66,7 +67,7 @@ final class FieldInfos {
     while (fields.hasMoreElements()) {
       Field field = (Field) fields.nextElement();
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector());
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms());
     }
   }
   
@@ -109,7 +110,7 @@ final class FieldInfos {
    * @see #add(String, boolean, boolean, boolean, boolean)
    */
   public void add(String name, boolean isIndexed) {
-    add(name, isIndexed, false, false, false);
+    add(name, isIndexed, false, false, false, false);
   }
 
   /**
@@ -120,7 +121,7 @@ final class FieldInfos {
    * @param storeTermVector true if the term vector should be stored
    */
   public void add(String name, boolean isIndexed, boolean storeTermVector){
-    add(name, isIndexed, storeTermVector, false, false);
+    add(name, isIndexed, storeTermVector, false, false, false);
   }
   
   /** If the field is not yet known, adds it. If it is known, checks to make
@@ -136,9 +137,27 @@ final class FieldInfos {
    */
   public void add(String name, boolean isIndexed, boolean storeTermVector,
                   boolean storePositionWithTermVector, boolean storeOffsetWithTermVector) {
+
+    add(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, false);
+  }
+
+    /** If the field is not yet known, adds it. If it is known, checks to make
+   *  sure that the isIndexed flag is the same as was given previously for this
+   *  field. If not - marks it as being indexed.  Same goes for the TermVector
+   * parameters.
+   *
+   * @param name The name of the field
+   * @param isIndexed true if the field is indexed
+   * @param storeTermVector true if the term vector should be stored
+   * @param storePositionWithTermVector true if the term vector with positions should be stored
+   * @param storeOffsetWithTermVector true if the term vector with offsets should be stored
+   * @param omitNorms true if the norms for the indexed field should be omitted
+   */
+  public void add(String name, boolean isIndexed, boolean storeTermVector,
+                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector, boolean omitNorms) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector);
+      addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms);
     } else {
       if (fi.isIndexed != isIndexed) {
         fi.isIndexed = true;                      // once indexed, always index
@@ -152,15 +171,20 @@ final class FieldInfos {
       if (fi.storeOffsetWithTermVector != storeOffsetWithTermVector) {
         fi.storeOffsetWithTermVector = true;                // once vector, always vector
       }
+      if (fi.omitNorms != omitNorms) {
+        fi.omitNorms = false;                // once norms are stored, always store
+      }
+
     }
   }
 
+
   private void addInternal(String name, boolean isIndexed,
                            boolean storeTermVector, boolean storePositionWithTermVector, 
-                           boolean storeOffsetWithTermVector) {
+                           boolean storeOffsetWithTermVector, boolean omitNorms) {
     FieldInfo fi =
       new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
-              storeOffsetWithTermVector);
+              storeOffsetWithTermVector, omitNorms);
     byNumber.add(fi);
     byName.put(name, fi);
   }
@@ -245,6 +269,7 @@ final class FieldInfos {
       if (fi.storeTermVector) bits |= STORE_TERMVECTOR;
       if (fi.storePositionWithTermVector) bits |= STORE_POSITIONS_WITH_TERMVECTOR;
       if (fi.storeOffsetWithTermVector) bits |= STORE_OFFSET_WITH_TERMVECTOR;
+      if (fi.omitNorms) bits |= OMIT_NORMS;
       output.writeString(fi.name);
       output.writeByte(bits);
     }
@@ -259,7 +284,9 @@ final class FieldInfos {
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
       boolean storePositionsWithTermVector = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
       boolean storeOffsetWithTermVector = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector);
+      boolean omitNorms = (bits & OMIT_NORMS) != 0;
+
+      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms);
     }    
   }
 

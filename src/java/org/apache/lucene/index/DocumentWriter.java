@@ -371,7 +371,7 @@ final class DocumentWriter {
   private final void writeNorms(String segment) throws IOException { 
     for(int n = 0; n < fieldInfos.size(); n++){
       FieldInfo fi = fieldInfos.fieldInfo(n);
-      if(fi.isIndexed){
+      if(fi.isIndexed && !fi.omitNorms){
         float norm = fieldBoosts[n] * similarity.lengthNorm(fi.name, fieldLengths[n]);
         IndexOutput norms = directory.createOutput(segment + ".f" + n);
         try {

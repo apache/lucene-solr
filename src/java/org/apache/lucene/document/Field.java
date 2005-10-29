@@ -42,6 +42,7 @@ public final class Field implements Serializable {
   private boolean storeTermVector = false;
   private boolean storeOffsetWithTermVector = false; 
   private boolean storePositionWithTermVector = false;
+  private boolean omitNorms = false;
   private boolean isStored = false;
   private boolean isIndexed = true;
   private boolean isTokenized = true;
@@ -90,10 +91,19 @@ public final class Field implements Serializable {
     public static final Index TOKENIZED = new Index("TOKENIZED");
     
     /** Index the field's value without using an Analyzer, so it can be searched.
-     * As no analyzer is used the value will be stored as a single term. This is 
+     * As no analyzer is used the value will be stored as a single term. This is
      * useful for unique Ids like product numbers.
      */
     public static final Index UN_TOKENIZED = new Index("UN_TOKENIZED");
+
+    /** Index the field's value without an Analyzer, and disable
+     * the storing of norms.  No norms means that index-time boosting
+     * and field length normalization will be disabled.  The benefit is
+     * less memory usage as norms take up one byte per indexed field
+     * for every document in the index.
+     */
+    public static final Index NO_NORMS = new Index("NO_NORMS");
+
   }
 
   public static final class TermVector  extends Parameter implements Serializable {
@@ -338,6 +348,10 @@ public final class Field implements Serializable {
     } else if (index == Index.UN_TOKENIZED) {
       this.isIndexed = true;
       this.isTokenized = false;
+    } else if (index == Index.NO_NORMS) {
+      this.isIndexed = true;
+      this.isTokenized = false;
+      this.omitNorms = true;
     } else {
       throw new IllegalArgumentException("unknown index parameter " + index);
     }
@@ -540,6 +554,16 @@ public final class Field implements Serializable {
   /** True iff the value of the filed is stored as binary */
   public final boolean  isBinary()      { return isBinary; }
   
+  /** True if norms are omitted for this indexed field */
+  public boolean getOmitNorms() { return omitNorms; }
+
+  /** Expert:
+   *
+   * If set, omit normalization factors associated with this indexed field.
+   * This effectively disables indexing boosts and length normalization for this field.
+   */
+  public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
+  
   /** Prints a Field for human consumption. */
   public final String toString() {
     StringBuffer result = new StringBuffer();
@@ -580,7 +604,9 @@ public final class Field implements Serializable {
         result.append(",");
       result.append("binary");
     }
-    
+    if (omitNorms) {
+      result.append(",omitNorms");
+    }
     result.append('<');
     result.append(name);
     result.append(':');
