@@ -450,7 +450,7 @@ class SegmentReader extends IndexReader {
   }
 
   private byte[] ones;
-  private synchronized byte[] fakeNorms() {
+  private byte[] fakeNorms() {
     if (ones==null) ones=createFakeNorms(maxDoc());
     return ones;
   }

@@ -153,7 +153,7 @@ public class MultiReader extends IndexReader {
   }
 
   private byte[] ones;
-  private synchronized byte[] fakeNorms() {
+  private byte[] fakeNorms() {
     if (ones==null) ones=SegmentReader.createFakeNorms(maxDoc());
     return ones;
   }
