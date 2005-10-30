@@ -20,6 +20,7 @@ import junit.framework.TestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.DefaultSimilarity;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class TestSegmentReader extends TestCase {
     assertTrue(dir != null);
     assertTrue(reader != null);
     assertTrue(DocHelper.nameValues.size() > 0);
-    assertTrue(DocHelper.numFields(testDoc) == 6);
+    assertTrue(DocHelper.numFields(testDoc) == DocHelper.all.size());
   }
   
   public void testDocument() throws IOException {
@@ -59,7 +60,7 @@ public class TestSegmentReader extends TestCase {
     Document result = reader.document(0);
     assertTrue(result != null);
     //There are 2 unstored fields on the document that are not preserved across writing
-    assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - 2);
+    assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
     
     Enumeration fields = result.fields();
     while (fields.hasMoreElements()) {
@@ -91,7 +92,7 @@ public class TestSegmentReader extends TestCase {
   public void testGetFieldNameVariations() {
     Collection result = reader.getFieldNames(IndexReader.FieldOption.ALL);
     assertTrue(result != null);
-    assertTrue(result.size() == 6);
+    assertTrue(result.size() == DocHelper.all.size());
     for (Iterator iter = result.iterator(); iter.hasNext();) {
       String s = (String) iter.next();
       //System.out.println("Name: " + s);
@@ -99,23 +100,23 @@ public class TestSegmentReader extends TestCase {
     }                                                                               
     result = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
     assertTrue(result != null);
-    assertTrue(result.size() == 5);
+    assertTrue(result.size() == DocHelper.indexed.size());
     for (Iterator iter = result.iterator(); iter.hasNext();) {
       String s = (String) iter.next();
-      assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
+      assertTrue(DocHelper.indexed.containsKey(s) == true || s.equals(""));
     }
     
     result = reader.getFieldNames(IndexReader.FieldOption.UNINDEXED);
     assertTrue(result != null);
-    assertTrue(result.size() == 1);
+    assertTrue(result.size() == DocHelper.unindexed.size());
     //Get all indexed fields that are storing term vectors
     result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
     assertTrue(result != null);
-    assertTrue(result.size() == 2);
+    assertTrue(result.size() == DocHelper.termvector.size());
     
     result = reader.getFieldNames(IndexReader.FieldOption.INDEXED_NO_TERMVECTOR);
     assertTrue(result != null);
-    assertTrue(result.size() == 3);
+    assertTrue(result.size() == DocHelper.notermvector.size());
   } 
   
   public void testTerms() throws IOException {
@@ -134,6 +135,10 @@ public class TestSegmentReader extends TestCase {
     assertTrue(termDocs != null);
     termDocs.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
     assertTrue(termDocs.next() == true);
+
+    termDocs.seek(new Term(DocHelper.NO_NORMS_KEY,  DocHelper.NO_NORMS_TEXT));
+    assertTrue(termDocs.next() == true);
+
     
     TermPositions positions = reader.termPositions();
     positions.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
@@ -142,7 +147,7 @@ public class TestSegmentReader extends TestCase {
     assertTrue(positions.nextPosition() >= 0);
   }    
   
-  public void testNorms() {
+  public void testNorms() throws IOException {
     //TODO: Not sure how these work/should be tested
 /*
     try {
@@ -155,7 +160,32 @@ public class TestSegmentReader extends TestCase {
     }
 */
 
-  }    
+    checkNorms(reader);
+  }
+
+  public static void checkNorms(IndexReader reader) throws IOException {
+        // test omit norms
+    for (int i=0; i<DocHelper.fields.length; i++) {
+      Field f = DocHelper.fields[i];
+      if (f.isIndexed()) {
+        assertEquals(reader.hasNorms(f.name()), !f.getOmitNorms());
+        assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
+        if (!reader.hasNorms(f.name())) {
+          // test for fake norms of 1.0
+          byte [] norms = reader.norms(f.name());
+          assertEquals(norms.length,reader.maxDoc());
+          for (int j=0; j<reader.maxDoc(); j++) {
+            assertEquals(norms[j], DefaultSimilarity.encodeNorm(1.0f));
+          }
+          norms = new byte[reader.maxDoc()];
+          reader.norms(f.name(),norms, 0);
+          for (int j=0; j<reader.maxDoc(); j++) {
+            assertEquals(norms[j], DefaultSimilarity.encodeNorm(1.0f));
+          }
+        }
+      }
+    }
+  }
   
   public void testTermVectors() throws IOException {
     TermFreqVector result = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);

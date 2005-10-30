@@ -36,17 +36,28 @@ class DocHelper {
   public static final int [] FIELD_2_FREQS = {3, 1, 1}; 
   public static final String TEXT_FIELD_2_KEY = "textField2";
   public static Field textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
-  
+
+  public static final String FIELD_3_TEXT = "aaaNoNorms aaaNoNorms bbbNoNorms";
+  public static final String TEXT_FIELD_3_KEY = "textField3";
+  public static Field textField3 = new Field(TEXT_FIELD_3_KEY, FIELD_3_TEXT, Field.Store.YES, Field.Index.TOKENIZED);
+  static { textField3.setOmitNorms(true); }
+
   public static final String KEYWORD_TEXT = "Keyword";
   public static final String KEYWORD_FIELD_KEY = "keyField";
   public static Field keyField = new Field(KEYWORD_FIELD_KEY, KEYWORD_TEXT,
       Field.Store.YES, Field.Index.UN_TOKENIZED);
-  
+
+  public static final String NO_NORMS_TEXT = "omitNormsText";
+  public static final String NO_NORMS_KEY = "omitNorms";
+  public static Field noNormsField = new Field(NO_NORMS_KEY, NO_NORMS_TEXT,
+      Field.Store.YES, Field.Index.NO_NORMS);
+
   public static final String UNINDEXED_FIELD_TEXT = "unindexed field text";
   public static final String UNINDEXED_FIELD_KEY = "unIndField";
   public static Field unIndField = new Field(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT,
       Field.Store.YES, Field.Index.NO);
-  
+
+
   public static final String UNSTORED_1_FIELD_TEXT = "unstored field text";
   public static final String UNSTORED_FIELD_1_KEY = "unStoredField1";
   public static Field unStoredField1 = new Field(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT,
@@ -58,13 +69,58 @@ class DocHelper {
       Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES);
 
   public static Map nameValues = null;
-  
+
+  // ordered list of all the fields...
+  // could use LinkedHashMap for this purpose if Java1.4 is OK
+  public static Field[] fields = new Field[] {
+    textField1,
+    textField2,
+    textField3,
+    keyField,
+    noNormsField,
+    unIndField,
+    unStoredField1,
+    unStoredField2,
+  };
+
+  // Map<String fieldName, Field field>
+  public static Map all=new HashMap();
+  public static Map indexed=new HashMap();
+  public static Map stored=new HashMap();
+  public static Map unstored=new HashMap();
+  public static Map unindexed=new HashMap();
+  public static Map termvector=new HashMap();
+  public static Map notermvector=new HashMap();
+  public static Map noNorms=new HashMap();
+
+  static {
+    for (int i=0; i<fields.length; i++) {
+      Field f = fields[i];
+      add(all,f);
+      if (f.isIndexed()) add(indexed,f);
+      else add(unindexed,f);
+      if (f.isTermVectorStored()) add(termvector,f);
+      if (f.isIndexed() && !f.isTermVectorStored()) add(notermvector,f);
+      if (f.isStored()) add(stored,f);
+      else add(unstored,f);
+      if (f.getOmitNorms()) add(noNorms,f);
+    }
+  }
+
+
+  private static void add(Map map, Field field) {
+    map.put(field.name(), field);
+  }
+
+
   static
   {
     nameValues = new HashMap();
     nameValues.put(TEXT_FIELD_1_KEY, FIELD_1_TEXT);
     nameValues.put(TEXT_FIELD_2_KEY, FIELD_2_TEXT);
+    nameValues.put(TEXT_FIELD_3_KEY, FIELD_3_TEXT);
     nameValues.put(KEYWORD_FIELD_KEY, KEYWORD_TEXT);
+    nameValues.put(NO_NORMS_KEY, NO_NORMS_TEXT);
     nameValues.put(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT);
     nameValues.put(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT);
     nameValues.put(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT);
@@ -75,12 +131,9 @@ class DocHelper {
    * @param doc The document to write
    */ 
   public static void setupDoc(Document doc) {
-    doc.add(textField1);
-    doc.add(textField2);
-    doc.add(keyField);
-    doc.add(unIndField);
-    doc.add(unStoredField1);
-    doc.add(unStoredField2);
+    for (int i=0; i<fields.length; i++) {
+      doc.add(fields[i]);
+    }
   }                         
 
   /**

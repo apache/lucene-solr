@@ -54,14 +54,22 @@ public class TestFieldsReader extends TestCase {
     assertTrue(doc != null);
     assertTrue(doc.getField("textField1") != null);
     
-    
     Field field = doc.getField("textField2");
     assertTrue(field != null);
     assertTrue(field.isTermVectorStored() == true);
     
     assertTrue(field.isStoreOffsetWithTermVector() == true);
     assertTrue(field.isStorePositionWithTermVector() == true);
-    
+    assertTrue(field.getOmitNorms() == false);
+
+    field = doc.getField("textField3");
+    assertTrue(field != null);
+    assertTrue(field.isTermVectorStored() == false);
+    assertTrue(field.isStoreOffsetWithTermVector() == false);
+    assertTrue(field.isStorePositionWithTermVector() == false);
+    assertTrue(field.getOmitNorms() == true);
+
+
     reader.close();
   }
 }

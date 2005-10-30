@@ -61,12 +61,13 @@ public class TestMultiReader extends TestCase {
     assertTrue(reader != null);
     Document newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - 2);
+    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
     Document newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - 2);
+    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
     TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);
+    TestSegmentReader.checkNorms(reader);
   }
   
   public void testTermVectors() {

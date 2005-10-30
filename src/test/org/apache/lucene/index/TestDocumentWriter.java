@@ -75,6 +75,15 @@ public class TestDocumentWriter extends TestCase {
       fields = doc.getFields("keyField");
       assertTrue(fields != null && fields.length == 1);
       assertTrue(fields[0].stringValue().equals(DocHelper.KEYWORD_TEXT));
+
+      fields = doc.getFields(DocHelper.NO_NORMS_KEY);
+      assertTrue(fields != null && fields.length == 1);
+      assertTrue(fields[0].stringValue().equals(DocHelper.NO_NORMS_TEXT));
+
+      fields = doc.getFields(DocHelper.TEXT_FIELD_3_KEY);
+      assertTrue(fields != null && fields.length == 1);
+      assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_3_TEXT));
+
     } catch (IOException e) {
       e.printStackTrace();
       assertTrue(false);

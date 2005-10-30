@@ -75,10 +75,10 @@ public class TestSegmentMerger extends TestCase {
     Document newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
     //There are 2 unstored fields on the document
-    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - 2);
+    assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
     Document newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
-    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - 2);
+    assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
     
     TermDocs termDocs = mergedReader.termDocs(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
     assertTrue(termDocs != null);
@@ -106,6 +106,8 @@ public class TestSegmentMerger extends TestCase {
       //System.out.println("Term: " + term + " Freq: " + freq);
       assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);
       assertTrue(DocHelper.FIELD_2_FREQS[i] == freq);
-    }                                                
+    }
+
+    TestSegmentReader.checkNorms(mergedReader);
   }    
 }

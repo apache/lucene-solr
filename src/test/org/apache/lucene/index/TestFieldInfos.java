@@ -31,7 +31,7 @@ public class TestFieldInfos extends TestCase {
     FieldInfos fieldInfos = new FieldInfos();
     fieldInfos.add(testDoc);
     //Since the complement is stored as well in the fields map
-    assertTrue(fieldInfos.size() == 6); //this is 6 b/c we are using the no-arg constructor
+    assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
     RAMDirectory dir = new RAMDirectory();
     String name = "testFile";
     IndexOutput output = dir.createOutput(name);
@@ -47,11 +47,23 @@ public class TestFieldInfos extends TestCase {
       FieldInfo info = readIn.fieldInfo("textField1");
       assertTrue(info != null);
       assertTrue(info.storeTermVector == false);
-      
+      assertTrue(info.omitNorms == false);
+
       info = readIn.fieldInfo("textField2");
       assertTrue(info != null);
       assertTrue(info.storeTermVector == true);
-      
+      assertTrue(info.omitNorms == false);
+
+      info = readIn.fieldInfo("textField3");
+      assertTrue(info != null);
+      assertTrue(info.storeTermVector == false);
+      assertTrue(info.omitNorms == true);
+
+      info = readIn.fieldInfo("omitNorms");
+      assertTrue(info != null);
+      assertTrue(info.storeTermVector == false);
+      assertTrue(info.omitNorms == true);
+
       dir.close();
 
     } catch (IOException e) {
