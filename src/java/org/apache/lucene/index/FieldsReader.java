@@ -117,18 +117,23 @@ final class FieldsReader {
           store = Field.Store.COMPRESS;
           final byte[] b = new byte[fieldsStream.readVInt()];
           fieldsStream.readBytes(b, 0, b.length);
-          doc.add(new Field(fi.name,      // field name
+          Field f = new Field(fi.name,      // field name
               new String(uncompress(b), "UTF-8"), // uncompress the value and add as string
               store,
               index,
-              termVector));
+              termVector);
+          f.setOmitNorms(fi.omitNorms);
+          doc.add(f);
         }
-        else
-          doc.add(new Field(fi.name,      // name
+        else {
+          Field f = new Field(fi.name,     // name
                 fieldsStream.readString(), // read value
                 store,
                 index,
-                termVector));
+                termVector);
+          f.setOmitNorms(fi.omitNorms);
+          doc.add(f);
+        }
       }
     }
 
