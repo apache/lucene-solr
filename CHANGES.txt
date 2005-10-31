@@ -221,9 +221,17 @@ Bug fixes
     the original token.
     (Yonik Seeley via Erik Hatcher, LUCENE-437)
 
-12. Added Unicode range to fix tokenization of Korean
+12. Added Unicode range to fix tokenization of Korean.
     (Otis, http://issues.apache.org/jira/browse/LUCENE-444)
 
+13.	FieldsReader now looks at FieldInfo.storeOffsetWithTermVector and
+	FieldInfo.storePositionWithTermVector and creates the Field with
+	correct TermVector parameter.
+	(Frank Steinmann via Bernhard, LUCENE-455)
+	
+14.	Fixed WildcardQuery to prevent "cat" matching "ca??".
+	(Xiaozheng Ma via Bernhard, LUCENE-306)
+	
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
