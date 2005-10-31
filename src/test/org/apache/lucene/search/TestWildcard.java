@@ -29,6 +29,7 @@ import java.io.IOException;
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
  *
+ * @version $Id$
  * @author Otis Gospodnetic
  */
 public class TestWildcard
@@ -105,12 +106,14 @@ public class TestWildcard
     Query query3 = new WildcardQuery(new Term("body", "metals?"));
     Query query4 = new WildcardQuery(new Term("body", "m?t?ls"));
     Query query5 = new WildcardQuery(new Term("body", "M?t?ls"));
-
-    assertMatches(searcher, query1, 1);
-    assertMatches(searcher, query2, 2);
-    assertMatches(searcher, query3, 1);
+    Query query6 = new WildcardQuery(new Term("body", "meta??"));
+    
+    assertMatches(searcher, query1, 1); 
+    assertMatches(searcher, query2, 1);
+    assertMatches(searcher, query3, 0);
     assertMatches(searcher, query4, 3);
     assertMatches(searcher, query5, 0);
+    assertMatches(searcher, query6, 1); // Query: 'meta??' matches 'metals' not 'metal'
   }
 
   private RAMDirectory getIndexStore(String field, String[] contents)
