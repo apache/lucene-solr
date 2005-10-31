@@ -125,15 +125,20 @@ public class WildcardTermEnum extends FilteredTermEnum {
           {
             // Check the character at the current position
             char wildchar = pattern.charAt(wildcardSearchPos);
+            
             // If it's not a wildcard character, then there is more
             // pattern information after this/these wildcards.
-
             if (wildchar != WILDCARD_CHAR && wildchar != WILDCARD_STRING)
             {
               justWildcardsLeft = false;
             }
             else
             {
+              // to prevent "cat" matches "ca??"
+              if (wildchar == WILDCARD_CHAR) {
+                return false;
+              }
+              
               // Look at the next character
               wildcardSearchPos++;
             }
