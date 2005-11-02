@@ -54,9 +54,10 @@ public class TestDocumentWriter extends TestCase {
     DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
     assertTrue(writer != null);
     try {
-      writer.addDocument("test", testDoc);
+      String segName="test";
+      writer.addDocument(segName, testDoc);
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(new SegmentInfo("test", 1, dir));
+      SegmentReader reader = SegmentReader.get(new SegmentInfo(segName, 1, dir));
       assertTrue(reader != null);
       Document doc = reader.document(0);
       assertTrue(doc != null);
@@ -83,6 +84,14 @@ public class TestDocumentWriter extends TestCase {
       fields = doc.getFields(DocHelper.TEXT_FIELD_3_KEY);
       assertTrue(fields != null && fields.length == 1);
       assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_3_TEXT));
+
+      // test that the norm file is not present if omitNorms is true
+      for (int i=0; i<reader.fieldInfos.size(); i++) {
+        FieldInfo fi = reader.fieldInfos.fieldInfo(i);
+        if (fi.isIndexed) {
+          assertTrue(fi.omitNorms == !dir.fileExists(segName + ".f" + i));
+        }
+      }
 
     } catch (IOException e) {
       e.printStackTrace();
