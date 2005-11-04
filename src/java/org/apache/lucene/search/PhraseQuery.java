@@ -291,7 +291,7 @@ public class PhraseQuery extends Query {
   /** Returns a hash code value for this object.*/
   public int hashCode() {
     return Float.floatToIntBits(getBoost())
-      ^ Float.floatToIntBits(slop)
+      ^ slop
       ^ terms.hashCode()
       ^ positions.hashCode();
   }
