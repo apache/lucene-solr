@@ -67,17 +67,77 @@ public class CheckHits {
 
     checkDocIds("hits1", results, hits1);
     checkDocIds("hits2", results, hits2);
-    
-    final float scoreTolerance = 1.0e-7f;
-    for (int i = 0; i < results.length; i++) {
-      if (Math.abs(hits1.score(i) -  hits2.score(i)) > scoreTolerance) {
+    checkEqual(query, hits1, hits2);
+  }
+
+  public static void checkEqual(Query query, Hits hits1, Hits hits2) throws IOException {
+     final float scoreTolerance = 1.0e-6f;
+     if (hits1.length() != hits2.length()) {
+       TestCase.fail("Unequal lengths: hits1="+hits1.length()+",hits2="+hits2.length());
+     }
+    for (int i = 0; i < hits1.length(); i++) {
+      if (hits1.id(i) != hits2.id(i)) {
+        TestCase.fail("Hit " + i + " docnumbers don't match\n"
+                + hits2str(hits1, hits2,0,0)
+                + "for query:" + query.toString());
+      }
+
+      if ((hits1.id(i) != hits2.id(i))
+          || Math.abs(hits1.score(i) -  hits2.score(i)) > scoreTolerance)
+      {
         TestCase.fail("Hit " + i + ", doc nrs " + hits1.id(i) + " and " + hits2.id(i)
-                      + "\nunequal scores: " + hits1.score(i)
+                      + "\nunequal       : " + hits1.score(i)
                       + "\n           and: " + hits2.score(i)
                       + "\nfor query:" + query.toString());
       }
     }
   }
+
+  public static String hits2str(Hits hits1, Hits hits2, int start, int end) throws IOException {
+    StringBuffer sb = new StringBuffer();
+    int len1=hits1==null ? 0 : hits1.length();
+    int len2=hits2==null ? 0 : hits2.length();
+    if (end<=0) {
+      end = Math.max(len1,len2);
+    }
+
+    sb.append("Hits length1=" + len1 + "\tlength2="+len2);
+
+    sb.append("\n");
+    for (int i=start; i<end; i++) {
+      sb.append("hit=" + i + ":");
+      if (i<len1) {
+        sb.append(" doc"+hits1.id(i) + "=" + hits1.score(i));
+      } else {
+        sb.append("               ");
+      }
+      sb.append(",\t");
+      if (i<len2) {
+        sb.append(" doc"+hits2.id(i) + "=" + hits2.score(i));
+      }
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
+
+  public static String topdocsString(TopDocs docs, int start, int end) {
+    StringBuffer sb = new StringBuffer();
+    sb.append("TopDocs totalHits="+docs.totalHits + " top="+docs.scoreDocs.length+"\n");
+    if (end<=0) end=docs.scoreDocs.length;
+    else end=Math.min(end,docs.scoreDocs.length);
+    for (int i=start; i<end; i++) {
+      sb.append("\t");
+      sb.append(i);
+      sb.append(") doc=");
+      sb.append(docs.scoreDocs[i].doc);
+      sb.append("\tscore=");
+      sb.append(docs.scoreDocs[i].score);
+      sb.append("\n");
+    }
+    return sb.toString();
+  }
+
 
 }
 
