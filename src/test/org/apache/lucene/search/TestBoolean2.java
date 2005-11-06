@@ -68,15 +68,19 @@ public class TestBoolean2 extends TestCase {
   public void queriesTest(String queryText, int[] expDocNrs) throws Exception {
 //System.out.println();
 //System.out.println("Query: " + queryText);
-    Query query1 = makeQuery(queryText);
-    BooleanQuery.setUseScorer14(true);
-    Hits hits1 = searcher.search(query1);
+    try {
+      Query query1 = makeQuery(queryText);
+      BooleanQuery.setUseScorer14(true);
+      Hits hits1 = searcher.search(query1);
 
-    Query query2 = makeQuery(queryText); // there should be no need to parse again...
-    BooleanQuery.setUseScorer14(false);
-    Hits hits2 = searcher.search(query2);
+      Query query2 = makeQuery(queryText); // there should be no need to parse again...
+      BooleanQuery.setUseScorer14(false);
+      Hits hits2 = searcher.search(query2);
 
-    CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
+      CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
+    } finally { // even when a test fails.
+      BooleanQuery.setUseScorer14(false);
+    }
   }
 
   public void testQueries01() throws Exception {
@@ -150,25 +154,33 @@ public class TestBoolean2 extends TestCase {
     String[] vals = {"w1","w2","w3","w4","w5","xx","yy","zzz"};
 
     int tot=0;
-    // increase number of iterations for more complete testing
-    for (int i=0; i<1000; i++) {
-      int level = rnd.nextInt(3);
-      BooleanQuery q1 = randBoolQuery(new Random(i), level, field, vals, null);
 
-      // Can't sort by relevance since floating point numbers may not quite
-      // match up.
-      Sort sort = Sort.INDEXORDER;
+    try {
 
+      // increase number of iterations for more complete testing
+      for (int i=0; i<1000; i++) {
+        int level = rnd.nextInt(3);
+        BooleanQuery q1 = randBoolQuery(new Random(i), level, field, vals, null);
+
+        // Can't sort by relevance since floating point numbers may not quite
+        // match up.
+        Sort sort = Sort.INDEXORDER;
+
+        BooleanQuery.setUseScorer14(false);
+        Hits hits1 = searcher.search(q1,sort);
+        if (hits1.length()>0) hits1.id(hits1.length()-1);
+
+        BooleanQuery.setUseScorer14(true);
+        Hits hits2 = searcher.search(q1,sort);
+        if (hits2.length()>0) hits2.id(hits1.length()-1);
+        tot+=hits2.length();
+        CheckHits.checkEqual(q1, hits1, hits2);
+      }
+
+    } finally { // even when a test fails.
       BooleanQuery.setUseScorer14(false);
-      Hits hits1 = searcher.search(q1,sort);
-      if (hits1.length()>0) hits1.id(hits1.length()-1);
-
-      BooleanQuery.setUseScorer14(true);
-      Hits hits2 = searcher.search(q1,sort);
-      if (hits2.length()>0) hits2.id(hits1.length()-1);
-      tot+=hits2.length();
-      CheckHits.checkEqual(q1, hits1, hits2);
     }
+
     // System.out.println("Total hits:"+tot);
   }
 
