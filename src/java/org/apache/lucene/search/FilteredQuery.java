@@ -55,6 +55,8 @@ extends Query {
     this.filter = filter;
   }
 
+
+
   /**
    * Returns a Weight that applies the filter to the enclosed query's Weight.
    * This is accomplished by overriding the Scorer returned by the Weight.
@@ -118,6 +120,10 @@ extends Query {
 
   public Query getQuery() {
     return query;
+  }
+
+  public Filter getFilter() {
+    return filter;
   }
 
   // inherit javadoc
