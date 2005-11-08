@@ -22,6 +22,7 @@ import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -36,9 +37,9 @@ public class TestMultiAnalyzer extends TestCase {
 
   private static int multiToken = 0;
 
-  public void testAnalyzer() throws ParseException {
+  public void testMultiAnalyzer() throws ParseException {
     
-    QueryParser qp = new QueryParser("", new TestAnalyzer());
+    QueryParser qp = new QueryParser("", new MultiAnalyzer());
 
     // trivial, no multiple tokens:
     assertEquals("foo", qp.parse("foo").toString());
@@ -79,14 +80,22 @@ public class TestMultiAnalyzer extends TestCase {
     assertEquals("+(multi multi2) +foo", qp.parse("multi foo").toString());
 
   }
+
+  public void testPosIncrementAnalyzer() throws ParseException {
+    QueryParser qp = new QueryParser("", new PosIncrementAnalyzer());
+    assertEquals("quick brown", qp.parse("the quick brown").toString());
+    assertEquals("\"quick brown\"", qp.parse("\"the quick brown\"").toString());
+    assertEquals("quick brown fox", qp.parse("the quick brown fox").toString());
+    assertEquals("\"quick brown fox\"", qp.parse("\"the quick brown fox\"").toString());
+  }
   
   /**
    * Expands "multi" to "multi" and "multi2", both at the same position,
    * and expands "triplemulti" to "triplemulti", "multi3", and "multi2".  
    */
-  private class TestAnalyzer extends Analyzer {
+  private class MultiAnalyzer extends Analyzer {
 
-    public TestAnalyzer() {
+    public MultiAnalyzer() {
     }
 
     public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -129,6 +138,51 @@ public class TestMultiAnalyzer extends TestCase {
           return t;
         }
       }
+    }
+  }
+
+  /**
+   * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1).
+   * Does not work correctly for input other than "the quick brown ...".
+   */
+  private class PosIncrementAnalyzer extends Analyzer {
+
+    public PosIncrementAnalyzer() {
+    }
+
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      TokenStream result = new StandardTokenizer(reader);
+      result = new TestPosIncrementFilter(result);
+      result = new LowerCaseFilter(result);
+      return result;
+    }
+  }
+
+  private final class TestPosIncrementFilter extends TokenFilter {
+    
+    public TestPosIncrementFilter(TokenStream in) {
+      super(in);
+    }
+
+    public final org.apache.lucene.analysis.Token next() throws java.io.IOException {
+      for (Token t = input.next(); t != null; t = input.next()) {
+        if (t.termText().equals("the")) {
+          // stopword, do nothing
+        } else if (t.termText().equals("quick")) {
+          org.apache.lucene.analysis.Token token = 
+            new org.apache.lucene.analysis.Token(t.termText(), t.startOffset(),
+                t.endOffset(), t.type());
+          token.setPositionIncrement(2);
+          return token;
+        } else {
+          org.apache.lucene.analysis.Token token = 
+            new org.apache.lucene.analysis.Token(t.termText(), t.startOffset(),
+                t.endOffset(), t.type());
+          token.setPositionIncrement(1);
+          return token;
+        }
+      }
+      return null;
     }
   }
 

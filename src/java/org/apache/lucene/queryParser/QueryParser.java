@@ -381,8 +381,8 @@ public class QueryParser implements QueryParserConstants {
       if (t == null)
         break;
       v.addElement(t);
-      if (t.getPositionIncrement() == 1)
-        positionCount++;
+      if (t.getPositionIncrement() != 0)
+        positionCount += t.getPositionIncrement();
       else
         severalTokensAtSamePosition = true;
     }
