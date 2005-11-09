@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.BitSet;
 
 import junit.framework.TestCase;
 import junit.framework.Test;
@@ -57,6 +58,7 @@ implements Serializable {
 	private Query queryX;
 	private Query queryY;
 	private Query queryA;
+	private Query queryE;
 	private Query queryF;
 	private Sort sort;
 
@@ -120,6 +122,7 @@ implements Serializable {
 				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.UN_TOKENIZED));
 				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.UN_TOKENIZED));
 				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.UN_TOKENIZED));
+        doc.setBoost(2);  // produce some scores above 1.0
 				writer.addDocument (doc);
 			}
 		}
@@ -155,6 +158,7 @@ implements Serializable {
 		queryX = new TermQuery (new Term ("contents", "x"));
 		queryY = new TermQuery (new Term ("contents", "y"));
 		queryA = new TermQuery (new Term ("contents", "a"));
+    queryE = new TermQuery (new Term ("contents", "e"));
 		queryF = new TermQuery (new Term ("contents", "f"));
 		sort = new Sort();
 	}
@@ -444,7 +448,33 @@ implements Serializable {
 
 	}
 
-	// runs a variety of sorts useful for multisearchers
+  public void testTopDocsScores() throws Exception {
+    Sort sort = new Sort();
+    int nDocs=10;
+
+    // try to pick a query that will result in an unnormalized
+    // score greater than 1 to test for correct normalization
+    final TopDocs docs1 = full.search(queryE,null,nDocs,sort);
+
+    // a filter that only allows through the first hit
+    Filter filt = new Filter() {
+      public BitSet bits(IndexReader reader) throws IOException {
+        BitSet bs = new BitSet(reader.maxDoc());
+        bs.set(docs1.scoreDocs[0].doc);
+        return bs;
+      }
+    };
+
+    TopDocs docs2 = full.search(queryE, filt, nDocs, sort);
+
+    // This test currently fails because of a bug in FieldSortedHitQueue
+    // with a single document matching.
+    // TODO: uncomment when fixed.
+    // assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
+  }
+
+
+  // runs a variety of sorts useful for multisearchers
 	private void runMultiSorts (Searcher multi) throws Exception {
 		sort.setSort (SortField.FIELD_DOC);
 		assertMatchesPattern (multi, queryA, sort, "[AB]{2}[CD]{2}[EF]{2}[GH]{2}[IJ]{2}");
@@ -558,7 +588,13 @@ implements Serializable {
 		Iterator iter = m1.keySet().iterator();
 		while (iter.hasNext()) {
 			Object key = iter.next();
-			assertEquals (m1.get(key), m2.get(key));
+      Object o1 = m1.get(key);
+      Object o2 = m2.get(key);
+      if (o1 instanceof Float) {
+        assertEquals(((Float)o1).floatValue(), ((Float)o2).floatValue(), 1e-6);
+      } else {
+        assertEquals (m1.get(key), m2.get(key));
+      }
 		}
 	}
 
