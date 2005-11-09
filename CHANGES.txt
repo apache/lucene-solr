@@ -62,8 +62,8 @@ Changes in runtime behavior
       disableLuceneLocks
     (Daniel Naber)
 
- 8. Minor change in FieldCacheImpl to make it use its own IntParser and
-    FloatParser inner classes.
+ 8. Fixed FieldCacheImpl to use user-provided IntParser and FloatParser,
+    instead of using Integer and Float classes for parsing.
     (Yonik Seeley via Otis Gospodnetic)
  
 New features
