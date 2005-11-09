@@ -164,7 +164,7 @@ implements FieldCache {
           do {
             Term term = termEnum.term();
             if (term.field() != field) break;
-            int termval = Integer.parseInt (term.text());
+            int termval = parser.parseInt(term.text());
             termDocs.seek (termEnum);
             while (termDocs.next()) {
               retArray[termDocs.doc()] = termval;
@@ -204,7 +204,7 @@ implements FieldCache {
           do {
             Term term = termEnum.term();
             if (term.field() != field) break;
-            float termval = Float.parseFloat (term.text());
+            float termval = parser.parseFloat(term.text());
             termDocs.seek (termEnum);
             while (termDocs.next()) {
               retArray[termDocs.doc()] = termval;

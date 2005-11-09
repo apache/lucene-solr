@@ -61,6 +61,10 @@ Changes in runtime behavior
     See FSDirectory for getter/setter methods:
       disableLuceneLocks
     (Daniel Naber)
+
+ 8. Minor change in FieldCacheImpl to make it use its own IntParser and
+    FloatParser inner classes.
+    (Yonik Seeley via Otis Gospodnetic)
  
 New features
 
