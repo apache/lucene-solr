@@ -29,7 +29,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more
- * than one token per position.
+ * than one token per position or that return tokens with a position
+ * increment &gt; 1.
  * 
  * @author Daniel Naber
  */
@@ -43,7 +44,10 @@ public class TestMultiAnalyzer extends TestCase {
 
     // trivial, no multiple tokens:
     assertEquals("foo", qp.parse("foo").toString());
+    assertEquals("foo", qp.parse("\"foo\"").toString());
     assertEquals("foo foobar", qp.parse("foo foobar").toString());
+    assertEquals("\"foo foobar\"", qp.parse("\"foo foobar\"").toString());
+    assertEquals("\"foo foobar blah\"", qp.parse("\"foo foobar blah\"").toString());
 
     // two tokens at the same position:
     assertEquals("(multi multi2) foo", qp.parse("multi foo").toString());
