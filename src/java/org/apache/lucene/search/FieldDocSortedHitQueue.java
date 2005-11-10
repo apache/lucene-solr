@@ -126,9 +126,9 @@ extends PriorityQueue {
 					String s2 = (String) docB.fields[i];
 					// null values need to be sorted first, because of how FieldCache.getStringIndex()
 					// works - in that routine, any documents without a value in the given field are
-					// put first.
-					if (s1 == null) c = -1;      // could be null if there are
-					else if (s2 == null) c = 1;  // no terms in the given field
+					// put first.  If both are null, the next SortField is used
+					if (s1 == null) c = (s2==null) ? 0 : -1;
+					else if (s2 == null) c = 1;  // 
 					else if (fields[i].getLocale() == null) {
 						c = s1.compareTo(s2);
 					} else {

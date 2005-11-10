@@ -240,6 +240,11 @@ Bug fixes
 	
 14.	Fixed WildcardQuery to prevent "cat" matching "ca??".
 	(Xiaozheng Ma via Bernhard, LUCENE-306)
+
+15. Fixed a bug where MultiSearcher and ParallelMultiSearcher could
+    change the sort order when sorting by string for documents without
+    a value for the sort field.
+    (Luc Vanlerberghe via Yonik, LUCENE-453)
 	
 Optimizations
      

@@ -60,6 +60,7 @@ implements Serializable {
 	private Query queryA;
 	private Query queryE;
 	private Query queryF;
+	private Query queryG;
 	private Sort sort;
 
 
@@ -105,7 +106,10 @@ implements Serializable {
 	{   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88"  },
 	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10"  },
 	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7"   },
-	{   "Z",   "f",             null,          null,           null,    null    }
+	{   "W",   "g",             "1",           null,           null,    null    },
+	{   "X",   "g",             "1",           "0.1",          null,    null    },
+	{   "Y",   "g",             "1",           "0.2",          null,    null    },
+	{   "Z",   "f g",           null,          null,           null,    null    }
 	};
 
 	// create an index of all the documents, or just the x, or just the y documents
@@ -160,6 +164,7 @@ implements Serializable {
 		queryA = new TermQuery (new Term ("contents", "a"));
     queryE = new TermQuery (new Term ("contents", "e"));
 		queryF = new TermQuery (new Term ("contents", "f"));
+		queryG = new TermQuery (new Term ("contents", "g"));
 		sort = new Sort();
 	}
 
@@ -271,6 +276,47 @@ implements Serializable {
 
 		sort.setSort ("float", true);
 		assertMatches (full, queryF, sort, "IJZ");
+
+		// When a field is null for both documents, the next SortField should be used.
+                // Works for
+		sort.setSort (new SortField[] { new SortField ("int"),
+                                new SortField ("string", SortField.STRING),
+				new SortField ("float") });
+		assertMatches (full, queryG, sort, "ZWXY");
+
+		// Reverse the last criterium to make sure the test didn't pass by chance
+		sort.setSort (new SortField[] { new SortField ("int"),
+                                new SortField ("string", SortField.STRING),
+				new SortField ("float", true) });
+		assertMatches (full, queryG, sort, "ZYXW");
+
+		// Do the same for a MultiSearcher
+		Searcher multiSearcher=new MultiSearcher (new Searchable[] { full });
+
+		sort.setSort (new SortField[] { new SortField ("int"),
+                                new SortField ("string", SortField.STRING),
+				new SortField ("float") });
+		assertMatches (multiSearcher, queryG, sort, "ZWXY");
+
+		sort.setSort (new SortField[] { new SortField ("int"),
+                                new SortField ("string", SortField.STRING),
+				new SortField ("float", true) });
+		assertMatches (multiSearcher, queryG, sort, "ZYXW");
+		// Don't close the multiSearcher. it would close the full searcher too!
+
+		// Do the same for a ParallelMultiSearcher
+                Searcher parallelSearcher=new ParallelMultiSearcher (new Searchable[] { full });
+
+		sort.setSort (new SortField[] { new SortField ("int"),
+                                new SortField ("string", SortField.STRING),
+				new SortField ("float") });
+		assertMatches (parallelSearcher, queryG, sort, "ZWXY");
+
+		sort.setSort (new SortField[] { new SortField ("int"),
+                                new SortField ("string", SortField.STRING),
+				new SortField ("float", true) });
+		assertMatches (parallelSearcher, queryG, sort, "ZYXW");
+		// Don't close the parallelSearcher. it would close the full searcher too!
 	}
 
 	// test sorts using a series of fields
@@ -449,6 +495,9 @@ implements Serializable {
 	}
 
   public void testTopDocsScores() throws Exception {
+
+    // There was previously a bug in FieldSortedHitQueue.maxscore when only a single
+    // doc was added.  That is what the following tests for.
     Sort sort = new Sort();
     int nDocs=10;
 
@@ -466,10 +515,7 @@ implements Serializable {
     };
 
     TopDocs docs2 = full.search(queryE, filt, nDocs, sort);
-
-    // This test currently fails because of a bug in FieldSortedHitQueue
-    // with a single document matching.
-    // TODO: uncomment when fixed.
+    
     // assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
   }
 
