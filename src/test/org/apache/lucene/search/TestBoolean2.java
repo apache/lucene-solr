@@ -194,7 +194,7 @@ public class TestBoolean2 extends TestCase {
   // Random rnd is passed in so that the exact same random query may be created
   // more than once.
   public static BooleanQuery randBoolQuery(Random rnd, int level, String field, String[] vals, Callback cb) {
-    BooleanQuery current = new BooleanQuery();
+    BooleanQuery current = new BooleanQuery(rnd.nextInt()<0);
     for (int i=0; i<rnd.nextInt(vals.length)+1; i++) {
       int qType=0; // term query
       if (level>0) {
