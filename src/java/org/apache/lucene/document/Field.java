@@ -264,17 +264,17 @@ public final class Field implements Serializable {
   /** The value of the field as a String, or null.  If null, the Reader value
    * or binary value is used.  Exactly one of stringValue(), readerValue(), and
    * binaryValue() must be set. */
-  public String stringValue()   { try { return (String)fieldsData; } catch (ClassCastException ignore) { return null; } }
+  public String stringValue()   { return fieldsData instanceof String ? (String)fieldsData : null; }
   
   /** The value of the field as a Reader, or null.  If null, the String value
    * or binary value is  used.  Exactly one of stringValue(), readerValue(),
    * and binaryValue() must be set. */
-  public Reader readerValue()   { try { return (Reader)fieldsData; } catch (ClassCastException ignore) { return null; } }
+  public Reader readerValue()   { return fieldsData instanceof Reader ? (Reader)fieldsData : null; }
   
   /** The value of the field in Binary, or null.  If null, the Reader or
    * String value is used.  Exactly one of stringValue(), readerValue() and
    * binaryValue() must be set. */
-  public byte[] binaryValue()   { try { return (byte[])fieldsData; } catch (ClassCastException ignore) { return null; } }
+  public byte[] binaryValue()   { return fieldsData instanceof byte[] ? (byte[])fieldsData : null; }
   
   /**
    * Create a field by specifying its name, value and how it will
