@@ -157,6 +157,11 @@ extends PriorityQueue {
 				c = -c;
 			}
 		}
-		return c > 0;
+
+    // avoid random sort order that could lead to duplicates (bug #31241):
+    if (c == 0)
+      return docA.doc > docB.doc;
+
+    return c > 0;
 	}
 }

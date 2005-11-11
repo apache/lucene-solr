@@ -245,6 +245,10 @@ Bug fixes
     change the sort order when sorting by string for documents without
     a value for the sort field.
     (Luc Vanlerberghe via Yonik, LUCENE-453)
+
+16. Fixed a sorting problem with MultiSearchers that can lead to
+    missing or duplicate docs due to equal docs sorting in an arbitrary order.
+    (Yonik Seeley, LUCENE-456)
 	
 Optimizations
      
