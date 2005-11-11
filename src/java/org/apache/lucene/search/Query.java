@@ -86,7 +86,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     throw new UnsupportedOperationException();
   }
 
-  /** Expert: Constructs an initializes a Weight for a top-level query. */
+  /** Expert: Constructs and initializes a Weight for a top-level query. */
   public Weight weight(Searcher searcher)
     throws IOException {
     Query query = searcher.rewrite(this);
