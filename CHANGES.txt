@@ -249,6 +249,10 @@ Bug fixes
 16. Fixed a sorting problem with MultiSearchers that can lead to
     missing or duplicate docs due to equal docs sorting in an arbitrary order.
     (Yonik Seeley, LUCENE-456)
+
+17. A single hit using the expert level sorted search methods
+    resulted in the score not being normalized.
+    (Yonik Seeley, LUCENE-462)
 	
 Optimizations
      

@@ -516,7 +516,7 @@ implements Serializable {
 
     TopDocs docs2 = full.search(queryE, filt, nDocs, sort);
     
-    // assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
+    assertEquals(docs1.scoreDocs[0].score, docs2.scoreDocs[0].score, 1e-6);
   }
 
 

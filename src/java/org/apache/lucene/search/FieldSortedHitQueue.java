@@ -68,11 +68,29 @@ extends PriorityQueue {
   /** Stores the sort criteria being used. */
   protected SortField[] fields;
 
-  /** Stores the maximum score value encountered, for normalizing.
-   *  we only care about scores greater than 1.0 - if all the scores
-   *  are less than 1.0, we don't have to normalize. */
-  protected float maxscore = 1.0f;
+  /** Stores the maximum score value encountered, needed for normalizing. */
+  protected float maxscore = Float.NEGATIVE_INFINITY;
 
+  /** returns the maximum score encountered by elements inserted via insert()
+   */
+  public float getMaxScore() {
+    return maxscore;
+  }
+
+  // The signature of this method takes a FieldDoc in order to avoid
+  // the unneeded cast to retrieve the score.
+  // inherit javadoc
+  public boolean insert(FieldDoc fdoc) {
+    maxscore = Math.max(maxscore,fdoc.score);
+    return super.insert(fdoc);
+  }
+
+  // This overrides PriorityQueue.insert() so that insert(FieldDoc) that
+  // keeps track of the score isn't accidentally bypassed.  
+  // inherit javadoc
+  public boolean insert(Object fdoc) {
+    return insert((FieldDoc)fdoc);
+  }
 
   /**
    * Returns whether <code>a</code> is less relevant than <code>b</code>.
@@ -83,10 +101,6 @@ extends PriorityQueue {
   protected boolean lessThan (final Object a, final Object b) {
     final ScoreDoc docA = (ScoreDoc) a;
     final ScoreDoc docB = (ScoreDoc) b;
-
-    // keep track of maximum score
-    if (docA.score > maxscore) maxscore = docA.score;
-    if (docB.score > maxscore) maxscore = docB.score;
 
     // run comparators
     final int n = comparators.length;
