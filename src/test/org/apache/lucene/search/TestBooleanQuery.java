@@ -20,6 +20,7 @@ import junit.framework.TestCase;
 import org.apache.lucene.index.Term;
 
 public class TestBooleanQuery extends TestCase {
+  
   public void testEquality() throws Exception {
     BooleanQuery bq1 = new BooleanQuery();
     bq1.add(new TermQuery(new Term("field", "value1")), BooleanClause.Occur.SHOULD);
@@ -39,4 +40,14 @@ public class TestBooleanQuery extends TestCase {
 
     assertEquals(bq1, bq2);
   }
+
+  public void testException() {
+    try {
+      BooleanQuery.setMaxClauseCount(0);
+      fail();
+    } catch (IllegalArgumentException e) {
+      // okay
+    }
+  }
+  
 }

@@ -63,6 +63,8 @@ public class BooleanQuery extends Query {
    * the operating system.
    */
   public static void setMaxClauseCount(int maxClauseCount) {
+    if (maxClauseCount < 1)
+      throw new IllegalArgumentException("maxClauseCount must be >= 1");
     BooleanQuery.maxClauseCount = maxClauseCount;
   }
 
