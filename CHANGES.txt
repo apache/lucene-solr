@@ -5,25 +5,25 @@ $Id$
 1.9 RC1
 
 Note that this realease is mostly but not 100% source compatible with the
-latest release of Lucene (1.4.3). In other words, you should make sure 
-your application compiles with this version of Lucene before you replace 
+latest release of Lucene (1.4.3). In other words, you should make sure
+your application compiles with this version of Lucene before you replace
 the old Lucene JAR with the new one.
 
 Requirements
 
  1. To compile and use Lucene you now need Java 1.4 or later.
- 
+
 Changes in runtime behavior
 
- 1. FuzzyQuery can no longer throw a TooManyClauses exception. If a 
-    FuzzyQuery expands to more than BooleanQuery.maxClauseCount 
-    terms only the BooleanQuery.maxClauseCount most similar terms 
+ 1. FuzzyQuery can no longer throw a TooManyClauses exception. If a
+    FuzzyQuery expands to more than BooleanQuery.maxClauseCount
+    terms only the BooleanQuery.maxClauseCount most similar terms
     go into the rewritten query and thus the exception is avoided.
     (Christoph)
 
  2. Changed system property from "org.apache.lucene.lockdir" to
     "org.apache.lucene.lockDir", so that its casing follows the existing
-    pattern used in other Lucene system properties. (Bernhard)		
+    pattern used in other Lucene system properties. (Bernhard)
 
  3. The terms of RangeQueries and FuzzyQueries are now converted to
     lowercase by default (as it has been the case for PrefixQueries
@@ -41,12 +41,12 @@ Changes in runtime behavior
     its own files from the index directory (looking at the file name suffixes
     to decide if a file belongs to Lucene). The old behavior was to delete
     all files. (Daniel Naber and Bernhard Messer, bug #34695)
-    
+
  6. The version of an IndexReader, as returned by getCurrentVersion()
     and getVersion() doesn't start at 0 anymore for new indexes. Instead, it
     is now initialized by the system time in milliseconds.
     (Bernhard Messer via Daniel Naber)
- 
+
  7. Several default values cannot be set via system properties anymore, as
     this has been considered inappropriate for a library like Lucene. For
     most properties there are set/get methods available in IndexWriter which
@@ -65,12 +65,12 @@ Changes in runtime behavior
  8. Fixed FieldCacheImpl to use user-provided IntParser and FloatParser,
     instead of using Integer and Float classes for parsing.
     (Yonik Seeley via Otis Gospodnetic)
- 
+
 New features
 
  1. Added support for stored compressed fields (patch #31149)
     (Bernhard Messer via Christoph)
-    
+
  2. Added support for binary stored fields (patch #29370)
     (Drew Farris and Bernhard Messer via Christoph)
 
@@ -84,10 +84,10 @@ New features
     second, ...) which can make RangeQuerys on those fields more efficient.
     (Daniel Naber)
 
- 5. QueryParser now correctly works with Analyzers that can return more 
+ 5. QueryParser now correctly works with Analyzers that can return more
     than one token per position. For example, a query "+fast +car"
     would be parsed as "+fast +(car automobile)" if the Analyzer
-    returns "car" and "automobile" at the same position whenever it 
+    returns "car" and "automobile" at the same position whenever it
     finds "car" (Patch #23307).
     (Pierrick Brihaye, Daniel Naber)
 
@@ -109,7 +109,7 @@ New features
 
  9. Added javadocs-internal to build.xml - bug #30360
     (Paul Elschot via Otis)
-    
+
 10. Added RangeFilter, a more generically useful filter than DateFilter.
     (Chris M Hostetter via Erik)
 
@@ -121,7 +121,7 @@ New features
     to list and optionally extract the individual files from an existing
     compound index file.
     (adapted from code contributed by Garrett Rooney; committed by Bernhard)
-    
+
 13. Add IndexWriter.setTermIndexInterval() method.  See javadocs.
     (Doug Cutting)
 
@@ -134,23 +134,23 @@ New features
     This provides standard java.util.Iterator iteration over Hits.
     Each call to the iterator's next() method returns a Hit object.
     (Jeremy Rayner via Erik)
-    
+
 16. Add ParallelReader, an IndexReader that combines separate indexes
     over different fields into a single virtual index.  (Doug Cutting)
 
 17. Add IntParser and FloatParser interfaces to FieldCache, so that
     fields in arbitrarily formats can be cached as ints and floats.
     (Doug Cutting)
-    
+
 18. Added class org.apache.lucene.index.IndexModifier which combines
     IndexWriter and IndexReader, so you can add and delete documents without
     worrying about synchronisation/locking issues.
     (Daniel Naber)
 
-19. Lucene can now be used inside an unsigned applet, as Lucene's access 
+19. Lucene can now be used inside an unsigned applet, as Lucene's access
     to system properties will not cause a SecurityException anymore.
     (Jon Schuster via Daniel Naber, bug #34359)
-    
+
 20. Added a new class MatchAllDocsQuery that matches all documents.
     (John Wang via Daniel Naber, bug #34946)
 
@@ -159,11 +159,15 @@ New features
     See Field.setOmitNorms()
     (Yonik Seeley, LUCENE-448)
 
+22. Added NullFragmenter to contrib/highlighter, which is useful for
+    highlighting entire documents or fields.
+    (Erik Hatcher)
+
 API Changes
 
- 1. Several methods and fields have been deprecated. The API documentation 
+ 1. Several methods and fields have been deprecated. The API documentation
     contains information about the recommended replacements. It is planned
-    that most of the deprecated methods and fields will be removed in 
+    that most of the deprecated methods and fields will be removed in
     Lucene 2.0. (Daniel Naber)
 
  2. The Russian and the German analyzers have been moved to contrib/analyzers.
@@ -172,10 +176,10 @@ API Changes
     (Daniel Naber)
 
  3. The API contained methods that declared to throw an IOException
-    but that never did this. These declarations have been removed. If 
+    but that never did this. These declarations have been removed. If
     your code tries to catch these exceptions you might need to remove
     those catch clauses to avoid compile errors. (Daniel Naber)
-    
+
  4. Add a serializable Parameter Class to standardize parameter enum
     classes in BooleanClause and Field. (Christoph)
 
@@ -185,22 +189,22 @@ API Changes
 
 Bug fixes
 
- 1. The JSP demo page (src/jsp/results.jsp) now properly closes the 
+ 1. The JSP demo page (src/jsp/results.jsp) now properly closes the
     IndexSearcher it opens. (Daniel Naber)
 
  2. Fixed a bug in IndexWriter.addIndexes(IndexReader[] readers) that
     prevented deletion of obsolete segments. (Christoph Goller)
-  
+
  3. Fix in FieldInfos to avoid the return of an extra blank field in
     IndexReader.getFieldNames() (Patch #19058). (Mark Harwood via Bernhard)
-    
+
  4. Some combinations of BooleanQuery and MultiPhraseQuery (formerly
     PhrasePrefixQuery) could provoke UnsupportedOperationException
     (bug #33161). (Rhett Sutphin via Daniel Naber)
-    
- 5. Small bug in skipTo of ConjunctionScorer that caused NullPointerException 
+
+ 5. Small bug in skipTo of ConjunctionScorer that caused NullPointerException
     if skipTo() was called without prior call to next() fixed. (Christoph)
- 
+
  6. Disable Similiarty.coord() in the scoring of most automatically
     generated boolean queries.  The coord() score factor is
     appropriate when clauses are independently specified by a user,
@@ -212,7 +216,7 @@ Bug fixes
  7. Getting a lock file with Lock.obtain(long) was supposed to wait for
     a given amount of milliseconds, but this didn't work.
     (John Wang via Daniel Naber, Bug #33799)
- 
+
  8. Fix FSDirectory.createOutput() to always create new files.
     Previously, existing files were overwritten, and an index could be
     corrupted when the old version of a file was longer than the new.
@@ -237,7 +241,7 @@ Bug fixes
 	FieldInfo.storePositionWithTermVector and creates the Field with
 	correct TermVector parameter.
 	(Frank Steinmann via Bernhard, LUCENE-455)
-	
+
 14.	Fixed WildcardQuery to prevent "cat" matching "ca??".
 	(Xiaozheng Ma via Bernhard, LUCENE-306)
 
