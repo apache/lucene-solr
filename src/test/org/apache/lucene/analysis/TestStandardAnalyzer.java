@@ -94,5 +94,8 @@ public class TestStandardAnalyzer extends TestCase {
     assertAnalyzesTo(a, "C++", new String[]{"c"});
     assertAnalyzesTo(a, "C#", new String[]{"c"});
 
+    // Korean words
+    assertAnalyzesTo(a, "안녕하세요 한글입니다", new String[]{"안녕하세요", "한글입니다"});
+
   }
 }

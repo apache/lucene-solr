@@ -1,4 +1,4 @@
-/**
+/**f
  * Copyright 2004 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +59,7 @@ PARSER_END(StandardTokenizer)
 TOKEN : {					  // token patterns
 
   // basic word: a sequence of digits & letters
-  <ALPHANUM: (<LETTER>|<DIGIT>)+ >
+  <ALPHANUM: (<LETTER>|<DIGIT>|<KOREAN>)+ >
 
   // internal apostrophes: O'Reilly, you're, O'Reilly's
   // use a post-filter to remove possesives
@@ -106,14 +106,18 @@ TOKEN : {					  // token patterns
        "\u0100"-"\u1fff"
       ]
   >
-| < CJK:                                          // non-alphabets
+| < CJ:                                          // Chinese, Japanese
       [
        "\u3040"-"\u318f",
        "\u3300"-"\u337f",
        "\u3400"-"\u3d2d",
        "\u4e00"-"\u9fff",
-       "\uac00"-"\ud7af",
        "\uf900"-"\ufaff"
+      ]
+  >
+| < KOREAN:                                          // Korean
+      [
+       "\uac00"-"\ud7af"
       ]
   >
 | < #DIGIT:					  // unicode digits
@@ -157,7 +161,7 @@ org.apache.lucene.analysis.Token next() throws IOException :
     token = <EMAIL> |
     token = <HOST> |
     token = <NUM> |
-    token = <CJK> |
+    token = <CJ> |
     token = <EOF>
    )
     {

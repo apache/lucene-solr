@@ -234,8 +234,11 @@ Bug fixes
     the original token.
     (Yonik Seeley via Erik Hatcher, LUCENE-437)
 
-12. Added Unicode range to fix tokenization of Korean.
-    (Otis, http://issues.apache.org/jira/browse/LUCENE-444)
+12. Added Unicode range of Korean characters to StandardTokenizer,
+    grouping contiguous characters into a token rather than one token
+    per character.  This change also changes the token type to "<CJ>"
+    for Chinese and Japanese character tokens (previously it was "<CJK>").
+    (Otis and Erik, via Cheolgoo Kang LUCENE-444 and LUCENE-461)
 
 13.	FieldsReader now looks at FieldInfo.storeOffsetWithTermVector and
 	FieldInfo.storePositionWithTermVector and creates the Field with
