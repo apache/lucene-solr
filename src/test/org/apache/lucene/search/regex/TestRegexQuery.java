@@ -22,7 +22,7 @@ public class TestRegexQuery extends TestCase {
     writer.close();
 
     IndexSearcher searcher = new IndexSearcher(directory);
-    Query query = new SpanRegexQuery(new Term("field", "q.[aeiou]c.*"));
+    Query query = new RegexQuery(new Term("field", "q.[aeiou]c.*"));
     Hits hits = searcher.search(query);
     assertEquals(1, hits.length());
   }
