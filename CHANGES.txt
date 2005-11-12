@@ -238,15 +238,15 @@ Bug fixes
     grouping contiguous characters into a token rather than one token
     per character.  This change also changes the token type to "<CJ>"
     for Chinese and Japanese character tokens (previously it was "<CJK>").
-    (Otis and Erik, via Cheolgoo Kang LUCENE-444 and LUCENE-461)
+    (Cheolgoo Kang via Otis and Erik, LUCENE-444 and LUCENE-461)
 
-13.	FieldsReader now looks at FieldInfo.storeOffsetWithTermVector and
-	FieldInfo.storePositionWithTermVector and creates the Field with
-	correct TermVector parameter.
-	(Frank Steinmann via Bernhard, LUCENE-455)
+13. FieldsReader now looks at FieldInfo.storeOffsetWithTermVector and
+    FieldInfo.storePositionWithTermVector and creates the Field with
+    correct TermVector parameter.
+    (Frank Steinmann via Bernhard, LUCENE-455)
 
-14.	Fixed WildcardQuery to prevent "cat" matching "ca??".
-	(Xiaozheng Ma via Bernhard, LUCENE-306)
+14. Fixed WildcardQuery to prevent "cat" matching "ca??".
+    (Xiaozheng Ma via Bernhard, LUCENE-306)
 
 15. Fixed a bug where MultiSearcher and ParallelMultiSearcher could
     change the sort order when sorting by string for documents without
