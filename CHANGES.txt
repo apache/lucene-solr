@@ -163,6 +163,11 @@ New features
     highlighting entire documents or fields.
     (Erik Hatcher)
 
+23. Added regular expression queries, RegexQuery and SpanRegexQuery.
+    Note the same term enumeration caveats apply with these queries as
+    apply to WildcardQuery and other term expanding queries.
+    (Erik Hatcher)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation
