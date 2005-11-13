@@ -166,6 +166,7 @@ New features
 23. Added regular expression queries, RegexQuery and SpanRegexQuery.
     Note the same term enumeration caveats apply with these queries as
     apply to WildcardQuery and other term expanding queries.
+    These two new queries are not currently supported via QueryParser.
     (Erik Hatcher)
 
 API Changes
