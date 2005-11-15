@@ -169,6 +169,16 @@ New features
     These two new queries are not currently supported via QueryParser.
     (Erik Hatcher)
 
+24. Added ConstantScoreQuery which wraps a filter and produces a score
+    equal to the query boost for every matching document.
+    (Yonik Seeley, LUCENE-383)
+
+25. Added ConstantScoreRangeQuery which produces a constant score for
+    every document in the range.  One advantage over a normal RangeQuery
+    is that it doesn't expand to a BooleanQuery and thus doesn't have a maximum
+    number of terms the range can cover.  Both endpoints may also be open.
+    (Yonik Seeley, LUCENE-383)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation
