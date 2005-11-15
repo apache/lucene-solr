@@ -12,7 +12,6 @@ public class SingleFieldTestDb {
   private Directory db;
   private String[] docs;
   private String fieldName;
-  private String dbName = "testdb";
   
   public SingleFieldTestDb(String[] documents, String fName) {
     try {

@@ -46,8 +46,8 @@ public class BooleanQueryTest {
 
     public void collect(int docNr, float score) {
       /* System.out.println(docNr + " '" + dBase.getDocs()[docNr] + "': " + score); */
-      testCase.assertTrue(queryText + ": positive score", score > 0.0);
-      testCase.assertTrue(queryText + ": too many hits", totalMatched < expectedDocNrs.length);
+      TestCase.assertTrue(queryText + ": positive score", score > 0.0);
+      TestCase.assertTrue(queryText + ": too many hits", totalMatched < expectedDocNrs.length);
       int i;
       for (i = 0; i < expectedDocNrs.length; i++) {
         if ((! encountered[i]) && (expectedDocNrs[i] == docNr)) {
@@ -56,25 +56,24 @@ public class BooleanQueryTest {
         }
       }
       if (i == expectedDocNrs.length) {
-        testCase.assertTrue(queryText + ": doc nr for hit not expected: " + docNr, false);
+        TestCase.assertTrue(queryText + ": doc nr for hit not expected: " + docNr, false);
       }
       totalMatched++;
     }
 
     void checkNrHits() {
-      testCase.assertEquals(queryText + ": nr of hits", expectedDocNrs.length, totalMatched);
+      TestCase.assertEquals(queryText + ": nr of hits", expectedDocNrs.length, totalMatched);
     }
   }
 
   public void doTest() throws Exception {
-    QueryParser parser = new QueryParser();
 
     if (verbose) {    
         System.out.println("");
         System.out.println("Query: " + queryText);
     }
     
-    SrndQuery lq = parser.parse(queryText);
+    SrndQuery lq = QueryParser.parse(queryText);
     
     /* if (verbose) System.out.println("Srnd: " + lq.toString()); */
     
