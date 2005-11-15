@@ -15,15 +15,11 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import java.util.List;
-
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import java.io.IOException;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 
  
 public class SrndTermQuery extends SimpleTerm {

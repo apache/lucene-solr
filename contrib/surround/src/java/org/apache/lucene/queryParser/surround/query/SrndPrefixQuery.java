@@ -15,8 +15,6 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;

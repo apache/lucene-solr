@@ -15,15 +15,9 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Iterator;
-
-import java.io.IOException;
-
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
 
 public abstract class SrndQuery implements Cloneable {
   public SrndQuery() {}
