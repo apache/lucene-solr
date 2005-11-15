@@ -41,7 +41,7 @@ public class Test01Exceptions extends TestCase {
   };
 
   public void test01Exceptions() throws Exception {
-    String m = ExceptionQueryTest.getFailQueries(exceptionQueries, verbose);
+    String m = ExceptionQueryTst.getFailQueries(exceptionQueries, verbose);
     if (m.length() > 0) {
       fail("No ParseException for:\n" + m);
     }

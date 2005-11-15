@@ -24,7 +24,7 @@ public class Test03Distance extends TestCase {
   };
   
   public void test00Exceptions() throws Exception {
-    String m = ExceptionQueryTest.getFailQueries(exceptionQueries, verbose);
+    String m = ExceptionQueryTst.getFailQueries(exceptionQueries, verbose);
     if (m.length() > 0) {
       fail("No ParseException for:\n" + m);
     }
@@ -51,14 +51,14 @@ public class Test03Distance extends TestCase {
   SingleFieldTestDb db2 = new SingleFieldTestDb(docs2, fieldName);
 
   public void distanceTest1(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTest bqt = new BooleanQueryTest( query, expdnrs, db1, fieldName, this,
+    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db1, fieldName, this,
                                                 new BasicQueryFactory(maxBasicQueries));
     bqt.setVerbose(verbose);
     bqt.doTest();
   }
 
   public void distanceTest2(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTest bqt = new BooleanQueryTest( query, expdnrs, db2, fieldName, this,
+    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db2, fieldName, this,
                                                 new BasicQueryFactory(maxBasicQueries));
     bqt.setVerbose(verbose);
     bqt.doTest();

@@ -4,11 +4,11 @@ import org.apache.lucene.queryParser.surround.parser.ParseException;
 import org.apache.lucene.queryParser.surround.parser.QueryParser;
 
 
-public class ExceptionQueryTest {
+public class ExceptionQueryTst {
   private String queryText;
   private boolean verbose;
   
-  public ExceptionQueryTest(String queryText, boolean verbose) {
+  public ExceptionQueryTst(String queryText, boolean verbose) {
     this.queryText = queryText;
     this.verbose = verbose;
   }
@@ -40,7 +40,7 @@ public class ExceptionQueryTest {
   public static String getFailQueries(String[] exceptionQueries, boolean verbose) {
     StringBuffer failQueries = new StringBuffer();
     for (int i = 0; i < exceptionQueries.length; i++ ) {
-      new ExceptionQueryTest( exceptionQueries[i], verbose).doTest(failQueries);
+      new ExceptionQueryTst( exceptionQueries[i], verbose).doTest(failQueries);
     }
     return failQueries.toString();
   }

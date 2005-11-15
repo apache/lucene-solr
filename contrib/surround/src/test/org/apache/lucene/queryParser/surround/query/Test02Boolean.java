@@ -25,7 +25,7 @@ public class Test02Boolean extends TestCase {
   SingleFieldTestDb db1 = new SingleFieldTestDb(docs1, fieldName);
 
   public void normalTest1(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTest bqt = new BooleanQueryTest( query, expdnrs, db1, fieldName, this,
+    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db1, fieldName, this,
                                                 new BasicQueryFactory(maxBasicQueries));
     bqt.setVerbose(verbose);
     bqt.doTest();

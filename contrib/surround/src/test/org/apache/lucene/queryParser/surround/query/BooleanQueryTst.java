@@ -9,7 +9,7 @@ import org.apache.lucene.queryParser.surround.parser.QueryParser;
 
 import junit.framework.TestCase;
 
-public class BooleanQueryTest {
+public class BooleanQueryTst {
   String queryText;
   final int[] expectedDocNrs;
   SingleFieldTestDb dBase;
@@ -18,7 +18,7 @@ public class BooleanQueryTest {
   BasicQueryFactory qf;
   boolean verbose = true;
 
-  public BooleanQueryTest(
+  public BooleanQueryTst(
       String queryText,
       int[] expectedDocNrs,
       SingleFieldTestDb dBase,
