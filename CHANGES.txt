@@ -179,6 +179,10 @@ New features
     number of terms the range can cover.  Both endpoints may also be open.
     (Yonik Seeley, LUCENE-383)
 
+26. Added ability to specify a minimum number of optional clauses that
+    must match in a BooleanQuery.  See BooleanQuery.setMinimumNumberShouldMatch().
+    (Paul Elschot, Chris Hostetter via Yonik Seeley, LUCENE-395)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation

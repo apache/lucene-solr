@@ -107,6 +107,41 @@ public class BooleanQuery extends Query {
     return result;
   }
 
+  /**
+   * Specifies a minimum number of the optional BooleanClauses
+   * which must be satisifed.
+   *
+   * <p>
+   * By default no optional clauses are neccessary for a match
+   * (unless there are no required clauses).  If this method is used,
+   * then the specified numebr of clauses is required.
+   * </p>
+   * <p>
+   * Use of this method is totally independant of specifying that
+   * any specific clauses are required (or prohibited).  This number will
+   * only be compared against the number of matching optional clauses.
+   * </p>
+   * <p>
+   * EXPERT NOTE: Using this method will force the use of BooleanWeight2,
+   * regardless of wether setUseScorer14(true) has been called.
+   * </p>
+   *
+   * @param min the number of optional clauses that must match
+   * @see #setUseScorer14
+   */
+  public void setMinimumNumberShouldMatch(int min) {
+    this.minNrShouldMatch = min;
+  }
+  protected int minNrShouldMatch = 0;
+
+  /**
+   * Gets the minimum number of the optional BooleanClauses
+   * which must be satisifed.
+   */
+  public int getMinimumNumberShouldMatch() {
+    return minNrShouldMatch;
+  }
+
   /** Adds a clause to a boolean query.  Clauses may be:
    * <ul>
    * <li><code>required</code> which means that documents which <i>do not</i>
@@ -299,7 +334,8 @@ public class BooleanQuery extends Query {
      *          and scores documents in document number order.
      */
     public Scorer scorer(IndexReader reader) throws IOException {
-      BooleanScorer2 result = new BooleanScorer2(similarity);
+      BooleanScorer2 result = new BooleanScorer2(similarity,
+                                                 minNrShouldMatch);
 
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
@@ -327,6 +363,12 @@ public class BooleanQuery extends Query {
   }
 
   protected Weight createWeight(Searcher searcher) throws IOException {
+
+    if (0 < minNrShouldMatch) {
+      // :TODO: should we throw an exception if getUseScorer14 ?
+      return new BooleanWeight2(searcher);
+    }
+
     return getUseScorer14() ? (Weight) new BooleanWeight(searcher)
                             : (Weight) new BooleanWeight2(searcher);
   }
@@ -382,7 +424,8 @@ public class BooleanQuery extends Query {
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
-    if (getBoost() != 1.0) {
+    boolean needParens=(getBoost() != 1.0) || (getMinimumNumberShouldMatch()>0) ;
+    if (needParens) {
       buffer.append("(");
     }
 
@@ -405,8 +448,17 @@ public class BooleanQuery extends Query {
         buffer.append(" ");
     }
 
-    if (getBoost() != 1.0) {
+    if (needParens) {
       buffer.append(")");
+    }
+
+    if (getMinimumNumberShouldMatch()>0) {
+      buffer.append('~');
+      buffer.append(getMinimumNumberShouldMatch());
+    }
+
+    if (getBoost() != 1.0f)
+    {
       buffer.append(ToStringUtils.boost(getBoost()));
     }
 
@@ -419,12 +471,14 @@ public class BooleanQuery extends Query {
       return false;
     BooleanQuery other = (BooleanQuery)o;
     return (this.getBoost() == other.getBoost())
-        && this.clauses.equals(other.clauses);
+        && this.clauses.equals(other.clauses)
+        && this.getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch();
   }
 
   /** Returns a hash code value for this object.*/
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ clauses.hashCode();
+    return Float.floatToIntBits(getBoost()) ^ clauses.hashCode()
+           + getMinimumNumberShouldMatch();
   }
 
 }
