@@ -102,7 +102,7 @@ implements Serializable {
 	 * Run the test using two CustomSearcher instances. 
 	 */
 	public void testFieldSortCustomSearcher() throws Exception {
-	    log("Run testFieldSortCustomSearcher");
+	  // log("Run testFieldSortCustomSearcher");
 		// define the sort criteria
 	    Sort custSort = new Sort(new SortField[] {
 	            new SortField("publicationDate_"), 
@@ -116,7 +116,7 @@ implements Serializable {
 	 * Run the test using one CustomSearcher wrapped by a MultiSearcher. 
 	 */
 	public void testFieldSortSingleSearcher() throws Exception {
-	    log("Run testFieldSortSingleSearcher");
+	  // log("Run testFieldSortSingleSearcher");
 		// define the sort criteria
 	    Sort custSort = new Sort(new SortField[] {
 	            new SortField("publicationDate_"), 
@@ -132,7 +132,7 @@ implements Serializable {
 	 * Run the test using two CustomSearcher instances. 
 	 */
 	public void testFieldSortMultiCustomSearcher() throws Exception {
-	    log("Run testFieldSortMultiCustomSearcher");
+	  // log("Run testFieldSortMultiCustomSearcher");
 		// define the sort criteria
 	    Sort custSort = new Sort(new SortField[] {
 	            new SortField("publicationDate_"), 
@@ -178,7 +178,7 @@ implements Serializable {
             resultMap.remove(idHitDate);
         }
         if(resultMap.size()==0) {
-            log("All hits matched");
+            // log("All hits matched");
         } else {
         log("Couldn't match "+resultMap.size()+" hits.");
         }
