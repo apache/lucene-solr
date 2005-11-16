@@ -183,6 +183,10 @@ New features
     must match in a BooleanQuery.  See BooleanQuery.setMinimumNumberShouldMatch().
     (Paul Elschot, Chris Hostetter via Yonik Seeley, LUCENE-395)
 
+27. Added DisjunctionMaxQuery which provides the maximum score across it's clauses.
+    It's very useful for searching across multiple fields.
+    (Chuck Williams via Yonik Seeley, LUCENE-323)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation
