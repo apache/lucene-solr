@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Collection;
 
 /**
  * A query that generates the union of the documents produced by its subqueries, and that scores each document as the maximum
@@ -37,7 +38,7 @@ import java.util.Iterator;
  * in the multiple fields.
  * @author Chuck Williams
  */
-public class DisjunctionMaxQuery extends Query implements Iterable {
+public class DisjunctionMaxQuery extends Query {
 
   /* The subqueries */
   private ArrayList disjuncts = new ArrayList();
@@ -57,10 +58,10 @@ public class DisjunctionMaxQuery extends Query implements Iterable {
 
   /**
    * Creates a new DisjunctionMaxQuery
-   * @param disjuncts an Iterable<Query> of all the disjuncts to add
+   * @param disjuncts a Collection<Query> of all the disjuncts to add
    * @param tieBreakerMultiplier   the weight to give to each matching non-maximum disjunct
    */
-  public DisjunctionMaxQuery(Iterable disjuncts, float tieBreakerMultiplier) {
+  public DisjunctionMaxQuery(Collection disjuncts, float tieBreakerMultiplier) {
     this.tieBreakerMultiplier = tieBreakerMultiplier;
     add(disjuncts);
   }
@@ -75,9 +76,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable {
   /** Add a collection of disjuncts to this disjunction
    * via Iterable<Query>
    */
-  public void add(Iterable disjuncts) {
-    Iterator i = disjuncts.iterator();
-    while (i.hasNext()) add((Query)i.next());
+  public void add(Collection disjuncts) {
+    this.disjuncts.addAll(disjuncts);
   }
 
   /** An Iterator<Query> over the disjuncts */
