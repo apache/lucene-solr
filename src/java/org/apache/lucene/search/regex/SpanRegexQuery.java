@@ -23,6 +23,8 @@ public class SpanRegexQuery extends SpanQuery {
     this.term = term;
   }
 
+  public Term getTerm() { return term; }
+
   public Query rewrite(IndexReader reader) throws IOException {
     Query orig = new RegexQuery(term).rewrite(reader);
 
