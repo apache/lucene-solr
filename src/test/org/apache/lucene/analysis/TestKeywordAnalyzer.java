@@ -27,7 +27,8 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.queryParser.QueryParser;
 
 public class TestKeywordAnalyzer extends TestCase {
-  RAMDirectory directory;
+  
+  private RAMDirectory directory;
   private IndexSearcher searcher;
 
   public void setUp() throws Exception {
@@ -47,13 +48,11 @@ public class TestKeywordAnalyzer extends TestCase {
   }
 
   public void testPerFieldAnalyzer() throws Exception {
-    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(
-                                              new SimpleAnalyzer());
+    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
-    Query query = QueryParser.parse("partnum:Q36 AND SPACE",
-                                    "description",
-                                    analyzer);
+    QueryParser queryParser = new QueryParser("description", analyzer);
+    Query query = queryParser.parse("partnum:Q36 AND SPACE");
 
     Hits hits = searcher.search(query);
     assertEquals("Q36 kept as-is",
