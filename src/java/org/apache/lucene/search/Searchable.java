@@ -53,7 +53,7 @@ public interface Searchable extends java.rmi.Remote {
   throws IOException;
 
   /** Expert: Low-level search implementation.
-   * @deprecated use {@link Searcher#search(Query, Filter, HitCollector)} instead.
+   * @deprecated use {@link Searcher#search(Weight, Filter, HitCollector)} instead.
    */
   void search(Query query, Filter filter, HitCollector results)
     throws IOException;
@@ -94,7 +94,7 @@ public interface Searchable extends java.rmi.Remote {
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;
 
   /** Expert: Low-level search implementation.
-   * @deprecated use {@link Searcher#search(Query, Filter, int)} instead.
+   * @deprecated use {@link Searcher#search(Weight, Filter, int)} instead.
    */
   TopDocs search(Query query, Filter filter, int n) throws IOException;
 
@@ -123,7 +123,7 @@ public interface Searchable extends java.rmi.Remote {
   Explanation explain(Weight weight, int doc) throws IOException;
 
   /**
-   * @deprecated use {@link Searcher#explain(Query, int)} instead.
+   * @deprecated use {@link Searcher#explain(Weight, int)} instead.
    */
   Explanation explain(Query query, int doc) throws IOException;
 
@@ -140,7 +140,7 @@ public interface Searchable extends java.rmi.Remote {
   throws IOException;
 
   /** Expert: Low-level search implementation.
-   * @deprecated use {@link Searcher#search(Query, Filter, int, Sort)} instead.
+   * @deprecated use {@link Searcher#search(Weight, Filter, int, Sort)} instead.
    */
   TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
     throws IOException;
