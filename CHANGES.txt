@@ -187,6 +187,18 @@ New features
     It's very useful for searching across multiple fields.
     (Chuck Williams via Yonik Seeley, LUCENE-323)
 
+28. New class ISOLatin1AccentFilter that replaces accented characters in the ISO 
+    Latin 1 character set by their unaccented equivalent.
+    (Sven Duzont via Erik Hatcher)
+
+29. New class KeywordAnalyzer. "Tokenizes" the entire stream as a single token.
+    This is useful for data like zip codes, ids, and some product names.
+    (Erik Hatcher)
+
+30. Copied LengthFilter from contrib area to core. Removes words that are too 
+    long and too short from the stream.
+    (David Spencer via Otis and Daniel)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation
