@@ -17,8 +17,8 @@ package org.apache.lucene.analysis;
  */
 
 /**
- * A filter that replaces accented characters in the ISO Latin 1 character set by
- * their unaccented equivalent. The case will not be altered.
+ * A filter that replaces accented characters in the ISO Latin 1 character set 
+ * (ISO-8859-1) by their unaccented equivalent. The case will not be altered.
  * <p>
  * For instance, '&agrave;' will be replaced by 'a'.
  * <p>

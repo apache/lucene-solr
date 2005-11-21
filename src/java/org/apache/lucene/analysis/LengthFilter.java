@@ -37,7 +37,7 @@ public final class LengthFilter extends TokenFilter {
   {
     super(in);
     this.min = min;
-    this.max =max;
+    this.max = max;
   }
 
   /**
@@ -49,7 +49,7 @@ public final class LengthFilter extends TokenFilter {
     for (Token token = input.next(); token != null; token = input.next())
     {
       int len = token.termText().length();
-      if ( len >= min && len <= max) {
+      if (len >= min && len <= max) {
           return token;
       }
       // note: else we ignore it but should we index each part of it?

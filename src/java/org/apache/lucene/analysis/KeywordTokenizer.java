@@ -23,7 +23,8 @@ import java.io.Reader;
  * Emits the entire input as a single token.
  */
 public class KeywordTokenizer extends Tokenizer {
-  private static final int DEFAULT_BUFFER_SIZE=256;
+  
+  private static final int DEFAULT_BUFFER_SIZE = 256;
 
   private boolean done;
   private final char[] buffer;
@@ -34,8 +35,8 @@ public class KeywordTokenizer extends Tokenizer {
 
   public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
-    this.buffer=new char[bufferSize];
-    this.done=false;
+    this.buffer = new char[bufferSize];
+    this.done = false;
   }
 
   public Token next() throws IOException {
