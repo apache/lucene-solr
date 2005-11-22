@@ -51,7 +51,7 @@ public abstract class Analyzer {
   }
 
   /**
-   * Invoked, by DocumentWriter, before indexing a Field instance if
+   * Invoked before indexing a Field instance if
    * terms have already been added to that field.  This allows custom
    * analyzers to place an automatic position increment gap between
    * Field instances using the same field name.  The default value
