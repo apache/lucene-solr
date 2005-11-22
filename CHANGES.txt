@@ -199,6 +199,14 @@ New features
     long and too short from the stream.
     (David Spencer via Otis and Daniel)
 
+31. Added getPositionIncrementGap(String fieldName) to Analyzer.  This allows
+    custom analyzers to put gaps between Field instances with the same field
+    name, preventing phrase or span queries crossing these boundaries.  The
+    default implementation issues a gap of 0, allowing the default token
+    position increment of 1 to put the next field's first token into a
+    successive position.
+    (Erik Hatcher, with advice from Yonik)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation
