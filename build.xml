@@ -61,7 +61,7 @@
   <target name="compile-core" depends="common.compile-core"
           description="Compiles core classes, including rmic">
     <rmic classname="org.apache.lucene.search.RemoteSearchable"
-      base="${build.dir}/classes/java">
+      base="${build.dir}/classes/java" stubversion="1.2">
       <classpath refid="classpath"/>
     </rmic>
   </target>
