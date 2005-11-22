@@ -27,18 +27,17 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.Reader;
+import java.io.IOException;
 
 public class TestDocumentWriter extends TestCase {
-  private RAMDirectory dir = new RAMDirectory();
-  private Document testDoc = new Document();
-
+  private RAMDirectory dir;
 
   public TestDocumentWriter(String s) {
     super(s);
   }
 
   protected void setUp() {
-    DocHelper.setupDoc(testDoc);
+    dir = new RAMDirectory();
   }
 
   protected void tearDown() {
@@ -51,15 +50,9 @@ public class TestDocumentWriter extends TestCase {
   }
 
   public void testAddDocument() throws Exception {
-    Analyzer analyzer = new Analyzer() {
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new WhitespaceTokenizer(reader);
-      }
-
-      public int getPositionIncrementGap(String fieldName) {
-        return 500;
-      }
-    };
+    Document testDoc = new Document();
+    DocHelper.setupDoc(testDoc);
+    Analyzer analyzer = new WhitespaceAnalyzer();
     Similarity similarity = Similarity.getDefault();
     DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
     String segName = "test";
@@ -101,7 +94,30 @@ public class TestDocumentWriter extends TestCase {
       }
     }
 
-    TermPositions termPositions = reader.termPositions(new Term(DocHelper.REPEATED_KEY, "repeated"));
+  }
+
+  public void testPositionIncrementGap() throws IOException {
+    Analyzer analyzer = new Analyzer() {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new WhitespaceTokenizer(reader);
+      }
+
+      public int getPositionIncrementGap(String fieldName) {
+        return 500;
+      }
+    };
+
+    Similarity similarity = Similarity.getDefault();
+    DocumentWriter writer = new DocumentWriter(dir, analyzer, similarity, 50);
+    Document doc = new Document();
+    doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("repeated", "repeated two", Field.Store.YES, Field.Index.TOKENIZED));
+
+    String segName = "test";
+    writer.addDocument(segName, doc);
+    SegmentReader reader = SegmentReader.get(new SegmentInfo(segName, 1, dir));
+
+    TermPositions termPositions = reader.termPositions(new Term("repeated", "repeated"));
     assertTrue(termPositions.next());
     int freq = termPositions.freq();
     assertEquals(2, freq);

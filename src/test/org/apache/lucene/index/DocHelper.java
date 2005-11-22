@@ -71,14 +71,6 @@ class DocHelper {
   public static Field unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT,
       Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES);
 
-  public static final String REPEATED_1_TEXT = "repeated one";
-  public static final String REPEATED_KEY = "repeated";
-  public static Field repeatedField1 = new Field(REPEATED_KEY, REPEATED_1_TEXT,
-      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO);
-  public static final String REPEATED_2_TEXT = "repeated two";
-  public static Field repeatedField2 = new Field(REPEATED_KEY, REPEATED_2_TEXT,
-      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO);
-
   public static Map nameValues = null;
 
   // ordered list of all the fields...
@@ -92,8 +84,6 @@ class DocHelper {
     unIndField,
     unStoredField1,
     unStoredField2,
-    repeatedField1,
-    repeatedField2
   };
 
   // Map<String fieldName, Field field>
