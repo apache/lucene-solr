@@ -17,10 +17,14 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -41,10 +45,22 @@ public class TestPhraseQuery extends TestCase {
 
   public void setUp() throws Exception {
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    Analyzer analyzer = new Analyzer() {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new WhitespaceTokenizer(reader);
+      }
+
+      public int getPositionIncrementGap(String fieldName) {
+        return 100;
+      }
+    };
+    IndexWriter writer = new IndexWriter(directory, analyzer, true);
     
     Document doc = new Document();
     doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.TOKENIZED));
+    Field repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.TOKENIZED);
+    doc.add(repeatedField);
     writer.addDocument(doc);
     
     writer.optimize();
@@ -292,6 +308,17 @@ public class TestPhraseQuery extends TestCase {
     assertEquals(1, hits.id(1));
     assertEquals(0.31, hits.score(2), 0.01);
     assertEquals(2, hits.id(2));
+  }
+
+  public void testWrappedPhrase() throws IOException {
+    query.add(new Term("repeated", "first"));
+    query.add(new Term("repeated", "part"));
+    query.add(new Term("repeated", "second"));
+    query.add(new Term("repeated", "part"));
+    query.setSlop(99);
+
+    Hits hits = searcher.search(query);
+    assertEquals(0, hits.length());
   }
 
 }

@@ -135,6 +135,7 @@ final class DocumentWriter {
 
       int length = fieldLengths[fieldNumber];     // length of field
       int position = fieldPositions[fieldNumber]; // position in field
+      if (length>0) position+=analyzer.getPositionIncrementGap(fieldName);
       int offset = fieldOffsets[fieldNumber];       // offset field
 
       if (field.isIndexed()) {

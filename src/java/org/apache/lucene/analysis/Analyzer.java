@@ -49,5 +49,23 @@ public abstract class Analyzer {
   {
 	  return tokenStream(null, reader);
   }
+
+  /**
+   * Invoked, by DocumentWriter, before indexing a Field instance if
+   * terms have already been added to that field.  This allows custom
+   * analyzers to place an automatic position increment gap between
+   * Field instances using the same field name.  The default value
+   * position increment gap is 0.  With a 0 position increment gap and
+   * the typical default token position increment of 1, all terms in a field,
+   * including across Field instances, are in successive positions, allowing
+   * exact PhraseQuery matches, for instance, across Field instance boundaries.
+   *
+   * @param fieldName Field name being indexed.
+   * @return position increment gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
+   */
+  public int getPositionIncrementGap(String fieldName)
+  {
+    return 0;
+  }
 }
 

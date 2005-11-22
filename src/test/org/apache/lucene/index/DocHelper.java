@@ -1,12 +1,19 @@
 package org.apache.lucene.index;
 
 /**
- * Created by IntelliJ IDEA.
- * User: Grant Ingersoll
- * Date: Feb 2, 2004
- * Time: 6:16:12 PM
- * $Id$
- * Copyright 2004.  Center For Natural Language Processing
+ * Copyright 2005 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 import org.apache.lucene.analysis.Analyzer;
@@ -21,10 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Enumeration;
 
-/**
- *
- *
- **/
 class DocHelper {
   public static final String FIELD_1_TEXT = "field one text";
   public static final String TEXT_FIELD_1_KEY = "textField1";
@@ -68,6 +71,14 @@ class DocHelper {
   public static Field unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT,
       Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES);
 
+  public static final String REPEATED_1_TEXT = "repeated one";
+  public static final String REPEATED_KEY = "repeated";
+  public static Field repeatedField1 = new Field(REPEATED_KEY, REPEATED_1_TEXT,
+      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO);
+  public static final String REPEATED_2_TEXT = "repeated two";
+  public static Field repeatedField2 = new Field(REPEATED_KEY, REPEATED_2_TEXT,
+      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO);
+
   public static Map nameValues = null;
 
   // ordered list of all the fields...
@@ -81,6 +92,8 @@ class DocHelper {
     unIndField,
     unStoredField1,
     unStoredField2,
+    repeatedField1,
+    repeatedField2
   };
 
   // Map<String fieldName, Field field>
@@ -156,9 +169,8 @@ class DocHelper {
    */ 
   public static void writeDoc(Directory dir, String segment, Document doc) throws IOException
   {
-    Analyzer analyzer = new WhitespaceAnalyzer();
     Similarity similarity = Similarity.getDefault();
-    writeDoc(dir, analyzer, similarity, segment, doc);
+    writeDoc(dir, new WhitespaceAnalyzer(), similarity, segment, doc);
   }
 
   /**
