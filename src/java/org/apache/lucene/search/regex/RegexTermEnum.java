@@ -26,9 +26,7 @@ public class RegexTermEnum extends FilteredTermEnum {
     while (index < text.length()) {
       char c = text.charAt(index);
 
-      // TODO: improve the logic here.  There are other types of patterns
-      // that could break this, such as "\d*" and "\*abc"
-      if (c == '*' || c == '[' || c == '?' || c == '.') break;
+      if (!Character.isLetterOrDigit(c)) break;
 
       index++;
     }

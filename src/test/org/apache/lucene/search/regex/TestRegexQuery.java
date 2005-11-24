@@ -89,5 +89,12 @@ public class TestRegexQuery extends TestCase {
   public void testSpanRegex2() throws Exception {
     assertEquals(0, spanRegexQueryNrHits("q.[aeiou]c.*", "dog", 5, true));
   }
+
+//  public void testPrefix() throws Exception {
+      // This test currently fails because RegexTermEnum picks "r" as the prefix
+      // but the following "?" makes the "r" optional and should be a hit for the
+      // document matching "over".
+//    assertEquals(1, regexQueryNrHits("r?over"));
+//  }
 }
 
