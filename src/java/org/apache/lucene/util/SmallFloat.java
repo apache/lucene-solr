@@ -21,7 +21,7 @@ package org.apache.lucene.util;
  * @author yonik
  * @version $Id$
  */
-class SmallFloat {
+public class SmallFloat {
 
   /** Converts a 32 bit float to an 8 bit float.
    * <br>Values less than zero are all mapped to zero.

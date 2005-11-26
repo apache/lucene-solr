@@ -356,6 +356,11 @@ Optimizations
     and sorting the first time on a field.
     (Yonik Seeley, LUCENE-454)
 
+11. Optimized and generalized 32 bit floating point to byte
+    (custom 8 bit floating point) conversions.  Increased the speed of
+    Similarity.encodeNorm() anywhere from 10% to 250%, depending on the JVM.
+    (Yonik Seeley, LUCENE-467)
+
 Infrastructure
 
  1. Lucene's source code repository has converted from CVS to
