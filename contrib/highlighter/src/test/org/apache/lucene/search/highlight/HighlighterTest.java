@@ -455,9 +455,36 @@ public class HighlighterTest extends TestCase implements Formatter
 		}
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
 
-
-
 	}
+	
+	public void testFieldSpecificHighlighting() throws IOException, ParseException
+	{
+		String docMainText="fred is one of the people";
+		QueryParser parser=new QueryParser(FIELD_NAME,analyzer);
+		Query query=parser.parse("fred category:people");
+		
+		//highlighting respects fieldnames used in query
+		QueryScorer fieldSpecificScorer=new QueryScorer(query, "contents");
+		Highlighter fieldSpecificHighlighter =
+			new Highlighter(new SimpleHTMLFormatter(),fieldSpecificScorer);
+		fieldSpecificHighlighter.setTextFragmenter(new NullFragmenter());
+		String result=fieldSpecificHighlighter.getBestFragment(analyzer,FIELD_NAME,docMainText);
+		assertEquals("Should match",result,"<B>fred</B> is one of the people");
+		
+		//highlighting does not respect fieldnames used in query
+		QueryScorer fieldInSpecificScorer=new QueryScorer(query);
+		Highlighter fieldInSpecificHighlighter =
+			new Highlighter(new SimpleHTMLFormatter(),fieldInSpecificScorer);
+		fieldInSpecificHighlighter.setTextFragmenter(new NullFragmenter());
+		result=fieldInSpecificHighlighter.getBestFragment(analyzer,FIELD_NAME,docMainText);
+		assertEquals("Should match",result,"<B>fred</B> is one of the <B>people</B>");
+		
+		
+		reader.close();
+		
+	}
+	
+	
 
 /*
 

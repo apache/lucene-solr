@@ -61,7 +61,7 @@ public final class QueryTermExtractor
 	 */
 	public static final WeightedTerm[] getIdfWeightedTerms(Query query, IndexReader reader, String fieldName) 
 	{
-	    WeightedTerm[] terms=getTerms(query,false);
+	    WeightedTerm[] terms=getTerms(query,false, fieldName);
 	    int totalNumDocs=reader.numDocs();
 	    for (int i = 0; i < terms.length; i++)
         {
@@ -85,31 +85,49 @@ public final class QueryTermExtractor
 	 *
 	 * @param query      Query to extract term texts from
 	 * @param prohibited <code>true</code> to extract "prohibited" terms, too
+	 * @param fieldName  The fieldName used to filter query terms
+   * @return an array of the terms used in a query, plus their weights.
+   */
+	public static final WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName) 
+	{
+		HashSet terms=new HashSet();
+		if(fieldName!=null)
+		{
+		    fieldName=fieldName.intern();
+		}
+		getTerms(query,terms,prohibited,fieldName);
+		return (WeightedTerm[]) terms.toArray(new WeightedTerm[0]);
+	}
+	
+	/**
+	 * Extracts all terms texts of a given Query into an array of WeightedTerms
+	 *
+	 * @param query      Query to extract term texts from
+	 * @param prohibited <code>true</code> to extract "prohibited" terms, too
    * @return an array of the terms used in a query, plus their weights.
    */
 	public static final WeightedTerm[] getTerms(Query query, boolean prohibited) 
 	{
-		HashSet terms=new HashSet();
-		getTerms(query,terms,prohibited);
-		return (WeightedTerm[]) terms.toArray(new WeightedTerm[0]);
-	}
+	    return getTerms(query,prohibited,null);
+	}	
 
-	private static final void getTerms(Query query, HashSet terms,boolean prohibited) 
+	//fieldname MUST be interned prior to this call
+	private static final void getTerms(Query query, HashSet terms,boolean prohibited, String fieldName) 
 	{
 		if (query instanceof BooleanQuery)
-			getTermsFromBooleanQuery((BooleanQuery) query, terms, prohibited);
+			getTermsFromBooleanQuery((BooleanQuery) query, terms, prohibited, fieldName);
 		else
 			if (query instanceof PhraseQuery)
-				getTermsFromPhraseQuery((PhraseQuery) query, terms);
+				getTermsFromPhraseQuery((PhraseQuery) query, terms, fieldName);
 			else
 				if (query instanceof TermQuery)
-					getTermsFromTermQuery((TermQuery) query, terms);
+					getTermsFromTermQuery((TermQuery) query, terms, fieldName);
 				else
 		        if(query instanceof SpanNearQuery)
-		            getTermsFromSpanNearQuery((SpanNearQuery) query, terms);
+		            getTermsFromSpanNearQuery((SpanNearQuery) query, terms, fieldName);
 	}
 
-	private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet terms, boolean prohibited)
+	private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet terms, boolean prohibited, String fieldName)
 	{
 		BooleanClause[] queryClauses = query.getClauses();
 		int i;
@@ -117,27 +135,33 @@ public final class QueryTermExtractor
 		for (i = 0; i < queryClauses.length; i++)
 		{
 			if (prohibited || !queryClauses[i].prohibited)
-				getTerms(queryClauses[i].query, terms, prohibited);
+				getTerms(queryClauses[i].query, terms, prohibited, fieldName);
 		}
 	}
 
-	private static final void getTermsFromPhraseQuery(PhraseQuery query, HashSet terms)
+	private static final void getTermsFromPhraseQuery(PhraseQuery query, HashSet terms, String fieldName)
 	{
 		Term[] queryTerms = query.getTerms();
 		int i;
 
 		for (i = 0; i < queryTerms.length; i++)
 		{
-			terms.add(new WeightedTerm(query.getBoost(),queryTerms[i].text()));
+		    if((fieldName==null)||(queryTerms[i].field()==fieldName))
+		    {
+		        terms.add(new WeightedTerm(query.getBoost(),queryTerms[i].text()));
+		    }
 		}
 	}
 
-	private static final void getTermsFromTermQuery(TermQuery query, HashSet terms)
+	private static final void getTermsFromTermQuery(TermQuery query, HashSet terms, String fieldName)
 	{
-		terms.add(new WeightedTerm(query.getBoost(),query.getTerm().text()));
+	    if((fieldName==null)||(query.getTerm().field()==fieldName))
+	    {
+	        terms.add(new WeightedTerm(query.getBoost(),query.getTerm().text()));
+	    }
 	}
 
-    private static final void getTermsFromSpanNearQuery(SpanNearQuery query, HashSet terms){
+    private static final void getTermsFromSpanNearQuery(SpanNearQuery query, HashSet terms, String fieldName){
 
         Collection queryTerms = query.getTerms();
 
@@ -149,10 +173,10 @@ public final class QueryTermExtractor
 
             String text = term.text();
 
-            terms.add(new WeightedTerm(query.getBoost(), text));
-
- 
-
+    	    if((fieldName==null)||(term.field()==fieldName))
+    	    {
+    	        terms.add(new WeightedTerm(query.getBoost(), text));
+    	    }
         }
 
     }

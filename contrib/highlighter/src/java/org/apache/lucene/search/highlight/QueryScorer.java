@@ -48,6 +48,17 @@ public class QueryScorer implements Scorer
 	{
 		this(QueryTermExtractor.getTerms(query));
 	}
+	
+	/**
+	 * 
+	 * @param query a Lucene query (ideally rewritten using query.rewrite 
+	 * before being passed to this class and the searcher)
+	 * @param fieldName the Field name which is used to match Query terms
+	 */
+	public QueryScorer(Query query, String fieldName)
+	{
+		this(QueryTermExtractor.getTerms(query, false,fieldName));
+	}	
 
 	/**
 	 * 
