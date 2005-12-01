@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.document.Document;
 
 /** An abstract base class for search implementations.
  * Implements the main search methods.
@@ -71,7 +72,7 @@ public abstract class Searcher implements Searchable {
    * @throws BooleanQuery.TooManyClauses
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
-                                      Sort sort) throws IOException {
+                             Sort sort) throws IOException {
     return search(createWeight(query), filter, n, sort);
   }
 
@@ -92,7 +93,7 @@ public abstract class Searcher implements Searchable {
   public void search(Query query, HitCollector results)
     throws IOException {
     search(query, (Filter)null, results);
-  }    
+  }
 
   /** Lower-level search API.
    *
@@ -176,4 +177,18 @@ public abstract class Searcher implements Searchable {
     }
     return result;
   }
+
+  /* The following abstract methods were added as a workaround for GCJ bug #15411.
+   * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15411
+   */
+  abstract public void search(Weight weight, Filter filter, HitCollector results) throws IOException;
+  abstract public void close() throws IOException;
+  abstract public int docFreq(Term term) throws IOException;
+  abstract public int maxDoc() throws IOException;
+  abstract public TopDocs search(Weight weight, Filter filter, int n) throws IOException;
+  abstract public Document doc(int i) throws IOException;
+  abstract public Query rewrite(Query query) throws IOException;
+  abstract public Explanation explain(Weight weight, int doc) throws IOException;
+  abstract public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort) throws IOException;
+  /* End patch for GCJ bug #15411. */
 }
