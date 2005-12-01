@@ -26,7 +26,11 @@ import java.rmi.server.UnicastRemoteObject;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 
-/** A remote searchable implementation. */
+/**
+ * A remote searchable implementation.
+ *
+ * @version $Id$
+ */
 public class RemoteSearchable
   extends UnicastRemoteObject
   implements Searchable {
@@ -111,12 +115,22 @@ public class RemoteSearchable
   /** Exports a searcher for the index in args[0] named
    * "//localhost/Searchable". */
   public static void main(String args[]) throws Exception {
+    String indexName = null;
+    
+    if (args != null && args.length == 1)
+      indexName = args[0];
+    
+    if (indexName == null) {
+      System.out.println("Usage: org.apache.lucene.search.RemoteSearchable <index>");
+      return;
+    }
+    
     // create and install a security manager
     if (System.getSecurityManager() == null) {
       System.setSecurityManager(new RMISecurityManager());
     }
     
-    Searchable local = new IndexSearcher(args[0]);
+    Searchable local = new IndexSearcher(indexName);
     RemoteSearchable impl = new RemoteSearchable(local);
       
     // bind the implementation to "Searchable"
