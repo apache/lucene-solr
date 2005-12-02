@@ -53,6 +53,7 @@ public final class RAMDirectory extends Directory {
   
   private RAMDirectory(Directory dir, boolean closeDir) throws IOException {
     final String[] files = dir.list();
+    byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
     for (int i = 0; i < files.length; i++) {
       // make place on ram disk
       IndexOutput os = createOutput(files[i]);
@@ -60,9 +61,14 @@ public final class RAMDirectory extends Directory {
       IndexInput is = dir.openInput(files[i]);
       // and copy to ram disk
       int len = (int) is.length();
-      byte[] buf = new byte[len];
-      is.readBytes(buf, 0, len);
-      os.writeBytes(buf, len);
+      int readCount = 0;
+      while (readCount < len) {
+        int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? len - readCount : BufferedIndexOutput.BUFFER_SIZE;
+        is.readBytes(buf, 0, toRead);
+        os.writeBytes(buf, toRead);
+        readCount += toRead;
+      }
+
       // graceful cleanup
       is.close();
       os.close();

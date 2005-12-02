@@ -304,7 +304,10 @@ Bug fixes
 17. A single hit using the expert level sorted search methods
     resulted in the score not being normalized.
     (Yonik Seeley, LUCENE-462)
-	
+
+18. Fixed inefficient memory usage when loading an index into RAMDirectory.
+	(Volodymyr Bychkoviak via Bernhard, LUCENE-475)
+		
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
