@@ -37,7 +37,7 @@ import org.apache.lucene.index.IndexWriter;
  * @author Michael Goddard
  */
 
-public class FSDirectoryTest extends TestCase {
+public class TestFSDirectory extends TestCase {
 
     /**
      * What happens if the Lucene lockDir doesn't exist?

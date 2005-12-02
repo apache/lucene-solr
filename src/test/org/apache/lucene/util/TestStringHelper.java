@@ -18,19 +18,8 @@ package org.apache.lucene.util;
 
 import junit.framework.TestCase;
 
-public class StringHelperTest extends TestCase {
+public class TestStringHelper extends TestCase {
 
-
-  public StringHelperTest(String s) {
-    super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
-  }
 
   public void testStringDifference() {
     String test1 = "test";
