@@ -82,7 +82,7 @@ public class TestSegmentReader extends TestCase {
     assertTrue(deleteReader.hasDeletions() == true);
     assertTrue(deleteReader.numDocs() == 0);
     try {
-      Document test = deleteReader.document(0);
+      deleteReader.document(0);
       fail();
     } catch (IllegalArgumentException e) {
       // expcected exception
