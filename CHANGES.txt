@@ -187,7 +187,7 @@ New features
     It's very useful for searching across multiple fields.
     (Chuck Williams via Yonik Seeley, LUCENE-323)
 
-28. New class ISOLatin1AccentFilter that replaces accented characters in the ISO 
+28. New class ISOLatin1AccentFilter that replaces accented characters in the ISO
     Latin 1 character set by their unaccented equivalent.
     (Sven Duzont via Erik Hatcher)
 
@@ -195,7 +195,7 @@ New features
     This is useful for data like zip codes, ids, and some product names.
     (Erik Hatcher)
 
-30. Copied LengthFilter from contrib area to core. Removes words that are too 
+30. Copied LengthFilter from contrib area to core. Removes words that are too
     long and too short from the stream.
     (David Spencer via Otis and Daniel)
 
@@ -306,8 +306,11 @@ Bug fixes
     (Yonik Seeley, LUCENE-462)
 
 18. Fixed inefficient memory usage when loading an index into RAMDirectory.
-	(Volodymyr Bychkoviak via Bernhard, LUCENE-475)
-		
+    (Volodymyr Bychkoviak via Bernhard, LUCENE-475)
+
+19. Corrected term offsets returned by ChineseTokenizer.
+    (Ray Tsang via Erik Hatcher, LUCENE-324)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)

@@ -117,6 +117,7 @@ public final class ChineseTokenizer extends Tokenizer {
             case Character.OTHER_LETTER:
                 if (length>0) {
                     bufferIndex--;
+                    offset--;
                     return flush();
                 }
                 push(c);
