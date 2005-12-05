@@ -104,7 +104,7 @@ public class AnalyzerUtil {
 	 * @return an analyzer wrapper
 	 */
 	public static Analyzer getMaxTokenAnalyzer(
-			final Analyzer child, final int maxTokens, final int maxChars) {
+			final Analyzer child, final int maxTokens) {
 		
 		if (child == null) 
 			throw new IllegalArgumentException("child analyzer must not be null");
@@ -176,6 +176,7 @@ public class AnalyzerUtil {
 	 * @param maxSynonyms
 	 *            the maximum number of synonym tokens to return per underlying
 	 *            token word (a value of Integer.MAX_VALUE indicates unlimited)
+	 * @return a new analyzer
 	 */
 	public static Analyzer getSynonymAnalyzer(final Analyzer child, 
 			final SynonymMap synonyms, final int maxSynonyms) {
