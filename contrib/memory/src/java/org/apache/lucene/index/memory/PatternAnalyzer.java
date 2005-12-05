@@ -174,6 +174,7 @@ public class PatternAnalyzer extends Analyzer {
 	 *            the name of the field to tokenize (currently ignored).
 	 * @param text
 	 *            the string to tokenize
+	 * @return a new token stream
 	 */
 	public TokenStream tokenStream(String fieldName, String text) {
 		// Ideally the Analyzer superclass should have a method with the same signature, 
@@ -200,6 +201,12 @@ public class PatternAnalyzer extends Analyzer {
 	 * Creates a token stream that tokenizes all the text in the given Reader;
 	 * This implementation forwards to <code>tokenStream(String, String)</code> and is
 	 * less efficient than <code>tokenStream(String, String)</code>.
+	 * 
+	 * @param fieldName
+	 *            the name of the field to tokenize (currently ignored).
+	 * @param reader
+	 *            the reader delivering the text
+	 * @return a new token stream
 	 */
 	public TokenStream tokenStream(String fieldName, Reader reader) {
 		if (reader instanceof FastStringReader) { // fast path
@@ -214,7 +221,13 @@ public class PatternAnalyzer extends Analyzer {
 		}
 	}
 	
-	/**  Indicates whether some other object is "equal to" this one. */
+	/**
+	 * Indicates whether some other object is "equal to" this one.
+	 * 
+	 * @param other
+	 *            the reference object with which to compare.
+	 * @return true if equal, false otherwise
+	 */
 	public boolean equals(Object other) {
 		if (this  == other) return true;
 		if (this  == DEFAULT_ANALYZER && other == EXTENDED_ANALYZER) return false;
@@ -230,7 +243,11 @@ public class PatternAnalyzer extends Analyzer {
 		return false;
 	}
 	
-	/** Returns a hash code value for the object. */
+	/**
+	 * Returns a hash code value for the object.
+	 * 
+	 * @return the hash code.
+	 */
 	public int hashCode() {
 		if (this == DEFAULT_ANALYZER) return -1218418418; // fast path
 		if (this == EXTENDED_ANALYZER) return 1303507063; // fast path

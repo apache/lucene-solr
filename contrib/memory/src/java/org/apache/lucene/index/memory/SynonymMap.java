@@ -116,7 +116,11 @@ public class SynonymMap {
 		return copy;
 	}
 	
-	/** Returns a String representation of the index data for debugging purposes. */
+	/**
+	 * Returns a String representation of the index data for debugging purposes.
+	 * 
+	 * @return a String representation
+	 */
 	public String toString() {
 		StringBuffer buf = new StringBuffer();
 		Iterator iter = new TreeMap(table).keySet().iterator();

@@ -354,6 +354,8 @@ public class MemoryIndex {
 	/**
 	 * Creates and returns a searcher that can be used to execute arbitrary
 	 * Lucene queries and to collect the resulting query results as hits.
+	 * 
+	 * @return a searcher
 	 */
 	public IndexSearcher createSearcher() {
 		MemoryIndexReader reader = new MemoryIndexReader();
@@ -371,8 +373,7 @@ public class MemoryIndex {
 	 * @return the relevance score of the matchmaking; A number in the range
 	 *         [0.0 .. 1.0], with 0.0 indicating no match. The higher the number
 	 *         the better the match.
-	 * @see org.apache.lucene.queryParser.QueryParser#parse(String, String,
-	 *      Analyzer)
+	 * @see org.apache.lucene.queryParser.QueryParser#parse(String)
 	 */
 	public float search(Query query) {
 		if (query == null) 
@@ -412,6 +413,8 @@ public class MemoryIndex {
 	 * this instance. Useful for smart memory sensititve caches/pools. Assumes
 	 * fieldNames are interned, whereas tokenized terms are memory-overlaid. For
 	 * simplicity, assumes no VM word boundary alignment of instance vars.
+	 * 
+	 * @return the main memory consumption
 	 */
 	public int getMemorySize() {
 		// for example usage in a smart cache see nux.xom.pool.Pool
@@ -471,7 +474,11 @@ public class MemoryIndex {
 		return entries;
 	}
 	
-	/** Returns a String representation of the index data for debugging purposes. */
+	/**
+	 * Returns a String representation of the index data for debugging purposes.
+	 * 
+	 * @return the string representation
+	 */
 	public String toString() {
 		StringBuffer result = new StringBuffer(256);		
 		sortFields();		
