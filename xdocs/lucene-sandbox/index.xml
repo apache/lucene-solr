@@ -74,7 +74,7 @@
                     synonyms, definitions, and various relationships between synonym sets.
                 </p>
                 <p>
-                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/WordNet/">The
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/wordnet/">The
                         repository for the WordNet module.</a>
                 </p>
             </subsection>
