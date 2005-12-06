@@ -207,6 +207,9 @@ New features
     successive position.
     (Erik Hatcher, with advice from Yonik)
 
+32. StopFilter can now ignore case when checking for stop words.
+    (Grant Ingersoll via Yonik, LUCENE-248)
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation
