@@ -132,7 +132,7 @@ extends PriorityQueue {
     for (int i=0; i<n; ++i)
       fields[i] = comparators[i].sortValue(doc);
     doc.fields = fields;
-    if (maxscore > 1.0f) doc.score /= maxscore;   // normalize scores
+    //if (maxscore > 1.0f) doc.score /= maxscore;   // normalize scores
     return doc;
   }
 

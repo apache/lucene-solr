@@ -66,6 +66,11 @@ Changes in runtime behavior
     instead of using Integer and Float classes for parsing.
     (Yonik Seeley via Otis Gospodnetic)
 
+ 9. Expert level search routines returning TopDocs and TopFieldDocs
+    no longer normalize scores.  This also fixes bugs related to
+    MultiSearchers and score sorting/normalization.
+    (Luc Vanlerberghe via Yonik Seeley, LUCENE-469)
+
 New features
 
  1. Added support for stored compressed fields (patch #31149)

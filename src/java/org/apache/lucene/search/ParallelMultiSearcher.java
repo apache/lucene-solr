@@ -90,7 +90,9 @@ public class ParallelMultiSearcher extends MultiSearcher {
     for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
       scoreDocs[i] = (ScoreDoc) hq.pop();
 
-    return new TopDocs(totalHits, scoreDocs);
+    float maxScore = (totalHits==0) ? Float.NEGATIVE_INFINITY : scoreDocs[0].score;
+    
+    return new TopDocs(totalHits, scoreDocs, maxScore);
   }
 
   /**
@@ -120,6 +122,8 @@ public class ParallelMultiSearcher extends MultiSearcher {
       msta[i].start();
     }
 
+    float maxScore=Float.NEGATIVE_INFINITY;
+    
     for (int i = 0; i < searchables.length; i++) {
       try {
         msta[i].join();
@@ -129,6 +133,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
       IOException ioe = msta[i].getIOException();
       if (ioe == null) {
         totalHits += msta[i].hits();
+        maxScore=Math.max(maxScore, msta[i].getMaxScore());
       } else {
         // if one search produced an IOException, rethrow it
         throw ioe;
@@ -139,7 +144,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
     for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
       scoreDocs[i] = (ScoreDoc) hq.pop();
 
-    return new TopFieldDocs(totalHits, scoreDocs, hq.getFields());
+    return new TopFieldDocs(totalHits, scoreDocs, hq.getFields(), maxScore);
   }
 
   /** Lower-level search API.
@@ -274,6 +279,10 @@ class MultiSearcherThread extends Thread {
     return docs.totalHits;
   }
 
+  public float getMaxScore() {
+      return docs.getMaxScore();
+  }
+  
   public IOException getIOException() {
     return ioe;
   }

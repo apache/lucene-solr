@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -180,5 +181,114 @@ public class TestMultiSearcher extends TestCase
             Document d = hits3.doc(i);
         }
         mSearcher3.close();
+    }
+    
+    private static Document createDocument(String contents1, String contents2) {
+        Document document=new Document();
+        
+        document.add(new Field("contents", contents1, Field.Store.YES, Field.Index.UN_TOKENIZED));
+        
+        if (contents2!=null) {
+            document.add(new Field("contents", contents2, Field.Store.YES, Field.Index.UN_TOKENIZED));
+        }
+        
+        return document;
+    }
+    
+    private static void initIndex(Directory directory, int nDocs, boolean create, String contents2) throws IOException {
+        IndexWriter indexWriter=null;
+        
+        try {
+            indexWriter=new IndexWriter(directory, new KeywordAnalyzer(), create);
+            
+            for (int i=0; i<nDocs; i++) {
+                indexWriter.addDocument(createDocument("doc" + i, contents2));
+            }
+        } finally {
+            if (indexWriter!=null) {
+                indexWriter.close();
+            }
+        }
+    }
+    
+    /* uncomment this when the highest score is always normalized to 1.0, even when it was < 1.0
+    public void testNormalization1() throws IOException {
+        testNormalization(1, "Using 1 document per index:");
+    }
+     */
+    
+    public void testNormalization10() throws IOException {
+        testNormalization(10, "Using 10 documents per index:");
+    }
+    
+    private void testNormalization(int nDocs, String message) throws IOException {
+        Query query=new TermQuery(new Term("contents", "doc0"));
+        
+        RAMDirectory ramDirectory1;
+        IndexSearcher indexSearcher1;
+        Hits hits;
+        
+        ramDirectory1=new RAMDirectory();
+        
+        // First put the documents in the same index
+        initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
+        initIndex(ramDirectory1, nDocs, false, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+        
+        indexSearcher1=new IndexSearcher(ramDirectory1);
+        
+        hits=indexSearcher1.search(query);
+        
+        assertEquals(message, 2, hits.length());
+        
+        assertEquals(message, 1, hits.score(0), 1e-6); // hits.score(0) is 0.594535 if only a single document is in first index
+        
+        // Store the scores for use later
+        float[] scores={ hits.score(0), hits.score(1) };
+        
+        assertTrue(message, scores[0] > scores[1]);
+        
+        indexSearcher1.close();
+        ramDirectory1.close();
+        hits=null;
+        
+        
+        
+        RAMDirectory ramDirectory2;
+        IndexSearcher indexSearcher2;
+        
+        ramDirectory1=new RAMDirectory();
+        ramDirectory2=new RAMDirectory();
+        
+        // Now put the documents in a different index
+        initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
+        initIndex(ramDirectory2, nDocs, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+        
+        indexSearcher1=new IndexSearcher(ramDirectory1);
+        indexSearcher2=new IndexSearcher(ramDirectory2);
+        
+        Searcher searcher=getMultiSearcherInstance(new Searcher[] { indexSearcher1, indexSearcher2 });
+        
+        hits=searcher.search(query);
+        
+        assertEquals(message, 2, hits.length());
+        
+        // The scores should be the same (within reason)
+        assertEquals(message, scores[0], hits.score(0), 1e-6); // This will a document from ramDirectory1
+        assertEquals(message, scores[1], hits.score(1), 1e-6); // This will a document from ramDirectory2
+        
+        
+        
+        // Adding a Sort.RELEVANCE object should not change anything
+        hits=searcher.search(query, Sort.RELEVANCE);
+        
+        assertEquals(message, 2, hits.length());
+        
+        assertEquals(message, scores[0], hits.score(0), 1e-6); // This will a document from ramDirectory1
+        assertEquals(message, scores[1], hits.score(1), 1e-6); // This will a document from ramDirectory2
+        
+        searcher.close();
+        
+        ramDirectory1.close();
+        ramDirectory2.close();
     }
 }

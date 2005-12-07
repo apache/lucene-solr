@@ -97,7 +97,7 @@ public class IndexSearcher extends Searcher {
 
     Scorer scorer = weight.scorer(reader);
     if (scorer == null)
-      return new TopDocs(0, new ScoreDoc[0]);
+      return new TopDocs(0, new ScoreDoc[0], Float.NEGATIVE_INFINITY);
 
     final BitSet bits = filter != null ? filter.bits(reader) : null;
     final HitQueue hq = new HitQueue(nDocs);
@@ -120,7 +120,9 @@ public class IndexSearcher extends Searcher {
     for (int i = hq.size()-1; i >= 0; i--)        // put docs in array
       scoreDocs[i] = (ScoreDoc)hq.pop();
 
-    return new TopDocs(totalHits[0], scoreDocs);
+    float maxScore = (totalHits[0]==0) ? Float.NEGATIVE_INFINITY : scoreDocs[0].score;
+    
+    return new TopDocs(totalHits[0], scoreDocs, maxScore);
   }
 
   // inherit javadoc
@@ -129,7 +131,7 @@ public class IndexSearcher extends Searcher {
       throws IOException {
     Scorer scorer = weight.scorer(reader);
     if (scorer == null)
-      return new TopFieldDocs(0, new ScoreDoc[0], sort.fields);
+      return new TopFieldDocs(0, new ScoreDoc[0], sort.fields, Float.NEGATIVE_INFINITY);
 
     final BitSet bits = filter != null ? filter.bits(reader) : null;
     final FieldSortedHitQueue hq =
@@ -149,7 +151,7 @@ public class IndexSearcher extends Searcher {
     for (int i = hq.size()-1; i >= 0; i--)        // put docs in array
       scoreDocs[i] = hq.fillFields ((FieldDoc) hq.pop());
 
-    return new TopFieldDocs(totalHits[0], scoreDocs, hq.getFields());
+    return new TopFieldDocs(totalHits[0], scoreDocs, hq.getFields(), hq.getMaxScore());
   }
 
   // inherit javadoc
