@@ -69,6 +69,18 @@ public class TestMultiReader extends TestCase {
     assertTrue(vector != null);
     TestSegmentReader.checkNorms(reader);
   }
+
+  public void testUndeleteAll() throws IOException {
+    sis.read(dir);
+    MultiReader reader = new MultiReader(dir, sis, false, readers);
+    assertTrue(reader != null);
+    assertEquals( 2, reader.numDocs() );
+    reader.delete(0);
+    assertEquals( 1, reader.numDocs() );
+    reader.undeleteAll();
+    assertEquals( 2, reader.numDocs() );
+  }
+        
   
   public void testTermVectors() {
     MultiReader reader = new MultiReader(dir, sis, false, readers);

@@ -319,6 +319,9 @@ Bug fixes
 19. Corrected term offsets returned by ChineseTokenizer.
     (Ray Tsang via Erik Hatcher, LUCENE-324)
 
+20. Fixed MultiReader.undeleteAll() to correctly update numDocs.
+    (Robert Kirchgessner via Doug Cutting, LUCENE-479)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)

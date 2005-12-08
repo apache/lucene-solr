@@ -122,6 +122,7 @@ public class MultiReader extends IndexReader {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].undeleteAll();
     hasDeletions = false;
+    numDocs = -1;                                 // invalidate cache
   }
 
   private int readerIndex(int n) {    // find reader for doc n:
