@@ -477,7 +477,20 @@ public abstract class IndexReader {
       }
     }
   }
-  
+
+  /** Deletes the document numbered <code>docNum</code>.  Once a document is
+   * deleted it will not appear in TermDocs or TermPostitions enumerations.
+   * Attempts to read its field with the {@link #document}
+   * method will result in an error.  The presence of this document may still be
+   * reflected in the {@link #docFreq} statistic, though
+   * this will be corrected eventually as the index is further modified.
+   *
+   * @deprecated Use {@link #deleteDocument(int docNum)} instead.
+   */
+  public final synchronized void delete(int docNum) throws IOException {
+    deleteDocument(docNum);
+  }
+
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
    * deleted it will not appear in TermDocs or TermPostitions enumerations.
    * Attempts to read its field with the {@link #document}
@@ -485,12 +498,13 @@ public abstract class IndexReader {
    * reflected in the {@link #docFreq} statistic, though
    * this will be corrected eventually as the index is further modified.
    */
-  public final synchronized void delete(int docNum) throws IOException {
+  public final synchronized void deleteDocument(int docNum) throws IOException {
     if(directoryOwner)
       aquireWriteLock();
     doDelete(docNum);
     hasChanges = true;
   }
+
 
   /** Implements deletion of the document numbered <code>docNum</code>.
    * Applications should call {@link #delete(int)} or {@link #delete(Term)}.
@@ -502,17 +516,32 @@ public abstract class IndexReader {
    * the document.  Then to delete such a document, one merely constructs a
    * term with the appropriate field and the unique ID string as its text and
    * passes it to this method.
+   * See {@link #delete(int)} for information about when this deletion will
+   * become effective.
+   * @return the number of documents deleted
+   * 
+   * @deprecated Use {@link #deleteDocuments(Term term)} instead.
+   */
+  public final int delete(Term term) throws IOException {
+    return deleteDocuments(term);
+  }
+
+  /** Deletes all documents containing <code>term</code>.
+   * This is useful if one uses a document field to hold a unique ID string for
+   * the document.  Then to delete such a document, one merely constructs a
+   * term with the appropriate field and the unique ID string as its text and
+   * passes it to this method.
    * See {@link #delete(int)} for information about when this deletion will 
    * become effective.
    * @return the number of documents deleted
    */
-  public final int delete(Term term) throws IOException {
+  public final int deleteDocuments(Term term) throws IOException {
     TermDocs docs = termDocs(term);
     if (docs == null) return 0;
     int n = 0;
     try {
       while (docs.next()) {
-        delete(docs.doc());
+        deleteDocument(docs.doc());
         n++;
       }
     } finally {
