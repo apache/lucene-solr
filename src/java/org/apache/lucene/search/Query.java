@@ -97,7 +97,10 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     return weight;
   }
 
-  /** Expert: called to re-write queries into primitive queries. */
+  /** Expert: called to re-write queries into primitive queries. For example,
+   * a PrefixQuery will be rewritten into a BooleanQuery that consists
+   * of TermQuerys.
+   */
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
@@ -148,7 +151,10 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   }
 
   /**
-   * Expert: adds all terms occuring in this query to the terms set
+   * Expert: adds all terms occuring in this query to the terms set. Only
+   * works if this query is in its {@link #rewrite rewritten} form.
+   * 
+   * @throws UnsupportedOperationException if this query is not yet rewritten
    */
   public void extractTerms(Set terms) {
     // needs to be implemented by query subclasses
