@@ -30,7 +30,7 @@ import java.util.Comparator;
  */
 class DisjunctionMaxScorer extends Scorer {
 
-    /* The scorers for subqueries that have remaining docs, kept sorted by number of next doc. */
+    /* The scorers for subqueries that have remaining docs, kept as a min heap by number of next doc. */
     private ArrayList subScorers = new ArrayList();
 
     /* Multiplier applied to non-maximum-scoring subqueries for a document as they are summed into the result. */
@@ -39,33 +39,8 @@ class DisjunctionMaxScorer extends Scorer {
     private boolean more = false;          // True iff there is a next document
     private boolean firstTime = true;      // True iff next() has not yet been called
 
-    /* Comparator to sort subScorers according to the document number of next document */
-    private static class DisjunctionMaxClauseComparator implements Comparator {
-
-        /* Scorers have all been positioned at their next document already */
-        public int compare(Object o1, Object o2) {
-            if (o1 instanceof Scorer && o2 instanceof Scorer) {
-                Scorer s1 = (Scorer) o1;
-                Scorer s2 = (Scorer) o2;
-
-                return s1.doc() - s2.doc();
-            }
-            else {
-                throw new ClassCastException("Objects not of the type 'Scorer'");
-            }
-        }
-
-        /* Compatible equality */
-        public boolean equals(Scorer s1, Scorer s2) {
-            return s1.doc() == s2.doc();
-        }
-
-     }
-
-    /* Fixed instance of the comparator to reuse */
-    private static DisjunctionMaxClauseComparator subScorerComparator = new DisjunctionMaxClauseComparator();
-
     /** Creates a new instance of DisjunctionMaxScorer
+     * @param tieBreakerMultiplier Multiplier applied to non-maximum-scoring subqueries for a document as they are summed into the result.
      * @param similarity -- not used since our definition involves neither coord nor terms directly */
     public DisjunctionMaxScorer(float tieBreakerMultiplier, Similarity similarity) {
         super(similarity);
@@ -76,46 +51,30 @@ class DisjunctionMaxScorer extends Scorer {
      * @param scorer the scorer of a subquery of our associated DisjunctionMaxQuery
      */
     public void add(Scorer scorer) throws IOException {
-        if ( scorer.next() ) {       // Initialize and retain only if it produces docs
+        if (scorer.next()) {       // Initialize and retain only if it produces docs
             subScorers.add(scorer);
             more = true;
         }
-    }
-
-    /* First time initialization.  Sort subScorers. */
-    private void init() {
-        sortSubScorers();
-        firstTime = false;
-    }
-
-    /* Sort subScorers in order of document number of next document to be generated */
-    private void sortSubScorers() {
-        Scorer[] sorted = (Scorer[]) subScorers.toArray(new Scorer[subScorers.size()]);
-        Arrays.sort(sorted, subScorerComparator);
-        for (int i=0; i<sorted.length; i++) subScorers.set(i, sorted[i]);
     }
 
     /** Generate the next document matching our associated DisjunctionMaxQuery.
      * @return true iff there is a next document
      */
     public boolean next() throws IOException {
-        if ( !more ) return false;
-        if ( firstTime ) {
-            init();
+        if (!more) return false;
+        if (firstTime) {
+            heapify();
+            firstTime = false;
             return true;   // more would have been false if no subScorers had any docs
         }
-        // Increment all generators that generated the last doc and incrementally re-sort.
+        // Increment all generators that generated the last doc and adjust the heap.
         int lastdoc = ((Scorer) subScorers.get(0)).doc();
         do {
-            if ( ((Scorer) subScorers.get(0)).next() ) {
-                Scorer s = (Scorer) subScorers.get(0);
-                int snextdoc = s.doc(), i=1;
-                for (; i<subScorers.size() && snextdoc > ((Scorer) subScorers.get(i)).doc(); i++)
-                    subScorers.set(i-1, subScorers.get(i));
-                if ( i!=1 ) subScorers.set(i-1, s);
-            } else {
-                subScorers.remove(0);
-                if ( subScorers.isEmpty() ) return (more = false);
+            if (((Scorer) subScorers.get(0)).next())
+                heapAdjust(0);
+            else {
+                heapRemoveRoot();
+                if (subScorers.isEmpty()) return (more = false);
             }
         } while ( ((Scorer) subScorers.get(0)).doc()==lastdoc );
         return true;
@@ -132,13 +91,23 @@ class DisjunctionMaxScorer extends Scorer {
      * @return the score of the current generated document
      */
     public float score() throws IOException {
-        float max = ((Scorer) subScorers.get(0)).score(), sum = max;
-        for (int i = 1, doc = ((Scorer) subScorers.get(0)).doc(); i < subScorers.size() && ((Scorer) subScorers.get(i)).doc() == doc; i++) {
-            float sub = ((Scorer) subScorers.get(i)).score();
-            sum += sub;
-            max = Math.max(max, sub);
+        int doc = ((Scorer) subScorers.get(0)).doc();
+        float[] sum = {((Scorer) subScorers.get(0)).score()}, max = {sum[0]};
+        int size = subScorers.size();
+        scoreAll(1, size, doc, sum, max);
+        scoreAll(2, size, doc, sum, max);
+        return max[0] + (sum[0] - max[0])*tieBreakerMultiplier;
+    }
+
+    // Recursively iterate all subScorers that generated last doc computing sum and max
+    private void scoreAll(int root, int size, int doc, float[] sum, float[] max) throws IOException {
+        if (root<size && ((Scorer) subScorers.get(root)).doc() == doc) {
+            float sub = ((Scorer) subScorers.get(root)).score();
+            sum[0] += sub;
+            max[0] = Math.max(max[0], sub);
+            scoreAll((root<<1)+1, size, doc, sum, max);
+            scoreAll((root<<1)+2, size, doc, sum, max);
         }
-        return max + (sum - max)*tieBreakerMultiplier;
     }
 
     /** Advance to the first document beyond the current whose number is greater than or equal to target.
@@ -146,15 +115,14 @@ class DisjunctionMaxScorer extends Scorer {
      * @return true iff there is a document to be generated whose number is at least target
      */
     public boolean skipTo(int target) throws IOException {
-        int i=0;
-        while ( i<subScorers.size() ) {
-            if ( ((Scorer) subScorers.get(i)).doc() < target ) {
-                if ( ((Scorer) subScorers.get(i)).skipTo(target) ) i++;
-                else subScorers.remove(i);
-            } else i++;
+        while (subScorers.size()>0 && ((Scorer)subScorers.get(0)).doc()<target) {
+            if (((Scorer)subScorers.get(0)).skipTo(target))
+                heapAdjust(0);
+            else
+                heapRemoveRoot();
         }
-        if ( i == 0 ) return false;
-        sortSubScorers();
+        if ((subScorers.size()==0))
+            return (more = false);
         return true;
     }
 
@@ -166,49 +134,58 @@ class DisjunctionMaxScorer extends Scorer {
         throw new UnsupportedOperationException();
     }
 
+    // Organize subScorers into a min heap with scorers generating the earlest document on top.
+    private void heapify() {
+        int size = subScorers.size();
+        for (int i=(size>>1)-1; i>=0; i--)
+            heapAdjust(i);
+    }
+
+    /* The subtree of subScorers at root is a min heap except possibly for its root element.
+     * Bubble the root down as required to make the subtree a heap.
+     */
+    private void heapAdjust(int root) {
+        Scorer scorer=(Scorer)subScorers.get(root);
+        int doc=scorer.doc();
+        int i=root, size=subScorers.size();
+        while (i<=(size>>1)-1) {
+            int lchild=(i<<1)+1;
+            Scorer lscorer=(Scorer)subScorers.get(lchild);
+            int ldoc=lscorer.doc();
+            int rdoc=Integer.MAX_VALUE, rchild=(i<<1)+2;
+            Scorer rscorer=null;
+            if (rchild<size) {
+                rscorer=(Scorer)subScorers.get(rchild);
+                rdoc=rscorer.doc();
+            }
+            if (ldoc<doc) {
+                if (rdoc<ldoc) {
+                    subScorers.set(i, rscorer);
+                    subScorers.set(rchild, scorer);
+                    i=rchild;
+                } else {
+                    subScorers.set(i, lscorer);
+                    subScorers.set(lchild, scorer);
+                    i=lchild;
+                }
+            } else if (rdoc<doc) {
+                subScorers.set(i, rscorer);
+                subScorers.set(rchild, scorer);
+                i=rchild;
+            } else return;
+        }
+    }
+
+    // Remove the root Scorer from subScorers and re-establish it as a heap
+    private void heapRemoveRoot() {
+        int size=subScorers.size();
+        if (size==1)
+            subScorers.remove(0);
+        else {
+            subScorers.set(0, subScorers.get(size-1));
+            subScorers.remove(size-1);
+            heapAdjust(0);
+        }
+    }
+
 }
-
-/***************************************************************************
- Implementation notes from http://issues.apache.org/jira/browse/LUCENE-323
-
-
- There is an issue with the MaxDisjunctionScorer in the .zip attachment, I'm
- sorry I did not see this earlier when I posted on java-dev about this.
-
- The problem is that MaxDisjunctionScorer uses bubble sort to keep the subscorer
- sorted over the documents in the next() method (line 103), and this does not scale nicely
- when the number of subscorers increases.
- Supposing the number of subscores that match the document is N,
- the amount of work to be done is proportional to (N*N) per document.
- In DisjunctionSumScorer a priority queue is used, and there the amount of work is
- proportional to (N log(N)) per document.
- So I would recommend to rewrite MaxDisjunctionScorer to inherit from a new common
- super class with DisjunctionSumScorer, sharing everything except the
- advanceAfterCurrent() method (which could be abstract in the new superclass).
- It's possible to be more aggressive in refactoring by initializing and adapting
- the score per index document using different methods, but this would take N
- extra method calls per document.
-
- At the same time the name could be changed to DisjunctionMaxScorer
- for consistency in the org.lucene.search package.
-
- Regards,
- Paul Elschot
-
- Comment by Chuck Williams [14/Nov/05 11:55 PM]
- The code only uses bubble sort for the incremental resorting of an already-sorted list. The initial sort is done with Arrays.sort() which is O(n*logn). The incremental resort is O(k*n) where k is the number of clauses that match the document last generated. Even if n is large, k will usually be small. Theoretically this is O(n^2) because k could be as high as n, but this is extremely unlikely especially when n is large. More likely is that k is bounded by a small constant, in which case the algorithm is O(n). It's like Quicksort in that regard -- there are outlier cases where it won't perform well, but it will perform better than most alternatives for the vast majority of cases.
-
- Resorting the whole list every time would perform worse. The best algorithm would probably be to use the standard insert and delete operations on a heap (as in heap sort):
-
-   while top element generated last doc
-       heap remove it
-       generate it
-       heap insert it
-
- This would yield total time O(k*logn), as with a PriorityQueue.
-
- I don't think this is much of an issue to worry about, but the algorithm could be revised to use the heap sort operations if others think it is important.
-
- Chuck
-
-*********************************************************************/
