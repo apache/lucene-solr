@@ -37,32 +37,31 @@ public class MatchAllDocsQuery extends Query {
 
   private class MatchAllScorer extends Scorer {
 
-    IndexReader reader;
-    int count;
-    int maxDoc;
+    final IndexReader reader;
+    int id;
+    final int maxId;
+    final float score;
 
-    MatchAllScorer(IndexReader reader, Similarity similarity) {
+    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w) {
       super(similarity);
       this.reader = reader;
-      count = -1;
-      maxDoc = reader.maxDoc();
-    }
-
-    public int doc() {
-      return count;
+      id = -1;
+      maxId = reader.maxDoc() - 1;
+      score = w.getValue();
     }
 
     public Explanation explain(int doc) {
-      Explanation explanation = new Explanation();
-      explanation.setValue(1.0f);
-      explanation.setDescription("MatchAllDocsQuery");
-      return explanation;
+      return null; // not called... see MatchAllDocsWeight.explain()
+    }
+
+    public int doc() {
+      return id;
     }
 
     public boolean next() {
-      while (count < (maxDoc - 1)) {
-        count++;
-        if (!reader.isDeleted(count)) {
+      while (id < maxId) {
+        id++;
+        if (!reader.isDeleted(id)) {
           return true;
         }
       }
@@ -70,11 +69,11 @@ public class MatchAllDocsQuery extends Query {
     }
 
     public float score() {
-      return 1.0f;
+      return score;
     }
 
     public boolean skipTo(int target) {
-      count = target - 1;
+      id = target - 1;
       return next();
     }
 
@@ -82,6 +81,8 @@ public class MatchAllDocsQuery extends Query {
 
   private class MatchAllDocsWeight implements Weight {
     private Searcher searcher;
+    private float queryWeight;
+    private float queryNorm;
 
     public MatchAllDocsWeight(Searcher searcher) {
       this.searcher = searcher;
@@ -96,29 +97,32 @@ public class MatchAllDocsQuery extends Query {
     }
 
     public float getValue() {
-      return 1.0f;
+      return queryWeight;
     }
 
     public float sumOfSquaredWeights() {
-      return 1.0f;
+      queryWeight = getBoost();
+      return queryWeight * queryWeight;
     }
 
     public void normalize(float queryNorm) {
+      this.queryNorm = queryNorm;
+      queryWeight *= this.queryNorm;
     }
 
     public Scorer scorer(IndexReader reader) {
-      return new MatchAllScorer(reader, getSimilarity(searcher));
+      return new MatchAllScorer(reader, getSimilarity(searcher), this);
     }
 
     public Explanation explain(IndexReader reader, int doc) {
       // explain query weight
       Explanation queryExpl = new Explanation();
-      queryExpl.setDescription("MatchAllDocsQuery:");
-
-      Explanation boostExpl = new Explanation(getBoost(), "boost");
-      if (getBoost() != 1.0f)
-        queryExpl.addDetail(boostExpl);
-      queryExpl.setValue(boostExpl.getValue());
+      queryExpl.setDescription("MatchAllDocsQuery, product of:");
+      queryExpl.setValue(getValue());
+      if (getBoost() != 1.0f) {
+        queryExpl.addDetail(new Explanation(getBoost(),"boost"));
+      }
+      queryExpl.addDetail(new Explanation(queryNorm,"queryNorm"));
 
       return queryExpl;
     }
