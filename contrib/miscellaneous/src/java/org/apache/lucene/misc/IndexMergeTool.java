@@ -70,6 +70,10 @@ import java.io.IOException;
  */
 public class IndexMergeTool {
   public static void main(String[] args) throws IOException {
+    if (args.length < 3) {
+      System.err.println("Usage: IndexMergeTool <mergedIndex> <index1> <index2> [index3] ...");
+      System.exit(1);
+    }
     File mergedIndex = new File(args[0]);
 
     IndexWriter writer = new IndexWriter(mergedIndex, new  SimpleAnalyzer(), true);
@@ -79,9 +83,12 @@ public class IndexMergeTool {
       indexes[i  - 1] = FSDirectory.getDirectory(args[i], false);
     }
 
+    System.out.println("Merging...");
     writer.addIndexes(indexes);
 
+    System.out.println("Optimizing...");
     writer.optimize();
     writer.close();
+    System.out.println("Done.");
   }
 }
