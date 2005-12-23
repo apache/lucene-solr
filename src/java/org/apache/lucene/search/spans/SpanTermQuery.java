@@ -65,7 +65,7 @@ public class SpanTermQuery extends SpanQuery {
 
   /** Returns a hash code value for this object.*/
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ term.hashCode();
+    return Float.floatToIntBits(getBoost()) ^ term.hashCode() ^ 0xD23FE494;
   }
 
   public Spans getSpans(final IndexReader reader) throws IOException {
