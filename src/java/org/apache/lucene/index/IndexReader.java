@@ -228,7 +228,21 @@ public abstract class IndexReader {
    * @throws IOException if segments file cannot be read.
    */
   public static long getCurrentVersion(Directory directory) throws IOException {
-    return SegmentInfos.readCurrentVersion(directory);
+    synchronized (directory) {                 // in- & inter-process sync
+      Lock commitLock=directory.makeLock(IndexWriter.COMMIT_LOCK_NAME);
+      
+      boolean locked=false;
+      
+      try {
+         locked=commitLock.obtain(IndexWriter.COMMIT_LOCK_TIMEOUT);
+         
+         return SegmentInfos.readCurrentVersion(directory);
+      } finally {
+        if (locked) {
+          commitLock.release();
+        }
+      }
+    }
   }
   
   /**
@@ -246,10 +260,21 @@ public abstract class IndexReader {
    * @throws IOException
    */
   public boolean isCurrent() throws IOException {
-    if (SegmentInfos.readCurrentVersion(directory) != segmentInfos.getVersion()) {
-      return false;
+    synchronized (directory) {                 // in- & inter-process sync
+      Lock commitLock=directory.makeLock(IndexWriter.COMMIT_LOCK_NAME);
+      
+      boolean locked=false;
+      
+      try {
+         locked=commitLock.obtain(IndexWriter.COMMIT_LOCK_TIMEOUT);
+         
+         return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
+      } finally {
+        if (locked) {
+          commitLock.release();
+        }
+      }
     }
-    return true;
   }
 
   /**

@@ -322,6 +322,10 @@ Bug fixes
 20. Fixed MultiReader.undeleteAll() to correctly update numDocs.
     (Robert Kirchgessner via Doug Cutting, LUCENE-479)
 
+21. Race condition in IndexReader.getCurrentVersion() and isCurrent()
+    fixed by aquiring the commit lock.
+    (Luc Vanlerberghe via Yonik Seeley, LUCENE-481)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
