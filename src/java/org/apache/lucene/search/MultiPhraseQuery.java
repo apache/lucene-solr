@@ -284,4 +284,24 @@ public class MultiPhraseQuery extends Query {
 
     return buffer.toString();
   }
+
+
+  /** Returns true if <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (!(o instanceof MultiPhraseQuery)) return false;
+    MultiPhraseQuery other = (MultiPhraseQuery)o;
+    return this.getBoost() == other.getBoost()
+      && this.slop == other.slop
+      && this.termArrays.equals(other.termArrays)
+      && this.positions.equals(other.positions);
+  }
+
+  /** Returns a hash code value for this object.*/
+  public int hashCode() {
+    return Float.floatToIntBits(getBoost())
+      ^ slop
+      ^ termArrays.hashCode()
+      ^ positions.hashCode()
+      ^ 0x4AC65113;
+  }
 }
