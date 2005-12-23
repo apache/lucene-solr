@@ -147,6 +147,6 @@ public class MatchAllDocsQuery extends Query {
   }
 
   public int hashCode() {
-    return Float.floatToIntBits(getBoost());
+    return Float.floatToIntBits(getBoost()) ^ 0x1AA71190;
   }
 }
