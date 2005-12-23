@@ -85,6 +85,6 @@ public class PrefixQuery extends Query {
 
   /** Returns a hash code value for this object.*/
   public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ prefix.hashCode();
+    return Float.floatToIntBits(getBoost()) ^ prefix.hashCode() ^ 0x6634D93C;
   }
 }
