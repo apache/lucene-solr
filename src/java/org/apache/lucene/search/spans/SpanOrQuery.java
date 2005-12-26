@@ -113,10 +113,10 @@ public class SpanOrQuery extends SpanQuery {
   }
 
   public int hashCode() {
-    int result;
-    result = clauses.hashCode();
-    result = 29 * result + field.hashCode();
-    return result;
+    int h = clauses.hashCode();
+    h ^= (h << 10) | (h >>> 23);
+    h ^= Float.floatToRawIntBits(getBoost());
+    return h;
   }
 
   private class SpanQueue extends PriorityQueue {

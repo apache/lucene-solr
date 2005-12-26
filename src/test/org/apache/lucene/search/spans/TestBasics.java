@@ -72,7 +72,7 @@ public class TestBasics extends TestCase {
        578, 579, 670, 671, 672, 673, 674, 675, 676, 677, 678, 679, 770, 771,
        772, 773, 774, 775, 776, 777, 778, 779, 870, 871, 872, 873, 874, 875,
        876, 877, 878, 879, 970, 971, 972, 973, 974, 975, 976, 977, 978, 979});
-  }
+    }
 
   public void testTerm2() throws Exception {
     Query query = new TermQuery(new Term("field", "seventish"));
@@ -120,6 +120,10 @@ public class TestBasics extends TestCase {
 
     assertTrue(searcher.explain(query, 77).getValue() > 0.0f);
     assertTrue(searcher.explain(query, 977).getValue() > 0.0f);
+
+    QueryUtils.check(term1);
+    QueryUtils.check(term2);
+    QueryUtils.checkUnequal(term1,term2);
   }
 
   public void testSpanNearUnordered() throws Exception {
@@ -264,5 +268,6 @@ public class TestBasics extends TestCase {
 
   private void checkHits(Query query, int[] results) throws IOException {
     CheckHits.checkHits(query, "field", searcher, results);
+    QueryUtils.check(query);
   }
 }

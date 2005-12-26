@@ -65,15 +65,13 @@ public class SpanRegexQuery extends SpanQuery {
 
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
+    if (!(o instanceof TermQuery)) return false;
     final SpanRegexQuery that = (SpanRegexQuery) o;
-
     return term.equals(that.term) && getBoost() == that.getBoost();
   }
 
   public int hashCode() {
-    return term.hashCode();
+    return term.hashCode() ^ Float.floatToRawIntBits(getBoost()) ^ 0x4BCEF3A9;
   }
 
   public String toString(String field) {

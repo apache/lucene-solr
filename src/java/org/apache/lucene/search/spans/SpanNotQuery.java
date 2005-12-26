@@ -151,4 +151,24 @@ public class SpanNotQuery extends SpanQuery {
     }
   }
 
+    /** Returns true iff <code>o</code> is equal to this. */
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof SpanNotQuery)) return false;
+
+    SpanNotQuery other = (SpanNotQuery)o;
+    return this.include.equals(other.include)
+            && this.exclude.equals(other.exclude)
+            && this.getBoost() == other.getBoost();
+  }
+
+  public int hashCode() {
+    int h = include.hashCode();
+    h = (h<<1) | (h >>> 31);  // rotate left
+    h ^= include.hashCode();
+    h = (h<<1) | (h >>> 31);  // rotate left
+    h ^= Float.floatToRawIntBits(getBoost());
+    return h;
+  }
+
 }

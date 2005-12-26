@@ -134,14 +134,13 @@ public class SpanNearQuery extends SpanQuery {
   /** Returns true iff <code>o</code> is equal to this. */
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof SpanNearQuery)) return false;
 
     final SpanNearQuery spanNearQuery = (SpanNearQuery) o;
 
     if (inOrder != spanNearQuery.inOrder) return false;
     if (slop != spanNearQuery.slop) return false;
     if (!clauses.equals(spanNearQuery.clauses)) return false;
-    if (!field.equals(spanNearQuery.field)) return false;
 
     return getBoost() == spanNearQuery.getBoost();
   }
@@ -149,9 +148,13 @@ public class SpanNearQuery extends SpanQuery {
   public int hashCode() {
     int result;
     result = clauses.hashCode();
-    result += slop * 29;
-    result +=  (inOrder ? 1 : 0);
-    result ^= field.hashCode();
+    // Mix bits before folding in things like boost, since it could cancel the
+    // last element of clauses.  This particular mix also serves to
+    // differentiate SpanNearQuery hashcodes from others.
+    result ^= (result << 14) | (result >>> 19);  // reversible
+    result += Float.floatToRawIntBits(getBoost());
+    result += slop;
+    result ^= (inOrder ? 0x99AFD3BD : 0);
     return result;
   }
 }

@@ -105,4 +105,23 @@ public class SpanFirstQuery extends SpanQuery {
       return this;                         // no clauses rewrote
     }
   }
+
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof SpanFirstQuery)) return false;
+
+    SpanFirstQuery other = (SpanFirstQuery)o;
+    return this.end == other.end
+         && this.match.equals(other.match)
+         && this.getBoost() == other.getBoost();
+  }
+
+  public int hashCode() {
+    int h = match.hashCode();
+    h ^= (h << 8) | (h >>> 25);  // reversible
+    h ^= Float.floatToRawIntBits(getBoost()) ^ end;
+    return h;
+  }
+
+
 }
