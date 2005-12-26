@@ -65,7 +65,7 @@ public class SpanRegexQuery extends SpanQuery {
 
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof TermQuery)) return false;
+    if (!(o instanceof SpanRegexQuery)) return false;
     final SpanRegexQuery that = (SpanRegexQuery) o;
     return term.equals(that.term) && getBoost() == that.getBoost();
   }
