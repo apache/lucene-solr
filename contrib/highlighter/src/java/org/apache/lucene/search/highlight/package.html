@@ -16,7 +16,7 @@ Fragmenter, FragmentScorer, Formatter classes.
 	Hits hits = searcher.search(query);
 
 	Highlighter highlighter = new Highlighter(this, new QueryScorer(query));
-	for (int i = 0; i < hits.length(); i++)
+	for (int i = 0; i &lt; hits.length(); i++)
 	{
 		String text = hits.doc(i).get(FIELD_NAME);
 		TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
