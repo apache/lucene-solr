@@ -18,4 +18,19 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     char[] prefix = RegexpTunnel.getPrefix(regexp);
     return prefix == null ? null : new String(prefix);
   }
+
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    final JakartaRegexpCapabilities that = (JakartaRegexpCapabilities) o;
+
+    if (regexp != null ? !regexp.equals(that.regexp) : that.regexp != null) return false;
+
+    return true;
+  }
+
+  public int hashCode() {
+    return (regexp != null ? regexp.hashCode() : 0);
+  }
 }
