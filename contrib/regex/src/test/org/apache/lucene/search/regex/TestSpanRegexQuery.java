@@ -9,7 +9,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -30,8 +29,5 @@ public class TestSpanRegexQuery extends TestCase {
     SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6, true);
     Hits hits = searcher.search(query);
     assertEquals(1, hits.length());
-    QueryUtils.check(srq);
-    QueryUtils.checkUnequal(srq,stq);
-    QueryUtils.checkUnequal(srq,query);
   }
 }

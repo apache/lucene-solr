@@ -4,34 +4,24 @@ import org.apache.lucene.search.FilteredTermEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
-import java.util.regex.Pattern;
 import java.io.IOException;
 
 public class RegexTermEnum extends FilteredTermEnum {
   private String field = "";
   private String pre = "";
-  boolean endEnum = false;
-  private Pattern pattern;
+  private boolean endEnum = false;
+  private RegexCapabilities regexImpl;
 
-  public RegexTermEnum(IndexReader reader, Term term) throws IOException {
+  public RegexTermEnum(IndexReader reader, Term term, RegexCapabilities regexImpl) throws IOException {
     super();
     field = term.field();
     String text = term.text();
+    this.regexImpl = regexImpl;
 
-    pattern = Pattern.compile(text);
+    regexImpl.compile(text);
 
-    // Find the first regex character position, to find the
-    // maximum prefix to use for term enumeration
-    int index = 0;
-    while (index < text.length()) {
-      char c = text.charAt(index);
-
-      if (!Character.isLetterOrDigit(c)) break;
-
-      index++;
-    }
-
-    pre = text.substring(0, index);
+    pre = regexImpl.prefix();
+    if (pre == null) pre = "";
 
     setEnum(reader.terms(new Term(term.field(), pre)));
   }
@@ -40,7 +30,7 @@ public class RegexTermEnum extends FilteredTermEnum {
     if (field == term.field()) {
       String searchText = term.text();
       if (searchText.startsWith(pre)) {
-        return pattern.matcher(searchText).matches();
+        return regexImpl.match(searchText);
       }
     }
     endEnum = true;

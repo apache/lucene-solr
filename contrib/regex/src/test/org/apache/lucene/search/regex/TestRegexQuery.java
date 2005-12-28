@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -59,7 +58,7 @@ public class TestRegexQuery extends TestCase {
   private Term newTerm(String value) { return new Term(FN, value); }
 
   private int  regexQueryNrHits(String regex) throws Exception {
-    Query query = new RegexQuery( newTerm(regex));
+    RegexQuery query = new RegexQuery( newTerm(regex));
     return searcher.search(query).length();
   }
 
@@ -71,30 +70,32 @@ public class TestRegexQuery extends TestCase {
   }
 
   public void testRegex1() throws Exception {
-    assertEquals(1, regexQueryNrHits("q.[aeiou]c.*"));
+    assertEquals(1, regexQueryNrHits("^q.[aeiou]c.*$"));
   }
 
   public void testRegex2() throws Exception {
-    assertEquals(0, regexQueryNrHits(".[aeiou]c.*"));
+    assertEquals(0, regexQueryNrHits("^.[aeiou]c.*$"));
   }
 
   public void testRegex3() throws Exception {
-    assertEquals(0, regexQueryNrHits("q.[aeiou]c"));
+    assertEquals(0, regexQueryNrHits("^q.[aeiou]c$"));
   }
 
   public void testSpanRegex1() throws Exception {
-    assertEquals(1, spanRegexQueryNrHits("q.[aeiou]c.*", "dog", 6, true));
+    assertEquals(1, spanRegexQueryNrHits("^q.[aeiou]c.*$", "dog", 6, true));
   }
 
   public void testSpanRegex2() throws Exception {
-    assertEquals(0, spanRegexQueryNrHits("q.[aeiou]c.*", "dog", 5, true));
+    assertEquals(0, spanRegexQueryNrHits("^q.[aeiou]c.*$", "dog", 5, true));
   }
 
-//  public void testPrefix() throws Exception {
-      // This test currently fails because RegexTermEnum picks "r" as the prefix
-      // but the following "?" makes the "r" optional and should be a hit for the
-      // document matching "over".
-//    assertEquals(1, regexQueryNrHits("r?over"));
-//  }
+  public void testEquals() throws Exception {
+    RegexQuery query1 = new RegexQuery( newTerm("foo.*"));
+    query1.setRegexImplementation(new JakartaRegexpCapabilities());
+
+    RegexQuery query2 = new RegexQuery( newTerm("foo.*"));
+    assertFalse(query1.equals(query2));
+  }
+
 }
 
