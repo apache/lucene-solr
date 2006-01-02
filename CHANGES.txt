@@ -215,6 +215,10 @@ New features
 32. StopFilter can now ignore case when checking for stop words.
     (Grant Ingersoll via Yonik, LUCENE-248)
 
+33. Add TopDocCollector and TopFieldDocCollector.  These simplify the
+    implementation of hit collectors that collect only the
+    top-scoring or top-sorting hits.
+
 API Changes
 
  1. Several methods and fields have been deprecated. The API documentation

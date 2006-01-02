@@ -95,63 +95,20 @@ public class IndexSearcher extends Searcher {
     if (nDocs <= 0)  // null might be returned from hq.top() below.
       throw new IllegalArgumentException("nDocs must be > 0");
 
-    Scorer scorer = weight.scorer(reader);
-    if (scorer == null)
-      return new TopDocs(0, new ScoreDoc[0], Float.NEGATIVE_INFINITY);
-
-    final BitSet bits = filter != null ? filter.bits(reader) : null;
-    final HitQueue hq = new HitQueue(nDocs);
-    final int[] totalHits = new int[1];
-    scorer.score(new HitCollector() {
-        private float minScore = 0.0f;
-        public final void collect(int doc, float score) {
-          if (score > 0.0f &&                     // ignore zeroed buckets
-              (bits==null || bits.get(doc))) {    // skip docs not in bits
-            totalHits[0]++;
-            if (hq.size() < nDocs || score >= minScore) {
-              hq.insert(new ScoreDoc(doc, score));
-              minScore = ((ScoreDoc)hq.top()).score; // maintain minScore
-            }
-          }
-        }
-      });
-
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-    for (int i = hq.size()-1; i >= 0; i--)        // put docs in array
-      scoreDocs[i] = (ScoreDoc)hq.pop();
-
-    float maxScore = (totalHits[0]==0) ? Float.NEGATIVE_INFINITY : scoreDocs[0].score;
-    
-    return new TopDocs(totalHits[0], scoreDocs, maxScore);
+    TopDocCollector collector = new TopDocCollector(nDocs);
+    search(weight, filter, collector);
+    return collector.topDocs();
   }
 
   // inherit javadoc
   public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
                              Sort sort)
       throws IOException {
-    Scorer scorer = weight.scorer(reader);
-    if (scorer == null)
-      return new TopFieldDocs(0, new ScoreDoc[0], sort.fields, Float.NEGATIVE_INFINITY);
 
-    final BitSet bits = filter != null ? filter.bits(reader) : null;
-    final FieldSortedHitQueue hq =
-      new FieldSortedHitQueue(reader, sort.fields, nDocs);
-    final int[] totalHits = new int[1];
-    scorer.score(new HitCollector() {
-        public final void collect(int doc, float score) {
-          if (score > 0.0f &&			  // ignore zeroed buckets
-              (bits==null || bits.get(doc))) {	  // skip docs not in bits
-            totalHits[0]++;
-            hq.insert(new FieldDoc(doc, score));
-          }
-        }
-      });
-
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
-    for (int i = hq.size()-1; i >= 0; i--)        // put docs in array
-      scoreDocs[i] = hq.fillFields ((FieldDoc) hq.pop());
-
-    return new TopFieldDocs(totalHits[0], scoreDocs, hq.getFields(), hq.getMaxScore());
+    TopFieldDocCollector collector =
+      new TopFieldDocCollector(reader, sort, nDocs);
+    search(weight, filter, collector);
+    return (TopFieldDocs)collector.topDocs();
   }
 
   // inherit javadoc
