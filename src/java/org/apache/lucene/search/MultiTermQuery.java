@@ -92,6 +92,6 @@ public abstract class MultiTermQuery extends Query {
     }
 
     public int hashCode() {
-      return term.hashCode();
+      return term.hashCode() + Float.floatToRawIntBits(getBoost());
     }
 }
