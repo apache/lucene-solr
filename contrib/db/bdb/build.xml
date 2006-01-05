@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<project name="bdb" default="default">
+
+  <description>
+    Lucene Berkeley DB integration
+  </description>
+
+  <property name="db.version" value="4.3.29" />
+
+  <path id="db.jar">
+    <pathelement location="lib/db-${db.version}.jar" />
+  </path>
+
+  <available classname="com.sleepycat.db.internal.Db" property="db.jar.exists">
+    <classpath refid="db.jar" />
+  </available>
+
+  <pathconvert property="project.classpath" targetos="unix" refid="db.jar" />
+
+  <property name="build.dir" location="../../../build/contrib/db/bdb" />
+  <property name="dist.dir" location="../../../dist/contrib/db/bdb" />
+
+  <import file="../../contrib-build.xml" />
+
+  <target name="get-db-jar" unless="db.jar.exists">
+    <mkdir dir="lib" />
+    <get src="http://downloads.osafoundation.org/db/db-${db.version}.jar"
+         dest="lib/db-${db.version}.jar" />
+  </target>
+
+  <target name="check-and-get-db-jar" depends="get-db-jar" />
+  <target name="init" depends="common.init,check-and-get-db-jar" />
+</project>

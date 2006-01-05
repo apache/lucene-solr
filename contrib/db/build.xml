@@ -3,36 +3,28 @@
 
   <description>
     Lucene DB integration
+      - bdb:    using the Java interface of C Berkeley DB
+      - bdb-je: using Berkeley DB Java Edition
   </description>
 
-  <property name="db.version" value="4.3.29"/>
-
-  <path id="db.jar">
-    <pathelement location="lib/db-${db.version}.jar"/>
-  </path>
-
-  <available classname="com.sleepycat.db.internal.Db" property="db.jar.exists">
-    <classpath refid="db.jar"/>
-  </available>
-
-  <pathconvert property="project.classpath"
-               targetos="unix"
-               refid="db.jar"
-  />
-
-  <import file="../contrib-build.xml"/>
-
-  <target name="get-db-jar" unless="db.jar.exists">
-    <mkdir dir="lib"/>
-    <get src="http://downloads.osafoundation.org/db/db-${db.version}.jar"
-         dest="lib/db-${db.version}.jar"
-    />
+  <target name="bdb">
+    <ant dir="bdb" />
   </target>
 
-  <target name="check-and-get-db-jar" depends="get-db-jar">
+  <target name="bdb-je">
+    <ant dir="bdb-je" />
   </target>
 
-  <target name="init" depends="common.init,check-and-get-db-jar">
-    
+  <target name="default" depends="bdb,bdb-je" />
+
+  <target name="clean">
+    <ant dir="bdb" target="clean" />
+    <ant dir="bdb-je" target="clean" />
   </target>
+
+  <target name="test">
+    <ant dir="bdb" target="test" />
+    <ant dir="bdb-je" target="test" />
+  </target>
+
 </project>

@@ -1,7 +1,7 @@
-package org.apache.lucene.store.db;
+package org.apache.lucene.store.je;
 
 /**
- * Copyright 2002-2005 The Apache Software Foundation
+ * Copyright 2002-2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,37 @@ package org.apache.lucene.store.db;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.store.IndexOutput;
 
-
 /**
- * @author Andi Vajda
+ * Port of Andi Vajda's DbDirectory to Java Edition of Berkeley Database
+ * 
+ * @author Aaron Donovan
  */
 
-public class DbIndexOutput extends IndexOutput {
+public class JEIndexOutput extends IndexOutput {
 
     /**
      * The size of data blocks, currently 16k (2^14), is determined by this
      * constant.
      */
     static public final int BLOCK_SHIFT = 14;
+
     static public final int BLOCK_LEN = 1 << BLOCK_SHIFT;
+
     static public final int BLOCK_MASK = BLOCK_LEN - 1;
 
     protected long position = 0L, length = 0L;
-    protected DbDirectory directory;
+
+    protected JEDirectory directory;
+
     protected Block block;
+
     protected File file;
 
-    protected DbIndexOutput(DbDirectory directory, String name, boolean create)
-        throws IOException
-    {
+    protected JEIndexOutput(JEDirectory directory, String name, boolean create)
+            throws IOException {
         super();
 
         this.directory = directory;
@@ -56,31 +62,24 @@ public class DbIndexOutput extends IndexOutput {
         directory.openFiles.add(this);
     }
 
-    public void close()
-        throws IOException
-    {
+    public void close() throws IOException {
         flush();
         file.modify(directory, length, System.currentTimeMillis());
 
         directory.openFiles.remove(this);
     }
 
-    public void flush()
-        throws IOException
-    {
+    public void flush() throws IOException {
         if (length > 0)
             block.put(directory);
     }
 
-    public void writeByte(byte b)
-        throws IOException
-    {
+    public void writeByte(byte b) throws IOException {
         int blockPos = (int) (position++ & BLOCK_MASK);
 
         block.getData()[blockPos] = b;
 
-        if (blockPos + 1 == BLOCK_LEN)
-        {
+        if (blockPos + 1 == BLOCK_LEN) {
             block.put(directory);
             block.seek(position);
             block.get(directory);
@@ -90,9 +89,7 @@ public class DbIndexOutput extends IndexOutput {
             length = position;
     }
 
-    public void writeBytes(byte[] b, int len)
-        throws IOException
-    {
+    public void writeBytes(byte[] b, int len) throws IOException {
         int blockPos = (int) (position & BLOCK_MASK);
         int offset = 0;
 
@@ -111,8 +108,7 @@ public class DbIndexOutput extends IndexOutput {
             blockPos = 0;
         }
 
-        if (len > 0)
-        {
+        if (len > 0) {
             System.arraycopy(b, offset, block.getData(), blockPos, len);
             position += len;
         }
@@ -121,22 +117,17 @@ public class DbIndexOutput extends IndexOutput {
             length = position;
     }
 
-    public long length()
-        throws IOException
-    {
+    public long length() throws IOException {
         return length;
     }
 
-    public void seek(long pos)
-        throws IOException
-    {
+    public void seek(long pos) throws IOException {
         if (pos > length)
             throw new IOException("seeking past end of file");
 
         if ((pos >>> BLOCK_SHIFT) == (position >>> BLOCK_SHIFT))
             position = pos;
-        else
-        {
+        else {
             block.put(directory);
             block.seek(pos);
             block.get(directory);
@@ -144,8 +135,7 @@ public class DbIndexOutput extends IndexOutput {
         }
     }
 
-    public long getFilePointer()
-    {
+    public long getFilePointer() {
         return position;
     }
 }

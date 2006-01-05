@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<project name="bdb-je" default="default">
+
+  <description>
+    Lucene Berkeley DB Java Edition integration
+  </description>
+
+  <property name="je.version" value="2.0.90" />
+
+  <path id="je.jar">
+    <pathelement location="lib/je-${je.version}/lib/je.jar" />
+  </path>
+
+  <available classname="com.sleepycat.je.Database" property="je.jar.exists">
+    <classpath refid="je.jar" />
+  </available>
+
+  <pathconvert property="project.classpath" targetos="unix" refid="je.jar" />
+
+  <property name="build.dir" location="../../../build/contrib/db/bdb-je" />
+  <property name="dist.dir" location="../../../dist/contrib/db/bdb-je" />
+
+  <import file="../../contrib-build.xml" />
+
+  <target name="get-je-jar" unless="je.jar.exists">
+    <mkdir dir="lib" />
+    <get src="http://downloads.sleepycat.com/je-${je.version}.zip"
+         dest="lib/je-${je.version}.zip" />
+    <unzip src="lib/je-${je.version}.zip" dest="lib">
+      <patternset>
+        <include name="je-${je.version}/lib/je.jar" />
+      </patternset>
+    </unzip>
+  </target>
+
+  <target name="check-and-get-je-jar" depends="get-je-jar" />
+  <target name="init" depends="common.init,check-and-get-je-jar" />
+</project>

@@ -1,7 +1,7 @@
-package org.apache.lucene.store.db;
+package org.apache.lucene.store.je;
 
 /**
- * Copyright 2002-2005 The Apache Software Foundation
+ * Copyright 2002-2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,24 @@ package org.apache.lucene.store.db;
 import java.io.IOException;
 import org.apache.lucene.store.IndexInput;
 
-
 /**
- * @author Andi Vajda
+ * Port of Andi Vajda's DbDirectory to Java Edition of Berkeley Database
+ * 
+ * @author Aaron Donovan
  */
 
-public class DbIndexInput extends IndexInput {
+public class JEIndexInput extends IndexInput {
 
     protected long position = 0L, length = 0L;
-    protected DbDirectory directory;
+
+    protected JEDirectory directory;
+
     protected Block block;
+
     protected File file;
 
-    protected DbIndexInput(DbDirectory directory, String name)
-        throws IOException
-    {
+    protected JEIndexInput(JEDirectory directory, String name)
+            throws IOException {
         super();
 
         this.directory = directory;
@@ -48,10 +51,9 @@ public class DbIndexInput extends IndexInput {
         block.get(directory);
     }
 
-    public Object clone()
-    {
+    public Object clone() {
         try {
-            DbIndexInput clone = (DbIndexInput) super.clone();
+            JEIndexInput clone = (JEIndexInput) super.clone();
 
             clone.block = new Block(file);
             clone.block.seek(position);
@@ -63,27 +65,21 @@ public class DbIndexInput extends IndexInput {
         }
     }
 
-    public void close()
-        throws IOException
-    {
+    public void close() throws IOException {
     }
 
-    public long length()
-    {
+    public long length() {
         return length;
     }
 
-    public byte readByte()
-        throws IOException
-    {
+    public byte readByte() throws IOException {
         if (position + 1 > length)
-            throw new IOException("Reading past end of file");
+            throw new IOException(file.getName() + ": Reading past end of file");
 
-        int blockPos = (int) (position++ & DbIndexOutput.BLOCK_MASK);
+        int blockPos = (int) (position++ & JEIndexOutput.BLOCK_MASK);
         byte b = block.getData()[blockPos];
 
-        if (blockPos + 1 == DbIndexOutput.BLOCK_LEN)
-        {
+        if (blockPos + 1 == JEIndexOutput.BLOCK_LEN) {
             block.seek(position);
             block.get(directory);
         }
@@ -91,20 +87,18 @@ public class DbIndexInput extends IndexInput {
         return b;
     }
 
-    public void readBytes(byte[] b, int offset, int len)
-        throws IOException
-    {
+    public void readBytes(byte[] b, int offset, int len) throws IOException {
         if (position + len > length)
             throw new IOException("Reading past end of file");
-        else
-        {
-            int blockPos = (int) (position & DbIndexOutput.BLOCK_MASK);
+        else {
+            int blockPos = (int) (position & JEIndexOutput.BLOCK_MASK);
 
-            while (blockPos + len >= DbIndexOutput.BLOCK_LEN) {
-                int blockLen = DbIndexOutput.BLOCK_LEN - blockPos;
+            while (blockPos + len >= JEIndexOutput.BLOCK_LEN) {
+                int blockLen = JEIndexOutput.BLOCK_LEN - blockPos;
 
-                System.arraycopy(block.getData(), blockPos,
-                                 b, offset, blockLen);
+                System
+                        .arraycopy(block.getData(), blockPos, b, offset,
+                                blockLen);
 
                 len -= blockLen;
                 offset += blockLen;
@@ -115,23 +109,18 @@ public class DbIndexInput extends IndexInput {
                 blockPos = 0;
             }
 
-            if (len > 0)
-            {
+            if (len > 0) {
                 System.arraycopy(block.getData(), blockPos, b, offset, len);
                 position += len;
             }
         }
     }
 
-    public void seek(long pos)
-        throws IOException
-    {
+    public void seek(long pos) throws IOException {
         if (pos > length)
             throw new IOException("seeking past end of file");
 
-        if ((pos >>> DbIndexOutput.BLOCK_SHIFT) !=
-            (position >>> DbIndexOutput.BLOCK_SHIFT))
-        {
+        if ((pos >>> JEIndexOutput.BLOCK_SHIFT) != (position >>> JEIndexOutput.BLOCK_SHIFT)) {
             block.seek(pos);
             block.get(directory);
         }
@@ -139,8 +128,7 @@ public class DbIndexInput extends IndexInput {
         position = pos;
     }
 
-    public long getFilePointer()
-    {
+    public long getFilePointer() {
         return position;
     }
 }
