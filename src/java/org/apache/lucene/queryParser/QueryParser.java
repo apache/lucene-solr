@@ -414,6 +414,7 @@ public class QueryParser implements QueryParserConstants {
         else {
           // phrase query:
           MultiPhraseQuery mpq = new MultiPhraseQuery();
+          mpq.setSlop(phraseSlop);
           List multiTerms = new ArrayList();
           for (int i = 0; i < v.size(); i++) {
             t = (org.apache.lucene.analysis.Token) v.elementAt(i);
