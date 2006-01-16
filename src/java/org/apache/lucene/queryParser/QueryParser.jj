@@ -68,6 +68,15 @@ import org.apache.lucene.util.Parameter;
  * documentation</a>.
  * </p>
  *
+ * <p>In {@link RangeQuery}s, QueryParser tries to detect date values, e.g. <tt>date:[6/1/2005 TO 6/4/2005]</tt>
+ * produces a range query that searches for "date" fields between 2005-06-01 and 2005-06-04. Note
+ * that the format of the accpeted input depends on {@link #setLocale(Locale) the locale}. This
+ * feature also assumes that your index uses the {@link DateField} class to store dates.
+ * If you use a different format (e.g. {@link DateTools}) and you still want QueryParser
+ * to turn local dates in range queries into valid queries you need to create your own
+ * query parser that inherits QueryParser and overwrites
+ * {@link #getRangeQuery(String, String, String, boolean)}.</p>
+ *
  * <p>Note that QueryParser is <em>not</em> thread-safe.</p>
  *
  * @author Brian Goetz
