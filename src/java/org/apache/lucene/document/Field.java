@@ -418,7 +418,8 @@ public final class Field implements Serializable {
    * 
    * @param name The name of the field
    * @param value The binary value
-   * @param store How <code>value</code> should be stored (compressed or not.)
+   * @param store How <code>value</code> should be stored (compressed or not)
+   * @throws IllegalArgumentException if store is <code>Store.NO</code> 
    */
   public Field(String name, byte[] value, Store store) {
     if (name == null)
