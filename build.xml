@@ -146,8 +146,11 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, jjdoc, war-demo, build-contrib">
+  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib">
     <mkdir dir="${dist.dir}"/>
+  </target>
+
+  <target name="nightly" depends="test, package-tgz">
   </target>
 
   <!-- ================================================================== -->
