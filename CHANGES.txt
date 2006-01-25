@@ -330,6 +330,9 @@ Bug fixes
     fixed by aquiring the commit lock.
     (Luc Vanlerberghe via Yonik Seeley, LUCENE-481)
 
+22. IndexWriter.setMaxBufferedDocs(1) didn't have the expected effect,
+    this has now been fixed. (Daniel Naber)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)

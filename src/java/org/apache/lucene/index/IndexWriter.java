@@ -637,7 +637,7 @@ public class IndexWriter {
       int mergeDocs = 0;
       while (--minSegment >= 0) {
         SegmentInfo si = segmentInfos.info(minSegment);
-        if (si.docCount >= targetMergeDocs)
+        if (si.docCount > targetMergeDocs)
           break;
         mergeDocs += si.docCount;
       }
