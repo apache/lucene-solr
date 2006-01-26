@@ -751,7 +751,7 @@ PARSER_END(QueryParser)
 }
 
 <DEFAULT, RangeIn, RangeEx> SKIP : {
-  <<_WHITESPACE>>
+  < <_WHITESPACE>>
 }
 
 // OG: to support prefix queries:

@@ -44,7 +44,7 @@ import org.apache.lucene.util.Parameter;
  * href="http://lucene.apache.org/java/docs/queryparsersyntax.html">query syntax
  * documentation</a>.
  * </p>
- * 
+ *
  * <p>In {@link RangeQuery}s, QueryParser tries to detect date values, e.g. <tt>date:[6/1/2005 TO 6/4/2005]</tt>
  * produces a range query that searches for "date" fields between 2005-06-01 and 2005-06-04. Note
  * that the format of the accpeted input depends on {@link #setLocale(Locale) the locale}. This
