@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tomcat fails if it can't find the DTD
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN
+" "http://java.sun.com/dtd/web-app_2_3.dtd" [
+    <!ENTITY web.external.xml SYSTEM "../../../conf/solar/WEB-INF/web.external.xml">
+]>
+-->
+
+<web-app>
+  <!-- resin specific way to add to the webapps classpath -->
+  <classpath id="../../conf/solar/WEB-INF/classes" />
+  <classpath id="../../conf/solar/WEB-INF/lib" library-dir="true" />
+
+  <!-- Use the default JDK5 XML implementation...
+    Resin3 has some missing/incompatible xpath features.  -->
+  <system-property javax.xml.xpath.XPathFactory=
+             "com.sun.org.apache.xpath.internal.jaxp.XPathFactoryImpl"/>
+  <system-property javax.xml.parsers.DocumentBuilderFactory=
+             "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"/>
+  <system-property javax.xml.parsers.SAXParserFactory=
+             "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl"/>
+
+  <servlet>
+
+    <servlet-name>SolrServer</servlet-name>
+    <display-name>SOLR</display-name>
+    <description>SOLR Server</description>
+    <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
+    <load-on-startup>0</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>SolrServer</servlet-name>
+    <url-pattern>/select/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>SolrServer</servlet-name>
+    <url-pattern>/update/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>solar-status</servlet-name>
+    <jsp-file>/admin/solar-status.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>solar-status</servlet-name>
+    <url-pattern>/admin/solar-status</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ping</servlet-name>
+    <jsp-file>/admin/ping.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ping</servlet-name>
+    <url-pattern>/admin/ping</url-pattern>
+  </servlet-mapping>
+
+  <!--  doesn't seem to work with tomcat
+  &web.external.xml;
+  -->
+
+</web-app>

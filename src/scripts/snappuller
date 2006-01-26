@@ -1,0 +1,212 @@
+#!/bin/bash
+#
+# $Id: snappuller.template,v 1.13 2005/07/20 18:38:49 billa Exp $
+# $Source: /cvs/main/searching/solar-tools/snappuller.template,v $
+# $Name: r20050725_standardized_server_enabled $
+#
+# Shell script to copy snapshots of a SOLAR Lucene collection from the master
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+
+# sudo to app user if necessary
+if [[ $(whoami) != app ]]
+then
+    sudo -u app $0 "$@"
+    exit $?
+fi
+
+oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
+
+if [[ "${oldwhoami}" == "" ]]
+then
+    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
+fi
+
+# set up variables
+prog=${0##*/}
+log=logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog -m master -p port [-n snapshot] [ -svz ]
+       -m master   hostname of master server from where to pull index snapshot
+       -p port     port number of master server from where to pull index snapshot
+       -n snapshot pull a specific snapshot by name
+       -s          use the --size-only option with rsync
+       -v          increase verbosity (-vv show file transfer stats also)
+       -z          enable compression of data
+"
+
+unset masterHost masterPort name sizeonly stats verbose compress startStatus
+
+cd ${0%/*}/../..
+SERVER_ROOT=$(pwd)
+
+# check for config file
+confFile=${SERVER_ROOT}/conf/distribution.conf
+if
+  [[ ! -f $confFile ]]
+then
+  echo "unable to find configuration file: $confFile" >&2
+  exit 1
+fi
+# source the config file
+. $confFile
+
+# parse args
+originalargs="$@"
+while getopts m:p:n:svz OPTION
+do
+    case $OPTION in
+    m)
+        masterHost="$OPTARG"
+        ;;
+    p)
+        masterPort="$OPTARG"
+        ;;
+    n)
+        name="$OPTARG"
+        ;;
+    s)
+        sizeonly="--size-only"
+        ;;
+    v)
+        [[ -n $verbose ]] && stats="--stats" || verbose=v
+        ;;
+    z)
+        compress="z"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+shift $(( OPTIND - 1 ))
+
+MASTER_ROOT=/var/opt/resin3/${masterPort}
+
+function timeStamp
+{
+    date +'%Y%m%d-%H%M%S'
+}
+
+function logMessage
+{
+    echo $(timeStamp) $@>>$log
+    if [[ -n ${verbose} ]]
+    then
+	echo $@
+    fi
+}
+
+function logExit
+{
+# push stats/state to master if necessary
+    if [[ -n ${startStatus} ]]
+    then
+      scp -q -o StrictHostKeyChecking=no logs/snappuller.status ${masterHost}:${MASTER_ROOT}/logs/clients/snapshot.status.`uname -n`
+    fi
+    end=`date +"%s"`
+    diff=`expr $end - $start`
+    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
+    exit $2
+}
+
+if [[ -z ${masterHost} ]]
+then
+    echo "name of master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+if [[ -z ${masterPort} ]]
+then
+    echo "port number of master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+
+fi
+rsyncd_port=`expr 10000 + ${masterPort}`
+
+logMessage started by $oldwhoami
+logMessage command: $0 $originalargs
+start=`date +"%s"`
+
+if [[ ! -f ${prog}-enabled ]]
+then
+    logMessage snappuller disabled
+    exit 1
+fi
+
+# make sure we can ssh to master
+if
+    ! ssh -o StrictHostKeyChecking=no ${masterHost} id 1>/dev/null 2>&1
+then
+    logMessage failed to ssh to master ${masterHost}
+    exit 1
+fi
+
+# get directory name of latest snapshot if not specified on command line
+if [[ -z ${name} ]]
+then
+    name=`ssh -o StrictHostKeyChecking=no ${masterHost} "ls -d ${MASTER_ROOT}/snapshot.* 2>/dev/null"|tail -1`
+fi
+
+# clean up after INT/TERM
+trap 'echo cleaning up, please wait ...;/bin/rm -rf ${name} ${name}-wip;echo ${startStatus} aborted:$(timeStamp)>logs/snappuller.status;logExit aborted 13' INT TERM
+
+if [[ -d ${name} || -d ${name}-wip || "${name}" == "" ]]
+then
+    logMessage no new snapshot available on ${masterHost}:${masterPort}
+    logExit ended 0
+fi
+
+# take a snapshot of current index so that only modified files will be rsync-ed
+# put the snapshot in the 'work-in-progress" directory to prevent it from
+# being installed while the copying is still in progress
+cp -lr index ${name}-wip
+# force rsync of segments and .del files since we are doing size-only
+if [[ -n ${sizeonly} ]]
+then
+    rm -f ${name}-wip/segments
+    rm -f ${name}-wip/*.del
+fi
+
+logMessage pulling snapshot ${name}
+
+# make sure master has directory for hold slaves stats/state
+ssh -o StrictHostKeyChecking=no ${masterHost} mkdir -p ${MASTER_ROOT}/logs/clients
+
+# start new distribution stats
+rsyncStart=`date`
+startTimestamp=`date -d "$rsyncStart" +'%Y%m%d-%H%M%S'`
+rsyncStartSec=`date -d "$rsyncStart" +'%s'`
+startStatus="rsync of `basename ${name}` started:$startTimestamp"
+echo ${startStatus} > logs/snappuller.status
+# push stats/state to master
+scp -q -o StrictHostKeyChecking=no logs/snappuller.status ${masterHost}:${MASTER_ROOT}/logs/clients/snapshot.status.`uname -n`
+
+# rsync over files that have changed
+rsync -Wa${verbose}${compress} --delete ${sizeonly} \
+${stats} rsync://${masterHost}:${rsyncd_port}/solar/`basename ${name}`/ `basename ${name}-wip`
+
+rc=$?
+rsyncEnd=`date`
+endTimestamp=`date -d "$rsyncEnd" +'%Y%m%d-%H%M%S'`
+rsyncEndSec=`date -d "$rsyncEnd" +'%s'`
+elapsed=`expr $rsyncEndSec - $rsyncStartSec`
+if [[ $rc != 0 ]]
+then
+  logMessage rsync failed
+  /bin/rm -rf ${name}-wip
+  echo ${startStatus} failed:$endTimestamp > logs/snappuller.status
+  logExit failed 1
+fi
+
+# move into place atomically
+mv ${name}-wip ${name}
+
+# finish new distribution stats`
+echo ${startStatus} ended:$endTimestamp rsync-elapsed:${elapsed} > logs/snappuller.status
+
+logExit ended 0

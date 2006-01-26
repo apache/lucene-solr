@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+# $Id: rsyncd-start.template,v 1.3 2005/06/20 20:43:55 billa Exp $
+# $Source: /cvs/main/searching/solar-tools/rsyncd-start.template,v $
+# $Name: r20050725_standardized_server_enabled $
+#
+# Shell script to start rsyncd on master SOLAR server
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+
+# sudo to app user if necessary
+if [[ $(whoami) != app ]]
+then
+    sudo -u app $0 "$@"
+    exit $?
+fi
+
+oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
+
+if [[ "${oldwhoami}" == "" ]]
+then
+    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
+fi
+
+prog=${0##*/}
+log=logs/rsyncd.log
+
+# define usage string
+USAGE="\
+usage: $prog [ -v ]
+       -v          increase verbosity
+"
+
+resin_port=5051
+rsyncd_port=`expr 10000 + ${resin_port}`
+
+cd ${0%/*}/../..
+
+unset verbose
+
+# parse args
+originalargs="$@"
+while getopts v OPTION
+do
+    case $OPTION in
+    v)
+        verbose="v"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+shift $(( OPTIND - 1 ))
+
+function timeStamp
+{
+    date +'%Y/%m/%d %H:%M:%S'
+}
+
+function logMessage
+{
+    echo $(timeStamp) $@>>$log
+    if [[ -n ${verbose} ]]
+    then
+        echo $@
+    fi
+}
+
+logMessage started by $oldwhoami
+logMessage command: $0 $originalargs
+
+if [[ ! -f rsyncd-enabled ]]
+then
+    logMessage rsyncd disabled
+    exit 1
+fi
+
+if \
+    rsync rsync://localhost:${rsyncd_port} >/dev/null 2>&1
+then
+    logMessage "rsyncd already running at port ${rsyncd_port}"
+    exit 1
+fi
+
+rsync --daemon --port=${rsyncd_port} --config=conf/rsyncd.conf
+
+# first make sure rsyncd is accepting connections
+i=1
+while \
+ ! rsync rsync://localhost:${rsyncd_port} >/dev/null 2>&1
+do
+    if (( i++ > 15 ))
+    then
+        logMessage "rsyncd not accepting connections, exiting" >&2
+        exit 2
+    fi
+    sleep 1
+done
+
+logMessage rsyncd started and accepting requests

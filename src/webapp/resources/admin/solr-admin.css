@@ -1,0 +1,133 @@
+
+
+h1, h2, h3, h4, h5 {
+   display: block;
+   font-family: ITC Officina Sans Book, Terminator Two, Helvetica, Arial, sans-serif;
+   font-style: bold;
+   margin: 0;
+}
+
+strong {
+   font-family: ITC Officina Sans Book, Terminator Two, Helvetica, Arial, sans-serif;
+   font-style: bold;
+   margin: 0;
+}
+
+input[type="text"], textarea {
+   color: black;
+   border: 2px inset #ff9933;
+   background-color: #ffffff;
+}
+
+input[type="submit"] {
+   font-family: ITC Officina Sans Book, Helvetica, Arial, sans-serif;
+   font-style: bold;
+   font-size: 11;
+   text-transform: capitalize;
+   color: black;
+   background-color: #dddddd;
+   border: groove #ff9933;
+}
+
+input[type="submit"]:hover {
+   color: #0000ff;
+   border: groove #0000ff;
+}
+
+
+body {
+   background-color: #bbbbbb;
+}
+
+table {
+   display: table;
+   background-color: #FAF7E4;
+   width: 100%;
+   border-top: 4px solid #666666;
+   border-left: 2px solid #666666;
+   text-align: left;
+   vertical-align: top;
+   cellpadding-right: 8px;
+}
+
+table[name="responseHeader"] {
+   width: auto;
+}
+
+table[name="table"] {
+   width: auto;
+}
+
+table {
+   border-collapse: collapse
+}
+
+tr {
+   border-bottom: 1px solid #ff9933;
+}
+
+
+tr > td:first-child {
+   width: 30%;
+}
+
+tr > td[name="debugdata"] {
+  width: auto;
+}
+
+tr > td[name="highlight"]:first-child {
+   width: auto;
+   background:	#ccccff;
+}
+
+tr > td[name="responseHeader"]:first-child {
+   width: auto;
+   text-align: right;
+}
+
+tr > td[name="responseHeader"] + td {
+   text-align: left;
+   font-family: Courier;
+}
+
+
+td {
+   text-align: left;
+   vertical-align: top;
+}
+
+td[name="highlight"] {
+   width: auto;
+   background:	#ccccff;
+}
+
+
+a {
+   text-decoration:	none;
+   font-weight:	bold;
+   font-size:	11px;
+   background:	#FAF7E4;
+   text-transform: uppercase;
+}
+		
+a:link {	
+   color:	#0000aa;
+}			
+					
+a:visited {	
+   color:	#0000ff;
+}			
+								
+a:active {
+   color:	#4444ff;
+}			
+
+a:hover {
+   color:	#0000ff;
+   background:	#ccccff;
+}			
+
+a:offsite {	
+   color:	#0000aa;
+}		 
+

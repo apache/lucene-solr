@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# $Id: snappuller-enable.template,v 1.4 2005/06/20 20:43:56 billa Exp $
+# $Source: /cvs/main/searching/solar-tools/snappuller-enable.template,v $
+# $Name: r20050725_standardized_server_enabled $
+#
+# Shell script to enable snappuller
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+
+# sudo to app user if necessary
+if [[ $(whoami) != app ]]
+then
+    sudo -u app $0 "$@"
+    exit $?
+fi
+
+oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
+
+if [[ "${oldwhoami}" == "" ]]
+then
+  oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
+fi
+
+# set up variables
+prog=${0##*/}
+log=logs/snappuller.log
+
+# define usage string
+USAGE="\
+usage: $prog [ -v ]
+       -v          increase verbosity
+"
+
+unset verbose
+
+# parse args
+originalargs="$@"
+while getopts v OPTION
+do
+    case $OPTION in
+    v)
+        verbose="v"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+shift $(( OPTIND - 1 ))
+
+start=`date +"%s"`
+
+function timeStamp
+{
+    date +'%Y%m%d-%H%M%S'
+}
+
+function logMessage
+{
+    echo $(timeStamp) $@>>$log
+    if [[ -n ${verbose} ]]
+    then
+	echo $@
+    fi
+}
+
+function logExit
+{
+    end=`date +"%s"`
+    diff=`expr $end - $start`
+    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
+    exit $2
+}
+
+cd ${0%/*}/../..
+logMessage enabled by $oldwhoami
+logMessage command: $0 $originalargs
+name=snappuller-enabled
+
+if [[ -f ${name} ]]
+then
+    logMessage snappuller already currently enabled
+    logExit exited 1
+else
+    touch ${name}
+fi
+
+logExit ended 0

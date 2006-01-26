@@ -1,0 +1,171 @@
+#!/bin/bash
+#
+# $Id: snapinstaller.template,v 1.12 2005/06/09 17:19:34 billa Exp $
+# $Source: /cvs/main/searching/solar-tools/snapinstaller.template,v $
+# $Name: r20050725_standardized_server_enabled $
+#
+# Shell script to install a snapshot into place as the Lucene collection
+# for a SOLAR server
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+
+# sudo to app user if necessary
+if [[ $(whoami) != app ]]
+then
+    sudo -u app $0 "$@"
+    exit $?
+fi
+
+oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
+
+if [[ "${oldwhoami}" == "" ]]
+then
+    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
+fi
+
+# set up variables
+prog=${0##*/}
+log=logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog -m master -p port [ -v ]
+       -m master   hostname of master server where snapshot stats are posted
+       -p port     port number of master server where snapshot stats are posted
+       -v          increase verbosity
+"
+
+cd ${0%/*}/../..
+SERVER_ROOT=$(pwd)
+
+unset masterHost masterPort verbose
+
+# check for config file
+confFile=${SERVER_ROOT}/conf/distribution.conf
+if
+  [[ ! -f $confFile ]]
+then
+  echo "unable to find configuration file: $confFile" >&2
+  exit 1
+fi
+# source the config file
+. $confFile
+
+# parse args
+originalargs="$@"
+while getopts m:p:v OPTION
+do
+    case $OPTION in
+    m)
+        masterHost="$OPTARG"
+        ;;
+    p)
+        masterPort="$OPTARG"
+        ;;
+    v)
+        verbose="v"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+shift $(( OPTIND - 1 ))
+
+MASTER_ROOT=/var/opt/resin3/${masterPort}
+
+if [[ -z ${masterHost} ]]
+then
+    echo "name of master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+                                                                                
+if [[ -z ${masterPort} ]]
+then
+    echo "port number of master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+function timeStamp
+{
+    date +'%Y%m%d-%H%M%S'
+}
+
+function logMessage
+{
+    echo $(timeStamp) $@>>$log
+    if [[ -n ${verbose} ]]
+    then
+	echo $@
+    fi
+}
+
+function logExit
+{
+    end=`date +"%s"`
+    diff=`expr $end - $start`
+    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
+    exit $2
+}
+
+logMessage started by $oldwhoami
+logMessage command: $0 $originalargs
+start=`date +"%s"`
+
+# get directory name of latest snapshot
+name=`ls -d snapshot.*|grep -v wip|sort -r|head -1`
+
+# clean up after INT/TERM
+trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf index.tmp$$;logExit aborted 13' INT TERM
+
+# is there a snapshot
+if [[ "${name}" == "" ]]
+then
+    logMessage no shapshot available
+    logExit ended 0
+fi
+
+# has snapshot already been installed
+if [[ ${name} == `cat logs/snapshot.current 2>/dev/null` ]]
+then
+    logMessage latest snapshot ${name} already installed
+    logExit ended 0
+fi
+
+# make sure master has directory for hold slaves stats/state
+if
+    ! ssh -o StrictHostKeyChecking=no ${masterHost} mkdir -p ${MASTER_ROOT}/logs/clients
+then
+    logMessage failed to ssh to master ${masterHost}, snapshot status not updated on master
+fi
+
+# install using hard links into temporary directory
+# remove original index and then atomically copy new one into place
+logMessage installing snapshot ${name}
+cp -lr ${name}/ index.tmp$$
+/bin/rm -rf index
+mv -f index.tmp$$ index
+
+# update distribution stats
+echo ${name} > logs/snapshot.current
+
+# push stats/state to master
+if
+    ! scp -q -o StrictHostKeyChecking=no logs/snapshot.current ${masterHost}:${MASTER_ROOT}/logs/clients/snapshot.current.`uname -n`
+then
+    logMessage failed to ssh to master ${masterHost}, snapshot status not updated on master
+fi
+
+# notify SOLAR to open a new Searcher
+logMessage notifing SOLAR to open a new Searcher
+scripts/solar/commit
+if [[ $? != 0 ]]
+then
+  logMessage failed to connect to SOLAR server at port 5051
+  logMessage snapshot installed but SOLAR server has not open a new Searcher
+  logExit failed 1
+fi
+
+logExit ended 0

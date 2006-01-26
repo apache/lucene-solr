@@ -1,0 +1,24 @@
+
+#change the query cache size to 3 and the autowarm size to 2 for this test
+<commit/>
+val_s:A
+val_s:B
+val_s:C
+val_s:D
+#B,C,D should be in cache
+val_s:A
+#miss, now C,D,A should be in cache
+<commit/>
+#should see old{lookups=5, hits=0, size=3}, new{size=2}
+#now D,A should be autowarmed in new
+
+val_s:C
+#miss, now cache=D,A,C
+<commit/>
+#should see old{lookups,1 hits=0, size=3}, new{size=2}
+#now A,C should be autowarmed in new
+
+val_s:A
+val_s:C
+<commit/>
+#should see old{lookups=2, hits=2, size=0}

@@ -1,0 +1,51 @@
+<delete><query>id:[* TO *]</query></delete>
+<optimize/>
+
+<delete><query>id[0 TO 9]</query></delete>
+<commit/>
+
+<add><doc><field name="id">3</field></doc></add>
+<add><doc><field name="id">1</field></doc></add>
+<add><doc><field name="id">7</field></doc></add>
+<add><doc><field name="id">0</field></doc></add>
+<add><doc><field name="id">5</field></doc></add>
+<commit/>
+
+_val_:"linear(id,2,3)"
++id:[ 0 TO 5 ] +_val_:"linear(id,2,3)"^0.1
++id:[ 0 TO 5 ] +_val_:"linear(rord(id),2,3)"^0.1
++id:[ 0 TO 5 ] +_val_:"recip(rord(id),2,3,4)"^0.1
++id:[ 0 TO 5 ] +_val_:"linear(linear(rord(id),6,5),2,3)"^0.1
+
+#<delete><query>id:[0 TO 9]</query></delete>
+#<commit/>
+
+<delete><query>weight:[* TO *]</query></delete>
+<commit/>
+
+<add><doc><field name="id">10</field><field name="weight">3</field></doc></add>
+<add><doc><field name="id">11</field><field name="weight">1</field></doc></add>
+<add><doc><field name="id">12</field><field name="weight">7</field></doc></add>
+<add><doc><field name="id">13</field><field name="weight">0</field></doc></add>
+<add><doc><field name="id">14</field><field name="weight">5</field></doc></add>
+<commit/>
+
++id:[10 TO 14] +_val_:weight^2
++id:[10 TO 14] +_val_:"ord(weight)"^2
++id:[10 TO 14] +_val_:"rord(weight)"^2
+
+#+id:[10 TO 14] +weight:_int_^2
+#+id:[10 TO 14] +weight:_ord_^2
+#+id:[10 TO 14] +weight:_rord_^2
+
+<add><doc><field name="id">10</field><field name="q_i">2</field></doc></add>
+<add><doc><field name="id">11</field><field name="q_f">3.14159</field></doc></add>
+<add><doc><field name="id">12</field><field name="q_l">900</field></doc></add>
+<add><doc><field name="id">13</field><field name="q_d">.1</field></doc></add>
+<add><doc><field name="id">14</field><field name="q_dt">2005-01-01T01:01:01Z</field></doc></add>
+<commit/>
+_val_:q_i %%fl=score %//@maxScore = //doc/float[@name="score"] %//doc/float[@name="score"] = "2.0"
+_val_:q_f %%fl=score %//@maxScore = //doc/float[@name="score"] %//doc/float[@name="score"] = "3.14159"
+_val_:q_l %%fl=score %//@maxScore = //doc/float[@name="score"] %//doc/float[@name="score"] = "900.0"
+_val_:q_d %%fl=score %//@maxScore = //doc/float[@name="score"] %//doc/float[@name="score"] = "0.1"
+_val_:q_dt %%fl=score %//@maxScore = //doc/float[@name="score"] %//doc/float[@name="score"] = "1.0"

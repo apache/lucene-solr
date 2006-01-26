@@ -1,0 +1,124 @@
+#!/bin/bash
+#
+# $Id: snapshooter.template,v 1.9 2005/06/09 15:34:07 billa Exp $
+# $Source: /cvs/main/searching/solar-tools/snapshooter.template,v $
+# $Name: r20050725_standardized_server_enabled $
+#
+# Shell script to take a snapshot of a SOLAR Lucene collection.
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+
+# sudo to app user if necessary
+if [[ $(whoami) != app ]]
+then
+    sudo -u app $0 "$@"
+    exit $?
+fi
+
+oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
+
+if [[ "${oldwhoami}" == "" ]]
+then
+    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
+fi
+
+# set up variables
+prog=${0##*/}
+log=logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog [ -v ]
+       -v          increase verbosity
+"
+
+cd ${0%/*}/../..
+SERVER_ROOT=$(pwd)
+
+unset verbose
+
+# check for config file
+confFile=${SERVER_ROOT}/conf/distribution.conf
+if
+  [[ ! -f $confFile ]]
+then
+  echo "unable to find configuration file: $confFile" >&2
+  exit 1
+fi
+# source the config file
+. $confFile
+
+if [[ "${solar_role}" == "slave" ]]
+then
+  echo "$prog disabled on slave server" >&2
+  exit 1
+fi
+
+# parse args
+originalargs="$@"
+while getopts v OPTION
+do
+    case $OPTION in
+    v)
+        verbose="v"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+shift $(( OPTIND - 1 ))
+
+function timeStamp
+{
+    date +'%Y%m%d-%H%M%S'
+}
+
+function logMessage
+{
+    echo $(timeStamp) $@>>$log
+    if [[ -n ${verbose} ]]
+    then
+	echo $@
+    fi
+}
+
+function logExit
+{
+    end=`date +"%s"`
+    diff=`expr $end - $start`
+    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
+    exit $2
+}
+
+logMessage started by $oldwhoami
+logMessage command: $0 $originalargs
+start=`date +"%s"`
+
+name=snapshot.`date +"%Y%m%d%H%M%S"`
+temp=temp-${name}
+
+if [[ -d ${name} ]]
+then
+    logMessage snapshot directory ${name} already exists
+    logExit aborted 1
+fi
+
+if [[ -d ${temp} ]]
+then
+    logMessage snapshoting of ${name} in progress
+    logExit aborted 1
+fi
+
+# clean up after INT/TERM
+trap 'echo cleaning up, please wait ...;/bin/rm -rf ${name} ${temp};logExit aborted 13' INT TERM
+
+logMessage taking snapshot ${name}
+
+# take a snapshot using hard links into temporary location
+# then move it into place atomically
+cp -lr index ${temp}
+mv ${temp} ${name}
+
+logExit ended 0
+
