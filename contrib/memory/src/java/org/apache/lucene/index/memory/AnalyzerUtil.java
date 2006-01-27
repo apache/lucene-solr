@@ -200,7 +200,7 @@ public class AnalyzerUtil {
 
 	
 	/**
-	 * Returns (frequency:text) pairs for the top N distinct terms (aka words),
+	 * Returns (frequency:term) pairs for the top N distinct terms (aka words),
 	 * sorted descending by frequency (and ascending by term, if tied).
 	 * <p>
 	 * Example XQuery:
@@ -220,8 +220,8 @@ public class AnalyzerUtil {
 	 * @param limit
 	 *            the maximum number of pairs to return; zero indicates 
 	 *            "as many as possible".
-	 * @return an array of (frequency:text) pairs in the form of (freq0:text0,
-	 *         freq1:text1, ..., freqN:textN). Each pair is a single string
+	 * @return an array of (frequency:term) pairs in the form of (freq0:term0,
+	 *         freq1:term1, ..., freqN:termN). Each pair is a single string
 	 *         separated by a ':' delimiter.
 	 */
 	public static String[] getMostFrequentTerms(Analyzer analyzer, String text, int limit) {
