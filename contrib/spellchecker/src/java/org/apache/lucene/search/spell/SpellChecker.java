@@ -172,7 +172,7 @@ public class SpellChecker {
 
             sugword.string=hits.doc(i).get(F_WORD); // get orig word)
 
-            if (sugword.string==word) {
+            if (sugword.string.equals(word)) {
                 continue; // don't suggest a word for itself, that would be silly
             }
 

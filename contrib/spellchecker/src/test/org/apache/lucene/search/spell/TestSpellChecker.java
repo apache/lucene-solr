@@ -22,7 +22,7 @@ import org.apache.lucene.store.Directory;
  */
 public class TestSpellChecker extends TestCase {
   private SpellChecker spellChecker;
-  Directory userindex, spellindex;
+  private Directory userindex, spellindex;
 
   protected void setUp() throws Exception {
     super.setUp();
@@ -61,18 +61,27 @@ public class TestSpellChecker extends TestCase {
 
       // test small word
       String[] similar = spellChecker.suggestSimilar("fvie", 2);
+      assertEquals(1, similar.length);
       assertEquals(similar[0], "five");
 
+      similar = spellChecker.suggestSimilar("five", 2);
+      assertEquals(1, similar.length);
+      assertEquals(similar[0], "nine");     // don't suggest a word for itself
+
       similar = spellChecker.suggestSimilar("fiv", 2);
+      assertEquals(1, similar.length);
       assertEquals(similar[0], "five");
 
       similar = spellChecker.suggestSimilar("ive", 2);
+      assertEquals(1, similar.length);
       assertEquals(similar[0], "five");
 
       similar = spellChecker.suggestSimilar("fives", 2);
+      assertEquals(1, similar.length);
       assertEquals(similar[0], "five");
 
       similar = spellChecker.suggestSimilar("fie", 2);
+      assertEquals(1, similar.length);
       assertEquals(similar[0], "five");
 
       similar = spellChecker.suggestSimilar("fi", 2);
@@ -88,7 +97,6 @@ public class TestSpellChecker extends TestCase {
       e.printStackTrace();
       fail();
     }
-
   }
 
 
@@ -96,14 +104,14 @@ public class TestSpellChecker extends TestCase {
     long time = System.currentTimeMillis();
     spellChecker.indexDictionary(new LuceneDictionary(r, field));
     time = System.currentTimeMillis() - time;
-    System.out.println("time to build " + field + ": " + time);
+    //System.out.println("time to build " + field + ": " + time);
   }
 
   private int numdoc() throws IOException {
     IndexReader rs = IndexReader.open(spellindex);
     int num = rs.numDocs();
     assertTrue(num != 0);
-    System.out.println("num docs: " + num);
+    //System.out.println("num docs: " + num);
     rs.close();
     return num;
   }
