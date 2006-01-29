@@ -26,18 +26,26 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.store.RAMDirectory;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 /**
  * Tests QueryParser.
@@ -342,23 +350,32 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
   }
 
-  public String getDate(String s) throws Exception {
+  private String getDate(String s) throws Exception {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     return DateField.dateToString(df.parse(s));
   }
 
-  public String getLocalizedDate(int year, int month, int day) {
+  private String getLocalizedDate(int year, int month, int day, boolean extendLastDate) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     Calendar calendar = Calendar.getInstance();
     calendar.set(year, month, day);
+    if (extendLastDate) {
+      calendar.set(Calendar.HOUR_OF_DAY, 23);
+      calendar.set(Calendar.MINUTE, 59);
+      calendar.set(Calendar.SECOND, 59);
+      calendar.set(Calendar.MILLISECOND, 999);
+    }
     return df.format(calendar.getTime());
   }
 
   public void testDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1);
-    String endDate = getLocalizedDate(2002, 1, 4);
+    String startDate = getLocalizedDate(2002, 1, 1, false);
+    String endDate = getLocalizedDate(2002, 1, 4, false);
+    Calendar endDateExpected = Calendar.getInstance();
+    endDateExpected.set(2002, 1, 4, 23, 59, 59);
+    endDateExpected.set(Calendar.MILLISECOND, 999);
     assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null,
-                      "[" + getDate(startDate) + " TO " + getDate(endDate) + "]");
+                      "[" + getDate(startDate) + " TO " + DateField.dateToString(endDateExpected.getTime()) + "]");
     assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null,
                       "{" + getDate(startDate) + " TO " + getDate(endDate) + "}");
   }
@@ -537,6 +554,39 @@ public class TestQueryParser extends TestCase {
     assertEquals(query1, query2);
   }
 
+  public void testLocalDateFormat() throws IOException, ParseException {
+    RAMDirectory ramDir = new RAMDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(), true);
+    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
+    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
+    iw.close();
+    IndexSearcher is = new IndexSearcher(ramDir);
+    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
+    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
+    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
+    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
+    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
+    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
+    is.close();
+  }
+  
+  private void assertHits(int expected, String query, IndexSearcher is) throws ParseException, IOException {
+    QueryParser qp = new QueryParser("date", new WhitespaceAnalyzer());
+    qp.setLocale(Locale.ENGLISH);
+    Query q = qp.parse(query);
+    Hits hits = is.search(q);
+    assertEquals(expected, hits.length());
+  }
+
+  private static void addDateDoc(String content, int year, int month,
+      int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
+    Document d = new Document();
+    d.add(new Field("f", content, Field.Store.YES, Field.Index.TOKENIZED));
+    Calendar cal = Calendar.getInstance();
+    cal.set(year, month-1, day, hour, minute, second);
+    d.add(new Field("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.UN_TOKENIZED));
+    iw.addDocument(d);
+  }
 
   public void tearDown() {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);

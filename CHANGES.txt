@@ -333,6 +333,10 @@ Bug fixes
 22. IndexWriter.setMaxBufferedDocs(1) didn't have the expected effect,
     this has now been fixed. (Daniel Naber)
 
+23. Fixed QueryParser when called with a date in local form like 
+    "[1/16/2000 TO 1/18/2000]". This query did not include the documents
+    of 1/18/2000, i.e. the last day was not included. (Daniel Naber)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
