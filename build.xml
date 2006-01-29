@@ -22,7 +22,7 @@
   <target name="usage"
           description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
-    <echo message="Use 'ant build' to compile the source code." />
+    <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project distribution files." />
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant test' to run unit tests." />
@@ -35,9 +35,9 @@
   </target>
 
 
-  <!-- ------------------------------------------------------------------------- -->
+  <!-- ========================================================================= -->
   <!-- ===================== COMPILATION-RELATED TASKS ========================= -->
-  <!-- ------------------------------------------------------------------------- -->
+  <!-- ========================================================================= -->
 
 
   <!-- The compilation classpath -->
@@ -46,7 +46,7 @@
       <include name="lucene-core-nightly.jar" />
       <include name="lucene-snowball-nightly.jar" />
       <include name="servlet-api-2.4.jar" />
-      <include name="xpp3-1.1.3.4.0.jar" />
+      <include name="xpp3-1.1.3.4.O.jar" />
     </fileset>
   </path>
 
@@ -54,20 +54,27 @@
   <target name="compile"
           description="Compile the source code.">
     <mkdir dir="${dest}" />
+
     <javac destdir="${dest}"
            classpathref="compile.classpath">
-      <src dir="${srcdir}/java" />
-      <src dir="${srcdir}/webapp" />
+      <src path="${src}/java" />
+      <src path="${src}/webapp" />
 
-      <!-- Should we include this here?  A better name for this directory is needed anyways. -->
-      <src dir="${srcdir}/lucene_extras" />
+      <!-- This dir includes tests, but is needed by core: need to split these up -->
+      <!-- A better name for this directory is needed anyways. -->
+      <src path="${src}/lucene_extras" >
+      </src>
+
+      <!-- Only need this for now because lucene_extras has a test class -->
+      <exclude name="**/Test*" />
+
     </javac>
   </target>
 
 
-  <!-- ------------------------------------------------------------------------- -->
+  <!-- ========================================================================= -->
   <!-- ===================== TESTING-RELATED TASKS ============================= -->
-  <!-- ------------------------------------------------------------------------- -->
+  <!-- ========================================================================= -->
 
 
   <!-- Classpath for unit test compilation. -->
@@ -97,9 +104,9 @@
 
 
 
-  <!-- ------------------------------------------------------------------------- -->
+  <!-- ========================================================================= -->
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
-  <!-- ------------------------------------------------------------------------- -->
+  <!-- ========================================================================= -->
 
 
   <!-- Creates the Solr distribution files. -->
@@ -118,6 +125,9 @@
       <lib dir="${lib}">
         <exclude name="servlet-api-2.4.jar" />
       </lib>
+
+
+      <fileset dir="${src}/webapp/resources" />
     </war>
   </target>
 
