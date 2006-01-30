@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" 
+          "http://forrest.apache.org/dtd/document-v20.dtd">
+
+<document>
+
+<header>
+  <title>Solr tutorial</title> 
+</header> 
+
+<body>
+
+<section>
+
+<title>Requirements</title>
+<ol>
+  <li>Java 1.5, from
+  <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
+  <a href="http://www-106.ibm.com/developerworks/java/jdk/">IBM</a>, or
+  <a href="http://www.bea.com/jrockit/">BEA</a>.
+  </li>
+  <li>A servlet container such as Apache's <a href="http://jakarta.apache.org/tomcat/">Tomcat</a>
+5.5.</li>
+  <li>On Win32, <a href="http://www.cygwin.com/">cygwin</a>, for
+shell support.  (If you plan to use Subversion on Win32, be sure to select the subversion package when you install, in the "Devel" category.)</li>
+</ol>
+</section>
+
+
+
+</body>
+</document>

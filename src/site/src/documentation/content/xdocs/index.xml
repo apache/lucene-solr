@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2002-2004 The Apache Software Foundation or its licensors,
+  as applicable.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" "http://forrest.apache.org/dtd/document-v20.dtd">
+<document> 
+  <header> 
+    <title>Welcome to Solr</title> 
+  </header> 
+  <body> 
+    <section id="intro">
+      <title>Introduction</title>
+      <p>
+        Solr is an open source search server based on the
+        <a href="http://lucene.apache.org/java/">Lucene Java</a> search library.
+        It's normally run as a webapp in a servlet container
+        such as <a href="http://tomcat.apache.org">Tomcat</a>.
+      </p>
+    </section>
+
+    <section id="news">
+      <title>News</title>
+
+        <section>
+          <title>17 January 2006: Solr Joins Apache Incubator</title>
+          <p>Solr, a search server based on Lucene, has been accepted into the Apache Incubator.
+            Solr was originally developed by CNET Networks, and is widely used within CNET
+            to provide high relevancy search and faceted browsing capabilities.
+            </p>
+        </section>
+
+    </section>
+
+  </body>
+</document>

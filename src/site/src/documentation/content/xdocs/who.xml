@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" 
+          "http://forrest.apache.org/dtd/document-v20.dtd">
+
+<document> 
+
+<header>
+  <title>Who We Are</title> 
+</header> 
+
+<body>
+<section>
+<title>Solr Committers (in alphabetical order)</title>
+<ul>
+  <li>Bill Au</li>
+  <li>Doug Cutting</li>
+  <li>Otis Gospodneti&#263;</li>
+  <li>Erik Hatcher</li>
+  <li>Chris Hostetter</li>
+  <li>Yonik Seeley</li>
+  <li>Yoav Shapira</li>
+</ul>
+</section>
+
+<section>
+<title>Incubation Mentors</title>
+<ul>
+  <li>Doug Cutting</li>
+  <li>Erik Hatcher</li>
+  <li>Ian Holsman</li>
+</ul>
+</section>
+
+</body>
+</document>

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" 
+          "http://forrest.apache.org/dtd/document-v20.dtd">
+
+<document>
+  
+  <header>
+    <title>Solr Mailing Lists</title>
+  </header>
+  
+  <body>
+  
+    <section>
+      <title>Users</title>
+
+      <p>If you use Solr, please subscribe to the Solr user mailing list.</p>
+
+      <p>
+        The Solr user mailing list is :
+        <a href="mailto:solr-user@lucene.apache.org">solr-user@lucene.apache.org</a>.
+      </p>      
+      <ul>
+        <li><a href="mailto:solr-user-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:solr-user-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+        <li><a href="http://www.mail-archive.com/solr-user@lucene.apache.org/">View List Archive</a></li>
+      </ul>
+      <note>In order to post to the list, it is necessary to first subscribe to it.</note>
+    </section>
+  
+    <section>
+      <title>Developers</title>
+
+      <p>If you'd like to contribute to Solr, please subscribe to the
+      Solr developer mailing list.</p>
+
+      <p>
+        The Solr developer mailing list is :
+        <a href="mailto:solr-dev@lucene.apache.org">solr-dev@lucene.apache.org</a>.
+      </p>      
+      <ul>
+        <li><a href="mailto:solr-dev-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:solr-dev-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+        <li><a href="http://www.mail-archive.com/solr-dev@lucene.apache.org/">View List Archive</a></li>
+      </ul>
+      <note>In order to post to the list, it is necessary to first subscribe to it.</note>
+    </section>
+  
+    <section>
+      <title>Commits</title>
+
+      <p>If you'd like to see changes made in Solr's <a
+      href="version_control.html">version control system</a>
+      then subscribe to the Solr commit mailing list.</p>
+
+      <ul>
+        <li><a href="mailto:solr-commits-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:solr-commits-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+      </ul>
+    </section>
+  
+  </body>
+  
+</document>

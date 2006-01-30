@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" "http://forrest.apache.org/dtd/document-v20.dtd">
+
+<document>
+  
+  <header>
+    <title>Solr Issue Tracking</title>
+  </header>
+  
+  <body>
+    <p>
+      Solr issues (bugs, as well as enhancement requests) are tracked in 
+      JIRA <a href="http://issues.apache.org/jira/browse/SOLR">here</a>.
+      If you aren't sure whether something is a bug, post a question on the
+      Solr user <a href="mailing_lists.html">mailing list</a>.
+    </p>
+  </body>
+  
+</document>
