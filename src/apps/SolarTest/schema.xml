@@ -225,7 +225,16 @@
     </fieldtype>
 
     <fieldtype  name="unstored" class="solar.StrField" indexed="true" stored="false"/>
-  </types>
+
+
+  <fieldtype name="textgap" class="solar.TextField" multiValued="true" positionIncrementGap="100">
+      <analyzer>
+          <tokenizer class="solar.WhitespaceTokenizerFactory"/>
+          <filter class="solar.LowerCaseFilterFactory"/>
+      </analyzer>
+  </fieldtype>
+
+ </types>
 
 
  <fields>
@@ -281,6 +290,8 @@
    <field name="sku1" type="skutype1" indexed="true" stored="true"/>
    <field name="sku2" type="skutype2" indexed="true" stored="true"/>
 
+   <field name="textgap" type="textgap" indexed="true" stored="true"/>
+
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -307,6 +318,7 @@
    <!-- for testing to ensure that longer patterns are matched first -->
    <dynamicField name="*aa"  type="string"  indexed="true" stored="true"/>
    <dynamicField name="*aaa" type="integer" indexed="false" stored="true"/>
+
 
 
  </fields>

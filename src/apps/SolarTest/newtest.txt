@@ -535,6 +535,22 @@ id:13 AND syn:foo %//*[@numFound="1"]
 id:13 AND syn:bar %//*[@numFound="1"]
 id:13 AND syn:baz %//*[@numFound="1"]
 
+
+#test position increment gaps between field values
+<delete><id>44</id></delete>
+<delete><id>45</id></delete>
+<add><doc><field name="id">44</field><field name="textgap">aa bb cc</field><field name="textgap">dd ee ff</field></doc></add>
+<add><doc><field name="id">45</field><field name="text">aa bb cc</field><field name="text">dd ee ff</field></doc></add>
+<commit/>
++id:44 +textgap:"aa bb cc"  %//*[@numFound="1"]
++id:44 +textgap:"dd ee ff"  %//*[@numFound="1"]
++id:44 +textgap:"cc dd"  %//*[@numFound="0"]
++id:44 +textgap:"cc dd"~100  %//*[@numFound="1"]
++id:44 +textgap:"bb cc dd ee"~90  %//*[@numFound="0"]
++id:44 +textgap:"bb cc dd ee"~100  %//*[@numFound="1"]
++id:45 +text:"cc dd"  %//*[@numFound="1"]
+
+
 #trigger output of custom value test
 values %%qt=test
 

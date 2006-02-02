@@ -121,10 +121,10 @@ public final class IndexSchema {
 
 
 
-  private class SolrAnalyzer extends Analyzer {
+  private class SolrIndexAnalyzer extends Analyzer {
     protected final HashMap<String,Analyzer> analyzers;
 
-    SolrAnalyzer() {
+    SolrIndexAnalyzer() {
       analyzers = analyzerCache();
     }
 
@@ -154,7 +154,7 @@ public final class IndexSchema {
   }
 
 
-  private class SolrQueryAnalyzer extends SolrAnalyzer {
+  private class SolrQueryAnalyzer extends SolrIndexAnalyzer {
     protected HashMap<String,Analyzer> analyzerCache() {
       HashMap<String,Analyzer> cache = new HashMap<String,Analyzer>();
        for (SchemaField f : getFields().values()) {
@@ -348,7 +348,7 @@ public final class IndexSchema {
       throw new SolrException(1,"Schema Parsing Failed",e,false);
     }
 
-     analyzer = new SolrAnalyzer();
+     analyzer = new SolrIndexAnalyzer();
      queryAnalyzer = new SolrQueryAnalyzer();
   }
 

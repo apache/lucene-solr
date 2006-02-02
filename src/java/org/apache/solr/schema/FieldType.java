@@ -26,6 +26,7 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.analysis.SolrAnalyzer;
 
 import java.util.logging.Logger;
 import java.util.Map;
@@ -48,10 +49,6 @@ public abstract class FieldType extends FieldProperties {
   protected int falseProperties;  // properties explicitly set to false
   int properties;
 
-  // these are common enough, they were moved to the base class to handle.
-  // not all subclasses will be able to support these options.
-  protected int positionIncrementGap;
-
   protected boolean isTokenized() {
     return (properties & TOKENIZED) != 0;
   }
@@ -73,12 +70,6 @@ public abstract class FieldType extends FieldProperties {
     this.args=args;
     Map<String,String> initArgs = new HashMap<String,String>(args);
 
-    String str;
-
-    str = initArgs.get("positionIncrementGap");
-    if (str!=null) positionIncrementGap = Integer.parseInt(str);
-    initArgs.remove("positionIncrementGap");
-
     trueProperties = FieldProperties.parseProperties(initArgs,true);
     falseProperties = FieldProperties.parseProperties(initArgs,false);
 
@@ -88,6 +79,23 @@ public abstract class FieldType extends FieldProperties {
     for (String prop : FieldProperties.propertyNames) initArgs.remove(prop);
 
     init(schema, initArgs);
+
+    String positionInc = initArgs.get("positionIncrementGap");
+    if (positionInc != null) {
+      Analyzer analyzer = getAnalyzer();
+      if (analyzer instanceof SolrAnalyzer) {
+        ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
+      } else {
+        throw new RuntimeException("Can't set positionIncrementGap on custom analyzer " + analyzer.getClass());
+      }
+      analyzer = getQueryAnalyzer();
+      if (analyzer instanceof SolrAnalyzer) {
+        ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
+      } else {
+        throw new RuntimeException("Can't set positionIncrementGap on custom analyzer " + analyzer.getClass());
+      }
+      initArgs.remove("positionIncrementGap");
+    }
 
     if (initArgs.size() > 0) {
       throw new RuntimeException("schema fieldtype " + typeName
@@ -195,7 +203,7 @@ public abstract class FieldType extends FieldProperties {
   // Default analyzer for types that only produce 1 verbatim token...
   // A maximum size of chars to be read must be specified
   //
-  protected final class DefaultAnalyzer extends Analyzer {
+  protected final class DefaultAnalyzer extends SolrAnalyzer {
     final int maxChars;
 
     DefaultAnalyzer(int maxChars) {
@@ -212,10 +220,6 @@ public abstract class FieldType extends FieldProperties {
           return new Token(s,0,n);
         };
       };
-    }
-
-    public int getPositionIncrementGap(String fieldName) {
-      return positionIncrementGap;
     }
   }
 

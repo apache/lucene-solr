@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.analysis.SolrAnalyzer;
 
 import java.util.Map;
 import java.io.Reader;
@@ -54,7 +55,7 @@ public class BoolField extends FieldType {
   // handle single valued non-text fields (int,bool,etc) if needed.
 
 
-  protected final static Analyzer boolAnalyzer = new Analyzer() {
+  protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new Tokenizer(reader) {
           boolean done=false;
