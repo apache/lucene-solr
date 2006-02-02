@@ -18,9 +18,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.function.ValueSource;
-import org.apache.lucene.search.function.FieldCacheSource;
-import org.apache.lucene.search.function.DocValues;
+import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.FieldCacheSource;
+import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.NumberUtils;

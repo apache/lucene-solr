@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.function.*;
+import org.apache.solr.search.function.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;

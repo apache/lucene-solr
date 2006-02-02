@@ -20,8 +20,8 @@ import org.apache.solr.core.SolrException;
 import org.apache.solr.request.XMLWriter;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.function.ValueSource;
-import org.apache.lucene.search.function.OrdFieldSource;
+import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.OrdFieldSource;
 
 import java.util.Map;
 import java.io.IOException;

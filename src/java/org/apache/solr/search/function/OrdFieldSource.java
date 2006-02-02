@@ -14,84 +14,79 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.function;
+package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.function.DocValues;
-import org.apache.lucene.search.function.ValueSource;
+import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.ValueSource;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
 
 /**
- * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex()
- * and reverses the order.
+ * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex().
  * <br>
  * The native lucene index order is used to assign an ordinal value for each field value.
  * <br>Field values (terms) are lexicographically ordered by unicode value, and numbered starting at 1.
  * <br>
- * Example of reverse ordinal (rord):<br>
+ * Example:<br>
  *  If there were only three field values: "apple","banana","pear"
- * <br>then rord("apple")=3, rord("banana")=2, ord("pear")=1
+ * <br>then ord("apple")=1, ord("banana")=2, ord("pear")=3
  * <p>
- *  WARNING: ord() depends on the position in an index and can thus change when other documents are inserted or deleted,
+ * WARNING: ord() depends on the position in an index and can thus change when other documents are inserted or deleted,
  *  or if a MultiSearcher is used.
  * @author yonik
- * @version $Id: ReverseOrdFieldSource.java,v 1.2 2005/11/22 05:23:21 yonik Exp $
+ * @version $Id: OrdFieldSource.java,v 1.2 2005/11/22 05:23:21 yonik Exp $
  */
 
-public class ReverseOrdFieldSource extends ValueSource {
-  public String field;
+public class OrdFieldSource extends ValueSource {
+  protected String field;
 
-  public ReverseOrdFieldSource(String field) {
+  public OrdFieldSource(String field) {
     this.field = field;
   }
 
   public String description() {
-    return "rord("+field+')';
+    return "ord(" + field + ')';
   }
 
   public DocValues getValues(IndexReader reader) throws IOException {
-    final FieldCache.StringIndex sindex = FieldCache.DEFAULT.getStringIndex(reader, field);
-
-    final int arr[] = sindex.order;
-    final int end = sindex.lookup.length;
-
+    final int[] arr = FieldCache.DEFAULT.getStringIndex(reader, field).order;
     return new DocValues() {
       public float floatVal(int doc) {
-        return (float)(end - arr[doc]);
+        return (float)arr[doc];
       }
 
       public int intVal(int doc) {
-        return (int)(end - arr[doc]);
+        return (int)arr[doc];
       }
 
       public long longVal(int doc) {
-        return (long)(end - arr[doc]);
+        return (long)arr[doc];
       }
 
       public double doubleVal(int doc) {
-        return (double)(end - arr[doc]);
+        return (double)arr[doc];
       }
 
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString((end - arr[doc]));
+        return Integer.toString(arr[doc]);
       }
 
       public String toString(int doc) {
-        return description() + '=' + strVal(doc);
+        return description() + '=' + intVal(doc);
       }
     };
   }
 
   public boolean equals(Object o) {
-    if (o.getClass() !=  ReverseOrdFieldSource.class) return false;
-    ReverseOrdFieldSource other = (ReverseOrdFieldSource)o;
+    if (o.getClass() !=  OrdFieldSource.class) return false;
+    OrdFieldSource other = (OrdFieldSource)o;
     return this.field.equals(field);
   }
 
-  private static final int hcode = ReverseOrdFieldSource.class.hashCode();
+  private static final int hcode = OrdFieldSource.class.hashCode();
   public int hashCode() {
     return hcode + field.hashCode();
   };

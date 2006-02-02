@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.function;
+package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -22,7 +22,7 @@ import java.io.IOException;
 
 /**
  * <code>ReciprocalFloatFunction</code> implements a reciprocal function f(x) = a/(mx+b), based on
- * the float value of a field as exported by {@link org.apache.lucene.search.function.ValueSource}.
+ * the float value of a field as exported by {@link org.apache.solr.search.function.ValueSource}.
  * <br>
  *
  * When a and b are equal, and x>=0, this function has a maximum value of 1 that drops as x increases.

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.function;
+package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.function.DocValues;
-import org.apache.lucene.search.function.ValueSource;
+import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;

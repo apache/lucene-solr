@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.function;
+package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.function.DocValues;
+import org.apache.solr.search.function.DocValues;
 
 import java.io.IOException;
 import java.io.Serializable;
 
 /**
- * Instantiates {@link org.apache.lucene.search.function.DocValues} for a particular reader.
+ * Instantiates {@link org.apache.solr.search.function.DocValues} for a particular reader.
  * <br>
  * Often used when creating a {@link FunctionQuery}.
  *

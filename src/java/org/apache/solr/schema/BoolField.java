@@ -17,8 +17,8 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.function.ValueSource;
-import org.apache.lucene.search.function.OrdFieldSource;
+import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;

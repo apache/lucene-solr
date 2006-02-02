@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.function;
+package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 

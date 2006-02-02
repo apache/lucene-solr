@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ConstantScoreQuery;
 
 import java.io.IOException;
 
