@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.solr.analysis;
+
+import org.apache.lucene.analysis.Token;
 
 import java.util.*;
 
-/** Mapping rules for use with {@link SynonymFilter}
+/** Mapping rules for use with {@link org.apache.solr.analysis.SynonymFilter}
  *
  * @author yonik
  * @version $Id: SynonymMap.java,v 1.2 2005/12/13 05:15:08 yonik Exp $
@@ -121,7 +123,7 @@ public class SynonymMap {
     int pos2 = tok2!=null ? tok2.getPositionIncrement() : 0;
     while(tok1!=null || tok2!=null) {
       while (tok1 != null && (pos1 <= pos2 || tok2==null)) {
-        Token tok = new Token(tok1.termText, tok1.startOffset, tok1.endOffset, tok1.type);
+        Token tok = new Token(tok1.termText(), tok1.startOffset(), tok1.endOffset(), tok1.type());
         tok.setPositionIncrement(pos1-pos);
         result.add(tok);
         pos=pos1;
@@ -129,7 +131,7 @@ public class SynonymMap {
         pos1 += tok1!=null ? tok1.getPositionIncrement() : 0;
       }
       while (tok2 != null && (pos2 <= pos1 || tok1==null)) {
-        Token tok = new Token(tok2.termText, tok2.startOffset, tok2.endOffset, tok2.type);
+        Token tok = new Token(tok2.termText(), tok2.startOffset(), tok2.endOffset(), tok2.type());
         tok.setPositionIncrement(pos2-pos);
         result.add(tok);
         pos=pos2;

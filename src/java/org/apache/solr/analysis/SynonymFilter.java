@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.solr.analysis;
+
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 /** SynonymFilter handles multi-token synonyms with variable position increment offsets.
  * <p>
@@ -73,7 +79,7 @@ public class SynonymFilter extends TokenFilter {
       // common case fast-path of first token not matching anything
       Token firstTok = nextTok();
       if (firstTok ==null) return null;
-      String str = ignoreCase ? firstTok.termText.toLowerCase() : firstTok.termText;
+      String str = ignoreCase ? firstTok.termText().toLowerCase() : firstTok.termText();
       Object o = map.submap!=null ? map.submap.get(str) : null;
       if (o == null) return firstTok;
 
@@ -106,7 +112,7 @@ public class SynonymFilter extends TokenFilter {
 
       for (int i=0; i<result.synonyms.length; i++) {
         Token repTok = result.synonyms[i];
-        Token newTok = new Token(repTok.termText, firstTok.startOffset, lastTok.endOffset, firstTok.type);
+        Token newTok = new Token(repTok.termText(), firstTok.startOffset(), lastTok.endOffset(), firstTok.type());
         repPos += repTok.getPositionIncrement();
         if (i==0) repPos=origPos;  // make position of first token equal to original
 
@@ -176,7 +182,7 @@ public class SynonymFilter extends TokenFilter {
       Token tok = nextTok();
       if (tok != null) {
         // check for positionIncrement!=1?  if>1, should not match, if==0, check multiple at this level?
-        String str = ignoreCase ? tok.termText.toLowerCase() : tok.termText;
+        String str = ignoreCase ? tok.termText().toLowerCase() : tok.termText();
 
         SynonymMap subMap = (SynonymMap)map.submap.get(str);
 

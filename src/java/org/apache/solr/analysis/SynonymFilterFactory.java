@@ -17,18 +17,14 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.SynonymFilter;
-import org.apache.lucene.analysis.SynonymMap;
-
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
-import java.io.IOException;
-
-import org.apache.solr.util.StrUtils;
-import org.apache.solr.analysis.BaseTokenFilterFactory;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.StrUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 /**
  * @author yonik
  * @version $Id$
