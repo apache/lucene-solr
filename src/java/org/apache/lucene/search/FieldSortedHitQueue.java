@@ -38,7 +38,7 @@ import java.text.Collator;
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  */
-class FieldSortedHitQueue
+public class FieldSortedHitQueue
 extends PriorityQueue {
 
   /**
@@ -48,7 +48,7 @@ extends PriorityQueue {
    * @param size  The number of hits to retain.  Must be greater than zero.
    * @throws IOException
    */
-  FieldSortedHitQueue (IndexReader reader, SortField[] fields, int size)
+  public FieldSortedHitQueue (IndexReader reader, SortField[] fields, int size)
   throws IOException {
     final int n = fields.length;
     comparators = new ScoreDocComparator[n];
