@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 import junit.framework.TestCase;
 
@@ -58,6 +59,7 @@ public class TestDateTools extends TestCase {
     cal.set(1970, 0, 1,    // year=1970, month=january, day=1
         0, 0, 0);          // hour, minute, second
     cal.set(Calendar.MILLISECOND, 0);
+    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     assertEquals(cal.getTime().getTime(), time);
     cal.set(1980, 1, 2,    // year=1980, month=february, day=2
         11, 5, 0);          // hour, minute, second
@@ -68,6 +70,7 @@ public class TestDateTools extends TestCase {
   
   public void testDateAndTimetoString() throws ParseException {
     Calendar cal = Calendar.getInstance();
+    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
     cal.set(Calendar.MILLISECOND, 333);
@@ -131,6 +134,7 @@ public class TestDateTools extends TestCase {
   
   public void testRound() {
     Calendar cal = Calendar.getInstance();
+    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
     cal.set(Calendar.MILLISECOND, 333);
@@ -168,7 +172,23 @@ public class TestDateTools extends TestCase {
 
   private String isoFormat(Date date) {
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+    sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
     return sdf.format(date);
+  }
+
+  public void testDateToolsUTC() throws Exception {
+    // Sun, 30 Oct 2005 00:00:00 +0000 -- the last second of 2005's DST in Europe/London
+    long time = 1130630400;
+    try {
+        TimeZone.setDefault(TimeZone.getTimeZone(/* "GMT" */ "Europe/London"));
+        String d1 = DateTools.dateToString(new Date(time*1000), DateTools.Resolution.MINUTE);
+        String d2 = DateTools.dateToString(new Date((time+3600)*1000), DateTools.Resolution.MINUTE);
+        assertFalse("different times", d1.equals(d2));
+        assertEquals("midnight", DateTools.stringToTime(d1), time*1000);
+        assertEquals("later", DateTools.stringToTime(d2), (time+3600)*1000);
+    } finally {
+        TimeZone.setDefault(null);
+    }
   }
 
 }

@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Provides support for converting dates to strings and vice-versa.
@@ -36,6 +37,8 @@ import java.util.Date;
  * is set to <code>Resolution.DAY</code> or lower.
  */
 public class DateTools {
+  
+  private final static TimeZone GMT = TimeZone.getTimeZone("GMT");
 
   private DateTools() {}
 
@@ -46,7 +49,7 @@ public class DateTools {
    * @param resolution the desired resolution, see
    *  {@link #round(Date, DateTools.Resolution)}
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
-   *  depeding on <code>resolution</code>
+   *  depeding on <code>resolution</code>; using UTC as timezone 
    */
   public static String dateToString(Date date, Resolution resolution) {
     return timeToString(date.getTime(), resolution);
@@ -59,10 +62,10 @@ public class DateTools {
    * @param resolution the desired resolution, see
    *  {@link #round(long, DateTools.Resolution)}
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
-   *  depeding on <code>resolution</code>
+   *  depeding on <code>resolution</code>; using UTC as timezone
    */
   public static String timeToString(long time, Resolution resolution) {
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = Calendar.getInstance(GMT);
 
     //protected in JDK's prior to 1.4
     //cal.setTimeInMillis(round(time, resolution));
@@ -70,6 +73,7 @@ public class DateTools {
     cal.setTime(new Date(round(time, resolution)));
 
     SimpleDateFormat sdf = new SimpleDateFormat();
+    sdf.setTimeZone(GMT);
     String pattern = null;
     if (resolution == Resolution.YEAR) {
       pattern = "yyyy";
@@ -135,6 +139,7 @@ public class DateTools {
     else
       throw new ParseException("Input is not valid date string: " + dateString, 0);
     SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+    sdf.setTimeZone(GMT);
     Date date = sdf.parse(dateString);
     return date;
   }
@@ -163,7 +168,7 @@ public class DateTools {
    *  set to 0 or 1, expressed as milliseconds since January 1, 1970, 00:00:00 GMT
    */
   public static long round(long time, Resolution resolution) {
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = Calendar.getInstance(GMT);
 
     // protected in JDK's prior to 1.4
     //cal.setTimeInMillis(time);
