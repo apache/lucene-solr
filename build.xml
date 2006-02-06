@@ -43,10 +43,7 @@
   <!-- The compilation classpath -->
   <path id="compile.classpath">
     <fileset dir="${lib}">
-      <include name="lucene-core-nightly.jar" />
-      <include name="lucene-snowball-nightly.jar" />
-      <include name="servlet-api-2.4.jar" />
-      <include name="xpp3-1.1.3.4.O.jar" />
+      <include name="*.jar" />
     </fileset>
   </path>
 
@@ -59,14 +56,6 @@
            classpathref="compile.classpath">
       <src path="${src}/java" />
       <src path="${src}/webapp" />
-
-      <!-- This dir includes tests, but is needed by core: need to split these up -->
-      <!-- A better name for this directory is needed anyways. -->
-      <src path="${src}/lucene_extras" >
-      </src>
-
-      <!-- Only need this for now because lucene_extras has a test class -->
-      <exclude name="**/Test*" />
 
     </javac>
   </target>
@@ -123,7 +112,7 @@
          webxml="${src}/webapp/WEB-INF/web.xml">
       <classes dir="${dest}" />
       <lib dir="${lib}">
-        <exclude name="servlet-api-2.4.jar" />
+        <exclude name="servlet-api-*.jar" />
       </lib>
 
 
@@ -150,7 +139,7 @@
          basedir="${dest}" />  
 
     <zip destfile="${dist}/${ant.project.name}-${version}.zip"
-         basedir="${dist}" />
+         basedir="${dest}" />
   </target>
 
 </project>

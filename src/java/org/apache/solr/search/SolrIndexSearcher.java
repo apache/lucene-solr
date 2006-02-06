@@ -696,17 +696,19 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       // NOTE: this changed late in Lucene 1.9
 
       final DocSet filt = filter;
-      final PublicFieldSortedHitQueue hq = new PublicFieldSortedHitQueue(reader, lsort.getSort(), offset+len);
+      final int[] numHits = new int[1];
+      final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, lsort.getSort(), offset+len);
 
       searcher.search(query, new HitCollector() {
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
+          numHits[0]++;
           hq.insert(new FieldDoc(doc, score));
         }
       }
       );
 
-      totalHits = hq.getTotalHits();
+      totalHits = numHits[0];
       maxScore = totalHits>0 ? hq.getMaxScore() : 0.0f;
 
       nDocsReturned = hq.size();
@@ -916,8 +918,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
 
   protected DocList sortDocSet(DocSet set, Sort sort, int nDocs) throws IOException {
-    final PublicFieldSortedHitQueue hq =
-            new PublicFieldSortedHitQueue(reader, sort.getSort(), nDocs);
+    final FieldSortedHitQueue hq =
+            new FieldSortedHitQueue(reader, sort.getSort(), nDocs);
     DocIterator iter = set.iterator();
     int hits=0;
     while(iter.hasNext()) {
