@@ -56,7 +56,7 @@
     <state>IN_SERVICE</state>
     <schemaFile>schema.xml</schemaFile>
     <schemaName><%= schema.getName() %></schemaName>
-    <indexDir><%= core.getDir() %></indexDir>
+    <indexDir><%= core.getDataDir() %></indexDir>
     <maxDoc><%= core.maxDoc() %></maxDoc>
   </status>
 </solr>

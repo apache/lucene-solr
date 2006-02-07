@@ -93,7 +93,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   protected SolrIndexWriter createMainIndexWriter(String name) throws IOException {
-    SolrIndexWriter writer = new SolrIndexWriter(name,core.getDir(), false, schema,SolrCore.mainIndexConfig);
+    SolrIndexWriter writer = new SolrIndexWriter(name,core.getIndexDir(), false, schema,SolrCore.mainIndexConfig);
     return writer;
   }
 

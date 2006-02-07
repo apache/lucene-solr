@@ -43,7 +43,7 @@ public class SolrConfig {
       } catch (Exception ee) {
         throw new RuntimeException(ee);
       }
-      Config.log.info("Loaded Config solarconfig.xml");
+      Config.log.info("Loaded Config solrconfig.xml");
     } else {
       throw new RuntimeException(e);
     }

@@ -64,6 +64,7 @@ public final class SolrCore {
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
 
   private final IndexSchema schema;
+  private final String dataDir;
   private final String index_path;
   private final UpdateHandler updateHandler;
 
@@ -98,10 +99,9 @@ public final class SolrCore {
     newSearcherListeners = parseListener("//listener[@event=\"newSearcher\"]");
   }
 
-
   public IndexSchema getSchema() { return schema; }
-  public String getDir() { return index_path; }
-
+  public String getDataDir() { return index_path; }
+  public String getIndexDir() { return index_path; }
 
   private final RequestHandlers reqHandlers = new RequestHandlers(SolrConfig.config);
 
@@ -130,15 +130,14 @@ public final class SolrCore {
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
-    return new SolrIndexSearcher(schema, name,getDir(),false);
+    return new SolrIndexSearcher(schema, name,getDataDir(),false);
   }
 
 
   void initIndex() {
     try {
-      File dirFile = new File(getDir());
+      File dirFile = new File(getIndexDir());
       boolean indexExists = dirFile.canRead();
-
 
       boolean removeLocks = SolrConfig.config.getBool("mainIndex/unlockOnStartup", false);
       if (removeLocks) {
@@ -146,7 +145,7 @@ public final class SolrCore {
         // if it didn't exist already...
         Directory dir = FSDirectory.getDirectory(dirFile, !indexExists);
         if (IndexReader.isLocked(dir)) {
-          log.warning("WARNING: Solr index directory '" + getDir() + "' is locked.  Unlocking...");
+          log.warning("WARNING: Solr index directory '" + getDataDir() + "' is locked.  Unlocking...");
           IndexReader.unlock(dir);
         }
       }
@@ -157,7 +156,7 @@ public final class SolrCore {
         log.warning("Solr index directory '" + dirFile + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getDir(), true, schema, mainIndexConfig);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex",getDataDir(), true, schema, mainIndexConfig);
         writer.close();
 
       }
@@ -192,24 +191,25 @@ public final class SolrCore {
   }
 
 
-  public SolrCore(String index_path, IndexSchema schema) {
+  public SolrCore(String dataDir, IndexSchema schema) {
     synchronized (SolrCore.class) {
       // this is for backward compatibility (and also the reason
       // the sync block is needed)
       core = this;   // set singleton
        try {
-      if (index_path==null) {
-        index_path=SolrConfig.config.get("indexDir","index");
+      if (dataDir ==null) {
+        dataDir =SolrConfig.config.get("dataDir","data");
       }
 
-      log.info("Opening new SolrCore at " + index_path);
+      log.info("Opening new SolrCore with data directory at " + dataDir);
 
       if (schema==null) {
         schema = new IndexSchema("schema.xml");
       }
 
       this.schema = schema;
-      this.index_path = index_path;
+      this.dataDir = dataDir;
+      this.index_path = dataDir + "/" + "index";
 
       parseListeners();
 

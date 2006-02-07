@@ -220,10 +220,31 @@ public class Config {
 
 
   public static InputStream openResource(String resource) {
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    InputStream is = loader.getResourceAsStream(resource);
+    InputStream is=null;
+
+    try {
+      File f = new File(resource);
+      if (!f.isAbsolute()) {
+        // try $CWD/conf/
+        f = new File("conf/" + resource);
+      }
+      if (f.isFile() && f.canRead()) {
+        return new FileInputStream(f);
+      } else {
+        // try $CWD
+        f = new File(resource);
+        if (f.isFile() && f.canRead()) {
+          return new FileInputStream(f);
+        }
+      }
+
+      ClassLoader loader = Thread.currentThread().getContextClassLoader();
+      is = loader.getResourceAsStream(resource);
+    } catch (Exception e) {
+      throw new RuntimeException("Error opening " + resource, e);
+    }
     if (is==null) {
-      throw new SolrException(500,"Can't open " + resource);
+      throw new RuntimeException("Can't find resource " + resource);
     }
     return is;
   }

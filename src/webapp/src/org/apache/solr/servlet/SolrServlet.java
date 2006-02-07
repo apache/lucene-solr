@@ -46,15 +46,15 @@ public class SolrServlet extends HttpServlet {
 
   public void init() throws ServletException
   {
-    /***
-    luceneDir=getServletContext().getInitParameter("solr.indexdir");
-    schemaFile=getServletContext().getInitParameter("solr.schema");
-    if (schemaFile == null) schemaFile="schema.xml";
-    ***/
+    String configDir=getServletContext().getInitParameter("solr.configDir");
+    String dataDir=getServletContext().getInitParameter("solr.dataDir");
 
     log.info("user.dir=" + System.getProperty("user.dir"));
 
-    IndexSchema schema = new IndexSchema("schema.xml");
+    // TODO: find a way to allow configuration of the config and data
+    // directories other than using CWD.  If it is done via servlet
+    // params, then we must insure that this init() run before any
+    // of the JSPs.
     core = SolrCore.getSolrCore();
 
     xmlResponseWriter=new XMLResponseWriter();

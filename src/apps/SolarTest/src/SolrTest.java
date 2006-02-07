@@ -286,8 +286,8 @@ public class SolrTest extends Thread {
 
     String filename="dict.txt";
     String updateFilename="update_dict.txt";
-    String luceneDir=null;
-    String schemaFile="schema.xml";
+    String dataDir =null;
+    String schemaFile=null;
     String testFile=null;
 
     boolean b_numUpdates=false; boolean b_writers=false;
@@ -299,8 +299,8 @@ public class SolrTest extends Thread {
         verbose=true;
       } else if (arg.equals("-dict")) {
         filename=args[i++];
-      } else if (arg.equals("-index")) {
-        luceneDir=args[i++];
+      } else if (arg.equals("-data")) {
+        dataDir =args[i++];
       } else if (arg.equals("-readers")) {
         readers=Integer.parseInt(args[i++]);
       } else if (arg.equals("-numRequests")) {
@@ -322,16 +322,17 @@ public class SolrTest extends Thread {
 
     try {
 
-    IndexSchema schema = new IndexSchema(schemaFile);
+    IndexSchema schema = schemaFile==null ? null : new IndexSchema(schemaFile);
     countdown = requests;
-    core=new SolrCore(luceneDir,schema);
+    core=new SolrCore(dataDir,schema);
 
     try {
-      if (readers > 0) requestDict = readDict(filename);
-      if (writers > 0) updateDict = readDict(updateFilename);
       if (testFile != null) {
         testDict = readDict(testFile);
         testDictLineno = lineno;
+      }  else {
+        if (readers > 0) requestDict = readDict(filename);
+        if (writers > 0) updateDict = readDict(updateFilename);
       }
     } catch (IOException e) {
       e.printStackTrace();
