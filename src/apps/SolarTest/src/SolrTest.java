@@ -83,7 +83,9 @@ public class SolrTest extends Thread {
   boolean sequenceTest=false;
 
   public void run() {
+
     if (sequenceTest) {
+      try {
       for (int i=0; i<testDict.length; i++) {
         String s = testDict[i];
         int lineno = testDictLineno.get(i);
@@ -112,9 +114,9 @@ public class SolrTest extends Thread {
         if (startParams > 0) params = s.substring(startParams+2,endParams).trim();
         if (startTests > 0) test = s.substring(startTests+1,endTests).trim();
 
-        System.out.println("###req=" + req);
-        System.out.println("###params=" + params);
-        System.out.println("###tests=" + test);
+        // System.out.println("###req=" + req);
+        // System.out.println("###params=" + params);
+        // System.out.println("###tests=" + test);
 
         if (req.startsWith("<")) {
           resp = doUpdate(req);
@@ -127,6 +129,11 @@ public class SolrTest extends Thread {
           System.out.println("#### no validation performed");
         }
       }
+      } catch (RuntimeException e) {
+        numErr++;
+        throw(e);
+      }
+
       System.out.println(">>>>>>>>>>>>>>>>>>>>>>>> SUCCESS <<<<<<<<<<<<<<<<<<<<<<<<<<");
     }
 
@@ -322,46 +329,60 @@ public class SolrTest extends Thread {
 
     try {
 
-    IndexSchema schema = schemaFile==null ? null : new IndexSchema(schemaFile);
-    countdown = requests;
-    core=new SolrCore(dataDir,schema);
+      IndexSchema schema = schemaFile==null ? null : new IndexSchema(schemaFile);
+      countdown = requests;
+      core=new SolrCore(dataDir,schema);
 
-    try {
-      if (testFile != null) {
-        testDict = readDict(testFile);
-        testDictLineno = lineno;
-      }  else {
-        if (readers > 0) requestDict = readDict(filename);
-        if (writers > 0) updateDict = readDict(updateFilename);
+      try {
+        if (testFile != null) {
+          testDict = readDict(testFile);
+          testDictLineno = lineno;
+        }  else {
+          if (readers > 0) requestDict = readDict(filename);
+          if (writers > 0) updateDict = readDict(updateFilename);
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+        System.out.println("Can't read "+filename);
+        return;
       }
-    } catch (IOException e) {
+
+      SolrTest[] clients = new SolrTest[readers+writers];
+      for (i=0; i<readers; i++) {
+        clients[i] = new SolrTest();
+        if (testFile != null) clients[i].sequenceTest=true;
+        clients[i].start();
+      }
+      for (i=readers; i<readers+writers; i++) {
+        clients[i] = new SolrTest();
+        clients[i].isWriter = true;
+        clients[i].start();
+      }
+
+      for (i=0; i<readers; i++) {
+        clients[i].join();
+      }
+      for (i=readers; i<readers+writers; i++) {
+        clients[i].join();
+      }
+
+      core.close();
+      core=null;
+
+      if (testFile!=null) {
+        if (clients[0].numErr == 0) {
+          System.out.println(">>>>>>>>>>>>>>>>>>>>>>>> SUCCESS <<<<<<<<<<<<<<<<<<<<<<<<<<");
+        } else {
+          System.exit(1);
+        }
+      }
+
+    } catch (Throwable e) {
+      if (core!=null) {try{core.close();} catch (Throwable th){}}
       e.printStackTrace();
-      System.out.println("Can't read "+filename);
-      return;
+      System.exit(1);
     }
 
-    SolrTest[] clients = new SolrTest[readers+writers];
-    for (i=0; i<readers; i++) {
-      clients[i] = new SolrTest();
-      if (testFile != null) clients[i].sequenceTest=true;
-      clients[i].start();
-    }
-    for (i=readers; i<readers+writers; i++) {
-      clients[i] = new SolrTest();
-      clients[i].isWriter = true;
-      clients[i].start();
-    }
-
-    for (i=0; i<readers; i++) {
-      clients[i].join();
-    }
-    for (i=readers; i<readers+writers; i++) {
-      clients[i].join();
-    }
-
-    } finally {
-      if (core != null) core.close();
-    }
 
   }
 

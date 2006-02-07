@@ -70,6 +70,12 @@
   <!-- For now, it's the same as main classpath.  Later it will have JUnit, Clover, etc. -->
   <path id="test.compile.classpath">
     <path refid="compile.classpath" />
+    <pathelement location="${dest}"/>
+  </path>
+
+  <path id="test.run.classpath">
+    <path refid="test.compile.classpath" />
+    <pathelement location="${dest}/tests"/>
   </path>
 
   <!-- Compile unit tests. -->
@@ -77,10 +83,11 @@
           description="Compile unit tests."
           depends="compile">
     <mkdir dir="${dest}/tests" />
-    <javac destdir="${dest}/tests"
-           classpathref="test.compile.classpath">
-      <src dir="${src}/test" />
-      <src dir="${src}/apps/SolarTest/src" />
+    <javac 
+       destdir="${dest}/tests"
+       classpathref="test.compile.classpath">
+      <src path="${src}/test" />
+      <src path="${src}/apps/SolarTest/src" />
     </javac>
   </target>
 
@@ -89,6 +96,14 @@
           description="Runs the unit tests."
           depends="compileTests">
     <echo message="TO-DO later or after we convert tests to JUnit." />
+
+    <java classname="SolrTest" fork="true" dir="src/apps/SolarTest" failonerror="true">
+     <arg line="-test newtest.txt"/>
+     <classpath>
+       <path refid="test.run.classpath" />
+     </classpath>
+    </java>
+
   </target>
 
 
@@ -103,7 +118,7 @@
           description="Creates the Solr distribution files."
           depends="dist-src, dist-war, dist-bin" />
 
-  <!-- Creates the demo WAR file. -->
+  <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
           description="Creates the demo WAR file."
           depends="compile">

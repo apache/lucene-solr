@@ -1,1 +1,0 @@
-java -cp "../solar/classes;classes;../../lucene/lucene-1.4.3.jar" SolarPerf -schema test_schema.xml -index F:/root/index -verbose -test newtest.txt
