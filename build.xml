@@ -87,7 +87,7 @@
        destdir="${dest}/tests"
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
-      <src path="${src}/apps/SolarTest/src" />
+      <src path="${src}/apps/SolrTest/src" />
     </javac>
   </target>
 
@@ -97,7 +97,7 @@
           depends="compileTests">
     <echo message="TO-DO later or after we convert tests to JUnit." />
 
-    <java classname="SolrTest" fork="true" dir="src/apps/SolarTest" failonerror="true">
+    <java classname="SolrTest" fork="true" dir="src/apps/SolrTest" failonerror="true">
      <arg line="-test newtest.txt"/>
      <classpath>
        <path refid="test.run.classpath" />
