@@ -17,6 +17,8 @@
 package org.apache.solr.core;
 
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocIterator;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.NamedList;
@@ -30,14 +32,39 @@ import java.util.List;
 class QuerySenderListener extends AbstractSolrEventListener {
 
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
+    final SolrIndexSearcher searcher = newSearcher;
     SolrCore core = SolrCore.getSolrCore();
     log.info("QuerySenderListener sending requests to " + newSearcher);
     for (NamedList nlst : (List<NamedList>)args.get("queries")) {
       try {
-        LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, nlst);
+        // bind the request to a particular searcher (the newSearcher)
+        LocalSolrQueryRequest req = new LocalSolrQueryRequest(core,nlst) {
+          public SolrIndexSearcher getSearcher() {
+            return searcher;
+          }
+          public void close() {
+          }
+        };
 
         SolrQueryResponse rsp = new SolrQueryResponse();
         core.execute(req,rsp);
+
+        // Retrieve the Document instances (not just the ids) to warm
+        // the OS disk cache, and any Solr document cache.  Only the top
+        // level values in the NamedList are checked for DocLists.
+        NamedList values = rsp.getValues();
+        for (int i=0; i<values.size(); i++) {
+          Object o = values.getVal(i);
+          if (o instanceof DocList) {
+            DocList docs = (DocList)o;
+            for (DocIterator iter = docs.iterator(); iter.hasNext();) {
+              newSearcher.doc(iter.nextDoc());
+            }
+          }
+        }
+
+        req.close();
+
       } catch (Exception e) {
         // do nothing... we want to continue with the other requests.
         // the failure should have already been logged.
