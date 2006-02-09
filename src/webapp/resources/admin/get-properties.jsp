@@ -1,4 +1,3 @@
-<%@ page import=""%>
 <%@ page contentType="text/plain;charset=UTF-8" language="java" %>
 <%
   java.util.Enumeration e = System.getProperties().propertyNames();
