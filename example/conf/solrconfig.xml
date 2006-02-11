@@ -1,0 +1,193 @@
+<?xml version="1.0" ?>
+
+<config>
+
+  <!-- Used to specify an alternate directory to hold all index data
+       other than the default ./data
+       If replication is in use, this should match the replication configuration. -->
+  <!--
+  <dataDir>data</dataDir>
+  -->
+
+  <indexDefaults>
+   <!-- Values here affect all index writers and act as a default unless overridden. -->
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <maxBufferedDocs>1000</maxBufferedDocs>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+
+    <!-- these are global... can't currently override per index -->
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+  </indexDefaults>
+
+  <mainIndex>
+    <!-- options specific to the main on-disk lucene index -->
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <maxBufferedDocs>1000</maxBufferedDocs>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+
+    <!-- If true, unlock any held write or commit locks on startup. 
+         This defeats the locking mechanism that allows multiple
+         processes to safely access a lucene index, and should be
+         used with care. -->
+    <unlockOnStartup>false</unlockOnStartup>
+  </mainIndex>
+
+  <!-- the default high-performance update handler -->
+  <updateHandler class="solr.DirectUpdateHandler2">
+
+    <!-- The RunExecutableListener executes an external command.
+         exe - the name of the executable to run
+         dir - dir to use as the current working directory. default="."
+         wait - the calling thread waits until the executable returns. default="true"
+         args - the arguments to pass to the program.  default=nothing
+         env - environment variables to set.  default=nothing
+      -->
+    <!-- A postCommit event is fired after every commit
+    <listener event="postCommit" class="solr.RunExecutableListener">
+      <str name="exe">snapshooter</str>
+      <str name="dir">bin</str>
+      <bool name="wait">true</bool>
+      <arr name="args"> <str>arg1</str> <str>arg2</str> </arr>
+      <arr name="env"> <str>MYVAR=val1</str> </arr>
+    </listener>
+    -->
+
+  </updateHandler>
+
+
+  <query>
+    <!-- Maximum number of clauses in a boolean query... can affect
+        range or prefix queries that expand to big boolean
+        queries.  An exception is thrown if exceeded.  -->
+    <maxBooleanClauses>1024</maxBooleanClauses>
+
+    
+    <!-- Cache used by SolrIndexSearcher for filters (DocSets),
+         unordered sets of *all* documents that match a query.
+         When a new searcher is opened, its caches may be prepopulated
+         or "autowarmed" using data from caches in the old searcher.
+         autowarmCount is the number of items to prepopulate.  For LRUCache,
+         the autowarmed items will be the most recently accessed items.  -->
+    <filterCache
+      class="solr.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="256"/>
+
+   <!-- queryResultCache caches results of searches - ordered lists of
+         document ids (DocList) based on a query, a sort, and the range
+         of documents requested.  -->
+    <queryResultCache
+      class="solr.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="256"/>
+
+  <!-- documentCache caches Lucene Document objects (the stored fields for each document).
+       Since Lucene internal document ids are transient, this cache will not be autowarmed.  -->
+    <documentCache
+      class="solr.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+
+    <!-- Example of a generic cache.  These caches may be accessed by name
+         through SolrIndexSearcher.getCache(),cacheLookup(), and cacheInsert().
+         The purpose is to enable easy caching of user/application level data.
+         The regenerator argument should be specified as an implementation
+         of solr.search.CacheRegenerator if autowarming is desired.  -->
+    <!--
+    <cache name="myUserCache"
+      class="solr.LRUCache"
+      size="4096"
+      initialSize="1024"
+      autowarmCount="1024"
+      regenerator="org.mycompany.mypackage.MyRegenerator"
+      />
+    -->
+
+   <!-- An optimization that attempts to use a filter to satisfy a search.
+         If the requested sort does not include score, then the filterCache
+         will be checked for a filter matching the query. If found, the filter
+         will be used as the source of document ids, and then the sort will be
+         applied to that.  -->
+    <useFilterForSortedQuery>true</useFilterForSortedQuery>
+
+   <!-- An optimization for use with the queryResultCache.  When a search
+         is requested, a superset of the requested number of document ids
+         are collected.  For example, of a search for a particular query
+         requests matching documents 10 through 19, and queryWindowSize is 50,
+         then documents 0 through 50 will be collected and cached.  Any further
+         requests in that range can be satisfied via the cache.  -->
+    <queryResultWindowSize>10</queryResultWindowSize>
+
+    <!-- This entry enables an int hash representation for filters (DocSets)
+         when the number of items in the set is less than maxSize.  For smaller
+         sets, this representation is more memory efficient, more efficient to
+         iterate over, and faster to take intersections.  -->
+    <HashDocSet maxSize="3000" loadFactor="0.75"/>
+
+
+    <!-- boolToFilterOptimizer converts boolean clauses with zero boost
+         into cached filters if the number of docs selected by the clause exceeds
+         the threshold (represented as a fraction of the total index) -->
+    <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
+
+
+    <!-- a newSearcher event is fired whenever a new searcher is being prepared
+         and there is a current searcher handling requests (aka registered). -->
+    <!-- QuerySenderListener takes an array of NamedList and executes a
+         local query request for each NamedList in sequence. -->
+    <!--
+    <listener event="newSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+        <lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+        <lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+      </arr>
+    </listener>
+    -->
+
+    <!-- a firstSearcher event is fired whenever a new searcher is being
+         prepared but there is no current registered searcher to handle
+         requests or to gain autowarming data from. -->
+    <!--
+    <listener event="firstSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+        <lst> <str name="q">fast_warm</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+      </arr>
+    </listener>
+    -->
+
+  </query>
+
+
+  <!-- requestHandler plugins... incoming queries will be dispatched to the
+     correct handler based on the qt (query type) param matching the
+     name of registered handlers.
+     The "standard" request handler is the default and will be used if qt
+     is not specified in the request.
+  -->
+  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+
+  <!-- example of a request handler with custom parameters passed to it's init()
+  <requestHandler name="example" class="myorg.mypkg.MyRequestHandler" >
+    <int name="myparam">1000</int>
+    <float name="ratio">1.4142135</float>
+    <arr name="myarr"><int>1</int><int>2</int></arr>
+    <str>foo</str>
+  </requestHandler>
+  -->  
+
+  <!-- config for the admin interface --> 
+  <admin>
+    <defaultQuery>solr</defaultQuery>
+    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
+    <pingQuery>q=id:0&amp;start=0&amp;rows=0</pingQuery>
+  </admin>
+
+</config>

@@ -1,0 +1,7 @@
+#use a protected word file to protect against the stemmer reducing two
+#unrelated words to the same base word.
+
+#some test non-words that would normally be stemmed:
+dontstems
+zwhacky
+

@@ -1,0 +1,172 @@
+<?xml version="1.0" ?>
+<!-- The Solr schema file. This file should be named "schema.xml" and
+     should be in the conf directory or located where the classloader 
+     for the Solr webapp can find it.  -->
+
+<schema name="example" version="1.1">
+  <types>
+    <!-- field type definitions. The "name" attribute is
+         just a label to be used by field definitions.  The "class"
+         attribute and any other attributes determine the real
+         behavior of the fieldtype.  -->
+
+    <!-- The StringField type is not analyzed, but indexed/stored verbatim  -->
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+
+    <!-- boolean type: "true" or "false" -->
+    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+
+    <!-- The optional sortMissingLast and sortMissingFirst attributes are
+         currently supported on types that are sorted internally as a strings.
+       - If sortMissingLast="true" then a sort on this field will cause documents
+       without the field to come after documents with the field,
+       regardless of the requested sort order (asc or desc).
+       - If sortMissingFirst="true" then a sort on this field will cause documents
+       without the field to come before documents with the field,
+       regardless of the requested sort order.
+       - If sortMissingLast="false" and sortMissingFirst="false" (the default),
+       then default lucene sorting will be used which places docs without the field
+       first in an ascending sort and last in a descending sort.
+    -->    
+
+         
+    <!-- numeric field types that store and index the text
+         value verbatim (and hence don't support range queries since the
+         lexicographic ordering isn't equal to the numeric ordering) -->
+    <fieldtype name="integer" class="solr.IntField"/>
+    <fieldtype name="long" class="solr.LongField"/>
+    <fieldtype name="float" class="solr.FloatField"/>
+    <fieldtype name="double" class="solr.DoubleField"/>
+
+
+    <!-- Numeric field types that manipulate the value into
+         a string value that isn't human readable in it's internal form,
+         but with a lexicographic odering the same as the numeric ordering
+         so that range queries correctly work. -->
+    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
+    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
+    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
+    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true"/>
+
+
+    <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
+         is a more restricted form of the canonical representation of dateTime
+         http://www.w3.org/TR/xmlschema-2/#dateTime    
+         The trailing "Z" designates UTC time and is mandatory.
+         Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
+         All other components are mandatory. -->
+    <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
+
+    <!-- solr.TextField allows the specification of custom text analyzers
+         specified as a tokenizer and a list of token filters. Different
+         analyzers may be specified for indexing and querying.
+
+         The optional positionIncrementGap puts space between multiple fields of
+         this type on the same document, with the purpose of preventing false phrase
+         matching across fields.
+     -->
+
+    <!-- Standard analyzer commonly used by Lucene developers -->
+    <fieldtype name="text_lu" class="solr.TextField" positionIncrementGap="10">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.EnglishPorterFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
+    <!-- A text field that only splits on whitespace for more exact matching -->
+    <fieldtype name="text_ws" class="solr.TextField" positionIncrementGap="10">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      </analyzer>
+    </fieldtype>
+
+    <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
+        words on case-change, alpha numeric boundaries, and non-alphanumeric chars
+        so that a query of "wifi" or "wi fi" could match a document containing Wi-Fi.
+        Synonyms and stopwords are customized by external files, and stemming is enabled -->
+    <fieldtype name="text" class="solr.TextField" positionIncrementGap="10">
+      <analyzer type="index">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+          <filter class="solr.StopFilterFactory" ignoreCase="true"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+      </analyzer>
+      <analyzer type="query">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+          <filter class="solr.StopFilterFactory" ignoreCase="true"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+      </analyzer>
+    </fieldtype>
+
+ </types>
+
+
+ <fields>
+   <!-- Valid attributes for fields:
+       name: mandatory - the name for the field
+       type: mandatory - the name of a previously defined type from the <types> section
+       indexed: true if this field should be indexed (searchable)
+       stored: true if this field should be retrievable
+       multiValued: true if this field may contain multiple values per document
+       omitNorms: (expert) set to true to omit the norms associated with this field
+                  (this disables length normalization and index-time boosting for the field)
+   -->
+
+   <field name="id" type="string" indexed="true" stored="true"/>
+   <field name="date" type="date" indexed="true" stored="true"/>
+   <field name="title" type="text" indexed="true" stored="true"/>
+   <field name="subject" type="text" indexed="true" stored="true"/>
+   <field name="body" type="text" indexed="true" stored="true"/>
+
+   <!-- catchall field, containing all other searchable text fields (implemented
+        via copyField further on in this schema  -->
+   <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
+
+
+   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
+        will be used if the name matches any of the patterns.
+        RESTRICTION: the glob-like pattern in the name attribute must have
+        a "*" only at the start or the end.
+        EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
+        Longer patterns will be matched first.  if equal size patterns
+        both match, the first appearing in the schema will be used.  -->
+   <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
+   <dynamicField name="*_l"  type="slong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
+   <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
+   <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+ </fields>
+
+ <!-- field to use to determine document uniqueness... used when
+      overwriting one document with another -->
+ <uniqueKey>id</uniqueKey>
+
+ <!-- field for the QueryParser to use when an explicit fieldname is absent -->
+ <defaultSearchField>text</defaultSearchField>
+
+  <!-- copyField commands copy one field to another at the time a document
+        is added to the index.  It's used either to index the same field different
+        ways, or to add multiple fields to the same field for easier/faster searching.  -->
+   <copyField source="title" dest="text"/>
+   <copyField source="subject" dest="text"/>
+   <copyField source="body" dest="text"/>
+
+ <!-- Similarity is the scoring routine for each document vs a query.
+      A custom similarity may be specified here, but the default is fine
+      for most applications.  -->
+ <!-- <similarity class="org.apache.lucene.search.DefaultSimilarity"/> -->
+
+</schema>
+
