@@ -106,7 +106,7 @@
   </td>
   <td>
     [<a href="/admin/solar-status">Status</a>]
-    [<a href="/admin/get-file.jsp?file=solarconfig.xml&classloader=true">Config</a>]
+    [<a href="/admin/get-file.jsp?file=solrconfig.xml">Config</a>]
     [<a href="/admin/get-file.jsp?file=conf/solar/WEB-INF/web.external.xml">web.external.xml</a>]
     [<a href="/admin/get-properties.jsp">Properties</a>]
     [<a href="/admin/raw-schema.jsp">Schema</a>]
@@ -159,7 +159,7 @@
 <table>
 <tr>
   <td>
-	<h3>Make a Query</he>
+	<h3>Make a Query</h3>
   </td>
   <td>
 
