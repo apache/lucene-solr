@@ -154,26 +154,21 @@ implements FieldCache {
     Object ret = lookup (reader, field, parser);
     if (ret == null) {
       final int[] retArray = new int[reader.maxDoc()];
-      if (retArray.length > 0) {
-        TermDocs termDocs = reader.termDocs();
-        TermEnum termEnum = reader.terms (new Term (field, ""));
-        try {
-          if (termEnum.term() == null) {
-            throw new RuntimeException ("no terms in field " + field);
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          int termval = parser.parseInt(term.text());
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
           }
-          do {
-            Term term = termEnum.term();
-            if (term.field() != field) break;
-            int termval = parser.parseInt(term.text());
-            termDocs.seek (termEnum);
-            while (termDocs.next()) {
-              retArray[termDocs.doc()] = termval;
-            }
-          } while (termEnum.next());
-        } finally {
-          termDocs.close();
-          termEnum.close();
-        }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
       }
       store (reader, field, parser, retArray);
       return retArray;
@@ -194,26 +189,21 @@ implements FieldCache {
     Object ret = lookup (reader, field, parser);
     if (ret == null) {
       final float[] retArray = new float[reader.maxDoc()];
-      if (retArray.length > 0) {
-        TermDocs termDocs = reader.termDocs();
-        TermEnum termEnum = reader.terms (new Term (field, ""));
-        try {
-          if (termEnum.term() == null) {
-            throw new RuntimeException ("no terms in field " + field);
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          float termval = parser.parseFloat(term.text());
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
           }
-          do {
-            Term term = termEnum.term();
-            if (term.field() != field) break;
-            float termval = parser.parseFloat(term.text());
-            termDocs.seek (termEnum);
-            while (termDocs.next()) {
-              retArray[termDocs.doc()] = termval;
-            }
-          } while (termEnum.next());
-        } finally {
-          termDocs.close();
-          termEnum.close();
-        }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
       }
       store (reader, field, parser, retArray);
       return retArray;
@@ -228,26 +218,21 @@ implements FieldCache {
     Object ret = lookup (reader, field, SortField.STRING);
     if (ret == null) {
       final String[] retArray = new String[reader.maxDoc()];
-      if (retArray.length > 0) {
-        TermDocs termDocs = reader.termDocs();
-        TermEnum termEnum = reader.terms (new Term (field, ""));
-        try {
-          if (termEnum.term() == null) {
-            throw new RuntimeException ("no terms in field " + field);
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          String termval = term.text();
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
           }
-          do {
-            Term term = termEnum.term();
-            if (term.field() != field) break;
-            String termval = term.text();
-            termDocs.seek (termEnum);
-            while (termDocs.next()) {
-              retArray[termDocs.doc()] = termval;
-            }
-          } while (termEnum.next());
-        } finally {
-          termDocs.close();
-          termEnum.close();
-        }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
       }
       store (reader, field, SortField.STRING, retArray);
       return retArray;
@@ -263,56 +248,52 @@ implements FieldCache {
     if (ret == null) {
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
-      if (retArray.length > 0) {
-        TermDocs termDocs = reader.termDocs();
-        TermEnum termEnum = reader.terms (new Term (field, ""));
-        int t = 0;  // current term number
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      int t = 0;  // current term number
 
-        // an entry for documents that have no terms in this field
-        // should a document with no terms be at top or bottom?
-        // this puts them at the top - if it is changed, FieldDocSortedHitQueue
-        // needs to change as well.
-        mterms[t++] = null;
+      // an entry for documents that have no terms in this field
+      // should a document with no terms be at top or bottom?
+      // this puts them at the top - if it is changed, FieldDocSortedHitQueue
+      // needs to change as well.
+      mterms[t++] = null;
 
-        try {
-          if (termEnum.term() == null) {
-            throw new RuntimeException ("no terms in field " + field);
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+
+          // store term text
+          // we expect that there is at most one term per document
+          if (t >= mterms.length) throw new RuntimeException ("there are more terms than " +
+                  "documents in field \"" + field + "\", but it's impossible to sort on " +
+                  "tokenized fields");
+          mterms[t] = term.text();
+
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = t;
           }
-          do {
-            Term term = termEnum.term();
-            if (term.field() != field) break;
 
-            // store term text
-            // we expect that there is at most one term per document
-            if (t >= mterms.length) throw new RuntimeException ("there are more terms than " +
-            		"documents in field \"" + field + "\", but it's impossible to sort on " +
-            		"tokenized fields");
-            mterms[t] = term.text();
-
-            termDocs.seek (termEnum);
-            while (termDocs.next()) {
-              retArray[termDocs.doc()] = t;
-            }
-
-            t++;
-          } while (termEnum.next());
-        } finally {
-          termDocs.close();
-          termEnum.close();
-        }
-
-        if (t == 0) {
-          // if there are no terms, make the term array
-          // have a single null entry
-          mterms = new String[1];
-        } else if (t < mterms.length) {
-          // if there are less terms than documents,
-          // trim off the dead array space
-          String[] terms = new String[t];
-          System.arraycopy (mterms, 0, terms, 0, t);
-          mterms = terms;
-        }
+          t++;
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
       }
+
+      if (t == 0) {
+        // if there are no terms, make the term array
+        // have a single null entry
+        mterms = new String[1];
+      } else if (t < mterms.length) {
+        // if there are less terms than documents,
+        // trim off the dead array space
+        String[] terms = new String[t];
+        System.arraycopy (mterms, 0, terms, 0, t);
+        mterms = terms;
+      }
+
       StringIndex value = new StringIndex (retArray, mterms);
       store (reader, field, STRING_INDEX, value);
       return value;
@@ -389,26 +370,21 @@ implements FieldCache {
     Object ret = lookup (reader, field, comparator);
     if (ret == null) {
       final Comparable[] retArray = new Comparable[reader.maxDoc()];
-      if (retArray.length > 0) {
-        TermDocs termDocs = reader.termDocs();
-        TermEnum termEnum = reader.terms (new Term (field, ""));
-        try {
-          if (termEnum.term() == null) {
-            throw new RuntimeException ("no terms in field " + field);
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          Comparable termval = comparator.getComparable (term.text());
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
           }
-          do {
-            Term term = termEnum.term();
-            if (term.field() != field) break;
-            Comparable termval = comparator.getComparable (term.text());
-            termDocs.seek (termEnum);
-            while (termDocs.next()) {
-              retArray[termDocs.doc()] = termval;
-            }
-          } while (termEnum.next());
-        } finally {
-          termDocs.close();
-          termEnum.close();
-        }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
       }
       store (reader, field, comparator, retArray);
       return retArray;

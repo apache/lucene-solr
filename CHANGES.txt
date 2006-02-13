@@ -337,6 +337,9 @@ Bug fixes
     "[1/16/2000 TO 1/18/2000]". This query did not include the documents
     of 1/18/2000, i.e. the last day was not included. (Daniel Naber)
 
+24. Removed sorting constraint that threw an exception if there were
+    not yet any values for the sort field (Yonik Seeley, LUCENE-374)
+
 Optimizations
      
  1. Disk usage (peak requirements during indexing and optimization)
