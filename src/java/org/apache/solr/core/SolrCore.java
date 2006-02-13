@@ -196,7 +196,7 @@ public final class SolrCore {
       // this is for backward compatibility (and also the reason
       // the sync block is needed)
       core = this;   // set singleton
-       try {
+
       if (dataDir ==null) {
         dataDir =SolrConfig.config.get("dataDir","data");
       }
@@ -227,11 +227,6 @@ public final class SolrCore {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-     } finally {
-
-       }
-
-
     }
   }
 
