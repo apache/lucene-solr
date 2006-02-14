@@ -10,7 +10,7 @@
 <%@ page import="java.util.Map"%>
 
 <%@ page contentType="text/xml;charset=UTF-8" language="java" %>
-<?xml-stylesheet type="text/xsl" href="/admin/registry.xsl"?>
+<?xml-stylesheet type="text/xsl" href="registry.xsl"?>
 
 <%
   SolrCore core = SolrCore.getSolrCore();

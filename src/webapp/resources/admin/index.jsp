@@ -87,14 +87,14 @@
 
 <html>
 <head>
-<link rel="stylesheet" type="text/css" href="/admin/solr-admin.css">
-<link rel="icon" href="/favicon.ico" type="image/ico"></link>
-  <link rel="shortcut icon" href="/favicon.ico" type="image/ico"></link>
+<link rel="stylesheet" type="text/css" href="solr-admin.css">
+<link rel="icon" href="favicon.ico" type="image/ico"></link>
+  <link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
 <title>SOLR admin page</title>
 </head>
 
 <body>
-<a href="/admin/"><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
+<a href=""><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
 <h1>SOLR Admin (<%= collectionName %>) - <%= enabledStatus %></h1>
 <%= hostname %> : <%= port.toString() %>
 <br clear="all">
@@ -105,18 +105,18 @@
 	<h3>SOLR</h3>
   </td>
   <td>
-    [<a href="/admin/solar-status">Status</a>]
-    [<a href="/admin/get-file.jsp?file=solrconfig.xml">Config</a>]
-    [<a href="/admin/get-file.jsp?file=conf/solar/WEB-INF/web.external.xml">web.external.xml</a>]
-    [<a href="/admin/get-properties.jsp">Properties</a>]
-    [<a href="/admin/raw-schema.jsp">Schema</a>]
-    [<a href="/admin/analysis.jsp?highlight=on">Analysis</a>]
+    [<a href="solar-status">Status</a>]
+    [<a href="get-file.jsp?file=solrconfig.xml">Config</a>]
+    [<a href="get-file.jsp?file=conf/solar/WEB-INF/web.external.xml">web.external.xml</a>]
+    [<a href="get-properties.jsp">Properties</a>]
+    [<a href="raw-schema.jsp">Schema</a>]
+    [<a href="analysis.jsp?highlight=on">Analysis</a>]
     <br>
-    [<a href="/admin/registry.jsp">Info</a>]
-    [<a href="/admin/stats.jsp">Statistics</a>]
-    [<a href="/admin/distributiondump.jsp">Distribution</a>]
-    [<a href="/admin/ping">Ping</a>]
-    [<a href="/admin/logging.jsp">Logging</a>]
+    [<a href="registry.jsp">Info</a>]
+    [<a href="stats.jsp">Statistics</a>]
+    [<a href="distributiondump.jsp">Distribution</a>]
+    [<a href="ping">Ping</a>]
+    [<a href="logging.jsp">Logging</a>]
   </td>
 </tr>
 
@@ -126,16 +126,16 @@
   </td>
   <td>
     [<a href="/server-status">Status</a>]
-    [<a href="/admin/get-file.jsp?file=conf/resin.conf">Config</a>]
-    [<a href="/admin/threaddump.jsp">Thread Dump</a>]
+    [<a href="get-file.jsp?file=conf/resin.conf">Config</a>]
+    [<a href="threaddump.jsp">Thread Dump</a>]
   <%
     if (isEnabled) {
   %>
-  [<a href="/admin/action.jsp?action=Disable">Disable</a>]
+  [<a href="action.jsp?action=Disable">Disable</a>]
   <%
     } else {
   %>
-  [<a href="/admin/action.jsp?action=Enable">Enable</a>]
+  [<a href="action.jsp?action=Enable">Enable</a>]
   <%
     }
   %>
@@ -164,7 +164,7 @@
   <td>
 
   <td>
-	[<a href="/admin/form.jsp">Full Interface</a>]
+	[<a href="form.jsp">Full Interface</a>]
   </td>
 </tr>
 <tr>
@@ -172,7 +172,7 @@
   StyleSheet:<br>Query:
   </td>
   <td colspan=2>
-	<form method="GET" action="/select/">
+	<form method="GET" action="../select/">
         <input name="stylesheet" type="text" value=""><br>
         <textarea rows="4" cols="40" name="q"><%= defaultSearch %></textarea>
         <input name="version" type="hidden" value="2.0">

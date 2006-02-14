@@ -85,14 +85,14 @@
 
 <html>
 <head>
-<link rel="stylesheet" type="text/css" href="/admin/solr-admin.css">
-<link rel="icon" href="/favicon.ico" type="image/ico">
-<link rel="shortcut icon" href="/favicon.ico" type="image/ico">
+<link rel="stylesheet" type="text/css" href="solr-admin.css">
+<link rel="icon" href="favicon.ico" type="image/ico">
+<link rel="shortcut icon" href="favicon.ico" type="image/ico">
 <title>SOLR Interface</title>
 </head>
 
 <body>
-<a href="/admin/"><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
+<a href=""><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
 <h1>SOLR Interface (<%= collectionName %>) - <%= enabledStatus %></h1>
 <%= hostname %> : <%= port.toString() %>
 <br clear="all">
@@ -100,7 +100,7 @@
 
 <h2>/select mode</h2>
 
-<form method="GET" action="/select/">
+<form method="GET" action="../select">
 <table>
 <tr>
   <td>

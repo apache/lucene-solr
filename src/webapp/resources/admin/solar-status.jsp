@@ -13,7 +13,7 @@
 --%>
 <%@ page contentType="text/xml;charset=UTF-8" language="java" %>
 
-<?xml-stylesheet type="text/xsl" href="/admin/status.xsl"?>
+<?xml-stylesheet type="text/xsl" href="status.xsl"?>
 
 <%
   SolrCore core = SolrCore.getSolrCore();

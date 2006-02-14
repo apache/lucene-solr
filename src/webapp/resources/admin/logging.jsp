@@ -48,12 +48,12 @@
 %>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="/admin/solr-admin.css">
-    <link rel="icon" href="/favicon.ico" type="image/ico">
-    <link rel="shortcut icon" href="/favicon.ico" type="image/ico">
+    <link rel="stylesheet" type="text/css" href="solr-admin.css">
+    <link rel="icon" href="favicon.ico" type="image/ico">
+    <link rel="shortcut icon" href="favicon.ico" type="image/ico">
 </head>
 <body>
-<a href="/admin/"><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
+<a href=""><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
 <h1>SOLR Logging (<%= collectionName %>)</h1>
 <%= hostname %> : <%= port.toString() %>
 <br clear="all">
@@ -101,6 +101,6 @@
   </tr>
 </table>
 <br><br>
-    <a href="/admin">Return to Admin Page</a>
+    <a href="">Return to Admin Page</a>
 </body>
 </html>

@@ -20,21 +20,21 @@
   <xsl:template match="/">
     <html>
       <head>
-        <link rel="stylesheet" type="text/css" href="/admin/solr-admin.css"></link>
+        <link rel="stylesheet" type="text/css" href="solr-admin.css"></link>
         <link rel="icon" href="/favicon.ico" type="image/ico"></link>
         <link rel="shortcut icon" href="/favicon.ico" type="image/ico"></link>
         <title>SOLR Search Results</title>
       </head>
       <body>
-        <a href="/admin/">
-           <img border="0" align="right" height="88" width="215" src="/admin/solr-head.gif" alt="SOLR">
+        <a href="">
+           <img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR">
            </img>
         </a>
         <h1>SOLR Search Results</h1>
           <br clear="all" />
         <xsl:apply-templates/>
         <br /><br />
-        <a href="/admin">Return to Admin Page</a>
+        <a href="">Return to Admin Page</a>
       </body>
     </html>
   </xsl:template>

@@ -92,14 +92,14 @@
 
 <html>
 <head>
-<link rel="stylesheet" type="text/css" href="/admin/solr-admin.css">
-<link rel="icon" href="/favicon.ico" type="image/ico">
-<link rel="shortcut icon" href="/favicon.ico" type="image/ico">
+<link rel="stylesheet" type="text/css" href="solr-admin.css">
+<link rel="icon" href="favicon.ico" type="image/ico">
+<link rel="shortcut icon" href="favicon.ico" type="image/ico">
 <title>SOLR Interface</title>
 </head>
 
 <body>
-<a href="/admin/"><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
+<a href=""><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
 <h1>SOLR Interface (<%= collectionName %>) - <%= enabledStatus %></h1>
 <%= hostname %> : <%= request.getServerPort() %>
 <br clear="all">
@@ -107,7 +107,7 @@
 
 <h2>Field Analysis</h2>
 
-<form method="GET" action="/admin/analysis.jsp">
+<form method="GET" action="analysis.jsp">
 <table>
 <tr>
   <td>
