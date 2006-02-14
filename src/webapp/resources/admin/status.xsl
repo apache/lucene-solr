@@ -24,7 +24,7 @@
         <title>SOLR Status</title>
       </head>
       <body>
-        <a href="">
+        <a href=".">
            <img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR">
            </img>
         </a>
@@ -33,7 +33,7 @@
           <br clear="all" />
         <xsl:apply-templates/>
         <br /><br />
-        <a href="">Return to Admin Page</a>
+        <a href=".">Return to Admin Page</a>
       </body>
     </html>
   </xsl:template>

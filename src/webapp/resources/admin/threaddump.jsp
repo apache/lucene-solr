@@ -45,7 +45,7 @@
     <link rel="shortcut icon" href="favicon.ico" type="image/ico">
 </head>
 <body>
-<a href=""><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
+<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
 <h1>SOLR Thread Dump (<%= collectionName %>)</h1>
 <%= hostname %> : <%= port.toString() %>
 <br clear="all">
@@ -113,6 +113,6 @@ Thread Dumps
   </tr>
 </table>
 <br><br>
-    <a href="">Return to Admin Page</a>
+    <a href=".">Return to Admin Page</a>
 </body>
 </html>

@@ -99,7 +99,7 @@
 </head>
 
 <body>
-<a href=""><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
+<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
 <h1>SOLR Interface (<%= collectionName %>) - <%= enabledStatus %></h1>
 <%= hostname %> : <%= request.getServerPort() %>
 <br clear="all">
