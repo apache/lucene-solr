@@ -20,6 +20,7 @@ import java.io.Reader;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.search.Query;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.Token;
@@ -79,12 +80,39 @@ public class TestMultiAnalyzer extends TestCase {
     // phrase with non-default boost:
     assertEquals("\"(multi multi2) foo\"^2.0", qp.parse("\"multi foo\"^2").toString());
 
+    // phrase after changing default slop
+    qp.setPhraseSlop(99);
+    assertEquals("\"(multi multi2) foo\"~99 bar",
+                 qp.parse("\"multi foo\" bar").toString());
+    assertEquals("\"(multi multi2) foo\"~99 \"foo bar\"~2",
+                 qp.parse("\"multi foo\" \"foo bar\"~2").toString());
+    qp.setPhraseSlop(0);
+
     // non-default operator:
     qp.setDefaultOperator(QueryParser.AND_OPERATOR);
     assertEquals("+(multi multi2) +foo", qp.parse("multi foo").toString());
 
   }
+    
+  public void testMultiAnalyzerWithSubclassOfQueryParser() throws ParseException {
 
+    DumbQueryParser qp = new DumbQueryParser("", new MultiAnalyzer());
+    qp.setPhraseSlop(99); // modified default slop
+
+    // direct call to (super's) getFieldQuery to demonstrate differnce
+    // between phrase and multiphrase with modified default slop
+    assertEquals("\"foo bar\"~99",
+                 qp.getSuperFieldQuery("","foo bar").toString());
+    assertEquals("\"(multi multi2) bar\"~99",
+                 qp.getSuperFieldQuery("","multi bar").toString());
+
+    
+    // ask sublcass to parse phrase with modified default slop
+    assertEquals("\"(multi multi2) foo\"~99 bar",
+                 qp.parse("\"multi foo\" bar").toString());
+    
+  }
+    
   public void testPosIncrementAnalyzer() throws ParseException {
     QueryParser qp = new QueryParser("", new PosIncrementAnalyzer());
     assertEquals("quick brown", qp.parse("the quick brown").toString());
@@ -190,4 +218,39 @@ public class TestMultiAnalyzer extends TestCase {
     }
   }
 
+    /** a very simple subclass of QueryParser */
+    private final static class DumbQueryParser extends QueryParser {
+        
+        public DumbQueryParser(String f, Analyzer a) {
+            super(f, a);
+        }
+
+        /** expose super's version */
+        public Query getSuperFieldQuery(String f, String t) 
+            throws ParseException {
+            return super.getFieldQuery(f,t);
+        }
+        /** wrap super's version */
+        protected Query getFieldQuery(String f, String t)
+            throws ParseException {
+            return new DumbQueryWrapper(getSuperFieldQuery(f,t));
+        }
+    }
+    
+    /**
+     * A very simple wrapper to prevent instanceof checks but uses
+     * the toString of the query it wraps.
+     */
+    private final static class DumbQueryWrapper extends Query {
+
+        private Query q;
+        public DumbQueryWrapper(Query q) {
+            super();
+            this.q = q;
+        }
+        public String toString(String f) {
+            return q.toString(f);
+        }
+    }
+    
 }
