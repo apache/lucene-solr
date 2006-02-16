@@ -18,6 +18,9 @@
   <!-- Destination for distribution files (demo WAR, src distro, etc.) -->
   <property name="dist" value="dist" />
 
+  <!-- Example directory -->
+  <property name="example" value="example" />
+
   <!-- Default target: usage.  Prints out instructions. -->
   <target name="usage"
           description="Prints out instructions">
@@ -116,7 +119,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-src, dist-war, dist-bin" />
+          depends="dist-src, dist-war, dist-bin, dist-example" />
 
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
@@ -157,4 +160,21 @@
          basedir="${dest}" />
   </target>
 
+
+  <target name="example" 
+	  depends="dist-war">
+          <copy file="${dist}/${ant.project.name}-${version}.war" tofile="${example}/webapps/${ant.project.name}.war"/>
+  </target>
+
+  <target name="dist-example" 
+	  depends="example">
+    <zip destfile="${dist}/${ant.project.name}-${version}-example.zip">
+      <zipfileset dir="${example}"
+        prefix="${ant.project.name}-${example}"
+        excludes="data/ logs/*"
+      />
+    </zip>
+  </target>
+
 </project>
+
