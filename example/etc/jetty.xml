@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+    <!-- =========================================================== -->
+    <!-- Initialize management framework                             -->
+    <!-- =========================================================== -->
+    <!--
+    <Call id="MBeanServer" class="javax.management.MBeanServerFactory" name="createMBeanServer">
+       <Arg>org.mortbay.jetty</Arg>
+    </Call>
+    <Get id="Container" name="container"/>
+    <New class="org.mortbay.management.MBeanContainer">
+      <Arg><Ref id="MBeanServer" /></Arg>
+      <Arg><Ref id="Container"/></Arg>
+      <Set name="managementPort">8985</Set>
+      <Call name="start" />
+    </New>
+    -->
+
+    <!-- =========================================================== -->
+    <!-- Server Thread Pool                                          -->
+    <!-- =========================================================== -->
+    <Set name="ThreadPool">
+      <New class="org.mortbay.thread.BoundedThreadPool">
+        <Set name="minThreads">10</Set>
+        <Set name="maxThreads">100</Set>
+      </New>
+    </Set>
+
+    <!-- =========================================================== -->
+    <!-- Set connectors                                              -->
+    <!-- =========================================================== -->
+    <!-- One of each type!                                           -->
+    <!-- =========================================================== -->
+    <Set name="connectors">
+      <Array type="org.mortbay.jetty.Connector">
+
+        <!-- Use this connector if NIO is not available.
+        -->
+        <!--
+        <Item>
+          <New class="org.mortbay.jetty.bio.SocketConnector">
+            <Set name="port">8984</Set>
+            <Set name="maxIdleTime">50000</Set>
+          </New>
+        </Item>
+        -->
+
+        <!-- Use this connector for few very active connections.
+        <Item>
+          <New class="org.mortbay.jetty.nio.BlockingChannelConnector">
+            <Set name="port">8983</Set>
+          </New>
+        </Item>
+        -->
+
+        <!-- Use this connector for many frequently idle connections
+             and for threadless continuations.
+        -->
+        <Item>
+          <New class="org.mortbay.jetty.nio.SelectChannelConnector">
+            <Set name="port">8983</Set>
+            <Set name="maxIdleTime">30000</Set>
+            <Set name="Acceptors">10</Set>
+          </New>
+        </Item>
+
+        <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+        <!-- Add a HTTPS SSL listener on port 8443                           -->
+        <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+        <!--
+        <Item>
+          <New class="org.mortbay.jetty.security.SslSocketConnector">
+            <Set name="Port">8443</Set>
+            <Set name="maxIdleTime">30000</Set>
+            <Set name="Keystore"><SystemProperty name="jetty.home" default="." />/etc/keystore</Set>
+            <Set name="Password">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+            <Set name="KeyPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
+          </New>
+        </Item>
+        -->
+      </Array>
+    </Set>
+
+    <!-- =========================================================== -->
+    <!-- Set handlers                                                -->
+    <!-- =========================================================== -->
+    <Set name="handlers">
+      <Array type="org.mortbay.jetty.Handler">
+
+        <!-- ======================================================= -->
+        <!-- Configure a test web application with web.xml           -->
+        <!-- ======================================================= -->
+        <!--
+        <Item>
+          <New id="testWebAppContext"  class="org.mortbay.jetty.webapp.WebAppContext">
+            <Set name="contextPath">/test</Set>
+            <Set name="war">./webapps/test</Set>
+            <Set name="VirtualHosts"><Array type="java.lang.String"></Array></Set>
+            <Get name="SessionHandler">
+              <Set name="SessionManager"><New class="org.mortbay.jetty.servlet.HashSessionManager"/></Set>
+            </Get>
+          </New>
+        </Item>
+        -->
+
+        <!-- ======================================================= -->
+        <!-- Configure a context directly - no XML parser required   -->
+        <!-- ======================================================= -->
+        <Item>
+          <New id="javadocContext"  class="org.mortbay.jetty.handler.ContextHandler">
+            <Set name="contextPath">/javadoc</Set>
+            <Set name="resourceBase">./javadoc</Set>
+            <Set name="handler">
+              <New id="javadocServletHandler" class="org.mortbay.jetty.servlet.ServletHandler">
+                <Set name="servlets">
+                    <Array type="org.mortbay.jetty.servlet.ServletHolder">
+                        <Item>
+                           <New class="org.mortbay.jetty.servlet.ServletHolder">
+                               <Set name="name">Default</Set>
+                               <Set name="className">org.mortbay.jetty.servlet.DefaultServlet</Set>
+                           </New>
+                        </Item>
+                     </Array>
+                 </Set>
+
+                <Set name="servletMappings">
+                    <Array type="org.mortbay.jetty.servlet.ServletMapping">
+                        <Item>
+                           <New class="org.mortbay.jetty.servlet.ServletMapping">
+                             <Set name="pathSpec">/</Set>
+                             <Set name="servletName">Default</Set>
+                           </New>
+                        </Item>
+                    </Array>
+                </Set>
+              </New>
+            </Set>
+          </New>
+        </Item>
+
+      </Array>
+    </Set>
+
+
+
+    <!-- =========================================================== -->
+    <!-- Additional contexts not defined above                       -->
+    <!-- =========================================================== -->
+    <Call class="org.mortbay.jetty.webapp.WebAppContext" name="addWebApplications">
+      <Arg><Ref id="Server"/></Arg>
+      <Arg>./webapps</Arg>
+      <Arg>org/mortbay/jetty/webapp/webdefault.xml</Arg>
+      <Arg type="boolean">True</Arg>
+      <Arg type="boolean">True</Arg>
+    </Call>
+
+
+
+    <!-- =========================================================== -->
+    <!-- Configure Realms                                            -->
+    <!-- =========================================================== -->
+    <Set name="UserRealms">
+      <Array type="org.mortbay.jetty.security.UserRealm">
+        <Item>
+          <New class="org.mortbay.jetty.security.HashUserRealm">
+            <Set name="name">Test Realm</Set>
+            <Set name="config">etc/realm.properties</Set>
+          </New>
+        </Item>
+      </Array>
+    </Set>
+    
+    <!-- =========================================================== -->
+    <!-- Configure Request Log                                       -->
+    <!-- =========================================================== -->
+    <!--  uncomment for a request log (and create logs directory) 
+    <Set name="requestLog">
+       <New id="requestLogImpl" class="org.mortbay.jetty.NCSARequestLog">
+          <Arg><SystemProperty name="jetty.home" default="."/>/logs/yyyy_mm_dd.request.log</Arg>
+          <Set name="retainDays">90</Set>
+          <Set name="append">true</Set>
+          <Set name="extended">false</Set>
+          <Set name="LogTimeZone">GMT</Set>
+       </New>
+    </Set>
+    -->
+
+    <!-- =========================================================== -->
+    <!-- Start the server                                            -->
+    <!-- =========================================================== -->
+    <Set name="stopAtShutdown">true</Set>
+    <Call name="start"/>
+
+</Configure>
+
+
+
+
+
+
+
+
+
