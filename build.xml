@@ -3,6 +3,8 @@
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
 
+  <property name="Name" value="Solr" />
+
   <!-- Solr version -->
   <property name="version" value="1.0" />
 
@@ -21,6 +23,12 @@
   <!-- Example directory -->
   <property name="example" value="example" />
 
+  <property name="build.docs" value="${dest}/docs"/>
+  <property name="javadoc.link.java"
+            value="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+  <property name="javadoc.packages" value="org.apache.solr.*"/>
+  <property name="build.javadoc" value="${build.docs}/api"/>
+
   <!-- Default target: usage.  Prints out instructions. -->
   <target name="usage"
           description="Prints out instructions">
@@ -35,6 +43,7 @@
   <target name="clean"
           description="Cleans compiled files and other temporary artifacts.">
     <delete dir="${dest}" />
+    <delete dir="${dist}" />
   </target>
 
 
@@ -63,6 +72,25 @@
     </javac>
   </target>
 
+
+  <target name="javadoc" depends="compile">
+    <mkdir dir="${build.javadoc}"/>
+    <javadoc
+      destdir="${build.javadoc}"
+      author="true"
+      version="true"
+      use="true"
+      windowtitle="${Name} ${version} API"
+      doctitle="${Name} ${version} API"
+      bottom="Copyright &amp;copy; ${year} The Apache Software Foundation"
+      >
+        <packageset dir="${src}/java"/>
+	<packageset dir="${src}/webapp/src"/>
+        <link href="${javadoc.link.java}"/>
+        <classpath refid="compile.classpath"/>
+    </javadoc>
+  </target>
+  
 
   <!-- ========================================================================= -->
   <!-- ===================== TESTING-RELATED TASKS ============================= -->
@@ -119,7 +147,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-src, dist-war, dist-bin, dist-example" />
+          depends="dist-src, dist-war, dist-jar" />
 
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
@@ -128,11 +156,10 @@
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${ant.project.name}-${version}.war"
          webxml="${src}/webapp/WEB-INF/web.xml">
-      <classes dir="${dest}" />
+         <classes dir="${dest}" includes="org/apache/**" />
       <lib dir="${lib}">
-        <exclude name="servlet-api-*.jar" />
+        <exclude name="servlet-api*.jar" />
       </lib>
-
 
       <fileset dir="${src}/webapp/resources" />
     </war>
@@ -140,24 +167,20 @@
 
   <!-- Creates the source distribution. -->
   <target name="dist-src"
-          description="Creates the source distribution."
-          depends="clean">
+          description="Creates the source distribution." >
     <mkdir dir="${dist}" />
     <zip destfile="${dist}/${ant.project.name}-${version}-src.zip"
          basedir="${src}" />
   </target>
 
-  <!-- Creates the binary distribution. -->
-  <target name="dist-bin"
+  <!-- Creates the solr jar. -->
+  <target name="dist-jar"
           description="Creates the binary distribution."
-          depends="clean, compile, dist-war">
+          depends="compile">
     <mkdir dir="${dist}" />
-    
     <jar destfile="${dist}/${ant.project.name}-${version}.jar"
-         basedir="${dest}" />  
-
-    <zip destfile="${dist}/${ant.project.name}-${version}.zip"
-         basedir="${dest}" />
+         basedir="${dest}"
+         includes="org/apache/**" />  
   </target>
 
 
@@ -174,6 +197,27 @@
         excludes="data/ logs/*"
       />
     </zip>
+  </target>
+
+
+  <!-- make a distribution -->
+  <target name="package"
+	  depends="dist, javadoc">
+    <zip destfile="${dist}/${ant.project.name}-${version}.zip">
+      <zipfileset dir="."
+        prefix="${ant.project.name}-${version}"
+	includes="*.txt *.xml lib/** src/** example/**"
+	excludes="**/data/ **/logs/ **/classes/" />
+      <zipfileset dir="."
+        prefix="${ant.project.name}-${version}"
+	includes="dist/*.jar dist/*.war" />
+      <zipfileset dir="${dest}/docs/api/"
+        prefix="${ant.project.name}-${version}/docs/api/" />
+    </zip>
+  </target>
+
+  <target name="nightly"
+	  depends="test, package">
   </target>
 
 </project>
