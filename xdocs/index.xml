@@ -16,18 +16,18 @@
             </p>
             <p>
                 Apache Lucene is an open source project available for
-                <a href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">free download</a> from Apache Jakarta.
+                <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">free download</a> from Apache Jakarta.
                 Please use the links on the left to access Lucene.
             </p>
         </section>
 
         <section name="Lucene News">
 
-          <h3>21 February 2006 - 1.9RC1 available </h3>
+          <h3>21 February 2006 - 1.9 RC1 available </h3>
 
              <p>This release candidate has many improvements since
-                release 1.4.3, both new features and performance
-                improvements. See <a
+                release 1.4.3, including new features, performance
+                improvements, bug fixes, etc. See <a
                 href="http://svn.apache.org/viewcvs.cgi/*checkout*/lucene/java/branches/lucene_1_9/CHANGES.txt?rev=379190">CHANGES.txt</a>
                 for details.</p>
 
@@ -41,7 +41,7 @@
 
 		<p>Binary and source distributions are
                 available <a
-                href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">here</a>.</p>
+                href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.</p>
 
           <h3>26 January 2006 - Nightly builds available</h3>
 
