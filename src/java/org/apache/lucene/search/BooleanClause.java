@@ -21,6 +21,7 @@ import org.apache.lucene.util.Parameter;
 /** A clause in a BooleanQuery. */
 public class BooleanClause implements java.io.Serializable {
   
+  /** Specifies how terms may occur in matching documents. */
   public static final class Occur extends Parameter implements java.io.Serializable {
     
     private Occur(String name) {

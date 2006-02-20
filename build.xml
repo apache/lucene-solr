@@ -370,13 +370,13 @@
         <packageset dir="contrib/highlighter/src/java"/>
         <packageset dir="contrib/similarity/src/java"/>
         <packageset dir="contrib/spellchecker/src/java"/>
-        <packageset dir="contrib/snowball/src/java" excludes="net/"/>
+        <packageset dir="contrib/snowball/src/java"/>
         <packageset dir="contrib/swing/src/java"/>
         <packageset dir="contrib/memory/src/java"/>
 
         <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
         <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
-        <group title="Snowball" packages="org.apache.lucene.analysis.snowball*"/>
+        <group title="Snowball Stemmers" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
         <group title="Highlighter" packages="org.apache.lucene.search.highlight*"/>
         <group title="MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
         <group title="SpellChecker" packages="org.apache.lucene.search.spell*"/>

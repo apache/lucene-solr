@@ -51,6 +51,7 @@ public final class Field implements Serializable {
   
   private float boost = 1.0f;
   
+  /** Specifies whether and how a field should be stored. */
   public static final class Store extends Parameter implements Serializable {
     
     private Store(String name) {
@@ -73,6 +74,7 @@ public final class Field implements Serializable {
     public static final Store NO = new Store("NO");
   }
   
+  /** Specifies whether and how a field should be indexed. */
   public static final class Index extends Parameter implements Serializable {
     
     private Index(String name) {
@@ -106,6 +108,7 @@ public final class Field implements Serializable {
 
   }
 
+  /** Specifies whether and how a field should have term vectors. */
   public static final class TermVector  extends Parameter implements Serializable {
     
     private TermVector(String name) {

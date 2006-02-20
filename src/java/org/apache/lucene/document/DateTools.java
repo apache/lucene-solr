@@ -210,6 +210,7 @@ public class DateTools {
     return cal.getTime().getTime();
   }
 
+  /** Specifies the time granularity. */
   public static class Resolution {
     
     public static final Resolution YEAR = new Resolution("year");
