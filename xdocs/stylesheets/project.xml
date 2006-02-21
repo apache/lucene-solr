@@ -27,9 +27,8 @@
     </menu>
 
     <menu name="Download">
-        <item name="Binaries"           href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/binaries/"/>
-        <item name="Source Code"        href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/source/"/>
-        <item name="Source Repository"  href="http://svn.apache.org/viewcvs.cgi/lucene/"/>
+        <item name="Releases"           href="http://www.apache.org/dyn/closer.cgi/lucene/java/"/>
+        <item name="Source Repository"  href="http://svn.apache.org/viewcvs.cgi/lucene/java/"/>
     </menu>
 
     </body>
