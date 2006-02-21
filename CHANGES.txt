@@ -2,6 +2,15 @@ Lucene Change Log
 
 $Id$
 
+1.9 RC2
+
+Optimizations
+     
+ 1. Optimized BufferedIndexOutput.writeBytes() to use
+    System.arraycopy() in more cases, rather than copying byte-by-byte.
+    (Lukas Zapletal via Cutting)
+
+
 1.9 RC1
 
 Note that this realease is mostly but not 100% source compatible with the
