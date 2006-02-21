@@ -34,6 +34,16 @@
     <section id="news">
       <title>News</title>
 
+      <section>
+      <title>21 February, 2006: nightly builds</title>
+      <p>Solr now has nightly builds.  This automatically creates a
+      <a href="ext:nightly">downloadable version of Solr every
+      night</a>.  All unit tests must pass, or a message is sent to
+      the developers mailing list and no new version is created.  This
+      also updates the <a href="docs/api/">javadoc</a>.</p>
+      </section>
+      
+
         <section>
           <title>17 January 2006: Solr Joins Apache Incubator</title>
           <p>Solr, a search server based on Lucene, has been accepted into the Apache Incubator.

@@ -45,9 +45,11 @@ See http://forrest.apache.org/docs/linking.html for more info
     <faq         label="FAQ"              href="ext:faq" />
     <wiki        label="Wiki"             href="ext:wiki" />
     <tutorial    label="Tutorial"         href="tutorial.html" />
+    <apidocs     label="API Docs"         href="docs/api/" />    
   </docs>
 
   <resources label="Resources">
+    <download    label="Download"         href="ext:nightly" />
     <contact     label="Mailing Lists"    href="mailing_lists.html" />
     <issues      label="Issue Tracking"   href="issue_tracking.html" />
     <svn         label="Version Control"  href="version_control.html" />
@@ -76,11 +78,11 @@ See http://forrest.apache.org/docs/linking.html for more info
     <cocoon href="http://cocoon.apache.org/"/>
     <xml.apache.org href="http://xml.apache.org/"/>
 
-
     <lucene    href="http://lucene.apache.org/java/" />
     <nutch     href="http://lucene.apache.org/nutch/" />
     <wiki      href="http://wiki.apache.org/solr/" />
     <faq       href="http://wiki.apache.org/solr/FAQ" />
+    <nightly   href="http://cvs.apache.org/dist/lucene/solr/nightly/" />    
     
   </external-refs>
 
