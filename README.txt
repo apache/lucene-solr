@@ -16,8 +16,11 @@ Please join the Lucene-User mailing list by sending a message to:
 
 FILES
 
-lucene-XX.jar
+lucene-core-XX.jar
   The compiled lucene library.
+
+lucene-demos-XX.jar
+  The compiled simple example code.
 
 docs/index.html
   The contents of the Lucene website.

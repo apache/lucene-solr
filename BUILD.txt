@@ -38,7 +38,7 @@ file.  However, you might have received this file by some alternate
 route, or you might have an incomplete copy of the Lucene, so: Lucene
 releases are available for download at:
 
-  http://www.apache.org/dyn/closer.cgi/jakarta/lucene/
+  http://www.apache.org/dyn/closer.cgi/lucene/java/
 
 Download either a zip or a tarred/gzipped version of the archive, and
 uncompress it into a directory of your choice.
