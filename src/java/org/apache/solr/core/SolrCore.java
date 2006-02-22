@@ -67,6 +67,9 @@ public final class SolrCore {
   private final String dataDir;
   private final String index_path;
   private final UpdateHandler updateHandler;
+  private static final long startTime = System.currentTimeMillis();
+
+  public long getStartTime() { return startTime; }
 
   public static SolrIndexConfig mainIndexConfig = new SolrIndexConfig("mainIndex");
 

@@ -4,75 +4,20 @@
                  org.apache.solr.analysis.TokenFilterFactory,
                  org.apache.solr.analysis.TokenizerChain,
                  org.apache.solr.analysis.TokenizerFactory,
-                 org.apache.solr.core.SolrConfig,
-                 org.apache.solr.core.SolrCore,
                  org.apache.solr.schema.FieldType,
-                 org.apache.solr.schema.IndexSchema,org.apache.solr.schema.SchemaField
+                 org.apache.solr.schema.SchemaField,
+                 org.apache.solr.util.XML,
+                 javax.servlet.jsp.JspWriter,java.io.IOException
                 "%>
-<%@ page import="org.apache.solr.util.XML"%>
-<%@ page import="javax.servlet.jsp.JspWriter"%>
-<%@ page import="java.io.File"%>
-<%@ page import="java.io.IOException"%>
 <%@ page import="java.io.Reader"%>
 <%@ page import="java.io.StringReader"%>
-<%@ page import="java.net.InetAddress"%>
-<%@ page import="java.net.UnknownHostException"%>
 <%@ page import="java.util.*"%>
+
 <!-- $Id: analysis.jsp,v 1.2 2005/09/20 18:23:30 yonik Exp $ -->
 <!-- $Source: /cvs/main/searching/org.apache.solrolarServer/resources/admin/analysis.jsp,v $ -->
 <!-- $Name:  $ -->
 
-<%
-  SolrCore core = SolrCore.getSolrCore();
-  IndexSchema schema = core.getSchema();
-
-  String rootdir = "/var/opt/resin3/"+request.getServerPort();
-  File pidFile = new File(rootdir + "/logs/resin.pid");
-  File enableFile = new File(rootdir + "/logs/server-enabled");
-  boolean isEnabled = false;
-  String enabledStatus = "";
-  String enableActionStatus = "";
-  String makeEnabled = "";
-  String action = request.getParameter("action");
-  String startTime = "";
-
-  try {
-    startTime = (pidFile.lastModified() > 0)
-      ? new Date(pidFile.lastModified()).toString()
-      : "No Resin Pid found (logs/resin.pid)";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't open Solr pid file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-
-  try {
-    isEnabled = (enableFile.lastModified() > 0);
-    enabledStatus = (isEnabled)
-      ? "Enabled"
-      : "Disabled";
-    makeEnabled = (isEnabled)
-      ? "Disable"
-      : "Enable";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't check server-enabled file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  String collectionName = schema!=null ? schema.getName():"unknown";
-  String hostname="localhost";
-  String defaultSearch= SolrConfig.config.get("admin/defaultQuery","");
-  try {
-    InetAddress addr = InetAddress.getLocalHost();
-    // Get IP Address
-    byte[] ipAddr = addr.getAddress();
-    // Get hostname
-    // hostname = addr.getHostName();
-    hostname = addr.getCanonicalHostName();
-  } catch (UnknownHostException e) {}
-%>
+<%@include file="header.jsp" %>
 
 <%
   String name = request.getParameter("name");
@@ -89,21 +34,7 @@
   boolean highlight = highlightS!=null && highlightS.equalsIgnoreCase("on");
 %>
 
-
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="solr-admin.css">
-<link rel="icon" href="favicon.ico" type="image/ico">
-<link rel="shortcut icon" href="favicon.ico" type="image/ico">
-<title>SOLR Interface</title>
-</head>
-
-<body>
-<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
-<h1>SOLR Interface (<%= collectionName %>) - <%= enabledStatus %></h1>
-<%= hostname %> : <%= request.getServerPort() %>
 <br clear="all">
-
 
 <h2>Field Analysis</h2>
 

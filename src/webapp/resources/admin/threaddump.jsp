@@ -1,57 +1,13 @@
-<%@ page import="org.apache.solr.core.SolrCore,
-                 org.apache.solr.schema.IndexSchema,
-                 java.io.BufferedReader,
-                 java.io.File,
-                 java.io.FileReader,
-                 java.net.InetAddress,
-                 java.net.UnknownHostException,
-                 java.util.Date"%>
+<%@ page import="java.io.BufferedReader,
+                 java.io.FileReader"%>
+<%@include file="header.jsp" %>
 <%
-  SolrCore core = SolrCore.getSolrCore();
-  Integer port = new Integer(request.getServerPort());
-  IndexSchema schema = core.getSchema();
-  String collectionName = schema!=null ? schema.getName():"unknown";
-
-  String rootdir = "/var/opt/resin3/"+port.toString();
-  File pidFile = new File(rootdir + "/logs/resin.pid");
-  String startTime = "";
-
-  try {
-    startTime = (pidFile.lastModified() > 0)
-              ? new Date(pidFile.lastModified()).toString()
-                    : "No Resin Pid found (logs/resin.pid)";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't open Solr pid file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  String hostname="localhost";
-  try {
-    InetAddress addr = InetAddress.getLocalHost();
-    // Get IP Address
-    byte[] ipAddr = addr.getAddress();
-    // Get hostname
-    // hostname = addr.getHostName();
-    hostname = addr.getCanonicalHostName();
-  } catch (UnknownHostException e) {}
-
-  File getinfo = new File(rootdir + "/logs/jvm.log");
+  File getinfo = new File("logs/jvm.log");
 %>
-<html>
-<head>
-    <link rel="stylesheet" type="text/css" href="solr-admin.css">
-    <link rel="icon" href="favicon.ico" type="image/ico">
-    <link rel="shortcut icon" href="favicon.ico" type="image/ico">
-</head>
-<body>
-<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
-<h1>SOLR Thread Dump (<%= collectionName %>)</h1>
-<%= hostname %> : <%= port.toString() %>
 <br clear="all">
 <%
   Runtime rt = Runtime.getRuntime();
-  Process p = rt.exec(rootdir + "/getinfo");
+  Process p = rt.exec("./getinfo");
   p.waitFor();
 %>
 <table>

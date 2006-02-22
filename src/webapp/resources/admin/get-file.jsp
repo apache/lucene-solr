@@ -1,6 +1,5 @@
 <%@ page import="org.apache.solr.core.Config,
                  org.apache.solr.core.SolrConfig,
-                 java.io.FileInputStream,
                  java.io.InputStream,
                  java.io.InputStreamReader,
                  java.io.Reader,

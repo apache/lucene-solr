@@ -1,108 +1,18 @@
-<%@ page import="org.apache.solr.core.SolrConfig,
-                 org.apache.solr.core.SolrCore,
-                 org.apache.solr.schema.IndexSchema,
-                 java.io.File"%>
-<%@ page import="java.net.InetAddress"%>
-<%@ page import="java.net.UnknownHostException"%>
-<%@ page import="java.util.Date"%>
+
 <!-- $Id: index.jsp,v 1.26 2005/09/20 18:23:30 yonik Exp $ -->
 <!-- $Source: /cvs/main/searching/SolrServer/resources/admin/index.jsp,v $ -->
 <!-- $Name:  $ -->
 
-<%
-  SolrCore core = SolrCore.getSolrCore();
-  Integer port = new Integer(request.getServerPort());
-  IndexSchema schema = core.getSchema();
+<!-- jsp:include page="header.jsp"/ -->
+<!-- do a verbatim include so we can use the local vars -->
+<%@include file="header.jsp" %>
 
-  String rootdir = "/var/opt/resin3/"+port.toString();
-  File pidFile = new File(rootdir + "/logs/resin.pid");
-  File enableFile = new File(rootdir + "/logs/server-enabled");
-  boolean isEnabled = false;
-  String enabledStatus = "";
-  String enableActionStatus = "";
-  String makeEnabled = "";
-  String action = request.getParameter("action");
-  String startTime = "";
-
-  try {
-    startTime = (pidFile.lastModified() > 0)
-      ? new Date(pidFile.lastModified()).toString()
-      : "No Resin Pid found (logs/resin.pid)";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't open Solr pid file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  try {
-    if (action != null) {
-      if ("Enable".compareTo(action) == 0) {
-        if (enableFile.createNewFile()) {
-          enableActionStatus += "Enable Succeeded";
-        } else {
-          enableActionStatus += "Already Enabled)";
-        }
-      }
-      if ("Disable".compareTo(action) == 0) {
-        if (enableFile.delete()) {
-          enableActionStatus = "Disable Succeeded";
-        } else {
-          enableActionStatus = "Already Disabled";
-        }
-      }
-    }
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't "+action+" server-enabled file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  try {
-    isEnabled = (enableFile.lastModified() > 0);
-    enabledStatus = (isEnabled)
-      ? "Enabled"
-      : "Disabled";
-    makeEnabled = (isEnabled)
-      ? "Disable"
-      : "Enable";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't check server-enabled file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  String collectionName = schema!=null ? schema.getName():"unknown";
-  String hostname="localhost";
-  String defaultSearch= SolrConfig.config.get("admin/defaultQuery","");
-  try {
-    InetAddress addr = InetAddress.getLocalHost();
-    // Get IP Address
-    byte[] ipAddr = addr.getAddress();
-    // Get hostname
-    // hostname = addr.getHostName();
-    hostname = addr.getCanonicalHostName();
-  } catch (UnknownHostException e) {}
-%>
-
-
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="solr-admin.css">
-<link rel="icon" href="favicon.ico" type="image/ico"></link>
-  <link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
-<title>SOLR admin page</title>
-</head>
-
-<body>
-<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
-<h1>SOLR Admin (<%= collectionName %>) - <%= enabledStatus %></h1>
-<%= hostname %> : <%= port.toString() %>
 <br clear="all">
 <table>
 
 <tr>
   <td>
-	<h3>SOLR</h3>
+	<h3>Solr</h3>
   </td>
   <td>
     [<a href="solar-status">Status</a>]
@@ -117,6 +27,7 @@
   </td>
 </tr>
 
+
 <tr>
   <td>
     <strong>App server:</strong><br>
@@ -125,6 +36,7 @@
     [<a href="get-properties.jsp">Java Properties</a>]
     [<a href="threaddump.jsp">Thread Dump</a>]
   <%
+    if (enabledFile!=null)
     if (isEnabled) {
   %>
   [<a href="action.jsp?action=Disable">Disable</a>]
@@ -138,6 +50,7 @@
   </td>
 </tr>
 
+<!-- TODO: make it possible to add links to the admin page via solrconfig.xml
 <tr>
   <td>
 	<strong>Hardware:</strong><br>
@@ -148,6 +61,7 @@
 	[<a href="http://monitor.cnet.com/orca_mon/?mgroup=prob&hours=48&hostname=<%= hostname %>">Problems</a>]
   </td>
 </tr>
+-->
 
 </table><P>
 
@@ -203,14 +117,14 @@
   <td>
   </td>
   <td>
-  Current Time: <%= new Date().toString() %>
+  Current Time: <%= new Date() %>
   </td>
 </tr>
 <tr>
   <td>
   </td>
   <td>
-  Server Start At: <%= startTime %>
+  Server Start At: <%= new Date(core.getStartTime()) %>
   </td>
 </tr>
 </table>
