@@ -17,7 +17,6 @@
 	<h3>Solr</h3>
   </td>
   <td>
-    [<a href="solar-status">Status</a>]
     [<a href="get-file.jsp?file=schema.xml">Schema</a>]
     [<a href="get-file.jsp?file=solrconfig.xml">Config</a>]
     [<a href="analysis.jsp?highlight=on">Analysis</a>]

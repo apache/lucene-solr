@@ -113,24 +113,6 @@ public final class SolrCore {
   }
 
 
-  // TODO - what about a master that not might have a searcher normally open?
-  @Deprecated
-  public int maxDoc() {
-    RefCounted<SolrIndexSearcher> holder=null;
-    int num=0;
-    try {
-      holder = getSearcher();
-      SolrIndexSearcher searcher = holder.get();
-      num = searcher.maxDoc();
-    } catch (IOException e) {
-      log(e);
-    } finally {
-      if (holder != null) holder.decref();
-    }
-     return num;
-  }
-
-
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
     return new SolrIndexSearcher(schema, name,getDataDir(),false);
