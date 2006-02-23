@@ -1,0 +1,29 @@
+<add>
+<doc>
+  <field name="id">SP2514N</field>
+  <field name="name">Samsung SpinPoint P120 SP2514N - hard drive - 250 GB - ATA-133</field>
+  <field name="manu">Samsung Electronics Co. Ltd.</field>
+  <field name="cat">electronics</field>
+  <field name="cat">hard drive</field>
+  <field name="features">7200RPM, 8MB cache, IDE Ultra ATA-133</field>
+  <field name="features">NoiseGuard, SilentSeek technology, Fluid Dynamic Bearing (FDB) motor</field>
+  <field name="price">92</field>
+  <field name="popularity">6</field>
+  <field name="inStock">true</field>
+</doc>
+
+<doc>
+  <field name="id">6H500F0</field>
+  <field name="name">Maxtor DiamondMax 11 - hard drive - 500 GB - SATA-300</field>
+  <field name="manu">Maxtor Corp.</field>
+  <field name="cat">electronics</field>
+  <field name="cat">hard drive</field>
+  <field name="features">SATA 3.0Gb/s, NCQ</field>
+  <field name="features">8.5ms seek</field>
+  <field name="features">16MB cache</field>
+  <field name="price">350</field>
+  <field name="popularity">6</field>
+  <field name="inStock">true</field>
+</doc>
+</add>
+

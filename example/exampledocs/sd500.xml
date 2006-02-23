@@ -1,0 +1,16 @@
+<add><doc>
+  <field name="id">9885A004</field>
+  <field name="name">Canon Powershot SD500</field>
+  <field name="manu">Canon Inc.</field>
+  <field name="cat">electronics</field>
+  <field name="cat">camera</field>
+  <field name="features">3x zoop, 7.1 megapixel Digital ELPH</field>
+  <field name="features">movie clips up to 640x480 @30 fps</field>
+  <field name="features">2.0" TFT LCD, 118,000 pixels</field>
+  <field name="features">built in flash, red-eye reduction</field>
+  <field name="includes">32MB SD card, USB cable, AV cable, battery</field>
+  <field name="weight">6.4</field>
+  <field name="price">329.95</field>
+  <field name="popularity">7</field>
+  <field name="inStock">true</field>
+</doc></add>

@@ -66,8 +66,10 @@
          matching across fields.
      -->
 
+     <!-- Standard analyzer commonly used by Lucene developers
+     -->
     <!-- Standard analyzer commonly used by Lucene developers -->
-    <fieldtype name="text_lu" class="solr.TextField" positionIncrementGap="10">
+    <fieldtype name="text_lu" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
@@ -76,9 +78,15 @@
         <filter class="solr.EnglishPorterFilterFactory"/>
       </analyzer>
     </fieldtype>
-
+    <!-- One could also specify an existing Analyzer implementation in Java 
+         via the class attribute on the analyzer element:
+    <fieldtype name="text_lu" class="solr.TextField">
+      <analyzer class="org.apache.lucene.analysis.snowball.SnowballAnalyzer"/>
+    </fieldType>
+    -->
+    
     <!-- A text field that only splits on whitespace for more exact matching -->
-    <fieldtype name="text_ws" class="solr.TextField" positionIncrementGap="10">
+    <fieldtype name="text_ws" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       </analyzer>
@@ -86,9 +94,9 @@
 
     <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
         words on case-change, alpha numeric boundaries, and non-alphanumeric chars
-        so that a query of "wifi" or "wi fi" could match a document containing Wi-Fi.
+        so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
         Synonyms and stopwords are customized by external files, and stemming is enabled -->
-    <fieldtype name="text" class="solr.TextField" positionIncrementGap="10">
+    <fieldtype name="text" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
           <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
@@ -107,6 +115,20 @@
       </analyzer>
     </fieldtype>
 
+
+    <!-- Less flexible matching, but less false matches.  Probably not ideal for product names
+i        but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
+    <fieldtype name="textTight" class="solar.TextField" positionIncrementGap="100" >
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true"/>
+        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+      </analyzer>
+    </fieldtype>
+
  </types>
 
 
@@ -122,14 +144,25 @@
    -->
 
    <field name="id" type="string" indexed="true" stored="true"/>
-   <field name="date" type="date" indexed="true" stored="true"/>
-   <field name="title" type="text" indexed="true" stored="true"/>
-   <field name="subject" type="text" indexed="true" stored="true"/>
-   <field name="body" type="text" indexed="true" stored="true"/>
+   <field name="sku" type="textTight" indexed="true" stored="true"/>
+   <field name="name" type="text" indexed="true" stored="true"/>
+   <field name="manu" type="text" indexed="true" stored="true"/>
+   <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true"/>
+   <field name="features" type="text" indexed="true" stored="true" multiValued="true"/>
+   <field name="includes" type="text" indexed="true" stored="true"/>
+
+   <field name="weight" type="sfloat" indexed="true" stored="true"/>
+   <field name="price"  type="sfloat" indexed="true" stored="true"/>
+   <field name="popularity" type="sint" indexed="true" stored="true"/>
+   <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
    <!-- catchall field, containing all other searchable text fields (implemented
         via copyField further on in this schema  -->
    <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
+
+   <!-- non-tokenized version of manufacturer to make it easier to sort or group
+        results by manufacturer.  copied from "manu" via copyField -->
+   <field name="manu_exact" type="string" indexed="true" stored="false"/>
 
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
@@ -149,8 +182,7 @@
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
  </fields>
 
- <!-- field to use to determine document uniqueness... used when
-      overwriting one document with another -->
+ <!-- field to use to determine and enforce document uniqueness. -->
  <uniqueKey>id</uniqueKey>
 
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
@@ -159,9 +191,15 @@
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field different
         ways, or to add multiple fields to the same field for easier/faster searching.  -->
-   <copyField source="title" dest="text"/>
-   <copyField source="subject" dest="text"/>
-   <copyField source="body" dest="text"/>
+   <copyField source="id" dest="sku"/>
+
+   <copyField source="cat" dest="text"/>
+   <copyField source="name" dest="text"/>
+   <copyField source="manu" dest="text"/>
+   <copyField source="features" dest="text"/>
+   <copyField source="includes" dest="text"/>
+
+   <copyField source="manu" dest="manu_exact"/>
 
  <!-- Similarity is the scoring routine for each document vs a query.
       A custom similarity may be specified here, but the default is fine
