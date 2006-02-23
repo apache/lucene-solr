@@ -28,13 +28,15 @@ public class SolrConfig {
   static {
     Exception e=null;
     String file="solrconfig.xml";
-    InputStream is;
+    InputStream is=null;
     try {
       is = Config.openResource(file);
     } catch (Exception ee) {
       e=ee;
       file = "solarconfig.xml"; // backward compat
-      is = Config.openResource(file);
+      try {
+        is = Config.openResource(file);
+      } catch (Exception eee) {}
     }
     if (is!=null) {
       try {
@@ -45,7 +47,7 @@ public class SolrConfig {
       }
       Config.log.info("Loaded Config solrconfig.xml");
     } else {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Can't find Solr config file ./conf/solrconfig.xml",e);
     }
   }
 }
