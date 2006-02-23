@@ -568,7 +568,6 @@ public final class SolrCore {
         _searcher = newSearcherHolder;
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
-        SolrInfoRegistry.getRegistry().put("currentSearcher", newSearcher);
         newSearcher.register(); // register subitems (caches)
         log.info("Registered new searcher " + newSearcher);
 

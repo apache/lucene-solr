@@ -58,6 +58,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private final IndexSchema schema;
 
   private final String name;
+  private long openTime = System.currentTimeMillis();
+  private long registerTime = 0;
   private final IndexSearcher searcher;
   private final IndexReader reader;
   private final boolean closeReader;
@@ -134,6 +136,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       cacheMap = noGenericCaches;
       cacheList= noCaches;
     }
+
+    // register self
+    SolrInfoRegistry.getRegistry().put(this.name, this);
   }
 
 
@@ -149,10 +154,14 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       cache.setState(SolrCache.State.LIVE);
       SolrInfoRegistry.getRegistry().put(cache.name(), cache);
     }
+    registerTime=System.currentTimeMillis();
   }
 
 
   public void close() throws IOException {
+    // unregister first, so no management actions are tried on a closing searcher.
+    SolrInfoRegistry.getRegistry().remove(name);
+
     if (cachingEnabled) {
       StringBuilder sb = new StringBuilder();
       sb.append("Closing ").append(name);
@@ -1046,7 +1055,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
   public String getDescription() {
-    return "the searcher that handles all index queries";
+    return "index searcher";
   }
 
   public Category getCategory() {
@@ -1070,22 +1079,18 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
   public NamedList getStatistics() {
-    /***
     NamedList lst = new NamedList();
-    lst.add("requests", numRequests);
-    lst.add("errors", numErrors);
+    lst.add("caching", cachingEnabled);
+    lst.add("numDocs", reader.numDocs());
+    lst.add("maxDoc", reader.maxDoc());
+    lst.add("readerImpl", reader.getClass().getSimpleName());
+    lst.add("readerDir", reader.directory());
+    lst.add("indexVersion", reader.getVersion());
+    lst.add("openedAt", new Date(openTime));
+    if (registerTime!=0) lst.add("registeredAt", new Date(registerTime));
     return lst;
-    ***/
-    return new NamedList();
   }
-
-
-
-
 }
-
-
-
 
 
 // Todo: counting only hit collector (for speed comparison w/ caching filters)
