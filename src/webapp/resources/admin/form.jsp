@@ -7,7 +7,7 @@
 <table>
 <tr>
   <td>
-	<strong>SOLR/Lucene Statement</strong>
+	<strong>Solr/Lucene Statement</strong>
   </td>
   <td>
 	<textarea rows="5" cols="60" name="q"></textarea>
@@ -15,18 +15,10 @@
 </tr>
 <tr>
   <td>
-	<strong>Return Number Found</strong>
-  </td>
-  <td>
-	<input name="getnumfound" type="checkbox" >  <em><font size="-1">(Option ignored by SOLR... the number of matching documents is always returned)</font></em>
-  </td>
-</tr>
-<tr>
-  <td>
 	<strong>Protocol Version</strong>
   </td>
   <td>
-	<input name="version" type="text" value="2.0">
+	<input name="version" type="text" value="2.1">
   </td>
 </tr>
 <tr>
