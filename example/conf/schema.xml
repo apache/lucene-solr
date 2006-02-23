@@ -117,7 +117,7 @@
 
 
     <!-- Less flexible matching, but less false matches.  Probably not ideal for product names
-i        but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
+         but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
     <fieldtype name="textTight" class="solar.TextField" positionIncrementGap="100" >
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
