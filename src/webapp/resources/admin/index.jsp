@@ -3,6 +3,8 @@
 <!-- $Source: /cvs/main/searching/SolrServer/resources/admin/index.jsp,v $ -->
 <!-- $Name:  $ -->
 
+<%@ page import="java.util.Date"%>
+
 <!-- jsp:include page="header.jsp"/ -->
 <!-- do a verbatim include so we can use the local vars -->
 <%@include file="header.jsp" %>
