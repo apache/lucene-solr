@@ -35,6 +35,7 @@
     <echo message="Welcome to the Solr project!" />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project distribution files." />
+    <echo message="Use 'ant example' to install solr.war in ./example" />
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
