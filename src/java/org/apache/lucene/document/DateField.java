@@ -76,12 +76,13 @@ public class DateField {
    */
   public static String timeToString(long time) {
     if (time < 0)
-      throw new RuntimeException("time too early");
+      throw new RuntimeException("time '" + time + "' is too early, must be >= 0");
 
     String s = Long.toString(time, Character.MAX_RADIX);
 
     if (s.length() > DATE_LEN)
-      throw new RuntimeException("time too late");
+      throw new RuntimeException("time '" + time + "' is too late, length of string " +
+          "representation must be <= " + DATE_LEN);
 
     // Pad with leading zeros
     if (s.length() < DATE_LEN) {
