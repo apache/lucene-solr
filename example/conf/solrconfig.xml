@@ -188,6 +188,10 @@
     <defaultQuery>solr</defaultQuery>
     <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
     <pingQuery>q=id:0&amp;start=0&amp;rows=0</pingQuery>
+
+    <!-- configure a healthcheck file for servers behind a loadbalancer
+    <healthcheck type="file">server-enabled</healthcheck>
+    -->
   </admin>
 
 </config>
