@@ -42,6 +42,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   </about>
 
   <docs label="Documentation">
+    <features    label="Features"         href="features.html" />
     <faq         label="FAQ"              href="ext:faq" />
     <wiki        label="Wiki"             href="ext:wiki" />
     <tutorial    label="Tutorial"         href="tutorial.html" />

@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN" 
+          "http://forrest.apache.org/dtd/document-v20.dtd">
+
+<document>
+
+<header>
+  <title>Introduction to The Solar Enterprise Search Server</title> 
+</header> 
+
+<body>
+
+<section>
+<title>Solr in a Nutshell</title>
+  <p>
+  Solar is a standalone enterprise search server with a web-services like API. You put documents in it (called "indexing") via XML over HTTP. You query it via HTTP GET and receive XML results.
+  </p>
+  <ul>
+    <li> Advanced Full-Text Search Capabilities </li>
+    <li> Optimized for High Volume Web Traffic </li>
+    <li> Standards Based Open Interfaces - XML and HTTP </li>
+    <li> Comprehensive HTML Administration Interfaces </li>
+    <li> Scalability - Efficient Replication to other Solar Search Servers </li>
+    <li> Flexible and Adaptable with XML configuration </li>
+    <li> Extensible Plugin Architecture </li>
+  </ul>
+</section>
+
+<section>
+<title>Solar Uses the Lucene Search Library and Extends it!</title>
+  <ul>
+    <li> A Real Data Schema, with Dynamic Fields, Unique Keys </li>
+    <li> Powerful Extensions to the Lucene Query Language </li>
+    <li> Support for Dynamic Result Grouping and Filtering </li>
+    <li> Advanced, Configurable Text Analysis </li>
+    <li> Highly Configurable and User Extensible Caching </li>
+    <li> Performance Optimizations </li>
+    <li> External Configuration via XML </li>
+    <li> An Administration Interface </li>
+    <li> Monitorable Logging </li>
+    <li> Fast Incremental Updates and Snapshot Distribution </li>
+  </ul>
+</section>
+
+<section>
+<title>Detailed Features</title>
+
+  <section><title>Schema</title>
+    <ul>
+      <li>Defines the field types and fields of documents</li>
+      <li>Can drive more intelligent processing</li>
+      <li>Declarative Lucene Analyzer specification</li>
+      <li>Dynamic Fields enables on-the-fly addition of fields</li>
+      <li>CopyField functionality allows indexing a single field multiple ways, or combining multiple fields into a single searchable field</li>
+      <li>Explicit types eliminates the need for guessing types of fields</li>
+      <li>External file-based configuration of stopword lists, synonym lists, and protected word lists</li>
+    </ul>
+  </section>
+
+  <section><title>Query</title>
+    <ul>
+      <li>Sort specifications added to query language</li>
+      <li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
+      <li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
+      <li>Performance Optimizations</li>
+    </ul>
+  </section>
+
+  <section><title>Core</title>
+    <ul>
+      <li>Pluggable query handlers and extensible XML data format</li>
+      <li>Document uniqueness enforcement based on unique key field</li>
+      <li>Batches updates and deletes for high performance</li>
+      <li>User configurable commands triggered on index changes</li>
+      <li>Searcher concurrency control</li>
+      <li>Correct handling of numeric types for both sorting and range queries</li>
+      <li>Ability to control where docs with the sort field missing will be placed</li>
+      <li>Support for dynamic grouping of search results</li>
+    </ul>
+  </section>
+
+  <section><title>Caching</title>
+    <ul>
+      <li>Configurable Query Result, Filter, and Document cache instances</li>
+      <li>Pluggable Cache implementations</li>
+      <li>Cache warming in background
+        <ul><li> When a new searcher is opened, configurable searches are run against
+            it in order to warm it up to avoid
+            slow first hits.  During warming, the current searcher handles live requests.
+        </li></ul>
+      </li>
+      <li>Autowarming in background
+        <ul>
+          <li>The most recently accessed items in the caches of the current
+            searcher are re-populated in the new searcher, enabing high cache hit
+            rates across index/searcher changes.</li>
+        </ul>
+      </li>
+      <li>Fast/small filter implementation</li>
+      <li>User level caching with autowarming support</li>
+    </ul>
+  </section>
+
+  <section><title>Replication</title>
+    <ul>
+      <li>Efficient distribution of index parts that have changed via rsync transport</li>
+      <li>Pull strategy allows for easy addition of searchers</li>
+      <li>Configurable distribution interval allows tradeoff between timeliness and cache utilization</li>
+    </ul>
+  </section>
+
+  <section><title>Admin Interface</title>
+    <ul>
+      <li>Comprehensive statistics on cache utilization, updates, and queries</li>
+      <li>Text analysis debugger, showing result of every stage in an analyzer</li>
+      <li>Web Query Interface w/ debugging output
+        <ul>
+          <li>parsed query output</li>
+          <li>Lucene explain() document score detailing</li>
+          <li>explain score for documents outside of the requested range to debug why a given document wasn't ranked higher.</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+
+
+</section>
+
+</body>
+</document>
