@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta content="Apache Forrest" name="Generator">
+<meta name="Forrest-version" content="0.7">
+<meta name="Forrest-skin-name" content="pelt">
+<title>Introduction to The Solar Enterprise Search Server</title>
+<link type="text/css" href="skin/basic.css" rel="stylesheet">
+<link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
+<link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
+<link type="text/css" href="skin/profile.css" rel="stylesheet">
+<script src="skin/getBlank.js" language="javascript" type="text/javascript"></script><script src="skin/getMenu.js" language="javascript" type="text/javascript"></script><script src="skin/fontsize.js" language="javascript" type="text/javascript"></script>
+<link rel="shortcut icon" href="images/favicon.ico">
+</head>
+<body onload="init()">
+<script type="text/javascript">ndeSetTextSize();</script>
+<div id="top">
+<div class="breadtrail">
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://lucene.apache.org/">Lucene</a> &gt; <a href="http://incubator.apache.org/solr/">Solr</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
+</div>
+<div class="header">
+<div class="grouplogo">
+<a href="http://incubator.apache.org/"><img class="logoImage" alt="Apache Incubator" src="http://incubator.apache.org/images/apache-incubator-logo.png" title="Apache Incubator"></a>
+</div>
+<div class="projectlogo">
+<a href="http://incubator.apache.org/solr/"><img class="logoImage" alt="Solr" src="images/solr.png" title="Solr Description"></a>
+</div>
+<div class="searchbox">
+<form action="http://www.google.com/search" method="get" class="roundtopsmall">
+<input value="incubator.apache.org" name="sitesearch" type="hidden"><input onFocus="getBlank (this, 'Search the site with google');" size="25" name="q" id="query" type="text" value="Search the site with google">&nbsp; 
+                    <input attr="value" name="Search" value="Search" type="submit">
+</form>
+</div>
+<ul id="tabs">
+<li class="current">
+<a class="base-selected" href="index.html">Main</a>
+</li>
+<li>
+<a class="base-not-selected" href="http://wiki.apache.org/solr">Wiki</a>
+</li>
+</ul>
+</div>
+</div>
+<div id="main">
+<div id="publishedStrip">
+<div id="level2tabs"></div>
+<script type="text/javascript"><!--
+document.write("<text>Last Published:</text> " + document.lastModified);
+//  --></script>
+</div>
+<div class="breadtrail">
+             
+             &nbsp;
+           </div>
+<div id="menu">
+<div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">About</div>
+<div id="menu_1.1" class="menuitemgroup">
+<div class="menuitem">
+<a href="index.html" title="Welcome to Solr">Welcome</a>
+</div>
+<div class="menuitem">
+<a href="who.html" title="Solr Committers">Who We Are</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_selected_1.2', 'skin/')" id="menu_selected_1.2Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
+<div id="menu_selected_1.2" class="selectedmenuitemgroup" style="display: block;">
+<div class="menupage">
+<div class="menupagetitle">Features</div>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/solr/FAQ">FAQ</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/solr/">Wiki</a>
+</div>
+<div class="menuitem">
+<a href="tutorial.html">Tutorial</a>
+</div>
+<div class="menuitem">
+<a href="docs/api/">API Docs</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Resources</div>
+<div id="menu_1.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://cvs.apache.org/dist/lucene/solr/nightly/">Download</a>
+</div>
+<div class="menuitem">
+<a href="mailing_lists.html">Mailing Lists</a>
+</div>
+<div class="menuitem">
+<a href="issue_tracking.html">Issue Tracking</a>
+</div>
+<div class="menuitem">
+<a href="version_control.html">Version Control</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Related Projects</div>
+<div id="menu_1.4" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://lucene.apache.org/java/">Lucene Java</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/nutch/">Nutch</a>
+</div>
+</div>
+<div id="credit"></div>
+<div id="roundbottom">
+<img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<div id="credit2"></div>
+</div>
+<div id="content">
+<div title="Portable Document Format" class="pdflink">
+<a class="dida" href="features.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
+        PDF</a>
+</div>
+<h1>Introduction to The Solar Enterprise Search Server</h1>
+<div id="minitoc-area">
+<ul class="minitoc">
+<li>
+<a href="#Solr+in+a+Nutshell">Solr in a Nutshell</a>
+</li>
+<li>
+<a href="#Solar+Uses+the+Lucene+Search+Library+and+Extends+it%21">Solar Uses the Lucene Search Library and Extends it!</a>
+</li>
+<li>
+<a href="#Detailed+Features">Detailed Features</a>
+<ul class="minitoc">
+<li>
+<a href="#Schema">Schema</a>
+</li>
+<li>
+<a href="#Query">Query</a>
+</li>
+<li>
+<a href="#Core">Core</a>
+</li>
+<li>
+<a href="#Caching">Caching</a>
+</li>
+<li>
+<a href="#Replication">Replication</a>
+</li>
+<li>
+<a href="#Admin+Interface">Admin Interface</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+
+<a name="N1000C"></a><a name="Solr+in+a+Nutshell"></a>
+<h2 class="boxed">Solr in a Nutshell</h2>
+<div class="section">
+<p>
+  Solar is a standalone enterprise search server with a web-services like API. You put documents in it (called "indexing") via XML over HTTP. You query it via HTTP GET and receive XML results.
+  </p>
+<ul>
+    
+<li> Advanced Full-Text Search Capabilities </li>
+    
+<li> Optimized for High Volume Web Traffic </li>
+    
+<li> Standards Based Open Interfaces - XML and HTTP </li>
+    
+<li> Comprehensive HTML Administration Interfaces </li>
+    
+<li> Scalability - Efficient Replication to other Solar Search Servers </li>
+    
+<li> Flexible and Adaptable with XML configuration </li>
+    
+<li> Extensible Plugin Architecture </li>
+  
+</ul>
+</div>
+
+
+<a name="N1002E"></a><a name="Solar+Uses+the+Lucene+Search+Library+and+Extends+it%21"></a>
+<h2 class="boxed">Solar Uses the Lucene Search Library and Extends it!</h2>
+<div class="section">
+<ul>
+    
+<li> A Real Data Schema, with Dynamic Fields, Unique Keys </li>
+    
+<li> Powerful Extensions to the Lucene Query Language </li>
+    
+<li> Support for Dynamic Result Grouping and Filtering </li>
+    
+<li> Advanced, Configurable Text Analysis </li>
+    
+<li> Highly Configurable and User Extensible Caching </li>
+    
+<li> Performance Optimizations </li>
+    
+<li> External Configuration via XML </li>
+    
+<li> An Administration Interface </li>
+    
+<li> Monitorable Logging </li>
+    
+<li> Fast Incremental Updates and Snapshot Distribution </li>
+  
+</ul>
+</div>
+
+
+<a name="N10056"></a><a name="Detailed+Features"></a>
+<h2 class="boxed">Detailed Features</h2>
+<div class="section">
+<a name="N1005C"></a><a name="Schema"></a>
+<h3 class="boxed">Schema</h3>
+<ul>
+      
+<li>Defines the field types and fields of documents</li>
+      
+<li>Can drive more intelligent processing</li>
+      
+<li>Declarative Lucene Analyzer specification</li>
+      
+<li>Dynamic Fields enables on-the-fly addition of fields</li>
+      
+<li>CopyField functionality allows indexing a single field multiple ways, or combining multiple fields into a single searchable field</li>
+      
+<li>Explicit types eliminates the need for guessing types of fields</li>
+      
+<li>External file-based configuration of stopword lists, synonym lists, and protected word lists</li>
+    
+</ul>
+<a name="N1007A"></a><a name="Query"></a>
+<h3 class="boxed">Query</h3>
+<ul>
+      
+<li>Sort specifications added to query language</li>
+      
+<li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
+      
+<li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
+      
+<li>Performance Optimizations</li>
+    
+</ul>
+<a name="N1008F"></a><a name="Core"></a>
+<h3 class="boxed">Core</h3>
+<ul>
+      
+<li>Pluggable query handlers and extensible XML data format</li>
+      
+<li>Document uniqueness enforcement based on unique key field</li>
+      
+<li>Batches updates and deletes for high performance</li>
+      
+<li>User configurable commands triggered on index changes</li>
+      
+<li>Searcher concurrency control</li>
+      
+<li>Correct handling of numeric types for both sorting and range queries</li>
+      
+<li>Ability to control where docs with the sort field missing will be placed</li>
+      
+<li>Support for dynamic grouping of search results</li>
+    
+</ul>
+<a name="N100B0"></a><a name="Caching"></a>
+<h3 class="boxed">Caching</h3>
+<ul>
+      
+<li>Configurable Query Result, Filter, and Document cache instances</li>
+      
+<li>Pluggable Cache implementations</li>
+      
+<li>Cache warming in background
+        <ul>
+<li> When a new searcher is opened, configurable searches are run against
+            it in order to warm it up to avoid
+            slow first hits.  During warming, the current searcher handles live requests.
+        </li>
+</ul>
+      
+</li>
+      
+<li>Autowarming in background
+        <ul>
+          
+<li>The most recently accessed items in the caches of the current
+            searcher are re-populated in the new searcher, enabing high cache hit
+            rates across index/searcher changes.</li>
+        
+</ul>
+      
+</li>
+      
+<li>Fast/small filter implementation</li>
+      
+<li>User level caching with autowarming support</li>
+    
+</ul>
+<a name="N100D5"></a><a name="Replication"></a>
+<h3 class="boxed">Replication</h3>
+<ul>
+      
+<li>Efficient distribution of index parts that have changed via rsync transport</li>
+      
+<li>Pull strategy allows for easy addition of searchers</li>
+      
+<li>Configurable distribution interval allows tradeoff between timeliness and cache utilization</li>
+    
+</ul>
+<a name="N100E7"></a><a name="Admin+Interface"></a>
+<h3 class="boxed">Admin Interface</h3>
+<ul>
+      
+<li>Comprehensive statistics on cache utilization, updates, and queries</li>
+      
+<li>Text analysis debugger, showing result of every stage in an analyzer</li>
+      
+<li>Web Query Interface w/ debugging output
+        <ul>
+          
+<li>parsed query output</li>
+          
+<li>Lucene explain() document score detailing</li>
+          
+<li>explain score for documents outside of the requested range to debug why a given document wasn't ranked higher.</li>
+        
+</ul>
+      
+</li>
+    
+</ul>
+</div>
+
+
+</div>
+<div class="clearboth">&nbsp;</div>
+</div>
+<div id="footer">
+<div class="lastmodified">
+<script type="text/javascript"><!--
+document.write("<text>Last Published:</text> " + document.lastModified);
+//  --></script>
+</div>
+<div class="copyright">
+        Copyright &copy;
+         2006 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
+</div>
+</div>
+</body>
+</html>
