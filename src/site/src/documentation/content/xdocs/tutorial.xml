@@ -12,19 +12,212 @@
 <body>
 
 <section>
+<title>Overview</title>
 
+<p>
+This document covers the basics of running Solr using an example
+schema, and some sample data.
+</p>
+
+</section>
+
+<section>
 <title>Requirements</title>
+
+<p>
+To follow along with this tutorial, you will need...
+</p>
+
 <ol>
   <li>Java 1.5, from
   <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
   <a href="http://www-106.ibm.com/developerworks/java/jdk/">IBM</a>, or
   <a href="http://www.bea.com/jrockit/">BEA</a>.
   </li>
-  <li>A servlet container such as Apache's <a href="http://jakarta.apache.org/tomcat/">Tomcat</a>
-5.5.</li>
+  <li>A <a href="http://cvs.apache.org/dist/lucene/solr/nightly/">Solr release</a>.
+  </li>
   <li>On Win32, <a href="http://www.cygwin.com/">cygwin</a>, for
-shell support.  (If you plan to use Subversion on Win32, be sure to select the subversion package when you install, in the "Devel" category.)</li>
+      shell support.  (If you plan to use Subversion on Win32, be
+      sure to select the subversion package when you install, in the
+      "Devel" category.)  This tutorial will assume that "<code>sh</code>"
+      is in your PATH.
+  </li>
 </ol>
+</section>
+
+<section>
+<title>Getting Started</title>
+
+<p>
+Begin by unziping the Solar release, and changing your working directory
+to be the "<code>example</code>" directory
+</p>
+<pre class="code">
+chrish@asimov:~/tmp/solr$ ls
+solr-1.0.zip
+chrish@asimov:~/tmp/solr$ unzip -q solr-1.0.zip
+chrish@asimov:~/tmp/solr$ cd solr-1.0/example/
+</pre>
+
+<p>
+Solr can run in any Java Servlet Container of your choice, but to simplify
+this tutorial, the example index includes a copy of getty.
+</p>
+<p>
+To launch getty with the Solr WAR, and the example configs, just run the <code>start.jar</code> ...
+</p>
+
+<pre class="code">
+chrish@asimov:~/tmp/solr/solr-1.0/example$ java -jar start.jar
+1 [main] INFO org.mortbay.log - Logging to org.slf4j.impl.SimpleLogger@1f436f5 via org.mortbay.log.Slf4jLog
+334 [main] INFO org.mortbay.log - Extract jar:file:/home/chrish/tmp/solr/solr-1.0/example/webapps/solr.war!/ to /tmp/Jetty__solr/webapp
+Feb 24, 2006 5:54:52 PM org.apache.solr.servlet.SolrServlet init
+INFO: user.dir=/home/chrish/tmp/solr/solr-1.0/example
+Feb 24, 2006 5:54:52 PM org.apache.solr.core.SolrConfig &lt;clinit&gt;
+INFO: Loaded Config solrconfig.xml
+
+...
+
+1656 [main] INFO org.mortbay.log - Started SelectChannelConnector @ 0.0.0.0:8983</pre>
+<p>
+This will start up the getty application server on port 8983, and use your terminal to display the logging information from Solr.
+</p>
+<p>
+You can see that the Solr is running by loading <a href="http://localhost:8983/solr/admin/">http://localhost:8983/solr/admin/</a> in your web browser.  This is the main starting point for Administering Solr.
+</p>
+
+
+</section>
+
+
+
+<section>
+<title>Indexing Data</title>
+
+<p>
+Your Solr port is up and running, but it doesn't contain any data.  You can modify a Solr index by POSTing XML Documents containing instructions to add (or update) documents, delete documents, commit pending adds and deletes, and optimize your index.  The <code>exampledocs</code> directory contains samples of the types of instructions Solr expects, as well as a Shell script for posting them using the command line utility "<code>curl</code>".
+</p>
+<p>
+Open a new Terminal window, enter the exampledocs directory, and run the "<code>post.sh</code>" script on some of the XML files in that directory...
+</p>
+
+<pre class="code">
+chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh solr.xml
+Posting file solr.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+&lt;result status="0"&gt;&lt;/result&gt;
+</pre>
+
+<p>
+You have now indexed one document about Solr, and commited and commited that document.  You can now search for "solr" using the "Make a Query" interface on the Admin screen, and you should get one result.  Clicking the "Search" button should take you to the following URL...
+</p>
+<p>
+<a href="http://localhost:8983/solr/select/?stylesheet=&amp;q=solr&amp;version=2.1&amp;start=0&amp;rows=10&amp;indent=on">http://localhost:8983/solr/select/?stylesheet=&amp;q=solr&amp;version=2.1&amp;start=0&amp;rows=10&amp;indent=on</a>
+</p>
+
+<p>
+You can index all of the sample data, using the following command...
+</p>
+
+<pre class="code">
+chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh *.xml
+Posting file hd.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
+Posting file ipod_other.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
+Posting file ipod_video.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+Posting file mem.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
+Posting file monitor.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+Posting file monitor2.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+Posting file mp500.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+Posting file sd500.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+Posting file solr.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;
+Posting file vidcard.xml to http://localhost:8983/solr/update
+&lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
+&lt;result status="0"&gt;&lt;/result&gt;
+</pre>
+
+<p>
+...and now you can search for all sorts of things using the default Lucene QueryParser syntax...
+</p>
+<ul>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video">video</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=name%3A">name:video</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=%2Bvideo+%2Bprice%3A%5B*+TO+400%5D">+video +price:[* TO 400]</a></li>
+
+</ul>
+
+</section>
+
+
+
+<section>
+<title>Updating Data</title>
+
+<p>
+You may have noticed that even though the file <code>solr.xml</code> has now been POSTed to the server twice, you still only get 1 result when searching for "solr".  This is because the example schema.xml specifies a "uniqueKey" field called "<code>id</code>".  Whenever you POST instructions to Solr to add a document with the same value for the uniqueKey as an existing document, it automaticaly replaces it for you.  You can see that that has happened by looking at the values for <code>numDocs</code> and <code>maxDoc</code> in the "CORE" section of the statistics page...
+</p>
+<p>
+<a href="http://localhost:8983/solr/admin/stats.jsp">http://localhost:8983/solr/admin/stats.jsp</a>
+</p>
+
+<p>
+maxDoc should be 16, but numDoc is only 15.  You can re-post the sample XML files over and over again as much as you want and numDocs will never increase, because the new documents will constantly be replacing the old.
+</p>
+<p>
+Go ahead and edit the XML files to change some of the data, and re-run the post.sh command, you'll see your changes reflected in subsequent searches.
+</p>
+
+</section>
+
+
+
+<section>
+<title>Sorting</title>
+
+<p>
+Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  After your search, add a semi-colon followed by a list of "field direction" pairs...
+</p>
+
+<ul>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+desc">video; price desc</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+asc">video; price asc</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+price+desc">video; inStock asc price desc</a></li>
+</ul>
+
+<p>
+"score" can also be used as a field name when specifying a sort...
+</p>
+<ul>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+desc">video; score desc</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+asc">video; score asc</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+score+desc">video; inStock asc score desc</a></li>
+</ul>
+
+
+</section>
+
+
+
+<section>
+<title>TODO</title>
+
+<ul>
+  <li>screenshots?</li>
+  <li>talk about hte advanced search screen: fl, debug, etc...</li>
+  <li>talk about the analysis tools</li>
+  <li>talk about on deck searchers and pending commits .. change post.sh so there is an option to not commit and walk through an example where changes are POSTed but not commited, and show how searches don't show them</li>
+  <li>talk about optimizing, add an optimize.sh</li>
+  <li>talk about deleting, add a delete.sh</li>
+  <li>talk about dynamic fields?</li>
+</ul>
 </section>
 
 
