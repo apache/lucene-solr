@@ -66,6 +66,8 @@
     <mkdir dir="${dest}" />
 
     <javac destdir="${dest}"
+           target="1.5"
+	   source="1.5"
            classpathref="compile.classpath">
       <src path="${src}/java" />
       <src path="${src}/webapp" />
@@ -117,6 +119,8 @@
     <mkdir dir="${dest}/tests" />
     <javac 
        destdir="${dest}/tests"
+       target="1.5"
+       source="1.5"
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
       <src path="${src}/apps/SolrTest/src" />
