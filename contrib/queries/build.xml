@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<project name="queries" default="default">
+
+  <description>
+    Queries - various query object exotica not in core
+  </description>
+
+  <import file="../contrib-build.xml"/>
+</project>

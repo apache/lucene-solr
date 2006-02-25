@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FilteredQuery>
+	<Query>
+		<BooleanQuery fieldName="contents">
+			<Clause occurs="should">
+				<TermQuery>merger</TermQuery>
+			</Clause>
+			<Clause occurs="mustnot">
+				<TermQuery >sumitomo</TermQuery>		
+			</Clause>
+			<Clause occurs="must">
+				<TermQuery>bank</TermQuery>
+			</Clause>
+		</BooleanQuery>
+	</Query>
+	
+	<Filter>
+		<RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+	</Filter>
+	
+</FilteredQuery>
