@@ -18,12 +18,13 @@
 
   <property name="src.dir" location="src"/>
 
-  <target name="dist" depends="compile" description="Create JAR">
-    <jar jarfile="${dist.dir}/${dist.name}.jar"
-         basedir="${build.dir}/classes"
+
+  <import file="../contrib-build.xml"/>
+
+  <target name="jar" depends="compile" description="Create JAR">
+    <jar jarfile="${build.dir}/${final.name}.jar"
+         basedir="${build.dir}/classes/java"
          manifest="META-INF/MANIFEST.MF"
     />
   </target>
-
-  <import file="../contrib-build.xml"/>
 </project>
