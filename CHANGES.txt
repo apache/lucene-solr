@@ -4,6 +4,13 @@ $Id$
 
 1.9 RC2
 
+Bug fixes
+ 
+ 1. The fix that made IndexWriter.setMaxBufferedDocs(1) work had negative 
+    effects on indexing performance and has thus been reverted. The 
+    argument for setMaxBufferedDocs(int) must now at least be 2, otherwise
+    an exception is thrown.
+ 
 Optimizations
      
  1. Optimized BufferedIndexOutput.writeBytes() to use

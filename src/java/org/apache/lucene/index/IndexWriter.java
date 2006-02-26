@@ -318,11 +318,11 @@ public class IndexWriter {
    *
    * <p> The default value is 10.
    * 
-   * @throws IllegalArgumentException if maxBufferedDocs is smaller than 1 
+   * @throws IllegalArgumentException if maxBufferedDocs is smaller than 2
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
-    if (maxBufferedDocs < 1)
-      throw new IllegalArgumentException("maxBufferedDocs must at least be 1");
+    if (maxBufferedDocs < 2)
+      throw new IllegalArgumentException("maxBufferedDocs must at least be 2");
     this.minMergeDocs = maxBufferedDocs;
   }
 
@@ -637,7 +637,7 @@ public class IndexWriter {
       int mergeDocs = 0;
       while (--minSegment >= 0) {
         SegmentInfo si = segmentInfos.info(minSegment);
-        if (si.docCount > targetMergeDocs)
+        if (si.docCount >= targetMergeDocs)
           break;
         mergeDocs += si.docCount;
       }
