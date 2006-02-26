@@ -207,7 +207,7 @@
 
   <!-- make a distribution -->
   <target name="package"
-	  depends="dist, javadoc">
+	  depends="dist, example, javadoc">
     <zip destfile="${dist}/${ant.project.name}-${version}.zip">
       <zipfileset dir="."
         prefix="${ant.project.name}-${version}"
