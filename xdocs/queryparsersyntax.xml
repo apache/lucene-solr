@@ -16,7 +16,7 @@
 
 	    <p>This page provides the Query Parser syntax in Lucene 1.9.
 	    If you are using a different
-	    version of Lucene, pelase consult the copy of
+	    version of Lucene, please consult the copy of
 	    <code>docs/queryparsersyntax.html</code> that was distributed
 	    with the version you are using.
 	    </p>

@@ -15,7 +15,7 @@
             <p>
                 This document defines the index file formats used
                 in Lucene version 1.9.  If you are using a different
-		version of Lucene, pelase consult the copy of
+		version of Lucene, please consult the copy of
 		<code>docs/fileformats.html</code> that was distributed
 		with the version you are using.
             </p>
