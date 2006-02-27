@@ -2,7 +2,14 @@ Lucene Change Log
 
 $Id$
 
-1.9 RC2
+1.9 final
+
+Note that this realease is mostly but not 100% source compatible with
+the previous release of Lucene (1.4.3). In other words, you should
+make sure your application compiles with this version of Lucene before
+you replace the old Lucene JAR with the new one.  Many methods have
+been deprecated in anticipation of release 2.0, so deprecation
+warnings are to be expected when upgrading from 1.4.3 to 1.9.
 
 Bug fixes
  
@@ -17,13 +24,7 @@ Optimizations
     System.arraycopy() in more cases, rather than copying byte-by-byte.
     (Lukas Zapletal via Cutting)
 
-
 1.9 RC1
-
-Note that this realease is mostly but not 100% source compatible with the
-latest release of Lucene (1.4.3). In other words, you should make sure
-your application compiles with this version of Lucene before you replace
-the old Lucene JAR with the new one.
 
 Requirements
 
