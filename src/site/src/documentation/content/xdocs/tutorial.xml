@@ -52,12 +52,12 @@ To follow along with this tutorial, you will need...
 Begin by unziping the Solar release, and changing your working directory
 to be the "<code>example</code>" directory
 </p>
-<pre class="code">
+<source>
 chrish@asimov:~/tmp/solr$ ls
 solr-1.0.zip
 chrish@asimov:~/tmp/solr$ unzip -q solr-1.0.zip
 chrish@asimov:~/tmp/solr$ cd solr-1.0/example/
-</pre>
+</source>
 
 <p>
 Solr can run in any Java Servlet Container of your choice, but to simplify
@@ -67,7 +67,7 @@ this tutorial, the example index includes a copy of getty.
 To launch getty with the Solr WAR, and the example configs, just run the <code>start.jar</code> ...
 </p>
 
-<pre class="code">
+<source>
 chrish@asimov:~/tmp/solr/solr-1.0/example$ java -jar start.jar
 1 [main] INFO org.mortbay.log - Logging to org.slf4j.impl.SimpleLogger@1f436f5 via org.mortbay.log.Slf4jLog
 334 [main] INFO org.mortbay.log - Extract jar:file:/home/chrish/tmp/solr/solr-1.0/example/webapps/solr.war!/ to /tmp/Jetty__solr/webapp
@@ -78,7 +78,8 @@ INFO: Loaded Config solrconfig.xml
 
 ...
 
-1656 [main] INFO org.mortbay.log - Started SelectChannelConnector @ 0.0.0.0:8983</pre>
+1656 [main] INFO org.mortbay.log - Started SelectChannelConnector @ 0.0.0.0:8983
+</source>
 <p>
 This will start up the getty application server on port 8983, and use your terminal to display the logging information from Solr.
 </p>
@@ -101,12 +102,12 @@ Your Solr port is up and running, but it doesn't contain any data.  You can modi
 Open a new Terminal window, enter the exampledocs directory, and run the "<code>post.sh</code>" script on some of the XML files in that directory...
 </p>
 
-<pre class="code">
+<source>
 chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh solr.xml
 Posting file solr.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;
 &lt;result status="0"&gt;&lt;/result&gt;
-</pre>
+</source>
 
 <p>
 You have now indexed one document about Solr, and commited and commited that document.  You can now search for "solr" using the "Make a Query" interface on the Admin screen, and you should get one result.  Clicking the "Search" button should take you to the following URL...
@@ -119,7 +120,7 @@ You have now indexed one document about Solr, and commited and commited that doc
 You can index all of the sample data, using the following command...
 </p>
 
-<pre class="code">
+<source>
 chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh *.xml
 Posting file hd.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
@@ -142,7 +143,7 @@ Posting file solr.xml to http://localhost:8983/solr/update
 Posting file vidcard.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
 &lt;result status="0"&gt;&lt;/result&gt;
-</pre>
+</source>
 
 <p>
 ...and now you can search for all sorts of things using the default Lucene QueryParser syntax...
