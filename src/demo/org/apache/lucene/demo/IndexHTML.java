@@ -26,13 +26,16 @@ import java.io.File;
 import java.util.Date;
 import java.util.Arrays;
 
-class IndexHTML {
+/** Indexer for HTML files. */
+public class IndexHTML {
+  private IndexHTML() {}
 
   private static boolean deleting = false;	  // true during deletion pass
   private static IndexReader reader;		  // existing index
   private static IndexWriter writer;		  // new index being built
   private static TermEnum uidIter;		  // document id iterator
 
+  /** Indexer for HTML files.*/
   public static void main(String[] argv) {
     try {
       String index = "index";

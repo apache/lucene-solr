@@ -28,14 +28,13 @@ import java.util.Random;
 class StoreTest {
   public static void main(String[] args) {
     try {
-      test(1000, true);
+      test(1000, true, true);
     } catch (Exception e) {
-      System.out.println(" caught a " + e.getClass() +
-			 "\n with message: " + e.getMessage());
+		e.printStackTrace();
     }
   }
 
-  public static void test(int count, boolean ram)
+  public static void test(int count, boolean ram, boolean buffered)
        throws Exception {
     Random gen = new Random(1251971);
     int i;
@@ -51,6 +50,8 @@ class StoreTest {
 
     final int LENGTH_MASK = 0xFFF;
 
+	final byte[] buffer = new byte[LENGTH_MASK];
+
     for (i = 0; i < count; i++) {
       String name = i + ".dat";
       int length = gen.nextInt() & LENGTH_MASK;
@@ -59,8 +60,14 @@ class StoreTest {
 
       IndexOutput file = store.createOutput(name);
 
-      for (int j = 0; j < length; j++)
-	file.writeByte(b);
+      if (buffered) {
+        for (int j = 0; j < length; j++)
+          buffer[j] = b;
+        file.writeBytes(buffer, length);
+      } else {
+        for (int j = 0; j < length; j++)
+          file.writeByte(b);
+      }
       
       file.close();
     }
@@ -89,9 +96,18 @@ class StoreTest {
       if (file.length() != length)
 	throw new Exception("length incorrect");
 
-      for (int j = 0; j < length; j++)
-	if (file.readByte() != b)
-	  throw new Exception("contents incorrect");
+      byte[] content = new byte[length];
+      if (buffered) {
+        file.readBytes(content, 0, length);
+        // check the buffer
+        for (int j = 0; j < length; j++)
+          if (content[j] != b)
+            throw new Exception("contents incorrect");
+      } else {
+        for (int j = 0; j < length; j++)
+          if (file.readByte() != b)
+            throw new Exception("contents incorrect");
+      }
 
       file.close();
     }

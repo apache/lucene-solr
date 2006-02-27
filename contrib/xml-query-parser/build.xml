@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<project name="xml-query-parser" default="buildParser">
+
+  <description>
+    XML query parser
+  </description>
+
+  <import file="../contrib-build.xml"/>
+
+  <property name="queries.jar" location="../../build/contrib/queries/lucene-queries-${version}.jar"/>
+
+  <path id="classpath">
+   <pathelement path="${lucene.jar}"/>
+   <pathelement path="${queries.jar}"/>
+   <pathelement path="${project.classpath}"/>
+  </path>
+
+
+  <target name="buildParser" depends="buildQueries,default" />
+
+  <target name="buildQueries" >
+  	  <echo>XML Parser building dependency ${queries.jar}</echo>
+      <ant antfile="../queries/build.xml" target="default" inheritall="false"/>
+  </target>
+
+
+</project>

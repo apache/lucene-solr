@@ -134,8 +134,12 @@ public final class QueryTermExtractor
 
 		for (i = 0; i < queryClauses.length; i++)
 		{
-			if (prohibited || !queryClauses[i].prohibited)
-				getTerms(queryClauses[i].query, terms, prohibited, fieldName);
+			//Pre Lucene 2.0 code
+//			if (prohibited || !queryClauses[i].prohibited)
+//				getTerms(queryClauses[i].query, terms, prohibited, fieldName);
+			// Lucene 2.0 ready code
+			if (prohibited || queryClauses[i].getOccur()!=BooleanClause.Occur.MUST_NOT)
+				getTerms(queryClauses[i].getQuery(), terms, prohibited, fieldName);
 		}
 	}
 

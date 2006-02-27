@@ -10,9 +10,16 @@
         <section name="Overview">
             <p>Although Lucene provides the ability to create your own
             queries through its API, it also provides a rich query
-            language through the Query Parser.</p> <p>This page
-            provides syntax of Lucene's Query Parser, a lexer which
-            interprets a string into a Lucene Query using JavaCC.</p>
+            language through the Query Parser, a lexer which
+            interprets a string into a Lucene Query using JavaCC.
+	    </p>
+
+	    <p>This page provides the Query Parser syntax in Lucene 1.9.
+	    If you are using a different
+	    version of Lucene, please consult the copy of
+	    <code>docs/queryparsersyntax.html</code> that was distributed
+	    with the version you are using.
+	    </p>
             <p>
             Before choosing to use the provided Query Parser, please consider the following:
             <ol>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ConstantScoreQuery>
+	<RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+</ConstantScoreQuery>

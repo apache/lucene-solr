@@ -66,27 +66,27 @@ public class RAMOutputStream extends BufferedIndexOutput {
   }
 
   public void flushBuffer(byte[] src, int len) {
-    int bufferNumber = pointer/BUFFER_SIZE;
-    int bufferOffset = pointer%BUFFER_SIZE;
-    int bytesInBuffer = BUFFER_SIZE - bufferOffset;
-    int bytesToCopy = bytesInBuffer >= len ? len : bytesInBuffer;
+    byte[] buffer;
+    int bufferPos = 0;
+    while (bufferPos != len) {
+      int bufferNumber = pointer/BUFFER_SIZE;
+      int bufferOffset = pointer%BUFFER_SIZE;
+      int bytesInBuffer = BUFFER_SIZE - bufferOffset;
+      int remainInSrcBuffer = len - bufferPos;
+      int bytesToCopy = bytesInBuffer >= remainInSrcBuffer ? remainInSrcBuffer : bytesInBuffer;
 
-    if (bufferNumber == file.buffers.size())
-      file.buffers.addElement(new byte[BUFFER_SIZE]);
+      if (bufferNumber == file.buffers.size()) {
+        buffer = new byte[BUFFER_SIZE];
+        file.buffers.addElement(buffer);
+      } else {
+        buffer = (byte[]) file.buffers.elementAt(bufferNumber);
+      }
 
-    byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
-    System.arraycopy(src, 0, buffer, bufferOffset, bytesToCopy);
-
-    if (bytesToCopy < len) {			  // not all in one buffer
-      int srcOffset = bytesToCopy;
-      bytesToCopy = len - bytesToCopy;		  // remaining bytes
-      bufferNumber++;
-      if (bufferNumber == file.buffers.size())
-        file.buffers.addElement(new byte[BUFFER_SIZE]);
-      buffer = (byte[])file.buffers.elementAt(bufferNumber);
-      System.arraycopy(src, srcOffset, buffer, 0, bytesToCopy);
+      System.arraycopy(src, bufferPos, buffer, bufferOffset, bytesToCopy);
+      bufferPos += bytesToCopy;
+      pointer += bytesToCopy;
     }
-    pointer += len;
+
     if (pointer > file.length)
       file.length = pointer;
 

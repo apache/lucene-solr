@@ -22,8 +22,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 //import org.apache.lucene.index.Term;
 
-class DeleteFiles {
+
+/** Deletes documents from an index that do not contain a term. */
+public class DeleteFiles {
   
+  private DeleteFiles() {}                         // singleton
+
+  /** Deletes documents from an index that do not contain a term. */
   public static void main(String[] args) {
     String usage = "java org.apache.lucene.demo.DeleteFiles <unique_term>";
     if (args.length == 0) {

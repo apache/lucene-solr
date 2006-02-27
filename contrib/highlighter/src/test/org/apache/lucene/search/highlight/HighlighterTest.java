@@ -222,7 +222,8 @@ public class HighlighterTest extends TestCase implements Formatter
 		String srchkey = "football";
 
 		String s = "football-soccer in the euro 2004 footie competition";
-		Query query = QueryParser.parse(srchkey, "bookid", analyzer);
+		QueryParser parser=new QueryParser("bookid",analyzer);
+		Query query = parser.parse(srchkey);
 
 		Highlighter highlighter = new Highlighter(new QueryScorer(query));
 		TokenStream tokenStream =
@@ -289,7 +290,7 @@ public class HighlighterTest extends TestCase implements Formatter
 			new Highlighter(this,new QueryScorer(query));
 		highlighter.setMaxDocBytesToAnalyze(30);
 		TokenStream tokenStream=analyzer.tokenStream(FIELD_NAME,new StringReader(texts[0]));
-		String result = highlighter.getBestFragment(tokenStream,texts[0]);
+		highlighter.getBestFragment(tokenStream,texts[0]);
 		assertTrue("Setting MaxDocBytesToAnalyze should have prevented " +
 			"us from finding matches for this record: " + numHighlights +
 			 " found", numHighlights == 0);
@@ -302,7 +303,9 @@ public class HighlighterTest extends TestCase implements Formatter
 		//test to show how rewritten query can still be used
 		searcher = new IndexSearcher(ramDir);
 		Analyzer analyzer=new StandardAnalyzer();
-		Query query = QueryParser.parse("JF? or Kenned*", FIELD_NAME, analyzer);
+
+		QueryParser parser=new QueryParser(FIELD_NAME,analyzer);	
+		Query query = parser.parse("JF? or Kenned*");
 		System.out.println("Searching with primitive query");
 		//forget to set this and...
 		//query=query.rewrite(reader);
@@ -406,7 +409,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		RAMDirectory ramDir1 = new RAMDirectory();
 		IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(), true);
 		Document d = new Document();
-		Field f = new Field(FIELD_NAME, "multiOne", true, true, true);
+		Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.TOKENIZED);
 		d.add(f);
 		writer1.addDocument(d);
 		writer1.optimize();
@@ -417,7 +420,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		RAMDirectory ramDir2 = new RAMDirectory();
 		IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(), true);
 		d = new Document();
-		f = new Field(FIELD_NAME, "multiTwo", true, true, true);
+		f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.TOKENIZED);
 		d.add(f);
 		writer2.addDocument(d);
 		writer2.optimize();
@@ -430,7 +433,8 @@ public class HighlighterTest extends TestCase implements Formatter
 		searchers[0] = new IndexSearcher(ramDir1);
 		searchers[1] = new IndexSearcher(ramDir2);
 		MultiSearcher multiSearcher=new MultiSearcher(searchers);
-		query = QueryParser.parse("multi*", FIELD_NAME, new StandardAnalyzer());
+		QueryParser parser=new QueryParser(FIELD_NAME, new StandardAnalyzer());
+		query = parser.parse("multi*");
 		System.out.println("Searching for: " + query.toString(FIELD_NAME));
 		//at this point the multisearcher calls combine(query[])
 		hits = multiSearcher.search(query);
@@ -536,7 +540,8 @@ public class HighlighterTest extends TestCase implements Formatter
 	public void doSearching(String queryString) throws Exception
 	{
 		searcher = new IndexSearcher(ramDir);
-		query = QueryParser.parse(queryString, FIELD_NAME, new StandardAnalyzer());
+		QueryParser parser=new QueryParser(FIELD_NAME, new StandardAnalyzer());
+		query = parser.parse(queryString);
 		//for any multi-term queries to work (prefix, wildcard, range,fuzzy etc) you must use a rewritten query!
 		query=query.rewrite(reader);
 		System.out.println("Searching for: " + query.toString(FIELD_NAME));
@@ -585,7 +590,7 @@ public class HighlighterTest extends TestCase implements Formatter
 	private void addDoc(IndexWriter writer, String text) throws IOException
 	{
 		Document d = new Document();
-		Field f = new Field(FIELD_NAME, text, true, true, true);
+		Field f = new Field(FIELD_NAME, text,Field.Store.YES, Field.Index.TOKENIZED);
 		d.add(f);
 		writer.addDocument(d);
 
