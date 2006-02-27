@@ -387,20 +387,20 @@
 
         <group title="Demo" packages="org.apache.lucene.demo*"/>
 
-        <group title="Analysis" packages="org.apache.lucene.analysis.*"/>
-        <group title="Ant" packages="org.apache.lucene.ant*"/>
+        <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
+        <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
 
-        <group title="Highlighter" packages="org.apache.lucene.search.highlight*"/>
-        <group title="Lucli" packages="lucli*"/>
-        <group title="Memory" packages="org.apache.lucene.index.memory*"/>
-        <group title="Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
-        <group title="MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
-        <group title="RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
-        <group title="Snowball Stemmers" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
-	<group title="SpellChecker" packages="org.apache.lucene.search.spell*"/>
-	<group title="Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
-        <group title="Swing" packages="org.apache.lucene.swing*"/>
-        <group title="WordNet" packages="org.apache.lucene.wordnet*"/>
+        <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
+        <group title="contrib: Lucli" packages="lucli*"/>
+        <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
+        <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
+        <group title="contrib: MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
+        <group title="contrib: RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
+        <group title="contrib: Snowball" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
+	<group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
+	<group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
+        <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
+        <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
 
 	
       </javadoc>
