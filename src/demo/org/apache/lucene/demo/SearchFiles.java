@@ -33,7 +33,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.queryParser.QueryParser;
 
-class SearchFiles {
+/** Simple command-line based search demo. */
+public class SearchFiles {
 
   /** Use the norms from one field for all fields.  Norms are read into memory,
    * using a byte of memory per document per searched field.  This can cause
@@ -53,6 +54,9 @@ class SearchFiles {
     }
   }
 
+  private SearchFiles() {}
+
+  /** Simple command-line based search demo. */
   public static void main(String[] args) throws Exception {
     String usage =
       "Usage: java org.apache.lucene.demo.SearchFiles [-index dir] [-field f] [-repeat n] [-queries file] [-raw] [-norms field]";

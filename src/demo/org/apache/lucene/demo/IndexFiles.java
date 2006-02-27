@@ -24,10 +24,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Date;
 
-class IndexFiles {
+/** Index all text files under a directory. */
+public class IndexFiles {
   
+  private IndexFiles() {}
+
   static final File INDEX_DIR = new File("index");
   
+  /** Index all text files under a directory. */
   public static void main(String[] args) {
     String usage = "java org.apache.lucene.demo.IndexFiles <root_directory>";
     if (args.length == 0) {
@@ -64,7 +68,7 @@ class IndexFiles {
     }
   }
 
-  public static void indexDocs(IndexWriter writer, File file)
+  static void indexDocs(IndexWriter writer, File file)
     throws IOException {
     // do not try to index files that cannot be read
     if (file.canRead()) {
