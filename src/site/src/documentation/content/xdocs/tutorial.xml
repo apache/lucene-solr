@@ -192,8 +192,17 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
   <p>
     Searches are done via HTTP GET on the select URL with the query string in the q parameter.
     You can pass a number of optional <a href="http://wiki.apache.org/solr/StandardRequestHandler">request parameters</a>
-    to the request handler to control what information is returned.
+    to the request handler to control what information is returned.  For example, you can use the "fl" parameter
+    to control what stored fields are returned, and if the relevancy score is returned...
   </p>
+
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=name,id</a>       (return only name and id fields)   </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=name,id,score</a>  (return relevancy score as well) </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video;price desc&amp;fl=name,id">q=video;price desc&amp;fl=name,id</a>  (add sort specification: sort by price descending) </li>
+    </ul>
+
   <p>
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
     that allows setting the various request parameters and is useful when trying out or debugging queries.
@@ -207,9 +216,9 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
     </p>
 
     <ul>
-      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+desc">video; price desc</a></li>
-      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+asc">video; price asc</a></li>
-      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+price+desc">video; inStock asc, price desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video%;price+desc">video; price desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video;price+asc">video; price asc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video%;inStock+asc+price+desc">video; inStock asc, price desc</a></li>
     </ul>
 
     <p>
@@ -225,7 +234,21 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 
 </section>
 
+<section>
+  <title>Text Analysis</title>
 
+  <p>
+    Text fields are typically indexed by breaking the field into words and applying various transformations such as
+    lowercasing, removing plurals, or stemming to increase relevancy.
+  </p>
+
+  <p>TODO</p>
+
+  <p>A more in depth description of the analysis components
+    available is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
+    </p>
+
+</section>
 
 
 <section>
