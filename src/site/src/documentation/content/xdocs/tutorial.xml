@@ -186,32 +186,45 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 
 </section>
 
-
-
 <section>
-<title>Sorting</title>
+  <title>Querying Data</title>
 
-<p>
-Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  After your search, add a semi-colon followed by a list of "field direction" pairs...
-</p>
+  <p>
+    Searches are done via HTTP GET on the select URL with the query string in the q parameter.
+    You can pass a number of optional <a href="http://wiki.apache.org/solr/StandardRequestHandler">request parameters</a>
+    to the request handler to control what information is returned.
+  </p>
+  <p>
+    Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
+    that allows setting the various request parameters and is useful when trying out or debugging queries.
+  </p>
 
-<ul>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+desc">video; price desc</a></li>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+asc">video; price asc</a></li>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+price+desc">video; inStock asc, price desc</a></li>
-</ul>
+  <section>
+    <title>Sorting</title>
 
-<p>
-"score" can also be used as a field name when specifying a sort...
-</p>
-<ul>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+desc">video; score desc</a></li>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+asc">video; score asc</a></li>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+score+desc">video; inStock asc, score desc</a></li>
-</ul>
+    <p>
+      Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  After your search, add a semi-colon followed by a list of "field direction" pairs...
+    </p>
 
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+desc">video; price desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+price+asc">video; price asc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+price+desc">video; inStock asc, price desc</a></li>
+    </ul>
+
+    <p>
+      "score" can also be used as a field name when specifying a sort...
+    </p>
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+desc">video; score desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+asc">video; score asc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+score+desc">video; inStock asc, score desc</a></li>
+    </ul>
+
+  </section>
 
 </section>
+
 
 
 
