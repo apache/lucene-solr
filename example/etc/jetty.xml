@@ -113,6 +113,7 @@
         <!-- ======================================================= -->
         <!-- Configure a context directly - no XML parser required   -->
         <!-- ======================================================= -->
+        <!--
         <Item>
           <New id="javadocContext"  class="org.mortbay.jetty.handler.ContextHandler">
             <Set name="contextPath">/javadoc</Set>
@@ -144,6 +145,7 @@
             </Set>
           </New>
         </Item>
+        -->
 
       </Array>
     </Set>
