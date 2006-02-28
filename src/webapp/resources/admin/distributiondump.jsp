@@ -6,37 +6,11 @@
                  java.net.InetAddress,
                  java.net.UnknownHostException,
                  java.util.Date"%>
+
+<%@include file="header.jsp" %>
+
 <%
-  SolrCore core = SolrCore.getSolrCore();
-  Integer port = new Integer(request.getServerPort());
-  IndexSchema schema = core.getSchema();
-  String collectionName = schema!=null ? schema.getName():"unknown";
-
-  String rootdir = "/var/opt/resin3/"+port.toString();
-  File pidFile = new File(rootdir + "/logs/resin.pid");
-  String startTime = "";
-
-  try {
-    startTime = (pidFile.lastModified() > 0)
-              ? new Date(pidFile.lastModified()).toString()
-                    : "No Resin Pid found (logs/resin.pid)";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't open Solr pid file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  String hostname="localhost";
-  try {
-    InetAddress addr = InetAddress.getLocalHost();
-    // Get IP Address
-    byte[] ipAddr = addr.getAddress();
-    // Get hostname
-    // hostname = addr.getHostName();
-    hostname = addr.getCanonicalHostName();
-  } catch (UnknownHostException e) {}
-
-  File slaveinfo = new File(rootdir + "/logs/snappuller.status");
+  File slaveinfo = new File(cwd + "/logs/snappuller.status");
 
   StringBuffer buffer = new StringBuffer();
   String mode = "";
@@ -44,7 +18,7 @@
   if (slaveinfo.canRead()) {
     // Slave instance
     mode = "Slave";
-    File slavevers = new File(rootdir + "/logs/snapshot.current");
+    File slavevers = new File(cwd + "/logs/snapshot.current");
     BufferedReader inforeader = new BufferedReader(new FileReader(slaveinfo));
     BufferedReader versreader = new BufferedReader(new FileReader(slavevers));
     buffer.append("<tr>\n" +
@@ -67,7 +41,7 @@
   } else {
     // Master instance
     mode = "Master";
-    File masterdir = new File(rootdir + "/logs/clients");
+    File masterdir = new File(cwd + "/logs/clients");
     File[] clients = masterdir.listFiles();
     if (clients == null) {
       buffer.append("<tr>\n" +
@@ -103,39 +77,7 @@
     }
   }
 %>
-<html>
-<head>
-    <link rel="stylesheet" type="text/css" href="solr-admin.css">
-    <link rel="icon" href="favicon.ico" type="image/ico">
-    <link rel="shortcut icon" href="favicon.ico" type="image/ico">
-</head>
-<body>
-<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
-<h1>SOLR Distribution Info (<%= collectionName %>)</h1>
-<%= hostname %> : <%= port.toString() %>
-<br clear="all">
-<table>
-  <tr>
-    <td>
-    </td>
-    <td>
-      Current Time: <%= new Date().toString() %>
-    </td>
-  </tr>
-  <tr>
-    <td>
-    </td>
-    <td>
-      Server Start At: <%= startTime %>
-    </td>
-  </tr>
-</table>
-<br>
-<h3><%= mode %> Status</h3>
-<table>
-<%= buffer %>
-</table>
-<br><br>
-    <a href=".">Return to Admin Page</a>
+
+
 </body>
 </html>
