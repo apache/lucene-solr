@@ -1,6 +1,18 @@
+
+#some test synonym mappings for things unlikely to appear in input text
 aaa => aaaa
 bbb => bbbb1 bbbb2
 ccc => cccc1,cccc2
 a\=>a => b\=>b
 a\,a => b\,b
 fooaaa,baraaa,bazaaa
+
+#synonyms, for our purposes
+GB,gib,gigabyte,gigabytes
+MB,mib,megabyte,megabytes
+#notice we use "gib" instead of "GiB" so any WordDelimiterFilter coming
+#after us won't split it into two words.
+
+#spelling correction
+pixima => pixma
+
