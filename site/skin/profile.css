@@ -153,4 +153,13 @@ a:hover { color:#0000ff}
     
     #footer a { color: #0F3660; }
     #footer a:visited { color: #009999; }
+
+    pre.code {
+      margin-left: 2em;
+      margin-right: 2em;
+      padding: 0.5em;
+      background-color: #f0f0f0;
+    }
+      
+    
   
