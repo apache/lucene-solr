@@ -84,7 +84,7 @@ timer=0
 timeout=300
 while (( ! dead && timer < timeout ))
 do
-    if ps -eo pid | grep -q $pid
+    if ps -eo pid | grep -qw $pid
     then
 	kill $pid
         (( timer++ ))
@@ -93,7 +93,7 @@ do
         dead=1
     fi
 done
-if ps -eo pid | grep -q $pid
+if ps -eo pid | grep -qw $pid
 then
     logMessage rsyncd failed to stop after $timeout seconds
     exit 3
