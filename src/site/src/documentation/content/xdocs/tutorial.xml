@@ -288,6 +288,32 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
   </p>
 
 
+  <section>
+    <title>Analysis Debugging</title>
+    <p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
+      debugging page where you can see how a text value is broken down into words,
+      and shows the resulting tokens after they pass through each filter in the chain.
+    </p>
+    <p>
+      <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;val=Canon+PowerShot+SD500">This</a>
+      shows how "<code>Canon PowerShot SD500</code>" would be indexed as a value in the name field.  Each row of
+      the table shows the resulting tokens after having passed through the next TokenFilter in the Analyzer for the <code>name</code> field.
+      Notice how both <code>powershot</code> and <code>power</code>, <code>shot</code> are indexed.  Tokens generated at the same position
+      are shown in the same column, in this case <code>shot</code> and <code>powershot</code>.
+    </p>
+    <p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;verbose=on&amp;val=Canon+PowerShot+SD500">verbose output</a>
+    will show more details, such as the name of each analyzer component in the chain, token positions, and the start and end positions
+    of the token in the original text.
+    </p>
+    <p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;highlight=on&amp;val=Canon+PowerShot+SD500&amp;qval=power-shot">highlight matches</a>
+    when both index and query values are provided, will take the resulting terms from the query value and highlight
+    all matches during the index value analysis.
+    </p>
+    <p><a href="http://localhost:8983/solr/admin/analysis.jsp?name=text&amp;highlight=on&amp;val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&amp;qval=liberties+and+equality">Here</a>
+    is an example of stemming and stop-words at work.
+    </p>
+  </section>
+
 </section>
 
 
