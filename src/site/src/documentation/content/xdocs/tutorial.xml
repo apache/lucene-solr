@@ -29,7 +29,7 @@ To follow along with this tutorial, you will need...
 </p>
 
 <ol>
-  <li>Java 1.5 or greater, from
+  <li>Java 1.5 or greater.  Some places you can get it are from
   <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
   <a href="http://www-106.ibm.com/developerworks/java/jdk/">IBM</a>, or
   <a href="http://www.bea.com/jrockit/">BEA</a>.
@@ -42,7 +42,7 @@ To follow along with this tutorial, you will need...
       "Devel" category.)  This tutorial will assume that "<code>sh</code>"
       is in your PATH, and that you have "curl" installed from the "Web" category.
   </li>
-  <li>FireFox or Mozilla is the preferred browser to browse the admin pages...
+  <li>FireFox or Mozilla is the preferred browser to view the admin pages...
     the current stylesheet doesn't currently look good on IE.
   </li>
 </ol>
