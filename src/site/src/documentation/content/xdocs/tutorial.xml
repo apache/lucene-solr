@@ -29,7 +29,7 @@ To follow along with this tutorial, you will need...
 </p>
 
 <ol>
-  <li>Java 1.5, from
+  <li>Java 1.5 or greater, from
   <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
   <a href="http://www-106.ibm.com/developerworks/java/jdk/">IBM</a>, or
   <a href="http://www.bea.com/jrockit/">BEA</a>.
@@ -42,6 +42,9 @@ To follow along with this tutorial, you will need...
       "Devel" category.)  This tutorial will assume that "<code>sh</code>"
       is in your PATH, and that you have "curl" installed from the "Web" category.
   </li>
+  <li>FireFox or Mozilla is the preferred browser to browse the admin pages...
+    the current stylesheet doesn't currently look good on IE.
+  </li>
 </ol>
 </section>
 
@@ -49,7 +52,7 @@ To follow along with this tutorial, you will need...
 <title>Getting Started</title>
 
 <p>
-Begin by unziping the Solar release, and changing your working directory
+Begin by unziping the Solar release and changing your working directory
 to be the "<code>example</code>" directory
 </p>
 <source>
@@ -150,8 +153,8 @@ Posting file vidcard.xml to http://localhost:8983/solr/update
 </p>
 <ul>
   <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video">video</a></li>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=name%3A">name:video</a></li>
-  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=%2Bvideo+%2Bprice%3A%5B*+TO+400%5D">+video +price:[* TO 400]</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=name:video">name:video</a></li>
+  <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=%2Bvideo+%2Bprice%3A[*+TO+400]">+video +price:[* TO 400]</a></li>
 
 </ul>
 
@@ -216,19 +219,23 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
     </p>
 
     <ul>
-      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video%;price+desc">video; price desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video;price+desc">video; price desc</a></li>
       <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video;price+asc">video; price asc</a></li>
-      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video%;inStock+asc+price+desc">video; inStock asc, price desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video;inStock+asc+price+desc">video; inStock asc, price desc</a></li>
     </ul>
 
     <p>
       "score" can also be used as a field name when specifying a sort...
     </p>
     <ul>
-      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+desc">video; score desc</a></li>
-      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+score+asc">video; score asc</a></li>
-      <li><a href="http://localhost:8983/solr/select/?version=2.1&amp;indent=on&amp;q=video%3B+inStock+asc+score+desc">video; inStock asc, score desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/indent=on&amp;q=video;score+desc">video; score desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/indent=on&amp;q=video;score+asc">video; score asc</a></li>
+      <li><a href="http://localhost:8983/solr/select/indent=on&amp;q=video;inStock+asc,score+desc">video; inStock asc, score desc</a></li>
     </ul>
+
+    <p>
+      If no sort is specified, the default is <code>score desc</code>, the same as in the Lucene search APIs.
+    </p>
 
   </section>
 
@@ -239,14 +246,47 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 
   <p>
     Text fields are typically indexed by breaking the field into words and applying various transformations such as
-    lowercasing, removing plurals, or stemming to increase relevancy.
+    lowercasing, removing plurals, or stemming to increase relevancy.  The same text transformations are normally
+    applied to any queries in order to match what is indexed.
   </p>
 
-  <p>TODO</p>
+  <p>Example queries demonstrating relevancy improving transformations:</p>
+  <ul>
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
+       matches <code>PowerShot</code>, and
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
+      matches <code>A-DATA</code> due to the use of WordDelimiterFilter and LowerCaseFilter.
+    </li>
 
-  <p>A more in depth description of the analysis components
-    available is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
-    </p>
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=name:printers&amp;fl=name">name:printers</a>
+       matches <code>Printer</code>, and
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
+       matches <code>Rechargeable</code> due to stemming with the EnglishPorterFilter.
+    </li>
+
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=&quot;1+gigabyte&quot;&amp;fl=name">"1 gigabyte"</a>
+       matches things with <code>GB</code>, and
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a>
+       matches <code>Pixma</code> due to use of a SynonymFilter.
+    </li>
+
+  </ul>
+
+
+  <p>
+    The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
+    the fields in the index and what type of analysis is applied to them.  The current schema your server is using
+    may be accessed via the <code>[SCHEMA]</code> link on the <a href="http://localhost:8983/solr/admin/">admin</a> page.
+  </p>
+
+
+  <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
+    available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
+  </p>
+
 
 </section>
 
