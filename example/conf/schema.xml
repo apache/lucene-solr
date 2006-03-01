@@ -129,7 +129,7 @@
 
     <!-- Less flexible matching, but less false matches.  Probably not ideal for product names
          but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
-    <fieldtype name="textTight" class="solar.TextField" positionIncrementGap="100" >
+    <fieldtype name="textTight" class="solr.TextField" positionIncrementGap="100" >
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>

@@ -284,7 +284,7 @@ public class SolrTest extends Thread {
     int requests=1;
     int writers=0;
 
-    Logger log = Logger.getLogger("solar");
+    Logger log = Logger.getLogger("org.apache.solr");
     log.setUseParentHandlers(false);
     log.setLevel(Level.FINEST);
     Handler handler = new ConsoleHandler();

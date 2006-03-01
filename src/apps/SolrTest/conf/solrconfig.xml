@@ -40,7 +40,7 @@
     <unlockOnStartup>true</unlockOnStartup>
   </mainIndex>
 
-  <updateHandler class="solar.DirectUpdateHandler2">
+  <updateHandler class="solr.DirectUpdateHandler2">
 
     <!-- autocommit pending docs if certain criteria are met -->
     <autocommit>  <!-- NOTE: autocommit not implemented yet -->
@@ -61,8 +61,8 @@
          env - environment variables to set.  default=nothing
       -->
     <!-- A postCommit event is fired after every commit
-    <listener event="postCommit" class="solar.RunExecutableListener">
-      <str name="exe">/var/opt/resin3/__PORT__/scripts/solar/snapshooter</str>
+    <listener event="postCommit" class="solr.RunExecutableListener">
+      <str name="exe">/var/opt/resin3/__PORT__/scripts/solr/snapshooter</str>
       <str name="dir">/var/opt/resin3/__PORT__</str>
       <bool name="wait">true</bool>
       <arr name="args"> <str>arg1</str> <str>arg2</str> </arr>
@@ -86,26 +86,26 @@
          that match a particular query.
       -->
     <filterCache
-      class="solar.search.LRUCache"
+      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
 
     <queryResultCache
-      class="solar.search.LRUCache"
+      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="1024"/>
 
     <documentCache
-      class="solar.search.LRUCache"
+      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
 
     <!--
     <cache name="myUserCache"
-      class="solar.search.LRUCache"
+      class="solr.search.LRUCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"
@@ -133,9 +133,9 @@
     <!-- QuerySenderListener takes an array of NamedList and executes a
          local query request for each NamedList in sequence. -->
     <!--
-    <listener event="newSearcher" class="solar.QuerySenderListener">
+    <listener event="newSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
-        <lst> <str name="q">solar</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+        <lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> </lst>
         <lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> </lst>
       </arr>
     </listener>
@@ -145,7 +145,7 @@
          prepared but there is no current registered searcher to handle
          requests or to gain prewarming data from. -->
     <!--
-    <listener event="firstSearcher" class="solar.QuerySenderListener">
+    <listener event="firstSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
         <lst> <str name="q">fast_warm</str> <str name="start">0</str> <str name="rows">10</str> </lst>
       </arr>
@@ -166,24 +166,24 @@
       The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
-  <requestHandler name="standard" class="solar.StandardRequestHandler" />
-  <requestHandler name="old" class="solar.tst.OldRequestHandler" >
+  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+  <requestHandler name="old" class="solr.tst.OldRequestHandler" >
     <int name="myparam">1000</int>
     <float name="ratio">1.4142135</float>
     <arr name="myarr"><int>1</int><int>2</int></arr>
     <str>foo</str>
   </requestHandler>
-  <requestHandler name="oldagain" class="solar.tst.OldRequestHandler" >
+  <requestHandler name="oldagain" class="solr.tst.OldRequestHandler" >
     <lst name="lst1"> <str name="op">sqrt</str> <int name="val">2</int> </lst>
     <lst name="lst2"> <str name="op">log</str> <float name="val">10</float> </lst>
   </requestHandler>
 
-  <requestHandler name="test" class="solar.tst.TestRequestHandler" />
+  <requestHandler name="test" class="solr.tst.TestRequestHandler" />
 
 
   <admin>
-    <defaultQuery>solar</defaultQuery>
-    <gettableFiles>solarconfig.xml conf/solar/WEB-INF/web.external.xml conf/resin.conf </gettableFiles>
+    <defaultQuery>solr</defaultQuery>
+    <gettableFiles>solrconfig.xml scheam.xml</gettableFiles>
   </admin>
 
 
