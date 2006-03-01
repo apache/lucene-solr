@@ -75,7 +75,7 @@ public class TestLock extends TestCase {
     private class LockMock extends Lock {
         public int lockAttempts;
 
-        public boolean obtain() throws IOException {
+        public boolean obtain() {
             lockAttempts++;
             return false;
         }

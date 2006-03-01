@@ -16,12 +16,10 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-
-import java.io.StringReader;
 import java.io.IOException;
-import java.util.Set;
-import java.util.HashSet;
+import java.io.StringReader;
+
+import junit.framework.TestCase;
 
 /**
  * @author yonik
