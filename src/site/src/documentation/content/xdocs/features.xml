@@ -6,7 +6,7 @@
 <document>
 
 <header>
-  <title>Introduction to The Solar Enterprise Search Server</title> 
+  <title>Introduction to The Solr Enterprise Search Server</title> 
 </header> 
 
 <body>
@@ -14,21 +14,21 @@
 <section>
 <title>Solr in a Nutshell</title>
   <p>
-  Solar is a standalone enterprise search server with a web-services like API. You put documents in it (called "indexing") via XML over HTTP. You query it via HTTP GET and receive XML results.
+  Solr is a standalone enterprise search server with a web-services like API. You put documents in it (called "indexing") via XML over HTTP. You query it via HTTP GET and receive XML results.
   </p>
   <ul>
     <li> Advanced Full-Text Search Capabilities </li>
     <li> Optimized for High Volume Web Traffic </li>
     <li> Standards Based Open Interfaces - XML and HTTP </li>
     <li> Comprehensive HTML Administration Interfaces </li>
-    <li> Scalability - Efficient Replication to other Solar Search Servers </li>
+    <li> Scalability - Efficient Replication to other Solr Search Servers </li>
     <li> Flexible and Adaptable with XML configuration </li>
     <li> Extensible Plugin Architecture </li>
   </ul>
 </section>
 
 <section>
-<title>Solar Uses the Lucene Search Library and Extends it!</title>
+<title>Solr Uses the Lucene Search Library and Extends it!</title>
   <ul>
     <li> A Real Data Schema, with Dynamic Fields, Unique Keys </li>
     <li> Powerful Extensions to the Lucene Query Language </li>
