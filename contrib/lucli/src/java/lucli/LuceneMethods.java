@@ -80,6 +80,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Explanation;
@@ -88,21 +89,20 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 
-/*
- * Parts addapted from Lucene demo. Various methods that interact with
- * Lucene and provide info about the index, search, etc.
+/**
+ * Various methods that interact with Lucene and provide info about the 
+ * index, search, etc. Parts addapted from Lucene demo.
  */
-
 class LuceneMethods {
 
   private int numDocs;
   private String indexName; //directory of this index
-  java.util.Iterator fieldIterator;
-  Vector fields; //Fields as a vector
-  Vector indexedFields; //Fields as a vector
-  String fieldsArray[]; //Fields as an array
-  Searcher searcher;
-  Query query; //current query string
+  private java.util.Iterator fieldIterator;
+  private Vector fields; //Fields as a vector
+  private Vector indexedFields; //Fields as a vector
+  private String fieldsArray[]; //Fields as an array
+  private Searcher searcher;
+  private Query query; //current query string
 
   public LuceneMethods(String index) {
     indexName = index;
@@ -201,14 +201,13 @@ class LuceneMethods {
     Analyzer analyzer = new StandardAnalyzer();
     getFieldInfo();
 
-    MultiFieldQueryParser parser = new MultiFieldQueryParser(queryString, analyzer);
-
     int arraySize = indexedFields.size();
     String indexedArray[] = new String[arraySize];
     for (int ii = 0; ii < arraySize; ii++) {
       indexedArray[ii] = (String) indexedFields.get(ii);
     }
-    query = parser.parse(queryString, indexedArray, analyzer);
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(indexedArray, analyzer);
+    query = parser.parse(queryString);
     System.out.println("Searching for: " + query.toString());
     return (query);
 
@@ -223,14 +222,13 @@ class LuceneMethods {
     Analyzer analyzer = new StandardAnalyzer();
     getFieldInfo();
 
-    MultiFieldQueryParser parser = new MultiFieldQueryParser(queryString, analyzer);
-
     int arraySize = fields.size();
     fieldsArray = new String[arraySize];
     for (int ii = 0; ii < arraySize; ii++) {
       fieldsArray[ii] = (String) fields.get(ii);
     }
-    query = parser.parse(queryString, fieldsArray, analyzer);
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(fieldsArray, analyzer);
+    query = parser.parse(queryString);
     System.out.println("Searching for: " + query.toString());
     Hits hits = searcher.search(query);
     return (hits);
@@ -253,7 +251,7 @@ class LuceneMethods {
     indexedFields = new Vector();
 
     //get the list of all field names
-    fieldIterator = indexReader.getFieldNames().iterator();
+    fieldIterator = indexReader.getFieldNames(FieldOption.ALL).iterator();
     while (fieldIterator.hasNext()) {
       Object field = fieldIterator.next();
       if (field != null && !field.equals(""))
@@ -261,7 +259,7 @@ class LuceneMethods {
     }
     //
     //get the list of indexed field names
-    fieldIterator = indexReader.getFieldNames(true).iterator();
+    fieldIterator = indexReader.getFieldNames(FieldOption.INDEXED).iterator();
     while (fieldIterator.hasNext()) {
       Object field = fieldIterator.next();
       if (field != null && !field.equals(""))
