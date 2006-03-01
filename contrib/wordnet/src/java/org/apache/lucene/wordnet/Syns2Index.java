@@ -1,26 +1,23 @@
 package org.apache.lucene.wordnet;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
-
 import java.io.BufferedReader;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
+import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
 
 /**
  * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">WordNet prolog download</a>
@@ -295,7 +292,7 @@ public class Syns2Index
     private static void usage()
     {
         o.println("\n\n" +
-            "java org.apache.lucene.wordnet.Syn2Index <prolog file> <index dir>\n\n");
+            "java org.apache.lucene.wordnet.Syns2Index <prolog file> <index dir>\n\n");
     }
 
 }
