@@ -19,14 +19,13 @@ public class ConstantScoreQueryBuilder implements QueryBuilder
 
 	public Query getQuery(Element e) throws ParserException
 	{
-		Element filterElem=DOMUtils.getFirstChildElement(e);
-		if(filterElem==null)
-		{
-			throw new ParserException("ConstantScoreQuery missing child element with filter");
-		}
-		Query q=new ConstantScoreQuery(filterFactory.getFilter(filterElem));
-		q.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return q;
+ 		Element filterElem=DOMUtils.getFirstChildOrFail(e);
+  		Query q=new ConstantScoreQuery(filterFactory.getFilter(filterElem));
+
+  		q.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
+
+  		return q;
+		
 	}
 
 }

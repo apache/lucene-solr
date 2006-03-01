@@ -21,26 +21,14 @@ public class SpanNotBuilder extends SpanBuilderBase
     }
 	public SpanQuery getSpanQuery(Element e) throws ParserException
 	{
-	    Element includeElem=DOMUtils.getChildByTagName(e,"Include");
-	    if(includeElem!=null)
-		{
-	        includeElem=DOMUtils.getFirstChildElement(includeElem);
-		}
-	    if(includeElem==null)
-	    {
-			throw new ParserException("SpanNotQuery missing Include child Element");	        
-	    }
-	    Element excludeElem=DOMUtils.getChildByTagName(e,"Exclude");
-	    if(excludeElem!=null)
-		{
-	        excludeElem=DOMUtils.getFirstChildElement(excludeElem);
-		}
-	    if(excludeElem==null)
-	    {
-			throw new ParserException("SpanNotQuery missing Exclude child Element");	        
-	    }
-	    SpanQuery include=factory.getSpanQuery(includeElem);
-	    SpanQuery exclude=factory.getSpanQuery(excludeElem);
+  	    Element includeElem=DOMUtils.getChildByTagOrFail(e,"Include");
+        includeElem=DOMUtils.getFirstChildOrFail(includeElem);
+
+  	    Element excludeElem=DOMUtils.getChildByTagOrFail(e,"Exclude");
+        excludeElem=DOMUtils.getFirstChildOrFail(excludeElem);
+
+  	    SpanQuery include=factory.getSpanQuery(includeElem);
+  	    SpanQuery exclude=factory.getSpanQuery(excludeElem);
 	    
 		SpanNotQuery snq = new SpanNotQuery(include,exclude);
 		

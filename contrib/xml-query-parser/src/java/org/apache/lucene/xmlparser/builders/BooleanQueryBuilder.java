@@ -37,18 +37,9 @@ public class BooleanQueryBuilder implements QueryBuilder {
 			Element clauseElem=(Element) nl.item(i);
 			BooleanClause.Occur occurs=getOccursValue(clauseElem);
 			
-			//find the first element child which should contain a Query 
-			Element clauseQuery=DOMUtils.getFirstChildElement(clauseElem); 
-			if(clauseQuery!=null)
-			{
-				Query q=factory.getQuery(clauseQuery);
-				bq.add(new BooleanClause(q,occurs));
-				
-			}
-			else
-			{
-				throw new ParserException("BooleanClause missing child query element ");
-			}
+ 			Element clauseQuery=DOMUtils.getFirstChildOrFail(clauseElem);
+ 			Query q=factory.getQuery(clauseQuery);
+ 			bq.add(new BooleanClause(q,occurs));			
 		}
 		
 		return bq;

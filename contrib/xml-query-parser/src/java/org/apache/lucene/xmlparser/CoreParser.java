@@ -10,6 +10,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.builders.BooleanQueryBuilder;
 import org.apache.lucene.xmlparser.builders.ConstantScoreQueryBuilder;
+import org.apache.lucene.xmlparser.builders.FilteredQueryBuilder;
 import org.apache.lucene.xmlparser.builders.RangeFilterBuilder;
 import org.apache.lucene.xmlparser.builders.SpanFirstBuilder;
 import org.apache.lucene.xmlparser.builders.SpanNearBuilder;

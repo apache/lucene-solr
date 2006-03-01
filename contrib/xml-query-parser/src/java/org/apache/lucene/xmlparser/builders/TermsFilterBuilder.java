@@ -42,15 +42,12 @@ public class TermsFilterBuilder implements FilterBuilder
 		NodeList nl = e.getElementsByTagName("Field");
 		for(int i=0;i<nl.getLength();i++)
 		{
-			Element fieldElem=(Element) nl.item(i);
-			String fieldName=DOMUtils.getAttributeWithInheritance(fieldElem,"fieldName");
 			
-			if(fieldName==null)
-			{
-				throw new ParserException("TermsFilter missing \"fieldName\" element");				
-			}
-			String text=DOMUtils.getText(fieldElem).trim();
-			TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
+  			Element fieldElem=(Element) nl.item(i);
+ 			String fieldName=DOMUtils.getAttributeWithInheritanceOrFail(fieldElem,"fieldName");
+ 			String text=DOMUtils.getNonBlankTextOrFail(fieldElem);
+  			TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
+			
 			try
 			{
 			Token token=ts.next();

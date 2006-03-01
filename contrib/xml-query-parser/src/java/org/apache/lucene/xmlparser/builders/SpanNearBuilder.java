@@ -19,12 +19,8 @@ public class SpanNearBuilder extends SpanBuilderBase
 	
 	public SpanQuery getSpanQuery(Element e) throws ParserException
 	{
-		String slopString=e.getAttribute("slop");
-		if((slopString==null)||(slopString.length()==0))
-		{
-			throw new ParserException("SpanTermQuery missing slop property ");			
-		}
-		int slop=Integer.parseInt(slopString);
+ 		String slopString=DOMUtils.getAttributeOrFail(e,"slop");
+  		int slop=Integer.parseInt(slopString);
 		boolean inOrder=DOMUtils.getAttribute(e,"inOrder",false);
 		ArrayList spans=new ArrayList();
 		for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling())

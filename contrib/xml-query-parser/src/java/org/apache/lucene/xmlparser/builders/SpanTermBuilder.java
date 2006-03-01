@@ -12,20 +12,13 @@ public class SpanTermBuilder extends SpanBuilderBase
 
 	public SpanQuery getSpanQuery(Element e) throws ParserException
 	{
-		String fieldName=DOMUtils.getAttributeWithInheritance(e,"fieldName");
-		String value=DOMUtils.getText(e);
-		if((fieldName==null)||(fieldName.length()==0))
-		{
-			throw new ParserException("SpanTermQuery missing fieldName property ");
-		}
-		if((value==null)||(value.length()==0))
-		{
-			throw new ParserException("TermQuery missing value property ");
-		}
-		SpanTermQuery stq = new SpanTermQuery(new Term(fieldName,value));
+ 		String fieldName=DOMUtils.getAttributeWithInheritanceOrFail(e,"fieldName");
+ 		String value=DOMUtils.getNonBlankTextOrFail(e);
+  		SpanTermQuery stq = new SpanTermQuery(new Term(fieldName,value));
+  		
+  		stq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
+		return stq;		
 		
-		stq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		return stq;
 	}
 
 }

@@ -11,6 +11,65 @@ import org.xml.sax.InputSource;
 
 public class DOMUtils
 {
+    public static Element getChildByTagOrFail(Element e, String name)	throws ParserException
+	{
+		Element kid = getChildByTagName(e, name);
+		if (null == kid)
+		{
+			throw new ParserException(e.getTagName() + " missing \"" + name
+					+ "\" child element");
+		}
+		return kid;
+	}
+     
+     public static Element getFirstChildOrFail(Element e) throws ParserException
+	{
+		Element kid = getFirstChildElement(e);
+		if (null == kid)
+		{
+			throw new ParserException(e.getTagName()
+					+ " does not contain a child element");
+		}
+		return kid;
+	}
+     
+	public static String getAttributeOrFail(Element e, String name)	throws ParserException
+	{
+		String v = e.getAttribute(name);
+		if (null == v)
+		{
+			throw new ParserException(e.getTagName() + " missing \"" + name
+					+ "\" attribute");
+		}
+		return v;
+	}
+    public static String getAttributeWithInheritanceOrFail(Element e,	String name) throws ParserException
+	{
+		String v = getAttributeWithInheritance(e, name);
+		if (null == v)
+		{
+			throw new ParserException(e.getTagName() + " missing \"" + name
+					+ "\" attribute");
+		}
+		return v;
+	}
+    public static String getNonBlankTextOrFail(Element e) throws ParserException
+	{
+		String v = getText(e);
+		if (null != v)
+			v = v.trim();
+		if (null == v || 0 == v.length())
+		{
+			throw new ParserException(e.getTagName() + " has no text");
+		}
+		return v;
+	}
+ 
+     
+     
+     
+	
+	
 	/* Convenience method where there is only one child Element of a given name */
 	public static Element getChildByTagName(Element e, String name)
 	{

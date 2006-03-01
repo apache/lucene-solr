@@ -30,13 +30,8 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
     }
 	public SpanQuery getSpanQuery(Element e) throws ParserException
 	{
-		String fieldName=DOMUtils.getAttributeWithInheritance(e,"fieldName");
-		if(fieldName==null)
-		{
-			throw new ParserException("Error: SpanOrTermsBuilder missing \"fieldName\" property");
-		}
-
-		String value=DOMUtils.getText(e);
+ 		String fieldName=DOMUtils.getAttributeWithInheritanceOrFail(e,"fieldName");
+ 		String value=DOMUtils.getNonBlankTextOrFail(e);
 		
 		try
 		{
