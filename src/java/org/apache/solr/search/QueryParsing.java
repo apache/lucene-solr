@@ -450,6 +450,11 @@ public class QueryParsing {
         sp.expect(",");
         float intercept = sp.getFloat();
         vs = new LinearFloatFunction(source,slope,intercept);
+      } else if (id.equals("max")) {
+        ValueSource source = parseValSource(sp, schema);
+        sp.expect(",");
+        float val = sp.getFloat();
+        vs = new MaxFloatFunction(source,val);
       } else if (id.equals("recip")) {
         ValueSource source = parseValSource(sp,schema);
         sp.expect(",");
