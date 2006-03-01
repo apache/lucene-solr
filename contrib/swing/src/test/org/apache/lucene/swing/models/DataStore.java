@@ -18,10 +18,9 @@ package org.apache.lucene.swing.models;
  */
 
 
-import java.util.Iterator;
-import java.util.Collection;
 import java.util.ArrayList;
-import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * @author Jonathan Simon - jonathan_s_simon@yahoo.com

@@ -16,11 +16,11 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import junit.framework.Test;
-import junit.framework.TestCase;
+import java.util.ArrayList;
 
 import javax.swing.table.TableModel;
-import java.util.ArrayList;
+
+import junit.framework.TestCase;
 
 /**
  * @author Jonathan Simon - jonathan_s_simon@yahoo.com

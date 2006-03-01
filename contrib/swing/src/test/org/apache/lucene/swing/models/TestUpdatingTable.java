@@ -18,8 +18,6 @@ package org.apache.lucene.swing.models;
 
 import junit.framework.TestCase;
 
-import javax.swing.table.TableModel;
-
 /**
  * @author Jonathan Simon - jonathan_s_simon@yahoo.com
  */

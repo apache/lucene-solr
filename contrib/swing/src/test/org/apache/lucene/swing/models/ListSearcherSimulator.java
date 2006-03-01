@@ -16,12 +16,16 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import javax.swing.*;
-import javax.swing.event.DocumentListener;
+import java.awt.BorderLayout;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import java.awt.*;
+import javax.swing.event.DocumentListener;
 
 /**
  * @author Jonathan Simon - jonathan_s_simon@yahoo.com

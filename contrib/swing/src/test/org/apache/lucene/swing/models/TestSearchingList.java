@@ -16,10 +16,9 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import javax.swing.ListModel;
 
-import javax.swing.table.TableModel;
-import javax.swing.*;
+import junit.framework.TestCase;
 
 
 /**
