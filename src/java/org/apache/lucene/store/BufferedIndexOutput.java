@@ -58,6 +58,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
           flush();
         // and write data at once
         flushBuffer(b, length);
+        bufferStart += length;
       } else {
         // we fill/flush the buffer (until the input is written)
         int pos = 0; // position in the input data
