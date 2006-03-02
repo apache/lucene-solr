@@ -622,4 +622,26 @@ public class TestCompoundFile extends TestCase
         is.close();
         cr.close();
     }
+
+    /** This test that writes larger than the size of the buffer output
+     * will correctly increment the file pointer.
+     */
+    public void testLargeWrites() throws IOException {
+        IndexOutput os = dir.createOutput("testBufferStart.txt");
+
+        byte[] largeBuf = new byte[2048];
+        for (int i=0; i<largeBuf.length; i++) {
+            largeBuf[i] = (byte) (Math.random() * 256);
+        }
+
+        long currentPos = os.getFilePointer();
+        os.writeBytes(largeBuf, largeBuf.length);
+
+        try {
+            assertEquals(currentPos + largeBuf.length, os.getFilePointer());
+        } finally {
+            os.close();
+        }
+
+    }
 }
