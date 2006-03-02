@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 
 /**
  * @author yonik
- * @version $Id: Config.java,v 1.10 2005/12/20 16:05:46 yonik Exp $
+ * @version $Id$
  */
 public class Config {
   public static final Logger log = Logger.getLogger(SolrCore.class.getName());
@@ -274,8 +274,6 @@ public class Config {
     }
     return lines;
   }
-
-
 
 
 }
