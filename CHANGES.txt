@@ -2,6 +2,13 @@ Lucene Change Log
 
 $Id$
 
+1.9.1
+
+Bug fixes
+
+ 1. LUCENE-511: Fix a bug in the BufferedIndexOutput optimization
+    introduced in 1.9-final.
+
 1.9 final
 
 Note that this realease is mostly but not 100% source compatible with
