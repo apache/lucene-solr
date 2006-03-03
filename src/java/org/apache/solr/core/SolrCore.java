@@ -56,9 +56,6 @@ import java.util.logging.Logger;
  */
 
 public final class SolrCore {
-  public static final String cvsId="$Id$";
-  public static final String cvsSource="$Source: /cvs/main/searching/solr/solarcore/src/solr/SolrCore.java,v $";
-  public static final String cvsTag="$Name:  $";
   public static final String version="1.0";  
 
   public static Logger log = Logger.getLogger(SolrCore.class.getName());
