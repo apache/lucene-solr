@@ -28,7 +28,7 @@ import java.net.URL;
 
 /**
  * @author yonik
- * @version $Id: LRUCache.java,v 1.12 2005/11/30 06:12:55 yonik Exp $
+ * @version $Id$
  */
 public class LRUCache implements SolrCache {
 
@@ -56,6 +56,7 @@ public class LRUCache implements SolrCache {
   private int autowarmCount;
   private State state;
   private CacheRegenerator regenerator;
+  private String description="LRU Cache";
 
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     state=State.CREATED;
@@ -67,6 +68,13 @@ public class LRUCache implements SolrCache {
     final int initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), limit);
     str = (String)args.get("autowarmCount");
     autowarmCount = str==null ? 0 : Integer.parseInt(str);
+
+    description = "LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize;
+    if (autowarmCount>0) {
+      description += ", autowarmCount=" + autowarmCount
+              + ", regenerator=" + regenerator;
+    }
+    description += ')';
 
     map = new LinkedHashMap(initialSize, 0.75f, true) {
         protected boolean removeEldestEntry(Map.Entry eldest) {
@@ -207,23 +215,19 @@ public class LRUCache implements SolrCache {
   }
 
   public String getDescription() {
-    return "LRU Cache";
+    return description;
   }
 
   public Category getCategory() {
     return Category.CACHE;
   }
 
-  public String getCvsId() {
-    return "$Id: LRUCache.java,v 1.12 2005/11/30 06:12:55 yonik Exp $";
+  public String getSourceId() {
+    return "$Id$";
   }
 
-  public String getCvsName() {
-    return "$Name:  $";
-  }
-
-  public String getCvsSource() {
-    return "$Source: /cvs/main/searching/solr/solarcore/src/solr/search/LRUCache.java,v $";
+  public String getSource() {
+    return "$URL$";
   }
 
   public URL[] getDocs() {
