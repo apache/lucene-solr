@@ -35,7 +35,7 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * @author yonik
- * @version $Id: OldRequestHandler.java,v 1.7 2005/12/02 04:31:05 yonik Exp $
+ * @version $Id$
  */
 
 
@@ -122,15 +122,15 @@ public class OldRequestHandler implements SolrRequestHandler {
     return Category.QUERYHANDLER;
   }
 
-  public String getCvsId() {
-    return "$Id: OldRequestHandler.java,v 1.7 2005/12/02 04:31:05 yonik Exp $";
+  public String getSourceId() {
+    return "$Id$";
   }
 
   public String getCvsName() {
     return "$Name:  $";
   }
 
-  public String getCvsSource() {
+  public String getSource() {
     return "$Source: /cvs/main/searching/solr/solarcore/src/solr/tst/OldRequestHandler.java,v $";
   }
 

@@ -25,7 +25,7 @@ import org.apache.lucene.search.Explanation;
  * Often used by {@link FunctionFactory} implementations.
  *
  * @author yonik
- * @version $Id: DocValues.java,v 1.1 2005/11/22 05:23:20 yonik Exp $
+ * @version $Id$
  */
 
 // DocValues is distinct from ValueSource because

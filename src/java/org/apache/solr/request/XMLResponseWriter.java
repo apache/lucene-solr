@@ -21,7 +21,7 @@ import java.io.IOException;
 
 /**
  * @author yonik
- * @version $Id: XMLResponseWriter.java,v 1.6 2005/04/24 02:53:35 yonik Exp $
+ * @version $Id$
  */
 
 public class XMLResponseWriter implements QueryResponseWriter {

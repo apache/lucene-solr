@@ -26,7 +26,7 @@ import java.io.IOException;
  * often some function of the value of a field.
  *
  * @author yonik
- * @version $Id: FunctionQuery.java,v 1.4 2005/11/23 04:22:20 yonik Exp $
+ * @version $Id$
  */
 public class FunctionQuery extends Query {
   ValueSource func;

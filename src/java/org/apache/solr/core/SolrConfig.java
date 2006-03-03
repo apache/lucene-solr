@@ -21,7 +21,7 @@ import java.io.InputStream;
 
 /**
  * @author yonik
- * @version $Id: SolrConfig.java,v 1.3 2005/12/02 04:31:06 yonik Exp $
+ * @version $Id$
  */
 public class SolrConfig {
   public static Config config;

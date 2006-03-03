@@ -23,7 +23,7 @@ import org.apache.lucene.search.FieldCache;
  * a single field from the {@link org.apache.lucene.search.FieldCache}.
  *
  * @author yonik
- * @version $Id: FieldCacheSource.java,v 1.1 2005/11/22 05:23:20 yonik Exp $
+ * @version $Id$
  */
 public abstract class FieldCacheSource extends ValueSource {
   protected String field;

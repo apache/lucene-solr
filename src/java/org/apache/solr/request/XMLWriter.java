@@ -33,7 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
 /**
  * @author yonik
- * @version $Id: XMLWriter.java,v 1.16 2005/12/02 04:31:06 yonik Exp $
+ * @version $Id$
  */
 final public class XMLWriter {
   //

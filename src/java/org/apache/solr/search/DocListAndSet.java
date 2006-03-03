@@ -28,7 +28,7 @@ package org.apache.solr.search;
  * <p>
  *
  * @author yonik
- * @version $Id: DocListAndSet.java,v 1.3 2005/04/08 05:38:05 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 public final class DocListAndSet {

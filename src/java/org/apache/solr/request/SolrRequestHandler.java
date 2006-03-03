@@ -36,7 +36,7 @@ import org.apache.solr.core.SolrInfoMBean;
  * via the default constructor and is reused for all relevant queries.
  *
  * @author yonik
- * @version $Id: SolrRequestHandler.java,v 1.7 2005/12/02 04:31:06 yonik Exp $
+ * @version $Id$
  */
 public interface SolrRequestHandler extends SolrInfoMBean {
 

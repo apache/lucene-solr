@@ -25,7 +25,7 @@ import java.io.IOException;
 
 /**
  * @author yonik
- * @version $Id: SchemaField.java,v 1.8 2005/11/28 06:03:19 yonik Exp $
+ * @version $Id$
  */
 
 

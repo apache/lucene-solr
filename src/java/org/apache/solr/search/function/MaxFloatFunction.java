@@ -28,7 +28,7 @@ import java.io.IOException;
  * Normally Used as an argument to a {@link FunctionQuery}
  *
  * @author hossman
- * @version $Id: $
+ * @version $Id$
  */
 public class MaxFloatFunction extends ValueSource {
   protected final ValueSource source;

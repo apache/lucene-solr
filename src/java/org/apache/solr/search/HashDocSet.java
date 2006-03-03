@@ -26,7 +26,7 @@ import org.apache.solr.core.SolrConfig;
  * set intersections.
  *
  * @author yonik
- * @version $Id: HashDocSet.java,v 1.7 2005/11/22 17:16:19 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 public final class HashDocSet extends DocSetBase {

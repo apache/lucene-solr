@@ -42,7 +42,7 @@ import java.util.logging.Logger;
  * over the lucene IndexSearcher.
 
  * @author yonik
- * @version $Id: SolrIndexSearcher.java,v 1.49 2005/12/20 16:05:46 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 
@@ -1062,16 +1062,12 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return Category.CORE;
   }
 
-  public String getCvsId() {
-    return "$Id: SolrIndexSearcher.java,v 1.49 2005/12/20 16:05:46 yonik Exp $";
+  public String getSourceId() {
+    return "$Id$";
   }
 
-  public String getCvsName() {
-    return "$Name:  $";
-  }
-
-  public String getCvsSource() {
-    return "$Source: /cvs/main/searching/solr/solarcore/src/solr/search/SolrIndexSearcher.java,v $";
+  public String getSource() {
+    return "$URL$";
   }
 
   public URL[] getDocs() {

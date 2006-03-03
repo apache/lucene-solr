@@ -110,7 +110,7 @@ import org.apache.solr.core.SolrException;
 
  *
  * @author yonik
- * @version $Id: DirectUpdateHandler2.java,v 1.12 2005/06/17 20:44:42 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 
@@ -527,16 +527,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     return Category.UPDATEHANDLER;
   }
 
-  public String getCvsId() {
-    return "$Id: DirectUpdateHandler2.java,v 1.12 2005/06/17 20:44:42 yonik Exp $";
+  public String getSourceId() {
+    return "$Id$";
   }
 
-  public String getCvsName() {
-    return "$Name:  $";
-  }
-
-  public String getCvsSource() {
-    return "$Source: /cvs/main/searching/solr/solarcore/src/solr/DirectUpdateHandler2.java,v $";
+  public String getSource() {
+    return "$URL$";
   }
 
   public URL[] getDocs() {

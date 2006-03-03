@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.*;
  * that breaks up a stream of characters into tokens.
  *
  * @author yonik
- * @version $Id: TokenizerFactory.java,v 1.10 2005/12/13 05:16:03 yonik Exp $
+ * @version $Id$
  */
 public interface TokenizerFactory {
   public void init(Map<String,String> args);

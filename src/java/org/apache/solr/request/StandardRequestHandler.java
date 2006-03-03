@@ -37,7 +37,7 @@ import org.apache.solr.core.SolrException;
 
 /**
  * @author yonik
- * @version $Id: StandardRequestHandler.java,v 1.17 2005/12/02 04:31:06 yonik Exp $
+ * @version $Id$
  */
 public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean {
 
@@ -199,16 +199,12 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
     return Category.QUERYHANDLER;
   }
 
-  public String getCvsId() {
-    return "$Id: StandardRequestHandler.java,v 1.17 2005/12/02 04:31:06 yonik Exp $";
+  public String getSourceId() {
+    return "$Id$";
   }
 
-  public String getCvsName() {
-    return "$Name:  $";
-  }
-
-  public String getCvsSource() {
-    return "$Source: /cvs/main/searching/solr/solarcore/src/solr/StandardRequestHandler.java,v $";
+  public String getSource() {
+    return "$URL$";
   }
 
   public URL[] getDocs() {

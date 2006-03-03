@@ -1,5 +1,5 @@
 
-<!-- $Id: index.jsp,v 1.26 2005/09/20 18:23:30 yonik Exp $ -->
+<!-- $Id$ -->
 <!-- $Source: /cvs/main/searching/SolrServer/resources/admin/index.jsp,v $ -->
 <!-- $Name:  $ -->
 

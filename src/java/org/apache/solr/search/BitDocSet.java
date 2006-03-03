@@ -23,7 +23,7 @@ import java.util.BitSet;
  * using a BitSet.  A set bit represents inclusion in the set for that document.
  *
  * @author yonik
- * @version $Id: BitDocSet.java,v 1.4 2005/10/27 04:14:49 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 public class BitDocSet extends DocSetBase {

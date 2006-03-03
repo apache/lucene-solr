@@ -34,7 +34,7 @@ import java.util.LinkedList;
  * Generated synonyms will start at the same position as the first matched source token.
  *
  * @author yonik
- * @version $Id: SynonymFilter.java,v 1.3 2005/12/13 05:14:52 yonik Exp $
+ * @version $Id$
  */
 public class SynonymFilter extends TokenFilter {
 

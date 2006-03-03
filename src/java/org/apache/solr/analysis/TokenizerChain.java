@@ -24,7 +24,7 @@ import java.io.Reader;
 
 /**
  * @author yonik
- * @version $Id: TokenizerChain.java,v 1.3 2005/08/26 05:21:08 yonik Exp $
+ * @version $Id$
  */
 
 //

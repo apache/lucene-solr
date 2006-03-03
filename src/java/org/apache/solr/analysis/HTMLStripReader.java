@@ -28,7 +28,7 @@ import java.util.HashMap;
  *
  *
  * @author yonik
- * @version $Id: HTMLStripReader.java,v 1.2 2005/08/30 15:31:42 yonik Exp $
+ * @version $Id$
  */
 
 public class HTMLStripReader extends Reader {

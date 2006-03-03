@@ -24,7 +24,7 @@ import java.util.*;
  * <code>SolrQueryResponse</code> is used by a query handler to return
  * the response to a query.
  * @author yonik
- * @version $Id: SolrQueryResponse.java,v 1.5 2005/08/10 04:27:04 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 

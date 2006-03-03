@@ -2,7 +2,7 @@
 <!-- The Solr schema file. This file should be named "schema.xml" and
      should be located where the classloader for the Solr webapp can find it.
 
-     $Id: schema.xml,v 1.1 2005/06/09 03:01:13 yonik Exp $
+     $Id$
      $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
      $Name:  $
   -->

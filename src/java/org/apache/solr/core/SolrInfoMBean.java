@@ -21,7 +21,7 @@ import org.apache.solr.util.*;
 
 /**
  * @author ronp
- * @version $Id: SolrInfoMBean.java,v 1.3 2005/05/04 19:15:23 ronp Exp $
+ * @version $Id$
  */
 
 // MBean interface for getting various ui friendly strings and URLs
@@ -30,9 +30,8 @@ import org.apache.solr.util.*;
   // name        - simple common usage name, e.g. BasicQueryHandler
   // version     - simple common usage version, e.g. 2.0
   // description - simple one or two line description
-  // cvsId       - yes, really the CVS Id      (type 'man co')
-  // cvsName     - yes, really the CVS Name    (type 'man co')
-  // cvsSource   - yes, really the CVS Source  (type 'man co')
+  // SourceId    - CVS Id, SVN Id, etc
+  // Source      - CVS Source, SVN Source, etc
   // docs        - URL list: TWIKI, Faq, Design doc, something! :)
 
 public interface SolrInfoMBean {
@@ -43,9 +42,8 @@ public interface SolrInfoMBean {
   public String getVersion();
   public String getDescription();
   public Category getCategory();
-  public String getCvsId();
-  public String getCvsName();
-  public String getCvsSource();
+  public String getSourceId();
+  public String getSource();
   public URL[] getDocs();
   public NamedList getStatistics();
 

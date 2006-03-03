@@ -22,13 +22,13 @@ import java.util.*;
 
 /**
  * @author ronp
- * @version $Id: SolrInfoRegistry.java,v 1.5 2005/05/14 03:34:39 yonik Exp $
+ * @version $Id$
  */
 
 // A Registry to hold a collection of SolrInfo objects
 
 public class SolrInfoRegistry {
-  public static final String cvsId="$Id: SolrInfoRegistry.java,v 1.5 2005/05/14 03:34:39 yonik Exp $";
+  public static final String cvsId="$Id$";
   public static final String cvsSource="$Source: /cvs/main/searching/solr/solarcore/src/solr/SolrInfoRegistry.java,v $";
   public static final String cvsName="$Name:  $";
 

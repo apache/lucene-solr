@@ -32,9 +32,8 @@ for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
     String name   = (m.getName()!=null ? m.getName() : na);
     String vers   = (m.getVersion()!=null ? m.getVersion() : na);
     String desc   = (m.getDescription()!=null ? m.getDescription() : na);
-    String cvsId  = (m.getCvsId()!=null ? m.getCvsId() : na);
-    String cvsSrc = (m.getCvsSource()!=null ? m.getCvsSource() : na);
-    String cvsTag = (m.getCvsName()!=null ? m.getCvsName() : na);
+    String srcId  = (m.getSourceId()!=null ? m.getSourceId() : na);
+    String src = (m.getSource()!=null ? m.getSource() : na);
     // print
 %>
       <entry>
@@ -50,15 +49,13 @@ for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
         <description>
           <%= desc %>
         </description>
-        <cvsid>
-          <%= cvsId %>
-        </cvsid>
-        <cvssrc>
-          <%= cvsSrc %>
-        </cvssrc>
-        <cvstag>
-          <%= cvsTag %>
-        </cvstag>
+        <sourceid>
+          <%= srcId %>
+        </sourceid>
+        <source>
+          <%= src %>
+        </source>
+
 <%
     URL[] urls = m.getDocs();
     if ((urls != null) && (urls.length != 0)) {

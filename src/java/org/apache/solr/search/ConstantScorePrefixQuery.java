@@ -25,7 +25,7 @@ import java.io.IOException;
 
 /**
  * @author yonik
- * @version $Id: ConstantScorePrefixQuery.java,v 1.2 2005/09/15 14:32:41 yonik Exp $
+ * @version $Id$
  */
 public class ConstantScorePrefixQuery extends Query {
   private final Term prefix;

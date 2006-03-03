@@ -27,7 +27,7 @@ import java.io.IOException;
  * Normally Used as an argument to a {@link FunctionQuery}
  *
  * @author yonik
- * @version $Id: LinearFloatFunction.java,v 1.2 2005/11/22 05:23:21 yonik Exp $
+ * @version $Id$
  */
 public class LinearFloatFunction extends ValueSource {
   protected final ValueSource source;

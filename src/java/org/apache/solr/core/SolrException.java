@@ -22,7 +22,7 @@ import java.io.PrintWriter;
 
 /**
  * @author yonik
- * @version $Id: SolrException.java,v 1.6 2005/06/14 20:42:26 yonik Exp $
+ * @version $Id$
  */
 
 

@@ -11,7 +11,7 @@ import java.io.IOException;
 
 /**
  * @author yonik
- * @version $Id: PrefixFilter.java,v 1.1 2005/06/10 05:47:32 yonik Exp $
+ * @version $Id$
  */
 public class PrefixFilter extends Filter {
   protected final Term prefix;

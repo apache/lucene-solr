@@ -34,7 +34,7 @@ import java.io.IOException;
 
 /**
  * @author yonik
- * @version $Id: QueryParsing.java,v 1.10 2005/12/20 21:34:44 yonik Exp $
+ * @version $Id$
  */
 public class QueryParsing {
 

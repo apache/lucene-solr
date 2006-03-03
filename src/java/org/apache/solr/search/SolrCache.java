@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  *
  * @author yonik
- * @version $Id: SolrCache.java,v 1.6 2005/06/21 05:26:43 yonik Exp $
+ * @version $Id$
  */
 public interface SolrCache extends SolrInfoMBean {
   public final static Logger log = Logger.getLogger(SolrCache.class.getName());

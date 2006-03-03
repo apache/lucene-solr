@@ -28,7 +28,7 @@ import java.util.HashMap;
 
 /**
  * @author yonik
- * @version $Id: LocalSolrQueryRequest.java,v 1.6 2005/06/02 22:03:38 yonik Exp $
+ * @version $Id$
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   private final NamedList args;

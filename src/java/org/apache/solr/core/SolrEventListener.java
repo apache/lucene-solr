@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 
 /**
  * @author yonik
- * @version $Id: SolrEventListener.java,v 1.4 2005/05/25 04:26:47 yonik Exp $
+ * @version $Id$
  */
 public interface SolrEventListener {
   static final Logger log = Logger.getLogger(SolrCore.class.getName());

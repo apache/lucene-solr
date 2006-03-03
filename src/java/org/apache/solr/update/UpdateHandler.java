@@ -41,7 +41,7 @@ import javax.xml.xpath.XPathConstants;
  * (adds, deletes, commits, optimizes, etc).
  *
  * @author yonik
- * @version $Id: UpdateHandler.java,v 1.15 2005/06/21 20:24:25 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 

@@ -23,7 +23,7 @@ package org.apache.solr.search;
  * document ids starting at <code>offset()</code>.
  *
  * @author yonik
- * @version $Id: DocList.java,v 1.6 2005/11/11 21:57:56 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 public interface DocList extends DocSet {

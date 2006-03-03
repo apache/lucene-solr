@@ -46,7 +46,7 @@ import java.util.logging.Logger;
  * and the types of those fields.
  *
  * @author yonik
- * @version $Id: IndexSchema.java,v 1.21 2005/12/20 16:05:46 yonik Exp $
+ * @version $Id$
  */
 
 public final class IndexSchema {

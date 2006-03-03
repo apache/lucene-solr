@@ -21,7 +21,7 @@ import org.apache.solr.util.*;
 
 /**
  * @author ronp
- * @version $Id: SolrInfo.java,v 1.3 2005/05/02 19:04:59 ronp Exp $
+ * @version $Id$
  */
 
 // MBean pattern for holding various ui friendly strings and URLs
@@ -36,7 +36,7 @@ import org.apache.solr.util.*;
   // docs        - URL list: TWIKI, Faq, Design doc, something! :)
 
 abstract class SolrInfo implements SolrInfoMBean {
-  public static String _cvsId="$Id: SolrInfo.java,v 1.3 2005/05/02 19:04:59 ronp Exp $";
+  public static String _cvsId="$Id$";
   public static String _cvsSource="$Source: /cvs/main/searching/solr/solarcore/src/solr/SolrInfo.java,v $";
   public static String _cvsName="$Name:  $";
 
@@ -45,9 +45,9 @@ abstract class SolrInfo implements SolrInfoMBean {
   public String getVersion()       { return this.version;     }
   public String getDescription()   { return this.description; }
   public Category getCategory()    { return SolrInfoMBean.Category.QUERYHANDLER; }
-  public String getCvsId()         { return this.cvsId;       }
+  public String getSourceId()         { return this.cvsId;       }
   public String getCvsName()       { return this.cvsName;     }
-  public String getCvsSource()     { return this.cvsSource;   }
+  public String getSource()     { return this.cvsSource;   }
   public URL[] getDocs()           { return this.docs;        }
   public NamedList getStatistics() { return null;        }
 

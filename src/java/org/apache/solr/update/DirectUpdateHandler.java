@@ -46,7 +46,7 @@ import org.apache.solr.core.SolrException;
  * For this reason, not all combinations to/from pending and committed are supported.
  *
  * @author yonik
- * @version $Id: DirectUpdateHandler.java,v 1.13 2005/06/17 20:44:42 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 
@@ -354,15 +354,15 @@ public class DirectUpdateHandler extends UpdateHandler {
     return Category.CORE;
   }
 
-  public String getCvsId() {
-    return "$Id: DirectUpdateHandler.java,v 1.13 2005/06/17 20:44:42 yonik Exp $";
+  public String getSourceId() {
+    return "$Id$";
   }
 
   public String getCvsName() {
     return "$Name:  $";
   }
 
-  public String getCvsSource() {
+  public String getSource() {
     return "$Source: /cvs/main/searching/solr/solarcore/src/solr/DirectUpdateHandler.java,v $";
   }
 

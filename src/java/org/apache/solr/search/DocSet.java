@@ -26,7 +26,7 @@ import java.util.BitSet;
  * WARNING: Any DocSet returned from SolrIndexSearcher should <b>not</b> be modified as it may have been retrieved from
  * a cache and could be shared.
  * @author yonik
- * @version $Id: DocSet.java,v 1.6 2005/05/13 21:20:15 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 public interface DocSet /* extends Collection<Integer> */ {

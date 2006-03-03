@@ -26,7 +26,7 @@ import java.io.IOException;
  * used for all cache autowarmings).
  *
  * @author yonik
- * @version $Id: CacheRegenerator.java,v 1.2 2005/09/07 20:37:57 yonik Exp $
+ * @version $Id$
  */
 public interface CacheRegenerator {
   /**

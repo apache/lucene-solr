@@ -24,7 +24,7 @@ import java.util.Map;
  * Factory to create a token filter that transforms one TokenStream to another.
  * 
  * @author yonik
- * @version $Id: TokenFilterFactory.java,v 1.3 2005/09/20 04:58:28 yonik Exp $
+ * @version $Id$
  */
 
 public interface TokenFilterFactory {

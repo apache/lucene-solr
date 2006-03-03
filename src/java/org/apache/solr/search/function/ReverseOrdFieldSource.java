@@ -37,7 +37,7 @@ import java.io.IOException;
  *  WARNING: ord() depends on the position in an index and can thus change when other documents are inserted or deleted,
  *  or if a MultiSearcher is used.
  * @author yonik
- * @version $Id: ReverseOrdFieldSource.java,v 1.2 2005/11/22 05:23:21 yonik Exp $
+ * @version $Id$
  */
 
 public class ReverseOrdFieldSource extends ValueSource {

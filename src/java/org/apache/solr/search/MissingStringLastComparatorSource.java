@@ -29,7 +29,7 @@ import java.io.IOException;
  *
  * @author Chris Hostetter
  * @author yonik
- * @version $Id: MissingStringLastComparatorSource.java,v 1.1 2005/06/02 04:43:06 yonik Exp $
+ * @version $Id$
  *
  */
 

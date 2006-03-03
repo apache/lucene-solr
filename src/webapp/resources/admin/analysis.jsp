@@ -13,7 +13,7 @@
 <%@ page import="java.io.StringReader"%>
 <%@ page import="java.util.*"%>
 
-<!-- $Id: analysis.jsp,v 1.2 2005/09/20 18:23:30 yonik Exp $ -->
+<!-- $Id$ -->
 <!-- $Source: /cvs/main/searching/org.apache.solrolarServer/resources/admin/analysis.jsp,v $ -->
 <!-- $Name:  $ -->
 

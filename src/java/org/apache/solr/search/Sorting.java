@@ -22,7 +22,7 @@ import org.apache.lucene.search.*;
  * Extra lucene sorting utilities & convenience methods
  *
  * @author yonik
- * @version $Id: Sorting.java,v 1.1 2005/06/02 04:43:06 yonik Exp $
+ * @version $Id$
  *
  */
 

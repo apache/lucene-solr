@@ -26,7 +26,7 @@ import java.util.HashMap;
 
 /**
  * @author yonik
- * @version $Id: DocumentBuilder.java,v 1.7 2005/12/02 04:31:06 yonik Exp $
+ * @version $Id$
  */
 
 

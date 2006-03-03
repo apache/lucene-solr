@@ -28,7 +28,7 @@ import java.util.List;
 
 /**
  * @author yonik
- * @version $Id: TestSynonymFilter.java,v 1.2 2005/12/12 18:07:23 yonik Exp $
+ * @version $Id$
  */
 public class TestSynonymFilter extends TestCase {
 

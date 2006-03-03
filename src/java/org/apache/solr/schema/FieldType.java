@@ -38,7 +38,7 @@ import java.io.IOException;
  * Base class for all field types used by an index schema.
  *
  * @author yonik
- * @version $Id: FieldType.java,v 1.14 2006/01/06 04:23:15 yonik Exp $
+ * @version $Id$
  */
 public abstract class FieldType extends FieldProperties {
   public static final Logger log = Logger.getLogger(FieldType.class.getName());

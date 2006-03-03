@@ -21,7 +21,7 @@ import java.io.IOException;
 
 /**
  * @author yonik
- * @version $Id: QueryResponseWriter.java,v 1.2 2005/04/24 02:53:35 yonik Exp $
+ * @version $Id$
  */
 public interface QueryResponseWriter {
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException;

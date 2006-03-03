@@ -20,7 +20,7 @@ package org.apache.solr.search;
  * <code>DocSlice</code> implements DocList as an array of docids and optional scores.
  *
  * @author yonik
- * @version $Id: DocSlice.java,v 1.9 2005/11/11 21:57:56 yonik Exp $
+ * @version $Id$
  * @since solr 0.9
  */
 public class DocSlice extends DocSetBase implements DocList {

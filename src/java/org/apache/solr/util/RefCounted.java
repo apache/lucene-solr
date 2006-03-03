@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author yonik
- * @version $Id: RefCounted.java,v 1.2 2005/09/07 20:37:57 yonik Exp $
+ * @version $Id$
  */
 
 public abstract class RefCounted<Type> {

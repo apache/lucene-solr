@@ -28,7 +28,7 @@ import java.io.IOException;
  * and makes those values available as other numeric types, casting as needed.
  *
  * @author yonik
- * @version $Id: FloatFieldSource.java,v 1.2 2005/11/22 05:23:20 yonik Exp $
+ * @version $Id$
  */
 
 public class FloatFieldSource extends FieldCacheSource {

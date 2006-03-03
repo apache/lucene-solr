@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Often used when creating a {@link FunctionQuery}.
  *
  * @author yonik
- * @version $Id: ValueSource.java,v 1.2 2005/11/30 19:31:01 yonik Exp $
+ * @version $Id$
  */
 public abstract class ValueSource implements Serializable {
 

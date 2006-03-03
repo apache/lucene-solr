@@ -20,7 +20,7 @@ import java.util.Map;
 
 /**
  * @author yonik
- * @version $Id: BaseTokenizerFactory.java,v 1.3 2005/09/20 04:57:50 yonik Exp $
+ * @version $Id$
  */
 public abstract class BaseTokenizerFactory implements TokenizerFactory {
   protected Map<String,String> args;

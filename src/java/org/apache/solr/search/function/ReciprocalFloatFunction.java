@@ -34,7 +34,7 @@ import java.io.IOException;
  *
  *
  * @author yonik
- * @version $Id: ReciprocalFloatFunction.java,v 1.2 2005/11/22 05:23:21 yonik Exp $
+ * @version $Id$
  */
 public class ReciprocalFloatFunction extends ValueSource {
   protected final ValueSource source;

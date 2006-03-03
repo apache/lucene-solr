@@ -34,7 +34,7 @@ import javax.xml.xpath.XPathConstants;
  * factory to create caches.
  *
  * @author yonik
- * @version $Id: CacheConfig.java,v 1.2 2005/09/07 20:37:57 yonik Exp $
+ * @version $Id$
  */
 class CacheConfig {
   private String nodeName;

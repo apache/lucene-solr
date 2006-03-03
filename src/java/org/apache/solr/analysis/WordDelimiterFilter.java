@@ -58,7 +58,7 @@ import java.util.List;
  *  (such as WhitespaceTokenizer).
  *
  *  @author yonik
- *  @version $Id: WordDelimiterFilter.java,v 1.6 2005/09/20 03:54:05 yonik Exp $
+ *  @version $Id$
  */
 final class WordDelimiterFilter extends TokenFilter {
   private final byte[] charTypeTable;

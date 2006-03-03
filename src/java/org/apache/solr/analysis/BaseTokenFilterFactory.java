@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * @author yonik
- * @version $Id: BaseTokenFilterFactory.java,v 1.5 2005/12/06 04:16:16 yonik Exp $
+ * @version $Id$
  */
 public abstract class BaseTokenFilterFactory implements TokenFilterFactory {
   protected Map<String,String> args;

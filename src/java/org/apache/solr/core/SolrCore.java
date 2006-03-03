@@ -52,11 +52,11 @@ import java.util.logging.Logger;
 
 /**
  * @author yonik
- * @version $Id: SolrCore.java,v 1.47 2006/01/10 05:04:44 yonik Exp $
+ * @version $Id$
  */
 
 public final class SolrCore {
-  public static final String cvsId="$Id: SolrCore.java,v 1.47 2006/01/10 05:04:44 yonik Exp $";
+  public static final String cvsId="$Id$";
   public static final String cvsSource="$Source: /cvs/main/searching/solr/solarcore/src/solr/SolrCore.java,v $";
   public static final String cvsTag="$Name:  $";
   public static final String version="1.0";  
