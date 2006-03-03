@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# $Id: snapinstaller.template,v 1.12 2005/06/09 17:19:34 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/snapinstaller.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/snapinstaller.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
 # Shell script to install a snapshot into place as the Lucene collection
-# for a SOLAR server
+# for a Solr server
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 
@@ -158,13 +158,13 @@ then
     logMessage failed to ssh to master ${masterHost}, snapshot status not updated on master
 fi
 
-# notify SOLAR to open a new Searcher
-logMessage notifing SOLAR to open a new Searcher
-scripts/solar/commit
+# notify Solr to open a new Searcher
+logMessage notifing Solr to open a new Searcher
+scripts/solr/commit
 if [[ $? != 0 ]]
 then
-  logMessage failed to connect to SOLAR server at port 5051
-  logMessage snapshot installed but SOLAR server has not open a new Searcher
+  logMessage failed to connect to Solr server at port 5051
+  logMessage snapshot installed but Solr server has not open a new Searcher
   logExit failed 1
 fi
 

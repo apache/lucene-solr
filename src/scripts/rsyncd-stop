@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# $Id: rsyncd-stop.template,v 1.3 2005/06/20 20:43:55 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/rsyncd-stop.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/rsyncd-stop.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
-# Shell script to stop rsyncd on master SOLAR server
+# Shell script to stop rsyncd on master Solr server
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 

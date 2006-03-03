@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# $Id: backup.template,v 1.4 2005/06/09 15:33:13 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/backup.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/backup.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
-# Shell script to make a backup of a SOLAR Lucene collection.
+# Shell script to make a backup of a Solr Lucene collection.
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 

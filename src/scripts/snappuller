@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# $Id: snappuller.template,v 1.13 2005/07/20 18:38:49 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/snappuller.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/snappuller.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
-# Shell script to copy snapshots of a SOLAR Lucene collection from the master
+# Shell script to copy snapshots of a Solr Lucene collection from the master
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 
@@ -188,7 +188,7 @@ scp -q -o StrictHostKeyChecking=no logs/snappuller.status ${masterHost}:${MASTER
 
 # rsync over files that have changed
 rsync -Wa${verbose}${compress} --delete ${sizeonly} \
-${stats} rsync://${masterHost}:${rsyncd_port}/solar/`basename ${name}`/ `basename ${name}-wip`
+${stats} rsync://${masterHost}:${rsyncd_port}/solr/`basename ${name}`/ `basename ${name}-wip`
 
 rc=$?
 rsyncEnd=`date`

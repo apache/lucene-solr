@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# $Id: rsyncd-enable.template,v 1.1 2005/06/20 20:43:29 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/rsyncd-enable.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/rsyncd-enable.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
 # Shell script to enable rsyncd

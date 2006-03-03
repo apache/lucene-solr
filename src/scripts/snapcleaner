@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# $Id: snapcleaner.template,v 1.7 2005/06/09 15:34:06 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/snapcleaner.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/snapcleaner.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
-# Shell script to clean up snapshots of a SOLAR Lucene collection.
+# Shell script to clean up snapshots of a Solr Lucene collection.
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 

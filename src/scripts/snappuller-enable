@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# $Id: snappuller-enable.template,v 1.4 2005/06/20 20:43:56 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/snappuller-enable.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/snappuller-enable.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
 # Shell script to enable snappuller

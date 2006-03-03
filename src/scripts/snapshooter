@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# $Id: snapshooter.template,v 1.9 2005/06/09 15:34:07 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/snapshooter.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/snapshooter.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
-# Shell script to take a snapshot of a SOLAR Lucene collection.
+# Shell script to take a snapshot of a Solr Lucene collection.
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 
@@ -48,7 +48,7 @@ fi
 # source the config file
 . $confFile
 
-if [[ "${solar_role}" == "slave" ]]
+if [[ "${solr_role}" == "slave" ]]
 then
   echo "$prog disabled on slave server" >&2
   exit 1

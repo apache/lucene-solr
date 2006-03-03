@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# $Id: snappuller-disable.template,v 1.4 2005/06/20 20:43:55 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/snappuller-disable.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/snappuller-disable.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
 # Shell script to disable snappuller

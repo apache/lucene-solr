@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# $Id: optimize.template,v 1.3 2005/06/09 15:34:06 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/optimize.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/optimize.template,v $
 # $Name: r20050725_standardized_server_enabled $
 
 #
 # Shell script to force a optimized commit of all changes since last commit
-# for a SOLAR server
+# for a Solr server
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 
@@ -82,7 +82,7 @@ logMessage command: $0 $originalargs
 rs=`curl http://localhost:5051/update -s -d "<optimize/>"`
 if [[ $? != 0 ]]
 then
-  logMessage failed to connect to SOLAR server at port 5051
+  logMessage failed to connect to Solr server at port 5051
   logMessage optimize failed
   logExit failed 1
 fi
@@ -91,7 +91,7 @@ fi
 rc=`echo $rs|cut -f2 -d'"'`
 if [[ $? != 0 ]]
 then
-  logMessage optimize request to SOLAR at port 5051 failed:
+  logMessage optimize request to Solr at port 5051 failed:
   logMessage $rs
   logExit failed 2
 fi

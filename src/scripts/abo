@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# $Id: abo.template,v 1.5 2005/06/09 15:33:13 billa Exp $
-# $Source: /cvs/main/searching/solar-tools/abo.template,v $
+# $Id$
+# $Source: /cvs/main/searching/solr-tools/abo.template,v $
 # $Name: r20050725_standardized_server_enabled $
 #
 # Shell script to make an Atomic Backup after Optimize of
-# a SOLAR Lucene collection.
+# a Solr Lucene collection.
 
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
 
@@ -78,11 +78,11 @@ cd ${0%/*}/../..
 logMessage started by $oldwhoami
 logMessage command: $0 $originalargs
 
-logMessage sending optimize to Solar server at port 5051
+logMessage sending optimize to Solr server at port 5051
 rs=`curl http://localhost:5051/update -s -d "<optimize/>"`
 if [[ $? != 0 ]]
 then
-  logMessage failed to connect to SOLAR server at port 5051
+  logMessage failed to connect to Solr server at port 5051
   logMessage optimize failed
   logExit failed 1
 fi
@@ -91,7 +91,7 @@ fi
 rc=`echo $rs|cut -f2 -d'"'`
 if [[ $? != 0 ]]
 then
-  logMessage optimize request to SOLAR at port 5051 failed:
+  logMessage optimize request to Solr at port 5051 failed:
   logMessage $rs
   logExit failed 2
 fi
