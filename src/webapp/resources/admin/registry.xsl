@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- $Id: registry.xsl,v 1.6 2005/06/07 15:53:35 ronp Exp $ -->
-<!-- $Source: /cvs/main/searching/org.apache.solrSolarServer/resources/admin/registry.xsl,v $ -->
-<!-- $Name:  $ -->
+<!-- $Id$ -->
+<!-- $URL$ -->
 
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

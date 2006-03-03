@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- $Id: tabular.xsl,v 1.2 2005/05/31 20:35:18 ronp Exp $ -->
-<!-- $Source: /cvs/main/searching/org.apache.solrSolarServer/resources/admin/tabular.xsl,v $ -->
-<!-- $Name:  $ -->
+<!-- $Id$ -->
+<!-- $URL$ -->
 
 
 <xsl:stylesheet

@@ -126,12 +126,8 @@ public class OldRequestHandler implements SolrRequestHandler {
     return "$Id$";
   }
 
-  public String getCvsName() {
-    return "$Name:  $";
-  }
-
   public String getSource() {
-    return "$Source: /cvs/main/searching/solr/solarcore/src/solr/tst/OldRequestHandler.java,v $";
+    return "$URL$";
   }
 
   public URL[] getDocs() {

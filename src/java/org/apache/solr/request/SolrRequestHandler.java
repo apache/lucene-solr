@@ -23,9 +23,9 @@ import org.apache.solr.core.SolrInfoMBean;
  * Implementations of <code>SolrRequestHandler</code> are called to handle query requests.
  *
  * Different <code>SolrRequestHandler</code>s are registered with the <code>SolrCore</code>.
- * One way to register a SolrRequestHandler with the core is thorugh the <code>solarconfig.xml</code> file.
+ * One way to register a SolrRequestHandler with the core is thorugh the <code>solrconfig.xml</code> file.
  * <p>
- * Example <code>solarconfig.xml</code> entry to register a <code>SolrRequestHandler</code> implementation to
+ * Example <code>solrconfig.xml</code> entry to register a <code>SolrRequestHandler</code> implementation to
  * handle all queries with a query type of "test":
  * <p>
  * <code>
@@ -43,7 +43,7 @@ public interface SolrRequestHandler extends SolrInfoMBean {
   /** <code>init</code> will be called just once, immediately after creation.
    * <p>The args are user-level initialization parameters that
    * may be specified when declaring a request handler in
-   * solarconfig.xml
+   * solrconfig.xml
    */
   public void init(NamedList args);
 

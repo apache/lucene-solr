@@ -358,12 +358,8 @@ public class DirectUpdateHandler extends UpdateHandler {
     return "$Id$";
   }
 
-  public String getCvsName() {
-    return "$Name:  $";
-  }
-
   public String getSource() {
-    return "$Source: /cvs/main/searching/solr/solarcore/src/solr/DirectUpdateHandler.java,v $";
+    return "$URL$";
   }
 
   public URL[] getDocs() {

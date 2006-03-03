@@ -30,7 +30,7 @@ import javax.xml.xpath.XPathConstants;
 
 /**
  * Contains the knowledge of how cache config is
- * stored in the solarconfig.xml file, and implements a
+ * stored in the solrconfig.xml file, and implements a
  * factory to create caches.
  *
  * @author yonik

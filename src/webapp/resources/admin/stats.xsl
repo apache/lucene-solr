@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- $Id: stats.xsl,v 1.6 2005/06/13 15:38:45 ronp Exp $ -->
-<!-- $Source: /cvs/main/searching/org.apache.solrSolarServer/resources/admin/stats.xsl,v $ -->
-<!-- $Name:  $ -->
+<!-- $Id$ -->
+<!-- $URL$ -->
 
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

@@ -252,7 +252,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
 
   public Hits search(Query query, Filter filter, Sort sort) throws IOException {
-    // todo - when SOLAR starts accepting filters, need to
+    // todo - when Solr starts accepting filters, need to
     // change this conditional check (filter!=null) and create a new filter
     // that ANDs them together if it already exists.
 
@@ -577,7 +577,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
 
   static final int NO_CHECK_QCACHE=0x80;
-  
+
   public static final int GET_SCORES=0x01;
   public static final int NO_CHECK_FILTERCACHE=0x02;
 
