@@ -7,7 +7,7 @@ $Id$
 Bug fixes
 
  1. LUCENE-511: Fix a bug in the BufferedIndexOutput optimization
-    introduced in 1.9-final.
+    introduced in 1.9-final.  (Shay Banon & Steven Tamm via cutting)
 
 1.9 final
 
