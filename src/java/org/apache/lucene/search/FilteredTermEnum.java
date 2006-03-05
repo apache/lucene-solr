@@ -36,7 +36,7 @@ public abstract class FilteredTermEnum extends TermEnum {
     /** Equality measure on the term */
     public abstract float difference();
 
-    /** Indiciates the end of the enumeration has been reached */
+    /** Indicates the end of the enumeration has been reached */
     protected abstract boolean endEnum();
     
     protected void setEnum(TermEnum actualEnum) throws IOException {
