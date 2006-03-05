@@ -1,7 +1,7 @@
 package org.apache.lucene.search;
 
 /**
- * Copyright 2004 The Apache Software Foundation
+ * Copyright 2004,2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,5 +126,19 @@ extends TestCase {
     assertEquals(2, hits.length());
   }
 
+
+  public void testBoolean() throws Exception {
+    BooleanQuery bq = new BooleanQuery();
+    Query query = new FilteredQuery(new MatchAllDocsQuery(),
+        new SingleDocTestFilter(0));
+    bq.add(query, BooleanClause.Occur.MUST);
+    query = new FilteredQuery(new MatchAllDocsQuery(),
+        new SingleDocTestFilter(1));
+    bq.add(query, BooleanClause.Occur.MUST);
+    Hits hits = searcher.search(bq);
+    System.out.println(hits.id(0));
+    System.out.println(hits.id(1));
+    assertEquals(0, hits.length());
+  }
 }
 
