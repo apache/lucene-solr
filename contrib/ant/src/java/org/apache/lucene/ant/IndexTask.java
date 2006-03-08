@@ -21,9 +21,9 @@ import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Hits;
@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
+import java.text.ParseException;
 
 /**
  *  Ant task to index files with Lucene
@@ -139,7 +140,7 @@ public class IndexTask extends Task {
   /**
    * If creating a new index and this is set to true, the
    * index will be created in compound format.
-   */ 
+   */
   public void setUseCompoundIndex(boolean useCompoundIndex) {
     this.useCompoundIndex = useCompoundIndex;
   }
@@ -302,8 +303,13 @@ public class IndexTask extends Task {
                 String indexModified =
                   doc.get("modified").trim();
                 if (indexModified != null) {
-                  if (DateField.stringToTime(indexModified)
-                    == file.lastModified()) {
+                  long lastModified = 0;
+                  try {
+                    lastModified = DateTools.stringToTime(indexModified);
+                  } catch (ParseException e) {
+                    // if modified time is not parsable, skip
+                  }
+                  if (lastModified == file.lastModified()) {
                     // TODO: remove existing document
                     indexIt = false;
                   }
@@ -328,7 +334,7 @@ public class IndexTask extends Task {
                   // Add the last modified date of the file a field named "modified".  Use a
                   // Keyword field, so that it's searchable, but so that no attempt is made
                   // to tokenize the field into words.
-                  doc.add(new Field("modified", DateField.timeToString(file.lastModified()), Field.Store.YES, Field.Index.UN_TOKENIZED));
+                  doc.add(new Field("modified", DateTools.timeToString(file.lastModified(), DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
 
                   writer.addDocument(doc);
                   totalIndexed++;

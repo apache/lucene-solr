@@ -15,5 +15,11 @@
                refid="additional.dependencies"
   />
 
+  <target name="compile-core" depends="common.compile-core">
+    <copy todir="${build.dir}/classes/java">
+      <fileset dir="src/java" includes="**/*.xml"/>
+    </copy>
+  </target>
+
   <import file="../contrib-build.xml"/>
 </project>

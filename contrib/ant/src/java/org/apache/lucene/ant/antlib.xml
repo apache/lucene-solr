@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<antlib>
+  <taskdef name="index" classname="org.apache.lucene.ant.IndexTask"/>
+</antlib>
