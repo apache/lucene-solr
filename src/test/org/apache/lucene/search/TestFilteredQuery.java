@@ -126,7 +126,6 @@ extends TestCase {
     assertEquals(2, hits.length());
   }
 
-
   public void testBoolean() throws Exception {
     BooleanQuery bq = new BooleanQuery();
     Query query = new FilteredQuery(new MatchAllDocsQuery(),
@@ -136,8 +135,6 @@ extends TestCase {
         new SingleDocTestFilter(1));
     bq.add(query, BooleanClause.Occur.MUST);
     Hits hits = searcher.search(bq);
-    System.out.println(hits.id(0));
-    System.out.println(hits.id(1));
     assertEquals(0, hits.length());
   }
 }
