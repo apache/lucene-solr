@@ -9,6 +9,9 @@ Bug fixes
  1. LUCENE-330: Fix issue of FilteredQuery not working properly within
     BooleanQuery.  (Paul Elschot via Erik Hatcher)
 
+ 2. LUCENE-515: Make ConstantScoreRangeQuery and ConstantScoreQuery work
+    with RemoteSearchable.  (Philippe Laflamme via Yonik Seeley)
+
 1.9.1
 
 Bug fixes

@@ -40,12 +40,12 @@ public class ConstantScoreQuery extends Query {
   }
 
   protected class ConstantWeight implements Weight {
-    private Searcher searcher;
+    private Similarity similarity;
     private float queryNorm;
     private float queryWeight;
 
     public ConstantWeight(Searcher searcher) {
-      this.searcher = searcher;
+      this.similarity = getSimilarity(searcher);
     }
 
     public Query getQuery() {
@@ -67,7 +67,7 @@ public class ConstantScoreQuery extends Query {
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
-      return new ConstantScorer(getSimilarity(searcher), reader, this);
+      return new ConstantScorer(similarity, reader, this);
     }
 
     public Explanation explain(IndexReader reader, int doc) throws IOException {

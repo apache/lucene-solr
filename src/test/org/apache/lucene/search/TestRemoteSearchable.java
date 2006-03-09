@@ -107,4 +107,14 @@ public class TestRemoteSearchable extends TestCase {
           new QueryFilter(new TermQuery(new Term("test", "non-existent-term"))));
     assertEquals(0, nohits.length());
   }
+
+  public void testConstantScoreQuery() throws Exception {
+    // try to search the published index
+    Searchable[] searchables = { getRemote() };
+    Searcher searcher = new MultiSearcher(searchables);
+    Hits hits = searcher.search(
+          new ConstantScoreQuery(new QueryFilter(
+                                   new TermQuery(new Term("test", "test")))));
+    assertEquals(1, hits.length());
+  }
 }
