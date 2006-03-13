@@ -133,7 +133,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
 
     public void collect(int doc, float score) {
       try {
-        searcher.getReader().delete(doc);
+        searcher.getReader().deleteDocument(doc);
         deleted++;
       } catch (IOException e) {
         // don't try to close the searcher on failure for now...

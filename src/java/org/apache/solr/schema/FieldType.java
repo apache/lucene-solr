@@ -146,7 +146,10 @@ public abstract class FieldType extends FieldProperties {
   public Field createField(SchemaField field, String externalVal, float boost) {
     String val = toInternal(externalVal);
     if (val==null) return null;
-    Field f =  new Field(field.getName(), val, field.stored(), field.indexed(), isTokenized());
+    Field f =  new Field(field.getName(),val,
+            field.stored() ? Field.Store.YES : Field.Store.NO ,
+            field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED)
+                    : Field.Index.NO);
     f.setOmitNorms(field.omitNorms());
     f.setBoost(boost);
     return f;

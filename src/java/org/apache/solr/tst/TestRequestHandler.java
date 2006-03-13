@@ -148,7 +148,7 @@ public class TestRequestHandler implements SolrRequestHandler {
         nl.add("myLong",999999999999L);
 
         Document doc = new Document();
-        doc.add(new Field("id","55",true,true,false));
+        doc.add(new Field("id","55",Field.Store.YES, Field.Index.UN_TOKENIZED));
         nl.add("myDoc",doc);
 
         nl.add("myResult",results);

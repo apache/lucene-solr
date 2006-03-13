@@ -342,20 +342,8 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return searcher.search(weight, filter, i);
   }
 
-  public TopDocs search(Query query, Filter filter, int nDocs) throws IOException {
-    return searcher.search(query, filter, nDocs);
-  }
-
-  public TopFieldDocs search(Query query, Filter filter, int nDocs, Sort sort) throws IOException {
-    return searcher.search(query, filter, nDocs, sort);
-  }
-
   public void search(Weight weight, Filter filter, HitCollector hitCollector) throws IOException {
     searcher.search(weight, filter, hitCollector);
-  }
-
-  public void search(Query query, Filter filter, HitCollector results) throws IOException {
-    searcher.search(query, filter, results);
   }
 
   public Query rewrite(Query original) throws IOException {
@@ -364,10 +352,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   public Explanation explain(Weight weight, int i) throws IOException {
     return searcher.explain(weight, i);
-  }
-
-  public Explanation explain(Query query, int doc) throws IOException {
-    return searcher.explain(query, doc);
   }
 
   public TopFieldDocs search(Weight weight, Filter filter, int i, Sort sort) throws IOException {

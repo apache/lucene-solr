@@ -76,14 +76,15 @@ if (c.query instanceof TermQuery) {
  System.out.println("docFreq="+searcher.docFreq(((TermQuery)c.query).getTerm()));
 }
 ***/
-      if (c.required                              // required
-          && c.query.getBoost() == 0.0f           // boost is zero
-          && c.query instanceof TermQuery         // TermQuery
-          && (searcher.docFreq(((TermQuery)c.query).getTerm())
+      Query q = c.getQuery();
+      if (c.isRequired()                              // required
+          && q.getBoost() == 0.0f           // boost is zero
+          && q instanceof TermQuery         // TermQuery
+          && (searcher.docFreq(((TermQuery)q).getTerm())
               / (float)searcher.maxDoc()) >= threshold) { // check threshold
         if (filterQuery == null)
           filterQuery = new BooleanQuery();
-        filterQuery.add(c.query, true, false);    // filter it
+        filterQuery.add(q, BooleanClause.Occur.MUST);    // filter it
 //System.out.println("WooHoo... qualified to be hoisted to a filter!");
       } else {
         query.add(c);                             // query it

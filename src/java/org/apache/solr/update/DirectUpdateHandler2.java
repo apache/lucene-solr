@@ -408,7 +408,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         while (tdocs.next()) {
           if (saveLast==0) {
             // special case - delete all the docs as we see them.
-            reader.delete(tdocs.doc());
+            reader.deleteDocument(tdocs.doc());
             numDeletes++;
             continue;
           }
@@ -416,7 +416,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
           int prev=docnums[pos];
           docnums[pos]=tdocs.doc();
           if (prev != -1) {
-            reader.delete(prev);
+            reader.deleteDocument(prev);
             numDeletes++;
           }
 

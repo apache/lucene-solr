@@ -130,7 +130,7 @@ public class DirectUpdateHandler extends UpdateHandler {
     TermDocs tdocs = null;
     int num=0;
     try {
-      num = ir.delete(idTerm(id));
+      num = ir.deleteDocuments(idTerm(id));
       if (SolrCore.log.isLoggable(Level.FINEST)) {
         SolrCore.log.finest("deleted " + num + " docs matching id " + id);
       }

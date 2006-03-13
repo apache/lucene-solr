@@ -203,7 +203,7 @@ public class QueryParsing {
 
   static void writeFieldVal(String val, FieldType ft, Appendable out, int flags) throws IOException {
     if (ft!=null) {
-      out.append(ft.toExternal(new Field("",val,true,true,false)));
+      out.append(ft.toExternal(new Field("",val, Field.Store.YES, Field.Index.UN_TOKENIZED)));
     } else {
       out.append(val);
     }
@@ -281,12 +281,12 @@ public class QueryParsing {
           first=false;
         }
 
-        if (c.prohibited) {
+        if (c.isProhibited()) {
           out.append('-');
-        } else if (c.required) {
+        } else if (c.isRequired()) {
           out.append('+');
         }
-        Query subQuery = c.query;
+        Query subQuery = c.getQuery();
         boolean wrapQuery=false;
 
         // TODO: may need to put parens around other types

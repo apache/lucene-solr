@@ -46,10 +46,10 @@ public class SolrIndexWriter extends IndexWriter {
 
     if (config != null) {
       setUseCompoundFile(config.useCompoundFile);
-      if (config.maxBufferedDocs != -1) minMergeDocs=config.maxBufferedDocs;
-      if (config.maxMergeDocs != -1) maxMergeDocs=config.maxMergeDocs;
-      if (config.mergeFactor != -1)  mergeFactor =config.mergeFactor;
-      if (config.maxFieldLength != -1)  maxFieldLength =config.maxFieldLength;
+      if (config.maxBufferedDocs != -1) setMaxBufferedDocs(config.maxBufferedDocs);
+      if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
+      if (config.mergeFactor != -1)  setMergeFactor(config.mergeFactor);
+      if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
     }
 
   }
