@@ -48,7 +48,7 @@ public class CoreParser implements QueryBuilder
 		queryFactory = new QueryBuilderFactory();
 		queryFactory.addBuilder("TermQuery",new TermQueryBuilder());
 		queryFactory.addBuilder("BooleanQuery",new BooleanQueryBuilder(queryFactory));
-		queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(new QueryParser("contents", analyzer)));
+		queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(parser));
 		queryFactory.addBuilder("FilteredQuery",new FilteredQueryBuilder(filterFactory,queryFactory));
 		queryFactory.addBuilder("ConstantScoreQuery",new ConstantScoreQueryBuilder(filterFactory));
 		
