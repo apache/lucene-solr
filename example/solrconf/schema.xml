@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!-- The Solr schema file. This file should be named "schema.xml" and
-     should be in the conf directory or located where the classloader 
+     should be in the solrconf directory or located where the classloader 
      for the Solr webapp can find it.
 
  For more information, on how to customize this file, please see...

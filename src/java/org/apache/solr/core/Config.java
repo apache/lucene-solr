@@ -218,6 +218,18 @@ public class Config {
     }
   }
 
+  // The directory where solr will look for config files by default.
+  // defaults to "./solrconf/"
+  private static final String configDir;
+  static {
+    String str = System.getProperty("solr.configdir");
+    if (str==null) {
+      str="solrconf/";
+    } else if ( !(str.endsWith("/") || str.endsWith("\\")) ) {
+      str+='/';
+    }
+    configDir = str;
+  }
 
   public static InputStream openResource(String resource) {
     InputStream is=null;
@@ -225,8 +237,8 @@ public class Config {
     try {
       File f = new File(resource);
       if (!f.isAbsolute()) {
-        // try $CWD/conf/
-        f = new File("conf/" + resource);
+        // try $CWD/solrconf/
+        f = new File(configDir + resource);
       }
       if (f.isFile() && f.canRead()) {
         return new FileInputStream(f);

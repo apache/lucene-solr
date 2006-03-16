@@ -26,28 +26,28 @@ import java.io.InputStream;
 public class SolrConfig {
   public static Config config;
   static {
-    Exception e=null;
+    RuntimeException e=null;
     String file="solrconfig.xml";
     InputStream is=null;
     try {
       is = Config.openResource(file);
-    } catch (Exception ee) {
+    } catch (RuntimeException ee) {
       e=ee;
       file = "solarconfig.xml"; // backward compat
       try {
         is = Config.openResource(file);
-      } catch (Exception eee) {}
-    }
-    if (is!=null) {
-      try {
-        config=new Config(file, is, "/config/");
-        is.close();
-      } catch (Exception ee) {
-        throw new RuntimeException(ee);
+      } catch (Exception eee) {
+        throw e;
       }
-      Config.log.info("Loaded Config solrconfig.xml");
-    } else {
-      throw new RuntimeException("Can't find Solr config file ./conf/solrconfig.xml",e);
     }
+
+    try {
+      config=new Config(file, is, "/config/");
+      is.close();
+    } catch (Exception ee) {
+      throw new RuntimeException("Error in solrconfig.xml", ee);
+    }
+    Config.log.info("Loaded Config solrconfig.xml");
+
   }
 }
