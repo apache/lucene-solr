@@ -59,14 +59,18 @@ import org.apache.lucene.analysis.Analyzer;
 public class IndexWriter {
 
   /**
-   * Default value is 1,000.
+   * Default value for the write lock timeout (1,000).
    */
   public final static long WRITE_LOCK_TIMEOUT = 1000;
 
+  private long writeLockTimeout = WRITE_LOCK_TIMEOUT;
+
   /**
-   * Default value is 10,000.
+   * Default value for the commit lock timeout (10,000).
    */
   public final static long COMMIT_LOCK_TIMEOUT = 10000;
+
+  private long commitLockTimeout = COMMIT_LOCK_TIMEOUT;
 
   public static final String WRITE_LOCK_NAME = "write.lock";
   public static final String COMMIT_LOCK_NAME = "commit.lock";
@@ -252,12 +256,12 @@ public class IndexWriter {
       analyzer = a;
 
       Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-      if (!writeLock.obtain(WRITE_LOCK_TIMEOUT)) // obtain write lock
+      if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;                   // save it
 
       synchronized (directory) {        // in- & inter-process sync
-        new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+        new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), commitLockTimeout) {
             public Object doBody() throws IOException {
               if (create)
                 segmentInfos.write(directory);
@@ -368,6 +372,34 @@ public class IndexWriter {
    */
   public PrintStream getInfoStream() {
     return infoStream;
+  }
+
+  /**
+   * Sets the maximum time to wait for a commit lock (in milliseconds).
+   */
+  public void setCommitLockTimeout(long commitLockTimeout) {
+    this.commitLockTimeout = commitLockTimeout;
+  }
+
+  /**
+   * @see #setCommitLockTimeout
+   */
+  public long getCommitLockTimeout() {
+    return commitLockTimeout;
+  }
+
+  /**
+   * Sets the maximum time to wait for a write lock (in milliseconds).
+   */
+  public void setWriteLockTimeout(long writeLockTimeout) {
+    this.writeLockTimeout = writeLockTimeout;
+  }
+
+  /**
+   * @see #setWriteLockTimeout
+   */
+  public long getWriteLockTimeout() {
+    return writeLockTimeout;
   }
 
   /** Flushes all changes to an index and closes all associated files. */
@@ -585,7 +617,7 @@ public class IndexWriter {
         sReader.close();
 
     synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit changes
 	    deleteSegments(segmentsToDelete);  // delete now-unused segments
@@ -597,7 +629,7 @@ public class IndexWriter {
     if (useCompoundFile) {
       final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
       synchronized (directory) { // in- & inter-process sync
-        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
           public Object doBody() throws IOException {
             // make compound file visible for SegmentReaders
             directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
@@ -693,7 +725,7 @@ public class IndexWriter {
     merger.closeReaders();
 
     synchronized (directory) {                 // in- & inter-process sync
-      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
           public Object doBody() throws IOException {
             segmentInfos.write(directory);     // commit before deleting
             deleteSegments(segmentsToDelete);  // delete now-unused segments
@@ -705,7 +737,7 @@ public class IndexWriter {
     if (useCompoundFile) {
       final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
       synchronized (directory) { // in- & inter-process sync
-        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), COMMIT_LOCK_TIMEOUT) {
+        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
           public Object doBody() throws IOException {
             // make compound file visible for SegmentReaders
             directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");

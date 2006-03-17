@@ -12,6 +12,11 @@ Bug fixes
  2. LUCENE-515: Make ConstantScoreRangeQuery and ConstantScoreQuery work
     with RemoteSearchable.  (Philippe Laflamme via Yonik Seeley)
 
+ 3. Added methods to get/set writeLockTimeout and commitLockTimeout in
+    IndexWriter. These could be set in Lucene 1.4 using a system property.
+    This feature had been removed without adding the corresponding 
+    getter/setter methods.  (Daniel Naber)
+ 
 1.9.1
 
 Bug fixes
