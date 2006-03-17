@@ -21,7 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import java.io.IOException;
 
 /**
- * A range query that returns a constant score equal to it's boost for
+ * A range query that returns a constant score equal to its boost for
  * all documents in the range.
  * <p>
  * It does not have an upper bound on the number of clauses covered in the range.
