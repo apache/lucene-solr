@@ -105,7 +105,7 @@ public final class SimilarityQueries
 			TermQuery tq = new TermQuery( new Term( field, word));
 			try
 			{
-				tmp.add( tq, false, false);
+				tmp.add( tq, BooleanClause.Occur.SHOULD);
 			}
 			catch( BooleanQuery.TooManyClauses too)
 			{

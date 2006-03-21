@@ -350,12 +350,7 @@ public class MemoryIndexTest extends TestCase {
 	
 	private Document createDocument(String content) {
 		Document doc = new Document();
-		{ // lucene-1.4.3
-			doc.add(Field.UnStored(FIELD_NAME, content));
-		}
-//		{ // lucene >= 1.9
-//			doc.add(new Field(FIELD_NAME, content, Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
-//		}
+		doc.add(new Field(FIELD_NAME, content, Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS));
 		return doc;
 	}
 	
@@ -374,8 +369,7 @@ public class MemoryIndexTest extends TestCase {
 		IndexWriter writer = null;
 		try {
 			writer = new IndexWriter(dir, analyzer, true);
-			writer.maxFieldLength = Integer.MAX_VALUE; // ensure large files are scored correctly
-//			writer.setMaxFieldLength(Integer.MAX_VALUE);
+			writer.setMaxFieldLength(Integer.MAX_VALUE);
 			writer.addDocument(doc);
 			writer.optimize();
 			return dir;

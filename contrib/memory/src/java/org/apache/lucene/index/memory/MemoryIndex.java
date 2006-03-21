@@ -1030,8 +1030,11 @@ public class MemoryIndex {
 		protected void doClose() {
 			if (DEBUG) System.err.println("MemoryIndexReader.doClose");
 		}
-	
-		// lucene <= 1.4.3
+
+    
+
+
+    // lucene <= 1.4.3
 		public Collection getFieldNames() {
 			if (DEBUG) System.err.println("MemoryIndexReader.getFieldNames");
 			return getFieldNames(true);
