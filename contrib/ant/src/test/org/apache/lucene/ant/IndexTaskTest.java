@@ -73,7 +73,7 @@ public class IndexTaskTest extends TestCase {
 
 
     public void testSearch() throws Exception {
-        Query query = QueryParser.parse("test", "contents", analyzer);
+        Query query = new QueryParser("contents",analyzer).parse("test");
 
         Hits hits = searcher.search(query);
 

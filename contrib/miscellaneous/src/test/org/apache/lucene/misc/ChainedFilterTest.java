@@ -27,14 +27,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.DateFilter;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.QueryFilter;
+import org.apache.lucene.search.*;
 
 public class ChainedFilterTest extends TestCase {
   public static final int MAX = 500;
@@ -42,7 +35,8 @@ public class ChainedFilterTest extends TestCase {
   private RAMDirectory directory;
   private IndexSearcher searcher;
   private Query query;
-  private DateFilter dateFilter;
+  // private DateFilter dateFilter;   DateFilter was deprecated and removed
+  private RangeFilter dateFilter;
   private QueryFilter bobFilter;
   private QueryFilter sueFilter;
 
@@ -56,10 +50,9 @@ public class ChainedFilterTest extends TestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(Field.Keyword("key", "" + (i + 1)));
-      doc.add(
-          Field.Keyword("owner", (i < MAX / 2) ? "bob" : "sue"));
-      doc.add(Field.Keyword("date", cal.getTime()));
+      doc.add(new Field("key", "" + (i + 1), Field.Store.YES, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.UN_TOKENIZED));
+      doc.add(new Field("date", cal.getTime().toString(), Field.Store.YES, Field.Index.UN_TOKENIZED));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);
@@ -71,13 +64,15 @@ public class ChainedFilterTest extends TestCase {
 
     // query for everything to make life easier
     BooleanQuery bq = new BooleanQuery();
-    bq.add(new TermQuery(new Term("owner", "bob")), false, false);
-    bq.add(new TermQuery(new Term("owner", "sue")),false, false);
+    bq.add(new TermQuery(new Term("owner", "bob")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("owner", "sue")), BooleanClause.Occur.SHOULD);
     query = bq;
 
     // date filter matches everything too
     Date pastTheEnd = parseDate("2099 Jan 1");
-    dateFilter = DateFilter.Before("date", pastTheEnd);
+    // dateFilter = DateFilter.Before("date", pastTheEnd);
+    // just treat dates as strings and select the whole range for now...
+    dateFilter = new RangeFilter("date","","ZZZZ",true,true);
 
     bobFilter = new QueryFilter(
         new TermQuery(new Term("owner", "bob")));
