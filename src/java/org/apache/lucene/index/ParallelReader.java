@@ -221,29 +221,6 @@ public class ParallelReader extends IndexReader {
       ((IndexReader)readers.get(i)).close();
   }
 
-  public Collection getFieldNames() throws IOException {
-    return fieldToReader.keySet();
-  }
-
-  public Collection getFieldNames(boolean indexed) throws IOException {
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = ((IndexReader)readers.get(i));
-      Collection names = reader.getFieldNames(indexed);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  }
-
-  public Collection getIndexedFieldNames (Field.TermVector tvSpec){
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = ((IndexReader)readers.get(i));
-      Collection names = reader.getIndexedFieldNames(tvSpec);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  }
 
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
     Set fieldSet = new HashSet();

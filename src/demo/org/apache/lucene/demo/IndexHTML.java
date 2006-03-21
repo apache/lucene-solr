@@ -105,7 +105,7 @@ public class IndexHTML {
         while (uidIter.term() != null && uidIter.term().field() == "uid") {
           System.out.println("deleting " +
               HTMLDocument.uid2url(uidIter.term().text()));
-          reader.delete(uidIter.term());
+          reader.deleteDocuments(uidIter.term());
           uidIter.next();
         }
         deleting = false;
@@ -137,7 +137,7 @@ public class IndexHTML {
           if (deleting) {			  // delete stale docs
             System.out.println("deleting " +
                 HTMLDocument.uid2url(uidIter.term().text()));
-            reader.delete(uidIter.term());
+            reader.deleteDocuments(uidIter.term());
           }
           uidIter.next();
         }

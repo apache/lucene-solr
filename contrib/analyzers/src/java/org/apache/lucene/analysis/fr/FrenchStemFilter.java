@@ -45,15 +45,6 @@ public final class FrenchStemFilter extends TokenFilter {
 		stemmer = new FrenchStemmer();
 	}
 
-	/**
-	 * Builds a FrenchStemFilter that uses an exclusiontable.
-   *
-   * @deprecated
-	 */
-	public FrenchStemFilter( TokenStream in, Hashtable exclusiontable ) {
-		this( in );
-		exclusions = new HashSet(exclusiontable.keySet());
-	}
 
 	public FrenchStemFilter( TokenStream in, Set exclusiontable ) {
 		this( in );

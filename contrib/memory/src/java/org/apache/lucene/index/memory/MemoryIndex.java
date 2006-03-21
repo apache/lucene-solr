@@ -1049,12 +1049,7 @@ public class MemoryIndex {
 			return getFieldNames(storedTermVector);
 		}
 	
-		// lucene >= 1.9 (deprecated) (remove this method for lucene-1.4.3)
-		public Collection getIndexedFieldNames(org.apache.lucene.document.Field.TermVector tvSpec) {
-			throw new UnsupportedOperationException(
-				"Deprecated; replaced by getFieldNames(IndexReader.FieldOption)");
-		}
-
+		
 		// lucene >= 1.9 (remove this method for lucene-1.4.3)
 		public Collection getFieldNames(FieldOption fieldOption) {
 			if (DEBUG) System.err.println("MemoryIndexReader.getFieldNamesOption");

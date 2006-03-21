@@ -16,8 +16,7 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
+import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,7 +30,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
+import java.io.IOException;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
@@ -62,7 +61,8 @@ public class TestDemo extends TestCase {
     // Now search the index:
     IndexSearcher isearcher = new IndexSearcher(directory);
     // Parse a simple query that searches for "text":
-    Query query = QueryParser.parse("text", "fieldname", analyzer);
+      QueryParser parser = new QueryParser("fieldname", analyzer);
+    Query query = parser.parse("text");
     Hits hits = isearcher.search(query);
     assertEquals(1, hits.length());
     // Iterate through the results:

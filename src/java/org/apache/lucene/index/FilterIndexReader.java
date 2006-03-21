@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -130,21 +129,10 @@ public class FilterIndexReader extends IndexReader {
     return in.termPositions();
   }
 
-  protected void doDelete(int n) throws IOException { in.delete(n); }
+  protected void doDelete(int n) throws IOException { in.deleteDocument(n); }
   protected void doCommit() throws IOException { in.commit(); }
   protected void doClose() throws IOException { in.close(); }
 
-  public Collection getFieldNames() throws IOException {
-    return in.getFieldNames();
-  }
-
-  public Collection getFieldNames(boolean indexed) throws IOException {
-    return in.getFieldNames(indexed);
-  }
-
-  public Collection getIndexedFieldNames (Field.TermVector tvSpec){
-    return in.getIndexedFieldNames(tvSpec);
-  }
   
   public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
     return in.getFieldNames(fieldNames);

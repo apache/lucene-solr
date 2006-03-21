@@ -16,10 +16,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,6 +25,8 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import java.io.IOException;
 
 /**
  * Tests {@link MultiSearcher} ranking, i.e. makes sure this bug is fixed:
@@ -88,8 +87,8 @@ public class TestMultiSearcherRanking extends TestCase {
   private void checkQuery(String queryStr) throws IOException, ParseException {
     // check result hit ranking
     if(verbose) System.out.println("Query: " + queryStr);
-    Query query = QueryParser.parse(queryStr, FIELD_NAME,
-        new StandardAnalyzer());
+      QueryParser queryParser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
+    Query query = queryParser.parse(queryStr);
     Hits multiSearcherHits = multiSearcher.search(query);
     Hits singleSearcherHits = singleSearcher.search(query);
     assertEquals(multiSearcherHits.length(), singleSearcherHits.length());

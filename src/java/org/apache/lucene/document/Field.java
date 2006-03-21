@@ -16,14 +16,13 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.io.Reader;
-import java.io.Serializable;
-import java.util.Date;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Parameter;
+
+import java.io.Reader;
+import java.io.Serializable;
 
 /**
   A field is a section of a Document.  Each field has two parts, a name and a
@@ -53,45 +52,45 @@ public final class Field implements Serializable {
   
   /** Specifies whether and how a field should be stored. */
   public static final class Store extends Parameter implements Serializable {
-    
+
     private Store(String name) {
       super(name);
     }
-    
+
     /** Store the original field value in the index in a compressed form. This is
      * useful for long documents and for binary valued fields.
      */
     public static final Store COMPRESS = new Store("COMPRESS");
-    
+
     /** Store the original field value in the index. This is useful for short texts
      * like a document's title which should be displayed with the results. The
      * value is stored in its original form, i.e. no analyzer is used before it is
-     * stored. 
+     * stored.
      */
     public static final Store YES = new Store("YES");
-    
+
     /** Do not store the field value in the index. */
     public static final Store NO = new Store("NO");
   }
-  
+
   /** Specifies whether and how a field should be indexed. */
   public static final class Index extends Parameter implements Serializable {
-    
+
     private Index(String name) {
       super(name);
     }
-    
+
     /** Do not index the field value. This field can thus not be searched,
-     * but one can still access its contents provided it is 
+     * but one can still access its contents provided it is
      * {@link Field.Store stored}. */
     public static final Index NO = new Index("NO");
-    
+
     /** Index the field's value so it can be searched. An Analyzer will be used
      * to tokenize and possibly further normalize the text before its
      * terms will be stored in the index. This is useful for common text.
      */
     public static final Index TOKENIZED = new Index("TOKENIZED");
-    
+
     /** Index the field's value without using an Analyzer, so it can be searched.
      * As no analyzer is used the value will be stored as a single term. This is
      * useful for unique Ids like product numbers.
@@ -181,84 +180,6 @@ public final class Field implements Serializable {
   public float getBoost() {
     return boost;
   }
-
-  /** Constructs a String-valued Field that is not tokenized, but is indexed
-    and stored.  Useful for non-text fields, e.g. date or url.  
-    @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
-      Field(name, value, Field.Store.YES, Field.Index.UN_TOKENIZED)} instead */
-  public static final Field Keyword(String name, String value) {
-    return new Field(name, value, true, true, false);
-  }
-
-  /** Constructs a String-valued Field that is not tokenized nor indexed,
-    but is stored in the index, for return with hits.
-    @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
-      Field(name, value, Field.Store.YES, Field.Index.NO)} instead */
-  public static final Field UnIndexed(String name, String value) {
-    return new Field(name, value, true, false, false);
-  }
-
-  /** Constructs a String-valued Field that is tokenized and indexed,
-    and is stored in the index, for return with hits.  Useful for short text
-    fields, like "title" or "subject". Term vector will not be stored for this field.
-  @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
-    Field(name, value, Field.Store.YES, Field.Index.TOKENIZED)} instead */
-  public static final Field Text(String name, String value) {
-    return Text(name, value, false);
-  }
-
-  /** Constructs a Date-valued Field that is not tokenized and is indexed,
-      and stored in the index, for return with hits.
-      @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
-      Field(name, value, Field.Store.YES, Field.Index.UN_TOKENIZED)} instead */
-  public static final Field Keyword(String name, Date value) {
-    return new Field(name, DateField.dateToString(value), true, true, false);
-  }
-
-  /** Constructs a String-valued Field that is tokenized and indexed,
-    and is stored in the index, for return with hits.  Useful for short text
-    fields, like "title" or "subject".
-    @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)
-      Field(name, value, Field.Store.YES, Field.Index.TOKENIZED, storeTermVector)} instead */
-  public static final Field Text(String name, String value, boolean storeTermVector) {
-    return new Field(name, value, true, true, true, storeTermVector);
-  }
-
-  /** Constructs a String-valued Field that is tokenized and indexed,
-    but that is not stored in the index.  Term vector will not be stored for this field.
-    @deprecated use {@link #Field(String, String, Field.Store, Field.Index)
-      Field(name, value, Field.Store.NO, Field.Index.TOKENIZED)} instead */
-  public static final Field UnStored(String name, String value) {
-    return UnStored(name, value, false);
-  }
-
-  /** Constructs a String-valued Field that is tokenized and indexed,
-    but that is not stored in the index.
-    @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)
-      Field(name, value, Field.Store.NO, Field.Index.TOKENIZED, storeTermVector)} instead */
-  public static final Field UnStored(String name, String value, boolean storeTermVector) {
-    return new Field(name, value, false, true, true, storeTermVector);
-  }
-
-  /** Constructs a Reader-valued Field that is tokenized and indexed, but is
-    not stored in the index verbatim.  Useful for longer text fields, like
-    "body". Term vector will not be stored for this field.
-    @deprecated use {@link #Field(String, Reader) Field(name, value)} instead */
-  public static final Field Text(String name, Reader value) {
-    return Text(name, value, false);
-  }
-
-  /** Constructs a Reader-valued Field that is tokenized and indexed, but is
-    not stored in the index verbatim.  Useful for longer text fields, like
-    "body".
-    @deprecated use {@link #Field(String, Reader, Field.TermVector)
-      Field(name, value, storeTermVector)} instead */
-  public static final Field Text(String name, Reader value, boolean storeTermVector) {
-    Field f = new Field(name, value);
-    f.storeTermVector = storeTermVector;
-    return f;
-  }
-  
   /** Returns the name of the field as an interned string.
    * For example "date", "title", "body", ...
    */
@@ -405,15 +326,6 @@ public final class Field implements Serializable {
     setStoreTermVector(termVector);
   }
 
-  /** Create a field by specifying all parameters except for <code>storeTermVector</code>,
-   *  which is set to <code>false</code>.
-   * 
-   * @deprecated use {@link #Field(String, String, Field.Store, Field.Index)} instead
-   */
-  public Field(String name, String string,
-         boolean store, boolean index, boolean token) {
-    this(name, string, store, index, token, false);
-  }
 
   
   /**
@@ -454,34 +366,6 @@ public final class Field implements Serializable {
     setStoreTermVector(TermVector.NO);
   }
   
-  /**
-   * 
-   * @param name The name of the field
-   * @param string The string to process
-   * @param store true if the field should store the string
-   * @param index true if the field should be indexed
-   * @param token true if the field should be tokenized
-   * @param storeTermVector true if we should store the Term Vector info
-   * 
-   * @deprecated use {@link #Field(String, String, Field.Store, Field.Index, Field.TermVector)} instead
-   */ 
-  public Field(String name, String string,
-         boolean store, boolean index, boolean token, boolean storeTermVector) {
-    if (name == null)
-      throw new NullPointerException("name cannot be null");
-    if (string == null)
-      throw new NullPointerException("value cannot be null");
-    if (!index && storeTermVector)
-      throw new IllegalArgumentException("cannot store a term vector for fields that are not indexed");
-
-    this.name = name.intern();        // field names are interned
-    this.fieldsData = string;
-    this.isStored = store;
-    this.isIndexed = index;
-    this.isTokenized = token;
-    this.storeTermVector = storeTermVector;
-  }
-
   private void setStoreTermVector(TermVector termVector) {
     if (termVector == TermVector.NO) {
       this.storeTermVector = false;

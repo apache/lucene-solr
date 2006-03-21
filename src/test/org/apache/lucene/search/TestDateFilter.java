@@ -16,20 +16,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.RAMDirectory;
+import junit.framework.TestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DateField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
-
-import junit.framework.TestCase;
 
  /**
   * DateFilter JUnit tests.
@@ -59,7 +55,7 @@ public class TestDateFilter
 
  	Document doc = new Document();
  	// add time that is in the past
- 	doc.add(new Field("datefield", DateField.timeToString(now - 1000), Field.Store.YES, Field.Index.UN_TOKENIZED));
+ 	doc.add(new Field("datefield", DateTools.timeToString(now - 1000, DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
  	doc.add(new Field("body", "Today is a very sunny day in New York City", Field.Store.YES, Field.Index.TOKENIZED));
   	writer.addDocument(doc);
  	writer.optimize();
@@ -68,12 +64,15 @@ public class TestDateFilter
 	IndexSearcher searcher = new IndexSearcher(indexStore);
 
 	// filter that should preserve matches
-	DateFilter df1 = DateFilter.Before("datefield", now);
-
+	//DateFilter df1 = DateFilter.Before("datefield", now);
+    RangeFilter df1 = new RangeFilter("datefield", DateTools.timeToString(now - 2000, DateTools.Resolution.MILLISECOND),
+                                      DateTools.timeToString(now, DateTools.Resolution.MILLISECOND), false, true);
 	// filter that should discard matches
-	DateFilter df2 = DateFilter.Before("datefield", now - 999999);
+	//DateFilter df2 = DateFilter.Before("datefield", now - 999999);
+    RangeFilter df2 = new RangeFilter("datefield", DateTools.timeToString(0, DateTools.Resolution.MILLISECOND),
+                                      DateTools.timeToString(now - 2000, DateTools.Resolution.MILLISECOND), true, false);
 
-	// search something that doesn't exist with DateFilter
+    // search something that doesn't exist with DateFilter
 	Query query1 = new TermQuery(new Term("body", "NoMatchForThis"));
 
 	// search for something that does exists
@@ -117,7 +116,7 @@ public class TestDateFilter
 
  	Document doc = new Document();
  	// add time that is in the future
- 	doc.add(new Field("datefield", DateField.timeToString(now + 888888), Field.Store.YES, Field.Index.UN_TOKENIZED));
+ 	doc.add(new Field("datefield", DateTools.timeToString(now + 888888, DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));
  	doc.add(new Field("body", "Today is a very sunny day in New York City", Field.Store.YES, Field.Index.TOKENIZED));
   	writer.addDocument(doc);
  	writer.optimize();
@@ -126,12 +125,15 @@ public class TestDateFilter
 	IndexSearcher searcher = new IndexSearcher(indexStore);
 
 	// filter that should preserve matches
-	DateFilter df1 = DateFilter.After("datefield", now);
-
+	//DateFilter df1 = DateFilter.After("datefield", now);
+    RangeFilter df1 = new RangeFilter("datefield", DateTools.timeToString(now, DateTools.Resolution.MILLISECOND),
+                                      DateTools.timeToString(now + 999999, DateTools.Resolution.MILLISECOND), true, false);
 	// filter that should discard matches
-	DateFilter df2 = DateFilter.After("datefield", now + 999999);
+	//DateFilter df2 = DateFilter.After("datefield", now + 999999);
+    RangeFilter df2 = new RangeFilter("datefield", DateTools.timeToString(now + 999999, DateTools.Resolution.MILLISECOND),
+                                          DateTools.timeToString(now + 999999999, DateTools.Resolution.MILLISECOND), false, true);
 
-	// search something that doesn't exist with DateFilter
+    // search something that doesn't exist with DateFilter
 	Query query1 = new TermQuery(new Term("body", "NoMatchForThis"));
 
 	// search for something that does exists

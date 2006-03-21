@@ -16,20 +16,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.File;
-import java.io.PrintStream;
-import java.util.Vector;
-
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.RAMDirectory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Vector;
 
 
 /**
@@ -84,11 +84,6 @@ public class IndexWriter {
    * Default value is 10. Change using {@link #setMaxBufferedDocs(int)}.
    */
   public final static int DEFAULT_MAX_BUFFERED_DOCS = 10;
-
-  /**
-   * @deprecated use {@link #DEFAULT_MAX_BUFFERED_DOCS} instead
-   */
-  public final static int DEFAULT_MIN_MERGE_DOCS = DEFAULT_MAX_BUFFERED_DOCS;
 
   /**
    * Default value is {@link Integer#MAX_VALUE}. Change using {@link #setMaxMergeDocs(int)}.
@@ -454,10 +449,9 @@ public class IndexWriter {
    * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
    * By default, no more than 10,000 terms will be indexed for a field.
-   * 
-   * @deprecated use {@link #setMaxFieldLength} instead
+   *
    */
-  public int maxFieldLength = DEFAULT_MAX_FIELD_LENGTH;
+  private int maxFieldLength = DEFAULT_MAX_FIELD_LENGTH;
 
   /**
    * Adds a document to this index.  If the document contains more than
@@ -502,10 +496,10 @@ public class IndexWriter {
    * for batch index creation, and smaller values (< 10) for indices that are
    * interactively maintained.
    *
-   * <p>This must never be less than 2.  The default value is 10.
-   * @deprecated use {@link #setMergeFactor} instead
+   * <p>This must never be less than 2.  The default value is {@link DEFAULT_MERGE_FACTOR}.
+
    */
-  public int mergeFactor = DEFAULT_MERGE_FACTOR;
+  private int mergeFactor = DEFAULT_MERGE_FACTOR;
 
   /** Determines the minimal number of documents required before the buffered
    * in-memory documents are merging and a new Segment is created.
@@ -513,10 +507,10 @@ public class IndexWriter {
    * large value gives faster indexing.  At the same time, mergeFactor limits
    * the number of files open in a FSDirectory.
    *
-   * <p> The default value is 10.
-   * @deprecated use {@link #setMaxBufferedDocs} instead
+   * <p> The default value is {@link DEFAULT_MAX_BUFFERED_DOCS}.
+
    */
-  public int minMergeDocs = DEFAULT_MIN_MERGE_DOCS;
+  private int minMergeDocs = DEFAULT_MAX_BUFFERED_DOCS;
 
 
   /** Determines the largest number of documents ever merged by addDocument().
@@ -524,15 +518,15 @@ public class IndexWriter {
    * as this limits the length of pauses while indexing to a few seconds.
    * Larger values are best for batched indexing and speedier searches.
    *
-   * <p>The default value is {@link Integer#MAX_VALUE}.
-   * @deprecated use {@link #setMaxMergeDocs} instead
+   * <p>The default value is {@link DEFAULT_MAX_MERGE_DOCS}.
+
    */
-  public int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
+  private int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
   /** If non-null, information about merges will be printed to this.
-   * @deprecated use {@link #setInfoStream} instead 
+
    */
-  public PrintStream infoStream = null;
+  private PrintStream infoStream = null;
 
   /** Merges all segments together into a single segment, optimizing an index
       for search. */

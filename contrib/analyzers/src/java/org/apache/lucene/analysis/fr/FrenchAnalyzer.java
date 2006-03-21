@@ -96,15 +96,6 @@ public final class FrenchAnalyzer extends Analyzer {
 
   /**
    * Builds an analyzer with the given stop words.
-   *
-   * @deprecated
-   */
-  public FrenchAnalyzer(Hashtable stopwords) {
-    stoptable = new HashSet(stopwords.keySet());
-  }
-
-  /**
-   * Builds an analyzer with the given stop words.
    * @throws IOException
    */
   public FrenchAnalyzer(File stopwords) throws IOException {

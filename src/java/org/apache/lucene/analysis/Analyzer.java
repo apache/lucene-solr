@@ -34,21 +34,8 @@ public abstract class Analyzer {
     compatibility with older version.  Override to allow Analyzer to choose 
     strategy based on document and/or field.  Must be able to handle null
     field name for backward compatibility. */
-  public TokenStream tokenStream(String fieldName, Reader reader)
-  {
-	  // implemented for backward compatibility
-	  return tokenStream(reader);
-  }
-  
-  /** Creates a TokenStream which tokenizes all the text in the provided
-   *  Reader.  Provided for backward compatibility only.
-   * @deprecated use tokenStream(String, Reader) instead.
-   * @see #tokenStream(String, Reader)
-   */
-  public TokenStream tokenStream(Reader reader)
-  {
-	  return tokenStream(null, reader);
-  }
+  public abstract TokenStream tokenStream(String fieldName, Reader reader);
+
 
   /**
    * Invoked before indexing a Field instance if

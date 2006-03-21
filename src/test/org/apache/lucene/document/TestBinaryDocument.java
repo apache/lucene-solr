@@ -91,7 +91,7 @@ public class TestBinaryDocument extends TestCase
     assertTrue(stringFldCompressedTest.equals(binaryValCompressed));
     
     /** delete the document from index */
-    reader.delete(0);
+    reader.deleteDocument(0);
     assertEquals(0, reader.numDocs());
     
     reader.close();

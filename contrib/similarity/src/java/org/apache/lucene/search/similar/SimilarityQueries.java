@@ -15,16 +15,19 @@
  */
 package org.apache.lucene.search.similar;
 
-import java.io.*;
-import java.util.*;
-import java.net.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.standard.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.util.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Simple similarity measures.
@@ -105,7 +108,7 @@ public final class SimilarityQueries
 			TermQuery tq = new TermQuery( new Term( field, word));
 			try
 			{
-				tmp.add( tq, false, false);
+				tmp.add( tq, BooleanClause.Occur.SHOULD);//false, false);
 			}
 			catch( BooleanQuery.TooManyClauses too)
 			{

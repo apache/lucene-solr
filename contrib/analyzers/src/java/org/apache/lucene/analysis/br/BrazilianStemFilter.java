@@ -44,16 +44,6 @@ public final class BrazilianStemFilter extends TokenFilter {
     stemmer = new BrazilianStemmer();
   }
 
-  /**
-   * Builds a BrazilianStemFilter that uses an exclusiontable.
-   *
-   * @deprecated
-   */
-  public BrazilianStemFilter(TokenStream in, Hashtable exclusiontable) {
-    this(in);
-    this.exclusions = new HashSet(exclusiontable.keySet());
-  }
-
   public BrazilianStemFilter(TokenStream in, Set exclusiontable) {
     this(in);
     this.exclusions = exclusiontable;

@@ -27,10 +27,6 @@ public abstract class TokenFilter extends TokenStream {
   /** The source of tokens for this filter. */
   protected TokenStream input;
 
-  /** Call TokenFilter(TokenStream) instead.
-   * @deprecated */
-  protected TokenFilter() {}
-
   /** Construct a token stream filtering the given input. */
   protected TokenFilter(TokenStream input) {
     this.input = input;

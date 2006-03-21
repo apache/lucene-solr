@@ -99,7 +99,8 @@ public class TestMultiSearcher extends TestCase
         writerB.close();
 
         // creating the query
-        Query query = QueryParser.parse("handle:1", "fulltext", new StandardAnalyzer());
+        QueryParser parser = new QueryParser("fulltext", new StandardAnalyzer());
+        Query query = parser.parse("handle:1");
 
         // building the searchables
         Searcher[] searchers = new Searcher[2];
@@ -156,7 +157,7 @@ public class TestMultiSearcher extends TestCase
         // deleting the document just added, this will cause a different exception to take place
         Term term = new Term("id", "doc1");
         IndexReader readerB = IndexReader.open(indexStoreB);
-        readerB.delete(term);
+        readerB.deleteDocuments(term);
         readerB.close();
 
         // optimizing the index with the writer

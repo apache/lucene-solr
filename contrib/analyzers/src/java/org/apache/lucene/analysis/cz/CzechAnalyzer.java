@@ -82,15 +82,6 @@ public final class CzechAnalyzer extends Analyzer {
 		stoptable = StopFilter.makeStopSet( stopwords );
 	}
 
-	/**
-	 * Builds an analyzer with the given stop words.
-   *
-   * @deprecated
-	 */
-	public CzechAnalyzer( Hashtable stopwords ) {
-		stoptable = new HashSet(stopwords.keySet());
-	}
-
 	public CzechAnalyzer( HashSet stopwords ) {
 		stoptable = stopwords;
 	}

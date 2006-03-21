@@ -16,30 +16,29 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.util.Date;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.RangeQuery;
 
-import org.apache.lucene.search.PrefixQuery;  // for javadoc
-import org.apache.lucene.search.RangeQuery;   // for javadoc
+import java.util.Date;   // for javadoc
 
 /**
  * Provides support for converting dates to strings and vice-versa.
  * The strings are structured so that lexicographic sorting orders by date,
  * which makes them suitable for use as field values and search terms.
- * 
+ *
  * <P>Note that this class saves dates with millisecond granularity,
  * which is bad for {@link RangeQuery} and {@link PrefixQuery}, as those
- * queries are expanded to a BooleanQuery with a potentially large number 
+ * queries are expanded to a BooleanQuery with a potentially large number
  * of terms when searching. Thus you might want to use
  * {@link DateTools} instead.
- * 
+ *
  * <P>
  * Note: dates before 1970 cannot be used, and therefore cannot be
  * indexed when using this class. See {@link DateTools} for an
  * alternative without such a limitation.
- * 
- * @deprecated If you build a new index, use {@link DateTools} instead. For 
- *  existing indices you can continue using this class, as it will not be 
- *  removed in the near future despite being deprecated.
+ *
+ * @deprecated If you build a new index, use {@link DateTools} instead. This class is included for use with existing
+ * indices and will be removed in a future release.
  */
 public class DateField {
   

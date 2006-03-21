@@ -60,7 +60,7 @@ public class TestMatchAllDocsQuery extends TestCase {
     assertEquals(1, hits.length());
 
     // delete a document:
-    is.getIndexReader().delete(0);
+    is.getIndexReader().deleteDocument(0);
     hits = is.search(new MatchAllDocsQuery());
     assertEquals(2, hits.length());
     

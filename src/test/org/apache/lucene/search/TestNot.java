@@ -47,7 +47,8 @@ public class TestNot extends TestCase {
     writer.close();
 
     Searcher searcher = new IndexSearcher(store);
-    Query query = QueryParser.parse("a NOT b", "field", new SimpleAnalyzer());
+      QueryParser parser = new QueryParser("field", new SimpleAnalyzer());
+    Query query = parser.parse("a NOT b");
     //System.out.println(query);
     Hits hits = searcher.search(query);
     assertEquals(0, hits.length());

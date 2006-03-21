@@ -16,17 +16,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import junit.framework.TestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import junit.framework.TestCase;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -73,8 +71,10 @@ public class TestPhrasePrefixQuery
 
         IndexSearcher searcher = new IndexSearcher(indexStore);
 
-        PhrasePrefixQuery query1 = new PhrasePrefixQuery();
-        PhrasePrefixQuery query2 = new PhrasePrefixQuery();
+        //PhrasePrefixQuery query1 = new PhrasePrefixQuery();
+        MultiPhraseQuery query1 = new MultiPhraseQuery();
+        //PhrasePrefixQuery query2 = new PhrasePrefixQuery();
+        MultiPhraseQuery query2 = new MultiPhraseQuery();
         query1.add(new Term("body", "blueberry"));
         query2.add(new Term("body", "strawberry"));
 

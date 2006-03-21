@@ -17,22 +17,15 @@ package org.apache.lucene.search;
  */
 
 
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-
+import junit.framework.TestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
-
-import junit.framework.TestCase;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 import java.text.DecimalFormat;
 import java.util.Random;
@@ -67,10 +60,10 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
-            doc.add(Field.Keyword("id",String.valueOf(i)));
-            doc.add(Field.Keyword("all","all"));
+            doc.add(new Field("id", String.valueOf(i), Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id",String.valueOf(i)));
+            doc.add(new Field("all", "all", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("all","all"));
             if (null != data[i]) {
-                doc.add(Field.Text("data",data[i]));
+                doc.add(new Field("data", data[i], Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("data",data[i]));
             }
             writer.addDocument(doc);
         }
@@ -96,7 +89,7 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         BooleanQuery q = new BooleanQuery();
         for (int i = 1; i <=4; i++) {
-            q.add(new TermQuery(new Term("data",""+i)), false, false);
+            q.add(new TermQuery(new Term("data",""+i)), BooleanClause.Occur.SHOULD);//false, false);
         }
         q.setMinimumNumberShouldMatch(2); // match at least two of 4
         verifyNrHits(q, 2);
@@ -106,10 +99,10 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* one required, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all", "all" )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, false);
+        q.add(new TermQuery(new Term("all", "all" )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.SHOULD);//false, false);
 
         q.setMinimumNumberShouldMatch(2); // 2 of 3 optional 
 
@@ -120,11 +113,11 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all", "all" )), true,  false);
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, false);
+        q.add(new TermQuery(new Term("all", "all" )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.SHOULD);//false, false);
 
         q.setMinimumNumberShouldMatch(2); // 2 of 3 optional 
 
@@ -135,10 +128,10 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* one prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
 
         q.setMinimumNumberShouldMatch(2); // 2 of 3 optional 
 
@@ -149,11 +142,11 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "C"  )), false, true );
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "C"  )), BooleanClause.Occur.MUST_NOT);//false, true );
 
         q.setMinimumNumberShouldMatch(2); // 2 of 3 optional 
 
@@ -164,12 +157,12 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* one required, one prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);// true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
 
         q.setMinimumNumberShouldMatch(3); // 3 of 4 optional 
 
@@ -180,13 +173,13 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, one prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all",  "all")), true,  false);
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
+        q.add(new TermQuery(new Term("all",  "all")), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
 
         q.setMinimumNumberShouldMatch(3); // 3 of 4 optional 
 
@@ -197,13 +190,13 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* one required, two prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
-        q.add(new TermQuery(new Term("data", "C"  )), false, true );
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "C"  )), BooleanClause.Occur.MUST_NOT);//false, true );
 
         q.setMinimumNumberShouldMatch(3); // 3 of 4 optional 
 
@@ -214,14 +207,14 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, two prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all",  "all")), true,  false);
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
-        q.add(new TermQuery(new Term("data", "C"  )), false, true );
+        q.add(new TermQuery(new Term("all",  "all")), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "C"  )), BooleanClause.Occur.MUST_NOT);//false, true );
 
         q.setMinimumNumberShouldMatch(3); // 3 of 4 optional 
 
@@ -232,14 +225,14 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, two prohibited, some optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all",  "all")), true,  false);
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "5"  )), false, false);
-        q.add(new TermQuery(new Term("data", "4"  )), false, false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, true );
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
-        q.add(new TermQuery(new Term("data", "1"  )), false, false);
-        q.add(new TermQuery(new Term("data", "C"  )), false, true );
+        q.add(new TermQuery(new Term("all",  "all")), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "5"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "4"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST_NOT);//false, true );
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "1"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "C"  )), BooleanClause.Occur.MUST_NOT);//false, true );
 
         q.setMinimumNumberShouldMatch(90); // 90 of 4 optional ?!?!?!
 
@@ -250,10 +243,10 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, two optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all", "all" )), false, false);
-        q.add(new TermQuery(new Term("data", "6"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "3"  )), true,  false);
-        q.add(new TermQuery(new Term("data", "2"  )), false, false);
+        q.add(new TermQuery(new Term("all", "all" )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "6"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.SHOULD);//false, false);
 
         q.setMinimumNumberShouldMatch(2); // 2 of 2 optional 
 
@@ -264,9 +257,9 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, one optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all", "all" )), true,  false);
-        q.add(new TermQuery(new Term("data", "3"  )), false, false);
-        q.add(new TermQuery(new Term("data", "2"  )), true,  false);
+        q.add(new TermQuery(new Term("all", "all" )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "3"  )), BooleanClause.Occur.SHOULD);//false, false);
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.MUST);//true,  false);
 
         q.setMinimumNumberShouldMatch(1); // 1 of 1 optional 
 
@@ -277,8 +270,8 @@ public class TestBooleanMinShouldMatch extends TestCase {
 
         /* two required, no optional */
         BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("all", "all" )), true,  false);
-        q.add(new TermQuery(new Term("data", "2"  )), true,  false);
+        q.add(new TermQuery(new Term("all", "all" )), BooleanClause.Occur.MUST);//true,  false);
+        q.add(new TermQuery(new Term("data", "2"  )), BooleanClause.Occur.MUST);//true,  false);
 
         q.setMinimumNumberShouldMatch(1); // 1 of 0 optional 
 
@@ -306,7 +299,7 @@ public class TestBooleanMinShouldMatch extends TestCase {
       };
 
 
-      int tot=0;
+
       // increase number of iterations for more complete testing      
       for (int i=0; i<1000; i++) {
         int lev = rnd.nextInt(maxLev);
@@ -322,7 +315,6 @@ public class TestBooleanMinShouldMatch extends TestCase {
         // will not normalize scores.
         TopDocs top1 = s.search(q1,null,100);
         TopDocs top2 = s.search(q2,null,100);
-        tot+=top2.totalHits;
 
         // The constrained query
         // should be a superset to the unconstrained query.

@@ -16,11 +16,11 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;       // for javadoc
+
+import java.io.IOException;       // for javadoc
 
 /** The interface for search implementations.
  *
@@ -52,11 +52,6 @@ public interface Searchable extends java.rmi.Remote {
   void search(Weight weight, Filter filter, HitCollector results)
   throws IOException;
 
-  /** Expert: Low-level search implementation.
-   * @deprecated use {@link Searcher#search(Weight, Filter, HitCollector)} instead.
-   */
-  void search(Query query, Filter filter, HitCollector results)
-    throws IOException;
 
   /** Frees resources associated with this Searcher.
    * Be careful not to call this method while you are still using objects
@@ -93,11 +88,6 @@ public interface Searchable extends java.rmi.Remote {
    */
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;
 
-  /** Expert: Low-level search implementation.
-   * @deprecated use {@link Searcher#search(Weight, Filter, int)} instead.
-   */
-  TopDocs search(Query query, Filter filter, int n) throws IOException;
-
   /** Expert: Returns the stored fields of document <code>i</code>.
    * Called by {@link HitCollector} implementations.
    * @see IndexReader#document(int)
@@ -122,11 +112,6 @@ public interface Searchable extends java.rmi.Remote {
    */
   Explanation explain(Weight weight, int doc) throws IOException;
 
-  /**
-   * @deprecated use {@link Searcher#explain(Weight, int)} instead.
-   */
-  Explanation explain(Query query, int doc) throws IOException;
-
   /** Expert: Low-level search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
    * <code>filter</code> if non-null, and sorting the hits by the criteria in
@@ -139,9 +124,4 @@ public interface Searchable extends java.rmi.Remote {
   TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
   throws IOException;
 
-  /** Expert: Low-level search implementation.
-   * @deprecated use {@link Searcher#search(Weight, Filter, int, Sort)} instead.
-   */
-  TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
-    throws IOException;
 }

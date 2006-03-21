@@ -146,12 +146,6 @@ public class MultiSearcher extends Searcher {
     return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
   }
 
-  /** Call {@link #subSearcher} instead.
-   * @deprecated
-   */
-  public int searcherIndex(int n) {
-    return subSearcher(n);
-  }
 
   /** Returns index of the searcher for document <code>n</code> in the array
    * used to construct this searcher. */

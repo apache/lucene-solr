@@ -217,7 +217,7 @@ public class TestIndexReader extends TestCase
         // DELETE DOCUMENTS CONTAINING TERM: aaa
         int deleted = 0;
         reader = IndexReader.open(dir);
-        deleted = reader.delete(searchTerm);
+        deleted = reader.deleteDocuments(searchTerm);
         assertEquals("deleted count", 100, deleted);
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
@@ -290,7 +290,7 @@ public class TestIndexReader extends TestCase
         // NOTE: the reader was created when only "aaa" documents were in
         int deleted = 0;
         try {
-            deleted = reader.delete(searchTerm);
+            deleted = reader.deleteDocuments(searchTerm);
             fail("Delete allowed on an index reader with stale segment information");
         } catch (IOException e) {
             /* success */
@@ -305,7 +305,7 @@ public class TestIndexReader extends TestCase
         assertTermDocsCount("first reader", reader, searchTerm, 100);
         assertTermDocsCount("first reader", reader, searchTerm2, 100);
 
-        deleted = reader.delete(searchTerm);
+        deleted = reader.deleteDocuments(searchTerm);
         assertEquals("deleted count", 100, deleted);
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm2));
@@ -384,13 +384,13 @@ public class TestIndexReader extends TestCase
       writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
       IndexReader reader = IndexReader.open(dir);
       try {
-        reader.delete(0);
+        reader.deleteDocument(0);
         fail("expected lock");
       } catch(IOException e) {
         // expected exception
       }
       IndexReader.unlock(dir);		// this should not be done in the real world! 
-      reader.delete(0);
+      reader.deleteDocument(0);
       reader.close();
       writer.close();
     }
@@ -402,8 +402,8 @@ public class TestIndexReader extends TestCase
       addDocumentWithFields(writer);
       writer.close();
       IndexReader reader = IndexReader.open(dir);
-      reader.delete(0);
-      reader.delete(1);
+      reader.deleteDocument(0);
+      reader.deleteDocument(1);
       reader.undeleteAll();
       reader.close();
       reader = IndexReader.open(dir);
@@ -463,7 +463,7 @@ public class TestIndexReader extends TestCase
         // delete documents containing term: aaa
         // when the reader is closed, the segment info is updated and
         // the first reader is now stale
-        reader2.delete(searchTerm1);
+        reader2.deleteDocuments(searchTerm1);
         assertEquals("after delete 1", 100, reader2.docFreq(searchTerm1));
         assertEquals("after delete 1", 100, reader2.docFreq(searchTerm2));
         assertEquals("after delete 1", 100, reader2.docFreq(searchTerm3));
@@ -484,7 +484,7 @@ public class TestIndexReader extends TestCase
         // ATTEMPT TO DELETE FROM STALE READER
         // delete documents containing term: bbb
         try {
-            reader1.delete(searchTerm2);
+            reader1.deleteDocuments(searchTerm2);
             fail("Delete allowed from a stale index reader");
         } catch (IOException e) {
             /* success */
@@ -500,7 +500,7 @@ public class TestIndexReader extends TestCase
         assertTermDocsCount("reopened", reader1, searchTerm2, 100);
         assertTermDocsCount("reopened", reader1, searchTerm3, 100);
 
-        reader1.delete(searchTerm2);
+        reader1.deleteDocuments(searchTerm2);
         assertEquals("deleted 2", 100, reader1.docFreq(searchTerm1));
         assertEquals("deleted 2", 100, reader1.docFreq(searchTerm2));
         assertEquals("deleted 2", 100, reader1.docFreq(searchTerm3));

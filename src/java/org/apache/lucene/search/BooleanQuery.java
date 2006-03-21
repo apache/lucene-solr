@@ -16,13 +16,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -31,9 +31,9 @@ import org.apache.lucene.util.ToStringUtils;
 public class BooleanQuery extends Query {
 
   /**
-   * @deprecated use {@link #setMaxClauseCount(int)} instead
+
    */
-  public static int maxClauseCount = 1024;
+  private static int maxClauseCount = 1024;
 
   /** Thrown when an attempt is made to add more than {@link
    * #getMaxClauseCount()} clauses. This typically happens if
@@ -140,30 +140,6 @@ public class BooleanQuery extends Query {
    */
   public int getMinimumNumberShouldMatch() {
     return minNrShouldMatch;
-  }
-
-  /** Adds a clause to a boolean query.  Clauses may be:
-   * <ul>
-   * <li><code>required</code> which means that documents which <i>do not</i>
-   * match this sub-query will <i>not</i> match the boolean query;
-   * <li><code>prohibited</code> which means that documents which <i>do</i>
-   * match this sub-query will <i>not</i> match the boolean query; or
-   * <li>neither, in which case matched documents are neither prohibited from
-   * nor required to match the sub-query. However, a document must match at
-   * least 1 sub-query to match the boolean query.
-   * </ul>
-   * It is an error to specify a clause as both <code>required</code> and
-   * <code>prohibited</code>.
-   *
-   * @deprecated use {@link #add(Query, BooleanClause.Occur)} instead:
-   * <ul>
-   *  <li>For add(query, true, false) use add(query, BooleanClause.Occur.MUST)
-   *  <li>For add(query, false, false) use add(query, BooleanClause.Occur.SHOULD)
-   *  <li>For add(query, false, true) use add(query, BooleanClause.Occur.MUST_NOT)
-   * </ul>
-   */
-  public void add(Query query, boolean required, boolean prohibited) {
-    add(new BooleanClause(query, required, prohibited));
   }
 
   /** Adds a clause to a boolean query.

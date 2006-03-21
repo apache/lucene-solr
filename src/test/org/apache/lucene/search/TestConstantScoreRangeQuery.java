@@ -16,19 +16,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+
+import java.io.IOException;
 
 public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
     
@@ -69,10 +66,10 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
         
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
-            doc.add(Field.Keyword("id",String.valueOf(i)));
-            doc.add(Field.Keyword("all","all"));
+            doc.add(new Field("id", String.valueOf(i), Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id",String.valueOf(i)));
+            doc.add(new Field("all", "all", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("all","all"));
             if (null != data[i]) {
-                doc.add(Field.Text("data",data[i]));
+                doc.add(new Field("data", data[i], Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("data",data[i]));
             }
             writer.addDocument(doc);
         }
@@ -182,8 +179,8 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
         // ConstantScoreRangeQuery and make sure hte order is the same
         
         BooleanQuery q = new BooleanQuery();
-        q.add(rq, T, F);
-        q.add(csrq("data","1","6", T, T), T, F);
+        q.add(rq, BooleanClause.Occur.MUST);//T, F);
+        q.add(csrq("data","1","6", T, T), BooleanClause.Occur.MUST);//T, F);
 
         Hits actual = search.search(q);
 

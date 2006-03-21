@@ -19,10 +19,9 @@ package org.apache.lucene.analysis.de;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+
 import java.io.IOException;
-import java.util.Hashtable;
 import java.util.Set;
-import java.util.HashSet;
 
 /**
  * A filter that stems German words. It supports a table of words that should
@@ -45,16 +44,6 @@ public final class GermanStemFilter extends TokenFilter
     {
       super(in);
       stemmer = new GermanStemmer();
-    }
-
-    /**
-     * Builds a GermanStemFilter that uses an exclusiontable.
-     * @deprecated Use {@link #GermanStemFilter(org.apache.lucene.analysis.TokenStream, java.util.Set)} instead.
-     */
-    public GermanStemFilter( TokenStream in, Hashtable exclusiontable )
-    {
-      this( in );
-      exclusionSet = new HashSet(exclusiontable.keySet());
     }
 
     /**
@@ -100,14 +89,6 @@ public final class GermanStemFilter extends TokenFilter
       }
     }
 
-    /**
-     * Set an alternative exclusion list for this filter.
-     * @deprecated Use {@link #setExclusionSet(java.util.Set)} instead.
-     */
-    public void setExclusionTable( Hashtable exclusiontable )
-    {
-      exclusionSet = new HashSet(exclusiontable.keySet());
-    }
 
     /**
      * Set an alternative exclusion list for this filter.

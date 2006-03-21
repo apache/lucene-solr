@@ -40,7 +40,7 @@ public class DeleteFiles {
       IndexReader reader = IndexReader.open(directory);
 
       Term term = new Term("path", args[0]);
-      int deleted = reader.delete(term);
+      int deleted = reader.deleteDocuments(term);
 
       System.out.println("deleted " + deleted +
  			 " documents containing " + term);

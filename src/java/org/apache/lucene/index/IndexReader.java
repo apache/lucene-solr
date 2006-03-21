@@ -503,18 +503,6 @@ public abstract class IndexReader {
     }
   }
 
-  /** Deletes the document numbered <code>docNum</code>.  Once a document is
-   * deleted it will not appear in TermDocs or TermPostitions enumerations.
-   * Attempts to read its field with the {@link #document}
-   * method will result in an error.  The presence of this document may still be
-   * reflected in the {@link #docFreq} statistic, though
-   * this will be corrected eventually as the index is further modified.
-   *
-   * @deprecated Use {@link #deleteDocument(int docNum)} instead.
-   */
-  public final synchronized void delete(int docNum) throws IOException {
-    deleteDocument(docNum);
-  }
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
    * deleted it will not appear in TermDocs or TermPostitions enumerations.
@@ -536,20 +524,6 @@ public abstract class IndexReader {
    */
   protected abstract void doDelete(int docNum) throws IOException;
 
-  /** Deletes all documents containing <code>term</code>.
-   * This is useful if one uses a document field to hold a unique ID string for
-   * the document.  Then to delete such a document, one merely constructs a
-   * term with the appropriate field and the unique ID string as its text and
-   * passes it to this method.
-   * See {@link #delete(int)} for information about when this deletion will
-   * become effective.
-   * @return the number of documents deleted
-   * 
-   * @deprecated Use {@link #deleteDocuments(Term term)} instead.
-   */
-  public final int delete(Term term) throws IOException {
-    return deleteDocuments(term);
-  }
 
   /** Deletes all documents containing <code>term</code>.
    * This is useful if one uses a document field to hold a unique ID string for
@@ -640,61 +614,7 @@ public abstract class IndexReader {
       writeLock = null;
     }
   }
-  
-  /**
-   * Returns a list of all unique field names that exist in the index pointed
-   * to by this IndexReader.
-   * @return Collection of Strings indicating the names of the fields
-   * @throws IOException if there is a problem with accessing the index
-   * 
-   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
-   */
-  public abstract Collection getFieldNames() throws IOException;
 
-  /**
-   * Returns a list of all unique field names that exist in the index pointed
-   * to by this IndexReader.  The boolean argument specifies whether the fields
-   * returned are indexed or not.
-   * @param indexed <code>true</code> if only indexed fields should be returned;
-   *                <code>false</code> if only unindexed fields should be returned.
-   * @return Collection of Strings indicating the names of the fields
-   * @throws IOException if there is a problem with accessing the index
-   * 
-   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
-   */
-  public abstract Collection getFieldNames(boolean indexed) throws IOException;
-
-  /**
-   * 
-   * @param storedTermVector if true, returns only Indexed fields that have term vector info, 
-   *                        else only indexed fields without term vector info 
-   * @return Collection of Strings indicating the names of the fields
-   * 
-   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
-   */ 
-  public Collection getIndexedFieldNames(boolean storedTermVector){
-    if(storedTermVector){
-      Set fieldSet = new HashSet();
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.YES));
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS));
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_OFFSETS));
-      fieldSet.addAll(getIndexedFieldNames(Field.TermVector.WITH_POSITIONS_OFFSETS));
-      return fieldSet;
-    }
-    else
-      return getIndexedFieldNames(Field.TermVector.NO);
-  }
-  
-  /**
-   * Get a list of unique field names that exist in this index, are indexed, and have
-   * the specified term vector information.
-   * 
-   * @param tvSpec specifies which term vector information should be available for the fields
-   * @return Collection of Strings indicating the names of the fields
-   * 
-   * @deprecated  Replaced by {@link #getFieldNames(IndexReader.FieldOption)}
-   */
-  public abstract Collection getIndexedFieldNames(Field.TermVector tvSpec);
   
   /**
    * Get a list of unique field names that exist in this index and have the specified

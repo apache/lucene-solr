@@ -62,31 +62,15 @@ public abstract class Directory {
   public abstract long fileLength(String name)
        throws IOException;
 
-  /** @deprecated use {@link #createOutput(String)} */
-  public OutputStream createFile(String name) throws IOException {
-    return (OutputStream)createOutput(name);
-  }
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public IndexOutput createOutput(String name) throws IOException {
-    // default implementation for back compatibility
-    // this method should be abstract
-    return (IndexOutput)createFile(name);
-  }
+  public abstract IndexOutput createOutput(String name) throws IOException;
 
-  /** @deprecated use {@link #openInput(String)} */
-  public InputStream openFile(String name) throws IOException {
-    return (InputStream)openInput(name);
-  }
 
   /** Returns a stream reading an existing file. */
-  public IndexInput openInput(String name)
-    throws IOException {
-    // default implementation for back compatibility
-    // this method should be abstract
-    return (IndexInput)openFile(name);
-  }
+  public abstract IndexInput openInput(String name)
+    throws IOException;
 
   /** Construct a {@link Lock}.
    * @param name the name of the lock file

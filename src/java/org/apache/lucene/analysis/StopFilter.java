@@ -18,7 +18,6 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Set;
 
 /**
@@ -48,25 +47,6 @@ public final class StopFilter extends TokenFilter {
     this.stopWords = makeStopSet(stopWords, ignoreCase);
   }
 
-  /**
-   * Constructs a filter which removes words from the input
-   * TokenStream that are named in the Hashtable.
-   *
-   * @deprecated Use {@link #StopFilter(TokenStream, Set)} instead
-   */ 
-  public StopFilter(TokenStream in, Hashtable stopTable) {
-    this(in, stopTable, false);
-  }
-  /**
-   * Constructs a filter which removes words from the input
-   * TokenStream that are named in the Hashtable.
-   * If ignoreCase is true, all keys in the stopTable should already
-   * be lowercased.
-   * @deprecated Use {@link #StopFilter(TokenStream, Set)} instead
-   */
-  public StopFilter(TokenStream in, Hashtable stopTable, boolean ignoreCase) {
-    this(in, stopTable.keySet(), ignoreCase);
-  }
 
     /**
      * Construct a token stream filtering the given input.
@@ -91,34 +71,6 @@ public final class StopFilter extends TokenFilter {
    */
   public StopFilter(TokenStream in, Set stopWords) {
     this(in, stopWords, false);
-  }
-  /**
-   * Builds a Hashtable from an array of stop words,
-   * appropriate for passing into the StopFilter constructor.
-   * This permits this table construction to be cached once when
-   * an Analyzer is constructed.
-   *
-   * @deprecated Use {@link #makeStopSet(String[])} instead.
-   */
-  public static final Hashtable makeStopTable(String[] stopWords) {
-      return makeStopTable(stopWords, false);
-  }
-    
-    /**
-    * Builds a Hashtable from an array of stop words,
-    * appropriate for passing into the StopFilter constructor.
-    * This permits this table construction to be cached once when
-    * an Analyzer is constructed.
-  * @deprecated Use {@link #makeStopSet(java.lang.String[], boolean)}  instead.
- */ 
-  public static final Hashtable makeStopTable(String [] stopWords, boolean ignoreCase) {
-      Hashtable stopTable = new Hashtable(stopWords.length);                                
-      for (int i = 0; i < stopWords.length; i++)
-      {
-          String stopWord = ignoreCase ? stopWords[i].toLowerCase() : stopWords[i];
-          stopTable.put(stopWord, stopWord);
-      }
-    return stopTable;
   }
 
   /**

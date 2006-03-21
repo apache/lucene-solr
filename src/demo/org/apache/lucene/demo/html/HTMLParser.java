@@ -40,12 +40,6 @@ public class HTMLParser implements HTMLParserConstants {
     }
   }
 
-  /**
-   * @deprecated Use HTMLParser(FileInputStream) instead
-   */
-  public HTMLParser(File file) throws FileNotFoundException {
-    this(new FileInputStream(file));
-  }
 
   public String getTitle() throws IOException, InterruptedException {
     if (pipeIn == null)

@@ -16,22 +16,22 @@ package org.apache.lucene.demo;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Date;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.FilterIndexReader;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.Searcher;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Date;
 
 /** Simple command-line based search demo. */
 public class SearchFiles {
@@ -107,7 +107,7 @@ public class SearchFiles {
     } else {
       in = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
     }
-
+      QueryParser parser = new QueryParser(field, analyzer);
     while (true) {
       if (queries == null)                        // prompt the user
         System.out.print("Query: ");
@@ -117,7 +117,7 @@ public class SearchFiles {
       if (line == null || line.length() == -1)
         break;
 
-      Query query = QueryParser.parse(line, field, analyzer);
+      Query query = parser.parse(line);
       System.out.println("Searching for: " + query.toString(field));
 
       Hits hits = searcher.search(query);

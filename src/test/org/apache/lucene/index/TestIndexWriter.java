@@ -39,7 +39,7 @@ public class TestIndexWriter extends TestCase
         // delete 40 documents
         reader = IndexReader.open(dir);
         for (i = 0; i < 40; i++) {
-            reader.delete(i);
+            reader.deleteDocument(i);
         }
         reader.close();
 

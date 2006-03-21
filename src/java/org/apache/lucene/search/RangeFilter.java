@@ -16,14 +16,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.BitSet;
-import java.io.IOException;
-
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.IndexReader;
+
+import java.io.IOException;
+import java.util.BitSet;
 
 /**
  * A Filter that restricts search results to a range of values in a given
@@ -31,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
  * 
  * <p>
  * This code borrows heavily from {@link RangeQuery}, but is implemented as a Filter
- * (much like {@link DateFilter}).
+ * 
  * </p>
  */
 public class RangeFilter extends Filter {

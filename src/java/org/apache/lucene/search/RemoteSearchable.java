@@ -16,15 +16,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import java.rmi.Naming;
-import java.rmi.RemoteException;
-import java.rmi.RMISecurityManager;
-import java.rmi.server.UnicastRemoteObject;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+
+import java.io.IOException;
+import java.rmi.Naming;
+import java.rmi.RMISecurityManager;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 
 /**
  * A remote searchable implementation.
@@ -42,13 +41,7 @@ public class RemoteSearchable
     super();
     this.local = local;
   }
-  
-  // this implementation should be removed when the deprecated
-  // Searchable#search(Query,Filter,HitCollector) is removed
-  public void search(Query query, Filter filter, HitCollector results)
-    throws IOException {
-    local.search(query, filter, results);
-  }
+
 
   public void search(Weight weight, Filter filter, HitCollector results)
     throws IOException {
@@ -72,22 +65,10 @@ public class RemoteSearchable
     return local.maxDoc();
   }
 
-  // this implementation should be removed when the deprecated
-  // Searchable#search(Query,Filter,int) is removed
-  public TopDocs search(Query query, Filter filter, int n) throws IOException {
-    return local.search(query, filter, n);
-  }
-
   public TopDocs search(Weight weight, Filter filter, int n) throws IOException {
     return local.search(weight, filter, n);
   }
 
-  // this implementation should be removed when the deprecated
-  // Searchable#search(Query,Filter,int,Sort) is removed
-  public TopFieldDocs search (Query query, Filter filter, int n, Sort sort)
-    throws IOException {
-    return local.search (query, filter, n, sort);
-  }
 
   public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
   throws IOException {
@@ -100,12 +81,6 @@ public class RemoteSearchable
 
   public Query rewrite(Query original) throws IOException {
     return local.rewrite(original);
-  }
-
-  // this implementation should be removed when the deprecated
-  // Searchable#explain(Query,int) is removed
-  public Explanation explain(Query query, int doc) throws IOException {
-    return local.explain(query, doc);
   }
 
   public Explanation explain(Weight weight, int doc) throws IOException {

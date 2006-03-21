@@ -16,14 +16,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 
 /**
  * A class to modify an index, i.e. to delete and add documents. This
@@ -261,21 +261,6 @@ public class IndexModifier {
   }
 
   /**
-   * Deletes all documents containing <code>term</code>.
-   * This is useful if one uses a document field to hold a unique ID string for
-   * the document.  Then to delete such a document, one merely constructs a
-   * term with the appropriate field and the unique ID string as its text and
-   * passes it to this method.  Returns the number of documents deleted.
-   * @return the number of documents deleted
-   * @see IndexReader#deleteDocuments(Term)
-   * @throws IllegalStateException if the index is closed
-   * @deprecated Use {@link #deleteDocuments(Term)} instead.
-   */
-  public int delete(Term term) throws IOException {
-    return deleteDocuments(term);
-  }
-
-  /**
    * Deletes the document numbered <code>docNum</code>.
    * @see IndexReader#deleteDocument(int)
    * @throws IllegalStateException if the index is closed
@@ -288,15 +273,6 @@ public class IndexModifier {
     }
   }
 
-  /**
-   * Deletes the document numbered <code>docNum</code>.
-   * @see IndexReader#deleteDocument(int)
-   * @throws IllegalStateException if the index is closed
-   * @deprecated Use {@link #deleteDocument(int)} instead.
-   */
-  public void delete(int docNum) throws IOException {
-    deleteDocument(docNum);
-  }
   
   /**
    * Returns the number of documents currently in this index.

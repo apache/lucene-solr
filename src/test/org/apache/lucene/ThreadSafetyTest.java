@@ -113,9 +113,9 @@ class ThreadSafetyTest {
     private void searchFor(int n, Searcher searcher)
       throws Exception {
       System.out.println("Searching for " + n);
+        QueryParser parser = new QueryParser("contents", ANALYZER);
       Hits hits =
-        searcher.search(QueryParser.parse(English.intToEnglish(n), "contents",
-                                          ANALYZER));
+        searcher.search(parser.parse(English.intToEnglish(n)));
       System.out.println("Search for " + n + ": total=" + hits.length());
       for (int j = 0; j < Math.min(3, hits.length()); j++) {
         System.out.println("Hit for " + n + ": " + hits.doc(j).get("id"));

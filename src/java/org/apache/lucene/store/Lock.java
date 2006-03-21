@@ -16,8 +16,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexWriter;
-
 import java.io.IOException;
 
 /** An interprocess mutex lock.
@@ -80,14 +78,6 @@ public abstract class Lock {
     private Lock lock;
     private long lockWaitTimeout;
 
-    /** Constructs an executor that will grab the named lock.
-     *  Defaults lockWaitTimeout to Lock.COMMIT_LOCK_TIMEOUT.
-     *  @deprecated Kept only to avoid breaking existing code.
-     */
-    public With(Lock lock)
-    {
-      this(lock, IndexWriter.COMMIT_LOCK_TIMEOUT);
-    }
 
     /** Constructs an executor that will grab the named lock. */
     public With(Lock lock, long lockWaitTimeout) {

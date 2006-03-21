@@ -16,14 +16,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.EmptyStackException;
-import java.util.Random;
-import java.util.Stack;
-
 import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -32,6 +25,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.EmptyStackException;
+import java.util.Random;
+import java.util.Stack;
 
 /**
  * Tests for the "IndexModifier" class, including accesses from two threads at the
@@ -56,7 +55,7 @@ public class TestIndexModifier extends TestCase {
     i.optimize();
     assertEquals(2, i.docCount());
     i.flush();
-    i.delete(0);
+    i.deleteDocument(0);
     assertEquals(1, i.docCount());
     i.flush();
     assertEquals(1, i.docCount());
@@ -64,7 +63,7 @@ public class TestIndexModifier extends TestCase {
     i.addDocument(getDoc());
     i.flush();
     assertEquals(3, i.docCount());
-    i.delete(allDocTerm);
+    i.deleteDocuments(allDocTerm);
     assertEquals(0, i.docCount());
     i.optimize();
     assertEquals(0, i.docCount());
@@ -88,7 +87,7 @@ public class TestIndexModifier extends TestCase {
     assertFalse(i.getUseCompoundFile());
 
     // test setting properties when internally the reader is opened:
-    i.delete(allDocTerm);
+    i.deleteDocuments(allDocTerm);
     i.setMaxBufferedDocs(100);
     i.setMergeFactor(25);
     i.setMaxFieldLength(250000);
@@ -241,7 +240,7 @@ class IndexThread extends Thread {
             continue;
           }
           Term delTerm = new Term("id", new Integer(delId).toString());
-          int delCount = index.delete(delTerm);
+          int delCount = index.deleteDocuments(delTerm);
           if (delCount != 1) {
             throw new RuntimeException("Internal error: " + threadNumber + " deleted " + delCount + 
                 " documents, term=" + delTerm);

@@ -16,10 +16,7 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -33,6 +30,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import java.io.Reader;
 
 /**
  * Tests QueryParser.
@@ -96,23 +95,6 @@ public class TestMultiFieldQueryParser extends TestCase {
 
   }
   
-  // TODO: remove this for Lucene 2.0
-  public void testOldMethods() throws ParseException {
-    // testing the old static calls that are now deprecated:
-    assertQueryEquals("b:one t:one", "one");
-    assertQueryEquals("(b:one b:two) (t:one t:two)", "one two");
-    assertQueryEquals("(b:one -b:two) (t:one -t:two)", "one -two");
-    assertQueryEquals("(b:one -(b:two b:three)) (t:one -(t:two t:three))", "one -(two three)");
-    assertQueryEquals("(+b:one +b:two) (+t:one +t:two)", "+one +two");
-  }
-  
-  // TODO: remove this for Lucene 2.0
-  private void assertQueryEquals(String expected, String query) throws ParseException {
-    String[] fields = {"b", "t"};
-    Query q = MultiFieldQueryParser.parse(query, fields, new StandardAnalyzer());
-    String s = q.toString();
-    assertEquals(expected, s);
-  }
 
   public void testStaticMethod1() throws ParseException {
     String[] fields = {"b", "t"};
@@ -161,15 +143,18 @@ public class TestMultiFieldQueryParser extends TestCase {
 
   public void testStaticMethod2Old() throws ParseException {
     String[] fields = {"b", "t"};
-    int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
-    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer());
+    //int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
+      BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
+      MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
+
+    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer());//, fields, flags, new StandardAnalyzer());
     assertEquals("+b:one -t:one", q.toString());
 
     q = MultiFieldQueryParser.parse("one two", fields, flags, new StandardAnalyzer());
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     try {
-      int[] flags2 = {MultiFieldQueryParser.REQUIRED_FIELD};
+      BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
       q = MultiFieldQueryParser.parse("blah", fields, flags2, new StandardAnalyzer());
       fail();
     } catch(IllegalArgumentException e) {
@@ -197,12 +182,12 @@ public class TestMultiFieldQueryParser extends TestCase {
   public void testStaticMethod3Old() throws ParseException {
     String[] queries = {"one", "two"};
     String[] fields = {"b", "t"};
-    int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
+      BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
     Query q = MultiFieldQueryParser.parse(queries, fields, flags, new StandardAnalyzer());
     assertEquals("+b:one -t:two", q.toString());
 
     try {
-      int[] flags2 = {MultiFieldQueryParser.REQUIRED_FIELD};
+      BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
       q = MultiFieldQueryParser.parse(queries, fields, flags2, new StandardAnalyzer());
       fail();
     } catch(IllegalArgumentException e) {

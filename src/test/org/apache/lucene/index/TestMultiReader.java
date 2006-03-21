@@ -75,7 +75,7 @@ public class TestMultiReader extends TestCase {
     MultiReader reader = new MultiReader(dir, sis, false, readers);
     assertTrue(reader != null);
     assertEquals( 2, reader.numDocs() );
-    reader.delete(0);
+    reader.deleteDocument(0);
     assertEquals( 1, reader.numDocs() );
     reader.undeleteAll();
     assertEquals( 2, reader.numDocs() );

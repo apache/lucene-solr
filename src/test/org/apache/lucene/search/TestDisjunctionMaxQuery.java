@@ -17,25 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import junit.framework.TestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.DefaultSimilarity;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import junit.framework.TestCase;
 
 import java.text.DecimalFormat;
 
@@ -92,38 +82,38 @@ public class TestDisjunctionMaxQuery extends TestCase{
         // d1 is an "ok" match for:  albino elephant
         {
             Document d1 = new Document();
-            d1.add(Field.Keyword("id", "d1"));
-            d1.add(Field.Text("hed", "elephant"));
-            d1.add(Field.Text("dek", "elephant"));
+            d1.add(new Field("id", "d1", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d1"));
+            d1.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
+            d1.add(new Field("dek", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "elephant"));
             writer.addDocument(d1);
         }
 
         // d2 is a "good" match for:  albino elephant
         {
             Document d2 = new Document();
-            d2.add(Field.Keyword("id", "d2"));
-            d2.add(Field.Text("hed", "elephant"));
-            d2.add(Field.Text("dek", "albino"));
-            d2.add(Field.Text("dek", "elephant"));
+            d2.add(new Field("id", "d2", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d2"));
+            d2.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
+            d2.add(new Field("dek", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "albino"));
+            d2.add(new Field("dek", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "elephant"));
             writer.addDocument(d2);
         }
 
         // d3 is a "better" match for:  albino elephant
         {
             Document d3 = new Document();
-            d3.add(Field.Keyword("id", "d3"));
-            d3.add(Field.Text("hed", "albino"));
-            d3.add(Field.Text("hed", "elephant"));
+            d3.add(new Field("id", "d3", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d3"));
+            d3.add(new Field("hed", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "albino"));
+            d3.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
             writer.addDocument(d3);
         }
 
         // d4 is the "best" match for:  albino elephant
         {
             Document d4 = new Document();
-            d4.add(Field.Keyword("id", "d4"));
-            d4.add(Field.Text("hed", "albino"));
-            d4.add(Field.Text("hed", "elephant"));
-            d4.add(Field.Text("dek", "albino"));
+            d4.add(new Field("id", "d4", Field.Store.YES, Field.Index.UN_TOKENIZED));//Field.Keyword("id", "d4"));
+            d4.add(new Field("hed", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "albino"));
+            d4.add(new Field("hed", "elephant", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("hed", "elephant"));
+            d4.add(new Field("dek", "albino", Field.Store.YES, Field.Index.TOKENIZED));//Field.Text("dek", "albino"));
             writer.addDocument(d4);
         }
 
@@ -241,13 +231,13 @@ public class TestDisjunctionMaxQuery extends TestCase{
             DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.0f);
             q1.add(tq("hed","albino"));
             q1.add(tq("dek","albino"));
-            q.add(q1,true,false);
+            q.add(q1,BooleanClause.Occur.MUST);//true,false);
         }
         {
             DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.0f);
             q2.add(tq("hed","elephant"));
             q2.add(tq("dek","elephant"));
-            q.add(q2,true,false);
+            q.add(q2, BooleanClause.Occur.MUST);//true,false);
         }
 
 
@@ -275,13 +265,13 @@ public class TestDisjunctionMaxQuery extends TestCase{
             DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.0f);
             q1.add(tq("hed","albino"));
             q1.add(tq("dek","albino"));
-            q.add(q1,false,false);
+            q.add(q1, BooleanClause.Occur.SHOULD);//false,false);
         }
         {
             DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.0f);
             q2.add(tq("hed","elephant"));
             q2.add(tq("dek","elephant"));
-            q.add(q2,false,false);
+            q.add(q2, BooleanClause.Occur.SHOULD);//false,false);
         }
 
 
@@ -314,13 +304,13 @@ public class TestDisjunctionMaxQuery extends TestCase{
             DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.01f);
             q1.add(tq("hed","albino"));
             q1.add(tq("dek","albino"));
-            q.add(q1,false,false);
+            q.add(q1, BooleanClause.Occur.SHOULD);//false,false);
         }
         {
             DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.01f);
             q2.add(tq("hed","elephant"));
             q2.add(tq("dek","elephant"));
-            q.add(q2,false,false);
+            q.add(q2, BooleanClause.Occur.SHOULD);//false,false);
         }
 
 
@@ -372,13 +362,13 @@ public class TestDisjunctionMaxQuery extends TestCase{
             DisjunctionMaxQuery q1 = new DisjunctionMaxQuery(0.01f);
             q1.add(tq("hed","albino", 1.5f));
             q1.add(tq("dek","albino"));
-            q.add(q1,false,false);
+            q.add(q1, BooleanClause.Occur.SHOULD);//false,false);
         }
         {
             DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.01f);
             q2.add(tq("hed","elephant", 1.5f));
             q2.add(tq("dek","elephant"));
-            q.add(q2,false,false);
+            q.add(q2, BooleanClause.Occur.SHOULD);//false,false);
         }
 
 

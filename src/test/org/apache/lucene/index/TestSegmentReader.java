@@ -77,7 +77,7 @@ public class TestSegmentReader extends TestCase {
     SegmentReader deleteReader = SegmentReader.get(new SegmentInfo("seg-to-delete", 1, dir));
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
-    deleteReader.delete(0);
+    deleteReader.deleteDocument(0);
     assertTrue(deleteReader.isDeleted(0) == true);
     assertTrue(deleteReader.hasDeletions() == true);
     assertTrue(deleteReader.numDocs() == 0);

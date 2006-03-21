@@ -114,7 +114,7 @@ public class MultiReader extends IndexReader {
   protected void doDelete(int n) throws IOException {
     numDocs = -1;                             // invalidate cache
     int i = readerIndex(n);                   // find segment num
-    subReaders[i].delete(n - starts[i]);      // dispatch to segment reader
+    subReaders[i].deleteDocument(n - starts[i]);      // dispatch to segment reader
     hasDeletions = true;
   }
 
@@ -222,45 +222,6 @@ public class MultiReader extends IndexReader {
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].close();
-  }
-
-  /**
-   * @see IndexReader#getFieldNames()
-   */
-  public Collection getFieldNames() throws IOException {
-    // maintain a unique set of field names
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < subReaders.length; i++) {
-      IndexReader reader = subReaders[i];
-      Collection names = reader.getFieldNames();
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  }
-
-  /**
-   * @see IndexReader#getFieldNames(boolean)
-   */
-  public Collection getFieldNames(boolean indexed) throws IOException {
-    // maintain a unique set of field names
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < subReaders.length; i++) {
-      IndexReader reader = subReaders[i];
-      Collection names = reader.getFieldNames(indexed);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
-  }
-
-  public Collection getIndexedFieldNames (Field.TermVector tvSpec){
-    // maintain a unique set of field names
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < subReaders.length; i++) {
-      IndexReader reader = subReaders[i];
-      Collection names = reader.getIndexedFieldNames(tvSpec);
-      fieldSet.addAll(names);
-    }
-    return fieldSet;
   }
 
   /**

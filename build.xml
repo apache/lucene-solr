@@ -6,10 +6,7 @@
 
   <import file="common-build.xml"/>
 
-  <!-- Import tests for deprecation compliance.
-       This will be removed for Lucene 2.0
-   -->
-  <import file="build-deprecated.xml"/>
+  
 
   <property name="demo.name" value="lucene-demos-${version}"/>
   <property name="demo.war.name" value="luceneweb"/>
