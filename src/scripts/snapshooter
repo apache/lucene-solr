@@ -1,64 +1,51 @@
 #!/bin/bash
 #
-# $Id$
-# $Source: /cvs/main/searching/solr-tools/snapshooter.template,v $
-# $Name: r20050725_standardized_server_enabled $
+# Copyright 2006 The Apache Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # Shell script to take a snapshot of a Solr Lucene collection.
 
-export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
 
-# sudo to app user if necessary
-if [[ $(whoami) != app ]]
-then
-    sudo -u app $0 "$@"
-    exit $?
-fi
-
-oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
-
-if [[ "${oldwhoami}" == "" ]]
-then
-    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
-fi
+unset data_dir user verbose
+. ${solr_root}/bin/scripts-util
 
 # set up variables
 prog=${0##*/}
-log=logs/${prog}.log
+log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog [ -v ]
+usage: $prog [-d dir] [-u username] [-v]
+       -d          specify directory holding index data
+       -u          specify user to sudo to before running script
        -v          increase verbosity
 "
 
-cd ${0%/*}/../..
-SERVER_ROOT=$(pwd)
-
-unset verbose
-
-# check for config file
-confFile=${SERVER_ROOT}/conf/distribution.conf
-if
-  [[ ! -f $confFile ]]
-then
-  echo "unable to find configuration file: $confFile" >&2
-  exit 1
-fi
-# source the config file
-. $confFile
-
-if [[ "${solr_role}" == "slave" ]]
-then
-  echo "$prog disabled on slave server" >&2
-  exit 1
-fi
-
 # parse args
-originalargs="$@"
-while getopts v OPTION
+while getopts d:u:v OPTION
 do
     case $OPTION in
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
     v)
         verbose="v"
         ;;
@@ -67,36 +54,27 @@ do
         exit 1
     esac
 done
-shift $(( OPTIND - 1 ))
 
-function timeStamp
-{
-    date +'%Y%m%d-%H%M%S'
-}
+fixUser "$@"
 
-function logMessage
-{
-    echo $(timeStamp) $@>>$log
-    if [[ -n ${verbose} ]]
-    then
-	echo $@
-    fi
-}
+# user default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
 
-function logExit
-{
-    end=`date +"%s"`
-    diff=`expr $end - $start`
-    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
-    exit $2
-}
-
-logMessage started by $oldwhoami
-logMessage command: $0 $originalargs
 start=`date +"%s"`
 
-name=snapshot.`date +"%Y%m%d%H%M%S"`
-temp=temp-${name}
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+snap_name=snapshot.`date +"%Y%m%d%H%M%S"`
+name=${data_dir}/${snap_name}
+temp=${data_dir}/temp-${snap_name}
 
 if [[ -d ${name} ]]
 then
@@ -117,7 +95,7 @@ logMessage taking snapshot ${name}
 
 # take a snapshot using hard links into temporary location
 # then move it into place atomically
-cp -lr index ${temp}
+cp -lr ${data_dir}/index ${temp}
 mv ${temp} ${name}
 
 logExit ended 0

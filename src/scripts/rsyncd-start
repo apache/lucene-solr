@@ -1,48 +1,55 @@
 #!/bin/bash
 #
-# $Id$
-# $Source: /cvs/main/searching/solr-tools/rsyncd-start.template,v $
-# $Name: r20050725_standardized_server_enabled $
+# Copyright 2006 The Apache Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # Shell script to start rsyncd on master Solr server
 
-export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
 
-# sudo to app user if necessary
-if [[ $(whoami) != app ]]
-then
-    sudo -u app $0 "$@"
-    exit $?
-fi
+unset data_dir solr_port rsyncd_port user verbose
+. ${solr_root}/bin/scripts-util
 
-oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
-
-if [[ "${oldwhoami}" == "" ]]
-then
-    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
-fi
-
+# set up variables
 prog=${0##*/}
-log=logs/rsyncd.log
+log=${solr_root}/logs/rsyncd.log
 
 # define usage string
 USAGE="\
-usage: $prog [ -v ]
+usage: $prog [-d dir] [-p portnum] [-u username] [-v]
+       -d          specify directory holding index data
+       -p          specify rsyncd port number
+       -u          specify user to sudo to before running script
        -v          increase verbosity
 "
 
-resin_port=5051
-rsyncd_port=`expr 10000 + ${resin_port}`
-
-cd ${0%/*}/../..
-
-unset verbose
-
 # parse args
-originalargs="$@"
-while getopts v OPTION
+while getopts d:p:u:v OPTION
 do
     case $OPTION in
+    d)
+        data_dir="$OPTARG"
+        ;;
+    p)
+        rsyncd_port="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
     v)
         verbose="v"
         ;;
@@ -51,26 +58,37 @@ do
         exit 1
     esac
 done
-shift $(( OPTIND - 1 ))
 
-function timeStamp
-{
-    date +'%Y/%m/%d %H:%M:%S'
-}
+fixUser "$@"
 
-function logMessage
-{
-    echo $(timeStamp) $@>>$log
-    if [[ -n ${verbose} ]]
+# try to determine rsyncd port number from $confFile if not specified on
+# command line
+if [[ -z ${rsyncd_port} ]]
+then
+    if [[ "${solr_port}" ]]
     then
-        echo $@
+        rsyncd_port=`expr 10000 + ${solr_port}`
+    else
+        echo "rsyncd port number missing in $confFile or command line."
+        echo "$USAGE"
+        exit 1
     fi
-}
+fi
+
+# user default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
 
 logMessage started by $oldwhoami
-logMessage command: $0 $originalargs
+logMessage command: $0 $@
 
-if [[ ! -f rsyncd-enabled ]]
+if [[ ! -f ${solr_root}/logs/rsyncd-enabled ]]
 then
     logMessage rsyncd disabled
     exit 1
@@ -83,7 +101,26 @@ then
     exit 1
 fi
 
-rsync --daemon --port=${rsyncd_port} --config=conf/rsyncd.conf
+# create conf/rsyncd.conf on the fly, creating solrlogs directory if needed
+if [[ ! -d ${solr_root}/conf ]]
+then
+    mkdir ${solr_root}/conf
+fi
+cat <<EOF > ${solr_root}/conf/rsyncd.conf
+#### rsyncd.conf file ####
+ 
+uid = app
+gid = app
+use chroot = no
+list = no
+pid file = ${solr_root}/logs/rsyncd.pid
+log file = ${solr_root}/logs/rsyncd.log
+[solr]
+    path = ${data_dir}
+    comment = Solr
+EOF
+
+rsync --daemon --port=${rsyncd_port} --config=${solr_root}/conf/rsyncd.conf
 
 # first make sure rsyncd is accepting connections
 i=1
@@ -98,4 +135,4 @@ do
     sleep 1
 done
 
-logMessage rsyncd started and accepting requests
+logMessage rsyncd started with data_dir=${data_dir} and accepting requests

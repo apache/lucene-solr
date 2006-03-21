@@ -1,71 +1,75 @@
 #!/bin/bash
 #
-# $Id$
-# $Source: /cvs/main/searching/solr-tools/snappuller.template,v $
-# $Name: r20050725_standardized_server_enabled $
+# Copyright 2006 The Apache Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # Shell script to copy snapshots of a Solr Lucene collection from the master
 
-export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
 
-# sudo to app user if necessary
-if [[ $(whoami) != app ]]
-then
-    sudo -u app $0 "$@"
-    exit $?
-fi
-
-oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
-
-if [[ "${oldwhoami}" == "" ]]
-then
-    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
-fi
+unset master_host rsyncd_port master_data_dir master_status_dir snap_name
+unset sizeonly stats data_dir user verbose compress startStatus
+. ${solr_root}/bin/scripts-util
 
 # set up variables
 prog=${0##*/}
-log=logs/${prog}.log
+log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog -m master -p port [-n snapshot] [ -svz ]
-       -m master   hostname of master server from where to pull index snapshot
-       -p port     port number of master server from where to pull index snapshot
+usage: $prog [-M master] [-P portnum] [-D mdir] [-S sdir] [-n snapshot] [-d dir] [-u username] [-svz]
+       -M master   specify hostname of master server from where to pull index
+                   snapshot
+       -P port     specify rsyncd port number of master server from where to
+                   pull index snapshot
+       -D          specify directory holding index data on master server
+       -S          specify directory holding snapshot status on master server
        -n snapshot pull a specific snapshot by name
+       -d          specify directory holding index data on local machine
+       -u          specify user to sudo to before running script
        -s          use the --size-only option with rsync
        -v          increase verbosity (-vv show file transfer stats also)
        -z          enable compression of data
 "
 
-unset masterHost masterPort name sizeonly stats verbose compress startStatus
-
-cd ${0%/*}/../..
-SERVER_ROOT=$(pwd)
-
-# check for config file
-confFile=${SERVER_ROOT}/conf/distribution.conf
-if
-  [[ ! -f $confFile ]]
-then
-  echo "unable to find configuration file: $confFile" >&2
-  exit 1
-fi
-# source the config file
-. $confFile
-
 # parse args
-originalargs="$@"
-while getopts m:p:n:svz OPTION
+while getopts M:P:D:S:n:d:u:svz OPTION
 do
     case $OPTION in
-    m)
-        masterHost="$OPTARG"
+    M)
+        master_host="$OPTARG"
         ;;
-    p)
-        masterPort="$OPTARG"
+    P)
+        rsyncd_port="$OPTARG"
+        ;;
+    D)
+        master_data_dir="$OPTARG"
+        ;;
+    S)
+        master_status_dir="$OPTARG"
         ;;
     n)
-        name="$OPTARG"
+        snap_name="$OPTARG"
+        ;;
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
         ;;
     s)
         sizeonly="--size-only"
@@ -81,58 +85,69 @@ do
         exit 1
     esac
 done
-shift $(( OPTIND - 1 ))
 
-MASTER_ROOT=/var/opt/resin3/${masterPort}
-
-function timeStamp
-{
-    date +'%Y%m%d-%H%M%S'
-}
-
-function logMessage
-{
-    echo $(timeStamp) $@>>$log
-    if [[ -n ${verbose} ]]
-    then
-	echo $@
-    fi
-}
-
-function logExit
-{
-# push stats/state to master if necessary
-    if [[ -n ${startStatus} ]]
-    then
-      scp -q -o StrictHostKeyChecking=no logs/snappuller.status ${masterHost}:${MASTER_ROOT}/logs/clients/snapshot.status.`uname -n`
-    fi
-    end=`date +"%s"`
-    diff=`expr $end - $start`
-    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
-    exit $2
-}
-
-if [[ -z ${masterHost} ]]
+if [[ -z ${master_host} ]]
 then
     echo "name of master server missing in $confFile or command line."
     echo "$USAGE"
     exit 1
 fi
 
-if [[ -z ${masterPort} ]]
+if [[ -z ${rsyncd_port} ]]
 then
-    echo "port number of master server missing in $confFile or command line."
+    echo "rsyncd port number of master server missing in $confFile or command line."
     echo "$USAGE"
     exit 1
-
 fi
-rsyncd_port=`expr 10000 + ${masterPort}`
 
-logMessage started by $oldwhoami
-logMessage command: $0 $originalargs
+if [[ -z ${master_data_dir} ]]
+then
+    echo "directory holding index data on master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+if [[ -z ${master_status_dir} ]]
+then
+    echo "directory holding snapshot status on master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+fixUser "$@"
+
+# user default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
+
+# assume relative path to start at ${solr_root}
+if [[ "`echo ${master_data_dir}|cut -c1`" != "/" ]]
+then
+    master_data_dir=${solr_root}/${master_data_dir}
+fi
+if [[ "`echo ${master_status_dir}|cut -c1`" != "/" ]]
+then
+    master_status_dir=${solr_root}/${master_status_dir}
+fi
+
+# push stats/state to master if necessary
+function pushStatus
+{
+    scp -q -o StrictHostKeyChecking=no ${solr_root}/logs/snappuller.status ${master_host}:${master_status_dir}/snapshot.status.`uname -n`
+}
+
 start=`date +"%s"`
 
-if [[ ! -f ${prog}-enabled ]]
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+if [[ ! -f ${solr_root}/logs/snappuller-enabled ]]
 then
     logMessage snappuller disabled
     exit 1
@@ -140,55 +155,61 @@ fi
 
 # make sure we can ssh to master
 if
-    ! ssh -o StrictHostKeyChecking=no ${masterHost} id 1>/dev/null 2>&1
+    ! ssh -o StrictHostKeyChecking=no ${master_host} id 1>/dev/null 2>&1
 then
-    logMessage failed to ssh to master ${masterHost}
+    logMessage failed to ssh to master ${master_host}
     exit 1
 fi
 
 # get directory name of latest snapshot if not specified on command line
-if [[ -z ${name} ]]
+if [[ -z ${snap_name} ]]
 then
-    name=`ssh -o StrictHostKeyChecking=no ${masterHost} "ls -d ${MASTER_ROOT}/snapshot.* 2>/dev/null"|tail -1`
+    snap_name=`ssh -o StrictHostKeyChecking=no ${master_host} "ls -d ${master_data_dir}/snapshot.* 2>/dev/null"|tail -1`
+fi
+if [[ "${snap_name}" == "" ]]
+then
+    logMessage no snapshot available on ${master_host} in ${master_data_dir}
+    logExit ended 0
+else
+    name=`basename ${snap_name}`
 fi
 
 # clean up after INT/TERM
-trap 'echo cleaning up, please wait ...;/bin/rm -rf ${name} ${name}-wip;echo ${startStatus} aborted:$(timeStamp)>logs/snappuller.status;logExit aborted 13' INT TERM
+trap 'echo cleaning up, please wait ...;/bin/rm -rf ${data_dir}/${name} ${data_dir}/${name}-wip;echo ${startStatus} aborted:$(timeStamp)>${solr_root}/logs/snappuller.status;pushStatus;logExit aborted 13' INT TERM
 
-if [[ -d ${name} || -d ${name}-wip || "${name}" == "" ]]
+if [[ -d ${data_dir}/${name} || -d ${data_dir}/${name}-wip ]]
 then
-    logMessage no new snapshot available on ${masterHost}:${masterPort}
+    logMessage no new snapshot available on ${master_host} in ${master_data_dir}
     logExit ended 0
 fi
 
 # take a snapshot of current index so that only modified files will be rsync-ed
 # put the snapshot in the 'work-in-progress" directory to prevent it from
 # being installed while the copying is still in progress
-cp -lr index ${name}-wip
+cp -lr ${data_dir}/index ${data_dir}/${name}-wip
 # force rsync of segments and .del files since we are doing size-only
 if [[ -n ${sizeonly} ]]
 then
-    rm -f ${name}-wip/segments
-    rm -f ${name}-wip/*.del
+    rm -f ${data_dir}/${name}-wip/segments
+    rm -f ${data_dir}/${name}-wip/*.del
 fi
 
 logMessage pulling snapshot ${name}
 
 # make sure master has directory for hold slaves stats/state
-ssh -o StrictHostKeyChecking=no ${masterHost} mkdir -p ${MASTER_ROOT}/logs/clients
+ssh -o StrictHostKeyChecking=no ${master_host} mkdir -p ${master_status_dir}
 
 # start new distribution stats
 rsyncStart=`date`
 startTimestamp=`date -d "$rsyncStart" +'%Y%m%d-%H%M%S'`
 rsyncStartSec=`date -d "$rsyncStart" +'%s'`
 startStatus="rsync of `basename ${name}` started:$startTimestamp"
-echo ${startStatus} > logs/snappuller.status
-# push stats/state to master
-scp -q -o StrictHostKeyChecking=no logs/snappuller.status ${masterHost}:${MASTER_ROOT}/logs/clients/snapshot.status.`uname -n`
+echo ${startStatus} > ${solr_root}/logs/snappuller.status
+pushStatus
 
 # rsync over files that have changed
 rsync -Wa${verbose}${compress} --delete ${sizeonly} \
-${stats} rsync://${masterHost}:${rsyncd_port}/solr/`basename ${name}`/ `basename ${name}-wip`
+${stats} rsync://${master_host}:${rsyncd_port}/solr/${name}/ ${data_dir}/${name}-wip
 
 rc=$?
 rsyncEnd=`date`
@@ -198,15 +219,16 @@ elapsed=`expr $rsyncEndSec - $rsyncStartSec`
 if [[ $rc != 0 ]]
 then
   logMessage rsync failed
-  /bin/rm -rf ${name}-wip
-  echo ${startStatus} failed:$endTimestamp > logs/snappuller.status
+  /bin/rm -rf ${data_dir}/${name}-wip
+  echo ${startStatus} failed:$endTimestamp > ${solr_root}/logs/snappuller.status
+  pushStatus
   logExit failed 1
 fi
 
 # move into place atomically
-mv ${name}-wip ${name}
+mv ${data_dir}/${name}-wip ${data_dir}/${name}
 
 # finish new distribution stats`
-echo ${startStatus} ended:$endTimestamp rsync-elapsed:${elapsed} > logs/snappuller.status
-
+echo ${startStatus} ended:$endTimestamp rsync-elapsed:${elapsed} > ${solr_root}/logs/snappuller.status
+pushStatus
 logExit ended 0

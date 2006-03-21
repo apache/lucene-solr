@@ -1,52 +1,59 @@
 #!/bin/bash
 #
-# $Id$
-# $Source: /cvs/main/searching/solr-tools/snapcleaner.template,v $
-# $Name: r20050725_standardized_server_enabled $
+# Copyright 2006 The Apache Software Foundation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # Shell script to clean up snapshots of a Solr Lucene collection.
 
-export PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
 
-# sudo to app user if necessary
-if [[ $(whoami) != app ]]
-then
-    sudo -u app $0 "$@"
-    exit $?
-fi
-
-oldwhoami=$(who -m | cut -d' ' -f1 | sed -e's/^.*!//')
-
-if [[ "${oldwhoami}" == "" ]]
-then
-    oldwhoami=`ps h -Hfp $(pgrep -g0 ${0##*/}) | tail -1|cut -f1 -d" "`
-fi
+unset days num data_dir user verbose
+. ${solr_root}/bin/scripts-util
 
 # set up variables
 prog=${0##*/}
-log=logs/${prog}.log
+log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog -d <days> | -n <num> [ -v ]
-       -d <days>    cleanup snapshots more than <days> days old
-       -n <num>     keep the most most recent <num> number of snapshots and
-                    cleanup up the remaining ones that are not being pulled
-       -v           increase verbosity
+usage: $prog -D <days> | -N <num> [-d dir] [-u username] [-v]
+       -D <days>   cleanup snapshots more than <days> days old
+       -N <num>    keep the most most recent <num> number of snapshots and
+                   cleanup up the remaining ones that are not being pulled
+       -d          specify directory holding index data
+       -u          specify user to sudo to before running script
+       -v          increase verbosity
 "
 
-unset days num verbose
-
 # parse args
-originalargs="$@"
-while getopts d:n:v OPTION
+while getopts D:N:d:u:v OPTION
 do
     case $OPTION in
-    d)
+    D)
         days="$OPTARG"
         ;;
-    n)
+    N)
         num="$OPTARG"
+        ;;
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
         ;;
     v)
         verbose="v"
@@ -56,7 +63,6 @@ do
         exit 1
     esac
 done
-shift $(( OPTIND - 1 ))
 
 if [[ -z ${days} && -z ${num} ]]
 then
@@ -64,31 +70,21 @@ then
     exit 1
 fi
 
-function timeStamp
-{
-    date +'%Y%m%d-%H%M%S'
-}
+fixUser "$@"
 
-function logMessage
-{
-    echo $(timeStamp) $@>>$log
-    if [[ -n ${verbose} ]]
-    then
-	echo $@
-    fi
-}
-
-function logExit
-{
-    end=`date +"%s"`
-    diff=`expr $end - $start`
-    echo "$(timeStamp) $1 (elapsed time: $diff sec)">>$log
-    exit $2
-}
+# user default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
 
 function remove
 {
-    syncing=`ps -fwwwu app|grep rsync|grep -v grep|cut -f6 -d"/"|grep $1`
+    syncing=`ps -fwwwu ${user}|grep -w rsync|grep -v grep|grep -w $1`
     if [[ -n $syncing ]]
     then
 	logMessage $1 not removed - rsync in progress
@@ -98,10 +94,10 @@ function remove
     fi
 }
 
-cd ${0%/*}/../..
-logMessage started by $oldwhoami
-logMessage command: $0 $originalargs
 start=`date +"%s"`
+
+logMessage started by $oldwhoami
+logMessage command: $0 $@
 
 # trap control-c
 trap 'echo "caught INT/TERM, exiting now but partial cleanup may have already occured";logExit aborted 13' INT TERM
@@ -109,15 +105,15 @@ trap 'echo "caught INT/TERM, exiting now but partial cleanup may have already oc
 if [[ -n ${days} ]]
 then
     logMessage cleaning up snapshots more than ${days} days old
-    for i in `find . -name "snapshot.*" -maxdepth 1 -mtime +${days} -print`
+    for i in `find ${data_dir} -name "snapshot.*" -maxdepth 1 -mtime +${days} -print`
     do
-        remove `basename $i`
+        remove $i
     done
 elif [[ -n ${num} ]]
 then
     logMessage cleaning up all snapshots except for the most recent ${num} ones
     unset snapshots count
-    snapshots=`ls -cd snapshot.* 2>/dev/null`
+    snapshots=`ls -cd ${data_dir}/snapshot.* 2>/dev/null`
     if [[ $? == 0 ]]
     then
         count=`echo $snapshots|wc -w`
