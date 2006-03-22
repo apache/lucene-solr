@@ -107,7 +107,7 @@ lastsnap=`ls -drt1 ${data_dir}/snapshot.* | tail -1 `
 
 if [[ $lastsnap == "" ]]
 then
-  logMessage commit did not create snapshot at port ${solr_port}; backup failed:
+  logMessage commit did not create snapshot at port ${solr_port}, backup failed:
   logExit failed 3
 fi
 
