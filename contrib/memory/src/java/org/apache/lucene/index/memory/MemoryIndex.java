@@ -1030,28 +1030,6 @@ public class MemoryIndex {
 		protected void doClose() {
 			if (DEBUG) System.err.println("MemoryIndexReader.doClose");
 		}
-
-    
-
-
-    // lucene <= 1.4.3
-		public Collection getFieldNames() {
-			if (DEBUG) System.err.println("MemoryIndexReader.getFieldNames");
-			return getFieldNames(true);
-		}
-	
-		// lucene <= 1.4.3
-		public Collection getFieldNames(boolean indexed) {
-			if (DEBUG) System.err.println("MemoryIndexReader.getFieldNames " + indexed);
-			return indexed ? Collections.unmodifiableSet(fields.keySet()) : Collections.EMPTY_SET;
-		}
-	
-		// lucene <= 1.4.3
-		public Collection getIndexedFieldNames(boolean storedTermVector) {
-			if (DEBUG) System.err.println("MemoryIndexReader.getIndexedFieldNames " + storedTermVector);
-			return getFieldNames(storedTermVector);
-		}
-	
 		
 		// lucene >= 1.9 (remove this method for lucene-1.4.3)
 		public Collection getFieldNames(FieldOption fieldOption) {
