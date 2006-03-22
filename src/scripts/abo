@@ -85,7 +85,7 @@ logMessage started by $oldwhoami
 logMessage command: $0 $@
 
 logMessage sending optimize to Solr server at port ${solr_port}
-rs=`curl http://localhost:${solr_port}/update -s -d "<optimize/>"`
+rs=`curl http://localhost:${solr_port}/solr/update -s -d "<optimize/>"`
 if [[ $? != 0 ]]
 then
   logMessage failed to connect to Solr server at port ${solr_port}

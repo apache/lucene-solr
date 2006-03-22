@@ -85,7 +85,7 @@ logMessage started by $oldwhoami
 logMessage command: $0 $@
 
 logMessage sending commit to Solr server at port ${solr_port}
-rs=`curl http://localhost:${solr_port}/update -s -d "<commit/>"`
+rs=`curl http://localhost:${solr_port}/solr/update -s -d "<commit/>"`
 if [[ $? != 0 ]]
 then
   logMessage failed to connect to Solr server at port ${solr_port}
