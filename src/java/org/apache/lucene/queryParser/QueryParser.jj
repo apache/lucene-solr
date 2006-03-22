@@ -94,11 +94,6 @@ public class QueryParser {
   private static final int MOD_NOT     = 10;
   private static final int MOD_REQ     = 11;
 
-  /** @deprecated use {@link #OR_OPERATOR} instead */
-  public static final int DEFAULT_OPERATOR_OR  = 0;
-  /** @deprecated use {@link #AND_OPERATOR} instead */
-  public static final int DEFAULT_OPERATOR_AND = 1;
-
   // make it possible to call setDefaultOperator() without accessing 
   // the nested class:
   /** Alternative form of QueryParser.Operator.AND */
@@ -129,19 +124,6 @@ public class QueryParser {
     static public final Operator AND = new Operator("AND");
   }
 
-  /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-   *  @param query  the query string to be parsed.
-   *  @param field  the default field for query terms.
-   *  @param analyzer   used to find terms in the query text.
-   *  @throws ParseException if the parsing fails
-   *
-   *  @deprecated Use an instance of QueryParser and the {@link #parse(String)} method instead.
-   */
-  static public Query parse(String query, String field, Analyzer analyzer)
-       throws ParseException {
-    QueryParser parser = new QueryParser(field, analyzer);
-    return parser.parse(query);
-  }
 
   /** Constructs a query parser.
    *  @param f  the default field for query terms.
@@ -230,23 +212,6 @@ public class QueryParser {
     return phraseSlop;
   }
 
-  /**
-   * Sets the boolean operator of the QueryParser.
-   * In default mode (<code>DEFAULT_OPERATOR_OR</code>) terms without any modifiers
-   * are considered optional: for example <code>capital of Hungary</code> is equal to
-   * <code>capital OR of OR Hungary</code>.<br/>
-   * In <code>DEFAULT_OPERATOR_AND</code> terms are considered to be in conjuction: the
-   * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
-   * @deprecated use {@link #setDefaultOperator(QueryParser.Operator)} instead
-   */
-  public void setOperator(int op) {
-    if (op == DEFAULT_OPERATOR_AND)
-      this.operator = AND_OPERATOR;
-    else if (op == DEFAULT_OPERATOR_OR)
-      this.operator = OR_OPERATOR;
-    else
-      throw new IllegalArgumentException("Unknown operator " + op);
-  }
 
   /**
    * Sets the boolean operator of the QueryParser.
@@ -260,19 +225,6 @@ public class QueryParser {
     this.operator = op;
   }
 
-  /**
-   * Gets implicit operator setting, which will be either DEFAULT_OPERATOR_AND
-   * or DEFAULT_OPERATOR_OR.
-   * @deprecated use {@link #getDefaultOperator()} instead
-   */
-  public int getOperator() {
-    if(operator == AND_OPERATOR)
-      return DEFAULT_OPERATOR_AND;
-    else if(operator == OR_OPERATOR)
-      return DEFAULT_OPERATOR_OR;
-    else
-      throw new IllegalStateException("Unknown operator " + operator);
-  }
 
   /**
    * Gets implicit operator setting, which will be either AND_OPERATOR
@@ -282,14 +234,6 @@ public class QueryParser {
     return operator;
   }
 
-  /**
-   * Whether terms of wildcard, prefix, fuzzy and range queries are to be automatically
-   * lower-cased or not.  Default is <code>true</code>.
-   * @deprecated use {@link #setLowercaseExpandedTerms(boolean)} instead
-   */
-  public void setLowercaseWildcardTerms(boolean lowercaseExpandedTerms) {
-    this.lowercaseExpandedTerms = lowercaseExpandedTerms;
-  }
 
   /**
    * Whether terms of wildcard, prefix, fuzzy and range queries are to be automatically
@@ -299,12 +243,6 @@ public class QueryParser {
     this.lowercaseExpandedTerms = lowercaseExpandedTerms;
   }
 
-  /**
-   * @deprecated use {@link #getLowercaseExpandedTerms()} instead
-   */
-  public boolean getLowercaseWildcardTerms() {
-    return lowercaseExpandedTerms;
-  }
 
   /**
    * @see #setLowercaseExpandedTerms(boolean)
@@ -376,19 +314,7 @@ public class QueryParser {
     else
       throw new RuntimeException("Clause cannot be both required and prohibited");
   }
-  
-  /**
-   * Note that parameter analyzer is ignored. Calls inside the parser always
-   * use class member analyzer.
-   *
-   * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getFieldQuery(String, String)}
-   */
-  protected Query getFieldQuery(String field,
-                                                    Analyzer analyzer,
-                                                    String queryText)  throws ParseException {
-    return getFieldQuery(field, queryText);
-  }
+
 
   /**
    * @exception ParseException throw in overridden method to disallow
@@ -472,20 +398,7 @@ public class QueryParser {
       }
     }
   }
-  
-  /**
-   * Note that parameter analyzer is ignored. Calls inside the parser always
-   * use class member analyzer.
-   *
-   * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getFieldQuery(String, String, int)}
-   */
-  protected Query getFieldQuery(String field,
-                                                    Analyzer analyzer,
-                                                    String queryText,
-                                                    int slop) throws ParseException {
-    return getFieldQuery(field, queryText, slop);
-  }
+
 
   /**
    * Base implementation delegates to {@link #getFieldQuery(String,String)}.
@@ -507,21 +420,7 @@ public class QueryParser {
 
     return query;
   }
-  
-  /**
-   * Note that parameter analyzer is ignored. Calls inside the parser always
-   * use class member analyzer.
-   *
-   * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getRangeQuery(String, String, String, boolean)}
-   */
-  protected Query getRangeQuery(String field,
-      Analyzer analyzer,
-      String part1,
-      String part2,
-      boolean inclusive) throws ParseException {
-    return getRangeQuery(field, part1, part2, inclusive);
-  }
+
 
   /**
    * @exception ParseException throw in overridden method to disallow
@@ -664,13 +563,7 @@ public class QueryParser {
     Term t = new Term(field, termStr);
     return new PrefixQuery(t);
   }
-  
- /**
-   * @deprecated use {@link #getFuzzyQuery(String, String, float)}
-   */
-  protected Query getFuzzyQuery(String field, String termStr) throws ParseException {
-    return getFuzzyQuery(field, termStr, fuzzyMinSim);
-  }
+
   
    /**
    * Factory method for generating a query (similar to
@@ -930,12 +823,9 @@ Query Term(String field) : {
        	 if(fms < 0.0f || fms > 1.0f){
        	   throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
        	 }
-       	 if(fms == fuzzyMinSim)
-       	   q = getFuzzyQuery(field, termImage);
-       	 else
-           q = getFuzzyQuery(field, termImage, fms);
+       	 q = getFuzzyQuery(field, termImage,fms);
        } else {
-         q = getFieldQuery(field, analyzer, termImage);
+         q = getFieldQuery(field, termImage);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
@@ -953,7 +843,7 @@ Query Term(String field) : {
       } else {
         goop2.image = discardEscapeChar(goop2.image);
       }
-          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, true);
+          q = getRangeQuery(field, goop1.image, goop2.image, true);
         }
      | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
          [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> )
@@ -971,7 +861,7 @@ Query Term(String field) : {
         goop2.image = discardEscapeChar(goop2.image);
       }
 
-          q = getRangeQuery(field, analyzer, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, goop1.image, goop2.image, false);
         }
      | term=<QUOTED>
        [ fuzzySlop=<FUZZY_SLOP> ]
@@ -985,7 +875,7 @@ Query Term(String field) : {
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, analyzer, term.image.substring(1, term.image.length()-1), s);
+         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
        }
   )
   {
