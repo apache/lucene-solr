@@ -11,6 +11,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.builders.BooleanQueryBuilder;
 import org.apache.lucene.xmlparser.builders.ConstantScoreQueryBuilder;
 import org.apache.lucene.xmlparser.builders.FilteredQueryBuilder;
+import org.apache.lucene.xmlparser.builders.MatchAllDocsQueryBuilder;
 import org.apache.lucene.xmlparser.builders.RangeFilterBuilder;
 import org.apache.lucene.xmlparser.builders.SpanFirstBuilder;
 import org.apache.lucene.xmlparser.builders.SpanNearBuilder;
@@ -47,6 +48,7 @@ public class CoreParser implements QueryBuilder
 		
 		queryFactory = new QueryBuilderFactory();
 		queryFactory.addBuilder("TermQuery",new TermQueryBuilder());
+		queryFactory.addBuilder("MatchAllDocsQuery",new MatchAllDocsQueryBuilder());
 		queryFactory.addBuilder("BooleanQuery",new BooleanQueryBuilder(queryFactory));
 		queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(parser));
 		queryFactory.addBuilder("FilteredQuery",new FilteredQueryBuilder(filterFactory,queryFactory));

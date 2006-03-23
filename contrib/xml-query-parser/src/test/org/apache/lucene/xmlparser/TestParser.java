@@ -135,6 +135,11 @@ public class TestParser extends TestCase {
 			Query q=parse("ConstantScoreQuery.xml");
 			dumpResults("ConstantScoreQuery",q, 5);
 	}
+	public void testMatchAllDocsPlusFilterXML() throws ParserException, IOException
+	{
+			Query q=parse("MatchAllDocsQuery.xml");
+			dumpResults("MatchAllDocsQuery with range filter", q, 5);
+	}
 	
 
 
