@@ -63,8 +63,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         Node node = nodes.item(i);
         try {
           String className = DOMUtil.getAttr(node,"class");
-          Class clazz = Class.forName(className);
-          SolrEventListener listener = (SolrEventListener)clazz.newInstance();
+          SolrEventListener listener = (SolrEventListener)Config.newInstance(className);
           listener.init(DOMUtil.childNodesToNamedList(node));
           // listener.init(DOMUtil.toMapExcept(node.getAttributes(),"class","synchronized"));
           commitCallbacks.add(listener);
