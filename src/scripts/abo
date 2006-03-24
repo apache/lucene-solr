@@ -22,7 +22,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset solr_port data_dir user verbose
+unset solr_hostname solr_port data_dir webapp_name user verbose
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -31,22 +31,30 @@ log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog [-p port] [-d dir] [-u username] [-v]
+usage: $prog [-h hostname] [-p port] [-d dir] [-w webapp_name] [-u username] [-v]
+       -h          specify Solr hostname
        -p          specify Solr port number
        -d          specify directory holding index data
+       -w          specify name of Solr webapp (defaults to solr)
        -u          specify user to sudo to before running script
        -v          increase verbosity
 "
 
 # parse args
-while getopts p:d:u:v OPTION
+while getopts h:p:d:w:u:v OPTION
 do
     case $OPTION in
+    h)
+        solr_hostname="$OPTARG"
+        ;;
     p)
         solr_port="$OPTARG"
         ;;
     d)
         data_dir="$OPTARG"
+        ;;
+    w)
+        webapp_name="$OPTARG"
         ;;
     u)
         user="$OPTARG"
@@ -67,7 +75,7 @@ then
     exit 1
 fi
 
-# user default value for data_dir if not specified
+# use default value for data_dir if not specified
 # relative path starts at ${solr_root}
 if [[ -z ${data_dir} ]]
 then
@@ -75,6 +83,18 @@ then
 elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
 then
     data_dir=${solr_root}/${data_dir}
+fi
+
+# use default hostname if not specified
+if [[ -z ${solr_hostname} ]]
+then
+    solr_hostname=localhost
+fi
+
+# use default webapp name if not specified
+if [[ -z ${webapp_name} ]]
+then
+    webapp_name=solr
 fi
 
 fixUser "$@"
@@ -85,7 +105,7 @@ logMessage started by $oldwhoami
 logMessage command: $0 $@
 
 logMessage sending optimize to Solr server at port ${solr_port}
-rs=`curl http://localhost:${solr_port}/solr/update -s -d "<optimize/>"`
+rs=`curl http://${solr_hostname}:${solr_port}/solr/update -s -d "<optimize/>"`
 if [[ $? != 0 ]]
 then
   logMessage failed to connect to Solr server at port ${solr_port}
