@@ -62,7 +62,7 @@ done
 fixUser "$@"
 
 # try to determine rsyncd port number from $confFile if not specified on
-# command line
+# command line, default to solr_port+10000
 if [[ -z ${rsyncd_port} ]]
 then
     if [[ "${solr_port}" ]]
