@@ -93,11 +93,18 @@ then
     exit 1
 fi
 
+# try to determine rsyncd port number from $confFile if not specified on
+# command line, default to solr_port+10000
 if [[ -z ${rsyncd_port} ]]
 then
-    echo "rsyncd port number of master server missing in $confFile or command line."
-    echo "$USAGE"
-    exit 1
+    if [[ "${solr_port}" ]]
+    then
+        rsyncd_port=`expr 10000 + ${solr_port}`
+    else
+        echo "rsyncd port number of master server missing in $confFile or command line."
+        echo "$USAGE"
+        exit 1
+    fi
 fi
 
 if [[ -z ${master_data_dir} ]]
