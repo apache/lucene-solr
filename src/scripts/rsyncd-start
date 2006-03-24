@@ -75,7 +75,7 @@ then
     fi
 fi
 
-# user default value for data_dir if not specified
+# use default value for data_dir if not specified
 # relative path starts at ${solr_root}
 if [[ -z ${data_dir} ]]
 then
