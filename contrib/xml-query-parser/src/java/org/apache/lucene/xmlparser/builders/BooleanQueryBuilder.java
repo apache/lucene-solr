@@ -44,7 +44,7 @@ public class BooleanQueryBuilder implements QueryBuilder {
 		
 		return bq;
 	}
-	private BooleanClause.Occur getOccursValue(Element clauseElem) throws ParserException
+	static BooleanClause.Occur getOccursValue(Element clauseElem) throws ParserException
 	{
 		String occs=clauseElem.getAttribute("occurs");
 		BooleanClause.Occur occurs=BooleanClause.Occur.SHOULD;

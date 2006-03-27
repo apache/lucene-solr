@@ -140,6 +140,11 @@ public class TestParser extends TestCase {
 			Query q=parse("MatchAllDocsQuery.xml");
 			dumpResults("MatchAllDocsQuery with range filter", q, 5);
 	}
+	public void testBooleanFilterXML() throws ParserException, IOException
+	{
+			Query q=parse("BooleanFilter.xml");
+			dumpResults("Boolean filter", q, 5);
+	}
 	
 
 

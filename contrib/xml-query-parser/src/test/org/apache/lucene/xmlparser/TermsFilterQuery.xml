@@ -22,8 +22,8 @@
 			This example might be just a list of Saturdays ie not a contiguous range of values
 			which can be handled by rangefilter
 		-->
-		<TermsFilter>			
-			<Field fieldName="date" >19870601 19870608 19870615</Field>
+		<TermsFilter fieldName="date">			
+			19870601 19870608 19870615
 		</TermsFilter> 
 	</Filter>
 	

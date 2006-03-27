@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FilteredQuery>
+	<Query>
+		<MatchAllDocsQuery/>
+	</Query>
+	
+	<Filter>
+		<!--
+			This query illustrates how a BooleanFilter can be used to combine
+			multiple filters in the same way BooleanQueries can be combined
+			with must, should and mustnot clauses
+			-->
+		<BooleanFilter>
+			<Clause occurs="should">
+				<RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/>
+			</Clause>
+			<Clause occurs="mustNot">
+				<TermsFilter fieldName="contents">Emcore</TermsFilter> 
+			</Clause>
+		</BooleanFilter>
+		
+	</Filter>
+	
+</FilteredQuery>
+
