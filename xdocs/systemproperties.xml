@@ -10,9 +10,9 @@
             <p>
                 Lucene has a number of properties that can be tuned. They can be adjusted either
                 programmatically, using the Lucene API, or their default values can be set via 
-                system properties (only up to including Lucene 1.4) described in this document. Starting
-                with Lucene 1.9, the system properties are not supported anymore and the API
-                (i.e. the get/set methods) should be used directly.
+                system properties described in this document. Starting
+                with Lucene 1.9, the system properties (except org.apache.lucene.lockDir) are not supported 
+                anymore and the API (i.e. the get/set methods) should be used directly.
             </p>
         </section>
 
