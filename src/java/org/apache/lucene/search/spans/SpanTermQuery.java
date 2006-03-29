@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -37,11 +38,18 @@ public class SpanTermQuery extends SpanQuery {
   public Term getTerm() { return term; }
 
   public String getField() { return term.field(); }
-
+  
+  /** Returns a collection of all terms matched by this query.
+   * @deprecated use extractTerms instead
+   * @see #extractTerms(Set)
+   */
   public Collection getTerms() {
     Collection terms = new ArrayList();
     terms.add(term);
     return terms;
+  }
+  public void extractTerms(Set terms) {
+	  terms.add(term);
   }
 
   public String toString(String field) {

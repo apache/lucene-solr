@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -34,7 +35,10 @@ public abstract class SpanQuery extends Query {
   /** Returns the name of the field matched by this query.*/
   public abstract String getField();
 
-  /** Returns a collection of all terms matched by this query.*/
+  /** Returns a collection of all terms matched by this query.
+   * @deprecated use extractTerms instead
+   * @see Query#extractTerms(Set)
+   */
   public abstract Collection getTerms();
 
   protected Weight createWeight(Searcher searcher) throws IOException {

@@ -18,8 +18,9 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Collection;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -38,14 +39,15 @@ class SpanWeight implements Weight {
   private float queryNorm;
   private float queryWeight;
 
-  private Collection terms;
+  private Set terms;
   private SpanQuery query;
 
   public SpanWeight(SpanQuery query, Searcher searcher)
     throws IOException {
     this.similarity = query.getSimilarity(searcher);
     this.query = query;
-    this.terms = query.getTerms();
+    terms=new HashSet();
+    query.extractTerms(terms);
 
     idf = this.query.getSimilarity(searcher).idf(terms, searcher);
   }

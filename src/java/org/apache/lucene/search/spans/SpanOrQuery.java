@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
@@ -56,6 +57,10 @@ public class SpanOrQuery extends SpanQuery {
 
   public String getField() { return field; }
 
+  /** Returns a collection of all terms matched by this query.
+   * @deprecated use extractTerms instead
+   * @see #extractTerms(Set)
+   */
   public Collection getTerms() {
     Collection terms = new ArrayList();
     Iterator i = clauses.iterator();
@@ -65,6 +70,15 @@ public class SpanOrQuery extends SpanQuery {
     }
     return terms;
   }
+  
+  public void extractTerms(Set terms) {
+	    Iterator i = clauses.iterator();
+	    while (i.hasNext()) {
+	      SpanQuery clause = (SpanQuery)i.next();
+	      clause.extractTerms(terms);
+	    }
+  }
+  
 
   public Query rewrite(IndexReader reader) throws IOException {
     SpanOrQuery clone = null;

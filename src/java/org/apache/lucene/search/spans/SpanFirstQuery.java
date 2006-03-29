@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -44,6 +45,10 @@ public class SpanFirstQuery extends SpanQuery {
 
   public String getField() { return match.getField(); }
 
+  /** Returns a collection of all terms matched by this query.
+   * @deprecated use extractTerms instead
+   * @see #extractTerms(Set)
+   */
   public Collection getTerms() { return match.getTerms(); }
 
   public String toString(String field) {
@@ -56,6 +61,10 @@ public class SpanFirstQuery extends SpanQuery {
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
+  
+  public void extractTerms(Set terms) {
+	    match.extractTerms(terms);
+  }  
 
   public Spans getSpans(final IndexReader reader) throws IOException {
     return new Spans() {
