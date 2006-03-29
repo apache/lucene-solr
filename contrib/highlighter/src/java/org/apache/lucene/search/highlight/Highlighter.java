@@ -113,7 +113,8 @@ public class Highlighter
 	 * into chunks  
 	 * @param text        	text to highlight terms in
 	 * @param maxNumFragments  the maximum number of fragments.
-	 *
+	 * @deprecated This method incorrectly hardcodes the choice of fieldname. Use the
+	 * method of the same name that takes a fieldname.
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
 	 */
 	public final String[] getBestFragments(
@@ -123,6 +124,29 @@ public class Highlighter
 		throws IOException
 	{
 		TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
+		return getBestFragments(tokenStream, text, maxNumFragments);
+	}
+	/**
+	 * Highlights chosen terms in a text, extracting the most relevant sections.
+	 * This is a convenience method that calls
+	 * {@link #getBestFragments(TokenStream, String, int)}
+	 *
+	 * @param analyzer   the analyzer that will be used to split <code>text</code>
+	 * into chunks  
+	 * @param fieldName     the name of the field being highlighted (used by analyzer)
+	 * @param text        	text to highlight terms in
+	 * @param maxNumFragments  the maximum number of fragments.
+	 *
+	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
+	 */
+	public final String[] getBestFragments(
+		Analyzer analyzer,	
+		String fieldName,
+		String text,
+		int maxNumFragments)
+		throws IOException
+	{
+		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragments(tokenStream, text, maxNumFragments);
 	}
 	

@@ -16,18 +16,12 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.SpanNearQuery;
 
 /**
  * Utility class used to extract the terms used in a query, plus any weights.
@@ -114,75 +108,22 @@ public final class QueryTermExtractor
 	//fieldname MUST be interned prior to this call
 	private static final void getTerms(Query query, HashSet terms,boolean prohibited, String fieldName) 
 	{
-		if (query instanceof BooleanQuery)
-			getTermsFromBooleanQuery((BooleanQuery) query, terms, prohibited, fieldName);
-		else
-			if (query instanceof PhraseQuery)
-				getTermsFromPhraseQuery((PhraseQuery) query, terms, fieldName);
-			else
-				if (query instanceof TermQuery)
-					getTermsFromTermQuery((TermQuery) query, terms, fieldName);
-				else
-		        if(query instanceof SpanNearQuery)
-		            getTermsFromSpanNearQuery((SpanNearQuery) query, terms, fieldName);
+       	try
+       	{
+       		HashSet nonWeightedTerms=new HashSet();
+       		query.extractTerms(nonWeightedTerms);
+       		for (Iterator iter = nonWeightedTerms.iterator(); iter.hasNext();)
+			{
+				Term term = (Term) iter.next();
+			    if((fieldName==null)||(term.field()==fieldName))
+				{
+					terms.add(new WeightedTerm(query.getBoost(),term.text()));
+				}
+			}
+	      }
+	      catch(UnsupportedOperationException ignore)
+	      {
+	    	  //this is non-fatal for our purposes
+       	  }		        			        	
 	}
-
-	private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet terms, boolean prohibited, String fieldName)
-	{
-		BooleanClause[] queryClauses = query.getClauses();
-		int i;
-
-		for (i = 0; i < queryClauses.length; i++)
-		{
-			//Pre Lucene 2.0 code
-//			if (prohibited || !queryClauses[i].prohibited)
-//				getTerms(queryClauses[i].query, terms, prohibited, fieldName);
-			// Lucene 2.0 ready code
-			if (prohibited || queryClauses[i].getOccur()!=BooleanClause.Occur.MUST_NOT)
-				getTerms(queryClauses[i].getQuery(), terms, prohibited, fieldName);
-		}
-	}
-
-	private static final void getTermsFromPhraseQuery(PhraseQuery query, HashSet terms, String fieldName)
-	{
-		Term[] queryTerms = query.getTerms();
-		int i;
-
-		for (i = 0; i < queryTerms.length; i++)
-		{
-		    if((fieldName==null)||(queryTerms[i].field()==fieldName))
-		    {
-		        terms.add(new WeightedTerm(query.getBoost(),queryTerms[i].text()));
-		    }
-		}
-	}
-
-	private static final void getTermsFromTermQuery(TermQuery query, HashSet terms, String fieldName)
-	{
-	    if((fieldName==null)||(query.getTerm().field()==fieldName))
-	    {
-	        terms.add(new WeightedTerm(query.getBoost(),query.getTerm().text()));
-	    }
-	}
-
-    private static final void getTermsFromSpanNearQuery(SpanNearQuery query, HashSet terms, String fieldName){
-
-        Collection queryTerms = query.getTerms();
-
-        for(Iterator iterator = queryTerms.iterator(); iterator.hasNext();){
-
-            // break it out for debugging.
-
-            Term term = (Term) iterator.next();
-
-            String text = term.text();
-
-    	    if((fieldName==null)||(term.field()==fieldName))
-    	    {
-    	        terms.add(new WeightedTerm(query.getBoost(), text));
-    	    }
-        }
-
-    }
-
 }

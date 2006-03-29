@@ -38,13 +38,20 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeFilter;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -140,6 +147,47 @@ public class HighlighterTest extends TestCase implements Formatter
 		//Currently highlights "John" and "Kennedy" separately
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
 	}
+	public void testGetBestFragmentsSpan() throws Exception
+	{
+		SpanQuery clauses[]={
+			new SpanTermQuery(new Term("contents","john")),
+			new SpanTermQuery(new Term("contents","kennedy")),
+			}; 
+		
+		SpanNearQuery snq=new SpanNearQuery(clauses,1,true);
+		doSearching(snq);
+		doStandardHighlights();
+		//Currently highlights "John" and "Kennedy" separately
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
+	}
+	public void testGetBestFragmentsFilteredQuery() throws Exception
+	{
+		RangeFilter rf=new RangeFilter("contents","john","john",true,true);
+		SpanQuery clauses[]={
+				new SpanTermQuery(new Term("contents","john")),
+				new SpanTermQuery(new Term("contents","kennedy")),
+				}; 
+		SpanNearQuery snq=new SpanNearQuery(clauses,1,true);
+		FilteredQuery fq=new FilteredQuery(snq,rf);
+		
+		doSearching(fq);
+		doStandardHighlights();
+		//Currently highlights "John" and "Kennedy" separately
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
+	}
+	public void testGetBestFragmentsFilteredPhraseQuery() throws Exception
+	{
+		RangeFilter rf=new RangeFilter("contents","john","john",true,true);
+		PhraseQuery pq=new PhraseQuery();
+		pq.add(new Term("contents","john"));
+		pq.add(new  Term("contents","kennedy"));
+		FilteredQuery fq=new FilteredQuery(pq,rf);
+		
+		doSearching(fq);
+		doStandardHighlights();
+		//Currently highlights "John" and "Kennedy" separately
+		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
+	}
 
 	public void testGetBestFragmentsMultiTerm() throws Exception
 	{
@@ -181,7 +229,7 @@ public class HighlighterTest extends TestCase implements Formatter
 		for (int i = 0; i < hits.length(); i++)
 		{
     		String text = hits.doc(i).get(FIELD_NAME);
-    		highlighter.getBestFragments(analyzer, text, 10);
+    		highlighter.getBestFragments(analyzer,FIELD_NAME, text, 10);
 		}
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 4);
 
@@ -536,17 +584,21 @@ public class HighlighterTest extends TestCase implements Formatter
 		numHighlights++; //update stats used in assertions
 		return "<b>" + originalText + "</b>";
 	}
-
+	
 	public void doSearching(String queryString) throws Exception
 	{
-		searcher = new IndexSearcher(ramDir);
 		QueryParser parser=new QueryParser(FIELD_NAME, new StandardAnalyzer());
 		query = parser.parse(queryString);
+		doSearching(query);
+	}
+	public void doSearching(Query unReWrittenQuery) throws Exception
+	{
+		searcher = new IndexSearcher(ramDir);
 		//for any multi-term queries to work (prefix, wildcard, range,fuzzy etc) you must use a rewritten query!
-		query=query.rewrite(reader);
+		query=unReWrittenQuery.rewrite(reader);
 		System.out.println("Searching for: " + query.toString(FIELD_NAME));
 		hits = searcher.search(query);
-	}
+	}	
 
 	void doStandardHighlights() throws Exception
 	{
