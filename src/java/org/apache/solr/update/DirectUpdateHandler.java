@@ -238,6 +238,9 @@ public class DirectUpdateHandler extends UpdateHandler {
       closeWriter();
 
       callPostCommitCallbacks();
+      if (cmd.optimize) {
+        callPostOptimizeCallbacks();
+      }
 
       core.getSearcher(true,false,waitSearcher);
     }

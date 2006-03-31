@@ -55,6 +55,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected final FieldType idFieldType;
 
   protected Vector<SolrEventListener> commitCallbacks = new Vector<SolrEventListener>();
+  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
   private void parseEventListeners() {
     NodeList nodes = (NodeList) SolrConfig.config.evaluate("updateHandler/listener[@event=\"postCommit\"]", XPathConstants.NODESET);
@@ -73,10 +74,31 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         }
       }
     }
+    nodes = (NodeList)SolrConfig.config.evaluate("updateHandler/listener[@event=\"postOptimize\"]", XPathConstants.NODESET);
+    if (nodes!=null) {
+      for (int i=0; i<nodes.getLength(); i++) {
+        Node node = nodes.item(i);
+        try {
+          String className = DOMUtil.getAttr(node,"class");
+          SolrEventListener listener = (SolrEventListener)Config.newInstance(className);
+          listener.init(DOMUtil.childNodesToNamedList(node));
+          optimizeCallbacks.add(listener);
+          log.info("added SolarEventListener for postOptimize: " + listener);
+        } catch (Exception e) {
+          throw new SolrException(1,"error parsing event listeners", e, false);
+        }
+      }
+    }
   }
 
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
+      listener.postCommit();
+    }
+  }
+
+  protected void callPostOptimizeCallbacks() {
+    for (SolrEventListener listener : optimizeCallbacks) {
       listener.postCommit();
     }
   }

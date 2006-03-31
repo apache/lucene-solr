@@ -463,7 +463,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         closeWriter();
 
         callPostCommitCallbacks();
-
+        if (cmd.optimize) {
+          callPostOptimizeCallbacks();
+        }
         // open a new searcher in the sync block to avoid opening it
         // after a deleteByQuery changed the index, or in between deletes
         // and adds of another commit being done.

@@ -47,13 +47,21 @@
          args - the arguments to pass to the program.  default=nothing
          env - environment variables to set.  default=nothing
       -->
-    <!-- A postCommit event is fired after every commit
+    <!-- A postCommit event is fired after every commit or optimize command
     <listener event="postCommit" class="solr.RunExecutableListener">
       <str name="exe">snapshooter</str>
-      <str name="dir">bin</str>
+      <str name="dir">solr/bin</str>
       <bool name="wait">true</bool>
       <arr name="args"> <str>arg1</str> <str>arg2</str> </arr>
       <arr name="env"> <str>MYVAR=val1</str> </arr>
+    </listener>
+    -->
+    <!-- A postOptimize event is fired only after every optimize command, useful
+         in conjunction with index distribution to only distribute optimized indicies 
+    <listener event="postOptimize" class="solr.RunExecutableListener">
+      <str name="exe">snapshooter</str>
+      <str name="dir">solr/bin</str>
+      <bool name="wait">true</bool>
     </listener>
     -->
 
