@@ -164,8 +164,14 @@ abstract class DocSetBase implements DocSet {
     return new BitDocSet(newbits);
   }
 
-  // TODO: more efficient implementations
   public int intersectionSize(DocSet other) {
+    // intersectionSize is overloaded in HashDocSet to be more
+    // efficient, so if "other" is a HashDocSet, dispatch off
+    // of it instead.
+    if (other instanceof HashDocSet) {
+      return other.intersectionSize(this);
+    }
+    // less efficient way: do the intersection then get it's size
     return intersection(other).size();
   }
 
