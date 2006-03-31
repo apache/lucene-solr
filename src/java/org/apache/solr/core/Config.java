@@ -188,13 +188,9 @@ public class Config {
       return Class.forName(cname, true, loader);
     } catch (ClassNotFoundException e) {
       String newName=cname;
-      if (newName.startsWith("solar.")) {
-        // handle legacy package names
-        newName = cname.substring("solar.".length());
-      } else if (cname.startsWith(project+".")) {
+      if (newName.startsWith(project)) {
         newName = cname.substring(project.length()+1);
       }
-
       for (String subpackage : subpackages) {
         try {
           String name = base + '.' + subpackage + newName;
@@ -218,17 +214,29 @@ public class Config {
     }
   }
 
-  // The directory where solr will look for config files by default.
-  // defaults to "./solrconf/"
-  private static final String configDir;
-  static {
-    String str = System.getProperty("solr.configdir");
+
+  private static String instance = project;
+  public static void setInstanceName(String name) {
+    instance = name;
+  }
+  public static String getInstanceName() {
+    return instance;
+  }
+
+  public static String getInstanceDir() {
+    String str = System.getProperty(instance + ".solr.home");
     if (str==null) {
-      str="solrconf/";
+      str=instance + '/';
     } else if ( !(str.endsWith("/") || str.endsWith("\\")) ) {
       str+='/';
     }
-    configDir = str;
+    return str;
+  }
+
+  // The directory where solr will look for config files by default.
+  // defaults to "./solr/conf/"
+  static String getConfigDir() {
+    return getInstanceDir() + "conf/";
   }
 
   public static InputStream openResource(String resource) {
@@ -238,7 +246,7 @@ public class Config {
       File f = new File(resource);
       if (!f.isAbsolute()) {
         // try $CWD/solrconf/
-        f = new File(configDir + resource);
+        f = new File(getConfigDir() + resource);
       }
       if (f.isFile() && f.canRead()) {
         return new FileInputStream(f);
@@ -256,7 +264,7 @@ public class Config {
       throw new RuntimeException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new RuntimeException("Can't find resource " + resource);
+      throw new RuntimeException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
     }
     return is;
   }

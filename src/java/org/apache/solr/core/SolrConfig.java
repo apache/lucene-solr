@@ -28,18 +28,7 @@ public class SolrConfig {
   static {
     RuntimeException e=null;
     String file="solrconfig.xml";
-    InputStream is=null;
-    try {
-      is = Config.openResource(file);
-    } catch (RuntimeException ee) {
-      e=ee;
-      file = "solarconfig.xml"; // backward compat
-      try {
-        is = Config.openResource(file);
-      } catch (Exception eee) {
-        throw e;
-      }
-    }
+    InputStream is = Config.openResource(file);
 
     try {
       config=new Config(file, is, "/config/");
@@ -47,7 +36,7 @@ public class SolrConfig {
     } catch (Exception ee) {
       throw new RuntimeException("Error in solrconfig.xml", ee);
     }
-    Config.log.info("Loaded Config solrconfig.xml");
 
+    Config.log.info("Loaded Config solrconfig.xml");
   }
 }

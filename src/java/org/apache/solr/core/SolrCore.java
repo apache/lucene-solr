@@ -180,10 +180,10 @@ public final class SolrCore {
       core = this;   // set singleton
 
       if (dataDir ==null) {
-        dataDir =SolrConfig.config.get("dataDir","data");
+        dataDir =SolrConfig.config.get("dataDir",Config.getInstanceDir()+"data");
       }
 
-      log.info("Opening new SolrCore with data directory at " + dataDir);
+      log.info("Opening new SolrCore at " + Config.getInstanceDir() + ", dataDir="+dataDir);
 
       if (schema==null) {
         schema = new IndexSchema("schema.xml");

@@ -3,10 +3,10 @@
 <config>
 
   <!-- Used to specify an alternate directory to hold all index data
-       other than the default ./data
+       other than the default ./solr/data
        If replication is in use, this should match the replication configuration. -->
   <!--
-  <dataDir>data</dataDir>
+  <dataDir>./solr/data</dataDir>
   -->
 
   <indexDefaults>
