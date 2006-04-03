@@ -214,7 +214,7 @@ public class SolrTest extends Thread {
   static SolrRequestHandler handler =
            // new OldRequestHandler();
               new StandardRequestHandler();
-  static String qargs = ""; // default query arguments
+  static String qargs = null; // default query arguments
 
   public char[] doReq(String req, String params)  {
     int start=0;
@@ -226,10 +226,13 @@ public class SolrTest extends Thread {
     Map args = new HashMap();
     args.put("indent", "on");
     args.put("debugQuery", "on");
-    args.put("fl", "score");
     args.put("version", "2.0");
 
-    params = params==null? qargs : (params + '&' + qargs);
+
+    if (qargs != null) {
+      if (params==null) params=qargs;
+      else params = qargs + '&' + params;
+    }
 
     if (params != null) {
       String[] plist = params.split("&");
