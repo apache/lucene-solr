@@ -46,7 +46,7 @@
 
     <!-- Numeric field types that manipulate the value into
          a string value that isn't human readable in it's internal form,
-         but with a lexicographic odering the same as the numeric ordering
+         but with a lexicographic ordering the same as the numeric ordering
          so that range queries correctly work. -->
     <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
     <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
