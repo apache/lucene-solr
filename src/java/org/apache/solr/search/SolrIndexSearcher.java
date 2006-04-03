@@ -560,12 +560,13 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
 
-  static final int NO_CHECK_QCACHE=0x80;
+  private static final int NO_CHECK_QCACHE       = 0x80000000;
+  private static final int GET_DOCSET            = 0x40000000;
+  private static final int NO_CHECK_FILTERCACHE  = 0x20000000;
 
-  public static final int GET_SCORES=0x01;
-  public static final int NO_CHECK_FILTERCACHE=0x02;
+  public static final int GET_SCORES             =       0x01;
 
-  protected void getDocListC(DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
+  private void getDocListC(DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryResultKey key=null;
     int maxDoc = offset + len;
     int supersetMaxDoc=maxDoc;
@@ -588,7 +589,22 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
               out.docList = superset.subset(offset,len);
             }
           }
-          if (out.docList != null) return;
+          if (out.docList != null) {
+            // found the docList in the cache... now check if we need the docset too.
+            // OPT: possible future optimization - if the doclist contains all the matches,
+            // use it to make the docset instead of rerunning the query.
+            if (out.docSet==null && ((flags & GET_DOCSET)!=0) ) {
+              if (filterList==null) {
+                out.docSet = getDocSet(query);
+              } else {
+                List<Query> newList = new ArrayList<Query>(filterList.size()+1);
+                newList.add(query);
+                newList.addAll(filterList);
+                out.docSet = getDocSet(newList);
+              }
+            }
+            return;
+          }
         }
 
         // If we are going to generate the result, bump up to the
@@ -640,9 +656,15 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     } else {
       // do it the normal way...
       DocSet theFilt = filter!=null ? filter : getDocSet(filterList);
-      superset = getDocListNC(query,theFilt,lsort,0,supersetMaxDoc,flags);
-      // OPT... if getDocListNC can get the set at the same time (later version)
-      // then set it as out.docSet.
+
+      if ((flags & GET_DOCSET)!=0) {
+        DocSet qDocSet = getDocListAndSetNC(out,query,theFilt,lsort,0,supersetMaxDoc,flags);
+        // cache the docSet matching the query w/o filtering
+        if (filterCache!=null) filterCache.put(query,qDocSet);
+      } else {
+        out.docList = getDocListNC(query,theFilt,lsort,0,supersetMaxDoc,flags);
+      }
+      superset = out.docList;
       out.docList = superset.subset(offset,len);
     }
 
@@ -807,6 +829,126 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
 
+  // the DocSet returned is for the query only, without any filtering... that way it may
+  // be cached if desired.
+  private DocSet getDocListAndSetNC(DocListAndSet out, Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
+    final int lastDocRequested = offset+len;
+    int nDocsReturned;
+    int totalHits;
+    float maxScore;
+    int[] ids;
+    float[] scores;
+    final DocSetHitCollector setHC = new DocSetHitCollector(maxDoc());
+    // TODO: perhaps unify getDocListAndSetNC and getDocListNC without imposing a significant performance hit
+
+    // Comment: gathering the set before the filter is applied allows one to cache
+    // the resulting DocSet under the query.  The drawback is that it requires an
+    // extra intersection with the filter at the end.  This will be a net win
+    // for expensive queries.
+
+    // Q: what if the final intersection results in a small set from two large
+    // sets... it won't be a HashDocSet or other small set.  One way around
+    // this would be to collect the resulting set as we go (the filter is
+    // checked anyway).
+
+    // handle zero case...
+    if (lastDocRequested<=0) {
+      final DocSet filt = filter;
+      final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
+      final int[] numHits = new int[1];
+
+      searcher.search(query, new HitCollector() {
+        public void collect(int doc, float score) {
+          setHC.collect(doc,score);
+          if (filt!=null && !filt.exists(doc)) return;
+          numHits[0]++;
+          if (score > topscore[0]) topscore[0]=score;
+        }
+      }
+      );
+
+      nDocsReturned=0;
+      ids = new int[nDocsReturned];
+      scores = new float[nDocsReturned];
+      totalHits = numHits[0];
+      maxScore = totalHits>0 ? topscore[0] : 0.0f;
+    } else if (lsort != null) {
+      // can't use TopDocs if there is a sort since it
+      // will do automatic score normalization.
+      // NOTE: this changed late in Lucene 1.9
+
+      final DocSet filt = filter;
+      final int[] numHits = new int[1];
+      final FieldSortedHitQueue hq = new FieldSortedHitQueue(reader, lsort.getSort(), offset+len);
+
+      searcher.search(query, new HitCollector() {
+        public void collect(int doc, float score) {
+          setHC.collect(doc,score);
+          if (filt!=null && !filt.exists(doc)) return;
+          numHits[0]++;
+          hq.insert(new FieldDoc(doc, score));
+        }
+      }
+      );
+
+      totalHits = numHits[0];
+      maxScore = totalHits>0 ? hq.getMaxScore() : 0.0f;
+
+      nDocsReturned = hq.size();
+      ids = new int[nDocsReturned];
+      scores = (flags&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
+      for (int i = nDocsReturned -1; i >= 0; i--) {
+        FieldDoc fieldDoc = (FieldDoc)hq.pop();
+        // fillFields is the point where score normalization happens
+        // hq.fillFields(fieldDoc)
+        ids[i] = fieldDoc.doc;
+        if (scores != null) scores[i] = fieldDoc.score;
+      }
+    } else {
+      // No Sort specified (sort by score descending)
+      // This case could be done with TopDocs, but would currently require
+      // getting a BitSet filter from a DocSet which may be inefficient.
+
+      final DocSet filt = filter;
+      final ScorePriorityQueue hq = new ScorePriorityQueue(lastDocRequested);
+      final int[] numHits = new int[1];
+      searcher.search(query, new HitCollector() {
+        float minScore=Float.NEGATIVE_INFINITY;  // minimum score in the priority queue
+        public void collect(int doc, float score) {
+          setHC.collect(doc,score);
+          if (filt!=null && !filt.exists(doc)) return;
+          if (numHits[0]++ < lastDocRequested || score >= minScore) {
+            // if docs are always delivered in order, we could use "score>minScore"
+            // but might BooleanScorer14 might still be used and deliver docs out-of-order?
+            hq.insert(new ScoreDoc(doc, score));
+            minScore = ((ScoreDoc)hq.top()).score;
+          }
+        }
+      }
+      );
+
+      totalHits = numHits[0];
+      nDocsReturned = hq.size();
+      ids = new int[nDocsReturned];
+      scores = (flags&GET_SCORES)!=0 ? new float[nDocsReturned] : null;
+      ScoreDoc sdoc =null;
+      for (int i = nDocsReturned -1; i >= 0; i--) {
+        sdoc = (ScoreDoc)hq.pop();
+        ids[i] = sdoc.doc;
+        if (scores != null) scores[i] = sdoc.score;
+      }
+      maxScore = sdoc ==null ? 0.0f : sdoc.score;
+    }
+
+
+    int sliceLen = Math.min(lastDocRequested,nDocsReturned) - offset;
+    if (sliceLen < 0) sliceLen=0;
+    out.docList = new DocSlice(offset,sliceLen,ids,scores,totalHits,maxScore);
+    DocSet qDocSet = setHC.getDocSet();
+    out.docSet = filter==null ? qDocSet : qDocSet.intersection(filter);
+    return qDocSet;
+  }
+
 
 
   /**
@@ -863,13 +1005,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
     DocListAndSet ret = new DocListAndSet();
-    getDocListC(ret,query,filterList,null,lsort,offset,len,0);
-    if (ret.docSet == null) {
-      List<Query> newList = new ArrayList<Query>(filterList.size()+1);
-      newList.add(query);
-      newList.addAll(filterList);
-      ret.docSet = getDocSet(newList);
-    }
+    getDocListC(ret,query,filterList,null,lsort,offset,len,GET_DOCSET);
     return ret;
   }
 
@@ -894,18 +1030,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {
     DocListAndSet ret = new DocListAndSet();
-    getDocListC(ret,query,null,filter,lsort,offset,len,0);
-    if (ret.docSet == null) {
-      ret.docSet = getDocSet(query,filter);
-    }
-
-    // TODO: OPT: Hmmm, but if docList.size() == docList.matches() then
-    // we actually already have all the ids (the set)!  We could simply
-    // return the docList as the docSet also, or hash the ids into
-    // a HashDocSet, etc... no need to run the query again!
-    //
-
-    assert(ret.docList.matches() == ret.docSet.size());
+    getDocListC(ret,query,null,filter,lsort,offset,len,GET_DOCSET);
     return ret;
   }
 
@@ -1144,7 +1269,6 @@ final class ScorePriorityQueue extends PriorityQueue {
     return sd1.score < sd2.score || (sd1.score==sd2.score && sd1.doc > sd2.doc);
   }
 }
-
 
 
 

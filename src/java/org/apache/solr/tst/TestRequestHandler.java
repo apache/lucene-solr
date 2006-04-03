@@ -218,6 +218,11 @@ public class TestRequestHandler implements SolrRequestHandler {
       test( both2.docList.equals(both.docList) );
       test( both2.docSet.equals(both.docSet) );
 
+      // use the query as a filter itself...
+      DocListAndSet both3 = searcher.getDocListAndSet(query,query,sort,start, limit);
+      test( both3.docList.equals(both.docList) );
+      test( both3.docSet.equals(both.docSet) );
+
       BitSet bits = both.docSet.getBits();
       BitSet neg = ((BitSet)bits.clone());
       neg.flip(0, bits.length());
