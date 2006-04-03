@@ -1,3 +1,25 @@
 Solr Change Log
+$Id$
 
-hi
+New Features
+ 1. added support for setting Lucene's positionIncrementGap
+ 2. Admin: new statistics for SolrIndexSearcher
+ 3. Admin: caches now show config params on stats page
+ 3. max() function added to FunctionQuery suite 
+ 4. postOptimize hook, mirroring the functionallity of the postCommit hook,
+    but only called on an index optimize.
+
+Changes in runtime behavior
+ 1. classes reorganized into different packages, package names changed to Apache
+ 2. force read of document stored fields in QuerySenderListener
+ 3. Solr now looks in ./solr/conf for config, ./solr/data for data
+    configurable via solr.solr.home system property
+
+Optimizations 
+ 1. getDocListAndSet can now generate both a DocList and a DocSet from a 
+    single lucene query.
+ 2. BitDocSet.intersectionSize(HashDocSet) no longer generates an intermediate
+    set
+
+
+2006/07/16 Solr open sourced, moves to Apache Incubator
