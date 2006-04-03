@@ -214,6 +214,7 @@ public class SolrTest extends Thread {
   static SolrRequestHandler handler =
            // new OldRequestHandler();
               new StandardRequestHandler();
+  static String qargs = ""; // default query arguments
 
   public char[] doReq(String req, String params)  {
     int start=0;
@@ -227,6 +228,8 @@ public class SolrTest extends Thread {
     args.put("debugQuery", "on");
     args.put("fl", "score");
     args.put("version", "2.0");
+
+    params = params==null? qargs : (params + '&' + qargs);
 
     if (params != null) {
       String[] plist = params.split("&");
@@ -321,6 +324,8 @@ public class SolrTest extends Thread {
         testFile=args[i++];
       } else if (arg.equals("-noValidate")) {
         doValidate=false;
+      } else if (arg.equals("-qargs")) {
+        qargs=args[i++];
       } else {
         System.out.println("Unknown option: " + arg);
         return;
