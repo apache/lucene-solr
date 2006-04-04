@@ -19,7 +19,11 @@ Bug fixes
 
  4. LUCENE-413: Fixed ArrayIndexOutOfBoundsException exceptions
     when using SpanQueries. (Paul Elschot via Yonik Seeley)
- 
+
+ 5. Implemented FilterIndexReader.getVersion() and isCurrent()
+    (Yonik Seeley)
+
+
 1.9.1
 
 Bug fixes

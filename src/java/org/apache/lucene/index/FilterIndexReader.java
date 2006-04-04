@@ -137,4 +137,7 @@ public class FilterIndexReader extends IndexReader {
   public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
     return in.getFieldNames(fieldNames);
   }
+
+  public long getVersion() { return in.getVersion(); }
+  public boolean isCurrent() throws IOException { return in.isCurrent(); }
 }
