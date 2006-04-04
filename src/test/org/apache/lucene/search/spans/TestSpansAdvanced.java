@@ -25,11 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -44,6 +40,8 @@ public class TestSpansAdvanced extends TestCase {
     // location to the index
     protected Directory mDirectory;;
 
+    protected IndexSearcher searcher;
+
     // field names in the index
     private final static String FIELD_ID = "ID";
     protected final static String FIELD_TEXT = "TEXT";
@@ -52,7 +50,6 @@ public class TestSpansAdvanced extends TestCase {
      * Initializes the tests by adding 4 identical documents to the index.
      */
     protected void setUp() throws Exception {
-
         super.setUp();
 
         // create test index
@@ -63,10 +60,11 @@ public class TestSpansAdvanced extends TestCase {
         addDocument(writer, "3", "I think it should work.");
         addDocument(writer, "4", "I think it should work.");
         writer.close();
+        searcher = new IndexSearcher(mDirectory);
     }
 
     protected void tearDown() throws Exception {
-
+        searcher.close();
         mDirectory.close();
         mDirectory = null;
     }
@@ -94,7 +92,7 @@ public class TestSpansAdvanced extends TestCase {
      */
     public void testBooleanQueryWithSpanQueries() throws IOException {
 
-        doTestBooleanQueryWithSpanQueries(0.3884282f);
+        doTestBooleanQueryWithSpanQueries(searcher,0.3884282f);
     }
 
     /**
@@ -102,57 +100,63 @@ public class TestSpansAdvanced extends TestCase {
      *
      * @throws IOException
      */
-    protected void doTestBooleanQueryWithSpanQueries(final float expectedScore) throws IOException {
+    protected void doTestBooleanQueryWithSpanQueries(IndexSearcher s, final float expectedScore) throws IOException {
 
         final Query spanQuery = new SpanTermQuery(new Term(FIELD_TEXT, "work"));
         final BooleanQuery query = new BooleanQuery();
         query.add(spanQuery, BooleanClause.Occur.MUST);
         query.add(spanQuery, BooleanClause.Occur.MUST);
-        final Hits hits = executeQuery(query);
         final String[] expectedIds = new String[] { "1", "2", "3", "4" };
         final float[] expectedScores = new float[] { expectedScore, expectedScore, expectedScore, expectedScore };
-        assertHits(hits, "two span queries", expectedIds, expectedScores);
+        assertHits(s, query, "two span queries", expectedIds, expectedScores);
     }
 
-    /**
-     * Executes the query and throws an assertion if the results don't match the
-     * expectedHits.
-     *
-     * @param query the query to execute
-     * @throws IOException
-     */
-    protected Hits executeQuery(final Query query) throws IOException {
-
-        final IndexSearcher searcher = new IndexSearcher(mDirectory);
-        final Hits hits = searcher.search(query);
-        searcher.close();
-        return hits;
-    }
 
     /**
      * Checks to see if the hits are what we expected.
      *
-     * @param hits the search results
+     * @param query the query to execute
      * @param description the description of the search
      * @param expectedIds the expected document ids of the hits
      * @param expectedScores the expected scores of the hits
      *
      * @throws IOException
      */
-    protected void assertHits(final Hits hits, final String description, final String[] expectedIds,
+    protected static void assertHits(Searcher s, Query query, final String description, final String[] expectedIds,
             final float[] expectedScores) throws IOException {
+        final float tolerance = 1e-5f;
 
+        // Hits hits = searcher.search(query);
+        // hits normalizes and throws things off if one score is greater than 1.0
+        TopDocs topdocs = s.search(query,null,10000);
+
+        /*****
         // display the hits
-        /*System.out.println(hits.length() + " hits for search: \"" + description + '\"');
+        System.out.println(hits.length() + " hits for search: \"" + description + '\"');
         for (int i = 0; i < hits.length(); i++) {
             System.out.println("  " + FIELD_ID + ':' + hits.doc(i).get(FIELD_ID) + " (score:" + hits.score(i) + ')');
-        }*/
+        }
+        *****/
 
         // did we get the hits we expected
-        assertEquals(expectedIds.length, hits.length());
-        for (int i = 0; i < hits.length(); i++) {
-            assertTrue(expectedIds[i].equals(hits.doc(i).get(FIELD_ID)));
-            assertEquals(expectedScores[i], hits.score(i), 0);
+        assertEquals(expectedIds.length, topdocs.totalHits);
+        for (int i = 0; i < topdocs.totalHits; i++) {
+            //System.out.println(i + " exp: " + expectedIds[i]);
+            //System.out.println(i + " field: " + hits.doc(i).get(FIELD_ID));
+
+            int id = topdocs.scoreDocs[i].doc;
+            float score = topdocs.scoreDocs[i].score;
+            Document doc = s.doc(id);
+            assertEquals(expectedIds[i], doc.get(FIELD_ID));
+            boolean scoreEq = Math.abs(expectedScores[i] - score) < tolerance;
+            if (!scoreEq) {
+              System.out.println(i + " warning, expected score: " + expectedScores[i] + ", actual " + score);
+              System.out.println(s.explain(query,id));
+            }
+            assertEquals(expectedScores[i], score, tolerance);
+            assertEquals(s.explain(query,id).getValue(), score, tolerance);
         }
     }
+
+
 }

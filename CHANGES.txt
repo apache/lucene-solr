@@ -16,6 +16,9 @@ Bug fixes
     IndexWriter. These could be set in Lucene 1.4 using a system property.
     This feature had been removed without adding the corresponding 
     getter/setter methods.  (Daniel Naber)
+
+ 4. LUCENE-413: Fixed ArrayIndexOutOfBoundsException exceptions
+    when using SpanQueries. (Paul Elschot via Yonik Seeley)
  
 1.9.1
 

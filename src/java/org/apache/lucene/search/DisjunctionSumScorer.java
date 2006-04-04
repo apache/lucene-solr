@@ -207,7 +207,7 @@ public class DisjunctionSumScorer extends Scorer {
       return false;
     }
     if (target <= currentDoc) {
-      target = currentDoc + 1;
+      return true;
     }
     do {
       Scorer top = (Scorer) scorerQueue.top();

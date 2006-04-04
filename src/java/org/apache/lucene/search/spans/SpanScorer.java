@@ -1,7 +1,7 @@
 package org.apache.lucene.search.spans;
 
 /**
- * Copyright 2004 The Apache Software Foundation
+ * Copyright 2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ class SpanScorer extends Scorer {
     this.norms = norms;
     this.weight = weight;
     this.value = weight.getValue();
+    doc = -1;
   }
 
   public boolean next() throws IOException {
@@ -50,19 +51,35 @@ class SpanScorer extends Scorer {
       more = spans.next();
       firstTime = false;
     }
+    return setFreqCurrentDoc();
+  }
 
-    if (!more) return false;
+  public boolean skipTo(int target) throws IOException {
+    if (firstTime) {
+      more = spans.skipTo(target);
+      firstTime = false;
+    }
+    if (! more) {
+      return false;
+    }
+    if (spans.doc() < target) { // setFreqCurrentDoc() leaves spans.doc() ahead
+      more = spans.skipTo(target);
+    }
+    return setFreqCurrentDoc();
+  }
 
-    freq = 0.0f;
+  private boolean setFreqCurrentDoc() throws IOException {
+    if (! more) {
+      return false;
+    }
     doc = spans.doc();
-
+    freq = 0.0f;
     while (more && doc == spans.doc()) {
       int matchLength = spans.end() - spans.start();
       freq += getSimilarity().sloppyFreq(matchLength);
       more = spans.next();
     }
-
-    return more || freq != 0.0f;
+    return more || (freq != 0);
   }
 
   public int doc() { return doc; }
@@ -70,22 +87,6 @@ class SpanScorer extends Scorer {
   public float score() throws IOException {
     float raw = getSimilarity().tf(freq) * value; // raw score
     return raw * Similarity.decodeNorm(norms[doc]); // normalize
-  }
-
-  public boolean skipTo(int target) throws IOException {
-    more = spans.skipTo(target);
-
-    if (!more) return false;
-
-    freq = 0.0f;
-    doc = spans.doc();
-
-    while (more && spans.doc() == target) {
-      freq += getSimilarity().sloppyFreq(spans.end() - spans.start());
-      more = spans.next();
-    }
-
-    return more || freq != 0.0f;
   }
 
   public Explanation explain(final int doc) throws IOException {
