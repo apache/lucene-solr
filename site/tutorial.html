@@ -154,6 +154,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
 </ul>
 </li>
+<li>
+<a href="#Conclusion">Conclusion</a>
+</li>
 </ul>
 </div>
 
@@ -204,14 +207,19 @@ To follow along with this tutorial, you will need...
 <h2 class="boxed">Getting Started</h2>
 <div class="section">
 <p>
+<strong>
+Please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
+</strong>
+</p>
+<p>
 Begin by unziping the Solr release and changing your working directory
-to be the "<span class="codefrag">example</span>" directory
+to be the "<span class="codefrag">example</span>" directory.  (Note that the base directory name may vary with the version of Solr downloaded.)
 </p>
 <pre class="code">
 chrish@asimov:~/tmp/solr$ ls
-solr-1.0.zip
-chrish@asimov:~/tmp/solr$ unzip -q solr-1.0.zip
-chrish@asimov:~/tmp/solr$ cd solr-1.0/example/
+solr-nightly.zip
+chrish@asimov:~/tmp/solr$ unzip -q solr-nightly.zip
+chrish@asimov:~/tmp/solr$ cd solr-nightly/example/
 </pre>
 <p>
 Solr can run in any Java Servlet Container of your choice, but to simplify
@@ -221,11 +229,11 @@ this tutorial, the example index includes a small installation of Jetty.
 To launch Jetty with the Solr WAR, and the example configs, just run the <span class="codefrag">start.jar</span> ...
 </p>
 <pre class="code">
-chrish@asimov:~/tmp/solr/solr-1.0/example$ java -jar start.jar
+chrish@asimov:~/tmp/solr/solr-nightly/example$ java -jar start.jar
 1 [main] INFO org.mortbay.log - Logging to org.slf4j.impl.SimpleLogger@1f436f5 via org.mortbay.log.Slf4jLog
-334 [main] INFO org.mortbay.log - Extract jar:file:/home/chrish/tmp/solr/solr-1.0/example/webapps/solr.war!/ to /tmp/Jetty__solr/webapp
+334 [main] INFO org.mortbay.log - Extract jar:file:/home/chrish/tmp/solr/solr-nightly/example/webapps/solr.war!/ to /tmp/Jetty__solr/webapp
 Feb 24, 2006 5:54:52 PM org.apache.solr.servlet.SolrServlet init
-INFO: user.dir=/home/chrish/tmp/solr/solr-1.0/example
+INFO: user.dir=/home/chrish/tmp/solr/solr-nightly/example
 Feb 24, 2006 5:54:52 PM org.apache.solr.core.SolrConfig &lt;clinit&gt;
 INFO: Loaded Config solrconfig.xml
 
@@ -244,7 +252,7 @@ You can see that the Solr is running by loading <a href="http://localhost:8983/s
 
 
 
-<a name="N1006E"></a><a name="Indexing+Data"></a>
+<a name="N10072"></a><a name="Indexing+Data"></a>
 <h2 class="boxed">Indexing Data</h2>
 <div class="section">
 <p>
@@ -254,7 +262,7 @@ Your Solr port is up and running, but it doesn't contain any data.  You can modi
 Open a new Terminal window, enter the exampledocs directory, and run the "<span class="codefrag">post.sh</span>" script on some of the XML files in that directory...
 </p>
 <pre class="code">
-chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh solr.xml
+chrish@asimov:~/tmp/solr/solr-nightly/example/exampledocs$ sh post.sh solr.xml
 Posting file solr.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;
 &lt;result status="0"&gt;&lt;/result&gt;
@@ -271,7 +279,7 @@ You have now indexed one document about Solr, and committed that change.  You ca
 You can index all of the sample data, using the following command...
 </p>
 <pre class="code">
-chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh *.xml
+chrish@asimov:~/tmp/solr/solr-nightly/example/exampledocs$ sh post.sh *.xml
 Posting file hd.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
 Posting file ipod_other.xml to http://localhost:8983/solr/update
@@ -318,7 +326,7 @@ Posting file vidcard.xml to http://localhost:8983/solr/update
 
 
 
-<a name="N100B2"></a><a name="Updating+Data"></a>
+<a name="N100B6"></a><a name="Updating+Data"></a>
 <h2 class="boxed">Updating Data</h2>
 <div class="section">
 <p>
@@ -343,7 +351,7 @@ because the new documents will constantly be replacing the old.
 <p>
 Go ahead and edit the existing XML files to change some of the data, and re-run the post.sh command, you'll see your changes reflected in subsequent searches.
 </p>
-<a name="N100D4"></a><a name="Deleting+Data"></a>
+<a name="N100D8"></a><a name="Deleting+Data"></a>
 <h3 class="boxed">Deleting Data</h3>
 <p>You can delete data by POSTing a delete command to the update URL and specifying the value
       of the document's unique key field, or a query that matches multiple documents.  Since these commands
@@ -374,7 +382,7 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 </div>
 
 
-<a name="N1011A"></a><a name="Querying+Data"></a>
+<a name="N1011E"></a><a name="Querying+Data"></a>
 <h2 class="boxed">Querying Data</h2>
 <div class="section">
 <p>
@@ -402,7 +410,7 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
     that allows setting the various request parameters and is useful when trying out or debugging queries.
   </p>
-<a name="N10149"></a><a name="Sorting"></a>
+<a name="N1014D"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
       Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  After your search, add a semi-colon followed by a list of "field direction" pairs...
@@ -442,7 +450,7 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 </div>
 
 
-<a name="N1017C"></a><a name="Text+Analysis"></a>
+<a name="N10180"></a><a name="Text+Analysis"></a>
 <h2 class="boxed">Text Analysis</h2>
 <div class="section">
 <p>
@@ -486,7 +494,7 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
     available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
   </p>
-<a name="N101D3"></a><a name="Analysis+Debugging"></a>
+<a name="N101D7"></a><a name="Analysis+Debugging"></a>
 <h3 class="boxed">Analysis Debugging</h3>
 <p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
       debugging page where you can see how a text value is broken down into words,
@@ -512,6 +520,27 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 <a href="http://localhost:8983/solr/admin/analysis.jsp?name=text&highlight=on&val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&qval=liberties+and+equality">Here</a>
     is an example of stemming and stop-words at work.
     </p>
+</div>
+
+
+<a name="N10216"></a><a name="Conclusion"></a>
+<h2 class="boxed">Conclusion</h2>
+<div class="section">
+<p>
+  Congratulations!  You successfully ran a small Solr instance, added some documents, and made changes to the index.  You learned about queries, text analysis, and the Solr admin interface.  You're ready to start using Solr on your own project!  Continue on with the following steps:
+</p>
+<ul>
+  
+<li>Subscribe to the Solr <a href="mailing_lists.html">mailing lists</a>!</li>
+  
+<li>Make a copy of the Solr example directory as a template for your project.</li>
+  
+<li>Customize the schema and other config in solr/conf/ to meet your needs.</li> 
+
+</ul>
+<p>
+  Have Fun, and we'll see you on the Solr mailing lists!
+</p>
 </div>
 
 

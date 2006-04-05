@@ -50,16 +50,18 @@ To follow along with this tutorial, you will need...
 
 <section>
 <title>Getting Started</title>
-
+<p><strong>
+Please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
+</strong></p>
 <p>
 Begin by unziping the Solr release and changing your working directory
-to be the "<code>example</code>" directory
+to be the "<code>example</code>" directory.  (Note that the base directory name may vary with the version of Solr downloaded.)
 </p>
 <source>
 chrish@asimov:~/tmp/solr$ ls
-solr-1.0.zip
-chrish@asimov:~/tmp/solr$ unzip -q solr-1.0.zip
-chrish@asimov:~/tmp/solr$ cd solr-1.0/example/
+solr-nightly.zip
+chrish@asimov:~/tmp/solr$ unzip -q solr-nightly.zip
+chrish@asimov:~/tmp/solr$ cd solr-nightly/example/
 </source>
 
 <p>
@@ -71,11 +73,11 @@ To launch Jetty with the Solr WAR, and the example configs, just run the <code>s
 </p>
 
 <source>
-chrish@asimov:~/tmp/solr/solr-1.0/example$ java -jar start.jar
+chrish@asimov:~/tmp/solr/solr-nightly/example$ java -jar start.jar
 1 [main] INFO org.mortbay.log - Logging to org.slf4j.impl.SimpleLogger@1f436f5 via org.mortbay.log.Slf4jLog
-334 [main] INFO org.mortbay.log - Extract jar:file:/home/chrish/tmp/solr/solr-1.0/example/webapps/solr.war!/ to /tmp/Jetty__solr/webapp
+334 [main] INFO org.mortbay.log - Extract jar:file:/home/chrish/tmp/solr/solr-nightly/example/webapps/solr.war!/ to /tmp/Jetty__solr/webapp
 Feb 24, 2006 5:54:52 PM org.apache.solr.servlet.SolrServlet init
-INFO: user.dir=/home/chrish/tmp/solr/solr-1.0/example
+INFO: user.dir=/home/chrish/tmp/solr/solr-nightly/example
 Feb 24, 2006 5:54:52 PM org.apache.solr.core.SolrConfig &lt;clinit&gt;
 INFO: Loaded Config solrconfig.xml
 
@@ -106,7 +108,7 @@ Open a new Terminal window, enter the exampledocs directory, and run the "<code>
 </p>
 
 <source>
-chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh solr.xml
+chrish@asimov:~/tmp/solr/solr-nightly/example/exampledocs$ sh post.sh solr.xml
 Posting file solr.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;
 &lt;result status="0"&gt;&lt;/result&gt;
@@ -124,7 +126,7 @@ You can index all of the sample data, using the following command...
 </p>
 
 <source>
-chrish@asimov:~/tmp/solr/solr-1.0/example/exampledocs$ sh post.sh *.xml
+chrish@asimov:~/tmp/solr/solr-nightly/example/exampledocs$ sh post.sh *.xml
 Posting file hd.xml to http://localhost:8983/solr/update
 &lt;result status="0"&gt;&lt;/result&gt;&lt;result status="0"&gt;&lt;/result&gt;
 Posting file ipod_other.xml to http://localhost:8983/solr/update
@@ -345,6 +347,22 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/>'
     is an example of stemming and stop-words at work.
     </p>
   </section>
+</section>
+
+<section>
+  <title>Conclusion</title>
+  <p>
+  Congratulations!  You successfully ran a small Solr instance, added some documents, and made changes to the index.  You learned about queries, text analysis, and the Solr admin interface.  You're ready to start using Solr on your own project!  Continue on with the following steps:
+</p>
+<ul>
+  <li>Subscribe to the Solr <a href="mailing_lists.html">mailing lists</a>!</li>
+  <li>Make a copy of the Solr example directory as a template for your project.</li>
+  <li>Customize the schema and other config in solr/conf/ to meet your needs.</li> 
+</ul>
+
+<p>
+  Have Fun, and we'll see you on the Solr mailing lists!
+</p>
 
 </section>
 
