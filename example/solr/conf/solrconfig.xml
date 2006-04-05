@@ -16,8 +16,6 @@
     <maxBufferedDocs>1000</maxBufferedDocs>
     <maxMergeDocs>2147483647</maxMergeDocs>
     <maxFieldLength>10000</maxFieldLength>
-
-    <!-- these are global... can't currently override per index -->
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
   </indexDefaults>

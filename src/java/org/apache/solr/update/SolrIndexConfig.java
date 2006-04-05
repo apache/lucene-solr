@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import org.apache.solr.core.SolrConfig;
+import org.apache.lucene.index.IndexWriter;
 
 //
 // For performance reasons, we don't want to re-read
@@ -36,8 +37,8 @@ public class SolrIndexConfig {
   public static final int defMaxMergeDocs=SolrConfig.config.getInt(defaultsName +"/maxMergeDocs", -1);
   public static final int defMergeFactor=SolrConfig.config.getInt(defaultsName +"/mergeFactor", -1);
   public static final int defMaxFieldLength=SolrConfig.config.getInt(defaultsName +"/maxFieldLength", -1);
-  public static final int writeLockTimeout=SolrConfig.config.getInt(defaultsName +"/writeLockTimeout", -1);
-  public static final int commitLockTimeout=SolrConfig.config.getInt(defaultsName +"/commitLockTimeout", -1);
+  public static final int defWriteLockTimeout=SolrConfig.config.getInt(defaultsName +"/writeLockTimeout", -1);
+  public static final int defCommitLockTimeout=SolrConfig.config.getInt(defaultsName +"/commitLockTimeout", -1);
 
   /*** These are "final" in lucene 1.9
   static {
@@ -51,6 +52,8 @@ public class SolrIndexConfig {
   public final int maxMergeDocs;
   public final int mergeFactor;
   public final int maxFieldLength;
+  public final int writeLockTimeout;
+  public final int commitLockTimeout;
 
   public SolrIndexConfig(String prefix)  {
     useCompoundFile=SolrConfig.config.getBool(prefix+"/useCompoundFile", defUseCompoundFile);
@@ -58,5 +61,7 @@ public class SolrIndexConfig {
     maxMergeDocs=SolrConfig.config.getInt(prefix+"/maxMergeDocs",defMaxMergeDocs);
     mergeFactor=SolrConfig.config.getInt(prefix+"/mergeFactor",defMergeFactor);
     maxFieldLength= SolrConfig.config.getInt(prefix+"/maxFieldLength",defMaxFieldLength);
+    writeLockTimeout= SolrConfig.config.getInt(prefix+"/writeLockTimeout", defWriteLockTimeout);
+    commitLockTimeout= SolrConfig.config.getInt(prefix+"/commitLockTimeout", defCommitLockTimeout);
   }
 }
