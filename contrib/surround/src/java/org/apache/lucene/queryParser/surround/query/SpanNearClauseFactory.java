@@ -131,19 +131,6 @@ public class SpanNearClauseFactory {
       spanQueries[i++] = sq;
     }
     
-    /* CHECKME: Does the underlying implementation of SpanQuery need sorting? */
-    if (false) /* true when sorting needed */
-      Arrays.sort(spanQueries, new Comparator() { 
-        public int compare(Object o1, Object o2) {
-          SpanQuery sq1 = (SpanQuery) o1;
-          SpanQuery sq2 = (SpanQuery) o2;
-          /* compare the text of the first term of each SpanQuery */
-          return  ((Term)sq1.getTerms().iterator().next()).text().compareTo(
-                  ((Term)sq2.getTerms().iterator().next()).text());
-        }
-        public boolean equals(Object o) {return false;}
-      });
-       
     if (spanQueries.length == 1)
       return spanQueries[0];
     else
