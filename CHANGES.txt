@@ -34,6 +34,9 @@ Bug fixes
     that sometimes caused the index order of documents to change.
     (Yonik Seeley)
 
+ 7. LUCENE-526: Fixed a bug in FieldSortedHitQueue that caused
+    subsequent String sorts with different locales to sort identically.
+    (Paul Cowan via Yonik Seeley)
 
 1.9.1
 

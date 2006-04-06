@@ -94,22 +94,23 @@ implements Serializable {
 	// the int field to sort by int
 	// the float field to sort by float
 	// the string field to sort by string
+    // the i18n field includes accented characters for testing locale-specific sorting
 	private String[][] data = new String[][] {
-	// tracer  contents         int            float           string   custom
-	{   "A",   "x a",           "5",           "4f",           "c",     "A-3"   },
-	{   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10"  },
-	{   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2"   },
-	{   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0"   },
-	{   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8"   },
-	{   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1"   },
-	{   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100" },
-	{   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88"  },
-	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10"  },
-	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7"   },
-	{   "W",   "g",             "1",           null,           null,    null    },
-	{   "X",   "g",             "1",           "0.1",          null,    null    },
-	{   "Y",   "g",             "1",           "0.2",          null,    null    },
-	{   "Z",   "f g",           null,          null,           null,    null    }
+	// tracer  contents         int            float           string   custom   i18n
+	{   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche"},
+	{   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT"},
+	{   "C",   "x a b c",       "2147483647",  "1.0",          "j",     "A-2",   "p\u00E9ch\u00E9"},
+	{   "D",   "y a b c",       "-1",          "0.0f",         "a",     "C-0",   "HUT"},
+	{   "E",   "x a b c d",     "5",           "2f",           "h",     "B-8",   "peach"},
+	{   "F",   "y a b c d",     "2",           "3.14159f",     "g",     "B-1",   "H\u00C5T"},
+	{   "G",   "x a b c d",     "3",           "-1.0",         "f",     "C-100", "sin"},
+	{   "H",   "y a b c d",     "0",           "1.4E-45",      "e",     "C-88",  "H\u00D8T"},
+	{   "I",   "x a b c d e f", "-2147483648", "1.0e+0",       "d",     "A-10",  "s\u00EDn"},
+	{   "J",   "y a b c d e f", "4",           ".5",           "b",     "C-7",   "HOT"},
+	{   "W",   "g",             "1",           null,           null,    null,    null},
+	{   "X",   "g",             "1",           "0.1",          null,    null,    null},
+	{   "Y",   "g",             "1",           "0.2",          null,    null,    null},
+	{   "Z",   "f g",           null,          null,           null,    null,    null}
 	};
 
 	// create an index of all the documents, or just the x, or just the y documents
@@ -126,6 +127,7 @@ implements Serializable {
 				if (data[i][3] != null) doc.add (new Field ("float",    data[i][3], Field.Store.NO, Field.Index.UN_TOKENIZED));
 				if (data[i][4] != null) doc.add (new Field ("string",   data[i][4], Field.Store.NO, Field.Index.UN_TOKENIZED));
 				if (data[i][5] != null) doc.add (new Field ("custom",   data[i][5], Field.Store.NO, Field.Index.UN_TOKENIZED));
+				if (data[i][6] != null) doc.add (new Field ("i18n",     data[i][6], Field.Store.NO, Field.Index.UN_TOKENIZED));
         doc.setBoost(2);  // produce some scores above 1.0
 				writer.addDocument (doc);
 			}
@@ -342,6 +344,40 @@ implements Serializable {
 		assertMatches (full, queryY, sort, "BFHJD");
 	}
 
+	// test using various international locales with accented characters
+	// (which sort differently depending on locale)
+	public void testInternationalSort() throws Exception {
+		sort.setSort (new SortField ("i18n", Locale.US));
+		assertMatches (full, queryY, sort, "BFJDH");
+
+		sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
+		assertMatches (full, queryY, sort, "BJDFH");
+
+		sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
+		assertMatches (full, queryY, sort, "BJDHF");
+
+		sort.setSort (new SortField ("i18n", Locale.US));
+		assertMatches (full, queryX, sort, "ECAGI");
+
+		sort.setSort (new SortField ("i18n", Locale.FRANCE));
+		assertMatches (full, queryX, sort, "EACGI");
+	}
+    
+    // Test the MultiSearcher's ability to preserve locale-sensitive ordering
+    // by wrapping it around a single searcher
+	public void testInternationalMultiSearcherSort() throws Exception {
+		Searcher multiSearcher = new MultiSearcher (new Searchable[] { full });
+		
+		sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
+		assertMatches (multiSearcher, queryY, sort, "BJDFH");
+		
+		sort.setSort (new SortField ("i18n", Locale.US));
+		assertMatches (multiSearcher, queryY, sort, "BFJDH");
+		
+		sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
+		assertMatches (multiSearcher, queryY, sort, "BJDHF");
+	} 
+    
 	// test a custom sort function
 	public void testCustomSorts() throws Exception {
 		sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));

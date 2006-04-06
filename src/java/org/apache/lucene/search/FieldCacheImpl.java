@@ -23,6 +23,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.FieldCache.StringIndex; // required by GCJ
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.HashMap;
@@ -45,12 +46,14 @@ implements FieldCache {
     final String field;        // which Field
     final int type;            // which SortField type
     final Object custom;       // which custom comparator
+    final Locale locale;       // the locale we're sorting (if string)
 
     /** Creates one of these objects. */
-    Entry (String field, int type) {
+    Entry (String field, int type, Locale locale) {
       this.field = field.intern();
       this.type = type;
       this.custom = null;
+      this.locale = locale;
     }
 
     /** Creates one of these objects for a custom comparator. */
@@ -58,6 +61,7 @@ implements FieldCache {
       this.field = field.intern();
       this.type = SortField.CUSTOM;
       this.custom = custom;
+      this.locale = null;
     }
 
     /** Two of these are equal iff they reference the same field and type. */
@@ -65,10 +69,12 @@ implements FieldCache {
       if (o instanceof Entry) {
         Entry other = (Entry) o;
         if (other.field == field && other.type == type) {
-          if (other.custom == null) {
-            if (custom == null) return true;
-          } else if (other.custom.equals (custom)) {
-            return true;
+          if (other.locale == null ? locale == null : other.locale.equals(locale)) {
+            if (other.custom == null) {
+              if (custom == null) return true;
+            } else if (other.custom.equals (custom)) {
+              return true;
+            }
           }
         }
       }
@@ -77,7 +83,7 @@ implements FieldCache {
 
     /** Composes a hashcode based on the field and type. */
     public int hashCode() {
-      return field.hashCode() ^ type ^ (custom==null ? 0 : custom.hashCode());
+      return field.hashCode() ^ type ^ (custom==null ? 0 : custom.hashCode()) ^ (locale==null ? 0 : locale.hashCode());
     }
   }
 
@@ -97,8 +103,8 @@ implements FieldCache {
   final Map cache = new WeakHashMap();
 
   /** See if an object is in the cache. */
-  Object lookup (IndexReader reader, String field, int type) {
-    Entry entry = new Entry (field, type);
+  Object lookup (IndexReader reader, String field, int type, Locale locale) {
+    Entry entry = new Entry (field, type, locale);
     synchronized (this) {
       HashMap readerCache = (HashMap)cache.get(reader);
       if (readerCache == null) return null;
@@ -117,8 +123,8 @@ implements FieldCache {
   }
 
   /** Put an object into the cache. */
-  Object store (IndexReader reader, String field, int type, Object value) {
-    Entry entry = new Entry (field, type);
+  Object store (IndexReader reader, String field, int type, Locale locale, Object value) {
+    Entry entry = new Entry (field, type, locale);
     synchronized (this) {
       HashMap readerCache = (HashMap)cache.get(reader);
       if (readerCache == null) {
@@ -215,7 +221,7 @@ implements FieldCache {
   public String[] getStrings (IndexReader reader, String field)
   throws IOException {
     field = field.intern();
-    Object ret = lookup (reader, field, SortField.STRING);
+    Object ret = lookup (reader, field, SortField.STRING, null);
     if (ret == null) {
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
@@ -234,7 +240,7 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      store (reader, field, SortField.STRING, retArray);
+      store (reader, field, SortField.STRING, null, retArray);
       return retArray;
     }
     return (String[]) ret;
@@ -244,7 +250,7 @@ implements FieldCache {
   public StringIndex getStringIndex (IndexReader reader, String field)
   throws IOException {
     field = field.intern();
-    Object ret = lookup (reader, field, STRING_INDEX);
+    Object ret = lookup (reader, field, STRING_INDEX, null);
     if (ret == null) {
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
@@ -295,7 +301,7 @@ implements FieldCache {
       }
 
       StringIndex value = new StringIndex (retArray, mterms);
-      store (reader, field, STRING_INDEX, value);
+      store (reader, field, STRING_INDEX, null, value);
       return value;
     }
     return (StringIndex) ret;
@@ -316,7 +322,7 @@ implements FieldCache {
   public Object getAuto (IndexReader reader, String field)
   throws IOException {
     field = field.intern();
-    Object ret = lookup (reader, field, SortField.AUTO);
+    Object ret = lookup (reader, field, SortField.AUTO, null);
     if (ret == null) {
       TermEnum enumerator = reader.terms (new Term (field, ""));
       try {
@@ -350,7 +356,7 @@ implements FieldCache {
             }
           }
           if (ret != null) {
-            store (reader, field, SortField.AUTO, ret);
+            store (reader, field, SortField.AUTO, null, ret);
           }
         } else {
           throw new RuntimeException ("field \"" + field + "\" does not appear to be indexed");

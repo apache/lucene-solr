@@ -56,7 +56,12 @@ extends PriorityQueue {
     for (int i=0; i<n; ++i) {
       String fieldname = fields[i].getField();
       comparators[i] = getCachedComparator (reader, fieldname, fields[i].getType(), fields[i].getLocale(), fields[i].getFactory());
-      this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
+      
+      if (comparators[i].sortType() == SortField.STRING) {
+    	  this.fields[i] = new SortField (fieldname, fields[i].getLocale(), fields[i].getReverse());
+      } else {
+    	  this.fields[i] = new SortField (fieldname, comparators[i].sortType(), fields[i].getReverse());
+      }
     }
     initialize (size);
   }
@@ -147,10 +152,10 @@ extends PriorityQueue {
   static final Map Comparators = new WeakHashMap();
 
   /** Returns a comparator if it is in the cache. */
-  static ScoreDocComparator lookup (IndexReader reader, String field, int type, Object factory) {
+  static ScoreDocComparator lookup (IndexReader reader, String field, int type, Locale locale, Object factory) {
     FieldCacheImpl.Entry entry = (factory != null)
       ? new FieldCacheImpl.Entry (field, factory)
-      : new FieldCacheImpl.Entry (field, type);
+      : new FieldCacheImpl.Entry (field, type, locale);
     synchronized (Comparators) {
       HashMap readerCache = (HashMap)Comparators.get(reader);
       if (readerCache == null) return null;
@@ -159,10 +164,10 @@ extends PriorityQueue {
   }
 
   /** Stores a comparator into the cache. */
-  static Object store (IndexReader reader, String field, int type, Object factory, Object value) {
+  static Object store (IndexReader reader, String field, int type, Locale locale, Object factory, Object value) {
     FieldCacheImpl.Entry entry = (factory != null)
       ? new FieldCacheImpl.Entry (field, factory)
-      : new FieldCacheImpl.Entry (field, type);
+      : new FieldCacheImpl.Entry (field, type, locale);
     synchronized (Comparators) {
       HashMap readerCache = (HashMap)Comparators.get(reader);
       if (readerCache == null) {
@@ -177,7 +182,7 @@ extends PriorityQueue {
   throws IOException {
     if (type == SortField.DOC) return ScoreDocComparator.INDEXORDER;
     if (type == SortField.SCORE) return ScoreDocComparator.RELEVANCE;
-    ScoreDocComparator comparator = lookup (reader, fieldname, type, factory);
+    ScoreDocComparator comparator = lookup (reader, fieldname, type, locale, factory);
     if (comparator == null) {
       switch (type) {
         case SortField.AUTO:
@@ -199,7 +204,7 @@ extends PriorityQueue {
         default:
           throw new RuntimeException ("unknown field type: "+type);
       }
-      store (reader, fieldname, type, factory, comparator);
+      store (reader, fieldname, type, locale, factory, comparator);
     }
     return comparator;
   }
