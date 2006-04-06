@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * A query that generates the union of the documents produced by its subqueries, and that scores each document as the maximum
@@ -192,6 +193,15 @@ public class DisjunctionMaxQuery extends Query {
     clone.disjuncts = (ArrayList)this.disjuncts.clone();
     return clone;
   }
+
+
+  // inherit javadoc
+  public void extractTerms(Set terms) {
+      for (int i = 0; i < disjuncts.size(); i++) {
+          ((Query)disjuncts.get(i)).extractTerms(terms);
+      }
+  }
+
 
   /** Prettyprint us.
    * @param field the field to which we are applied

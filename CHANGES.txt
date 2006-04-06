@@ -38,6 +38,9 @@ Bug fixes
     subsequent String sorts with different locales to sort identically.
     (Paul Cowan via Yonik Seeley)
 
+ 8. LUCENE-541: Add missing extractTerms() to DisjunctionMaxQuery
+    (Stefan Will via Yonik Seeley)
+
 1.9.1
 
 Bug fixes
