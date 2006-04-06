@@ -150,8 +150,8 @@ public class ParallelReader extends IndexReader {
     Iterator i = fieldToReader.entrySet().iterator();
     while (i.hasNext()) {
       Map.Entry e = (Map.Entry)i.next();
-      IndexReader reader = (IndexReader)e.getKey();
-      String field = (String)e.getValue();
+      String field = (String)e.getKey();
+      IndexReader reader = (IndexReader)e.getValue();
       TermFreqVector vector = reader.getTermFreqVector(n, field);
       if (vector != null)
         results.add(vector);

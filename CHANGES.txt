@@ -44,6 +44,8 @@ Bug fixes
  9. LUCENE-514: Added getTermArrays() and extractTerms() to
     MultiPhraseQuery (Eric Jain & Yonik Seeley)
 
+10. LUCENE-512: Fixed ClassCastException in ParallelReader.getTermFreqVectors
+    (frederic via Yonik)
 
 1.9.1
 
