@@ -17,9 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultipleTermPositions;
@@ -98,6 +96,14 @@ public class MultiPhraseQuery extends Query {
   }
 
   /**
+   * Returns a List<Term[]> of the terms in the multiphrase.
+   * Do not modify the List or it's contents.
+   */
+  public List getTermArrays() {
+	  return Collections.unmodifiableList(termArrays);
+  }
+
+  /**
    * Returns the relative positions of terms in this phrase.
    */
   public int[] getPositions() {
@@ -106,6 +112,17 @@ public class MultiPhraseQuery extends Query {
       result[i] = ((Integer) positions.elementAt(i)).intValue();
     return result;
   }
+
+  // inherit javadoc
+  public void extractTerms(Set terms) {
+    for (Iterator iter = termArrays.iterator(); iter.hasNext();) {
+      Term[] arr = (Term[])iter.next();
+      for (int i=0; i<arr.length; i++) {
+        terms.add(arr[i]);
+      }
+    }
+  }
+
 
   private class MultiPhraseWeight implements Weight {
     private Similarity similarity;

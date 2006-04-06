@@ -41,6 +41,10 @@ Bug fixes
  8. LUCENE-541: Add missing extractTerms() to DisjunctionMaxQuery
     (Stefan Will via Yonik Seeley)
 
+ 9. LUCENE-514: Added getTermArrays() and extractTerms() to
+    MultiPhraseQuery (Eric Jain & Yonik Seeley)
+
+
 1.9.1
 
 Bug fixes
