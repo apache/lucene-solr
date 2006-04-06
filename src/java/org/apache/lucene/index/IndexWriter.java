@@ -569,7 +569,7 @@ public class IndexWriter {
     
     // merge newly added segments in log(n) passes
     while (segmentInfos.size() > start+mergeFactor) {
-      for (int base = start+1; base < segmentInfos.size(); base++) {
+      for (int base = start; base < segmentInfos.size(); base++) {
         int end = Math.min(segmentInfos.size(), base+mergeFactor);
         if (end-base > 1)
           mergeSegments(base, end);
@@ -710,9 +710,9 @@ public class IndexWriter {
       infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
     }
 
-    for (int i = end-1; i >= minSegment; i--)     // remove old infos & add new
+    for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
       segmentInfos.remove(i);
-    segmentInfos.addElement(new SegmentInfo(mergedName, mergedDocCount,
+    segmentInfos.set(minSegment, new SegmentInfo(mergedName, mergedDocCount,
                                             directory));
 
     // close readers before we attempt to delete now-obsolete segments

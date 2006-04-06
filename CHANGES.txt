@@ -8,8 +8,9 @@ API Changes
 
  1. All deprecated methods and fields have been removed, except
     DateField, which will still be supported for some time
-    so Lucene can read its date fields from old indexes (Yonik Seeley)
- 
+    so Lucene can read its date fields from old indexes
+    (Yonik Seeley & Grant Ingersoll)
+
 Bug fixes
 
  1. LUCENE-330: Fix issue of FilteredQuery not working properly within
@@ -20,13 +21,17 @@ Bug fixes
 
  3. Added methods to get/set writeLockTimeout and commitLockTimeout in
     IndexWriter. These could be set in Lucene 1.4 using a system property.
-    This feature had been removed without adding the corresponding 
+    This feature had been removed without adding the corresponding
     getter/setter methods.  (Daniel Naber)
 
  4. LUCENE-413: Fixed ArrayIndexOutOfBoundsException exceptions
     when using SpanQueries. (Paul Elschot via Yonik Seeley)
 
  5. Implemented FilterIndexReader.getVersion() and isCurrent()
+    (Yonik Seeley)
+
+ 6. LUCENE-540: Fixed a bug with IndexWriter.addIndexes(Directory[])
+    that sometimes caused the index order of documents to change.
     (Yonik Seeley)
 
 
