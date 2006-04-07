@@ -109,8 +109,8 @@ fi
 cat <<EOF > ${solr_root}/conf/rsyncd.conf
 #### rsyncd.conf file ####
  
-uid = app
-gid = app
+uid = $(whoami)
+gid = $(whoami)
 use chroot = no
 list = no
 pid file = ${solr_root}/logs/rsyncd.pid
