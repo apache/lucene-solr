@@ -8,6 +8,7 @@ New Features
  3. max() function added to FunctionQuery suite 
  4. postOptimize hook, mirroring the functionallity of the postCommit hook,
     but only called on an index optimize.
+ 5. Ability to HTTP POST query requests to /select in addition to HTTP-GET
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
