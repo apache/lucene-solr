@@ -25,12 +25,22 @@
     <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
     <load-on-startup>0</load-on-startup>
   </servlet>
+
+  <servlet>
+    <servlet-name>SolrUpdate</servlet-name>
+    <display-name>SolrUpdate</display-name>
+    <description>Solr Update Handler</description>
+    <servlet-class>org.apache.solr.servlet.SolrUpdateServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
   <servlet-mapping>
     <servlet-name>SolrServer</servlet-name>
     <url-pattern>/select/*</url-pattern>
   </servlet-mapping>
+
   <servlet-mapping>
-    <servlet-name>SolrServer</servlet-name>
+    <servlet-name>SolrUpdate</servlet-name>
     <url-pattern>/update/*</url-pattern>
   </servlet-mapping>
 
