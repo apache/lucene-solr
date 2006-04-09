@@ -64,6 +64,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
     try {
       String sreq = req.getQueryString();
       String debug = req.getParam("debugQuery");
+      String defaultField = req.getParam("df");
 
       // find fieldnames to return (fieldlist)
       String fl = req.getParam("fl");
@@ -86,7 +87,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
       List<String> commands = StrUtils.splitSmart(sreq,';');
 
       String qs = commands.size() >= 1 ? commands.get(0) : "";
-      Query query = QueryParsing.parseQuery(qs, req.getSchema());
+      Query query = QueryParsing.parseQuery(qs, defaultField, req.getSchema());
 
       // If the first non-query, non-filter command is a simple sort on an indexed field, then
       // we can use the Lucene sort ability.

@@ -33,8 +33,8 @@ import org.apache.solr.schema.FieldType;
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;
 
-  public SolrQueryParser(IndexSchema schema) {
-    super(schema.getDefaultSearchFieldName(), schema.getQueryAnalyzer());
+  public SolrQueryParser(IndexSchema schema, String defaultField) {
+    super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
     this.schema = schema;
     setLowercaseExpandedTerms(false);
   }

@@ -39,8 +39,12 @@ import java.io.IOException;
 public class QueryParsing {
 
   public static Query parseQuery(String qs, IndexSchema schema) {
+    return parseQuery(qs, null, schema);
+  }
+
+  public static Query parseQuery(String qs, String defaultField, IndexSchema schema) {
     try {
-      Query query = new SolrQueryParser(schema).parse(qs);
+      Query query = new SolrQueryParser(schema, defaultField).parse(qs);
 
       if (SolrCore.log.isLoggable(Level.FINEST)) {
         SolrCore.log.finest("After QueryParser:" + query);
