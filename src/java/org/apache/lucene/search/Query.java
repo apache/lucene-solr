@@ -59,7 +59,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   public float getBoost() { return boost; }
 
   /** Prints a query to a string, with <code>field</code> assumed to be the 
-   * default field and ommitted.
+   * default field and omitted.
    * <p>The representation used is one that is supposed to be readable
    * by {@link org.apache.lucene.queryParser.QueryParser QueryParser}. However,
    * there are the following limitations:
