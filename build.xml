@@ -29,6 +29,11 @@
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.javadoc" value="${build.docs}/api"/>
 
+  <property name="junit.output.dir" location="${dest}/test-results"/>
+  <property name="junit.reports" location="${dest}/test-results/reports"/>
+  <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
+
+  
   <!-- Default target: usage.  Prints out instructions. -->
   <target name="usage"
           description="Prints out instructions">
@@ -67,11 +72,11 @@
 
     <javac destdir="${dest}"
            target="1.5"
-	   source="1.5"
+           source="1.5"
 	   debug="on"
            classpathref="compile.classpath">
       <src path="${src}/java" />
-      <src path="${src}/webapp" />
+      <src path="${src}/webapp/src" />
 
     </javac>
   </target>
@@ -132,9 +137,11 @@
   <!-- Run unit tests. -->
   <target name="test"
           description="Runs the unit tests."
-          depends="compileTests">
-    <echo message="TO-DO later or after we convert tests to JUnit." />
-
+          depends="compileTests, junit" />
+	   
+  <target name="legacyTest"
+          depends="compileTests" >
+    <!-- DEPRECATED: no description so it doesn't show up in project help -->
     <java classname="SolrTest" fork="true" dir="src/apps/SolrTest" failonerror="true">
      <arg line="-test newtest.txt"/>
      <classpath>
@@ -143,7 +150,48 @@
     </java>
 
   </target>
+  
+  <target name="junit" depends="compileTests">
+    <!-- no description so it doesn't show up in -projecthelp -->  
+    <mkdir dir="${junit.output.dir}"/>
 
+    <!-- :TODO: either SolrCore needs a way to specify the
+         solrconfig.xml, or all test are going to need to use the same
+         conf file, either way we need a specific run directory for
+         the tests.
+      -->    
+    <junit printsummary="on"
+           haltonfailure="no"
+           errorProperty="tests.failed"
+           failureProperty="tests.failed"
+           dir="src/apps/SolrTest"
+           >
+      <syspropertyset>
+        <propertyref prefix="solr" />
+      </syspropertyset>
+      <classpath refid="test.run.classpath"/>
+      <formatter type="xml"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/test" includes="${junit.includes}"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/test" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+  
+  <target name="test-reports">
+    <!-- no description so it doesn't show up in -projecthelp ... yet -->  
+    <mkdir dir="${junit.reports}"/>
+    <junitreport todir="${junit.output.dir}">
+      <fileset dir="${junit.output.dir}">
+        <include name="TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${junit.reports}"/>
+    </junitreport>
+  </target>
 
 
   <!-- ========================================================================= -->

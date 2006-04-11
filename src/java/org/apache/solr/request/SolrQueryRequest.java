@@ -25,6 +25,10 @@ import org.apache.solr.core.SolrCore;
  * @version $Id$
  */
 public interface SolrQueryRequest {
+
+  /** All uses of this request are finished, resources can be freed */
+  public void close();
+
   public String getParam(String name);
 
   public String getQueryString();
