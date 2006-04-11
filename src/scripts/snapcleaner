@@ -32,7 +32,7 @@ log=${solr_root}/logs/${prog}.log
 USAGE="\
 usage: $prog -D <days> | -N <num> [-d dir] [-u username] [-v]
        -D <days>   cleanup snapshots more than <days> days old
-       -N <num>    keep the most most recent <num> number of snapshots and
+       -N <num>    keep the most recent <num> number of snapshots and
                    cleanup up the remaining ones that are not being pulled
        -d          specify directory holding index data
        -u          specify user to sudo to before running script
