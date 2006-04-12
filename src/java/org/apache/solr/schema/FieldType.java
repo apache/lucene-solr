@@ -177,6 +177,17 @@ public abstract class FieldType extends FieldProperties {
     return indexedForm;
   }
 
+  public String storedToReadable(Field f) {
+    return toExternal(f);
+  }
+
+  public String storedToIndexed(Field f) {
+    // right now, the transformation of single valued fields like SortableInt
+    // is done when the Field is created, not at analysis time... this means
+    // that the indexed form is the same as the stored field form.
+    return f.stringValue();
+  }
+
 
   /*********
   // default analyzer for non-text fields.

@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.HitCollector;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
@@ -118,22 +119,27 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     return writer;
   }
 
-  protected final Term idTerm(String id) {
+  protected final Term idTerm(String readableId) {
     // to correctly create the Term, the string needs to be run
     // through the Analyzer for that field.
-    return new Term(idField.getName(), idFieldType.toInternal(id));
+    return new Term(idField.getName(), idFieldType.toInternal(readableId));
   }
 
-  protected final String getId(Document doc) {
+  protected final String getIndexedId(Document doc) {
     if (idField == null) throw new SolrException(400,"Operation requires schema to have a unique key field");
-    String id = doc.get(idField.getName());
+    // Right now, single valued fields that require value transformation from external to internal (indexed)
+    // form have that transformation already performed and stored as the field value.
+    // This means
+    String id = idFieldType.storedToIndexed(doc.getField(idField.getName()));
     if (id == null) throw new SolrException(400,"Document is missing uniqueKey field " + idField.getName());
     return id;
   }
 
-  protected final String getOptId(Document doc) {
+  protected final String getIndexedIdOptional(Document doc) {
     if (idField == null) return null;
-    return doc.get(idField.getName());
+    Field f = doc.getField(idField.getName());
+    if (f == null) return null;
+    return idFieldType.storedToIndexed(f);
   }
 
 

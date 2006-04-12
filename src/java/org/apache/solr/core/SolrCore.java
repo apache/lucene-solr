@@ -670,7 +670,7 @@ public final class SolrCore {
           // that there are multiple docs in the add... so make sure that
           // objects can handle that.
 
-          cmd.id = null;  // reset the id for this add     
+          cmd.indexedId = null;  // reset the id for this add
 
           if (eventType !=0) {
             eventType=xpp.getEventType();

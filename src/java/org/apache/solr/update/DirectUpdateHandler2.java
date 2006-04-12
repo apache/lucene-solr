@@ -246,7 +246,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
 
     synchronized(this) {
-      pset.put(cmd.id, ZERO);
+      pset.put(idFieldType.toInternal(cmd.id), ZERO);
     }
   }
 
@@ -307,16 +307,16 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
 
   protected int addConditionally(AddUpdateCommand cmd) throws IOException {
-    if (cmd.id==null) {
-      cmd.id=getId(cmd.doc);
+    if (cmd.indexedId ==null) {
+      cmd.indexedId =getIndexedId(cmd.doc);
     }
     synchronized(this) {
-      Integer saveCount = pset.get(cmd.id);
+      Integer saveCount = pset.get(cmd.indexedId);
       if (saveCount!=null && saveCount!=0) {
         // a doc with this id already exists in the pending set
         return 0;
       }
-      pset.put(cmd.id, ONE);
+      pset.put(cmd.indexedId, ONE);
       doAdd(cmd.doc);
       return 1;
     }
@@ -325,11 +325,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // overwrite both pending and committed
   protected synchronized int overwriteBoth(AddUpdateCommand cmd) throws IOException {
-    if (cmd.id==null) {
-      cmd.id=getId(cmd.doc);
+    if (cmd.indexedId ==null) {
+      cmd.indexedId =getIndexedId(cmd.doc);
     }
     synchronized (this) {
-      pset.put(cmd.id, ONE);
+      pset.put(cmd.indexedId, ONE);
       doAdd(cmd.doc);
     }
     return 1;
@@ -338,14 +338,14 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   // add without checking
   protected synchronized int allowDups(AddUpdateCommand cmd) throws IOException {
-    if (cmd.id==null) {
-      cmd.id=getOptId(cmd.doc);
+    if (cmd.indexedId ==null) {
+      cmd.indexedId =getIndexedIdOptional(cmd.doc);
     }
     synchronized(this) {
       doAdd(cmd.doc);
 
-      if (cmd.id != null) {
-        Integer saveCount = pset.get(cmd.id);
+      if (cmd.indexedId != null) {
+        Integer saveCount = pset.get(cmd.indexedId);
 
         // if there weren't any docs marked for deletion before, then don't mark
         // any for deletion now.
@@ -358,7 +358,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         if (saveCount == ZERO) saveCount=ONE;
         else saveCount++;
 
-        pset.put(cmd.id, saveCount);
+        pset.put(cmd.indexedId, saveCount);
       }
     }
     return 1;

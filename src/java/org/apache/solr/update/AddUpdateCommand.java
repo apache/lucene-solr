@@ -22,7 +22,10 @@ import org.apache.lucene.document.Document;
  * @version $Id$
  */
 public class AddUpdateCommand extends UpdateCommand {
-   public String id;
+   // optional id in "internal" indexed form... if it is needed and not supplied,
+   // it will be obtained from the doc.
+   public String indexedId;
+
    public Document doc;
    public boolean allowDups;
    public boolean overwritePending;
@@ -35,7 +38,7 @@ public class AddUpdateCommand extends UpdateCommand {
    public String toString() {
      StringBuilder sb = new StringBuilder(commandName);
      sb.append(':');
-     if (id!=null) sb.append("id=").append(id);
+     if (indexedId !=null) sb.append("id=").append(indexedId);
      sb.append(",allowDups=").append(allowDups);
      sb.append(",overwritePending=").append(overwritePending);
      sb.append(",overwriteCommitted=").append(overwriteCommitted);

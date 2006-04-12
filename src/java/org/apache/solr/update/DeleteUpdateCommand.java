@@ -20,8 +20,8 @@ package org.apache.solr.update;
  * @version $Id$
  */
 public class DeleteUpdateCommand extends UpdateCommand {
-  public String id;
-  public String query;
+  public String id;    // external (printable) id, for delete-by-id
+  public String query; // query string for delete-by-query
   public boolean fromPending;
   public boolean fromCommitted;
 

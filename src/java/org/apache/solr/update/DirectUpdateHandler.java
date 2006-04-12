@@ -23,6 +23,7 @@ package org.apache.solr.update;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 
@@ -105,15 +106,16 @@ public class DirectUpdateHandler extends UpdateHandler {
     writer.addDocument(doc);
   }
 
-  protected boolean existsInIndex(String id) throws IOException {
+  protected boolean existsInIndex(String indexedId) throws IOException {
     if (idField == null) throw new SolrException(2,"Operation requires schema to have a unique key field");
 
-    closeWriter(); openSearcher();
+    closeWriter();
+    openSearcher();
     IndexReader ir = searcher.getReader();
     TermDocs tdocs = null;
     boolean exists=false;
     try {
-      tdocs = ir.termDocs(idTerm(id));
+      tdocs = ir.termDocs(idTerm(indexedId));
       if (tdocs.next()) exists=true;
     } finally {
       try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
@@ -122,7 +124,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
 
 
-  protected int deleteInIndex(String id) throws IOException {
+  protected int deleteInIndex(String indexedId) throws IOException {
     if (idField == null) throw new SolrException(2,"Operation requires schema to have a unique key field");
 
     closeWriter(); openSearcher();
@@ -130,9 +132,10 @@ public class DirectUpdateHandler extends UpdateHandler {
     TermDocs tdocs = null;
     int num=0;
     try {
-      num = ir.deleteDocuments(idTerm(id));
+      Term term = new Term(idField.getName(), indexedId);
+      num = ir.deleteDocuments(term);
       if (SolrCore.log.isLoggable(Level.FINEST)) {
-        SolrCore.log.finest("deleted " + num + " docs matching id " + id);
+        SolrCore.log.finest("deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
       }
     } finally {
       try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
@@ -140,9 +143,9 @@ public class DirectUpdateHandler extends UpdateHandler {
     return num;
   }
 
-  protected void overwrite(String id, Document doc) throws IOException {
-    if (id==null) id=getId(doc);
-    deleteInIndex(id);
+  protected void overwrite(String indexedId, Document doc) throws IOException {
+    if (indexedId ==null) indexedId =getIndexedId(doc);
+    deleteInIndex(indexedId);
     doAdd(doc);
   }
 
@@ -171,10 +174,10 @@ public class DirectUpdateHandler extends UpdateHandler {
       throw new SolrException(400,"meaningless command: " + cmd);
     if (!cmd.fromPending || !cmd.fromCommitted)
       throw new SolrException(400,"operation not supported" + cmd);
-
+    String indexedId = idFieldType.toInternal(cmd.id);
     synchronized(this) {
-      deleteInIndex(cmd.id);
-      pset.remove(cmd.id);
+      deleteInIndex(indexedId);
+      pset.remove(indexedId);
     }
   }
 
@@ -265,26 +268,26 @@ public class DirectUpdateHandler extends UpdateHandler {
   ///////////////////////////////////////////////////////////////////
 
   protected int addNoOverwriteNoDups(AddUpdateCommand cmd) throws IOException {
-    if (cmd.id==null) {
-      cmd.id=getId(cmd.doc);
+    if (cmd.indexedId ==null) {
+      cmd.indexedId =getIndexedId(cmd.doc);
     }
     synchronized (this) {
-      if (existsInIndex(cmd.id)) return 0;
+      if (existsInIndex(cmd.indexedId)) return 0;
       doAdd(cmd.doc);
     }
     return 1;
   }
 
   protected int addConditionally(AddUpdateCommand cmd) throws IOException {
-    if (cmd.id==null) {
-      cmd.id=getId(cmd.doc);
+    if (cmd.indexedId ==null) {
+      cmd.indexedId =getIndexedId(cmd.doc);
     }
     synchronized(this) {
-      if (pset.contains(cmd.id)) return 0;
+      if (pset.contains(cmd.indexedId)) return 0;
       // since case 001 is currently the only case to use pset, only add
       // to it in that instance.
-      pset.add(cmd.id);
-      overwrite(cmd.id,cmd.doc);
+      pset.add(cmd.indexedId);
+      overwrite(cmd.indexedId,cmd.doc);
       return 1;
     }
   }
@@ -292,7 +295,7 @@ public class DirectUpdateHandler extends UpdateHandler {
 
   // overwrite both pending and committed
   protected synchronized int overwriteBoth(AddUpdateCommand cmd) throws IOException {
-    overwrite(cmd.id, cmd.doc);
+    overwrite(cmd.indexedId, cmd.doc);
     return 1;
   }
 
