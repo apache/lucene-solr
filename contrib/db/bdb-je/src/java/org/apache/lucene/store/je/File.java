@@ -192,8 +192,12 @@ public class File extends Object {
 
                 if (cursor.getSearchKey(cursorKey, cursorData, null) != OperationStatus.NOTFOUND) {
                     cursor.delete();
-
-                    while (cursor.getNextDup(cursorKey, cursorData, null) != OperationStatus.NOTFOUND) {
+                    advance: while (cursor.getNext(cursorKey, cursorData, null) != OperationStatus.NOTFOUND) {
+                        byte[] temp = cursorKey.getData();
+                        for (int i = 0; i < bytes.length; i++)
+                            if (bytes[i] != temp[i]) {
+                                break advance;
+                            }
                         cursor.delete();
                     }
                 }
