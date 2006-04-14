@@ -217,11 +217,13 @@ public class File extends Object {
                 {
                     cursor.del(0);
 
+                  outer:
                     while (cursor.get(cursorKey, cursorData,
-                                      DbConstants.DB_NEXT | flags) != DbConstants.DB_NOTFOUND) {
+                                      DbConstants.DB_NEXT | flags) != DbConstants.DB_NOTFOUND)
+                    {
                         for (int i = 0; i < bytes.length; i++)
                             if (bytes[i] != cursorBytes[i])
-                                return;
+                                break outer;
 
                         cursor.del(0);
                     }
