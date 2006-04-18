@@ -7,9 +7,9 @@
 -->
 <web-app>
 
-  <!-- Uncomment if you are trying to use Resin.  Their XML implementation
-    isn't entirely compatible with Xerces.  Below are the implementations to use
-    with Sun's JVM.
+  <!-- Uncomment if you are trying to use a Resin version before 3.0.19.
+    Their XML implementation isn't entirely compatible with Xerces.
+    Below are the implementations to use with Sun's JVM.
   <system-property javax.xml.xpath.XPathFactory=
              "com.sun.org.apache.xpath.internal.jaxp.XPathFactoryImpl"/>
   <system-property javax.xml.parsers.DocumentBuilderFactory=
