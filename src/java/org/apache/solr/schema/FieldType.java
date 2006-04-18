@@ -27,6 +27,7 @@ import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
+import org.apache.solr.core.SolrException;
 
 import java.util.logging.Logger;
 import java.util.Map;
@@ -144,7 +145,12 @@ public abstract class FieldType extends FieldProperties {
   // but use the external value and set tokenized=true to get Lucene to convert
   // to the internal(indexed) form.
   public Field createField(SchemaField field, String externalVal, float boost) {
-    String val = toInternal(externalVal);
+    String val;
+    try {
+      val = toInternal(externalVal);
+    } catch (NumberFormatException e) {
+      throw new SolrException(500, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
+    }
     if (val==null) return null;
     Field f =  new Field(field.getName(),val,
             field.stored() ? Field.Store.YES : Field.Store.NO ,
