@@ -22,5 +22,8 @@ Optimizations
  2. BitDocSet.intersectionSize(HashDocSet) no longer generates an intermediate
     set
 
+Bug Fixes
+ 1. Fixed delete-by-id for field types who's indexed form is different
+    from the printable form (mainly sortable numeric types).
 
 2006/07/16 Solr open sourced, moves to Apache Incubator

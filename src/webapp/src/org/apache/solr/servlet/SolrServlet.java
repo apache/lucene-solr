@@ -22,6 +22,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.StrUtils;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +32,7 @@ import java.io.BufferedReader;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Set;
+import java.net.MalformedURLException;
 
 /**
  * @author yonik
@@ -45,6 +47,14 @@ public class SolrServlet extends HttpServlet {
 
   public void init() throws ServletException
   {
+    ServletContext ctx = getServletContext();
+    try {
+      System.out.println("RESOURCE URL FOR .="+ctx.getResource("/select"));
+    } catch (MalformedURLException e) {
+      e.printStackTrace();
+    }
+
+
     log.info("user.dir=" + System.getProperty("user.dir"));
     core = SolrCore.getSolrCore();
     xmlResponseWriter=new XMLResponseWriter();
