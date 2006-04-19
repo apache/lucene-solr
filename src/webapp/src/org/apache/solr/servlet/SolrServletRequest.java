@@ -40,7 +40,7 @@ class SolrServletRequest extends SolrQueryRequestBase {
           first=false;
           sb.append(key);
           sb.append('=');
-          StrUtils.partialURLEncodeVal(sb, val);
+          StrUtils.partialURLEncodeVal(sb, val==null ? "" : val);
         }
       }
     }
