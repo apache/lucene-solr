@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<!--
+     Striped down schema used by SampleTest to demonstrate picking any
+     schema filename you want.
+
+     $Id: schema.xml 382610 2006-03-03 01:43:03Z yonik $
+     $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
+  -->
+
+<schema name="test" version="1.0">
+  <types>
+    <fieldtype name="sint" class="solr.SortableIntField" />
+    <fieldtype name="text" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory"/>
+        <filter class="solr.EnglishPorterFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+ </types>
+
+
+ <fields>
+   <field name="id" type="sint" indexed="true" stored="true"/>
+   <field name="subject" type="text" indexed="true" stored="true"/>
+ </fields>
+
+ <defaultSearchField>subject</defaultSearchField>
+ <uniqueKey>id</uniqueKey>
+</schema>

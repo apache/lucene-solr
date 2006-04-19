@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.*;
 
@@ -55,12 +56,34 @@ public class TestHarness {
   private DocumentBuilder builder;
         
   /**
+   * Assumes "solrconfig.xml" is the config file to use, and
+   * "schema.xml" is the schema path to use.
+   *
+   * @param dataDirectory path for index data, will not be cleaned up
+   */
+  public TestHarness(String dataDirectory) {
+    this(dataDirectory, "schema.xml");
+  }
+  /**
+   * Assumes "solrconfig.xml" is the config file to use.
+   *
    * @param dataDirectory path for index data, will not be cleaned up
    * @param schemaFile path of schema file
    */
   public TestHarness(String dataDirectory, String schemaFile) {
-    core = new SolrCore(dataDirectory, new IndexSchema(schemaFile));
+    this(dataDirectory, "solrconfig.xml", schemaFile);
+  }
+  /**
+   * @param dataDirectory path for index data, will not be cleaned up
+   * @param confFile solrconfig filename
+   * @param schemaFile schema filename
+   */
+  public TestHarness(String dataDirectory,
+                     String confFile,
+                     String schemaFile) {
     try {
+      SolrConfig.initConfig(confFile);
+      core = new SolrCore(dataDirectory, new IndexSchema(schemaFile));
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     } catch (Exception e) {
       throw new RuntimeException(e);

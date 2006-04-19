@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+
+<!--
+     Striped down solrconfig used by SampleTest to demonstrate picking any
+     config filename you want.
+
+     $Id: solrconfig.xml 382610 2006-03-03 01:43:03Z yonik $
+     $Source$
+  -->
+
+<config>
+  <indexDefaults>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <maxBufferedDocs>1000</maxBufferedDocs>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+  </indexDefaults>
+
+  <mainIndex>
+    <useCompoundFile>false</useCompoundFile>
+    <mergeFactor>10</mergeFactor>
+    <maxBufferedDocs>1000</maxBufferedDocs>
+    <maxMergeDocs>2147483647</maxMergeDocs>
+    <maxFieldLength>10000</maxFieldLength>
+    <unlockOnStartup>true</unlockOnStartup>
+  </mainIndex>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <commitIntervalLowerBound>0</commitIntervalLowerBound>
+  </updateHandler>
+
+
+  <query>
+    <maxBooleanClauses>1024</maxBooleanClauses>
+    <useFilterForSortedQuery>true</useFilterForSortedQuery>
+    <queryResultWindowSize>10</queryResultWindowSize>
+    <HashDocSet maxSize="3000" loadFactor="0.75"/>
+    <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
+  </query>
+  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+  <requestHandler name="crazy_custom_qt" class="solr.StandardRequestHandler" />
+
+  <admin>
+    <defaultQuery>solr</defaultQuery>
+    <gettableFiles>solrconfig.xml scheam.xml</gettableFiles>
+  </admin>
+
+
+
+</config>

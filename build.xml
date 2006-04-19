@@ -164,7 +164,7 @@
            haltonfailure="no"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/apps/SolrTest"
+           dir="src/test/test-files/"
            >
       <syspropertyset>
         <propertyref prefix="solr" />

@@ -30,7 +30,8 @@ import java.io.IOException;
  */
 public class ConvertedLegacyTest extends AbstractSolrTestCase {
 
-  public String getSchemaPath() { return "solr/conf/schema.xml"; } 
+  public String getSchemaFile() { return "schema.xml"; } 
+  public String getSolrConfigFile() { return "solrconfig.xml"; } 
 
   public void testABunchOfConvertedStuff() {
     // these may be reused by things that need a special query

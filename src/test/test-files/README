@@ -1,0 +1,4 @@
+This directory is where any non-transient, non-java files needed
+for the execution of tests should live.
+
+It is used as the CWD when running JUnit tests.

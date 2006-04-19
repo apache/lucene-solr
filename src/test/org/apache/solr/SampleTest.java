@@ -29,10 +29,25 @@ import java.io.IOException;
 public class SampleTest extends AbstractSolrTestCase {
 
   /**
-   * All subclasses of AbstractSolrTestCase must define this method
+   * All subclasses of AbstractSolrTestCase must define this method.
+   *
+   * <p>
+   * Note that different tests can use different schemas by refering
+   * to any crazy path they want (as long as it works).
+   * </p>
    */
-  public String getSchemaPath() { return "solr/conf/schema.xml"; } 
-
+  public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; } 
+  
+  /**
+   * All subclasses of AbstractSolrTestCase must define this method
+   *
+   * <p>
+   * Note that different tests can use different configs by refering
+   * to any crazy path they want (as long as it works).
+   * </p>
+   */
+  public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
+    
   /**
    * Demonstration of some of the simple ways to use the base class
    */
@@ -71,7 +86,7 @@ public class SampleTest extends AbstractSolrTestCase {
             doc("id", "4059",
                 "subject", "Who Me Again?") + "</add>");
 
-    // or really make the xml yourself
+    /* or really make the xml yourself */
     assertU("<add><doc><field name=\"id\">4055</field>"
             +"<field name=\"subject\">Hoss the Hoss man Hostetter</field>"
             +"</doc></add>");
@@ -87,9 +102,12 @@ public class SampleTest extends AbstractSolrTestCase {
             ,"//int[@name='id'][.='4055']"
             );
 
-    /* make your own LocalRequestFactory to build a request */
+    /* make your own LocalRequestFactory to build a request
+     *
+     * Note: the qt proves we are using our custom config...
+     */
     TestHarness.LocalRequestFactory l = h.getRequestFactory
-      ("standard",100,200,"version","2.1");
+      ("crazy_custom_qt",100,200,"version","2.1");
     assertQ("how did i find Mack Daddy? ",
             l.makeRequest( "Mack Daddy" )
             ,"//result[@numFound=0]"

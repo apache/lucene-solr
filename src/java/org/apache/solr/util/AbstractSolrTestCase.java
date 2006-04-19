@@ -45,10 +45,16 @@ public abstract class AbstractSolrTestCase extends TestCase {
   protected TestHarness.LocalRequestFactory lrf;
 
   /**
-   * Subclasses must define this method to return the path of the
+   * Subclasses must define this method to return the name of the
    * schema.xml they wish to use.
    */
-  public abstract String getSchemaPath();
+  public abstract String getSchemaFile();
+    
+  /**
+   * Subclasses must define this method to return the name of the
+   * solrconfig.xml they wish to use.
+   */
+  public abstract String getSolrConfigFile();
 
   /**
    * The directory used to story the index managed by the TestHarness h
@@ -72,7 +78,9 @@ public abstract class AbstractSolrTestCase extends TestCase {
                        + getClass().getName() + "-" + getName() + "-"
                        + System.currentTimeMillis());
     dataDir.mkdirs();
-    h = new TestHarness(dataDir.getAbsolutePath(), getSchemaPath());
+    h = new TestHarness(dataDir.getAbsolutePath(),
+                        getSolrConfigFile(),
+                        getSchemaFile());
     lrf = h.getRequestFactory
       ("standard",0,20,"version","2.0");
 

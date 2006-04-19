@@ -25,7 +25,8 @@ import org.apache.solr.util.*;
  */
 public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
-  public String getSchemaPath() { return "solr/conf/schema.xml"; } 
+  public String getSchemaFile() { return "schema.xml"; } 
+  public String getSolrConfigFile() { return "solrconfig.xml"; }
     
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
