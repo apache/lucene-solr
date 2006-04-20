@@ -38,7 +38,17 @@
       <title>News</title>
 
       <section>
-      <title>21 February, 2006: nightly builds</title>
+      <title>21 April 2006: Solr at ApacheCon</title>
+      <p>Yonik Seeley will be presenting
+        <strong>"Apache Solr, a Full-Text Search Server based on Lucene"</strong>  
+        at ApacheCon Europe 2006, on June 29th at 5:30pm.
+        See the <a href="http://www.eu.apachecon.com/">ApacheCon</a> website for more details.
+      </p>
+      </section>
+ 
+  
+      <section>
+      <title>21 February 2006: nightly builds</title>
       <p>Solr now has nightly builds.  This automatically creates a
       <a href="ext:nightly">downloadable version of Solr every
       night</a>.  All unit tests must pass, or a message is sent to
