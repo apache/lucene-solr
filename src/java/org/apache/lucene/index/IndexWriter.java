@@ -496,7 +496,7 @@ public class IndexWriter {
    * for batch index creation, and smaller values (< 10) for indices that are
    * interactively maintained.
    *
-   * <p>This must never be less than 2.  The default value is {@link DEFAULT_MERGE_FACTOR}.
+   * <p>This must never be less than 2.  The default value is {@link #DEFAULT_MERGE_FACTOR}.
 
    */
   private int mergeFactor = DEFAULT_MERGE_FACTOR;
@@ -507,7 +507,7 @@ public class IndexWriter {
    * large value gives faster indexing.  At the same time, mergeFactor limits
    * the number of files open in a FSDirectory.
    *
-   * <p> The default value is {@link DEFAULT_MAX_BUFFERED_DOCS}.
+   * <p> The default value is {@link #DEFAULT_MAX_BUFFERED_DOCS}.
 
    */
   private int minMergeDocs = DEFAULT_MAX_BUFFERED_DOCS;
@@ -518,7 +518,7 @@ public class IndexWriter {
    * as this limits the length of pauses while indexing to a few seconds.
    * Larger values are best for batched indexing and speedier searches.
    *
-   * <p>The default value is {@link DEFAULT_MAX_MERGE_DOCS}.
+   * <p>The default value is {@link #DEFAULT_MAX_MERGE_DOCS}.
 
    */
   private int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
