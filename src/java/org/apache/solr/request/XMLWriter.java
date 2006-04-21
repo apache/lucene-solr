@@ -166,7 +166,7 @@ final public class XMLWriter {
       writer.write(' ');
       writer.write(name);
       writer.write("=\"");
-      writer.write(val);
+      XML.escapeAttributeValue(val, writer);
       writer.write('"');
     }
   }
@@ -177,12 +177,11 @@ final public class XMLWriter {
     writer.write('<');
     writer.write(tag);
     if (name!=null) {
-      writer.write(" name=\"");
-      writer.write(name);
+      writeAttr("name", name);
       if (closeTag) {
-        writer.write("\"/>");
+        writer.write("/>");
       } else {
-        writer.write("\">");
+        writer.write(">");
       }
     } else {
       if (closeTag) {

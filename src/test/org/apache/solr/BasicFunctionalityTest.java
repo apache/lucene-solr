@@ -18,6 +18,14 @@ package org.apache.solr;
 
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
+import org.w3c.dom.Document;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -25,9 +33,9 @@ import org.apache.solr.util.*;
  */
 public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
-  public String getSchemaFile() { return "schema.xml"; } 
+  public String getSchemaFile() { return "schema.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
-    
+
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
@@ -54,13 +62,13 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             adoc("id", "42", "val_s", "aa;bb"));
     assertU("does commit work?",
             commit());
-    
+
     assertQ("backslash escaping semicolon",
             req("id:42 AND val_s:aa\\;bb")
             ,"//*[@numFound='1']"
             ,"//int[@name='id'][.='42']"
             );
-            
+
     assertQ("quote escaping semicolon",
             req("id:42 AND val_s:\"aa;bb\"")
             ,"//*[@numFound='1']"
@@ -77,9 +85,9 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertQ(req("id:42")
             ,"//*[@numFound='0']"
             );
-    
+
     // test allowDups default of false
-    
+
     assertU(adoc("id", "42", "val_s", "AAA"));
     assertU(adoc("id", "42", "val_s", "BBB"));
     assertU(commit());
@@ -138,16 +146,30 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertQ(req("id:[0 TO 99]")
             ,"//*[@numFound='2']"
             );
-    
+
   }
+
+  public void testXMLWriter() throws Exception {
+
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("\"quoted\"", "\"value\"");
+
+    StringWriter writer = new StringWriter(32000);
+    XMLWriter.writeResponse(writer,req("foo"),rsp);
+
+    DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    builder.parse(new ByteArrayInputStream
+                             (writer.toString().getBytes("UTF-8")));
+  }
+
 
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
-    
+
 //     assertU(adoc("id", "overwrite", "val_s", "AAA"));
 //     assertU(commit());
-    
+
 //     assertU(add(doc("id", "overwrite", "val_s", "BBB")
 //                 ,"allowDups", "false"
 //                 ,"overwriteCommitted","false"
@@ -159,6 +181,6 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 //             ,"//str[.='AAA']"
 //             );
 //   }
-  
-    
+
+
 }

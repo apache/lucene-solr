@@ -34,6 +34,10 @@ public class XML {
   private static final String[] chardata_escapes=
   {"#0;","#1;","#2;","#3;","#4;","#5;","#6;","#7;","#8;",null,null,"#11;","#12;",null,"#14;","#15;","#16;","#17;","#18;","#19;","#20;","#21;","#22;","#23;","#24;","#25;","#26;","#27;","#28;","#29;","#30;","#31;",null,null,null,null,null,null,"&amp;",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"&lt;"};
 
+  private static final String[] attribute_escapes=
+  {"#0;","#1;","#2;","#3;","#4;","#5;","#6;","#7;","#8;",null,null,"#11;","#12;",null,"#14;","#15;","#16;","#17;","#18;","#19;","#20;","#21;","#22;","#23;","#24;","#25;","#26;","#27;","#28;","#29;","#30;","#31;",null,null,"&quot;",null,null,null,"&amp;",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"&lt;"};
+
+
 
   /*****************************************
    #Simple python script used to generate the escape table above.  -YCS
@@ -71,41 +75,13 @@ public class XML {
  * @throws IOException
  */
   public static void escapeCharData(String str, Writer out) throws IOException {
-    int start=0;
-    // "n" was used for counting the chars added to out...
-    // removed cause it wasn't really useful so far.
-    // int n=0;
-
-    for (int i=start; i<str.length(); i++) {
-      char ch = str.charAt(i);
-      // since I already received the char, what if I put it into
-      // a char array and wrote that to the stream instead of the
-      // string? (would cause extra GC though)
-      String subst=null;
-      if (ch<chardata_escapes.length) {
-        subst=chardata_escapes[ch];
-      }
-      if (subst != null) {
-        if (start<i) {
-          // out.write(str.substring(start,i));
-          out.write(str, start, i-start);
-          // n+=i-start;
-        }
-        out.write(subst);
-        // n+=subst.length();
-        start=i+1;
-      }
-    }
-    if (start==0) {
-      out.write(str);
-      // n += str.length();
-    } else if (start<str.length()) {
-      // out.write(str.substring(start));
-      out.write(str, start, str.length()-start);
-      // n += str.length()-start;
-    }
-    // return n;
+    escape(str, out, chardata_escapes);
   }
+
+  public static void escapeAttributeValue(String str, Writer out) throws IOException {
+    escape(str, out, attribute_escapes);
+  }
+
 
   public final static void writeXML(Writer out, String tag, String val) throws IOException {
     out.write('<');
@@ -151,7 +127,7 @@ public class XML {
       out.write(' ');
       out.write(attrs[i++].toString());
       out.write("=\"");
-      out.write(attrs[i].toString());
+      escapeAttributeValue(attrs[i].toString(), out);
       out.write("\"");
     }
     if (val == null) {
@@ -163,5 +139,43 @@ public class XML {
       out.write(tag);
       out.write('>');
     }
+  }
+
+
+  private static void escape(String str, Writer out, String[] escapes) throws IOException {
+    int start=0;
+    // "n" was used for counting the chars added to out...
+    // removed cause it wasn't really useful so far.
+    // int n=0;
+
+    for (int i=start; i<str.length(); i++) {
+      char ch = str.charAt(i);
+      // since I already received the char, what if I put it into
+      // a char array and wrote that to the stream instead of the
+      // string? (would cause extra GC though)
+      String subst=null;
+      if (ch<escapes.length) {
+        subst=escapes[ch];
+      }
+      if (subst != null) {
+        if (start<i) {
+          // out.write(str.substring(start,i));
+          out.write(str, start, i-start);
+          // n+=i-start;
+        }
+        out.write(subst);
+        // n+=subst.length();
+        start=i+1;
+      }
+    }
+    if (start==0) {
+      out.write(str);
+      // n += str.length();
+    } else if (start<str.length()) {
+      // out.write(str.substring(start));
+      out.write(str, start, str.length()-start);
+      // n += str.length()-start;
+    }
+    // return n;
   }
 }
