@@ -97,7 +97,7 @@ public class MultiPhraseQuery extends Query {
 
   /**
    * Returns a List<Term[]> of the terms in the multiphrase.
-   * Do not modify the List or it's contents.
+   * Do not modify the List or its contents.
    */
   public List getTermArrays() {
 	  return Collections.unmodifiableList(termArrays);
