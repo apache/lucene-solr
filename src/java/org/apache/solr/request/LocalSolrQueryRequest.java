@@ -25,6 +25,8 @@ import org.apache.solr.core.SolrCore;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Arrays;
+import java.lang.reflect.Array;
 
 /**
  * @author yonik
@@ -67,7 +69,22 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
 
 
   public String getParam(String name) {
-    return (String)args.get(name);
+    Object value = args.get(name);
+    if (value == null || value instanceof String) {
+      return (String) value;
+    }
+    else {
+      return ((String[]) value)[0];
+    }
+  }
+
+  public String[] getParams(String name) {
+    Object value = args.get(name);
+    if (value instanceof String) {
+      return new String[] {(String)value};
+    } else {
+      return (String[]) value;
+    }
   }
 
   public String getQueryString() {

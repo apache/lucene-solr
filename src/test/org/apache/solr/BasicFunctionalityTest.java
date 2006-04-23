@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -160,6 +162,24 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     builder.parse(new ByteArrayInputStream
                              (writer.toString().getBytes("UTF-8")));
+  }
+
+  public void testLocalSolrQueryRequestParams() {
+    HashMap args = new HashMap();
+    args.put("string", "string value");
+    args.put("array", new String[] {"array", "value"});
+    SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
+    assertEquals("string value", req.getParam("string"));
+    assertEquals("array", req.getParam("array"));
+
+    String[] stringParams = req.getParams("string");
+    assertEquals(1, stringParams.length);
+    assertEquals("string value", stringParams[0]);
+
+    String[] arrayParams = req.getParams("array");
+    assertEquals(2, arrayParams.length);
+    assertEquals("array", arrayParams[0]);
+    assertEquals("value", arrayParams[1]);
   }
 
 

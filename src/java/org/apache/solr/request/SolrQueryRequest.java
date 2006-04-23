@@ -31,6 +31,8 @@ public interface SolrQueryRequest {
 
   public String getParam(String name);
 
+  public String[] getParams(String name);
+
   public String getQueryString();
 
   // signifies the syntax and the handler that should be used

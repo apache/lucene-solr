@@ -25,6 +25,10 @@ class SolrServletRequest extends SolrQueryRequestBase {
     return req.getParameter(name);
   }
 
+  public String[] getParams(String name) {
+    return req.getParameterValues(name);
+  }
+
 
   public String getParamString() {
     StringBuilder sb = new StringBuilder(128);
