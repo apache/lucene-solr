@@ -25,8 +25,6 @@ import org.apache.solr.core.SolrCore;
 
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Arrays;
-import java.lang.reflect.Array;
 
 /**
  * @author yonik
@@ -62,7 +60,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     super(core);
     this.args=args;
     this.query=getStrParam(QUERY_NAME,null);
-    this.qtype=getStrParam(QUERYTYPE_NAME,null);;
+    this.qtype=getStrParam(QUERYTYPE_NAME,null);
     this.start=getIntParam(START_NAME,0);
     this.limit=getIntParam(ROWS_NAME,10);
   }
