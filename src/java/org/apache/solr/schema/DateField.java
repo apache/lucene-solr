@@ -26,41 +26,50 @@ import org.apache.solr.search.function.OrdFieldSource;
 import java.util.Map;
 import java.io.IOException;
 
-/***
-Date Format for the XML, incoming and outgoing:
-
-A date field shall be of the form 1995-12-31T23:59:59Z
-The trailing "Z" designates UTC time and is mandatory.
-Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
-All other parts are mandatory.
-
-This format was derived to be standards compliant (ISO 8601) and is a more
-restricted form of the canonical representation of dateTime from XML schema part 2.
-http://www.w3.org/TR/xmlschema-2/#dateTime
-
-"In 1970 the Coordinated Universal Time system was devised by an international
-advisory group of technical experts within the International Telecommunication
-Union (ITU).  The ITU felt it was best to designate a single abbreviation for
-use in all languages in order to minimize confusion.  Since unanimous agreement
-could not be achieved on using either the English word order, CUT, or the
-French word order, TUC, the acronym UTC was chosen as a compromise."
-***/
-
-// The XML (external) date format will sort correctly, except if
-// fractions of seconds are present (because '.' is lower than 'Z').
-// The easiest fix is to simply remove the 'Z' for the internal
-// format.
-
 // TODO: make a FlexibleDateField that can accept dates in multiple
 // formats, better for human entered dates.
 
 // TODO: make a DayField that only stores the day?
 
+
 /**
+ * FieldType that can represent any Date/Time with millisecond precisison.
+ * <p>
+ * Date Format for the XML, incoming and outgoing:
+ * </p>
+ * <blockquote>
+ * A date field shall be of the form 1995-12-31T23:59:59Z
+ * The trailing "Z" designates UTC time and is mandatory.
+ * Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
+ * All other parts are mandatory.
+ * </blockquote>
+ * <p>
+ * This format was derived to be standards compliant (ISO 8601) and is a more
+ * restricted form of the canonical representation of dateTime from XML
+ * schema part 2.
+ * http://www.w3.org/TR/xmlschema-2/#dateTime
+ * </p>
+ * <blockquote>
+ * "In 1970 the Coordinated Universal Time system was devised by an
+ * international advisory group of technical experts within the International
+ * Telecommunication Union (ITU).  The ITU felt it was best to designate a
+ * single abbreviation for use in all languages in order to minimize
+ * confusion.  Since unanimous agreement could not be achieved on using
+ * either the English word order, CUT, or the French word order, TUC, the
+ * acronym UTC was chosen as a compromise."
+ * </blockquote>
+ *
  * @author yonik
  * @version $Id$
+ * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
  */
 public class DateField extends FieldType {
+
+  // The XML (external) date format will sort correctly, except if
+  // fractions of seconds are present (because '.' is lower than 'Z').
+  // The easiest fix is to simply remove the 'Z' for the internal
+  // format.
+  
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
 
