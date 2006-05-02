@@ -3,7 +3,7 @@
 <!-- $Source: /cvs/main/searching/SolrServer/resources/admin/index.jsp,v $ -->
 <!-- $Name:  $ -->
 
-<%@ page import="java.util.Date"%>
+<%@ page import="java.util.Date" %>
 
 <!-- jsp:include page="header.jsp"/ -->
 <!-- do a verbatim include so we can use the local vars -->
@@ -63,6 +63,7 @@
   </td>
 </tr>
 -->
+<jsp:include page="get-file.jsp?file=admin-extra.html&optional=y" flush="true"/>
 
 </table><P>
 
