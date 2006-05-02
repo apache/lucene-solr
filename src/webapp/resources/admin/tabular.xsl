@@ -26,7 +26,7 @@
       </head>
       <body>
         <a href=".">
-           <img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR">
+           <img border="0" align="right" height="61" width="142" src="solr-head.gif" alt="SOLR">
            </img>
         </a>
         <h1>SOLR Search Results</h1>
