@@ -6,32 +6,15 @@
 <%@ page import="java.util.Date"%>
 <%@ page import="java.util.logging.Level"%>
 <%@ page import="java.util.logging.Logger"%>
+<%@include file="header.jsp" %>
 <%
-  SolrCore core = SolrCore.getSolrCore();
-  IndexSchema schema = core.getSchema();
-  String collectionName = schema!=null ? schema.getName():"unknown";
 
   String action = request.getParameter("action");
   String logging = request.getParameter("log");
   String enableActionStatus = "";
   boolean isValid = false;
-  boolean wasOk = true;
 
-  String rootdir = "/var/opt/resin3/"+request.getServerPort();
-  File pidFile = new File(rootdir + "/logs/resin.pid");
-  String startTime = "";
-
-  try {
-    startTime = (pidFile.lastModified() > 0)
-              ? new Date(pidFile.lastModified()).toString()
-                    : "No Resin Pid found (logs/resin.pid)";
-  } catch (Exception e) {
-    out.println("<ERROR>");
-    out.println("Couldn't open Solr pid file:" + e.toString());
-    out.println("</ERROR>");
-  }
-
-  File enableFile = new File(rootdir + "/logs/server-enabled");
+  File enableFile = new File(enabledFile);
 
   if (action != null) {
     // Validate fname
@@ -46,25 +29,27 @@
     if ("Enable".compareTo(action) == 0) {
       try {
         if (enableFile.createNewFile()) {
-          enableActionStatus += "Enable Succeeded";
+          enableActionStatus += "Enable Succeeded (enable file ";
+          enableActionStatus += enabledFile;
+          enableActionStatus += " created)";
         } else {
           enableActionStatus += "Already Enabled";
         }
       } catch(Exception e) {
           enableActionStatus += "Enable Failed: " + e.toString();
-          wasOk = false;
       }
     }
     if ("Disable".compareTo(action) == 0) {
       try {
         if (enableFile.delete()) {
-          enableActionStatus = "Disable Succeeded";
+          enableActionStatus = "Disable Succeeded (enable file ";
+          enableActionStatus += enabledFile;
+          enableActionStatus += " removed)";
         } else {
           enableActionStatus = "Already Disabled";
         }
       } catch(Exception e) {
           enableActionStatus += "Disable Failed: " + e.toString();
-          wasOk = false;
       }
     }
     if (logging != null) {
@@ -80,40 +65,13 @@
       } catch(Exception e) {
           enableActionStatus += "Set Log Level (" + logging + ") Failed: "
                                  + e.toString();
-          wasOk = false;
       }
     }
   } else {
     enableActionStatus = "Illegal Action";
   }
 
-  String hostname="localhost";
-  try {
-    InetAddress addr = InetAddress.getLocalHost();
-    // Get IP Address
-    byte[] ipAddr = addr.getAddress();
-    // Get hostname
-    // hostname = addr.getHostName();
-    hostname = addr.getCanonicalHostName();
-  } catch (UnknownHostException e) {}
 %>
-<%
-  if (wasOk) {
-%>
-<meta http-equiv="refresh" content="4;url=index.jsp">
-<%
-  }
-%>
-<html>
-<head>
-    <link rel="stylesheet" type="text/css" href="solr-admin.css">
-    <link rel="icon" href="favicon.ico" type="image/ico">
-    <link rel="shortcut icon" href="favicon.ico" type="image/ico">
-</head>
-<body>
-<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="SOLR"></a>
-<h1>SOLR Action (<%= collectionName %>) - <%= action %></h1>
-<%= hostname %> : <%= request.getServerPort() %>
 <br clear="all">
 <table>
   <tr>
@@ -130,23 +88,6 @@
     </td>
     <td>
       <%= enableActionStatus %><br>
-    </td>
-  </tr>
-</table>
-<br>
-<table>
-  <tr>
-    <td>
-    </td>
-    <td>
-      Current Time: <%= new Date().toString() %>
-    </td>
-  </tr>
-  <tr>
-    <td>
-    </td>
-    <td>
-      Server Start At: <%= startTime %>
     </td>
   </tr>
 </table>
