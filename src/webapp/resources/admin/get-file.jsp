@@ -7,17 +7,23 @@
 <%@ page contentType="text/plain;charset=UTF-8" language="java" %>
 <%
   String fname = request.getParameter("file");
+  String optional = request.getParameter("optional");
   String gettableFiles = SolrConfig.config.get("admin/gettableFiles","");
   StringTokenizer st = new StringTokenizer(gettableFiles);
   InputStream is;
   boolean isValid = false;
+  boolean isOptional = false;
   if (fname != null) {
     // Validate fname
     while(st.hasMoreTokens()) {
       if (st.nextToken().compareTo(fname) == 0) isValid = true;
     }
   }
+  if (optional!=null && optional.equalsIgnoreCase("y")) {
+    isOptional=true;
+  }
   if (isValid) {
+    try {
     is= Config.openResource(fname);
     Reader input = new InputStreamReader(is);
     char[] buf = new char[4096];
@@ -25,6 +31,12 @@
       int len = input.read(buf);
       if (len<=0) break;
       out.write(buf,0,len);
+    }
+    }
+    catch (RuntimeException re) {
+      if (!isOptional) {
+        throw re;
+      }
     }
   } else {
     out.println("<ERROR>");
