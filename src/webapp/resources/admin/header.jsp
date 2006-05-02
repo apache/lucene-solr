@@ -1,4 +1,7 @@
 <%@include file="_info.jsp" %>
+<script>
+var host_name="<%= hostname %>"
+</script>
 
 <html>
 <head>
@@ -9,7 +12,7 @@
 </head>
 
 <body>
-<a href="."><img border="0" align="right" height="88" width="215" src="solr-head.gif" alt="Solr"></a>
+<a href="."><img border="0" align="right" height="61" width="142" src="solr-head.gif" alt="Solr"></a>
 <h1>Solr Admin (<%= collectionName %>)
 <%= enabledStatus==null ? "" : (isEnabled ? " - Enabled" : " - Disabled") %> </h1>
 
