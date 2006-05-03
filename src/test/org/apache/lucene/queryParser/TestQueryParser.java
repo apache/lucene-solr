@@ -134,6 +134,15 @@ public class TestQueryParser extends TestCase {
     }
   }
 
+  public void assertEscapedQueryEquals(String query, Analyzer a, String result)
+    throws Exception {
+    String escapedQuery = QueryParser.escape(query);
+    if (!escapedQuery.equals(result)) {
+      fail("Query /" + query + "/ yielded /" + escapedQuery
+          + "/, expecting /" + result + "/");
+    }
+  }
+
   public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
     throws Exception {
     QueryParser qp = getParser(null);
@@ -439,6 +448,41 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
   }
 
+  public void testQueryStringEscaping() throws Exception {
+    Analyzer a = new WhitespaceAnalyzer();
+
+    assertEscapedQueryEquals("a-b:c", a, "a\\-b\\:c");
+    assertEscapedQueryEquals("a+b:c", a, "a\\+b\\:c");
+    assertEscapedQueryEquals("a:b:c", a, "a\\:b\\:c");
+    assertEscapedQueryEquals("a\\b:c", a, "a\\\\b\\:c");
+
+    assertEscapedQueryEquals("a:b-c", a, "a\\:b\\-c");
+    assertEscapedQueryEquals("a:b+c", a, "a\\:b\\+c");
+    assertEscapedQueryEquals("a:b:c", a, "a\\:b\\:c");
+    assertEscapedQueryEquals("a:b\\c", a, "a\\:b\\\\c");
+
+    assertEscapedQueryEquals("a:b-c*", a, "a\\:b\\-c\\*");
+    assertEscapedQueryEquals("a:b+c*", a, "a\\:b\\+c\\*");
+    assertEscapedQueryEquals("a:b:c*", a, "a\\:b\\:c\\*");
+
+    assertEscapedQueryEquals("a:b\\\\c*", a, "a\\:b\\\\\\\\c\\*");
+
+    assertEscapedQueryEquals("a:b-?c", a, "a\\:b\\-\\?c");
+    assertEscapedQueryEquals("a:b+?c", a, "a\\:b\\+\\?c");
+    assertEscapedQueryEquals("a:b:?c", a, "a\\:b\\:\\?c");
+
+    assertEscapedQueryEquals("a:b?c", a, "a\\:b\\?c");
+
+    assertEscapedQueryEquals("a:b-c~", a, "a\\:b\\-c\\~");
+    assertEscapedQueryEquals("a:b+c~", a, "a\\:b\\+c\\~");
+    assertEscapedQueryEquals("a:b:c~", a, "a\\:b\\:c\\~");
+    assertEscapedQueryEquals("a:b\\c~", a, "a\\:b\\\\c\\~");
+
+    assertEscapedQueryEquals("[ a - TO a+ ]", null, "\\[ a \\- TO a\\+ \\]");
+    assertEscapedQueryEquals("[ a : TO a~ ]", null, "\\[ a \\: TO a\\~ \\]");
+    assertEscapedQueryEquals("[ a\\ TO a* ]", null, "\\[ a\\\\ TO a\\* \\]");
+  }
+  
   public void testTabNewlineCarriageReturn()
     throws Exception {
     assertQueryEqualsDOA("+weltbank +worlbank", null,
