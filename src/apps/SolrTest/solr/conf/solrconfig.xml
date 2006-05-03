@@ -183,7 +183,7 @@
 
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml scheam.xml</gettableFiles>
+    <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
   </admin>
 
 
