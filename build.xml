@@ -241,7 +241,13 @@
 
   <target name="example" 
 	  depends="dist-war">
-          <copy file="${dist}/${ant.project.name}-${version}.war" tofile="${example}/webapps/${ant.project.name}.war"/>
+    <copy file="${dist}/${ant.project.name}-${version}.war"
+          tofile="${example}/webapps/${ant.project.name}.war"/>
+    <copy todir="${example}/solr/bin">
+      <fileset dir="${src}/scripts">
+        <exclude name="scripts.conf"/>
+      </fileset>
+    </copy>
   </target>
 
   <target name="dist-example" 
