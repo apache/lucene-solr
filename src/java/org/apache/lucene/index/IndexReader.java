@@ -29,8 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -520,7 +518,7 @@ public abstract class IndexReader {
 
 
   /** Implements deletion of the document numbered <code>docNum</code>.
-   * Applications should call {@link #delete(int)} or {@link #delete(Term)}.
+   * Applications should call {@link #deleteDocument(int)} or {@link #deleteDocuments(Term)}.
    */
   protected abstract void doDelete(int docNum) throws IOException;
 
@@ -530,7 +528,7 @@ public abstract class IndexReader {
    * the document.  Then to delete such a document, one merely constructs a
    * term with the appropriate field and the unique ID string as its text and
    * passes it to this method.
-   * See {@link #delete(int)} for information about when this deletion will 
+   * See {@link #deleteDocument(int)} for information about when this deletion will 
    * become effective.
    * @return the number of documents deleted
    */
