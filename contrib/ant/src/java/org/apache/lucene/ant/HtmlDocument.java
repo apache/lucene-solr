@@ -55,7 +55,6 @@ public class HtmlDocument {
      *@param  file             the <code>File</code> containing the
      *      HTML to parse
      *@exception  IOException  if an I/O exception occurs
-     *@since
      */
     public HtmlDocument(File file) throws IOException {
         Tidy tidy = new Tidy();
@@ -73,8 +72,6 @@ public class HtmlDocument {
      *
      *@param  is               the <code>InputStream</code>
      *      containing the HTML
-     *@exception  IOException  if I/O exception occurs
-     *@since
      */
     public HtmlDocument(InputStream is) {
         Tidy tidy = new Tidy();
@@ -90,8 +87,6 @@ public class HtmlDocument {
      *  java.io.InputStream}.
      *
      *@param  is
-     *@return
-     *@exception  IOException
      */
     public static org.apache.lucene.document.Document
             getDocument(InputStream is) {
@@ -115,7 +110,6 @@ public class HtmlDocument {
      *  java.io.File}.
      *
      *@param  file
-     *@return
      *@exception  IOException
      */
     public static org.apache.lucene.document.Document
