@@ -14,8 +14,6 @@
   String enableActionStatus = "";
   boolean isValid = false;
 
-  File enableFile = new File(enabledFile);
-
   if (action != null) {
     // Validate fname
     if ("Enable".compareTo(action) == 0) isValid = true;
@@ -28,6 +26,7 @@
   if (isValid) {
     if ("Enable".compareTo(action) == 0) {
       try {
+        File enableFile = new File(enabledFile);
         if (enableFile.createNewFile()) {
           enableActionStatus += "Enable Succeeded (enable file ";
           enableActionStatus += enabledFile;
@@ -41,6 +40,7 @@
     }
     if ("Disable".compareTo(action) == 0) {
       try {
+        File enableFile = new File(enabledFile);
         if (enableFile.delete()) {
           enableActionStatus = "Disable Succeeded (enable file ";
           enableActionStatus += enabledFile;
@@ -70,7 +70,8 @@
   } else {
     enableActionStatus = "Illegal Action";
   }
-
+  // :TODO: might want to rework this so any logging change happens *after*
+  SolrCore.log.log(Level.INFO, enableActionStatus);
 %>
 <br clear="all">
 <table>
