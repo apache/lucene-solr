@@ -1,6 +1,7 @@
 #!/bin/sh
 FILES=$*
-URL=http://localhost:8983/solr/update
+#URL=http://localhost:8983/solr/update
+URL=http://localhost:7070/update
 
 for f in $FILES; do
   echo Posting file $f to $URL
