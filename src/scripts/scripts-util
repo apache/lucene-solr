@@ -79,3 +79,4 @@ then
     mkdir ${solr_root}/logs
 fi
 
+umask 002
