@@ -248,6 +248,7 @@
         <exclude name="scripts.conf"/>
       </fileset>
     </copy>
+    <chmod dir="${example}/solr/bin" perm="755" includes="**"/>
   </target>
 
   <target name="dist-example" 
