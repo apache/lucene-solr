@@ -80,12 +80,12 @@ public class FSDirectory extends Directory {
                            FSDirectory.class.getName());
       IMPL = Class.forName(name);
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException("cannot load FSDirectory class: " + e.toString());
+      throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
     } catch (SecurityException se) {
       try {
         IMPL = Class.forName(FSDirectory.class.getName());
       } catch (ClassNotFoundException e) {
-        throw new RuntimeException("cannot load default FSDirectory class: " + e.toString());
+        throw new RuntimeException("cannot load default FSDirectory class: " + e.toString(), e);
       }
     }
   }
@@ -96,7 +96,7 @@ public class FSDirectory extends Directory {
     try {
       DIGESTER = MessageDigest.getInstance("MD5");
     } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e.toString());
+        throw new RuntimeException(e.toString(), e);
     }
   }
 
@@ -136,7 +136,7 @@ public class FSDirectory extends Directory {
         try {
           dir = (FSDirectory)IMPL.newInstance();
         } catch (Exception e) {
-          throw new RuntimeException("cannot load FSDirectory class: " + e.toString());
+          throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
         }
         dir.init(file, create);
         DIRECTORIES.put(file, dir);
@@ -168,9 +168,10 @@ public class FSDirectory extends Directory {
     // Ensure that lockDir exists and is a directory.
     if (!lockDir.exists()) {
       if (!lockDir.mkdirs())
-        throw new IOException("Cannot create directory: " + lockDir);
+        throw new IOException("Cannot create directory: " + lockDir.getAbsolutePath());
     } else if (!lockDir.isDirectory()) {
-      throw new IOException("Found regular file where directory expected: " + lockDir);
+      throw new IOException("Found regular file where directory expected: " + 
+          lockDir.getAbsolutePath());
     }
     if (create) {
       create();
@@ -189,10 +190,12 @@ public class FSDirectory extends Directory {
       throw new IOException(directory + " not a directory");
 
     String[] files = directory.list(new IndexFileNameFilter());            // clear old files
+    if (files == null)
+      throw new IOException("Cannot read directory " + directory.getAbsolutePath());
     for (int i = 0; i < files.length; i++) {
       File file = new File(directory, files[i]);
       if (!file.delete())
-        throw new IOException("Cannot delete " + files[i]);
+        throw new IOException("Cannot delete " + file);
     }
 
     String lockPrefix = getLockPrefix().toString(); // clear old locks
@@ -204,7 +207,7 @@ public class FSDirectory extends Directory {
         continue;
       File lockFile = new File(lockDir, files[i]);
       if (!lockFile.delete())
-        throw new IOException("Cannot delete " + files[i]);
+        throw new IOException("Cannot delete " + lockFile);
     }
   }
 
@@ -288,21 +291,23 @@ public class FSDirectory extends Directory {
         old.delete();
       }
       catch (IOException ioe) {
-        throw new IOException("Cannot rename " + old + " to " + nu);
+        IOException newExc = new IOException("Cannot rename " + old + " to " + nu);
+        newExc.initCause(ioe);
+        throw newExc;
       }
       finally {
         if (in != null) {
           try {
             in.close();
           } catch (IOException e) {
-            throw new RuntimeException("Cannot close input stream: " + e.toString());
+            throw new RuntimeException("Cannot close input stream: " + e.toString(), e);
           }
         }
         if (out != null) {
           try {
             out.close();
           } catch (IOException e) {
-            throw new RuntimeException("Cannot close output stream: " + e.toString());
+            throw new RuntimeException("Cannot close output stream: " + e.toString(), e);
           }
         }
       }
@@ -379,7 +384,7 @@ public class FSDirectory extends Directory {
     try {
       dirName = directory.getCanonicalPath();
     } catch (IOException e) {
-      throw new RuntimeException(e.toString());
+      throw new RuntimeException(e.toString(), e);
     }
 
     byte digest[];
