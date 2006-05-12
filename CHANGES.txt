@@ -11,6 +11,9 @@ API Changes
     so Lucene can read its date fields from old indexes
     (Yonik Seeley & Grant Ingersoll)
 
+ 2. DisjunctionSumScorer is no longer public.
+    (Paul Elschot via Otis Gospodnetic)
+
 Bug fixes
 
  1. LUCENE-330: Fix issue of FilteredQuery not working properly within

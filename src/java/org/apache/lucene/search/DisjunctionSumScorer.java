@@ -1,7 +1,7 @@
 package org.apache.lucene.search;
 
 /**
- * Copyright 2005 The Apache Software Foundation
+ * Copyright 2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.apache.lucene.util.PriorityQueue;
 /** A Scorer for OR like queries, counterpart of Lucene's <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#skipTo(int)} and uses skipTo() on the given Scorers. 
  */
-public class DisjunctionSumScorer extends Scorer {
+class DisjunctionSumScorer extends Scorer {
   /** The number of subscorers. */ 
   private final int nrScorers;
   
