@@ -159,7 +159,9 @@ final class FieldsReader {
       }
       catch (DataFormatException e) {
         // this will happen if the field is not compressed
-        throw new IOException ("field data are in wrong format: " + e.toString());
+        IOException newException = new IOException("field data are in wrong format: " + e.toString());
+        newException.initCause(e);
+        throw newException;
       }
     }
   

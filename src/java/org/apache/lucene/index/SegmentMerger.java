@@ -332,7 +332,8 @@ final class SegmentMerger {
         doc += base;                              // convert to merged space
 
         if (doc < lastDoc)
-          throw new IllegalStateException("docs out of order");
+          throw new IllegalStateException("docs out of order (" + doc +
+              " < " + lastDoc + " )");
 
         df++;
 

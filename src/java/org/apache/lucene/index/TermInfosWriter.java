@@ -92,11 +92,14 @@ final class TermInfosWriter {
   final void add(Term term, TermInfo ti)
        throws IOException {
     if (!isIndex && term.compareTo(lastTerm) <= 0)
-      throw new IOException("term out of order");
+      throw new IOException("term out of order (\"" + term + 
+          "\".compareTo(\"" + lastTerm + "\") <= 0)");
     if (ti.freqPointer < lastTi.freqPointer)
-      throw new IOException("freqPointer out of order");
+      throw new IOException("freqPointer out of order (" + ti.freqPointer +
+          " < " + lastTi.freqPointer + ")");
     if (ti.proxPointer < lastTi.proxPointer)
-      throw new IOException("proxPointer out of order");
+      throw new IOException("proxPointer out of order (" + ti.proxPointer + 
+          " < " + lastTi.proxPointer + ")");
 
     if (!isIndex && size % indexInterval == 0)
       other.add(lastTerm, lastTi);                      // add an index term
