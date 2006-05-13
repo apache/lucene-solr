@@ -13,6 +13,10 @@ API Changes
 
  2. DisjunctionSumScorer is no longer public.
     (Paul Elschot via Otis Gospodnetic)
+    
+ 3. Creating a Field with both an empty name and an empty value 
+    now throws an IllegalArgumentException
+    (Daniel Naber)
 
 Bug fixes
 
