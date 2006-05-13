@@ -174,7 +174,9 @@ public class MMapDirectory extends FSDirectory {
       try {
         clone.seek(getFilePointer());
       } catch(IOException ioe) {
-        throw new RuntimeException(ioe);
+        RuntimeException newException = new RuntimeException(ioe);
+        newException.initCause(ioe);
+        throw newException;
       };
       return clone;
     }
