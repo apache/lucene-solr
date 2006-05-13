@@ -156,7 +156,6 @@ public class MultiFieldQueryParser extends QueryParser
    * @param fields Fields to search on
    * @param analyzer Analyzer to use
    * @throws ParseException if query parsing fails
-   * @throws TokenMgrError if query parsing fails
    * @throws IllegalArgumentException if the length of the queries array differs
    *  from the length of the fields array
    */
@@ -203,7 +202,6 @@ public class MultiFieldQueryParser extends QueryParser
    * @param flags Flags describing the fields
    * @param analyzer Analyzer to use
    * @throws ParseException if query parsing fails
-   * @throws TokenMgrError if query parsing fails
    * @throws IllegalArgumentException if the length of the fields array differs
    *  from the length of the flags array
    */
@@ -249,7 +247,6 @@ public class MultiFieldQueryParser extends QueryParser
    * @param flags Flags describing the fields
    * @param analyzer Analyzer to use
    * @throws ParseException if query parsing fails
-   * @throws TokenMgrError if query parsing fails
    * @throws IllegalArgumentException if the length of the queries, fields,
    *  and flags array differ
    */
