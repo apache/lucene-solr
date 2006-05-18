@@ -172,7 +172,7 @@ public class SpanNotQuery extends SpanQuery {
   public int hashCode() {
     int h = include.hashCode();
     h = (h<<1) | (h >>> 31);  // rotate left
-    h ^= include.hashCode();
+    h ^= exclude.hashCode();
     h = (h<<1) | (h >>> 31);  // rotate left
     h ^= Float.floatToRawIntBits(getBoost());
     return h;

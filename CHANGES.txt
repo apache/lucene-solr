@@ -56,7 +56,11 @@ Bug fixes
 
 11. LUCENE-352: Fixed bug in SpanNotQuery that manifested as
     NullPointerException when "exclude" query was not a SpanTermQuery.
+    (Chris Hostetter)
 
+12. LUCENE-572: Fixed bug in hashCode, was ignoring exclude clause
+    (Chris Hostetter)
+    
 1.9.1
 
 Bug fixes
