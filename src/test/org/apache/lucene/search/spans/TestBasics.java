@@ -160,7 +160,81 @@ public class TestBasics extends TestCase {
     assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
+  
+  public void testSpanWithMultipleNotSingle() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "forty"));
 
+    SpanOrQuery or = new SpanOrQuery(new SpanQuery[] {term3});
+
+    SpanNotQuery query = new SpanNotQuery(near, or);
+
+    checkHits(query, new int[]
+      {801, 821, 831, 851, 861, 871, 881, 891});
+
+    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+  }
+
+  public void testSpanWithMultipleNotMany() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "forty"));
+    SpanTermQuery term4 = new SpanTermQuery(new Term("field", "sixty"));
+    SpanTermQuery term5 = new SpanTermQuery(new Term("field", "eighty"));
+
+    SpanOrQuery or = new SpanOrQuery(new SpanQuery[] {term3, term4, term5});
+
+    SpanNotQuery query = new SpanNotQuery(near, or);
+
+    checkHits(query, new int[]
+      {801, 821, 831, 851, 871, 891});
+
+    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+  }
+    
+  public void testNpeInSpanNearWithSpanNot() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery hun = new SpanTermQuery(new Term("field", "hundred"));
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "forty"));
+    SpanNearQuery exclude = new SpanNearQuery(new SpanQuery[] {hun, term3},
+                                              1, true);
+    
+    SpanNotQuery query = new SpanNotQuery(near, exclude);
+
+    checkHits(query, new int[]
+      {801, 821, 831, 851, 861, 871, 881, 891});
+
+    assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+  }
+
+  
+  public void testNpeInSpanNearInSpanFirstInSpanNot() throws Exception {
+    int n = 5;
+    SpanTermQuery hun = new SpanTermQuery(new Term("field", "hundred"));
+    SpanTermQuery term40 = new SpanTermQuery(new Term("field", "forty"));
+    SpanTermQuery term40c = (SpanTermQuery)term40.clone();
+
+    SpanFirstQuery include = new SpanFirstQuery(term40, n);
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[]{hun, term40c},
+                                           n-1, true);
+    SpanFirstQuery exclude = new SpanFirstQuery(near, n-1);
+    SpanNotQuery q = new SpanNotQuery(include, exclude);
+    
+    checkHits(q, new int[]{40,41,42,43,44,45,46,47,48,49});
+    
+  }
+  
   public void testSpanFirst() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "five"));
     SpanFirstQuery query = new SpanFirstQuery(term1, 1);

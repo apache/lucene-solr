@@ -74,7 +74,7 @@ public class SpanNotQuery extends SpanQuery {
         private boolean moreInclude = true;
 
         private Spans excludeSpans = exclude.getSpans(reader);
-        private boolean moreExclude = true;
+        private boolean moreExclude = excludeSpans.next();
 
         public boolean next() throws IOException {
           if (moreInclude)                        // move to next include

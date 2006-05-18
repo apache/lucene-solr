@@ -54,6 +54,9 @@ Bug fixes
 10. LUCENE-512: Fixed ClassCastException in ParallelReader.getTermFreqVectors
     (frederic via Yonik)
 
+11. LUCENE-352: Fixed bug in SpanNotQuery that manifested as
+    NullPointerException when "exclude" query was not a SpanTermQuery.
+
 1.9.1
 
 Bug fixes
