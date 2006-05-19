@@ -118,7 +118,7 @@ public class ParallelReader extends IndexReader {
   // delete in all readers
   protected void doDelete(int n) throws IOException {
     for (int i = 0; i < readers.size(); i++) {
-      ((IndexReader)readers.get(i)).doDelete(n);
+      ((IndexReader)readers.get(i)).deleteDocument(n);
     }
     hasDeletions = true;
   }
@@ -126,7 +126,7 @@ public class ParallelReader extends IndexReader {
   // undeleteAll in all readers
   protected void doUndeleteAll() throws IOException {
     for (int i = 0; i < readers.size(); i++) {
-      ((IndexReader)readers.get(i)).doUndeleteAll();
+      ((IndexReader)readers.get(i)).undeleteAll();
     }
     hasDeletions = false;
   }
@@ -162,25 +162,32 @@ public class ParallelReader extends IndexReader {
 
   public TermFreqVector getTermFreqVector(int n, String field)
     throws IOException {
-    return ((IndexReader)fieldToReader.get(field)).getTermFreqVector(n, field);
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    return reader==null ? null : reader.getTermFreqVector(n, field);
   }
 
   public boolean hasNorms(String field) throws IOException {
-    return ((IndexReader)fieldToReader.get(field)).hasNorms(field);
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    return reader==null ? false : reader.hasNorms(field);
   }
 
   public byte[] norms(String field) throws IOException {
-    return ((IndexReader)fieldToReader.get(field)).norms(field);
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    return reader==null ? null : reader.norms(field);
   }
 
   public void norms(String field, byte[] result, int offset)
     throws IOException {
-     ((IndexReader)fieldToReader.get(field)).norms(field, result, offset);
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    if (reader!=null)
+      reader.norms(field, result, offset);
   }
 
   protected void doSetNorm(int n, String field, byte value)
     throws IOException {
-    ((IndexReader)fieldToReader.get(field)).doSetNorm(n, field, value);
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    if (reader!=null)
+      reader.doSetNorm(n, field, value);
   }
 
   public TermEnum terms() throws IOException {
@@ -192,7 +199,8 @@ public class ParallelReader extends IndexReader {
   }
 
   public int docFreq(Term term) throws IOException {
-    return ((IndexReader)fieldToReader.get(term.field())).docFreq(term);
+    IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
+    return reader==null ? 0 : reader.docFreq(term);
   }
 
   public TermDocs termDocs(Term term) throws IOException {
@@ -241,14 +249,16 @@ public class ParallelReader extends IndexReader {
       if (field != null)
         termEnum = ((IndexReader)fieldToReader.get(field)).terms();
     }
-    
+
     public ParallelTermEnum(Term term) throws IOException {
       field = term.field();
-      termEnum = ((IndexReader)fieldToReader.get(field)).terms(term);
+      IndexReader reader = ((IndexReader)fieldToReader.get(field));
+      if (reader!=null)
+        termEnum = reader.terms(term);
     }
-    
+
     public boolean next() throws IOException {
-      if (field == null)
+      if (termEnum == null)
         return false;
 
       boolean next = termEnum.next();
@@ -256,7 +266,7 @@ public class ParallelReader extends IndexReader {
       // still within field?
       if (next && termEnum.term().field() == field)
         return true;                              // yes, keep going
-      
+
       termEnum.close();                           // close old termEnum
 
       // find the next field, if any
@@ -267,12 +277,27 @@ public class ParallelReader extends IndexReader {
       }
 
       return false;                               // no more fields
-        
+
     }
 
-    public Term term() { return termEnum.term(); }
-    public int docFreq() { return termEnum.docFreq(); }
-    public void close() throws IOException { termEnum.close(); }
+    public Term term() {
+      if (termEnum==null)
+        return null;
+
+      return termEnum.term();
+    }
+
+    public int docFreq() {
+      if (termEnum==null)
+        return 0;
+
+      return termEnum.docFreq();
+    }
+
+    public void close() throws IOException {
+      if (termEnum!=null)
+        termEnum.close();
+    }
 
   }
 
@@ -287,24 +312,39 @@ public class ParallelReader extends IndexReader {
     public int freq() { return termDocs.freq(); }
 
     public void seek(Term term) throws IOException {
-      termDocs = ((IndexReader)fieldToReader.get(term.field())).termDocs(term);
+      IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
+      termDocs = reader!=null ? reader.termDocs(term) : null;
     }
 
     public void seek(TermEnum termEnum) throws IOException {
       seek(termEnum.term());
     }
 
-    public boolean next() throws IOException { return termDocs.next(); }
+    public boolean next() throws IOException {
+      if (termDocs==null)
+        return false;
+
+      return termDocs.next();
+    }
 
     public int read(final int[] docs, final int[] freqs) throws IOException {
+      if (termDocs==null)
+        return 0;
+
       return termDocs.read(docs, freqs);
     }
 
     public boolean skipTo(int target) throws IOException {
+      if (termDocs==null)
+        return false;
+
       return termDocs.skipTo(target);
     }
 
-    public void close() throws IOException { termDocs.close(); }
+    public void close() throws IOException {
+      if (termDocs!=null)
+        termDocs.close();
+    }
 
   }
 
@@ -315,11 +355,12 @@ public class ParallelReader extends IndexReader {
     public ParallelTermPositions(Term term) throws IOException { seek(term); }
 
     public void seek(Term term) throws IOException {
-      termDocs = ((IndexReader)fieldToReader.get(term.field()))
-        .termPositions(term);
+      IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
+      termDocs = reader!=null ? reader.termPositions(term) : null;
     }
 
     public int nextPosition() throws IOException {
+      // It is an error to call this if there is no next position, e.g. if termDocs==null
       return ((TermPositions)termDocs).nextPosition();
     }
 

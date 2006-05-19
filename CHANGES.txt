@@ -58,8 +58,13 @@ Bug fixes
     NullPointerException when "exclude" query was not a SpanTermQuery.
     (Chris Hostetter)
 
-12. LUCENE-572: Fixed bug in hashCode, was ignoring exclude clause
+12. LUCENE-572: Fixed bug in SpanNotQuery hashCode, was ignoring exclude clause
     (Chris Hostetter)
+
+13. LUCENE-561: Fixed some ParallelReader bugs. NullPointerException if the reader
+    didn't know about the field yet, reader didn't keep track if it had deletions,
+    and deleteDocument calls could circumvent synchronization on the subreaders.
+    (Chuck Williams via Yonik Seeley)
     
 1.9.1
 
