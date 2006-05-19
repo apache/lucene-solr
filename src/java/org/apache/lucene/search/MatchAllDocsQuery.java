@@ -25,6 +25,8 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ToStringUtils;
 
+import java.util.Set;
+
 /**
  * A query that matches all documents.
  * 
@@ -130,6 +132,9 @@ public class MatchAllDocsQuery extends Query {
 
   protected Weight createWeight(Searcher searcher) {
     return new MatchAllDocsWeight(searcher);
+  }
+
+  public void extractTerms(Set terms) {
   }
 
   public String toString(String field) {

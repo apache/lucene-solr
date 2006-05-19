@@ -65,6 +65,10 @@ Bug fixes
     didn't know about the field yet, reader didn't keep track if it had deletions,
     and deleteDocument calls could circumvent synchronization on the subreaders.
     (Chuck Williams via Yonik Seeley)
+
+14. LUCENE-556: Added empty extractTerms() implementation to MatchAllDocsQuery and
+    ConstantScoreQuery in order to allow their use with a MultiSearcher.
+    (Yonik Seeley)
     
 1.9.1
 

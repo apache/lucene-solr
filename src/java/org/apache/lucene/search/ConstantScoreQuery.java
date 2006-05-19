@@ -20,6 +20,7 @@ import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.Set;
 
 /**
  * A query that wraps a filter and simply returns a constant score equal to the
@@ -37,6 +38,11 @@ public class ConstantScoreQuery extends Query {
 
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
+  }
+
+  public void extractTerms(Set terms) {
+    // OK to not add any terms when used for MultiSearcher,
+    // but may not be OK for highlighting
   }
 
   protected class ConstantWeight implements Weight {
