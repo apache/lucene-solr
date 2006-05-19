@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import java.io.IOException;
+import java.util.Set;
 
 
 /**
@@ -42,6 +43,8 @@ public class FunctionQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
+
+  public void extractTerms(Set terms) {}
 
   protected class FunctionWeight implements Weight {
     Searcher searcher;

@@ -9,6 +9,9 @@ New Features
  4. postOptimize hook, mirroring the functionallity of the postCommit hook,
     but only called on an index optimize.
  5. Ability to HTTP POST query requests to /select in addition to HTTP-GET
+ 6. The default search field may now be overridden by requests to the
+    standard request handler using the df query parameter. (Erik Hatcher)
+
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
@@ -25,5 +28,9 @@ Optimizations
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different
     from the printable form (mainly sortable numeric types).
+ 2. Added escaping of attribute values in the XML response (Erik Hatcher)
+ 3. Added empty extractTerms() to FunctionQuery to enable use in
+    a MultiSearcher (Yonik)
+
 
 2006/07/16 Solr open sourced, moves to Apache Incubator
