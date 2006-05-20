@@ -180,15 +180,44 @@
   -->
   <requestHandler name="standard" class="solr.StandardRequestHandler" />
 
-  <!-- example of a request handler with custom parameters passed to it's init()
-  <requestHandler name="example" class="myorg.mypkg.MyRequestHandler" >
-    <int name="myparam">1000</int>
-    <float name="ratio">1.4142135</float>
-    <arr name="myarr"><int>1</int><int>2</int></arr>
-    <str>foo</str>
+  <!-- DisMaxRequestHandler is an example of a request handler that
+       supports optional parameters which are passed to
+       it's init() method.
+   -->
+  <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
+     <float name="tie">0.01</float>
+     <str name="qf">
+        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+     </str>
+     <str name="pf">
+        text^0.2 features^1.1 name^1.5 manu^1.4 manu_exact^1.9
+     </str>
+     <str name="bf">
+        ord(poplarity)^0.5 recip(rord(price),1,1000,1000)^0.3
+     </str>
+     <str name="fl">
+        id,name,price,score
+     </str>
+     <str name="mm">
+        2&lt;-1 5&lt;-2 6&lt;90%
+     </str>
+     <int name="ps">100</int>
   </requestHandler>
-  -->  
-
+  <!-- Note how you can register the same handler multiple times with
+       different names (and different init parameters)
+    -->
+  <requestHandler name="instock" class="solr.DisMaxRequestHandler" >
+     <str name="fq">
+        inStock:true
+     </str>
+     <str name="qf">
+        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+     </str>
+     <str name="mm">
+        2&lt;-1 5&lt;-2 6&lt;90%
+     </str>
+  </requestHandler>
+  
   <!-- config for the admin interface --> 
   <admin>
     <defaultQuery>solr</defaultQuery>

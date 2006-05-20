@@ -166,7 +166,23 @@
       The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+  <requestHandler name="standard" class="solr.StandardRequestHandler"/>
+  <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
+     <float name="tie">0.01</float>
+     <str name="qf">
+        text^0.5 features_t^1.0 subject^1.4 title_stemmed^2.0
+     </str>
+     <str name="pf">
+        text^0.2 features_t^1.1 subject^1.4 title_stemmed^2.0 title^1.5
+     </str>
+     <str name="bf">
+        ord(weight)^0.5 recip(rord(iind),1,1000,1000)^0.3
+     </str>
+     <str name="mm">
+        3&lt;-1 5&lt;-2 6&lt;90%
+     </str>
+     <int name="ps">100</int>
+  </requestHandler>
   <requestHandler name="old" class="solr.tst.OldRequestHandler" >
     <int name="myparam">1000</int>
     <float name="ratio">1.4142135</float>
