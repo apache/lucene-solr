@@ -69,6 +69,9 @@ Bug fixes
 14. LUCENE-556: Added empty extractTerms() implementation to MatchAllDocsQuery and
     ConstantScoreQuery in order to allow their use with a MultiSearcher.
     (Yonik Seeley)
+
+15. LUCENE-546: Creating a RAMDirectory from a Directory truncated files over 2GB.
+    (Peter Royal via Yonik Seeley)
     
 1.9.1
 

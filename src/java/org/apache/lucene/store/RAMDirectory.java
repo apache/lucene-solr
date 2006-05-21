@@ -60,10 +60,10 @@ public final class RAMDirectory extends Directory {
       // read current file
       IndexInput is = dir.openInput(files[i]);
       // and copy to ram disk
-      int len = (int) is.length();
-      int readCount = 0;
+      long len = is.length();
+      long readCount = 0;
       while (readCount < len) {
-        int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? len - readCount : BufferedIndexOutput.BUFFER_SIZE;
+        int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int)(len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
         is.readBytes(buf, 0, toRead);
         os.writeBytes(buf, toRead);
         readCount += toRead;
