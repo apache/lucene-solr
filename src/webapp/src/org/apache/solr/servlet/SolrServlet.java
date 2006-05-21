@@ -16,23 +16,23 @@
 
 package org.apache.solr.servlet;
 
-import org.apache.solr.core.*;
-import org.apache.solr.request.*;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.StrUtils;
+import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrException;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.XMLResponseWriter;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
 import javax.servlet.ServletException;
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.BufferedReader;
 import java.util.logging.Logger;
-import java.util.Map;
-import java.util.Set;
-import java.net.MalformedURLException;
 
 /**
  * @author yonik
@@ -47,13 +47,27 @@ public class SolrServlet extends HttpServlet {
 
   public void init() throws ServletException
   {
-    ServletContext ctx = getServletContext();
+    log.info("SolrServlet.init()");
     try {
-      System.out.println("RESOURCE URL FOR .="+ctx.getResource("/select"));
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-    }
+      Context c = new InitialContext();
 
+      /***
+      System.out.println("Enumerating JNDI Context=" + c);
+      NamingEnumeration<NameClassPair> en = c.list("java:comp/env");
+      while (en.hasMore()) {
+        NameClassPair ncp = en.next();
+        System.out.println("  ENTRY:" + ncp);
+      }
+      System.out.println("JNDI lookup=" + c.lookup("java:comp/env/solr/home"));
+      ***/
+
+      String home = (String)c.lookup("java:comp/env/solr/home");
+      if (home!=null) Config.setInstanceDir(home);
+    } catch (NoInitialContextException e) {
+      log.info("JNDI not configured for Solr (NoInitialContextEx)");
+    } catch (NamingException e) {
+      log.info("No /solr/home in JNDI");
+    }
 
     log.info("user.dir=" + System.getProperty("user.dir"));
     core = SolrCore.getSolrCore();

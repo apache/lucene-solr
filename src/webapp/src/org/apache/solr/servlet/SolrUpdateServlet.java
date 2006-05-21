@@ -42,6 +42,7 @@ public class SolrUpdateServlet extends HttpServlet {
   public void init() throws ServletException
   {
     core = SolrCore.getSolrCore();
+    log.info("SolrUpdateServlet.init() done");
   }
 
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

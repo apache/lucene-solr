@@ -3,7 +3,7 @@
 <config>
 
   <!-- Used to specify an alternate directory to hold all index data
-       other than the default ./solr/data
+       other than the default ./data under the Solr home.
        If replication is in use, this should match the replication configuration. -->
   <!--
   <dataDir>./solr/data</dataDir>

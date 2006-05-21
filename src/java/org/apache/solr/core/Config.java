@@ -214,23 +214,32 @@ public class Config {
     }
   }
 
-
-  private static String instance = project;
-  public static void setInstanceName(String name) {
-    instance = name;
+  private static String instanceDir; // solr home directory
+  private static String normalizeDir(String path) {
+    if (path==null) return null;
+    if ( !(path.endsWith("/") || path.endsWith("\\")) ) {
+      path+='/';
+    }
+    return path;
   }
-  public static String getInstanceName() {
-    return instance;
+
+  public static void setInstanceDir(String dir) {
+    instanceDir = normalizeDir(dir);
+    log.info("Solr home set to '" + instanceDir + "'");
   }
 
   public static String getInstanceDir() {
-    String str = System.getProperty(instance + ".solr.home");
-    if (str==null) {
-      str=instance + '/';
-    } else if ( !(str.endsWith("/") || str.endsWith("\\")) ) {
-      str+='/';
+    if (instanceDir==null) {
+      String prop = project + ".solr.home";
+      instanceDir = normalizeDir(System.getProperty(prop));
+      if (instanceDir==null) {
+        instanceDir=project + '/';
+        log.info("Solr home defaulted to '" + instanceDir + "'");
+      } else {
+        log.info("Solr home set to '" + instanceDir + "' from system property " + prop);
+      }
     }
-    return str;
+    return instanceDir;
   }
 
   // The directory where solr will look for config files by default.

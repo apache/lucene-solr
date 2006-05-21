@@ -17,4 +17,4 @@ var host_name="<%= hostname %>"
 <%= enabledStatus==null ? "" : (isEnabled ? " - Enabled" : " - Disabled") %> </h1>
 
 <%= hostname %>:<%= port %><br/>
-<%= cwd %>
+cwd=<%= cwd %>  SolrHome=<%= solrHome %>

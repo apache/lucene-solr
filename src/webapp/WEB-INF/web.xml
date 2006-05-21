@@ -15,12 +15,13 @@
              "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl"/>
    -->
 
+
   <servlet>
     <servlet-name>SolrServer</servlet-name>
     <display-name>Solr</display-name>
     <description>Solr Server</description>
     <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
-    <load-on-startup>0</load-on-startup>
+    <load-on-startup>1</load-on-startup>
   </servlet>
 
   <servlet>
@@ -28,7 +29,7 @@
     <display-name>SolrUpdate</display-name>
     <description>Solr Update Handler</description>
     <servlet-class>org.apache.solr.servlet.SolrUpdateServlet</servlet-class>
-    <load-on-startup>1</load-on-startup>
+    <load-on-startup>2</load-on-startup>
   </servlet>
 
   <servlet>
