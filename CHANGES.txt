@@ -70,9 +70,9 @@ Bug fixes
     ConstantScoreQuery in order to allow their use with a MultiSearcher.
     (Yonik Seeley)
 
-15. LUCENE-546: Creating a RAMDirectory from a Directory truncated files over 2GB.
-    (Peter Royal via Yonik Seeley)
-    
+15. LUCENE-546: Removed 2GB file size limitations for RAMDirectory.
+    (Peter Royal, Michael Chan, Yonik Seeley)
+
 1.9.1
 
 Bug fixes

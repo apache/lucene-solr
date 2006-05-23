@@ -26,7 +26,7 @@ import java.io.IOException;
 
 public class RAMOutputStream extends BufferedIndexOutput {
   private RAMFile file;
-  private int pointer = 0;
+  private long pointer = 0;
 
   /** Construct an empty output buffer. */
   public RAMOutputStream() {
@@ -69,8 +69,8 @@ public class RAMOutputStream extends BufferedIndexOutput {
     byte[] buffer;
     int bufferPos = 0;
     while (bufferPos != len) {
-      int bufferNumber = pointer/BUFFER_SIZE;
-      int bufferOffset = pointer%BUFFER_SIZE;
+      int bufferNumber = (int)(pointer/BUFFER_SIZE);
+      int bufferOffset = (int)(pointer%BUFFER_SIZE);
       int bytesInBuffer = BUFFER_SIZE - bufferOffset;
       int remainInSrcBuffer = len - bufferPos;
       int bytesToCopy = bytesInBuffer >= remainInSrcBuffer ? remainInSrcBuffer : bytesInBuffer;
@@ -99,7 +99,7 @@ public class RAMOutputStream extends BufferedIndexOutput {
 
   public void seek(long pos) throws IOException {
     super.seek(pos);
-    pointer = (int)pos;
+    pointer = pos;
   }
   public long length() {
     return file.length;

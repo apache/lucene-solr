@@ -24,7 +24,7 @@ package org.apache.lucene.store;
 
 class RAMInputStream extends BufferedIndexInput implements Cloneable {
   private RAMFile file;
-  private int pointer = 0;
+  private long pointer = 0;
   private long length;
 
   public RAMInputStream(RAMFile f) {
@@ -34,10 +34,10 @@ class RAMInputStream extends BufferedIndexInput implements Cloneable {
 
   public void readInternal(byte[] dest, int destOffset, int len) {
     int remainder = len;
-    int start = pointer;
+    long start = pointer;
     while (remainder != 0) {
-      int bufferNumber = start/BUFFER_SIZE;
-      int bufferOffset = start%BUFFER_SIZE;
+      int bufferNumber = (int)(start/BUFFER_SIZE);
+      int bufferOffset = (int)(start%BUFFER_SIZE);
       int bytesInBuffer = BUFFER_SIZE - bufferOffset;
       int bytesToCopy = bytesInBuffer >= remainder ? remainder : bytesInBuffer;
       byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
@@ -53,7 +53,7 @@ class RAMInputStream extends BufferedIndexInput implements Cloneable {
   }
 
   public void seekInternal(long pos) {
-    pointer = (int)pos;
+    pointer = pos;
   }
 
   public long length() {
