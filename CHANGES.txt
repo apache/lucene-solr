@@ -33,4 +33,4 @@ Bug Fixes
     a MultiSearcher (Yonik)
 
 
-2006/07/16 Solr open sourced, moves to Apache Incubator
+2006/01/17 Solr open sourced, moves to Apache Incubator
