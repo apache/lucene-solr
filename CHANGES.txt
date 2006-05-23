@@ -11,6 +11,7 @@ New Features
  5. Ability to HTTP POST query requests to /select in addition to HTTP-GET
  6. The default search field may now be overridden by requests to the
     standard request handler using the df query parameter. (Erik Hatcher)
+ 7. Added DisMaxRequestHandler and SolrPluginUtils. (Chris Hostetter)
 
 
 Changes in runtime behavior
