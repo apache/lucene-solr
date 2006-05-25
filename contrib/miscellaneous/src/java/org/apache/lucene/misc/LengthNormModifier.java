@@ -47,7 +47,7 @@ public class LengthNormModifier {
      * <pre>
      * Usage: LengthNormModifier /path/index package.SimilarityClassName field1 field2 ...
      * </pre>
-     * 
+     */
     public static void main(String[] args) throws IOException {
 	if (args.length < 3) {
 	    System.err.println("Usage: LengthNormModifier <index> <package.SimilarityClassName> <field1> [field2] ...");
