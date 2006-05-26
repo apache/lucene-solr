@@ -81,6 +81,10 @@ Bug fixes
 15. LUCENE-546: Removed 2GB file size limitations for RAMDirectory.
     (Peter Royal, Michael Chan, Yonik Seeley)
 
+16. LUCENE-485: Don't hold commit lock while removing obsolete index
+    files.  (Luc Vanlerberghe via cutting)
+
+
 1.9.1
 
 Bug fixes

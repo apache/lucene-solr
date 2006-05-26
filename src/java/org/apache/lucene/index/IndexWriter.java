@@ -614,12 +614,13 @@ public class IndexWriter {
       new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
 	  public Object doBody() throws IOException {
 	    segmentInfos.write(directory);	  // commit changes
-	    deleteSegments(segmentsToDelete);  // delete now-unused segments
 	    return null;
 	  }
 	}.run();
     }
     
+    deleteSegments(segmentsToDelete);  // delete now-unused segments
+
     if (useCompoundFile) {
       final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
       synchronized (directory) { // in- & inter-process sync
@@ -627,12 +628,13 @@ public class IndexWriter {
           public Object doBody() throws IOException {
             // make compound file visible for SegmentReaders
             directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
-            // delete now unused files of segment 
-            deleteFiles(filesToDelete);   
             return null;
           }
         }.run();
       }
+
+      // delete now unused files of segment 
+      deleteFiles(filesToDelete);   
     }
   }
 
@@ -722,12 +724,13 @@ public class IndexWriter {
       new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
           public Object doBody() throws IOException {
             segmentInfos.write(directory);     // commit before deleting
-            deleteSegments(segmentsToDelete);  // delete now-unused segments
             return null;
           }
         }.run();
     }
     
+    deleteSegments(segmentsToDelete);  // delete now-unused segments
+
     if (useCompoundFile) {
       final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
       synchronized (directory) { // in- & inter-process sync
@@ -735,12 +738,13 @@ public class IndexWriter {
           public Object doBody() throws IOException {
             // make compound file visible for SegmentReaders
             directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
-            // delete now unused files of segment 
-            deleteFiles(filesToDelete);   
             return null;
           }
         }.run();
       }
+
+      // delete now unused files of segment 
+      deleteFiles(filesToDelete);   
     }
   }
 
