@@ -28,9 +28,9 @@
     <category rdf:resource="http://projects.apache.org/category/database" />
     <release>
       <Version>
-        <name>Lucene 1.9</name>
-        <created>2006-02-28</created>
-        <revision>1.9</revision>
+        <name>Lucene 2.0.0</name>
+        <created>2006-05-26</created>
+        <revision>2.0.0</revision>
       </Version>
     </release>
     <repository>
