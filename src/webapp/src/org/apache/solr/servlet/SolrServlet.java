@@ -20,7 +20,7 @@ import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.request.QueryResponseWriter;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -36,17 +36,17 @@ import java.util.logging.Logger;
 
 /**
  * @author yonik
+ * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a>
  */
 
 public class SolrServlet extends HttpServlet {
+    
   final Logger log = Logger.getLogger(SolrServlet.class.getName());
   SolrCore core;
   private static String CONTENT_TYPE="text/xml;charset=UTF-8";
-
-  XMLResponseWriter xmlResponseWriter;
-
-  public void init() throws ServletException
-  {
+    
+    
+  public void init() throws ServletException {
     log.info("SolrServlet.init()");
     try {
       Context c = new InitialContext();
@@ -71,7 +71,7 @@ public class SolrServlet extends HttpServlet {
 
     log.info("user.dir=" + System.getProperty("user.dir"));
     core = SolrCore.getSolrCore();
-    xmlResponseWriter=new XMLResponseWriter();
+                
     log.info("SolrServlet.init() done");
   }
 
@@ -94,14 +94,15 @@ public class SolrServlet extends HttpServlet {
       core.execute(solrReq, solrRsp);
       if (solrRsp.getException() == null) {
         response.setContentType(CONTENT_TYPE);
-        PrintWriter writer = response.getWriter();
-        // if (solrReq.getStrParam("version","2").charAt(0) == '1')
-        xmlResponseWriter.write(writer, solrReq, solrRsp);
+        PrintWriter out = response.getWriter();
+
+        QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
+        responseWriter.write(out, solrReq, solrRsp);
       } else {
         Exception e = solrRsp.getException();
         int rc=500;
         if (e instanceof SolrException) {
-          rc=((SolrException)e).code();
+           rc=((SolrException)e).code();
         }
         sendErr(rc, SolrException.toStr(e), request, response);
       }
@@ -115,7 +116,6 @@ public class SolrServlet extends HttpServlet {
       // This releases the IndexReader associated with the request
       solrReq.close();
     }
-
   }
 
   final void sendErr(int rc, String msg, HttpServletRequest request, HttpServletResponse response) {

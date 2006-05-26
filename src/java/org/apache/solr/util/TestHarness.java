@@ -51,7 +51,6 @@ import java.util.*;
 public class TestHarness {
 
   private SolrCore core;
-  private XMLResponseWriter xmlwriter = new XMLResponseWriter();
   private XPath xpath = XPathFactory.newInstance().newXPath();
   private DocumentBuilder builder;
         
@@ -183,12 +182,13 @@ public class TestHarness {
       throw rsp.getException();
     }
                 
-    StringWriter writer = new StringWriter(32000);
-    xmlwriter.write(writer,req,rsp);
+    StringWriter sw = new StringWriter(32000);
+    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
+    responseWriter.write(sw,req,rsp);
 
     req.close();
     
-    return writer.toString();
+    return sw.toString();
   }
 
 

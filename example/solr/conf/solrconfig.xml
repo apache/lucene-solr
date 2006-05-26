@@ -218,6 +218,17 @@
      </str>
   </requestHandler>
   
+  <!-- queryResponseWriter plugins... query responses will be written using the
+    writer specified by the 'wt' request parameter matching the name of a registered
+    writer.
+    The "standard" writer is the default and will be used if 'wt' is not specified 
+    in the request. XMLResponseWriter will be used if nothing specified here.
+    
+    <queryResponseWriter name="standard" class="org.apache.solr.request.XMLResponseWriter"/>
+    <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
+  -->
+
+    
   <!-- config for the admin interface --> 
   <admin>
     <defaultQuery>solr</defaultQuery>

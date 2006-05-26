@@ -16,13 +16,17 @@
 
 package org.apache.solr.core;
 
+import java.util.Map;
+import java.util.TreeMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.*;
@@ -30,6 +34,7 @@ import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.XML;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xmlpull.v1.XmlPullParser;
@@ -52,6 +57,7 @@ import java.util.logging.Logger;
 
 /**
  * @author yonik
+ * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a> 
  * @version $Id$
  */
 
@@ -196,6 +202,8 @@ public final class SolrCore {
       parseListeners();
 
       initIndex();
+      
+      initWriters();
 
       try {
         // Open the searcher *before* the handler so we don't end up opening
@@ -936,6 +944,61 @@ public final class SolrCore {
     } catch (Exception ee) {
       log.severe("Error writing to putput stream: "+ee);
     }
+  }
+  
+  
+  
+  private QueryResponseWriter defaultResponseWriter;
+  private Map<String, QueryResponseWriter> responseWriters
+    = new TreeMap<String, QueryResponseWriter>();
+  
+  /** Configure the query response writers. There will always be a default writer; additional 
+   * writers may also be configured. */
+  private void initWriters() {
+    String xpath = "queryResponseWriter";
+    NodeList nodes = (NodeList) SolrConfig.config.evaluate(xpath, XPathConstants.NODESET);
+    int length = nodes.getLength();
+    for (int i=0; i<length; i++) {
+      Element elm = (Element) nodes.item(i);
+      
+      try {
+        String name = DOMUtil.getAttr(elm,"name", xpath+" config");
+        String className = DOMUtil.getAttr(elm,"class", xpath+" config");
+        log.info("adding queryResponseWriter "+name+"="+className);
+          
+        QueryResponseWriter writer = (QueryResponseWriter) Config.newInstance(className);
+        responseWriters.put(name, writer);
+      } catch (Exception ex) {
+        SolrException.logOnce(log,null, ex);
+        // if a writer can't be created, skip it and continue
+      }
+    }
+
+    // configure the default response writer; this one should never be null
+    if (responseWriters.containsKey("standard")) {
+      defaultResponseWriter = responseWriters.get("standard");
+    }
+    if (defaultResponseWriter == null) {
+      defaultResponseWriter = new XMLResponseWriter();
+    }
+  }
+  
+  /** Finds a writer by name, or returns the default writer if not found. */
+  public final QueryResponseWriter getQueryResponseWriter(String writerName) {
+    if (writerName != null) {
+        QueryResponseWriter writer = responseWriters.get(writerName);
+        if (writer != null) {
+            return writer;
+        }
+    }
+    return defaultResponseWriter;
+  }
+
+  /** Returns the appropriate writer for a request. If the request specifies a writer via the
+   * 'wt' parameter, attempts to find that one; otherwise return the default writer.
+   */
+  public final QueryResponseWriter getQueryResponseWriter(SolrQueryRequest request) {
+    return getQueryResponseWriter(request.getParam("wt")); 
   }
 
 
