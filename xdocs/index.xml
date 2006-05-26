@@ -23,6 +23,20 @@
 
         <section name="Lucene News">
 
+          <h3>26 May 2006 - Release 2.0.0 available </h3>
+
+             <p>This is mostly a bugfix release from release 1.9.1.
+                Note however that deprecated 1.x features have now
+                been removed.  Any code that compiles against Lucene
+                1.9.1 without deprecation warnings should work without
+                further changes with any 2.x release.  For more
+                information about this release, please read <a
+                href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_0_0/CHANGES.txt">CHANGES.txt</a>.</p>
+
+		<p>Binary and source distributions are
+                available <a
+                href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.</p>
+
           <h3>2 March 2006 - Release 1.9.1 available </h3>
 
              <p>This fixes a serious bug in release 1.9-final. <a

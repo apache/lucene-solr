@@ -2,7 +2,7 @@ Lucene Change Log
 
 $Id$
 
-2.0 RC1
+Release 2.0.0 2005-05-26
 
 API Changes
 
