@@ -764,14 +764,14 @@ This version of HTML supports several sets of character entity references:
 The following sections present the complete lists of character entity references. Although, by convention, [ISO10646] the comments following each entry are usually written with uppercase letters, we have converted them to lowercase in this specification for reasons of readability.
 24.2 Character entity references for ISO 8859-1 characters
 
-The character entity references in this section produce characters whose numeric equivalents should already be supported by conforming HTML 2.0 user agents. Thus, the character entity reference &divide; is a more convenient form than &#247; for obtaining the division sign (÷).
+The character entity references in this section produce characters whose numeric equivalents should already be supported by conforming HTML 2.0 user agents. Thus, the character entity reference &divide; is a more convenient form than &#247; for obtaining the division sign.
 
 To support these named entities, user agents need only recognize the entity names and convert them to characters that lie within the repertoire of [ISO88591].
 
 Character 65533 (FFFD hexadecimal) is the last valid character in UCS-2. 65534 (FFFE hexadecimal) is unassigned and reserved as the byte-swapped version of ZERO WIDTH NON-BREAKING SPACE for byte-order detection purposes. 65535 (FFFF hexadecimal) is unassigned.
 24.2.1 The list of characters
 
-<!-- Portions © International Organization for Standardization 1986
+<!-- Portions (c) International Organization for Standardization 1986
      Permission to copy in any form is granted for use with
      conforming SGML systems and applications as defined in
      ISO 8879, provided this notice is included in all copies.
@@ -982,7 +982,7 @@ When to use Greek entities. This entity set contains all the letters used in mod
        "-//W3C//ENTITIES Symbols//EN//HTML">
      %HTMLsymbol; -->
 
-<!-- Portions © International Organization for Standardization 1986:
+<!-- Portions (c) International Organization for Standardization 1986:
      Permission to copy in any form is granted for use with
      conforming SGML systems and applications as defined in
      ISO 8879, provided this notice is included in all copies.
@@ -1233,7 +1233,7 @@ To support these entities, user agents may support full [ISO10646] or use other 
        "-//W3C//ENTITIES Special//EN//HTML">
      %HTMLspecial; -->
 
-<!-- Portions © International Organization for Standardization 1986:
+<!-- Portions (c) International Organization for Standardization 1986:
      Permission to copy in any form is granted for use with
      conforming SGML systems and applications as defined in
      ISO 8879, provided this notice is included in all copies.
