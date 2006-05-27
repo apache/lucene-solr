@@ -279,9 +279,16 @@ public class Config {
   }
 
   /**
-   * Returns a list of non-blank non-comment lines with whitespace trimmed from front and back.
+   * Accesses a resource by name and returns the (non comment) lines
+   * containing data.
+   *
+   * <p>
+   * A comment line is any line that starts with the character "#"
+   * </p>
+   *
    * @param resource
-   * @return
+   * @return a list of non-blank non-comment lines with whitespace trimmed
+   * from front and back.
    * @throws IOException
    */
   public static List<String> getLines(String resource) throws IOException {

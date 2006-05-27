@@ -132,7 +132,7 @@ public class TestHarness {
    *
    * @param fieldsAndValues Odds are field names, Evens are values
    * @return null if succesful, otherwise the XML response to the update
-   * @see appendSimpleDoc
+   * @see #appendSimpleDoc
    */
   public String validateAddDoc(String... fieldsAndValues)
     throws XPathExpressionException, SAXException, IOException {

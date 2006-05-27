@@ -289,7 +289,7 @@ public final class SolrCore {
    * searcher will be created.</li>
    * </ul>
    * <p>
-   * If <tt>returnSearcher==true</tt> then a {@link RefCounted}&lt{@link SolrIndexSearcher}&gt will be returned with
+   * If <tt>returnSearcher==true</tt> then a {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; will be returned with
    * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
    * <p>
    * If <tt>waitSearcher!=null</tt> and a new {@link SolrIndexSearcher} was created,
@@ -298,9 +298,8 @@ public final class SolrCore {
    * this method returned.
    * <p>
    * @param forceNew           if true, force the open of a new index searcher regardless if there is already one open.
-   * @param returnSearcher     if true, returns a {@link &ltSolrIndexSearcher&gt} holder with the refcount already incremented.
+   * @param returnSearcher     if true, returns a {@link SolrIndexSearcher} holder with the refcount already incremented.
    * @param waitSearcher       if non-null, will be filled in with a {@link Future} that will return after the new searcher is registered.
-   * @return
    * @throws IOException
    */
   public RefCounted<SolrIndexSearcher> getSearcher(boolean forceNew, boolean returnSearcher, final Future[] waitSearcher) throws IOException {

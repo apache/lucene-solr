@@ -470,10 +470,10 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * This method is cache-aware and attempts to retrieve the answer from the cache if possible.
    * If the answer was not cached, it may have been inserted into the cache as a result of this call.
    * <p>
-   * The DocSet returned should <b>not</b> be modified.
    *
    * @param query
    * @param filter may be null
+   * @return DocSet meeting the specified criteria, should <b>not</b> be modified by the caller.
    */
   public DocSet getDocSet(Query query, DocSet filter) throws IOException {
     if (filter==null) return getDocSet(query);
@@ -533,14 +533,12 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * <p>
    * FUTURE: The returned DocList may be retrieved from a cache.
    *
-   * The DocList returned should <b>not</b> be modified.
-   *
    * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
-   * @return
+   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException
    */
   public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
@@ -955,15 +953,13 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * Returns documents matching both <code>query</code> and <code>filter</code>
    * and sorted by <code>sort</code>.
    * FUTURE: The returned DocList may be retrieved from a cache.
-   * <p>
-   * The DocList returned should <b>not</b> be modified.
    *
    * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
-   * @return
+   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException
    */
   public DocList getDocList(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {
@@ -989,7 +985,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
-   * @return
+   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
@@ -1017,15 +1013,13 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * matching <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len</code>).
    * <p>
    * FUTURE: The returned DocList may be retrieved from a cache.
-   * <p>
-   * The DocList and DocSet returned should <b>not</b> be modified.
    *
    * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
-   * @return
+   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {

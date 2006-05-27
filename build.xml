@@ -26,6 +26,10 @@
   <property name="build.docs" value="${dest}/docs"/>
   <property name="javadoc.link.java"
             value="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+  <property name="javadoc.link.junit"
+            value="http://junit.sourceforge.net/javadoc/"/>
+  <property name="javadoc.link.lucene"
+            value="http://lucene.apache.org/java/docs/api/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.javadoc" value="${build.docs}/api"/>
 
@@ -96,6 +100,8 @@
         <packageset dir="${src}/java"/>
 	<packageset dir="${src}/webapp/src"/>
         <link href="${javadoc.link.java}"/>
+        <link href="${javadoc.link.junit}"/>
+        <link href="${javadoc.link.lucene}"/>
         <classpath refid="compile.classpath"/>
     </javadoc>
   </target>

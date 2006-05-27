@@ -81,8 +81,8 @@ public class QueryParsing {
 
     /**
      * Gets the number of documens to return after sorting.
-     * -1 means there is no cutoff (only do the sort)
-     * @return
+     *
+     * @return number of docs to return, or -1 for no cut off (just sort)
      */
     public int getCount() { return num; }
   }
