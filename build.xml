@@ -26,6 +26,8 @@
   <!-- Javadoc properties -->
   <property name="year" value="2006" />
   <property name="build.docs" value="${dest}/docs"/>
+  <property name="build.javadoc" value="${build.docs}/api"/>
+  <property name="javadoc.access" value="protected"/>
   <property name="javadoc.link.java"
             value="http://java.sun.com/j2se/1.5.0/docs/api/"/>
   <property name="javadoc.link.junit"
@@ -33,7 +35,6 @@
   <property name="javadoc.link.lucene"
             value="http://lucene.apache.org/java/docs/api/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
-  <property name="build.javadoc" value="${build.docs}/api"/>
 
   <!-- JUnit properties -->
   <property name="junit.output.dir" location="${dest}/test-results"/>
@@ -98,6 +99,7 @@
       version="true"
       use="true"
       encoding="utf8"
+      access="${javadoc.access}"
       windowtitle="${Name} ${version} API"
       doctitle="${Name} ${version} API"
       bottom="Copyright &amp;copy; ${year} The Apache Software Foundation"

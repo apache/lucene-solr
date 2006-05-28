@@ -19,19 +19,35 @@ package org.apache.solr.search;
 import java.util.Iterator;
 
 /**
+ * Simple Iterator of document Ids which may include score information.
+ *
+ * <p>
+ * The order of the documents is determined by the context in which the
+ * DocIterator instance was retrieved.
+ * </p>
+ *
  * @author yonik
  * @version $Id$
  */
 public interface DocIterator extends Iterator<Integer> {
-  public boolean hasNext();
+  // allready declared in superclass, redeclaring prevents javadoc inheritence
+  //public boolean hasNext();
 
   /**
-   * returns the next document id if hasNext()==true
+   * Returns the next document id if hasNext()==true
+   *
+   * <code>
+   * This method is functionally equivilent to <code>next()</code>
+   * @see #next()
    */
   public int nextDoc();
 
   /**
-   * returns the score for the document just returned by nextDoc()
+   * Returns the score for the document just returned by <code>nextDoc()</code>
+   *
+   * <p>
+   * The value returned may be meaningless depending on the context
+   * in which the DocIterator instance was retrieved.
    */
   public float score();
 }

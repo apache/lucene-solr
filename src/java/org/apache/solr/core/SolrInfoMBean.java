@@ -20,31 +20,50 @@ import java.net.URL;
 import org.apache.solr.util.*;
 
 /**
+ * MBean interface for getting various ui friendly strings and URLs
+ * for use by objects which are 'plugable' to make server administration
+ * easier.
+ *
  * @author ronp
  * @version $Id$
  */
-
-// MBean interface for getting various ui friendly strings and URLs
-// for use by objects which are 'plugable' to make administering
-// production use easier
-  // name        - simple common usage name, e.g. BasicQueryHandler
-  // version     - simple common usage version, e.g. 2.0
-  // description - simple one or two line description
-  // SourceId    - CVS Id, SVN Id, etc
-  // Source      - CVS Source, SVN Source, etc
-  // docs        - URL list: TWIKI, Faq, Design doc, something! :)
-
 public interface SolrInfoMBean {
 
   public enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, OTHER };
 
+  /**
+   * Simple common usage name, e.g. BasicQueryHandler,
+   * or fully qualified clas name.
+   */
   public String getName();
+  /** Simple common usage version, e.g. 2.0 */
   public String getVersion();
+  /** Simple one or two line description */
   public String getDescription();
+  /** Purpose of this Class */
   public Category getCategory();
+  /** CVS Id, SVN Id, etc */
   public String getSourceId();
+  /** CVS Source, SVN Source, etc */
   public String getSource();
+  /**
+   * Documentation URL list.
+   *
+   * <p>
+   * Suggested documentaion URLs: Homepage for sponsoring project,
+   * FAQ on class usage, Design doc for class, Wiki, bug reporting URL, etc...
+   * </p>
+   */
   public URL[] getDocs();
+  /**
+   * Any statistics this instance would like to be publicly available via
+   * the Solr Administration interface.
+   *
+   * <p>
+   * Any Object type may be stored in the list, but only the
+   * <code>toString()</code> representation will be used.
+   * </p>
+   */
   public NamedList getStatistics();
 
 }

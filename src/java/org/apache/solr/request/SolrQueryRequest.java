@@ -21,40 +21,59 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrCore;
 
 /**
+ * Container for a request to execute a query.
+ * 
  * @author yonik
  * @version $Id$
  */
 public interface SolrQueryRequest {
 
-  /** All uses of this request are finished, resources can be freed */
+  /**
+   * This method should be called when all uses of this request are
+   * finished, so that resources can be freed.
+   */
   public void close();
 
+  /**
+   * Returns the input parameter value for the specified name
+   * @return the value, or the first value if the parameter was
+   * specified more then once; may be null.
+   */
   public String getParam(String name);
 
+  /**
+   * Returns the input parameter values for the specified name
+   * @return the values; may be null or empty depending on implimentation
+   */
   public String[] getParams(String name);
 
+  /**
+   * Returns the primary query string parameter of the request
+   */
   public String getQueryString();
 
-  // signifies the syntax and the handler that should be used
-  // to execute this query.
+  /**
+   * Signifies the syntax and the handler that should be used
+   * to execute this query.
+   */
   public String getQueryType();
 
-  // starting position in matches to return to client
+  /** starting position in matches to return to client */
   public int getStart();
 
-  // number of matching documents to return
+  /** number of matching documents to return */
   public int getLimit();
 
-  // Get the start time of this request in milliseconds
+  /** The start time of this request in milliseconds */
   public long getStartTime();
 
-  // The index searcher associated with this request
+  /** The index searcher associated with this request */
   public SolrIndexSearcher getSearcher();
 
-  // The solr core (coordinator, etc) associated with this request
+  /** The solr core (coordinator, etc) associated with this request */
   public SolrCore getCore();
 
-  // The index schema associated with this request
+  /** The index schema associated with this request */
   public IndexSchema getSchema();
 
   /**

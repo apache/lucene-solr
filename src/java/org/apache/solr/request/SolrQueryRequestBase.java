@@ -23,9 +23,19 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 
 /**
-* @author yonik
-* @version $Id$
-*/
+ * Base implimentation of <code>SolrQueryRequest</code> that provides some
+ * convinience methods for accessing parameters, and manages an IndexSearcher
+ * refrence.
+ *
+ * <p>
+ * The <code>close()</code> method must be called on any instance of this
+ * class once it is no longer in use.
+ * </p>
+ *
+ *
+ * @author yonik
+ * @version $Id$
+ */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
  // some standard query argument names
  public static final String QUERY_NAME="q";
@@ -116,7 +126,10 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
    return core.getSchema();
  }
 
-
+ /**
+  * Frees resources associated with this request, this method <b>must</b>
+  * be called when the object is no longer in use.
+  */
  public void close() {
    if (searcherHolder!=null) {
      searcherHolder.decref();

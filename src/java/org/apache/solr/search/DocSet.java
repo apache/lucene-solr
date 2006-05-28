@@ -22,33 +22,57 @@ import java.util.BitSet;
 
 /**
  * <code>DocSet</code> represents an unordered set of Lucene Document Ids.
+ *
  * <p>
  * WARNING: Any DocSet returned from SolrIndexSearcher should <b>not</b> be modified as it may have been retrieved from
  * a cache and could be shared.
+ * </p>
+ *
  * @author yonik
  * @version $Id$
  * @since solr 0.9
  */
 public interface DocSet /* extends Collection<Integer> */ {
+  
+  /**
+   * Adds the specified document if it is not currently in the DocSet
+   * (optional operation).
+   *
+   * @see #addUnique
+   * @throws SolrException if the implimentation does not allow modifications
+   */
   public void add(int doc);
+  /**
+   * Adds a document the caller knows is not currently in the DocSet
+   * (optional operation).
+   *
+   * <p>
+   * This method may be faster then <code>add(doc)</code> in some
+   * implimentaions provided the caller is certain of the precondition.
+   * </p>
+   *
+   * @see #add
+   * @throws SolrException if the implimentation does not allow modifications
+   */
   public void addUnique(int doc);
 
   /**
-   * @return The number of document ids in the set.
+   * Returns the number of documents in the set.
    */
   public int size();
 
   /**
-   *
-   * @param docid
-   * @return
-   * true if the docid is in the set
+   * Returns true if a document is in the DocSet.
    */
   public boolean exists(int docid);
 
   /**
+   * Returns an interator that may be used to iterate over all of the documents in the set.
    *
-   * @return an interator that may be used to iterate over all of the documents in the set.
+   * <p>
+   * The order of the documents returned by this iterator is
+   * non-deterministic, and any scoring information is meaningless
+   * </p>
    */
   public DocIterator iterator();
 
@@ -75,7 +99,6 @@ public interface DocSet /* extends Collection<Integer> */ {
   /**
    * Returns the intersection of this set with another set.  Neither set is modified - a new DocSet is
    * created and returned.
-   * @param other
    * @return a DocSet representing the intersection
    */
   public DocSet intersection(DocSet other);
@@ -89,7 +112,6 @@ public interface DocSet /* extends Collection<Integer> */ {
   /**
    * Returns the union of this set with another set.  Neither set is modified - a new DocSet is
    * created and returned.
-   * @param other
    * @return a DocSet representing the union
    */
   public DocSet union(DocSet other);
@@ -102,7 +124,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 
 }
 
-
+/** A base class that may be usefull for implimenting DocSets */
 abstract class DocSetBase implements DocSet {
 
   // Not implemented efficiently... for testing purposes only
@@ -126,16 +148,25 @@ abstract class DocSetBase implements DocSet {
     return this.getBits().equals(other.getBits());
   }
 
+  /**
+   * @throws SolrException Base implimentation does not allow modifications
+   */
   public void add(int doc) {
     throw new SolrException(500,"Unsupported Operation");
   }
 
+  /**
+   * @throws SolrException Base implimentation does not allow modifications
+   */
   public void addUnique(int doc) {
     throw new SolrException(500,"Unsupported Operation");
   }
 
-  // Only the inefficient base implementation.  DocSets based on
-  // BitSets will return the actual BitSet without making a copy.
+  /**
+   * Inefficient base implementation.
+   *
+   * @see BitDocSet#getBits
+   */
   public BitSet getBits() {
     BitSet bits = new BitSet();
     for (DocIterator iter = iterator(); iter.hasNext();) {

@@ -33,11 +33,12 @@ public class DocSlice extends DocSetBase implements DocList {
   final float maxScore;
 
   /**
+   * Primary constructer for a DocSlice instance.
    *
    * @param offset  starting offset for this range of docs
    * @param len     length of results
    * @param docs    array of docids starting at position 0
-   * @param scores
+   * @param scores  array of scores that corrisponds to docs, may be null
    * @param matches total number of matches for the query
    */
   public DocSlice(int offset, int len, int[] docs, float[] scores, int matches, float maxScore) {
