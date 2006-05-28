@@ -23,9 +23,9 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 
 /**
- * Base implimentation of <code>SolrQueryRequest</code> that provides some
- * convinience methods for accessing parameters, and manages an IndexSearcher
- * refrence.
+ * Base implementation of <code>SolrQueryRequest</code> that provides some
+ * convenience methods for accessing parameters, and manages an IndexSearcher
+ * reference.
  *
  * <p>
  * The <code>close()</code> method must be called on any instance of this

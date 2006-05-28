@@ -39,20 +39,21 @@ public interface DocSet /* extends Collection<Integer> */ {
    * (optional operation).
    *
    * @see #addUnique
-   * @throws SolrException if the implimentation does not allow modifications
+   * @throws SolrException if the implementation does not allow modifications
    */
   public void add(int doc);
+
   /**
    * Adds a document the caller knows is not currently in the DocSet
    * (optional operation).
    *
    * <p>
    * This method may be faster then <code>add(doc)</code> in some
-   * implimentaions provided the caller is certain of the precondition.
+   * implementaions provided the caller is certain of the precondition.
    * </p>
    *
    * @see #add
-   * @throws SolrException if the implimentation does not allow modifications
+   * @throws SolrException if the implementation does not allow modifications
    */
   public void addUnique(int doc);
 
@@ -67,7 +68,7 @@ public interface DocSet /* extends Collection<Integer> */ {
   public boolean exists(int docid);
 
   /**
-   * Returns an interator that may be used to iterate over all of the documents in the set.
+   * Returns an iterator that may be used to iterate over all of the documents in the set.
    *
    * <p>
    * The order of the documents returned by this iterator is
@@ -124,7 +125,7 @@ public interface DocSet /* extends Collection<Integer> */ {
 
 }
 
-/** A base class that may be usefull for implimenting DocSets */
+/** A base class that may be usefull for implementing DocSets */
 abstract class DocSetBase implements DocSet {
 
   // Not implemented efficiently... for testing purposes only
@@ -149,14 +150,14 @@ abstract class DocSetBase implements DocSet {
   }
 
   /**
-   * @throws SolrException Base implimentation does not allow modifications
+   * @throws SolrException Base implementation does not allow modifications
    */
   public void add(int doc) {
     throw new SolrException(500,"Unsupported Operation");
   }
 
   /**
-   * @throws SolrException Base implimentation does not allow modifications
+   * @throws SolrException Base implementation does not allow modifications
    */
   public void addUnique(int doc) {
     throw new SolrException(500,"Unsupported Operation");

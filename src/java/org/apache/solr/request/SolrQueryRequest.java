@@ -43,7 +43,7 @@ public interface SolrQueryRequest {
 
   /**
    * Returns the input parameter values for the specified name
-   * @return the values; may be null or empty depending on implimentation
+   * @return the values; may be null or empty depending on implementation
    */
   public String[] getParams(String name);
 

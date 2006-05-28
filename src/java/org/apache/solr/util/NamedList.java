@@ -55,7 +55,7 @@ public class NamedList implements Cloneable, Serializable {
    * Creates an instance backed by an explicitly specified list of
    * pairwise names/values.
    *
-   * @param nameValuePairs underlying List which should be used to impliment a NamedList; modifying this List will affect the NamedList.
+   * @param nameValuePairs underlying List which should be used to implement a NamedList; modifying this List will affect the NamedList.
    */
   public NamedList(List nameValuePairs) {
     nvPairs=nameValuePairs;
@@ -107,7 +107,7 @@ public class NamedList implements Cloneable, Serializable {
   }
 
   /**
-   * Scans the list sequentially begining at the specified index and
+   * Scans the list sequentially beginning at the specified index and
    * returns the index of the first pair with the specified name.
    *
    * @param name name to look for, may be null

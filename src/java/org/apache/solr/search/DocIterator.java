@@ -30,14 +30,15 @@ import java.util.Iterator;
  * @version $Id$
  */
 public interface DocIterator extends Iterator<Integer> {
-  // allready declared in superclass, redeclaring prevents javadoc inheritence
+  // already declared in superclass, redeclaring prevents javadoc inheritance
   //public boolean hasNext();
 
   /**
    * Returns the next document id if hasNext()==true
    *
    * <code>
-   * This method is functionally equivilent to <code>next()</code>
+   * This method is equivalent to <code>next()</code>, but avoids the creation
+   * of an Integer Object.
    * @see #next()
    */
   public int nextDoc();

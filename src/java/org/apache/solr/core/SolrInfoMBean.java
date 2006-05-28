@@ -21,7 +21,7 @@ import org.apache.solr.util.*;
 
 /**
  * MBean interface for getting various ui friendly strings and URLs
- * for use by objects which are 'plugable' to make server administration
+ * for use by objects which are 'pluggable' to make server administration
  * easier.
  *
  * @author ronp
@@ -50,7 +50,7 @@ public interface SolrInfoMBean {
    * Documentation URL list.
    *
    * <p>
-   * Suggested documentaion URLs: Homepage for sponsoring project,
+   * Suggested documentation URLs: Homepage for sponsoring project,
    * FAQ on class usage, Design doc for class, Wiki, bug reporting URL, etc...
    * </p>
    */

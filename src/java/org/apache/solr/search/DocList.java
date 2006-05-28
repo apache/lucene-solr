@@ -67,7 +67,7 @@ public interface DocList extends DocSet {
   public DocList subset(int offset, int len);
 
   /**
-   * Returns an interator that may be used to iterate over the documents in this DocList
+   * Returns an iterator that may be used to iterate over the documents in this DocList
    *
    * <p>
    * The order of the documents returned by this iterator is based on the
