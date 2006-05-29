@@ -400,18 +400,17 @@ public class IndexModifier {
   }
 
   /**
-   * The maximum number of terms that will be indexed for a single field in a
-   * document.  This limits the amount of memory required for indexing, so that
-   * collections with very large files will not crash the indexing process by
-   * running out of memory.<p/>
-   * Note that this effectively truncates large documents, excluding from the
-   * index terms that occur further in the document.  If you know your source
-   * documents are large, be sure to set this value high enough to accomodate
-   * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
-   * is your memory, but you should anticipate an OutOfMemoryError.<p/>
-   * By default, no more than 10,000 terms will be indexed for a field.
+   * Determines the minimal number of documents required before the buffered
+   * in-memory documents are merging and a new Segment is created.
+   * Since Documents are merged in a {@link org.apache.lucene.store.RAMDirectory},
+   * large value gives faster indexing.  At the same time, mergeFactor limits
+   * the number of files open in a FSDirectory.
+   *
+   * <p>The default value is 10.
+   * 
    * @see IndexWriter#setMaxBufferedDocs(int)
    * @throws IllegalStateException if the index is closed
+   * @throws IllegalArgumentException if maxBufferedDocs is smaller than 2
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
     synchronized(directory) {
