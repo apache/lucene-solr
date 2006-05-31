@@ -78,7 +78,8 @@ public String escapeHTML(String s) {
 
                 Analyzer analyzer = new StopAnalyzer();               //construct our usual analyzer
                 try {
-                        query = QueryParser.parse(queryString, "contents", analyzer); //parse the 
+                        QueryParser qp = new QueryParser("contents", analyzer);
+                        query = qp.parse(queryString); //parse the 
                 } catch (ParseException e) {                          //query and construct the Query
                                                                       //object
                                                                       //if it's just "operator error"
