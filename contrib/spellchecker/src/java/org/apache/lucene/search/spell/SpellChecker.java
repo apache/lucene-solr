@@ -125,6 +125,7 @@ public class SpellChecker {
     public String[] suggestSimilar (String word, int num_sug, IndexReader ir, String field
     , boolean morePopular) throws IOException {
 
+        float min = this.min;
         final TRStringDistance sd=new TRStringDistance(word);
         final int lengthWord=word.length();
 

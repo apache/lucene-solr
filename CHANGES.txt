@@ -16,10 +16,13 @@ API Changes
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
-    didn't work because it used a QueryParser method that had 
+    didn't work because it used a QueryParser method that had
     been removed (Daniel Naber)
 
- 2. LUCENE-583: ISOLatin1AccentFilter fails to preserve positionIncrement 
+ 2. LUCENE-583: ISOLatin1AccentFilter fails to preserve positionIncrement
+    (Yonik Seeley)
+
+ 3. LUCENE-575: SpellChecker min score is incorrectly changed by suggestSimilar
     (Yonik Seeley)
 
 Optimizations
