@@ -23,7 +23,7 @@ Bug fixes
     (Yonik Seeley)
 
  3. LUCENE-575: SpellChecker min score is incorrectly changed by suggestSimilar
-    (Yonik Seeley)
+    (Karl Wettin via Yonik Seeley)
 
 Optimizations
 
