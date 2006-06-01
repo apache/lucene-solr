@@ -8,6 +8,11 @@ New features
 
  1.
 
+API Changes
+
+ 1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
+    changing of termText via setTermText().  (Yonik Seeley)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

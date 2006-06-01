@@ -30,7 +30,7 @@ package org.apache.lucene.analysis;
   belongs to.  For example an end of sentence marker token might be implemented
   with type "eos".  The default token type is "word".  */
 
-public final class Token {
+public class Token implements Cloneable {
   String termText;				  // the text of the term
   int startOffset;				  // start in source text
   int endOffset;				  // end in source text
@@ -91,6 +91,11 @@ public final class Token {
    */
   public int getPositionIncrement() { return positionIncrement; }
 
+  /** Sets the Token's term text. */
+  public void setTermText(String text) {
+    termText = text;
+  }
+
   /** Returns the Token's term text. */
   public final String termText() { return termText; }
 
@@ -109,7 +114,7 @@ public final class Token {
   /** Returns this Token's lexical type.  Defaults to "word". */
   public final String type() { return type; }
 
-  public final String toString() {
+  public String toString() {
     StringBuffer sb = new StringBuffer();
     sb.append("(" + termText + "," + startOffset + "," + endOffset);
     if (!type.equals("word"))
@@ -118,5 +123,13 @@ public final class Token {
       sb.append(",posIncr="+positionIncrement);
     sb.append(")");
     return sb.toString();
+  }
+
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e); // shouldn't happen since we implement Cloneable
+    }
   }
 }
