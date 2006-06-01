@@ -19,6 +19,9 @@ Bug fixes
     didn't work because it used a QueryParser method that had 
     been removed (Daniel Naber)
 
+ 2. LUCENE-583: ISOLatin1AccentFilter fails to preserve positionIncrement 
+    (Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
