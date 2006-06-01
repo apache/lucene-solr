@@ -30,10 +30,9 @@ public class ISOLatin1AccentFilter extends TokenFilter {
 
 	public final Token next() throws java.io.IOException {
 		final Token t = input.next();
-		if (t == null)
-			return null;
-		// Return a token with filtered characters.
-		return new Token(removeAccents(t.termText()), t.startOffset(), t.endOffset(), t.type());
+    if (t != null)
+      t.setTermText(removeAccents(t.termText()));
+    return t;
 	}
 
 	/**
