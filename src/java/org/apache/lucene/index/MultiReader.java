@@ -374,13 +374,16 @@ class MultiTermDocs implements TermDocs {
     }
   }
 
-  /** As yet unoptimized implementation. */
+ /* A Possible future optimization could skip entire segments */
   public boolean skipTo(int target) throws IOException {
-    do {
-      if (!next())
-        return false;
-    } while (target > doc());
+    if (current != null && current.skipTo(target-base)) {
       return true;
+    } else if (pointer < readers.length) {
+      base = starts[pointer];
+      current = termDocs(pointer++);
+      return skipTo(target);
+    } else
+      return false;
   }
 
   private TermDocs termDocs(int i) throws IOException {

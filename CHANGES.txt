@@ -14,6 +14,13 @@ Bug fixes
     didn't work because it used a QueryParser method that had 
     been removed (Daniel Naber)
 
+Optimizations
+
+  1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
+     indexes.  This will improve the performance of many types of queries
+     against a non-optimized index. (Andrew Hudson via Yonik Seeley)
+
+
 
 Release 2.0.0 2005-05-26
 
