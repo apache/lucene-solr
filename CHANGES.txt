@@ -25,6 +25,9 @@ Bug fixes
  3. LUCENE-575: SpellChecker min score is incorrectly changed by suggestSimilar
     (Karl Wettin via Yonik Seeley)
 
+ 4. LUCENE-587: Explanation.toHtml was producing malformed HTML
+    (Chris Hostetter)
+    
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment

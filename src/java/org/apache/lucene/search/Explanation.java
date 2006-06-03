@@ -91,7 +91,7 @@ public class Explanation implements java.io.Serializable {
     buffer.append(getValue());
     buffer.append(" = ");
     buffer.append(getDescription());
-    buffer.append("</li>\n");
+    buffer.append("<br />\n");
 
     Explanation[] details = getDetails();
     if (details != null) {
@@ -100,6 +100,7 @@ public class Explanation implements java.io.Serializable {
       }
     }
 
+    buffer.append("</li>\n");
     buffer.append("</ul>\n");
 
     return buffer.toString();
