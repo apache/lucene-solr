@@ -95,6 +95,9 @@
     <fieldtype name="lowertok" class="solr.TextField">
       <analyzer><tokenizer class="solr.LowerCaseTokenizerFactory"/></analyzer>
     </fieldtype>
+    <fieldtype name="keywordtok" class="solr.TextField">
+      <analyzer><tokenizer class="solr.KeywordTokenizerFactory"/></analyzer>
+    </fieldtype>
     <fieldtype name="standardtok" class="solr.TextField">
       <analyzer><tokenizer class="solr.StandardTokenizerFactory"/></analyzer>
     </fieldtype>
@@ -270,6 +273,7 @@
    <!-- fields to test individual tokenizers and tokenfilters -->
    <field name="teststop" type="teststop" indexed="true" stored="true"/>
    <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
+   <field name="keywordtok" type="keywordtok" indexed="true" stored="true"/>
    <field name="standardtok" type="standardtok" indexed="true" stored="true"/>
    <field name="HTMLstandardtok" type="HTMLstandardtok" indexed="true" stored="true"/>
    <field name="lettertok" type="lettertok" indexed="true" stored="true"/>

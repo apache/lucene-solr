@@ -14,7 +14,8 @@ New Features
  7. Added DisMaxRequestHandler and SolrPluginUtils. (Chris Hostetter)
  8. Support for customizing the QueryResponseWriter per request
     (Mike Baranczak / SOLR-16 / hossman)
- 
+ 9. Added KeywordTokenizerFactory (hossman)
+     
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
  2. force read of document stored fields in QuerySenderListener

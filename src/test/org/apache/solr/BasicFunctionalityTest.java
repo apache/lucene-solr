@@ -182,6 +182,20 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertEquals("value", arrayParams[1]);
   }
 
+  public void testKeywordTokenizerFactory() {
+
+    assertU(adoc("id", "42",
+                 "keywordtok", "How nOw broWn-ish C.o.w. ?"));
+    assertU(commit());
+    assertQ("stored value matches?",
+            req("id:42")
+            ,"//str[.='How nOw broWn-ish C.o.w. ?']"
+            );
+    assertQ("query on exact matches?",
+            req("keywordtok:\"How nOw broWn-ish C.o.w. ?\"")
+            ,"//str[.='How nOw broWn-ish C.o.w. ?']"
+            );
+  }
 
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
