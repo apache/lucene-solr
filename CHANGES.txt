@@ -6,7 +6,8 @@ Trunk (not yet released)
 
 New features
 
- 1.
+ 1. New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers
+    (Samphan Raruenrom va Chris Hostetter)
 
 API Changes
 
