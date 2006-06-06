@@ -808,6 +808,17 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             ,"*[count(//doc)=1]"
             );
 
+    // test copyField functionality with a pattern.
+
+    assertU("<add><doc><field name=\"id\">42</field><field name=\"copy_t\">Copy me to the text field pretty please.</field></doc></add>");
+    assertU("<commit/>");
+    assertQ(req("id:42 AND text:pretty")
+        ,"*[count(//doc)=1]"
+        );
+    assertQ(req("id:42 AND copy_t:pretty")
+        ,"*[count(//doc)=1]"
+        );
+    
     // test slop
 
     assertU("<add><doc><field name=\"id\">42</field><field name=\"text\">foo bar</field></doc></add>");

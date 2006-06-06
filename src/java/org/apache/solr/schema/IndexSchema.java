@@ -96,7 +96,7 @@ public final class IndexSchema {
    * </p>
    */
   public Map<String,SchemaField> getFields() { return fields; }
-  
+
   /**
    * Provides direct access to the Map containing all Field Types
    * in the index, keyed on fild type name.
@@ -109,7 +109,7 @@ public final class IndexSchema {
 
 
   private Similarity similarity;
-  
+
   /**
    * Returns the Similarity used for this index
    */
@@ -128,7 +128,7 @@ public final class IndexSchema {
   public Analyzer getAnalyzer() { return analyzer; }
 
   private Analyzer queryAnalyzer;
-  
+
   /**
    * Returns the Analyzer used when searching this index
    *
@@ -147,7 +147,7 @@ public final class IndexSchema {
   }
 
   private SchemaField uniqueKeyField;
-  
+
   /**
    * Unique Key field specified in the schema file
    * @return null if this schema has no unique key field
@@ -339,17 +339,7 @@ public final class IndexSchema {
     // OK, now sort the dynamic fields largest to smallest size so we don't get
     // any false matches.  We want to act like a compiler tool and try and match
     // the largest string possible.
-    Collections.sort(dFields, new Comparator<DynamicField>() {
-        public int compare(DynamicField a, DynamicField b) {
-           // swap natural ordering to get biggest first.
-           // The sort is stable, so elements of the same size should
-           // be
-           if (a.regex.length() < b.regex.length()) return 1;
-           else if (a.regex.length() > b.regex.length()) return -1;
-           return 0;
-        }
-      }
-    );
+    Collections.sort(dFields);
 
     log.finest("Dynamic Field Ordering:" + dFields);
 
@@ -388,6 +378,9 @@ public final class IndexSchema {
     /////////////// parse out copyField commands ///////////////
     // Map<String,ArrayList<SchemaField>> cfields = new HashMap<String,ArrayList<SchemaField>>();
     // expression = "/schema/copyField";
+
+    ArrayList<DynamicCopy> dCopies = new ArrayList<DynamicCopy>();
+
     expression = "//copyField";
     nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
 
@@ -396,19 +389,33 @@ public final class IndexSchema {
         NamedNodeMap attrs = node.getAttributes();
 
         String source = DOMUtil.getAttr(attrs,"source","copyField definition");
+
+        boolean sourceIsPattern = isWildCard(source);
+
         String dest = DOMUtil.getAttr(attrs,"dest","copyField definition");
         log.fine("copyField source='"+source+"' dest='"+dest+"'");
-        SchemaField f = getField(source);
         SchemaField d = getField(dest);
-        SchemaField[] destArr = copyFields.get(source);
-        if (destArr==null) {
-          destArr=new SchemaField[]{d};
-        } else {
-          destArr = (SchemaField[])append(destArr,d);
-        }
-        copyFields.put(source,destArr);
-      }
 
+        if(sourceIsPattern) {
+          dCopies.add(new DynamicCopy(source, d));
+        } else {
+          // retrieve the field to force an exception if it doesn't exist
+          SchemaField f = getField(source);
+
+          SchemaField[] destArr = copyFields.get(source);
+          if (destArr==null) {
+            destArr=new SchemaField[]{d};
+          } else {
+            destArr = (SchemaField[])append(destArr,d);
+          }
+          copyFields.put(source,destArr);
+        }
+     }
+
+      log.finest("Dynamic Copied Fields:" + dCopies);
+
+      // stuff it in a normal array for faster access
+      dynamicCopyFields = (DynamicCopy[])dCopies.toArray(new DynamicCopy[dCopies.size()]);
 
     } catch (SolrException e) {
       throw e;
@@ -493,24 +500,17 @@ public final class IndexSchema {
   }
 
 
-  //
-  // Instead of storing a type, this could be implemented as a hierarchy
-  // with a virtual matches().
-  // Given how often a search will be done, however, speed is the overriding
-  // concern and I'm not sure which is faster.
-  //
-  final static class DynamicField {
+  static abstract class DynamicReplacement implements Comparable<DynamicReplacement> {
     final static int STARTS_WITH=1;
     final static int ENDS_WITH=2;
 
     final String regex;
     final int type;
-    final SchemaField prototype;
 
     final String str;
 
-    DynamicField(SchemaField prototype) {
-      this.regex=prototype.name;
+    protected DynamicReplacement(String regex) {
+      this.regex = regex;
       if (regex.startsWith("*")) {
         type=ENDS_WITH;
         str=regex.substring(1);
@@ -522,13 +522,39 @@ public final class IndexSchema {
       else {
         throw new RuntimeException("dynamic field name must start or end with *");
       }
-      this.prototype=prototype;
     }
 
-    boolean matches(String name) {
+    public boolean matches(String name) {
       if (type==STARTS_WITH && name.startsWith(str)) return true;
       else if (type==ENDS_WITH && name.endsWith(str)) return true;
       else return false;
+    }
+
+    /**
+     * Sort order is based on length of regex.  Longest comes first.
+     * @param other The object to compare to.
+     * @return a negative integer, zero, or a positive integer
+     * as this object is less than, equal to, or greater than
+     * the specified object.
+     */
+    public int compareTo(DynamicReplacement other) {
+      return other.regex.length() - regex.length();
+    }
+  }
+
+
+  //
+  // Instead of storing a type, this could be implemented as a hierarchy
+  // with a virtual matches().
+  // Given how often a search will be done, however, speed is the overriding
+  // concern and I'm not sure which is faster.
+  //
+  final static class DynamicField extends DynamicReplacement {
+    final SchemaField prototype;
+
+    DynamicField(SchemaField prototype) {
+      super(prototype.name);
+      this.prototype=prototype;
     }
 
     SchemaField makeSchemaField(String name) {
@@ -546,14 +572,72 @@ public final class IndexSchema {
   }
 
 
+  //
+  // Instead of storing a type, this could be implemented as a hierarchy
+  // with a virtual matches().
+  // Given how often a search will be done, however, speed is the overriding
+  // concern and I'm not sure which is faster.
+  //
+  final static class DynamicCopy extends DynamicReplacement {
+    final SchemaField targetField;
+    DynamicCopy(String regex, SchemaField targetField) {
+      super(regex);
+      this.targetField = targetField;
+    }
+
+    public String toString() {
+      return targetField.toString();
+    }
+  }
+
 
   private DynamicField[] dynamicFields;
 
+
   /**
-   * Returns the SchemaField that should be used for the specified field name 
+   * Does the schema have the specified field defined explicitly, i.e.
+   * not as a result of a copyField declaration with a wildcard?  We
+   * consider it explicitly defined if it matches a field or dynamicField
+   * declaration.
+   * @param fieldName
+   * @return true if explicitly declared in the schema.
+   */
+  public boolean hasExplicitField(String fieldName) {
+    if(fields.containsKey(fieldName)) {
+      return true;
+    }
+
+    for (DynamicField df : dynamicFields) {
+      if (df.matches(fieldName)) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Returns the SchemaField that should be used for the specified field name, or
+   * null if none exists.
    *
-   * @param fieldName may be an explicitly created field, or a name that
-   * excercies a dynamic field.
+   * @param fieldName may be an explicitly defined field, or a name that
+   * matches a dynamic field.
+   * @see #getFieldType
+   */
+  public SchemaField getFieldOrNull(String fieldName) {
+     SchemaField f = fields.get(fieldName);
+    if (f != null) return f;
+
+    for (DynamicField df : dynamicFields) {
+      if (df.matches(fieldName)) return df.makeSchemaField(fieldName);
+    }
+    
+    return f;
+  }
+
+  /**
+   * Returns the SchemaField that should be used for the specified field name
+   *
+   * @param fieldName may be an explicitly defined field, or a name that
+   * matches a dynamic field.
    * @throws SolrException if no such field exists
    * @see #getFieldType
    */
@@ -641,13 +725,48 @@ public final class IndexSchema {
 
 
   private final Map<String, SchemaField[]> copyFields = new HashMap<String,SchemaField[]>();
-  
+  private DynamicCopy[] dynamicCopyFields;
+
   /**
-   * Returns the list of fields that should recieve a copy of any indexed values added to the specified field.
-   * @return may be null or empty if there are no matching copyField directives
+   * Get all copy fields, both the static and the dynamic ones.
+   * @param sourceField
+   * @return Array of fields to copy to.
    */
   public SchemaField[] getCopyFields(String sourceField) {
-    return copyFields.get(sourceField);
+    // Get the dynamic ones into a list.
+    List<SchemaField> matchCopyFields = new ArrayList<SchemaField>();
+
+    for(DynamicCopy dynamicCopy : dynamicCopyFields) {
+      if(dynamicCopy.matches(sourceField)) {
+        matchCopyFields.add(dynamicCopy.targetField);
+      }
+    }
+
+    // Get the fixed ones, if there are any.
+    SchemaField[] fixedCopyFields = copyFields.get(sourceField);
+
+    boolean appendFixed = copyFields.containsKey(sourceField);
+
+    // Construct the results by concatenating dynamic and fixed into a results array.
+
+    SchemaField[] results = new SchemaField[matchCopyFields.size() + (appendFixed ? fixedCopyFields.length : 0)];
+
+    matchCopyFields.toArray(results);
+
+    if(appendFixed) {
+      System.arraycopy(fixedCopyFields, 0, results, matchCopyFields.size(), fixedCopyFields.length);
+    }
+
+    return results;
+  }
+
+  /**
+   * Is the given field name a wildcard?  I.e. does it begin or end with *?
+   * @param name
+   * @return true/false
+   */
+  private static boolean isWildCard(String name) {
+    return  name.startsWith("*") || name.endsWith("*");
   }
 
 }

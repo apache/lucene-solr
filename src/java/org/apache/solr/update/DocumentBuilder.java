@@ -68,25 +68,31 @@ public class DocumentBuilder {
 
   public void addField(SchemaField sfield, String val, float boost) {
     addSingleField(sfield,val,boost);
+  }
+
+  public void addField(String name, String val) {
+    addField(name, val, 1.0f);
+  }
+
+  public void addField(String name, String val, float boost) {
+    SchemaField sfield = schema.getFieldOrNull(name);
+    if (sfield != null) {
+      addField(sfield,val,boost);
+    }
 
     // Check if we should copy this field to any other fields.
-    SchemaField[] destArr = schema.getCopyFields(sfield.getName());
+    // This could happen whether it is explicit or not.
+    SchemaField[] destArr = schema.getCopyFields(name);
     if (destArr != null) {
       for (SchemaField destField : destArr) {
         addSingleField(destField,val,boost);
       }
     }
-  }
 
-  public void addField(String name, String val) {
-    SchemaField ftype = schema.getField(name);
-    // fields.get(name);
-    addField(ftype,val,1.0f);
-  }
-
-  public void addField(String name, String val, float boost) {
-    SchemaField ftype = schema.getField(name);
-    addField(ftype,val,boost);
+    // error if this field name doesn't match anything
+    if (sfield==null && (destArr==null || destArr.length==0)) {
+      throw new SolrException(400,"ERROR:unknown field '" + name + "'");
+    }
   }
 
   public void setBoost(float boost) {
