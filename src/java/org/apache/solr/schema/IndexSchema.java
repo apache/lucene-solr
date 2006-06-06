@@ -56,11 +56,22 @@ public final class IndexSchema {
   private String name;
   private float version;
 
+  /**
+   * Constructs a schema using the specified file name using the normal
+   * Config path directory searching rules.
+   *
+   * @see Config#openResource
+   */
   public IndexSchema(String schemaFile) {
     this.schemaFile=schemaFile;
     readConfig();
   }
 
+  /**
+   * Direct acess to the InputStream for the schemaFile used by this instance.
+   *
+   * @see Config#openResource
+   */
   public InputStream getInputStream() {
     return Config.openResource(schemaFile);
   }
@@ -70,39 +81,97 @@ public final class IndexSchema {
     return version;
   }
 
+  /** The Name of this schema (as specified in the schema file) */
   public String getName() { return name; }
 
   private final HashMap<String, SchemaField> fields = new HashMap<String,SchemaField>();
   private final HashMap<String, FieldType> fieldTypes = new HashMap<String,FieldType>();
 
+  /**
+   * Provides direct access to the Map containing all explicit
+   * (ie: non-dynamic) fields in the index, keyed on field name.
+   *
+   * <p>
+   * Modifying this Map (or any item in it) will affect the real schema
+   * </p>
+   */
   public Map<String,SchemaField> getFields() { return fields; }
+  
+  /**
+   * Provides direct access to the Map containing all Field Types
+   * in the index, keyed on fild type name.
+   *
+   * <p>
+   * Modifying this Map (or any item in it) will affect the real schema
+   * </p>
+   */
   public Map<String,FieldType> getFieldTypes() { return fieldTypes; }
 
 
   private Similarity similarity;
+  
+  /**
+   * Returns the Similarity used for this index
+   */
   public Similarity getSimilarity() { return similarity; }
 
   private Analyzer analyzer;
+
+  /**
+   * Returns the Analyzer used when indexing documents for this index
+   *
+   * <p>
+   * This Analyzer is field (and dynamic field) name aware, and delegates to
+   * a field specific Analyzer based on the field type.
+   * </p>
+   */
   public Analyzer getAnalyzer() { return analyzer; }
 
   private Analyzer queryAnalyzer;
+  
+  /**
+   * Returns the Analyzer used when searching this index
+   *
+   * <p>
+   * This Analyzer is field (and dynamic field) name aware, and delegates to
+   * a field specific Analyzer based on the field type.
+   * </p>
+   */
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
   private String defaultSearchFieldName=null;
+
+  /** Name of the default search field specified in the schema file */
   public String getDefaultSearchFieldName() {
     return defaultSearchFieldName;
   }
 
   private SchemaField uniqueKeyField;
+  
+  /**
+   * Unique Key field specified in the schema file
+   * @return null if this schema has no unique key field
+   */
   public SchemaField getUniqueKeyField() { return uniqueKeyField; }
 
   private String uniqueKeyFieldName;
   private FieldType uniqueKeyFieldType;
 
+  /**
+   * The raw (field type encoded) value of the Unique Key field for
+   * the specified Document
+   * @return null if this schema has no unique key field
+   * @see #printableUniqueKey
+   */
   public Field getUniqueKeyField(org.apache.lucene.document.Document doc) {
     return doc.getField(uniqueKeyFieldName);  // this should return null if name is null
   }
 
+  /**
+   * The printable value of the Unique Key field for
+   * the specified Document
+   * @return null if this schema has no unique key field
+   */
   public String printableUniqueKey(org.apache.lucene.document.Document doc) {
      Field f = doc.getField(uniqueKeyFieldName);
      return f==null ? null : uniqueKeyFieldType.toExternal(f);
@@ -480,8 +549,14 @@ public final class IndexSchema {
 
   private DynamicField[] dynamicFields;
 
-
-  // get a field, and if not statically defined, check dynamic fields.
+  /**
+   * Returns the SchemaField that should be used for the specified field name 
+   *
+   * @param fieldName may be an explicitly created field, or a name that
+   * excercies a dynamic field.
+   * @throws SolrException if no such field exists
+   * @see #getFieldType
+   */
   public SchemaField getField(String fieldName) {
      SchemaField f = fields.get(fieldName);
     if (f != null) return f;
@@ -498,8 +573,20 @@ public final class IndexSchema {
     throw new SolrException(1,"undefined field "+fieldName);
   }
 
-  // This method exists because it can be more efficient for dynamic fields
-  // if a full SchemaField isn't needed.
+  /**
+   * Returns the FieldType for the specified field name.
+   *
+   * <p>
+   * This method exists because it can be more efficient then
+   * {@link #getField} for dynamic fields if a full SchemaField isn't needed.
+   * </p>
+   *
+   * @param fieldName may be an explicitly created field, or a name that
+   * excercies a dynamic field.
+   * @throws SolrException if no such field exists
+   * @see #getField(String)
+   * @see #getFieldTypeNoEx
+   */
   public FieldType getFieldType(String fieldName) {
     SchemaField f = fields.get(fieldName);
     if (f != null) return f.getType();
@@ -508,8 +595,18 @@ public final class IndexSchema {
   }
 
   /**
-   * return null instead of throwing an exception if
-   * the field is undefined.
+   * Returns the FieldType for the specified field name.
+   *
+   * <p>
+   * This method exists because it can be more efficient then
+   * {@link #getField} for dynamic fields if a full SchemaField isn't needed.
+   * </p>
+   *
+   * @param fieldName may be an explicitly created field, or a name that
+   * excercies a dynamic field.
+   * @return null if field is not defined.
+   * @see #getField(String)
+   * @see #getFieldTypeNoEx
    */
   public FieldType getFieldTypeNoEx(String fieldName) {
     SchemaField f = fields.get(fieldName);
@@ -518,6 +615,16 @@ public final class IndexSchema {
   }
 
 
+  /**
+   * Returns the FieldType of the best matching dynamic field for
+   * the specified field name
+   *
+   * @param fieldName may be an explicitly created field, or a name that
+   * excercies a dynamic field.
+   * @throws SolrException if no such field exists
+   * @see #getField(String)
+   * @see #getFieldTypeNoEx
+   */
   public FieldType getDynamicFieldType(String fieldName) {
      for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
@@ -534,6 +641,11 @@ public final class IndexSchema {
 
 
   private final Map<String, SchemaField[]> copyFields = new HashMap<String,SchemaField[]>();
+  
+  /**
+   * Returns the list of fields that should recieve a copy of any indexed values added to the specified field.
+   * @return may be null or empty if there are no matching copyField directives
+   */
   public SchemaField[] getCopyFields(String sourceField) {
     return copyFields.get(sourceField);
   }

@@ -44,12 +44,17 @@ import java.io.IOException;
 public abstract class FieldType extends FieldProperties {
   public static final Logger log = Logger.getLogger(FieldType.class.getName());
 
-  protected String typeName;  // the name of the type, not the name of the field
-  protected Map<String,String> args;  // additional arguments
-  protected int trueProperties;   // properties explicitly set to true
-  protected int falseProperties;  // properties explicitly set to false
+  /** The name of the type (not the name of the field) */
+  protected String typeName;
+  /** additional arguments specified in the field type declaration */
+  protected Map<String,String> args;
+  /** properties explicitly set to true */
+  protected int trueProperties;
+  /** properties explicitly set to false */
+  protected int falseProperties;  
   int properties;
 
+  /** Returns true if fields of this type should be tokenized */
   protected boolean isTokenized() {
     return (properties & TOKENIZED) != 0;
   }
@@ -105,6 +110,7 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
+  /** :TODO: document this method */
   protected void restrictProps(int props) {
     if ((properties & props) != 0) {
       throw new RuntimeException("schema fieldtype " + typeName
@@ -113,7 +119,7 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
-
+  /** The Name of this FieldType as specified in the schema file */
   public String getTypeName() {
     return typeName;
   }
@@ -131,19 +137,31 @@ public abstract class FieldType extends FieldProperties {
   }
 
 
-  // used for adding a document when a field needs to be created from a type and a string
-  // by default, the indexed value is the same as the stored value (taken from toInternal())
-  // Having a different representation for external, internal, and indexed would present quite
-  // a few problems given the current Lucene architecture.  An analyzer for adding docs would
-  // need to translate internal->indexed while an analyzer for querying would need to
-  // translate external->indexed.
-  //
-  // The only other alternative to having internal==indexed would be to have
-  // internal==external.
-  // In this case, toInternal should convert to the indexed representation,
-  // toExternal() should do nothing, and createField() should *not* call toInternal,
-  // but use the external value and set tokenized=true to get Lucene to convert
-  // to the internal(indexed) form.
+  /**
+   * Used for adding a document when a field needs to be created from a
+   * type and a string.
+   *
+   * <p>
+   * By default, the indexed value is the same as the stored value
+   * (taken from toInternal()).   Having a different representation for
+   * external, internal, and indexed would present quite a few problems
+   * given the current Lucene architecture.  An analyzer for adding docs
+   * would need to translate internal->indexed while an analyzer for
+   * querying would need to translate external-&gt;indexed.
+   * </p>
+   * <p>
+   * The only other alternative to having internal==indexed would be to have
+   * internal==external.   In this case, toInternal should convert to
+   * the indexed representation, toExternal() should do nothing, and
+   * createField() should *not* call toInternal, but use the external
+   * value and set tokenized=true to get Lucene to convert to the
+   * internal(indexed) form.
+   * </p>
+   *
+   * :TODO: clean up and clarify this explanation.
+   *
+   * @see #toInternal
+   */
   public Field createField(SchemaField field, String externalVal, float boost) {
     String val;
     try {
@@ -162,31 +180,40 @@ public abstract class FieldType extends FieldProperties {
   }
 
 
-  // Convert an external value (from XML update command or from query string)
-  // into the internal format.
-  // - used in delete when a Term needs to be created.
-  // - used by the default getTokenizer() and createField()
+  /**
+   * Convert an external value (from XML update command or from query string)
+   * into the internal format.
+   * @see #toExternal
+   */
   public String toInternal(String val) {
+    // - used in delete when a Term needs to be created.
+    // - used by the default getTokenizer() and createField()
     return val;
   }
 
-  // Convert the stored-field format to an external (string, human readable) value
-  // currently used in writing XML of the search result (but perhaps
-  // a more efficient toXML(Field f, Writer w) should be used
-  // in the future.
+  /**
+   * Convert the stored-field format to an external (string, human readable)
+   * value
+   * @see #toInternal
+   */
   public String toExternal(Field f) {
+    // currently used in writing XML of the search result (but perhaps
+    // a more efficient toXML(Field f, Writer w) should be used
+    // in the future.
     return f.stringValue();
   }
 
-
+  /** :TODO: document this method */
   public String indexedToReadable(String indexedForm) {
     return indexedForm;
   }
 
+  /** :TODO: document this method */
   public String storedToReadable(Field f) {
     return toExternal(f);
   }
 
+  /** :TODO: document this method */
   public String storedToIndexed(Field f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
@@ -219,10 +246,10 @@ public abstract class FieldType extends FieldProperties {
   **********/
 
 
-  //
-  // Default analyzer for types that only produce 1 verbatim token...
-  // A maximum size of chars to be read must be specified
-  //
+  /**
+   * Default analyzer for types that only produce 1 verbatim token...
+   * A maximum size of chars to be read must be specified
+   */
   protected final class DefaultAnalyzer extends SolrAnalyzer {
     final int maxChars;
 
@@ -244,44 +271,77 @@ public abstract class FieldType extends FieldProperties {
   }
 
 
-  //analyzer set by schema for text types.
-  //subclasses can set analyzer themselves or override getAnalyzer()
+  /**
+   * Analyzer set by schema for text types to use when indexing fields
+   * of this type, subclasses can set analyzer themselves or override
+   * getAnalyzer()
+   * @see #getAnalyzer
+   */
   protected Analyzer analyzer=new DefaultAnalyzer(256);
+  
+  /**
+   * Analyzer set by schema for text types to use when searching fields
+   * of this type, subclasses can set analyzer themselves or override
+   * getAnalyzer()
+   * @see #getQueryAnalyzer
+   */
   protected Analyzer queryAnalyzer=analyzer;
 
-  // get analyzer should be fast to call... since the addition of dynamic fields,
-  // this can be called all the time instead of just once at startup.
-  // The analyzer will only be used in the following scenarios:
-  // - during a document add for any field that has "tokenized" set (typically
-  //   only Text fields)
-  // - during query parsing
-
+  /**
+   * Returns the Analyzer to be used when indexing fields of this type.
+   * <p>
+   * This method may be called many times, at any time.
+   * </p>
+   * @see #getQueryAnalyzer
+   */
   public Analyzer getAnalyzer() {
     return analyzer;
   }
 
+  /**
+   * Returns the Analyzer to be used when searching fields of this type.
+   * <p>
+   * This method may be called many times, at any time.
+   * </p>
+   * @see #getAnalyzer
+   */
   public Analyzer getQueryAnalyzer() {
     return queryAnalyzer;
   }
 
-  // This is called by the schema parser if a custom analyzer is defined
+  /**
+   * Sets the Analyzer to be used when indexing fields of this type.
+   * @see #getAnalyzer
+   */
   public void setAnalyzer(Analyzer analyzer) {
     this.analyzer = analyzer;
     log.finest("FieldType: " + typeName + ".setAnalyzer(" + analyzer.getClass().getName() + ")" );
   }
 
-   // This is called by the schema parser if a custom analyzer is defined
+  /**
+   * Sets the Analyzer to be used when querying fields of this type.
+   * @see #getQueryAnalyzer
+   */
   public void setQueryAnalyzer(Analyzer analyzer) {
     this.queryAnalyzer = analyzer;
     log.finest("FieldType: " + typeName + ".setQueryAnalyzer(" + analyzer.getClass().getName() + ")" );
   }
 
-
+  /**
+   * Renders the specified field as XML
+   */
   public abstract void write(XMLWriter xmlWriter, String name, Field f) throws IOException;
 
-
+  
+  /**
+   * Returns the SortField instance that should be used to sort fields
+   * of this type.
+   */
   public abstract SortField getSortField(SchemaField field, boolean top);
 
+  /**
+   * Utility usable by subclasses when they want to get basic String sorting.
+   */
   protected SortField getStringSort(SchemaField field, boolean reverse) {
     return Sorting.getStringSortField(field.name, reverse, field.sortMissingLast(),field.sortMissingFirst());
   }

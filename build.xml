@@ -92,7 +92,24 @@
 
 
   <target name="javadoc" depends="compile">
+
     <mkdir dir="${build.javadoc}"/>
+        
+    <!-- we do this to make sure whatever classes where in ant's
+         classpath at runtime are in the classpath used by javadoc
+         (ie: junit.jar)
+     -->
+    <path id="javadoc.classpath">
+       <path refid="compile.classpath"/>
+       <!-- aparently ant.library.dir isn't allways set right? -->
+       <fileset dir="${ant.home}/lib">
+          <include name="**/*.jar"/>
+       </fileset>
+       <fileset dir="${ant.library.dir}">
+          <include name="**/*.jar"/>
+       </fileset>
+    </path>
+
     <javadoc
       destdir="${build.javadoc}"
       author="true"
@@ -109,7 +126,7 @@
         <link href="${javadoc.link.java}"/>
         <link href="${javadoc.link.junit}"/>
         <link href="${javadoc.link.lucene}"/>
-        <classpath refid="compile.classpath"/>
+        <classpath refid="javadoc.classpath"/>
     </javadoc>
   </target>
   
