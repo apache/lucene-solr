@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd"> 
+<properties> 
+<comment>Lucene Storage Properties</comment> 
+<entry key="gdata.server.storage.lucene.buffersize">20</entry> 
+<entry key="gdata.server.storage.lucene.persistFactor">20</entry> 
+<entry key="gdata.server.storage.lucene.optimizeInterval">20</entry> 
+<entry key="gdata.server.storage.lucene.directory">/tmp/storage/</entry> 
+<entry key="gdata.server.storage.lucene.recover">true</entry> 
+<entry key="gdata.server.storage.lucene.recover.keepFiles">false</entry> 
+</properties> 

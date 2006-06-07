@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='UTF-8'?> 
+<feed xmlns='http://www.w3.org/2005/Atom' 
+    xmlns:openSearch='http://a9.com/-/spec/opensearchrss/1.0/' 
+    xmlns:gd='http://schemas.google.com/g/2005'> 
+    <id> 
+        http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic 
+    </id> 
+    <updated>2006-05-27T11:47:55.000Z</updated> 
+    <title type='text'>Simon Willnauer</title> 
+    <subtitle type='text'>Simon Willnauer</subtitle> 
+    <link rel='http://schemas.google.com/g/2005#feed' 
+        type='application/atom+xml' 
+        href='http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic'> 
+    </link> 
+    <link rel='self' type='application/atom+xml' 
+        href='http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic?max-results=25'> 
+    </link> 
+    <link rel='next' type='application/atom+xml' 
+        href='http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic?start-index=26&amp;max-results=25'> 
+    </link> 
+    <author> 
+        <name>Simon Willnauer</name> 
+        <email>simon.willnauer@googlemail.com</email> 
+    </author> 
+    <generator version='1.0' uri='http://www.google.com/calendar'> 
+        Google Calendar 
+    </generator> 
+    <openSearch:itemsPerPage>25</openSearch:itemsPerPage> 
+    <entry> 
+        <id> 
+            http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic/af4b5ca305c80f96f42c9af66c5b04a8473c949c 
+        </id> 
+        <published>2006-12-23T00:00:00.000Z</published> 
+        <updated>2006-05-23T16:42:48.000Z</updated> 
+        <category scheme='http://schemas.google.com/g/2005#kind' 
+            term='http://schemas.google.com/g/2005#event'> 
+        </category> 
+        <summary type='html'> 
+            When: 2006-12-23 to 2006-12-31 America/Los_Angeles&lt;br> 
+        </summary> 
+        <link rel='alternate' type='text/html' 
+            href='http://www.google.com/calendar/event?eid=YWY0YjVjYTMwNWM4MGY5NmY0MmM5YWY2NmM1YjA0YTg0NzNjOTQ5YyBzaW1vbi53aWxsbmF1ZXJAZ29vZ2xlbWFpbC5jb20' 
+            title='alternate'> 
+        </link> 
+        <link rel='self' type='application/atom+xml' 
+            href='http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic/af4b5ca305c80f96f42c9af66c5b04a8473c949c'> 
+        </link> 
+    </entry> 
+    <entry> 
+        <id> 
+            http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic/d5402951792ce690f6a45e51143deb78f4fffac4 
+        </id> 
+        <published>2006-05-26T00:00:00.000Z</published> 
+        <updated>2006-05-20T22:17:44.000Z</updated> 
+        <category scheme='http://schemas.google.com/g/2005#kind' 
+            term='http://schemas.google.com/g/2005#event'> 
+        </category> 
+        <summary type='html'> 
+            When: 2006-05-26 to 2006-05-27 America/Los_Angeles&lt;br> 
+        </summary> 
+        <link rel='alternate' type='text/html' 
+            href='http://www.google.com/calendar/event?eid=ZDU0MDI5NTE3OTJjZTY5MGY2YTQ1ZTUxMTQzZGViNzhmNGZmZmFjNCBzaW1vbi53aWxsbmF1ZXJAZ29vZ2xlbWFpbC5jb20' 
+            title='alternate'> 
+        </link> 
+        <link rel='self' type='application/atom+xml' 
+            href='http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic/d5402951792ce690f6a45e51143deb78f4fffac4'> 
+        </link> 
+    </entry> 
+    <entry> 
+        <id> 
+            http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic/21630e853795ea81d5e792d0ab082ad1c44256e4 
+        </id> 
+        <published>2006-06-19T14:00:00.000Z</published> 
+        <updated>2006-05-17T16:10:57.000Z</updated> 
+        <category scheme='http://schemas.google.com/g/2005#kind' 
+            term='http://schemas.google.com/g/2005#event'> 
+        </category> 
+        <summary type='html'> 
+            When: 2006-06-19 07:00:00 to 08:00:00 
+            America/Los_Angeles&lt;br> 
+        </summary> 
+        <link rel='alternate' type='text/html' 
+            href='http://www.google.com/calendar/event?eid=MjE2MzBlODUzNzk1ZWE4MWQ1ZTc5MmQwYWIwODJhZDFjNDQyNTZlNCBzaW1vbi53aWxsbmF1ZXJAZ29vZ2xlbWFpbC5jb20' 
+            title='alternate'> 
+        </link> 
+        <link rel='self' type='application/atom+xml' 
+            href='http://www.google.com/calendar/feeds/simon.willnauer%40googlemail.com/public/basic/21630e853795ea81d5e792d0ab082ad1c44256e4'> 
+        </link> 
+    </entry> 
+</feed> 

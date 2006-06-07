@@ -1,0 +1,50 @@
+<?xml version="1.0"?> 
+ 
+<project name="gdata-server" default="default"> 
+ 
+    <description> 
+    Serverside Google Data API implementation 
+  </description> 
+     
+    <property name="gdata.war.name" value="gdata-server"/> 
+    <property name="gdata.lib.dir" value="lib"/> 
+     
+    <path id="additional.dependencies"> 
+        <pathelement location="lib/servlet-api.jar" /> 
+        <!-- easymock version 1.2 for java 1.3 --> 
+        <pathelement location="lib/easymock.jar" /> 
+        <pathelement location="lib/gdata-client-1.0.jar" /> 
+        <pathelement location="lib/commons-logging-1.1.jar" /> 
+        <pathelement location="lib/commons-jxpath-1.2.jar" /> 
+        <pathelement location="lib/je.jar" /> 
+         
+         
+    </path> 
+     
+ 
+    <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" /> 
+ 
+       <property name="javac.source" value="1.5"/> 
+       <property name="javac.target" value="1.5"/> 
+    <import file="../contrib-build.xml" /> 
+ 
+    <target name="prepare-dist" depends="jar-core"> 
+        <echo>Prepare dist directory</echo> 
+        <delete dir="${dist.dir}"/> 
+        <mkdir dir="${dist.dir}"/> 
+    </target> 
+     <target name="war-gdata" depends="prepare-dist"> 
+         <echo>Distributing GData War </echo> 
+        <war destfile="${dist.dir}/${gdata.war.name}.war" 
+             webxml="webroot/WEB-INF/web.xml"> 
+        <fileset dir="webroot" excludes="WEB-INF/web.xml"/> 
+ 
+            <lib dir="${gdata.lib.dir}" includes="commons-logging-1.1.jar"/> 
+            <lib dir="${gdata.lib.dir}" includes="gdata-client-1.0.jar"/> 
+ 
+        <lib dir="${build.dir}" includes="${final.name}.jar"/> 
+        <lib file="${lucene.jar}" /> 
+        </war> 
+      </target> 
+ 
+</project> 

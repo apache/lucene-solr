@@ -379,6 +379,7 @@
         <packageset dir="contrib/surround/src/java"/>
         <packageset dir="contrib/swing/src/java"/>
         <packageset dir="contrib/wordnet/src/java"/>
+    <packageset dir="contrib/gdata-server/src/java"/> 
 
         <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
 
