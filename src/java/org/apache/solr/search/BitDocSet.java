@@ -85,8 +85,8 @@ public class BitDocSet extends DocSetBase {
   }
 
   public void addUnique(int doc) {
-    size++;
     bits.set(doc);
+    size=-1;  // invalidate size
   }
 
   public int size() {
