@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /**
@@ -78,6 +79,37 @@ public class WordlistLoader {
       }
     }
     finally {
+      if (br != null)
+        br.close();
+    }
+    return result;
+  }
+
+  /**
+   * Reads a stem dictionary. Each line contains:
+   * <pre>word<b>\t</b>stem</pre>
+   * (i.e. two tab seperated words)
+   *
+   * @return stem dictionary that overrules the stemming algorithm
+   * @throws IOException 
+   */
+  public static HashMap getStemDict(File wordstemfile) throws IOException {
+    if (wordstemfile == null)
+      throw new NullPointerException("wordstemfile may not be null");
+    HashMap result = new HashMap();
+    BufferedReader br = null;
+    FileReader fr = null;
+    try {
+      fr = new FileReader(wordstemfile);
+      br = new BufferedReader(fr);
+      String line;
+      while ((line = br.readLine()) != null) {
+        String[] wordstem = line.split("\t", 2);
+        result.put(wordstem[0], wordstem[1]);
+      }
+    } finally {
+      if (fr != null)
+        fr.close();
       if (br != null)
         br.close();
     }

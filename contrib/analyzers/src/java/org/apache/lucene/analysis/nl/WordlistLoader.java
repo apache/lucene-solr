@@ -23,16 +23,19 @@ import java.io.LineNumberReader;
 import java.util.HashMap;
 
 /**
- * @author Gerhard Schwarz
  *         <p/>
  *         Loads a text file and adds every line as an entry to a Hashtable. Every line
  *         should contain only one word. If the file is not found or on any error, an
  *         empty table is returned.
+ *         
+ * @author Gerhard Schwarz
+ * @deprecated use {@link org.apache.lucene.analysis.WordlistLoader} instead
  */
 public class WordlistLoader {
   /**
    * @param path     Path to the wordlist
    * @param wordfile Name of the wordlist
+   * @deprecated use {@link org.apache.lucene.analysis.WordlistLoader#getWordSet(File)} instead
    */
   public static HashMap getWordtable(String path, String wordfile) {
     if (path == null || wordfile == null) {
@@ -43,6 +46,7 @@ public class WordlistLoader {
 
   /**
    * @param wordfile Complete path to the wordlist
+   * @deprecated use {@link org.apache.lucene.analysis.WordlistLoader#getWordSet(File)} instead
    */
   public static HashMap getWordtable(String wordfile) {
     if (wordfile == null) {
@@ -57,6 +61,7 @@ public class WordlistLoader {
    * i.e. tab seperated)
    *
    * @return Stem dictionary that overrules, the stemming algorithm
+   * @deprecated use {@link org.apache.lucene.analysis.WordlistLoader#getStemDict(File)} instead
    */
   public static HashMap getStemDict(File wordstemfile) {
     if (wordstemfile == null) {
@@ -78,6 +83,7 @@ public class WordlistLoader {
 
   /**
    * @param wordfile File containing the wordlist
+   * @deprecated use {@link org.apache.lucene.analysis.WordlistLoader#getWordSet(File)} instead
    */
   public static HashMap getWordtable(File wordfile) {
     if (wordfile == null) {

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,18 +69,20 @@ public class DutchAnalyzer extends Analyzer {
    */
   private Set excltable = new HashSet();
 
-  private Map _stemdict = new HashMap();
+  private Map stemdict = new HashMap();
 
 
   /**
-   * Builds an analyzer with the default stop words ({@link #DUTCH_STOP_WORDS}).
+   * Builds an analyzer with the default stop words ({@link #DUTCH_STOP_WORDS}) 
+   * and a few default entries for the stem exclusion table.
+   * 
    */
   public DutchAnalyzer() {
     stoptable = StopFilter.makeStopSet(DUTCH_STOP_WORDS);
-    _stemdict.put("fiets", "fiets"); //otherwise fiet
-    _stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
-    _stemdict.put("ei", "eier");
-    _stemdict.put("kind", "kinder");
+    stemdict.put("fiets", "fiets"); //otherwise fiet
+    stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
+    stemdict.put("ei", "eier");
+    stemdict.put("kind", "kinder");
   }
 
   /**
@@ -106,7 +109,12 @@ public class DutchAnalyzer extends Analyzer {
    * @param stopwords
    */
   public DutchAnalyzer(File stopwords) {
-    stoptable = new HashSet(WordlistLoader.getWordtable(stopwords).keySet());
+    try {
+      stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
+    } catch (IOException e) {
+      // TODO: throw IOException
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -129,17 +137,26 @@ public class DutchAnalyzer extends Analyzer {
    * Builds an exclusionlist from the words contained in the given file.
    */
   public void setStemExclusionTable(File exclusionlist) {
-    excltable = new HashSet(WordlistLoader.getWordtable(exclusionlist).keySet());
+    try {
+      excltable = org.apache.lucene.analysis.WordlistLoader.getWordSet(exclusionlist);
+    } catch (IOException e) {
+      // TODO: throw IOException
+      throw new RuntimeException(e);
+    }
   }
 
   /**
    * Reads a stemdictionary file , that overrules the stemming algorithm
    * This is a textfile that contains per line
-   * word\tstem
-   * i.e: tabseperated
+   * <tt>word<b>\t</b>stem</tt>, i.e: two tab seperated words
    */
-  public void setStemDictionary(File stemdict) {
-    _stemdict = WordlistLoader.getStemDict(stemdict);
+  public void setStemDictionary(File stemdictFile) {
+    try {
+      stemdict = org.apache.lucene.analysis.WordlistLoader.getStemDict(stemdictFile);
+    } catch (IOException e) {
+      // TODO: throw IOException
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -152,7 +169,7 @@ public class DutchAnalyzer extends Analyzer {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
     result = new StopFilter(result, stoptable);
-    result = new DutchStemFilter(result, excltable, _stemdict);
+    result = new DutchStemFilter(result, excltable, stemdict);
     return result;
   }
 }

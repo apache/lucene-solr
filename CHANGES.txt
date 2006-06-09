@@ -14,6 +14,10 @@ API Changes
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
     changing of termText via setTermText().  (Yonik Seeley)
 
+ 2. org.apache.lucene.analysis.nl.WordlistLoader has been deprecated
+    and is supposed to be replaced with the WordlistLoader class in
+    package org.apache.lucene.analysis (Daniel Naber)
+    
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
