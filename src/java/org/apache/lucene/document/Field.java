@@ -289,7 +289,7 @@ public final class Field implements Serializable {
 
   /**
    * Create a tokenized and indexed field that is not stored. Term vectors will
-   * not be stored.
+   * not be stored.  The Reader is read only when the Document is added to the index.
    * 
    * @param name The name of the field
    * @param reader The reader with the content
@@ -301,7 +301,7 @@ public final class Field implements Serializable {
 
   /**
    * Create a tokenized and indexed field that is not stored, optionally with 
-   * storing term vectors.
+   * storing term vectors.  The Reader is read only when the Document is added to the index.
    * 
    * @param name The name of the field
    * @param reader The reader with the content
@@ -327,8 +327,6 @@ public final class Field implements Serializable {
     
     setStoreTermVector(termVector);
   }
-
-
   
   /**
    * Create a stored field with binary value. Optionally the value may be compressed.
