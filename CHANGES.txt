@@ -29,6 +29,9 @@ Optimizations
     single lucene query.
  2. BitDocSet.intersectionSize(HashDocSet) no longer generates an intermediate
     set
+ 3. OpenBitSet completed, replaces BitSet as the implementation for BitDocSet.
+    Iteration is faster, and BitDocSet.intersectionSize(BitDocSet)
+    is between 3 and 4 times faster. (yonik, SOLR-15)
 
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different

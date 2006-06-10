@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.core.SolrException;
+import org.apache.solr.util.OpenBitSet;
 
 import java.util.BitSet;
 
@@ -83,10 +84,10 @@ public interface DocSet /* extends Collection<Integer> */ {
    * a SolrIndexSearcher method, it's not safe to modify the BitSet.
    *
    * @return
-   * A BitSet with the bit number of every docid set in the set.
+   * An OpenBitSet with the bit number of every docid set in the set.
    */
   @Deprecated
-  public BitSet getBits();
+  public OpenBitSet getBits();
 
   /**
    * Returns the approximate amount of memory taken by this DocSet.
@@ -168,8 +169,8 @@ abstract class DocSetBase implements DocSet {
    *
    * @see BitDocSet#getBits
    */
-  public BitSet getBits() {
-    BitSet bits = new BitSet();
+  public OpenBitSet getBits() {
+    OpenBitSet bits = new OpenBitSet();
     for (DocIterator iter = iterator(); iter.hasNext();) {
       bits.set(iter.nextDoc());
     }
@@ -185,13 +186,13 @@ abstract class DocSetBase implements DocSet {
     }
 
     // Default... handle with bitsets.
-    BitSet newbits = (BitSet)(this.getBits().clone());
+    OpenBitSet newbits = (OpenBitSet)(this.getBits().clone());
     newbits.and(other.getBits());
     return new BitDocSet(newbits);
   }
 
   public DocSet union(DocSet other) {
-    BitSet newbits = (BitSet)(this.getBits().clone());
+    OpenBitSet newbits = (OpenBitSet)(this.getBits().clone());
     newbits.or(other.getBits());
     return new BitDocSet(newbits);
   }
@@ -207,11 +208,10 @@ abstract class DocSetBase implements DocSet {
     return intersection(other).size();
   }
 
-  // TODO: more efficient implementations
+  // TODO: do an efficient implementation
   public int unionSize(DocSet other) {
     return union(other).size();
   }
-
 
 }
 

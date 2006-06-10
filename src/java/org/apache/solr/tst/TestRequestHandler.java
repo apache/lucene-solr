@@ -29,6 +29,7 @@ import java.net.URL;
 
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.OpenBitSet;
 import org.apache.solr.search.*;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
@@ -223,9 +224,9 @@ public class TestRequestHandler implements SolrRequestHandler {
       test( both3.docList.equals(both.docList) );
       test( both3.docSet.equals(both.docSet) );
 
-      BitSet bits = both.docSet.getBits();
-      BitSet neg = ((BitSet)bits.clone());
-      neg.flip(0, bits.length());
+      OpenBitSet bits = both.docSet.getBits();
+      OpenBitSet neg = ((OpenBitSet)bits.clone());
+      neg.flip(0, bits.capacity());
 
       // use the negative as a filter (should result in 0 matches)
       // todo - fix if filter is not null

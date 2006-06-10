@@ -118,7 +118,8 @@
 
     <queryResultWindowSize>10</queryResultWindowSize>
 
-    <HashDocSet maxSize="3000" loadFactor="0.75"/>
+    <!-- set maxSize artificially low to exercise both types of sets -->
+    <HashDocSet maxSize="3" loadFactor="0.75"/>
 
 
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost

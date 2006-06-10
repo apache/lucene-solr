@@ -16,7 +16,8 @@
 
 package org.apache.solr.search;
 
-import java.util.BitSet;
+import org.apache.solr.util.OpenBitSet;
+import org.apache.solr.util.BitSetIterator;
 
 /**
  * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
@@ -27,23 +28,29 @@ import java.util.BitSet;
  * @since solr 0.9
  */
 public class BitDocSet extends DocSetBase {
-  final BitSet bits;
+  final OpenBitSet bits;
   int size;    // number of docs in the set (cached for perf)
 
   public BitDocSet() {
-    bits = new BitSet();
+    bits = new OpenBitSet();
   }
 
-  public BitDocSet(BitSet bits) {
+  /** Construct a BitDocSet.
+   * The capacity of the OpenBitSet should be at least maxDoc() */
+  public BitDocSet(OpenBitSet bits) {
     this.bits = bits;
     size=-1;
   }
 
-  public BitDocSet(BitSet bits, int size) {
+  /** Construct a BitDocSet, and provides the number of set bits.
+   * The capacity of the OpenBitSet should be at least maxDoc()
+   */
+  public BitDocSet(OpenBitSet bits, int size) {
     this.bits = bits;
     this.size = size;
   }
 
+  /*** DocIterator using nextSetBit()
   public DocIterator iterator() {
     return new DocIterator() {
       int pos=bits.nextSetBit(0);
@@ -70,12 +77,42 @@ public class BitDocSet extends DocSetBase {
       }
     };
   }
+  ***/
+
+  public DocIterator iterator() {
+    return new DocIterator() {
+      private final BitSetIterator iter = new BitSetIterator(bits);
+      private int pos = iter.next();
+      public boolean hasNext() {
+        return pos>=0;
+      }
+
+      public Integer next() {
+        return nextDoc();
+      }
+
+      public void remove() {
+        bits.clear(pos);
+      }
+
+      public int nextDoc() {
+        int old=pos;
+        pos=iter.next();
+        return old;
+      }
+
+      public float score() {
+        return 0.0f;
+      }
+    };
+  }
+
 
   /**
    *
-   * @return the <b>internal</b> BitSet that should <b>not</b> be modified.
+   * @return the <b>internal</b> OpenBitSet that should <b>not</b> be modified.
    */
-  public BitSet getBits() {
+  public OpenBitSet getBits() {
     return bits;
   }
 
@@ -91,7 +128,7 @@ public class BitDocSet extends DocSetBase {
 
   public int size() {
     if (size!=-1) return size;
-    return size=bits.cardinality();
+    return size=(int)bits.cardinality();
   }
 
   /**
@@ -106,7 +143,25 @@ public class BitDocSet extends DocSetBase {
     return bits.get(doc);
   }
 
+  public int intersectionSize(DocSet other) {
+    if (other instanceof BitDocSet) {
+      return (int)OpenBitSet.intersectionCount(this.bits, ((BitDocSet)other).bits);
+    } else {
+      // they had better not call us back!
+      return other.intersectionSize(this);
+    }
+  }
+
+  public int unionSize(DocSet other) {
+    if (other instanceof BitDocSet) {
+      return (int)OpenBitSet.unionCount(this.bits, ((BitDocSet)other).bits);
+    } else {
+      // they had better not call us back!
+      return other.unionSize(this);
+    }
+  }
+
   public long memSize() {
-    return (bits.size() >> 3) + 16;
+    return (bits.getBits().length << 3) + 16;
   }
 }

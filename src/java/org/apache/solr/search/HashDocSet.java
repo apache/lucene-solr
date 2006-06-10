@@ -16,7 +16,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.util.BitUtil;
 
 
 /**
@@ -30,10 +30,14 @@ import org.apache.solr.core.SolrConfig;
  * @since solr 0.9
  */
 public final class HashDocSet extends DocSetBase {
-  // keep track of the inverse of the Loadfactor  since
-  // multiplication is so much faster than division.
-  final static float inverseLoadfactor = 1.0f / SolrConfig.config.getFloat("//HashDocSet/@loadFactor",0.75f);
-  public final static int MAX_SIZE = SolrConfig.config.getInt("//HashDocSet/@maxSize",-1);
+  // final static float inverseLoadfactor = 1.0f / SolrConfig.config.getFloat("//HashDocSet/@loadFactor",0.75f);
+  /** Default load factor to use for HashDocSets.  We keep track of the inverse
+   *  since multiplication is so much faster than division.  The default
+   *  is 1.0f / 0.75f
+   */
+  static float DEFAULT_INVERSE_LOAD_FACTOR = 1.0f /0.75f;
+
+  // public final static int MAX_SIZE = SolrConfig.config.getInt("//HashDocSet/@maxSize",-1);
 
 
   // lucene docs are numbered from 0, so a neg number must be used for missing.
@@ -47,10 +51,15 @@ public final class HashDocSet extends DocSetBase {
   private final int mask;
 
   public HashDocSet(int[] docs, int offset, int len) {
-    int tsize = Math.max(nextHighestPowerOfTwo(len), 1);
-    if (tsize < len * inverseLoadfactor) {
+    this(docs, offset, len, DEFAULT_INVERSE_LOAD_FACTOR);
+  }
+
+  public HashDocSet(int[] docs, int offset, int len, float inverseLoadFactor) {
+    int tsize = Math.max(BitUtil.nextHighestPowerOfTwo(len), 1);
+    if (tsize < len * inverseLoadFactor) {
       tsize <<= 1;
     }
+
     tablesize = tsize;
     mask=tablesize-1;
 
@@ -63,18 +72,6 @@ public final class HashDocSet extends DocSetBase {
 
     size = len;
   }
-
-  static int nextHighestPowerOfTwo(int v) {
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v++;
-    return v;
-  }
-
 
   void put(int doc) {
     table[getSlot(doc)]=doc;

@@ -360,9 +360,10 @@ public final class IndexSchema {
     if (node==null) {
       log.warning("no default search field specified in schema.");
     } else {
-      String defName=node.getNodeValue().trim();
-      defaultSearchFieldName = getIndexedField(defName)!=null ? defName : null;
-      log.info("default search field is "+defName);
+      defaultSearchFieldName=node.getNodeValue().trim();
+      // throw exception if specified, but not found or not indexed
+      if (defaultSearchFieldName!=null) getIndexedField(defaultSearchFieldName);
+      log.info("default search field is "+defaultSearchFieldName);
     }
 
     node = (Node) xpath.evaluate("/schema/uniqueKey/text()", document, XPathConstants.NODE);

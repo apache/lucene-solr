@@ -19,6 +19,7 @@ package org.apache.solr.search.test;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.HashDocSet;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.util.OpenBitSet;
 
 import java.util.Random;
 import java.util.BitSet;
@@ -38,20 +39,20 @@ public class TestDocSet {
   static Random rand = new Random();
 
 
-  static BitSet bs;
+  static OpenBitSet bs;
   static BitDocSet bds;
   static HashDocSet hds;
   static int[] ids; // not unique
 
   static void generate(int maxSize, int bitsToSet) {
-    bs = new BitSet(maxSize);
+    bs = new OpenBitSet(maxSize);
     ids = new int[bitsToSet];
     int count=0;
     if (maxSize>0) {
       for (int i=0; i<bitsToSet; i++) {
         int id=rand.nextInt(maxSize);
         if (!bs.get(id)) {
-          bs.set(id);
+          bs.fastSet(id);
           ids[count++]=id;
         }
       }
@@ -79,7 +80,7 @@ public class TestDocSet {
 
     int ret=0;
 
-    BitSet[] sets = new BitSet[numSets];
+    OpenBitSet[] sets = new OpenBitSet[numSets];
     DocSet[] bset = new DocSet[numSets];
     DocSet[] hset = new DocSet[numSets];
     BitSet scratch=new BitSet();
@@ -96,14 +97,14 @@ public class TestDocSet {
     if ("test".equals(test)) {
       for (int it=0; it<iter; it++) {
         generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
-        BitSet bs1=bs;
+        OpenBitSet bs1=bs;
         BitDocSet bds1=bds;
         HashDocSet hds1=hds;
         generate(randSize ? rand.nextInt(bitSetSize) : bitSetSize, numBitsSet);
 
-        BitSet res = ((BitSet)bs1.clone());
+        OpenBitSet res = ((OpenBitSet)bs1.clone());
         res.and(bs);
-        int icount = res.cardinality();
+        int icount = (int)res.cardinality();
 
         test(bds1.intersection(bds).size() == icount);
         test(bds1.intersectionSize(bds) == icount);

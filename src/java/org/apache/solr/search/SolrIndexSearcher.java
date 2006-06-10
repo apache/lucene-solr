@@ -29,6 +29,7 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrInfoRegistry;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.OpenBitSet;
 
 import java.io.IOException;
 import java.net.URL;
@@ -459,9 +460,22 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 
 
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
-    SetHitCollector hc = new SetHitCollector(filter, maxDoc());
-    searcher.search(query, null, hc);
-    return hc.getDocSet();
+    if (filter==null) {
+      DocSetHitCollector hc = new DocSetHitCollector(maxDoc());
+      searcher.search(query,null,hc);
+      return hc.getDocSet();
+    } else {
+      // FUTURE: if the filter is sorted by docid, could use skipTo (SkipQueryFilter)
+      final DocSetHitCollector hc = new DocSetHitCollector(maxDoc());
+      final DocSet filt = filter;
+      searcher.search(query, null, new HitCollector() {
+        public void collect(int doc, float score) {
+          if (filt.exists(doc)) hc.collect(doc,score);
+        }
+      }
+      );
+      return hc.getDocSet();
+    }
   }
 
 
@@ -521,7 +535,12 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   * This method is not cache-aware and no caches are checked.
   */
   public DocSet convertFilter(Filter lfilter) throws IOException {
-    return new BitDocSet(lfilter.bits(this.reader));
+    BitSet bs = lfilter.bits(this.reader);
+    OpenBitSet obs = new OpenBitSet(bs.size());
+    for(int i=bs.nextSetBit(0); i>=0; i=bs.nextSetBit(i+1)) {
+      obs.fastSet(i);
+    }
+    return new BitDocSet(obs);
   }
 
   /**
@@ -1189,63 +1208,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     if (registerTime!=0) lst.add("registeredAt", new Date(registerTime));
     return lst;
   }
-}
-
-
-// Todo: counting only hit collector (for speed comparison w/ caching filters)
-// todo: fast term query
-// todo: do a both hit collector that can get a DocList and DocSet at the same time
-
-final class SetHitCollector extends HitCollector {
-  int pos=0;
-  final DocSet filter;
-    // should we bother with filters at this point?
-    // how much faster would it be to take the check for
-    // filter!=null out of the loop??? depends on HotSpot... it may
-    // optimize it anyway.
-
-  final BitSet bits;
-
-  // in case there aren't that many hits, we may not want a very sparse
-  // bit array.  Optimistically collect the first few docs in an array
-  // in case there are only a few.
-  static final int ARRAY_COLLECT_SZ=HashDocSet.MAX_SIZE;
-  final int[] scratch = ARRAY_COLLECT_SZ>0 ? new int[ARRAY_COLLECT_SZ] : null;
-
-  public SetHitCollector(DocSet filter, int maxDoc) {
-    bits = new BitSet(maxDoc);
-    this.filter = filter;
-  }
-
-  public void collect(int doc, float score) {
-    if (filter!=null && !filter.exists(doc)) return;
-
-    // OPTIMIZATION: should I only set bits *after* I have run out of
-    // room in scratch?  (then at the end I could add all of the docs
-    // in scratch to the bitset.
-    bits.set(doc);
-
-    // optimistically collect the first docs in an array
-    // in case the total number will be small enough to represent
-    // as a HashDocSet() instead...
-    // It is assumed that storing in this array will be quicker to convert
-    // than scanning through a potentially huge bit vector.
-    // FUTURE: when search methods all start returning docs in order, maybe
-    // we could have a SortedListDocSet() and use the collected array directly.
-    if (pos < ARRAY_COLLECT_SZ) {
-      scratch[pos]=doc;
-    }
-
-    pos++;
-  }
-
-  public DocSet getDocSet() {
-    if (pos<=ARRAY_COLLECT_SZ) {
-      return new HashDocSet(scratch,0,pos);
-    }
-    return new BitDocSet(bits,pos);
-  }
-
 }
 
 

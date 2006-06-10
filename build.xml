@@ -174,7 +174,7 @@
           depends="compileTests" >
     <!-- DEPRECATED: no description so it doesn't show up in project help -->
     <java classname="SolrTest" fork="true" dir="src/apps/SolrTest" failonerror="true">
-     <arg line="-test newtest.txt"/>
+     <arg line="-test newtest.txt -qargs qt=test"/>
      <classpath>
        <path refid="test.run.classpath" />
      </classpath>
