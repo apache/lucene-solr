@@ -150,7 +150,7 @@ final class TermVectorsWriter {
     return currentField != null;
   }
 
-  /** Add term to the field's term vector. Field must already be open.
+  /** Add term to the field's term vector. Fieldable must already be open.
    *  Terms should be added in
    *  increasing order of terms, one call per unique termNum. ProxPointer
    *  is a pointer into the TermPosition file (prx). Freq is the number of
@@ -268,7 +268,7 @@ final class TermVectorsWriter {
   private void writeField() throws IOException {
     // remember where this field is written
     currentField.tvfPointer = tvf.getFilePointer();
-    //System.out.println("Field Pointer: " + currentField.tvfPointer);
+    //System.out.println("Fieldable Pointer: " + currentField.tvfPointer);
     
     final int size = terms.size();
     tvf.writeVInt(size);

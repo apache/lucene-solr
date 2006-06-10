@@ -16,24 +16,21 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Vector;
-import org.apache.lucene.index.IndexReader;       // for javadoc
-import org.apache.lucene.search.Searcher;         // for javadoc
-import org.apache.lucene.search.Hits;             // for javadoc
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.Searcher;
+
+import java.util.*;             // for javadoc
 
 /** Documents are the unit of indexing and search.
  *
  * A Document is a set of fields.  Each field has a name and a textual value.
- * A field may be {@link Field#isStored() stored} with the document, in which
+ * A field may be {@link Fieldable#isStored() stored} with the document, in which
  * case it is returned with search hits on the document.  Thus each document
  * should typically contain one or more stored fields which uniquely identify
  * it.
  *
- * <p>Note that fields which are <i>not</i> {@link Field#isStored() stored} are
+ * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
  * <i>not</i> available in documents retrieved from the index, e.g. with {@link
  * Hits#doc(int)}, {@link Searcher#doc(int)} or {@link
  * IndexReader#document(int)}.
@@ -50,11 +47,11 @@ public final class Document implements java.io.Serializable {
   /** Sets a boost factor for hits on any field of this document.  This value
    * will be multiplied into the score of all hits on this document.
    *
-   * <p>Values are multiplied into the value of {@link Field#getBoost()} of
+   * <p>Values are multiplied into the value of {@link Fieldable#getBoost()} of
    * each field in this document.  Thus, this method in effect sets a default
    * boost for the fields of this document.
    *
-   * @see Field#setBoost(float)
+   * @see Fieldable#setBoost(float)
    */
   public void setBoost(float boost) {
     this.boost = boost;
@@ -85,7 +82,7 @@ public final class Document implements java.io.Serializable {
    * a document has to be deleted from an index and a new changed version of that
    * document has to be added.</p>
    */
-  public final void add(Field field) {
+  public final void add(Fieldable field) {
     fields.add(field);
   }
   
@@ -102,7 +99,7 @@ public final class Document implements java.io.Serializable {
   public final void removeField(String name) {
     Iterator it = fields.iterator();
     while (it.hasNext()) {
-      Field field = (Field)it.next();
+      Fieldable field = (Fieldable)it.next();
       if (field.name().equals(name)) {
         it.remove();
         return;
@@ -122,7 +119,7 @@ public final class Document implements java.io.Serializable {
   public final void removeFields(String name) {
     Iterator it = fields.iterator();
     while (it.hasNext()) {
-      Field field = (Field)it.next();
+      Fieldable field = (Fieldable)it.next();
       if (field.name().equals(name)) {
         it.remove();
       }
@@ -133,9 +130,9 @@ public final class Document implements java.io.Serializable {
    * null.  If multiple fields exists with this name, this method returns the
    * first value added.
    */
-  public final Field getField(String name) {
+  public final Fieldable getField(String name) {
     for (int i = 0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
+      Fieldable field = (Fieldable)fields.get(i);
       if (field.name().equals(name))
 	return field;
     }
@@ -149,7 +146,7 @@ public final class Document implements java.io.Serializable {
    */
   public final String get(String name) {
     for (int i = 0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
+      Fieldable field = (Fieldable)fields.get(i);
       if (field.name().equals(name) && (!field.isBinary()))
         return field.stringValue();
     }
@@ -162,16 +159,16 @@ public final class Document implements java.io.Serializable {
   }
 
   /**
-   * Returns an array of {@link Field}s with the given name.
+   * Returns an array of {@link Fieldable}s with the given name.
    * This method can return <code>null</code>.
    *
    * @param name the name of the field
-   * @return a <code>Field[]</code> array
+   * @return a <code>Fieldable[]</code> array
    */
-   public final Field[] getFields(String name) {
+   public final Fieldable[] getFields(String name) {
      List result = new ArrayList();
      for (int i = 0; i < fields.size(); i++) {
-       Field field = (Field)fields.get(i);
+       Fieldable field = (Fieldable)fields.get(i);
        if (field.name().equals(name)) {
          result.add(field);
        }
@@ -180,7 +177,7 @@ public final class Document implements java.io.Serializable {
      if (result.size() == 0)
        return null;
 
-     return (Field[])result.toArray(new Field[result.size()]);
+     return (Fieldable[])result.toArray(new Fieldable[result.size()]);
    }
 
   /**
@@ -193,7 +190,7 @@ public final class Document implements java.io.Serializable {
   public final String[] getValues(String name) {
     List result = new ArrayList();
     for (int i = 0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
+      Fieldable field = (Fieldable)fields.get(i);
       if (field.name().equals(name) && (!field.isBinary()))
         result.add(field.stringValue());
     }
@@ -215,7 +212,7 @@ public final class Document implements java.io.Serializable {
   public final byte[][] getBinaryValues(String name) {
     List result = new ArrayList();
     for (int i = 0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
+      Fieldable field = (Fieldable)fields.get(i);
       if (field.name().equals(name) && (field.isBinary()))
         result.add(field.binaryValue());
     }
@@ -237,7 +234,7 @@ public final class Document implements java.io.Serializable {
   */
   public final byte[] getBinaryValue(String name) {
     for (int i=0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
+      Fieldable field = (Fieldable)fields.get(i);
       if (field.name().equals(name) && (field.isBinary()))
         return field.binaryValue();
     }
@@ -249,7 +246,7 @@ public final class Document implements java.io.Serializable {
     StringBuffer buffer = new StringBuffer();
     buffer.append("Document<");
     for (int i = 0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
+      Fieldable field = (Fieldable)fields.get(i);
       buffer.append(field.toString());
       if (i != fields.size()-1)
         buffer.append(" ");

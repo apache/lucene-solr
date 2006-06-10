@@ -17,14 +17,11 @@ package org.apache.lucene.search;
  */
 
 import junit.framework.TestCase;
-
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.RAMDirectory;
 
 /** Document boost unit test.
  *
@@ -35,27 +32,27 @@ public class TestDocBoost extends TestCase {
   public TestDocBoost(String name) {
     super(name);
   }
-  
+
   public void testDocBoost() throws Exception {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
-    
-    Field f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
-    Field f2 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
+
+    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
+    Fieldable f2 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
     f2.setBoost(2.0f);
-    
+
     Document d1 = new Document();
     Document d2 = new Document();
     Document d3 = new Document();
     Document d4 = new Document();
     d3.setBoost(3.0f);
     d4.setBoost(2.0f);
-    
+
     d1.add(f1);                                 // boost = 1
     d2.add(f2);                                 // boost = 2
     d3.add(f1);                                 // boost = 3
     d4.add(f2);                                 // boost = 4
-    
+
     writer.addDocument(d1);
     writer.addDocument(d2);
     writer.addDocument(d3);
@@ -72,7 +69,7 @@ public class TestDocBoost extends TestCase {
            scores[doc] = score;
          }
        });
-    
+
     float lastScore = 0.0f;
 
     for (int i = 0; i < 4; i++) {

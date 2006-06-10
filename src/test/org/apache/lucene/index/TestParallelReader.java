@@ -16,20 +16,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-
 import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.document.MapFieldSelector;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;  
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 
 public class TestParallelReader extends TestCase {
 
@@ -69,6 +74,35 @@ public class TestParallelReader extends TestCase {
     assertTrue(fieldNames.contains("f2"));
     assertTrue(fieldNames.contains("f3"));
     assertTrue(fieldNames.contains("f4"));
+  }
+  
+  public void testDocument() throws IOException {
+    Directory dir1 = getDir1();
+    Directory dir2 = getDir2();
+    ParallelReader pr = new ParallelReader();
+    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir2));
+
+    Document doc11 = pr.document(0, new MapFieldSelector(new String[] {"f1"}));
+    Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList(new String[] {"f4"})));
+    Document doc223 = pr.document(1, new MapFieldSelector(new String[] {"f2", "f3"}));
+    
+    assertEquals(1, numFields(doc11));
+    assertEquals(1, numFields(doc24));
+    assertEquals(2, numFields(doc223));
+    
+    assertEquals("v1", doc11.get("f1"));
+    assertEquals("v2", doc24.get("f4"));
+    assertEquals("v2", doc223.get("f2"));
+    assertEquals("v2", doc223.get("f3"));
+  }
+  
+  private int numFields(Document doc) {
+    int num;
+    Enumeration e = doc.fields();
+    for (num=0; e.hasMoreElements(); num++)
+      e.nextElement();
+    return num;
   }
   
   public void testIncompatibleIndexes() throws IOException {

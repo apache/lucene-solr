@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+
 
 import java.io.IOException;
 import java.util.Collection;
@@ -100,7 +102,7 @@ public class FilterIndexReader extends IndexReader {
   public int numDocs() { return in.numDocs(); }
   public int maxDoc() { return in.maxDoc(); }
 
-  public Document document(int n) throws IOException { return in.document(n); }
+  public Document document(int n, FieldSelector fieldSelector) throws IOException { return in.document(n, fieldSelector); }
 
   public boolean isDeleted(int n) { return in.isDeleted(n); }
   public boolean hasDeletions() { return in.hasDeletions(); }
@@ -133,7 +135,7 @@ public class FilterIndexReader extends IndexReader {
   protected void doCommit() throws IOException { in.commit(); }
   protected void doClose() throws IOException { in.close(); }
 
-  
+
   public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
     return in.getFieldNames(fieldNames);
   }

@@ -16,20 +16,24 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+
+import java.io.IOException;
+import java.util.SortedMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Enumeration;
+import java.util.Set;
+import java.util.HashSet;
+
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
  * must have the same number of documents, but typically each contains
@@ -41,7 +45,7 @@ import org.apache.lucene.document.Field;
  * change rarely and small fields that change more frequently.  The smaller
  * fields may be re-indexed in a new index and both indexes may be searched
  * together.
- * 
+ *
  * <p><strong>Warning:</strong> It is up to you to make sure all indexes
  * are created and modified the same way. For example, if you add
  * documents to one index, you need to add the same documents in the
@@ -51,7 +55,8 @@ import org.apache.lucene.document.Field;
 public class ParallelReader extends IndexReader {
   private List readers = new ArrayList();
   private SortedMap fieldToReader = new TreeMap();
-  private List storedFieldReaders = new ArrayList(); 
+  private Map readerToFields = new HashMap();
+  private List storedFieldReaders = new ArrayList();
 
   private int maxDoc;
   private int numDocs;
@@ -59,7 +64,7 @@ public class ParallelReader extends IndexReader {
 
  /** Construct a ParallelReader. */
   public ParallelReader() throws IOException { super(null); }
-    
+
  /** Add an IndexReader. */
   public void add(IndexReader reader) throws IOException {
     add(reader, false);
@@ -68,10 +73,10 @@ public class ParallelReader extends IndexReader {
  /** Add an IndexReader whose stored fields will not be returned.  This can
   * accellerate search when stored fields are only needed from a subset of
   * the IndexReaders.
-  * 
-  * @throws IllegalArgumentException if not all indexes contain the same number 
+  *
+  * @throws IllegalArgumentException if not all indexes contain the same number
   *     of documents
-  * @throws IllegalArgumentException if not all indexes have the same value 
+  * @throws IllegalArgumentException if not all indexes have the same value
   *     of {@link IndexReader#maxDoc()}
   */
   public void add(IndexReader reader, boolean ignoreStoredFields)
@@ -89,8 +94,10 @@ public class ParallelReader extends IndexReader {
     if (reader.numDocs() != numDocs)
       throw new IllegalArgumentException
         ("All readers must have same numDocs: "+numDocs+"!="+reader.numDocs());
-    
-    Iterator i = reader.getFieldNames(IndexReader.FieldOption.ALL).iterator();
+
+    Collection fields = reader.getFieldNames(IndexReader.FieldOption.ALL);
+    readerToFields.put(reader, fields);
+    Iterator i = fields.iterator();
     while (i.hasNext()) {                         // update fieldToReader map
       String field = (String)i.next();
       if (fieldToReader.get(field) == null)
@@ -132,13 +139,25 @@ public class ParallelReader extends IndexReader {
   }
 
   // append fields from storedFieldReaders
-  public Document document(int n) throws IOException {
+  public Document document(int n, FieldSelector fieldSelector) throws IOException {
     Document result = new Document();
     for (int i = 0; i < storedFieldReaders.size(); i++) {
       IndexReader reader = (IndexReader)storedFieldReaders.get(i);
-      Enumeration fields = reader.document(n).fields();
-      while (fields.hasMoreElements()) {
-        result.add((Field)fields.nextElement());
+
+      boolean include = (fieldSelector==null);
+      if (!include) {
+        Iterator it = ((Collection) readerToFields.get(reader)).iterator();
+        while (it.hasNext())
+          if (fieldSelector.accept((String)it.next())!=FieldSelectorResult.NO_LOAD) {
+            include = true;
+            break;
+          }
+      }
+      if (include) {
+        Enumeration fields = reader.document(n, fieldSelector).fields();
+        while (fields.hasMoreElements()) {
+          result.add((Fieldable)fields.nextElement());
+        }
       }
     }
     return result;

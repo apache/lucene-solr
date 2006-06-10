@@ -16,9 +16,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Parameter;
 
 import java.io.Reader;
@@ -32,23 +29,7 @@ import java.io.Serializable;
   index, so that they may be returned with hits on the document.
   */
 
-public final class Field implements Serializable {
-  private String name = "body";
-  
-  // the one and only data object for all different kind of field values
-  private Object fieldsData = null;
-  
-  private boolean storeTermVector = false;
-  private boolean storeOffsetWithTermVector = false; 
-  private boolean storePositionWithTermVector = false;
-  private boolean omitNorms = false;
-  private boolean isStored = false;
-  private boolean isIndexed = true;
-  private boolean isTokenized = true;
-  private boolean isBinary = false;
-  private boolean isCompressed = false;
-  
-  private float boost = 1.0f;
+public final class Field extends AbstractField implements Fieldable, Serializable {
   
   /** Specifies whether and how a field should be stored. */
   public static final class Store extends Parameter implements Serializable {
@@ -146,45 +127,7 @@ public final class Field implements Serializable {
     public static final TermVector WITH_POSITIONS_OFFSETS = new TermVector("WITH_POSITIONS_OFFSETS");
   }
   
-  /** Sets the boost factor hits on this field.  This value will be
-   * multiplied into the score of all hits on this this field of this
-   * document.
-   *
-   * <p>The boost is multiplied by {@link Document#getBoost()} of the document
-   * containing this field.  If a document has multiple fields with the same
-   * name, all such values are multiplied together.  This product is then
-   * multipled by the value {@link Similarity#lengthNorm(String,int)}, and
-   * rounded by {@link Similarity#encodeNorm(float)} before it is stored in the
-   * index.  One should attempt to ensure that this product does not overflow
-   * the range of that encoding.
-   *
-   * @see Document#setBoost(float)
-   * @see Similarity#lengthNorm(String, int)
-   * @see Similarity#encodeNorm(float)
-   */
-  public void setBoost(float boost) {
-    this.boost = boost;
-  }
-
-  /** Returns the boost factor for hits for this field.
-   *
-   * <p>The default value is 1.0.
-   *
-   * <p>Note: this value is not stored directly with the document in the index.
-   * Documents returned from {@link IndexReader#document(int)} and
-   * {@link Hits#doc(int)} may thus not have the same value present as when
-   * this field was indexed.
-   *
-   * @see #setBoost(float)
-   */
-  public float getBoost() {
-    return boost;
-  }
-  /** Returns the name of the field as an interned string.
-   * For example "date", "title", "body", ...
-   */
-  public String name()    { return name; }
-
+  
   /** The value of the field as a String, or null.  If null, the Reader value
    * or binary value is used.  Exactly one of stringValue(), readerValue(), and
    * binaryValue() must be set. */
@@ -365,146 +308,6 @@ public final class Field implements Serializable {
     
     setStoreTermVector(TermVector.NO);
   }
-  
-  private void setStoreTermVector(TermVector termVector) {
-    if (termVector == TermVector.NO) {
-      this.storeTermVector = false;
-      this.storePositionWithTermVector = false;
-      this.storeOffsetWithTermVector = false;
-    } 
-    else if (termVector == TermVector.YES) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = false;
-      this.storeOffsetWithTermVector = false;
-    }
-    else if (termVector == TermVector.WITH_POSITIONS) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = true;
-      this.storeOffsetWithTermVector = false;
-    } 
-    else if (termVector == TermVector.WITH_OFFSETS) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = false;
-      this.storeOffsetWithTermVector = true;
-    } 
-    else if (termVector == TermVector.WITH_POSITIONS_OFFSETS) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = true;
-      this.storeOffsetWithTermVector = true;
-    } 
-    else {
-      throw new IllegalArgumentException("unknown termVector parameter " + termVector);
-    }
-  }
-  
-  /** True iff the value of the field is to be stored in the index for return
-    with search hits.  It is an error for this to be true if a field is
-    Reader-valued. */
-  public final boolean  isStored()  { return isStored; }
 
-  /** True iff the value of the field is to be indexed, so that it may be
-    searched on. */
-  public final boolean  isIndexed()   { return isIndexed; }
-
-  /** True iff the value of the field should be tokenized as text prior to
-    indexing.  Un-tokenized fields are indexed as a single word and may not be
-    Reader-valued. */
-  public final boolean  isTokenized()   { return isTokenized; }
-  
-  /** True if the value of the field is stored and compressed within the index */
-  public final boolean  isCompressed()   { return isCompressed; }
-
-  /** True iff the term or terms used to index this field are stored as a term
-   *  vector, available from {@link IndexReader#getTermFreqVector(int,String)}.
-   *  These methods do not provide access to the original content of the field,
-   *  only to terms used to index it. If the original content must be
-   *  preserved, use the <code>stored</code> attribute instead.
-   *
-   * @see IndexReader#getTermFreqVector(int, String)
-   */
-  public final boolean isTermVectorStored() { return storeTermVector; }
-  
-  /**
-   * True iff terms are stored as term vector together with their offsets 
-   * (start and end positon in source text).
-   */
-  public boolean isStoreOffsetWithTermVector(){ 
-    return storeOffsetWithTermVector; 
-  } 
-  
-  /**
-   * True iff terms are stored as term vector together with their token positions.
-   */
-  public boolean isStorePositionWithTermVector(){ 
-    return storePositionWithTermVector; 
-  }
-      
-  /** True iff the value of the filed is stored as binary */
-  public final boolean  isBinary()      { return isBinary; }
-  
-  /** True if norms are omitted for this indexed field */
-  public boolean getOmitNorms() { return omitNorms; }
-
-  /** Expert:
-   *
-   * If set, omit normalization factors associated with this indexed field.
-   * This effectively disables indexing boosts and length normalization for this field.
-   */
-  public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
-  
-  /** Prints a Field for human consumption. */
-  public final String toString() {
-    StringBuffer result = new StringBuffer();
-    if (isStored) {
-      result.append("stored");
-      if (isCompressed)
-        result.append("/compressed");
-      else
-        result.append("/uncompressed");
-    }
-    if (isIndexed) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("indexed");
-    }
-    if (isTokenized) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("tokenized");
-    }
-    if (storeTermVector) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("termVector");
-    }
-    if (storeOffsetWithTermVector) { 
-      if (result.length() > 0) 
-        result.append(","); 
-      result.append("termVectorOffsets"); 
-    } 
-    if (storePositionWithTermVector) { 
-      if (result.length() > 0) 
-        result.append(","); 
-      result.append("termVectorPosition"); 
-    } 
-    if (isBinary) {
-      if (result.length() > 0)
-        result.append(",");
-      result.append("binary");
-    }
-    if (omitNorms) {
-      result.append(",omitNorms");
-    }
-    result.append('<');
-    result.append(name);
-    result.append(':');
-    
-    if (fieldsData != null) {
-      result.append(fieldsData);
-    }
-    
-    result.append('>');
-    return result.toString();
-  }
 
 }

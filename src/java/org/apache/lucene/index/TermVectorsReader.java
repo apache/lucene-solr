@@ -127,7 +127,7 @@ class TermVectorsReader implements Cloneable {
 
         result = readTermVector(field, position);
       } else {
-        //System.out.println("Field not found");
+        //System.out.println("Fieldable not found");
       }
     } else {
       //System.out.println("No tvx file");

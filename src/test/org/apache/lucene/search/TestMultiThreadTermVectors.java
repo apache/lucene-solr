@@ -16,18 +16,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
+
+import java.io.IOException;
 
 /**
  * @author Bernhard Messer
@@ -49,7 +47,7 @@ public class TestMultiThreadTermVectors extends TestCase {
   	//writer.infoStream = System.out;
   	for (int i = 0; i < numDocs; i++) {
     	Document doc = new Document();
-    	Field fld = new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.UN_TOKENIZED, Field.TermVector.YES);
+    	Fieldable fld = new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.UN_TOKENIZED, Field.TermVector.YES);
     	doc.add(fld);
     	writer.addDocument(doc);
   	}

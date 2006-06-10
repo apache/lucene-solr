@@ -16,18 +16,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.SmallFloat;
+
 import java.io.IOException;
 import java.io.Serializable;
-
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.apache.lucene.index.Term;
-
-import org.apache.lucene.index.IndexReader;       // for javadoc
-import org.apache.lucene.index.IndexWriter;       // for javadoc
-import org.apache.lucene.document.Field;          // for javadoc
-import org.apache.lucene.util.SmallFloat;
 
 /** Expert: Scoring API.
  * <p>Subclasses implement search scoring.
@@ -44,7 +41,7 @@ import org.apache.lucene.util.SmallFloat;
  *    ( {@link #tf(int) tf}(t in d) *
  *    {@link #idf(Term,Searcher) idf}(t)^2 *
  *    {@link Query#getBoost getBoost}(t in q) *
- *    {@link Field#getBoost getBoost}(t.field in d) *
+ *    {@link org.apache.lucene.document.Field#getBoost getBoost}(t.field in d) *
  *    {@link #lengthNorm(String,int) lengthNorm}(t.field in d) )
  *    </small></td>
  *    <td valign="middle" rowspan="2">&nbsp;*
@@ -152,7 +149,7 @@ public abstract class Similarity implements Serializable {
    * <i>fieldName</i> of <i>doc</i>.
    * @return a normalization factor for hits on this field of this document
    *
-   * @see Field#setBoost(float)
+   * @see org.apache.lucene.document.Field#setBoost(float)
    */
   public abstract float lengthNorm(String fieldName, int numTokens);
 
@@ -179,7 +176,7 @@ public abstract class Similarity implements Serializable {
    * small to represent are rounded up to the smallest positive representable
    * value.
    *
-   * @see Field#setBoost(float)
+   * @see org.apache.lucene.document.Field#setBoost(float)
    * @see SmallFloat
    */
   public static byte encodeNorm(float f) {

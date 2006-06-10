@@ -16,26 +16,23 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.queryParser.MultiFieldQueryParser;
+import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.queryParser.MultiFieldQueryParser;
+import org.apache.lucene.store.RAMDirectory;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
-import java.util.List;
-
-import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.*;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
+import java.util.ArrayList;
 
 
 /**
@@ -275,7 +272,7 @@ public class TableSearcher extends AbstractTableModel {
             //tabble model row that we are mapping to
             for (int t=0; t<hits.length(); t++){
                 Document document = hits.doc(t);
-                Field field = document.getField(ROW_NUMBER);
+                Fieldable field = document.getField(ROW_NUMBER);
                 rowToModelIndex.add(new Integer(field.stringValue()));
             }
         } catch (Exception e){

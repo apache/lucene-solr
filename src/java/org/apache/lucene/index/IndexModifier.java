@@ -273,7 +273,7 @@ public class IndexModifier {
     }
   }
 
-  
+
   /**
    * Returns the number of documents currently in this index.
    * @see IndexWriter#docCount()
@@ -407,7 +407,7 @@ public class IndexModifier {
    * the number of files open in a FSDirectory.
    *
    * <p>The default value is 10.
-   * 
+   *
    * @see IndexWriter#setMaxBufferedDocs(int)
    * @throws IllegalStateException if the index is closed
    * @throws IllegalArgumentException if maxBufferedDocs is smaller than 2
@@ -500,8 +500,8 @@ public class IndexModifier {
     // create an index in /tmp/index, overwriting an existing one:
     IndexModifier indexModifier = new IndexModifier("/tmp/index", analyzer, true);
     Document doc = new Document();
-    doc.add(new Field("id", "1", Field.Store.YES, Field.Index.UN_TOKENIZED));
-    doc.add(new Field("body", "a simple test", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Fieldable("id", "1", Fieldable.Store.YES, Fieldable.Index.UN_TOKENIZED));
+    doc.add(new Fieldable("body", "a simple test", Fieldable.Store.YES, Fieldable.Index.TOKENIZED));
     indexModifier.addDocument(doc);
     int deleted = indexModifier.delete(new Term("id", "1"));
     System.out.println("Deleted " + deleted + " document");

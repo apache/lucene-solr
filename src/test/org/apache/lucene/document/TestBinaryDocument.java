@@ -38,10 +38,10 @@ public class TestBinaryDocument extends TestCase
   public void testBinaryFieldInIndex()
     throws Exception
   {
-    Field binaryFldStored = new Field("binaryStored", binaryValStored.getBytes(), Field.Store.YES);
-    Field binaryFldCompressed = new Field("binaryCompressed", binaryValCompressed.getBytes(), Field.Store.COMPRESS);
-    Field stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
-    Field stringFldCompressed = new Field("stringCompressed", binaryValCompressed, Field.Store.COMPRESS, Field.Index.NO, Field.TermVector.NO);
+    Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes(), Field.Store.YES);
+    Fieldable binaryFldCompressed = new Field("binaryCompressed", binaryValCompressed.getBytes(), Field.Store.COMPRESS);
+    Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
+    Fieldable stringFldCompressed = new Field("stringCompressed", binaryValCompressed, Field.Store.COMPRESS, Field.Index.NO, Field.TermVector.NO);
     
     try {
       // binary fields with store off are not allowed

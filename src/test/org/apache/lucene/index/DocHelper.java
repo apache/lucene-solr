@@ -18,12 +18,12 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Enumeration;
@@ -39,6 +39,13 @@ class DocHelper {
   public static final int [] FIELD_2_FREQS = {3, 1, 1}; 
   public static final String TEXT_FIELD_2_KEY = "textField2";
   public static Field textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+  
+  public static final String FIELD_2_COMPRESSED_TEXT = "field field field two text";
+    //Fields will be lexicographically sorted.  So, the order is: field, text, two
+    public static final int [] COMPRESSED_FIELD_2_FREQS = {3, 1, 1}; 
+    public static final String COMPRESSED_TEXT_FIELD_2_KEY = "compressedTextField2";
+    public static Field compressedTextField2 = new Field(COMPRESSED_TEXT_FIELD_2_KEY, FIELD_2_COMPRESSED_TEXT, Field.Store.COMPRESS, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    
 
   public static final String FIELD_3_TEXT = "aaaNoNorms aaaNoNorms bbbNoNorms";
   public static final String TEXT_FIELD_3_KEY = "textField3";
@@ -71,6 +78,34 @@ class DocHelper {
   public static Field unStoredField2 = new Field(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT,
       Field.Store.NO, Field.Index.TOKENIZED, Field.TermVector.YES);
 
+  public static final String LAZY_FIELD_BINARY_KEY = "lazyFieldBinary";
+  public static byte [] LAZY_FIELD_BINARY_BYTES;
+  public static Field lazyFieldBinary;
+  
+  public static final String LAZY_FIELD_KEY = "lazyField";
+  public static final String LAZY_FIELD_TEXT = "These are some field bytes";
+  public static Field lazyField = new Field(LAZY_FIELD_KEY, LAZY_FIELD_TEXT, Field.Store.YES, Field.Index.TOKENIZED);
+  
+  public static final String LARGE_LAZY_FIELD_KEY = "largeLazyField";
+  public static String LARGE_LAZY_FIELD_TEXT;
+  public static Field largeLazyField;
+  
+  //From Issue 509
+  public static final String FIELD_UTF1_TEXT = "field one \u4e00text";
+  public static final String TEXT_FIELD_UTF1_KEY = "textField1Utf8";
+  public static Field textUtfField1 = new Field(TEXT_FIELD_UTF1_KEY, FIELD_UTF1_TEXT,
+      Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.NO);
+
+  public static final String FIELD_UTF2_TEXT = "field field field \u4e00two text";
+  //Fields will be lexicographically sorted.  So, the order is: field, text, two
+  public static final int [] FIELD_UTF2_FREQS = {3, 1, 1};
+  public static final String TEXT_FIELD_UTF2_KEY = "textField2Utf8";
+  public static Field textUtfField2 = new Field(TEXT_FIELD_UTF2_KEY, FIELD_UTF2_TEXT, Field.Store.YES, 
+          Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+ 
+  
+  
+  
   public static Map nameValues = null;
 
   // ordered list of all the fields...
@@ -79,14 +114,20 @@ class DocHelper {
     textField1,
     textField2,
     textField3,
+    compressedTextField2,
     keyField,
     noNormsField,
     unIndField,
     unStoredField1,
     unStoredField2,
+    textUtfField1,
+    textUtfField2,
+    lazyField,
+    lazyFieldBinary,//placeholder for binary field, since this is null.  It must be second to last.
+    largeLazyField//placeholder for large field, since this is null.  It must always be last
   };
 
-  // Map<String fieldName, Field field>
+  // Map<String fieldName, Fieldable field>
   public static Map all=new HashMap();
   public static Map indexed=new HashMap();
   public static Map stored=new HashMap();
@@ -94,11 +135,28 @@ class DocHelper {
   public static Map unindexed=new HashMap();
   public static Map termvector=new HashMap();
   public static Map notermvector=new HashMap();
+  public static Map lazy= new HashMap();
   public static Map noNorms=new HashMap();
 
   static {
+    //Initialize the large Lazy Field
+    StringBuffer buffer = new StringBuffer();
+    for (int i = 0; i < 10000; i++)
+    {
+      buffer.append("Lazily loading lengths of language in lieu of laughing ");
+    }
+    
+    try {
+      LAZY_FIELD_BINARY_BYTES = "These are some binary field bytes".getBytes("UTF8");
+    } catch (UnsupportedEncodingException e) {
+    }
+    lazyFieldBinary = new Field(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES, Field.Store.YES);
+    fields[fields.length - 2] = lazyFieldBinary;
+    LARGE_LAZY_FIELD_TEXT = buffer.toString();
+    largeLazyField = new Field(LARGE_LAZY_FIELD_KEY, LARGE_LAZY_FIELD_TEXT, Field.Store.YES, Field.Index.TOKENIZED);
+    fields[fields.length - 1] = largeLazyField;
     for (int i=0; i<fields.length; i++) {
-      Field f = fields[i];
+      Fieldable f = fields[i];
       add(all,f);
       if (f.isIndexed()) add(indexed,f);
       else add(unindexed,f);
@@ -107,11 +165,12 @@ class DocHelper {
       if (f.isStored()) add(stored,f);
       else add(unstored,f);
       if (f.getOmitNorms()) add(noNorms,f);
+      if (f.isLazy()) add(lazy, f);
     }
   }
 
 
-  private static void add(Map map, Field field) {
+  private static void add(Map map, Fieldable field) {
     map.put(field.name(), field);
   }
 
@@ -121,13 +180,19 @@ class DocHelper {
     nameValues = new HashMap();
     nameValues.put(TEXT_FIELD_1_KEY, FIELD_1_TEXT);
     nameValues.put(TEXT_FIELD_2_KEY, FIELD_2_TEXT);
+    nameValues.put(COMPRESSED_TEXT_FIELD_2_KEY, FIELD_2_COMPRESSED_TEXT);
     nameValues.put(TEXT_FIELD_3_KEY, FIELD_3_TEXT);
     nameValues.put(KEYWORD_FIELD_KEY, KEYWORD_TEXT);
     nameValues.put(NO_NORMS_KEY, NO_NORMS_TEXT);
     nameValues.put(UNINDEXED_FIELD_KEY, UNINDEXED_FIELD_TEXT);
     nameValues.put(UNSTORED_FIELD_1_KEY, UNSTORED_1_FIELD_TEXT);
     nameValues.put(UNSTORED_FIELD_2_KEY, UNSTORED_2_FIELD_TEXT);
-  }
+    nameValues.put(LAZY_FIELD_KEY, LAZY_FIELD_TEXT);
+    nameValues.put(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES);
+    nameValues.put(LARGE_LAZY_FIELD_KEY, LARGE_LAZY_FIELD_TEXT);
+    nameValues.put(TEXT_FIELD_UTF1_KEY, FIELD_UTF1_TEXT);
+    nameValues.put(TEXT_FIELD_UTF2_KEY, FIELD_UTF2_TEXT);
+  }   
   
   /**
    * Adds the fields above to a document 

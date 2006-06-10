@@ -120,7 +120,7 @@ final class SegmentMerger {
       files.add(segment + "." + IndexFileNames.COMPOUND_EXTENSIONS[i]);
     }
 
-    // Field norm files
+    // Fieldable norm files
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {

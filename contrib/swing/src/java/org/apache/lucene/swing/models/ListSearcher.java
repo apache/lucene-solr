@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Hits;
@@ -190,7 +191,7 @@ public class ListSearcher extends AbstractListModel {
             //tabble model row that we are mapping to
             for (int t=0; t<hits.length(); t++){
                 Document document = hits.doc(t);
-                Field field = document.getField(ROW_NUMBER);
+                Fieldable field = document.getField(ROW_NUMBER);
                 rowToModelIndex.add(new Integer(field.stringValue()));
             }
         } catch (Exception e){

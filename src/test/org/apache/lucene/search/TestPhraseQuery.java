@@ -16,21 +16,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-
 import junit.framework.TestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import java.io.IOException;
+import java.io.Reader;
 
 /**
  * Tests {@link PhraseQuery}.
@@ -59,7 +54,7 @@ public class TestPhraseQuery extends TestCase {
     Document doc = new Document();
     doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.TOKENIZED));
     doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.TOKENIZED));
-    Field repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.TOKENIZED);
+    Fieldable repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.TOKENIZED);
     doc.add(repeatedField);
     writer.addDocument(doc);
     

@@ -46,9 +46,9 @@ public class TestDocument extends TestCase
     throws Exception
   {
     Document doc = new Document();
-    Field stringFld = new Field("string", binaryVal, Field.Store.YES, Field.Index.NO);
-    Field binaryFld = new Field("binary", binaryVal.getBytes(), Field.Store.YES);
-    Field binaryFld2 = new Field("binary", binaryVal2.getBytes(), Field.Store.YES);
+    Fieldable stringFld = new Field("string", binaryVal, Field.Store.YES, Field.Index.NO);
+    Fieldable binaryFld = new Field("binary", binaryVal.getBytes(), Field.Store.YES);
+    Fieldable binaryFld2 = new Field("binary", binaryVal2.getBytes(), Field.Store.YES);
     
     doc.add(stringFld);
     doc.add(binaryFld);

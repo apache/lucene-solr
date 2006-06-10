@@ -16,20 +16,11 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
@@ -42,6 +33,16 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -1004,8 +1005,14 @@ public class MemoryIndex {
 			if (DEBUG) System.err.println("MemoryIndexReader.document");
 			return new Document(); // there are no stored fields
 		}
-	
-		public boolean isDeleted(int n) {
+
+    //When we convert to JDK 1.5 make this Set<String>
+    public Document document(int n, FieldSelector fieldSelector) throws IOException {
+      if (DEBUG) System.err.println("MemoryIndexReader.document");
+			return new Document(); // there are no stored fields
+    }
+
+    public boolean isDeleted(int n) {
 			if (DEBUG) System.err.println("MemoryIndexReader.isDeleted");
 			return false;
 		}

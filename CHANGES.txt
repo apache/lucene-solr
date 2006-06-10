@@ -9,6 +9,9 @@ New features
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers
     (Samphan Raruenrom va Chris Hostetter)
 
+ 2. LUCENE-545: New FieldSelector API and associated changes to IndexReader and implementations.
+    New Fieldable interface for use with the lazy field loading mechanism. (Grant Ingersoll and Chuck Williams via Grant Ingersoll)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow

@@ -116,6 +116,32 @@ public abstract class IndexInput implements Cloneable {
     }
   }
 
+  /**
+   * Expert
+   * 
+   * Similar to {@link #readChars(char[], int, int)} but does not do any conversion operations on the bytes it is reading in.  It still
+   * has to invoke {@link #readByte()} just as {@link #readChars(char[], int, int)} does, but it does not need a buffer to store anything
+   * and it does not have to do any of the bitwise operations, since we don't actually care what is in the byte except to determine
+   * how many more bytes to read
+   * @param length The number of chars to read
+   */
+  public void skipChars(int length) throws IOException{
+    for (int i = 0; i < length; i++) {
+      byte b = readByte();
+      if ((b & 0x80) == 0){
+        //do nothing, we only need one byte
+      }
+      else if ((b & 0xE0) != 0xE0) {
+        readByte();//read an additional byte
+      } else{      
+        //read two additional bytes.
+        readByte();
+        readByte();
+      }
+    }
+  }
+  
+
   /** Closes the stream to futher operations. */
   public abstract void close() throws IOException;
 

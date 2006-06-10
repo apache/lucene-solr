@@ -17,13 +17,18 @@ package org.apache.lucene.index;
  */
 
 import junit.framework.TestCase;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Enumeration;
 
 public class TestFieldsReader extends TestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -50,19 +55,19 @@ public class TestFieldsReader extends TestCase {
     FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
-    Document doc = reader.doc(0);
+    Document doc = reader.doc(0, null);
     assertTrue(doc != null);
-    assertTrue(doc.getField("textField1") != null);
-    
-    Field field = doc.getField("textField2");
+    assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
+
+    Fieldable field = doc.getField(DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(field != null);
     assertTrue(field.isTermVectorStored() == true);
-    
+
     assertTrue(field.isStoreOffsetWithTermVector() == true);
     assertTrue(field.isStorePositionWithTermVector() == true);
     assertTrue(field.getOmitNorms() == false);
 
-    field = doc.getField("textField3");
+    field = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
     assertTrue(field.isTermVectorStored() == false);
     assertTrue(field.isStoreOffsetWithTermVector() == false);
@@ -72,4 +77,144 @@ public class TestFieldsReader extends TestCase {
 
     reader.close();
   }
+
+
+  public void testLazyFields() throws Exception {
+    assertTrue(dir != null);
+    assertTrue(fieldInfos != null);
+    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    assertTrue(reader != null);
+    assertTrue(reader.size() == 1);
+    Set loadFieldNames = new HashSet();
+    loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
+    loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
+    Set lazyFieldNames = new HashSet();
+    //new String[]{DocHelper.LARGE_LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_BINARY_KEY};
+    lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
+    lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
+    lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
+    lazyFieldNames.add(DocHelper.TEXT_FIELD_UTF2_KEY);
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
+    Document doc = reader.doc(0, fieldSelector);
+    assertTrue("doc is null and it shouldn't be", doc != null);
+    Fieldable field = doc.getField(DocHelper.LAZY_FIELD_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("field is not lazy and it should be", field.isLazy());
+    String value = field.stringValue();
+    assertTrue("value is null and it shouldn't be", value != null);
+    assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
+    field = doc.getField(DocHelper.TEXT_FIELD_1_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    field = doc.getField(DocHelper.TEXT_FIELD_UTF1_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF1_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF1_TEXT) == true);
+
+    field = doc.getField(DocHelper.TEXT_FIELD_UTF2_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("Field is lazy and it should not be", field.isLazy() == true);
+    assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF2_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF2_TEXT) == true);
+
+    field = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    byte [] bytes = field.binaryValue();
+    assertTrue("bytes is null and it shouldn't be", bytes != null);
+    assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
+
+    }
+  }
+
+  public void testLoadFirst() throws Exception {
+    assertTrue(dir != null);
+    assertTrue(fieldInfos != null);
+    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    assertTrue(reader != null);
+    assertTrue(reader.size() == 1);
+    LoadFirstFieldSelector fieldSelector = new LoadFirstFieldSelector();
+    Document doc = reader.doc(0, fieldSelector);
+    assertTrue("doc is null and it shouldn't be", doc != null);
+    int count = 0;
+    Enumeration enumeration = doc.fields();
+    while (enumeration.hasMoreElements()) {
+      Field field = (Field) enumeration.nextElement();
+      assertTrue("field is null and it shouldn't be", field != null);
+      String sv = field.stringValue();
+      assertTrue("sv is null and it shouldn't be", sv != null);
+      count++;
+    }
+    assertTrue(count + " does not equal: " + 1, count == 1);
+  }
+
+  /**
+   * Not really a test per se, but we should have some way of assessing whether this is worthwhile.
+   * <p/>
+   * Must test using a File based directory
+   *
+   * @throws Exception
+   */
+  public void testLazyPerformance() throws Exception {
+    String tmpIODir = System.getProperty("java.io.tmpdir");
+    String path = tmpIODir + File.separator + "lazyDir";
+    File file = new File(path);
+    FSDirectory tmpDir = FSDirectory.getDirectory(file, true);
+    assertTrue(tmpDir != null);
+    DocumentWriter writer = new DocumentWriter(tmpDir, new WhitespaceAnalyzer(),
+            Similarity.getDefault(), 50);
+    assertTrue(writer != null);
+    writer.addDocument("test", testDoc);
+    assertTrue(fieldInfos != null);
+    FieldsReader reader;
+    long lazyTime = 0;
+    long regularTime = 0;
+    int length = 50;
+    Set lazyFieldNames = new HashSet();
+    lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.EMPTY_SET, lazyFieldNames);
+
+    for (int i = 0; i < length; i++) {
+      reader = new FieldsReader(tmpDir, "test", fieldInfos);
+      assertTrue(reader != null);
+      assertTrue(reader.size() == 1);
+
+      Document doc;
+      doc = reader.doc(0, null);//Load all of them
+      assertTrue("doc is null and it shouldn't be", doc != null);
+      Fieldable field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
+      assertTrue("field is lazy", field.isLazy() == false);
+      String value;
+      long start;
+      long finish;
+      start = System.currentTimeMillis();
+      //On my machine this was always 0ms.
+      value = field.stringValue();
+      finish = System.currentTimeMillis();
+      assertTrue("value is null and it shouldn't be", value != null);
+      assertTrue("field is null and it shouldn't be", field != null);
+      regularTime += (finish - start);
+      reader.close();
+      reader = null;
+      doc = null;
+      //Hmmm, are we still in cache???
+      System.gc();
+      reader = new FieldsReader(tmpDir, "test", fieldInfos);
+      doc = reader.doc(0, fieldSelector);
+      field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
+      assertTrue("field is not lazy", field.isLazy() == true);
+      start = System.currentTimeMillis();
+      //On my machine this took around 50 - 70ms
+      value = field.stringValue();
+      finish = System.currentTimeMillis();
+      assertTrue("value is null and it shouldn't be", value != null);
+      lazyTime += (finish - start);
+      reader.close();
+
+    }
+    System.out.println("Average Non-lazy time (should be very close to zero): " + regularTime / length + " ms for " + length + " reads");
+    System.out.println("Average Lazy Time (should be greater than zero): " + lazyTime / length + " ms for " + length + " reads");
+  }
+
+
 }

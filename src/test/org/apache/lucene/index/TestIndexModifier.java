@@ -22,6 +22,8 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -270,9 +272,9 @@ class IndexThread extends Thread {
       id++;
     }
     // add random stuff:
-    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES, 
+    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES,
         Field.Index.TOKENIZED));
-    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES, 
+    doc.add(new Field("content", new Integer(random.nextInt(1000)).toString(), Field.Store.YES,
         Field.Index.TOKENIZED));
     doc.add(new Field("all", "x", Field.Store.YES, Field.Index.TOKENIZED));
     return doc;

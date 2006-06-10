@@ -45,7 +45,7 @@ extends PriorityQueue {
 
 	/**
 	 * Creates a hit queue sorted by the given list of fields.
-	 * @param fields Field names, in priority order (highest priority first).
+	 * @param fields Fieldable names, in priority order (highest priority first).
 	 * @param size  The number of hits to retain.  Must be greater than zero.
 	 */
 	FieldDocSortedHitQueue (SortField[] fields, int size) {

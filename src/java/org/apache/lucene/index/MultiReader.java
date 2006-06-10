@@ -17,11 +17,14 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
 
 /** An IndexReader which reads multiple indexes, appending their content.
  *
@@ -99,9 +102,9 @@ public class MultiReader extends IndexReader {
     return maxDoc;
   }
 
-  public Document document(int n) throws IOException {
+  public Document document(int n, FieldSelector fieldSelector) throws IOException {
     int i = readerIndex(n);                          // find segment num
-    return subReaders[i].document(n - starts[i]);    // dispatch to segment reader
+    return subReaders[i].document(n - starts[i], fieldSelector);    // dispatch to segment reader
   }
 
   public boolean isDeleted(int n) {

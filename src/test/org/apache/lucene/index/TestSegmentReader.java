@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 import junit.framework.TestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class TestSegmentReader extends TestCase {
     
     Enumeration fields = result.fields();
     while (fields.hasMoreElements()) {
-      Field field = (Field) fields.nextElement();
+      Fieldable field = (Fieldable) fields.nextElement();
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }
@@ -166,7 +166,7 @@ public class TestSegmentReader extends TestCase {
   public static void checkNorms(IndexReader reader) throws IOException {
         // test omit norms
     for (int i=0; i<DocHelper.fields.length; i++) {
-      Field f = DocHelper.fields[i];
+      Fieldable f = DocHelper.fields[i];
       if (f.isIndexed()) {
         assertEquals(reader.hasNorms(f.name()), !f.getOmitNorms());
         assertEquals(reader.hasNorms(f.name()), !DocHelper.noNorms.containsKey(f.name()));
@@ -202,7 +202,7 @@ public class TestSegmentReader extends TestCase {
 
     TermFreqVector [] results = reader.getTermFreqVectors(0);
     assertTrue(results != null);
-    assertTrue(results.length == 2);      
+    assertTrue("We do not have 4 term freq vectors, we have: " + results.length, results.length == 4);      
   }    
   
 }

@@ -21,8 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -64,7 +63,7 @@ public class TestDocumentWriter extends TestCase {
     assertTrue(doc != null);
 
     //System.out.println("Document: " + doc);
-    Field [] fields = doc.getFields("textField2");
+    Fieldable [] fields = doc.getFields("textField2");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
     assertTrue(fields[0].isTermVectorStored());

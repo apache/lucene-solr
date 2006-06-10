@@ -20,7 +20,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.FieldCache.StringIndex; // required by GCJ
 
 import java.io.IOException;
 import java.util.Locale;
@@ -43,7 +42,7 @@ implements FieldCache {
 
   /** Expert: Every key in the internal cache is of this type. */
   static class Entry {
-    final String field;        // which Field
+    final String field;        // which Fieldable
     final int type;            // which SortField type
     final Object custom;       // which custom comparator
     final Locale locale;       // the locale we're sorting (if string)

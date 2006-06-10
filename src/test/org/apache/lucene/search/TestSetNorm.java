@@ -17,15 +17,12 @@ package org.apache.lucene.search;
  */
 
 import junit.framework.TestCase;
-
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.RAMDirectory;
 
 /** Document boost unit test.
  *
@@ -36,13 +33,13 @@ public class TestSetNorm extends TestCase {
   public TestSetNorm(String name) {
     super(name);
   }
-  
+
   public void testSetNorm() throws Exception {
     RAMDirectory store = new RAMDirectory();
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true);
-    
+
     // add the same document four times
-    Field f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
+    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.TOKENIZED);
     Document d1 = new Document();
     d1.add(f1);
     writer.addDocument(d1);
@@ -69,7 +66,7 @@ public class TestSetNorm extends TestCase {
            scores[doc] = score;
          }
        });
-    
+
     float lastScore = 0.0f;
 
     for (int i = 0; i < 4; i++) {

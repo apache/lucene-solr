@@ -16,18 +16,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.*;
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 
-/** Access to the Field Info file that describes document fields and whether or
- *  not they are indexed. Each segment has a separate Field Info file. Objects
+import java.io.IOException;
+import java.util.*;
+
+/** Access to the Fieldable Info file that describes document fields and whether or
+ *  not they are indexed. Each segment has a separate Fieldable Info file. Objects
  *  of this class are thread-safe for multiple readers, but only one thread can
  *  be adding documents at a time, with no other reader or writer threads
  *  accessing this object.
@@ -65,7 +64,7 @@ final class FieldInfos {
   public void add(Document doc) {
     Enumeration fields = doc.fields();
     while (fields.hasMoreElements()) {
-      Field field = (Field) fields.nextElement();
+      Fieldable field = (Fieldable) fields.nextElement();
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
               field.isStoreOffsetWithTermVector(), field.getOmitNorms());
     }
@@ -105,7 +104,7 @@ final class FieldInfos {
   /**
    * Calls 5 parameter add with false for all TermVector parameters.
    * 
-   * @param name The name of the Field
+   * @param name The name of the Fieldable
    * @param isIndexed true if the field is indexed
    * @see #add(String, boolean, boolean, boolean, boolean)
    */

@@ -16,16 +16,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.*;
-
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
-import org.apache.lucene.search.DefaultSimilarity;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @version $Id$
@@ -277,11 +277,11 @@ class SegmentReader extends IndexReader {
     return tis.terms(t);
   }
 
-  public synchronized Document document(int n) throws IOException {
+  public synchronized Document document(int n, FieldSelector fieldSelector) throws IOException {
     if (isDeleted(n))
       throw new IllegalArgumentException
               ("attempt to access a deleted document");
-    return fieldsReader.doc(n);
+    return fieldsReader.doc(n, fieldSelector);
   }
 
   public synchronized boolean isDeleted(int n) {
