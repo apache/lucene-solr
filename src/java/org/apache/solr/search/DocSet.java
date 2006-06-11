@@ -124,6 +124,17 @@ public interface DocSet /* extends Collection<Integer> */ {
    */
   public int unionSize(DocSet other);
 
+  /**
+   * Returns the documents in this set that are not in the other set. Neither set is modified - a new DocSet is
+   * created and returned.
+   * @return a DocSet representing this AND NOT other
+   */
+  public DocSet andNot(DocSet other);
+
+  /**
+   * Returns the number of documents in this set that are not in the other set.
+   */
+  public int andNotSize(DocSet other);
 }
 
 /** A base class that may be usefull for implementing DocSets */
@@ -208,11 +219,20 @@ abstract class DocSetBase implements DocSet {
     return intersection(other).size();
   }
 
-  // TODO: do an efficient implementation
+  // subclasses have more efficient implementations
   public int unionSize(DocSet other) {
     return union(other).size();
   }
 
+  public DocSet andNot(DocSet other) {
+    OpenBitSet newbits = (OpenBitSet)(this.getBits().clone());
+    newbits.andNot(other.getBits());
+    return new BitDocSet(newbits);
+  }
+
+  public int andNotSize(DocSet other) {
+    return this.size() - this.intersectionSize(other);
+  }
 }
 
 

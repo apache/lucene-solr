@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search.test;
+package org.apache.solr.search;
 
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.HashDocSet;

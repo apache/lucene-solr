@@ -278,7 +278,7 @@ public final class HashDocSet extends DocSetBase {
   public int unionSize(DocSet other) {
    if (other instanceof HashDocSet) {
      // set "a" to the smallest doc set for the most efficient
-     // intersection.
+     // union count.
      final HashDocSet a = size()<=other.size() ? this : (HashDocSet)other;
      final HashDocSet b = size()<=other.size() ? (HashDocSet)other : this;
 
@@ -302,5 +302,6 @@ public final class HashDocSet extends DocSetBase {
    }
   }
 
-
+  // don't implement andNotSize() on purpose... if one of the sets is a HashDocSet,
+  // its easier to get the intersection size and subtract (implementation in BaseDocSet)
 }

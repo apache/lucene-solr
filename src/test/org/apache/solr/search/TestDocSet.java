@@ -64,14 +64,15 @@ public class TestDocSet extends TestCase {
     OpenBitSet a_and = (OpenBitSet)a1.clone(); a_and.and(a2);
     OpenBitSet a_or = (OpenBitSet)a1.clone(); a_or.or(a2);
     // OpenBitSet a_xor = (OpenBitSet)a1.clone(); a_xor.xor(a2);
-    // OpenBitSet a_andn = (OpenBitSet)a1.clone(); a_andn.andNot(a2);
+    OpenBitSet a_andn = (OpenBitSet)a1.clone(); a_andn.andNot(a2);
 
     checkEqual(a_and, b1.intersection(b2));
     checkEqual(a_or, b1.union(b2));
+    checkEqual(a_andn, b1.andNot(b2));
 
     assertEquals(a_and.cardinality(), b1.intersectionSize(b2));
     assertEquals(a_or.cardinality(), b1.unionSize(b2));
-
+    assertEquals(a_andn.cardinality(), b1.andNotSize(b2));
   }
 
 

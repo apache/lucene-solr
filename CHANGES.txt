@@ -17,6 +17,7 @@ New Features
  9. Added KeywordTokenizerFactory (hossman)
 10. copyField accepts dynamicfield-like names as the source.
     (Darren Erik Vengroff via yonik, SOLR-21)
+11. new DocSet.andNot(), DocSet.andNotSize() (yonik)
      
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
