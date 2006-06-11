@@ -212,7 +212,7 @@ public final class HashDocSet extends DocSetBase {
     return (tablesize<<2) + 20;
   }
 
-
+  @Override
   public DocSet intersection(DocSet other) {
    if (other instanceof HashDocSet) {
      // set "a" to the smallest doc set for the most efficient
@@ -245,6 +245,7 @@ public final class HashDocSet extends DocSetBase {
 
   }
 
+  @Override
   public int intersectionSize(DocSet other) {
    if (other instanceof HashDocSet) {
      // set "a" to the smallest doc set for the most efficient
@@ -271,6 +272,34 @@ public final class HashDocSet extends DocSetBase {
      return resultCount;
    }
 
+  }
+
+  @Override
+  public int unionSize(DocSet other) {
+   if (other instanceof HashDocSet) {
+     // set "a" to the smallest doc set for the most efficient
+     // intersection.
+     final HashDocSet a = size()<=other.size() ? this : (HashDocSet)other;
+     final HashDocSet b = size()<=other.size() ? (HashDocSet)other : this;
+
+     int resultCount=b.size();
+     for (int i=0; i<a.table.length; i++) {
+       int id=a.table[i];
+       if (id >= 0 && !b.exists(id)) {
+         resultCount++;
+       }
+     }
+     return resultCount;
+   } else {
+     int resultCount=other.size();
+     for (int i=0; i<table.length; i++) {
+       int id=table[i];
+       if (id >= 0 && !other.exists(id)) {
+         resultCount++;
+       }
+     }
+     return resultCount;
+   }
   }
 
 

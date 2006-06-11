@@ -30,8 +30,9 @@ Optimizations
  2. BitDocSet.intersectionSize(HashDocSet) no longer generates an intermediate
     set
  3. OpenBitSet completed, replaces BitSet as the implementation for BitDocSet.
-    Iteration is faster, and BitDocSet.intersectionSize(BitDocSet)
+    Iteration is faster, and BitDocSet.intersectionSize(BitDocSet) and unionSize
     is between 3 and 4 times faster. (yonik, SOLR-15)
+ 4. much faster unionSize when one of the sets is a HashDocSet: O(smaller_set_size)
 
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different
