@@ -27,7 +27,7 @@ import java.util.BitSet;
 /**
  * @author yonik
  */
-public class TestDocSet {
+public class DocSetPerf {
 
   // use test instead of assert since asserts may be turned off
   public static void test(boolean condition) {
