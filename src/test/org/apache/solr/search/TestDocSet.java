@@ -55,6 +55,8 @@ public class TestDocSet extends TestCase {
     DocSet b1 = getDocSet(a1);
     DocSet b2 = getDocSet(a2);
 
+    // System.out.println("b1="+b1+", b2="+b2);
+
     assertEquals((int)a1.cardinality(), b1.size());
     assertEquals((int)a2.cardinality(), b2.size());
 

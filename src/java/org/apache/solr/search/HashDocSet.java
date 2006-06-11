@@ -271,37 +271,10 @@ public final class HashDocSet extends DocSetBase {
      }
      return resultCount;
    }
-
+    
   }
 
-  @Override
-  public int unionSize(DocSet other) {
-   if (other instanceof HashDocSet) {
-     // set "a" to the smallest doc set for the most efficient
-     // union count.
-     final HashDocSet a = size()<=other.size() ? this : (HashDocSet)other;
-     final HashDocSet b = size()<=other.size() ? (HashDocSet)other : this;
 
-     int resultCount=b.size();
-     for (int i=0; i<a.table.length; i++) {
-       int id=a.table[i];
-       if (id >= 0 && !b.exists(id)) {
-         resultCount++;
-       }
-     }
-     return resultCount;
-   } else {
-     int resultCount=other.size();
-     for (int i=0; i<table.length; i++) {
-       int id=table[i];
-       if (id >= 0 && !other.exists(id)) {
-         resultCount++;
-       }
-     }
-     return resultCount;
-   }
-  }
-
-  // don't implement andNotSize() on purpose... if one of the sets is a HashDocSet,
-  // its easier to get the intersection size and subtract (implementation in BaseDocSet)
+  // don't implement andNotSize() and unionSize() on purpose... they are implemented
+  // in BaseDocSet in terms of intersectionSize().
 }

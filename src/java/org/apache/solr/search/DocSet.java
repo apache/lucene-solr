@@ -219,9 +219,8 @@ abstract class DocSetBase implements DocSet {
     return intersection(other).size();
   }
 
-  // subclasses have more efficient implementations
   public int unionSize(DocSet other) {
-    return union(other).size();
+    return this.size() + other.size() - this.intersectionSize(other);
   }
 
   public DocSet andNot(DocSet other) {

@@ -156,6 +156,8 @@ public class BitDocSet extends DocSetBase {
   @Override
   public int unionSize(DocSet other) {
     if (other instanceof BitDocSet) {
+      // if we don't know our current size, this is faster than
+      // size + other.size - intersection_size
       return (int)OpenBitSet.unionCount(this.bits, ((BitDocSet)other).bits);
     } else {
       // they had better not call us back!
@@ -170,7 +172,6 @@ public class BitDocSet extends DocSetBase {
       // size - intersection_size
       return (int)OpenBitSet.andNotCount(this.bits, ((BitDocSet)other).bits);
     } else {
-      // use BaseDocSet's size-intersection_size
       return super.andNotSize(other);
     }
   }
