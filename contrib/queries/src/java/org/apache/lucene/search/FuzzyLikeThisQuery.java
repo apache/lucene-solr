@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -89,57 +90,61 @@ public class FuzzyLikeThisQuery extends Query
         Token token=ts.next();
         int corpusNumDocs=reader.numDocs();
         Term internSavingTemplateTerm =new Term(f.fieldName,""); //optimization to avoid constructing new Term() objects
-        
+        HashSet processedTerms=new HashSet();
         while(token!=null)
         {            
-            ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
-            float minScore=0;
-            Term startTerm=internSavingTemplateTerm.createTerm(token.termText());
-            FuzzyTermEnum fe=new FuzzyTermEnum(reader,startTerm,f.minSimilarity,f.prefixLength);
-            TermEnum origEnum = reader.terms(startTerm);
-            int df=0;
-            if(startTerm.equals(origEnum.term()))
-            {
-                df=origEnum.docFreq(); //store the df so all variants use same idf
-            }
-            int numVariants=0;
-            int totalVariantDocFreqs=0;
-            do
-            {
-                Term possibleMatch=fe.term();
-                if(possibleMatch!=null)
+        	if(!processedTerms.contains(token.termText()))
+        	{
+        		processedTerms.add(token.termText());
+                ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
+                float minScore=0;
+                Term startTerm=internSavingTemplateTerm.createTerm(token.termText());
+                FuzzyTermEnum fe=new FuzzyTermEnum(reader,startTerm,f.minSimilarity,f.prefixLength);
+                TermEnum origEnum = reader.terms(startTerm);
+                int df=0;
+                if(startTerm.equals(origEnum.term()))
                 {
-	                numVariants++;
-	                totalVariantDocFreqs+=fe.docFreq();
-	                float score=fe.difference();
-	                if(variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
-	                    ScoreTerm st=new ScoreTerm(possibleMatch,score,startTerm);                    
-	                    variantsQ.insert(st);
-	                    minScore = ((ScoreTerm)variantsQ.top()).score; // maintain minScore
-	                }
+                    df=origEnum.docFreq(); //store the df so all variants use same idf
                 }
-            }
-            while(fe.next());
-            if(numVariants==0)
-            {
-                //no variants to rank here
-                break;
-            }
-            int avgDf=totalVariantDocFreqs/numVariants;
-            if(df==0)//no direct match we can use as df for all variants 
-            {
-                df=avgDf; //use avg df of all variants
-            }
-            
-            // take the top variants (scored by edit distance) and reset the score
-            // to include an IDF factor then add to the global queue for ranking overall top query terms
-            int size = variantsQ.size();
-            for(int i = 0; i < size; i++)
-            {
-              ScoreTerm st = (ScoreTerm) variantsQ.pop();
-              st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);
-              q.insert(st);
-            }                            
+                int numVariants=0;
+                int totalVariantDocFreqs=0;
+                do
+                {
+                    Term possibleMatch=fe.term();
+                    if(possibleMatch!=null)
+                    {
+    	                numVariants++;
+    	                totalVariantDocFreqs+=fe.docFreq();
+    	                float score=fe.difference();
+    	                if(variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
+    	                    ScoreTerm st=new ScoreTerm(possibleMatch,score,startTerm);                    
+    	                    variantsQ.insert(st);
+    	                    minScore = ((ScoreTerm)variantsQ.top()).score; // maintain minScore
+    	                }
+                    }
+                }
+                while(fe.next());
+                if(numVariants==0)
+                {
+                    //no variants to rank here
+                    break;
+                }
+                int avgDf=totalVariantDocFreqs/numVariants;
+                if(df==0)//no direct match we can use as df for all variants 
+                {
+                    df=avgDf; //use avg df of all variants
+                }
+                
+                // take the top variants (scored by edit distance) and reset the score
+                // to include an IDF factor then add to the global queue for ranking overall top query terms
+                int size = variantsQ.size();
+                for(int i = 0; i < size; i++)
+                {
+                  ScoreTerm st = (ScoreTerm) variantsQ.pop();
+                  st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);
+                  q.insert(st);
+                }                            
+        	}
             token=ts.next();
         }        
     }
