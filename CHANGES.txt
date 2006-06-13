@@ -35,6 +35,8 @@ Bug fixes
 
  4. LUCENE-587: Explanation.toHtml was producing malformed HTML
     (Chris Hostetter)
+
+ 5. Fix to allow MatchAllDocsQuery to be used with RemoteSearcher (Yonik Seeley)
     
 Optimizations
 

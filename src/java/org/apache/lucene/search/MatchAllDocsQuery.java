@@ -82,12 +82,12 @@ public class MatchAllDocsQuery extends Query {
   }
 
   private class MatchAllDocsWeight implements Weight {
-    private Searcher searcher;
+    private Similarity similarity;
     private float queryWeight;
     private float queryNorm;
 
     public MatchAllDocsWeight(Searcher searcher) {
-      this.searcher = searcher;
+      this.similarity = searcher.getSimilarity();
     }
 
     public String toString() {
@@ -113,7 +113,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     public Scorer scorer(IndexReader reader) {
-      return new MatchAllScorer(reader, getSimilarity(searcher), this);
+      return new MatchAllScorer(reader, similarity, this);
     }
 
     public Explanation explain(IndexReader reader, int doc) {
