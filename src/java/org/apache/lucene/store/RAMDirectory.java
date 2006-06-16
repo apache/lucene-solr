@@ -18,6 +18,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.File;
+import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Enumeration;
 
@@ -30,7 +31,10 @@ import org.apache.lucene.store.IndexOutput;
  *
  * @version $Id$
  */
-public final class RAMDirectory extends Directory {
+public final class RAMDirectory extends Directory implements Serializable {
+
+  private static final long serialVersionUID = 1l;
+
   Hashtable files = new Hashtable();
 
   /** Constructs an empty {@link Directory}. */

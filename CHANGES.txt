@@ -37,6 +37,9 @@ Bug fixes
     (Chris Hostetter)
 
  5. Fix to allow MatchAllDocsQuery to be used with RemoteSearcher (Yonik Seeley)
+
+ 6. LUCENE-601: RAMDirectory and RAMFile made Serializable
+    (Karl Wettin via Otis Gospodnetic)
     
 Optimizations
 

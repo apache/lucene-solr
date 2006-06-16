@@ -17,8 +17,12 @@ package org.apache.lucene.store;
  */
 
 import java.util.Vector;
+import java.io.Serializable;
 
-class RAMFile {
+class RAMFile implements Serializable {
+
+  private static final long serialVersionUID = 1l;
+
   Vector buffers = new Vector();
   long length;
   long lastModified = System.currentTimeMillis();
