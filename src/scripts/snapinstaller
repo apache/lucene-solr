@@ -103,7 +103,7 @@ logMessage started by $oldwhoami
 logMessage command: $0 $@
 
 # get directory name of latest snapshot
-name=`ls -d ${data_dir}/snapshot.* 2>/dev/null|grep -v wip|sort -r|head -1`
+name=`find ${data_dir} -name snapshot.* -print|grep -v wip|sort -r|head -1`
 
 # clean up after INT/TERM
 trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf ${data_dir"/index.tmp$$;logExit aborted 13' INT TERM
