@@ -18,6 +18,8 @@ New Features
 10. copyField accepts dynamicfield-like names as the source.
     (Darren Erik Vengroff via yonik, SOLR-21)
 11. new DocSet.andNot(), DocSet.andNotSize() (yonik)
+12. Ability to store term vectors. (Note: standard request handler does
+    not currently do anything with term vectors) (Mike Klaas via yonik, SOLR-23)
      
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache

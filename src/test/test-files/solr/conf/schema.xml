@@ -270,6 +270,14 @@
    <field name="sind" type="string" indexed="true" stored="false"/>
    <field name="sindsto" type="string" indexed="true" stored="true"/>
 
+   <!-- test combinations of term vector settings -->
+   <field name="test_basictv" type="text" termVectors="true"/>
+   <field name="test_notv" type="text" termVectors="false"/>
+   <field name="test_postv" type="text" termVectors="true" termPositions="true"/>
+   <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
+   <field name="test_posofftv" type="text" termVectors="true" 
+     termPositions="true" termOffsets="true"/>
+
    <!-- fields to test individual tokenizers and tokenfilters -->
    <field name="teststop" type="teststop" indexed="true" stored="true"/>
    <field name="lowertok" type="lowertok" indexed="true" stored="true"/>

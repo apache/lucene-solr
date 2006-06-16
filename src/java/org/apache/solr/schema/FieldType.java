@@ -170,10 +170,22 @@ public abstract class FieldType extends FieldProperties {
       throw new SolrException(500, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
     }
     if (val==null) return null;
+
+    Field.TermVector ftv = Field.TermVector.NO;
+    if (field.storeTermPositions() && field.storeTermOffsets())
+      ftv = Field.TermVector.WITH_POSITIONS_OFFSETS;
+    else if (field.storeTermPositions())
+      ftv = Field.TermVector.WITH_POSITIONS;
+    else if (field.storeTermOffsets())
+      ftv = Field.TermVector.WITH_OFFSETS;            
+    else if (field.storeTermVector())
+      ftv = Field.TermVector.YES;
+
     Field f =  new Field(field.getName(),val,
-            field.stored() ? Field.Store.YES : Field.Store.NO ,
-            field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED)
-                    : Field.Index.NO);
+        field.stored() ? Field.Store.YES : Field.Store.NO ,
+        field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED : 
+                           Field.Index.UN_TOKENIZED) : Field.Index.NO,
+        ftv);
     f.setOmitNorms(field.omitNorms());
     f.setBoost(boost);
     return f;

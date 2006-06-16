@@ -16,9 +16,12 @@
 
 package org.apache.solr;
 
+import org.apache.lucene.document.Field;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
+import org.apache.solr.schema.*;
 import org.w3c.dom.Document;
+
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
@@ -197,6 +200,40 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
   }
 
+  public void testTermVectorFields() {
+    
+    IndexSchema ischema = new IndexSchema(getSchemaFile());
+    SchemaField f; // Solr field type
+    Field luf; // Lucene field
+
+    f = ischema.getField("test_basictv");
+    luf = f.createField("test", 0f);
+    assertTrue(f.storeTermVector());
+    assertTrue(luf.isTermVectorStored());
+
+    f = ischema.getField("test_notv");
+    luf = f.createField("test", 0f);
+    assertTrue(!f.storeTermVector());
+    assertTrue(!luf.isTermVectorStored());    
+
+    f = ischema.getField("test_postv");
+    luf = f.createField("test", 0f);
+    assertTrue(f.storeTermVector() && f.storeTermPositions());
+    assertTrue(luf.isStorePositionWithTermVector());
+
+    f = ischema.getField("test_offtv");
+    luf = f.createField("test", 0f);
+    assertTrue(f.storeTermVector() && f.storeTermOffsets());
+    assertTrue(luf.isStoreOffsetWithTermVector());
+
+    f = ischema.getField("test_posofftv");
+    luf = f.createField("test", 0f);
+    assertTrue(f.storeTermVector() && f.storeTermPositions() && f.storeTermOffsets());
+    assertTrue(luf.isStoreOffsetWithTermVector() && luf.isStorePositionWithTermVector());
+
+  }
+      
+            
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
