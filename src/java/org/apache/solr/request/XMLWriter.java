@@ -140,7 +140,7 @@ final public class XMLWriter {
   private final Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
   private final StringBuilder sb = new StringBuilder();
 
-  XMLWriter(Writer writer, IndexSchema schema, SolrIndexSearcher searcher, String version) {
+  public XMLWriter(Writer writer, IndexSchema schema, SolrIndexSearcher searcher, String version) {
     this.writer = writer;
     this.schema = schema;
     this.searcher = searcher;
