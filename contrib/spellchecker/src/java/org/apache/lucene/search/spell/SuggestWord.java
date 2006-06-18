@@ -18,47 +18,43 @@ package org.apache.lucene.search.spell;
  */
 
 /**
- *  SuggestWord Class, used in suggestSimilar method in SpellChecker class.
+ *  SuggestWord, used in suggestSimilar method in SpellChecker class.
  * 
  *  @author Nicolas Maisonneuve
  */
- final class SuggestWord {
-    /**
-     * the score of the word
-     */
-    public float score;
+final class SuggestWord {
+  /**
+   * the score of the word
+   */
+  public float score;
 
+  /**
+   * The freq of the word
+   */
+  public int freq;
 
-    /**
-     * The freq of the word
-     */
-    public int freq;
+  /**
+   * the suggested word
+   */
+  public String string;
 
-
-    /**
-     * the suggested word
-     */
-    public String string;
-
-
-    public final int compareTo (SuggestWord a) {
-        //first criteria: the edit distance
-        if (score>a.score) {
-            return 1;
-        }
-        if (score<a.score) {
-            return-1;
-        }
-
-        //second criteria (if first criteria is equal): the popularity
-        if (freq>a.freq) {
-            return 1;
-        }
-
-        if (freq<a.freq) {
-            return-1;
-        }
-
-        return 0;
+  public final int compareTo (SuggestWord a) {
+    //first criteria: the edit distance
+    if (score > a.score) {
+      return 1;
     }
+    if (score < a.score) {
+      return -1;
+    }
+
+    //second criteria (if first criteria is equal): the popularity
+    if (freq > a.freq) {
+      return 1;
+    }
+
+    if (freq < a.freq) {
+      return -1;
+    }
+    return 0;
+  }
 }

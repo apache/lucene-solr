@@ -24,10 +24,9 @@ import java.util.Iterator;
  */
 public interface Dictionary {
 
-    /**
-     * return all the words present in the dictionnary
-     * @return Iterator
-     */
-    public Iterator getWordsIterator();
-
+  /**
+   * Return all words present in the dictionary
+   * @return Iterator
+   */
+  Iterator getWordsIterator();
 }

@@ -27,10 +27,10 @@ import java.io.*;
 /**
  * Dictionary represented by a file text.
  * 
- * <p>Format allowed: 1 word per line:<br>
- * word1<br>
- * word2<br>
- * word3<br>
+ * <p/>Format allowed: 1 word per line:<br/>
+ * word1<br/>
+ * word2<br/>
+ * word3<br/>
  *
  * @author Nicolas Maisonneuve
  */
@@ -38,7 +38,7 @@ public class PlainTextDictionary implements Dictionary {
 
   private BufferedReader in;
   private String line;
-  private boolean has_next_called;
+  private boolean hasNextCalled;
 
   public PlainTextDictionary(File file) throws FileNotFoundException {
     in = new BufferedReader(new FileReader(file));
@@ -55,16 +55,16 @@ public class PlainTextDictionary implements Dictionary {
 
   final class fileIterator implements Iterator {
     public Object next() {
-      if (!has_next_called) {
+      if (!hasNextCalled) {
         hasNext();
       }
-      has_next_called = false;
+      hasNextCalled = false;
       return line;
     }
 
 
     public boolean hasNext() {
-      has_next_called = true;
+      hasNextCalled = true;
       try {
         line = in.readLine();
       } catch (IOException ex) {
@@ -77,7 +77,7 @@ public class PlainTextDictionary implements Dictionary {
 
 
     public void remove() {
-    };
+    }
   }
 
 }

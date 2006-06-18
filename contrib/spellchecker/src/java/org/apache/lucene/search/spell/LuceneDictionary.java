@@ -47,7 +47,7 @@ public class LuceneDictionary implements Dictionary {
   final class LuceneIterator implements Iterator {
     private TermEnum termEnum;
     private Term actualTerm;
-    private boolean has_next_called;
+    private boolean hasNextCalled;
 
     public LuceneIterator() {
       try {
@@ -59,16 +59,16 @@ public class LuceneDictionary implements Dictionary {
 
 
     public Object next() {
-      if (!has_next_called) {
+      if (!hasNextCalled) {
         hasNext();
       }
-      has_next_called = false;
+      hasNextCalled = false;
       return (actualTerm != null) ? actualTerm.text() : null;
     }
 
 
     public boolean hasNext() {
-      has_next_called = true;
+      hasNextCalled = true;
       try {
         // if there is still words
         if (!termEnum.next()) {
@@ -90,6 +90,6 @@ public class LuceneDictionary implements Dictionary {
     }
 
     public void remove() {
-    };
+    }
   }
 }

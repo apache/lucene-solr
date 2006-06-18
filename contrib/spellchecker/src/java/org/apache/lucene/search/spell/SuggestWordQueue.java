@@ -17,25 +17,23 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-/**
- *  to sort SuggestWord
- * @author Nicolas Maisonneuve
- */
 import org.apache.lucene.util.PriorityQueue;
 
 
-final class SuggestWordQueue
-extends PriorityQueue {
+/**
+ * Sorts SuggestWord instances
+ * @author Nicolas Maisonneuve
+ */
+final class SuggestWordQueue extends PriorityQueue {
 
-    SuggestWordQueue (int size) {
-        initialize(size);
-    }
+  SuggestWordQueue (int size) {
+    initialize(size);
+  }
 
-    protected final boolean lessThan (Object a, Object b) {
-        SuggestWord wa=(SuggestWord) a;
-        SuggestWord wb=(SuggestWord) b;
-        int val=wa.compareTo(wb);
-        return val<0;
-    }
-
+  protected final boolean lessThan (Object a, Object b) {
+    SuggestWord wa = (SuggestWord) a;
+    SuggestWord wb = (SuggestWord) b;
+    int val = wa.compareTo(wb);
+    return val < 0;
+  }
 }

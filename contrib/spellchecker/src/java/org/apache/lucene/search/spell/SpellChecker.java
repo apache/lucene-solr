@@ -38,8 +38,8 @@ import java.util.*;
 
 /**
  *  <p>
- *	Spell Checker class  (Main class) <br/>
- * (initially inspired by the David Spencer code).
+ *   Spell Checker class  (Main class) <br/>
+ *   (initially inspired by the David Spencer code).
  *  </p>
  *  
  *  <p>Example Usage:
@@ -351,7 +351,7 @@ public class SpellChecker {
     }
 
 
-    protected void finalize () throws Throwable {
+    protected void finalize() throws Throwable {
         if (reader!=null) {
             reader.close();
         }
