@@ -31,12 +31,12 @@ import java.io.*;
  * @author Nicolas Maisonneuve
  */
 public class LuceneDictionary implements Dictionary {
-  IndexReader reader;
-  String field;
+  private IndexReader reader;
+  private String field;
 
   public LuceneDictionary(IndexReader reader, String field) {
     this.reader = reader;
-    this.field = field;
+    this.field = field.intern();
   }
 
   public final Iterator getWordsIterator() {
@@ -49,14 +49,13 @@ public class LuceneDictionary implements Dictionary {
     private Term actualTerm;
     private boolean hasNextCalled;
 
-    public LuceneIterator() {
+    LuceneIterator() {
       try {
         termEnum = reader.terms(new Term(field, ""));
-      } catch (IOException ex) {
-        ex.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
-
 
     public Object next() {
       if (!hasNextCalled) {
@@ -66,30 +65,28 @@ public class LuceneDictionary implements Dictionary {
       return (actualTerm != null) ? actualTerm.text() : null;
     }
 
-
     public boolean hasNext() {
       hasNextCalled = true;
       try {
-        // if there is still words
+        // if there are no more words
         if (!termEnum.next()) {
           actualTerm = null;
           return false;
         }
-        //  if the next word are in the field
+        // if the next word is in the field
         actualTerm = termEnum.term();
-        String fieldt = actualTerm.field();
-        if (fieldt != field) {
+        String currentField = actualTerm.field();
+        if (currentField != field) {
           actualTerm = null;
           return false;
         }
         return true;
-      } catch (IOException ex) {
-        ex.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
         return false;
       }
     }
 
-    public void remove() {
-    }
+    public void remove() {}
   }
 }
