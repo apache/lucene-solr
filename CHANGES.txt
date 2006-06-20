@@ -44,6 +44,9 @@ Bug fixes
  7. LUCENE-557: Fixes to BooleanQuery and FilteredQuery so that the score
     Explanations match up with the real scores.
     (Chris Hostetter)
+
+ 8. LUCENE-607: ParallelReader's TermEnum fails to advance properly to
+    new fields (Chuck Williams, Christian Kohlschuetter via Yonik Seeley)
         
 Optimizations
 

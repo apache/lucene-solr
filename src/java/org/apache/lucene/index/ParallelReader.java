@@ -261,6 +261,7 @@ public class ParallelReader extends IndexReader {
 
   private class ParallelTermEnum extends TermEnum {
     private String field;
+    private Iterator fieldIterator;
     private TermEnum termEnum;
 
     public ParallelTermEnum() throws IOException {
@@ -277,26 +278,31 @@ public class ParallelReader extends IndexReader {
     }
 
     public boolean next() throws IOException {
-      if (termEnum == null)
+      if (termEnum==null)
         return false;
 
-      boolean next = termEnum.next();
-
-      // still within field?
-      if (next && termEnum.term().field() == field)
+      // another term in this field?
+      if (termEnum.next() && termEnum.term().field()==field)
         return true;                              // yes, keep going
 
       termEnum.close();                           // close old termEnum
 
-      // find the next field, if any
-      field = (String)fieldToReader.tailMap(field).firstKey();
-      if (field != null) {
-        termEnum = ((IndexReader)fieldToReader.get(field)).terms();
-        return true;
+      // find the next field with terms, if any
+      if (fieldIterator==null) {
+        fieldIterator = fieldToReader.tailMap(field).keySet().iterator();
+        fieldIterator.next();                     // Skip field to get next one
       }
-
+      while (fieldIterator.hasNext()) {
+        field = (String) fieldIterator.next();
+        termEnum = ((IndexReader)fieldToReader.get(field)).terms(new Term(field, ""));
+        Term term = termEnum.term();
+        if (term!=null && term.field()==field)
+          return true;
+        else
+          termEnum.close();
+      }
+ 
       return false;                               // no more fields
-
     }
 
     public Term term() {
