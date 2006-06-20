@@ -496,6 +496,13 @@ class FSIndexOutput extends BufferedIndexOutput {
 
   public FSIndexOutput(File path) throws IOException {
     file = new RandomAccessFile(path, "rw");
+    if (file.length() == 0) {
+      // This can happen if there was a previous crash / unclean shutdown that
+      // left files around, then we end up re-using a segment name.
+      // If we have a logging framework in the future, a warning here might be
+      // a good idea.
+      file.setLength(0);
+    }
   }
 
   /** output methods: */

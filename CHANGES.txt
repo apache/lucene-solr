@@ -47,6 +47,10 @@ Bug fixes
 
  8. LUCENE-607: ParallelReader's TermEnum fails to advance properly to
     new fields (Chuck Williams, Christian Kohlschuetter via Yonik Seeley)
+
+ 9. LUCENE-415: A previously unclean shutdown during indexing can cause
+    a non-empty segment file to be re-used, causing index corruption.
+    (Andy Hind via Yonik Seeley)
         
 Optimizations
 
