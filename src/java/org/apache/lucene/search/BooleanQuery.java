@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -188,8 +189,11 @@ public class BooleanQuery extends Query {
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
+        // call sumOfSquaredWeights for all clauses in case of side effects
+        float s = w.sumOfSquaredWeights();         // sum sub weights
         if (!c.isProhibited())
-          sum += w.sumOfSquaredWeights();         // sum sub weights
+          // only add to sum for non-prohibited clauses
+          sum += s;
       }
 
       sum *= getBoost() * getBoost();             // boost each sub-weight
@@ -203,8 +207,8 @@ public class BooleanQuery extends Query {
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
-        if (!c.isProhibited())
-          w.normalize(norm);
+        // normalize all clauses, (even if prohibited in case of side affects)
+        w.normalize(norm);
       }
     }
 
@@ -257,11 +261,15 @@ public class BooleanQuery extends Query {
 
     public Explanation explain(IndexReader reader, int doc)
       throws IOException {
+      final int minShouldMatch =
+        BooleanQuery.this.getMinimumNumberShouldMatch();
       Explanation sumExpl = new Explanation();
       sumExpl.setDescription("sum of:");
       int coord = 0;
       int maxCoord = 0;
       float sum = 0.0f;
+      boolean fail = false;
+      int shouldMatchCount = 0;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.elementAt(i);
         Weight w = (Weight)weights.elementAt(i);
@@ -273,17 +281,35 @@ public class BooleanQuery extends Query {
             sum += e.getValue();
             coord++;
           } else {
-            return new Explanation(0.0f, "match prohibited");
+            Explanation r =
+              new Explanation(0.0f, "match on prohibited clause");
+            r.addDetail(e);
+            sumExpl.addDetail(r);
+            fail = true;
           }
+          if (c.getOccur().equals(Occur.SHOULD))
+            shouldMatchCount++;
         } else if (c.isRequired()) {
-          return new Explanation(0.0f, "match required");
+          Explanation r = new Explanation(0.0f, "no match on required clause");
+          r.addDetail(e);
+          sumExpl.addDetail(r);
+          fail = true;
         }
       }
+      if (fail) {
+        sumExpl.setValue(0.0f);
+        sumExpl.setDescription
+          ("Failure to meet condition(s) of required/prohibited clause(s)");
+        return sumExpl;
+      } else if (shouldMatchCount < minShouldMatch) {
+        sumExpl.setValue(0.0f);
+        sumExpl.setDescription("Failure to match minimum number "+
+                               "of optional clauses: " + minShouldMatch);
+        return sumExpl;
+      }
+      
       sumExpl.setValue(sum);
-
-      if (coord == 1)                               // only one clause matched
-        sumExpl = sumExpl.getDetails()[0];          // eliminate wrapper
-
+      
       float coordFactor = similarity.coord(coord, maxCoord);
       if (coordFactor == 1.0f)                      // coord is no-op
         return sumExpl;                             // eliminate wrapper

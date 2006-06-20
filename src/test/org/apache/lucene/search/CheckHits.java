@@ -16,6 +16,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.IndexReader;
+
 import junit.framework.TestCase;
 
 import java.io.IOException;
@@ -23,7 +26,43 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class CheckHits {
-  /** Tests that a query has expected document number results.
+  
+  /**
+   * Tests that all documents up to maxDoc which are *not* in the
+   * expected result set, have an explanation which indicates no match
+   * (ie: Explanation value of 0.0f)
+   */
+  public static void checkNoMatchExplanations(Query q, String defaultFieldName,
+                                              Searcher searcher, int[] results)
+    throws IOException {
+
+    String d = q.toString(defaultFieldName);
+    Set ignore = new TreeSet();
+    for (int i = 0; i < results.length; i++) {
+      ignore.add(new Integer(results[i]));
+    }
+    
+    int maxDoc = searcher.maxDoc();
+    for (int doc = 0; doc < maxDoc; doc++) {
+      if (ignore.contains(new Integer(doc))) continue;
+
+      Explanation exp = searcher.explain(q, doc);
+      TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+                             exp);
+      TestCase.assertEquals("Explanation of [["+d+"]] for #"+doc+
+                            " doesn't indicate non-match: " + exp.toString(),
+                            0.0f, exp.getValue(), 0.0f);
+    }
+    
+  }
+    
+  /**
+   * Tests that a query matches the an expected set of documents
+   *
+   * @param query the query to test
+   * @param searcher the searcher to test the query against
+   * @param defaultFieldName used for displaing the query in assertion messages
+   * @param results a list of documentIds that must match the query
    */
   public static void checkHits(
         Query query,
@@ -138,6 +177,121 @@ public class CheckHits {
     return sb.toString();
   }
 
+  /**
+   * Asserts that the score explanation for every document matching a
+   * query corrisponds with the true score.
+   *
+   * @see ExplanationAsserter
+   * @param query the query to test
+   * @param searcher the searcher to test the query against
+   * @param defaultFieldName used for displaing the query in assertion messages
+   */
+  public static void checkExplanations(Query query,
+                                       String defaultFieldName,
+                                       Searcher searcher) throws IOException {
+
+    searcher.search(query,
+                    new ExplanationAsserter
+                    (query, defaultFieldName, searcher));
+
+  }
+
+  /**
+   * an IndexSearcher that implicitly checks hte explanation of every match
+   * whenever it executes a search
+   */
+  public static class ExplanationAssertingSearcher extends IndexSearcher {
+    public ExplanationAssertingSearcher(Directory d) throws IOException {
+      super(d);
+    }
+    public ExplanationAssertingSearcher(IndexReader r) throws IOException {
+      super(r);
+    }
+    protected void checkExplanations(Query q) throws IOException {
+      super.search(q, null,
+                   new ExplanationAsserter
+                   (q, null, this));
+    }
+    public Hits search(Query query, Filter filter) throws IOException {
+      checkExplanations(query);
+      return super.search(query,filter);
+    }
+    public Hits search(Query query, Sort sort) throws IOException {
+      checkExplanations(query);
+      return super.search(query,sort);
+    }
+    public Hits search(Query query, Filter filter,
+                       Sort sort) throws IOException {
+      checkExplanations(query);
+      return super.search(query,filter,sort);
+    }
+    public TopFieldDocs search(Query query,
+                               Filter filter,
+                               int n,
+                               Sort sort) throws IOException {
+      
+      checkExplanations(query);
+      return super.search(query,filter,n,sort);
+    }
+    public void search(Query query, HitCollector results) throws IOException {
+      checkExplanations(query);
+      super.search(query,results);
+    }
+    public void search(Query query, Filter filter,
+                       HitCollector results) throws IOException {
+      checkExplanations(query);
+      super.search(query,filter, results);
+    }
+    public TopDocs search(Query query, Filter filter,
+                          int n) throws IOException {
+
+      checkExplanations(query);
+      return super.search(query,filter, n);
+    }
+  }
+    
+  /**
+   * Asserts that the score explanation for every document matching a
+   * query corrisponds with the true score.
+   *
+   * NOTE: this HitCollector should only be used with the Query and Searcher
+   * specified at when it is constructed.
+   */
+  public static class ExplanationAsserter extends HitCollector {
+
+    /**
+     * Some explains methods calculate their vlaues though a slightly
+     * differnet  order of operations from the acctaul scoring method ...
+     * this allows for a small amount of variation
+     */
+    public static float SCORE_TOLERANCE_DELTA = 0.00005f;
+    
+    Query q;
+    Searcher s;
+    String d;
+    public ExplanationAsserter(Query q, String defaultFieldName, Searcher s) {
+      this.q=q;
+      this.s=s;
+      this.d = q.toString(defaultFieldName);
+    }      
+    public void collect(int doc, float score) {
+      Explanation exp = null;
+      
+      try {
+        exp = s.explain(q, doc);
+      } catch (IOException e) {
+        throw new RuntimeException
+          ("exception in hitcollector of [["+d+"]] for #"+doc, e);
+      }
+      
+      TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+                             exp);
+      TestCase.assertEquals("Score of [["+d+"]] for #"+doc+
+                            " does not match explanation: " + exp.toString(),
+                            score, exp.getValue(), SCORE_TOLERANCE_DELTA);
+    }
+    
+  }
 
 }
 

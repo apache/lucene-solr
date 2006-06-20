@@ -70,7 +70,17 @@ extends Query {
       public float getValue() { return weight.getValue(); }
       public float sumOfSquaredWeights() throws IOException { return weight.sumOfSquaredWeights(); }
       public void normalize (float v) { weight.normalize(v); }
-      public Explanation explain (IndexReader ir, int i) throws IOException { return weight.explain (ir, i); }
+      public Explanation explain (IndexReader ir, int i) throws IOException {
+        Explanation inner = weight.explain (ir, i);
+        Filter f = FilteredQuery.this.filter;
+        BitSet matches = f.bits(ir);
+        if (matches.get(i))
+          return inner;
+        Explanation result = new Explanation
+          (0.0f, "failure to match filter: " + f.toString());
+        result.addDetail(inner);
+        return result;
+      }
 
       // return this query
       public Query getQuery() { return FilteredQuery.this; }

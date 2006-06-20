@@ -40,7 +40,11 @@ Bug fixes
 
  6. LUCENE-601: RAMDirectory and RAMFile made Serializable
     (Karl Wettin via Otis Gospodnetic)
-    
+
+ 7. LUCENE-557: Fixes to BooleanQuery and FilteredQuery so that the score
+    Explanations match up with the real scores.
+    (Chris Hostetter)
+        
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
