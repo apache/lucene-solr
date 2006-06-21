@@ -129,15 +129,30 @@ public final class Document implements java.io.Serializable {
   /** Returns a field with the given name if any exist in this document, or
    * null.  If multiple fields exists with this name, this method returns the
    * first value added.
+   * Do not use this method with lazy loaded fields.
    */
-  public final Fieldable getField(String name) {
+  public final Field getField(String name) {
     for (int i = 0; i < fields.size(); i++) {
-      Fieldable field = (Fieldable)fields.get(i);
+      Field field = (Field)fields.get(i);
       if (field.name().equals(name))
-	return field;
+        return field;
     }
     return null;
   }
+
+
+ /** Returns a field with the given name if any exist in this document, or
+   * null.  If multiple fields exists with this name, this method returns the
+   * first value added.
+   */
+ public Fieldable getFieldable(String name) {
+   for (int i = 0; i < fields.size(); i++) {
+     Fieldable field = (Fieldable)fields.get(i);
+     if (field.name().equals(name))
+       return field;
+   }
+   return null;
+ }
 
   /** Returns the string value of the field with the given name if any exist in
    * this document, or null.  If multiple fields exist with this name, this
@@ -159,13 +174,37 @@ public final class Document implements java.io.Serializable {
   }
 
   /**
+   * Returns an array of {@link Field}s with the given name.
+   * This method can return <code>null</code>.
+   * Do not use with lazy loaded fields.
+   *
+   * @param name the name of the field
+   * @return a <code>Field[]</code> array
+   */
+   public final Field[] getFields(String name) {
+     List result = new ArrayList();
+     for (int i = 0; i < fields.size(); i++) {
+       Field field = (Field)fields.get(i);
+       if (field.name().equals(name)) {
+         result.add(field);
+       }
+     }
+
+     if (result.size() == 0)
+       return null;
+
+     return (Field[])result.toArray(new Field[result.size()]);
+   }
+
+
+  /**
    * Returns an array of {@link Fieldable}s with the given name.
    * This method can return <code>null</code>.
    *
    * @param name the name of the field
    * @return a <code>Fieldable[]</code> array
    */
-   public final Fieldable[] getFields(String name) {
+   public Fieldable[] getFieldables(String name) {
      List result = new ArrayList();
      for (int i = 0; i < fields.size(); i++) {
        Fieldable field = (Fieldable)fields.get(i);
@@ -179,6 +218,7 @@ public final class Document implements java.io.Serializable {
 
      return (Fieldable[])result.toArray(new Fieldable[result.size()]);
    }
+
 
   /**
    * Returns an array of values of the field specified as the method parameter.

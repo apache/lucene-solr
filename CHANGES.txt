@@ -21,6 +21,10 @@ API Changes
     and is supposed to be replaced with the WordlistLoader class in
     package org.apache.lucene.analysis (Daniel Naber)
     
+10. LUCENE-609: Revert return type of Document.getField(s) to Field
+    for backward compatibility, added new Document.getFieldable(s)
+    for access to new lazy loaded fields. (Yonik Seeley)
+       
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
@@ -51,7 +55,7 @@ Bug fixes
  9. LUCENE-415: A previously unclean shutdown during indexing can cause
     a non-empty segment file to be re-used, causing index corruption.
     (Andy Hind via Yonik Seeley)
-        
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment

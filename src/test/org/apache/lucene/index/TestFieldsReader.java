@@ -97,26 +97,26 @@ public class TestFieldsReader extends TestCase {
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
     Document doc = reader.doc(0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
-    Fieldable field = doc.getField(DocHelper.LAZY_FIELD_KEY);
+    Fieldable field = doc.getFieldable(DocHelper.LAZY_FIELD_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("field is not lazy and it should be", field.isLazy());
     String value = field.stringValue();
     assertTrue("value is null and it shouldn't be", value != null);
     assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
-    field = doc.getField(DocHelper.TEXT_FIELD_1_KEY);
+    field = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("Field is lazy and it should not be", field.isLazy() == false);
-    field = doc.getField(DocHelper.TEXT_FIELD_UTF1_KEY);
+    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("Field is lazy and it should not be", field.isLazy() == false);
     assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF1_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF1_TEXT) == true);
 
-    field = doc.getField(DocHelper.TEXT_FIELD_UTF2_KEY);
+    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF2_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("Field is lazy and it should not be", field.isLazy() == true);
     assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF2_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF2_TEXT) == true);
 
-    field = doc.getField(DocHelper.LAZY_FIELD_BINARY_KEY);
+    field = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     byte [] bytes = field.binaryValue();
     assertTrue("bytes is null and it shouldn't be", bytes != null);
@@ -182,7 +182,7 @@ public class TestFieldsReader extends TestCase {
       Document doc;
       doc = reader.doc(0, null);//Load all of them
       assertTrue("doc is null and it shouldn't be", doc != null);
-      Fieldable field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
+      Fieldable field = doc.getFieldable(DocHelper.LARGE_LAZY_FIELD_KEY);
       assertTrue("field is lazy", field.isLazy() == false);
       String value;
       long start;
@@ -201,7 +201,7 @@ public class TestFieldsReader extends TestCase {
       System.gc();
       reader = new FieldsReader(tmpDir, "test", fieldInfos);
       doc = reader.doc(0, fieldSelector);
-      field = doc.getField(DocHelper.LARGE_LAZY_FIELD_KEY);
+      field = doc.getFieldable(DocHelper.LARGE_LAZY_FIELD_KEY);
       assertTrue("field is not lazy", field.isLazy() == true);
       start = System.currentTimeMillis();
       //On my machine this took around 50 - 70ms
