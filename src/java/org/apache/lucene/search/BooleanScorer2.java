@@ -130,8 +130,8 @@ class BooleanScorer2 extends Scorer {
       this.scorer = scorer;
     }
     public float score() throws IOException {
-      if (doc() > lastScoredDoc) {
-        lastScoredDoc = doc();
+      if (this.doc() > lastScoredDoc) {
+        lastScoredDoc = this.doc();
         coordinator.nrMatchers++;
       }
       return scorer.score();
@@ -157,8 +157,8 @@ class BooleanScorer2 extends Scorer {
     return new DisjunctionSumScorer(scorers, minMrShouldMatch) {
       private int lastScoredDoc = -1;
       public float score() throws IOException {
-        if (doc() > lastScoredDoc) {
-          lastScoredDoc = doc();
+        if (this.doc() > lastScoredDoc) {
+          lastScoredDoc = this.doc();
           coordinator.nrMatchers += super.nrMatchers;
         }
         return super.score();
@@ -175,8 +175,8 @@ class BooleanScorer2 extends Scorer {
       private int lastScoredDoc = -1;
 
       public float score() throws IOException {
-        if (doc() > lastScoredDoc) {
-          lastScoredDoc = doc();
+        if (this.doc() > lastScoredDoc) {
+          lastScoredDoc = this.doc();
           coordinator.nrMatchers += requiredNrMatchers;
         }
         // All scorers match, so defaultSimilarity super.score() always has 1 as

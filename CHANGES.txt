@@ -56,6 +56,10 @@ Bug fixes
     a non-empty segment file to be re-used, causing index corruption.
     (Andy Hind via Yonik Seeley)
 
+10. LUCENE-610: Simple syntax change to allow compilation with ecj : 
+    disambiguate inner class scorer's use of doc() in BooleanScorer2.
+    (DM Smith via Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
