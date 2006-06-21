@@ -14,7 +14,7 @@
 
             <p>
                 This document defines the index file formats used
-                in Lucene version 1.9.  If you are using a different
+                in Lucene version 2.0.  If you are using a different
 		version of Lucene, please consult the copy of
 		<code>docs/fileformats.html</code> that was distributed
 		with the version you are using.
@@ -107,7 +107,7 @@
                     tokenized, but sometimes it is useful for certain identifier fields
                     to be indexed literally.
                 </p>
-
+                <p>See the <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/document/Field.html">Field</a> java docs for more information on Fields.</p>
             </subsection>
 
             <subsection name="Segments">
@@ -230,8 +230,9 @@
                     </p>
                 </li>
                 <li><p>Term Vectors.  For each field in each document, the term vector
-                       (sometimes called document vector) is stored.  A term vector consists
-                       of term text and term frequency.
+                       (sometimes called document vector) may be stored.  A term vector consists
+                       of term text and term frequency.  To add Term Vectors to your index see the
+                    <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/document/Field.html">Field</a> constructors
                     </p>
                 </li>              
                 <li><p>Deleted documents.
@@ -249,7 +250,8 @@
             <p>
                 All files belonging to a segment have the same name with varying
                 extensions.  The extensions correspond to the different file formats
-                described below.
+                described below. When using the Compound File format (default in 1.4 and greater) these files are
+                collapsed into a single .cfs file (see below for details)
             </p>
 
             <p>
@@ -814,6 +816,7 @@
             	<p>FileName --&gt; String</p>
 
             	<p>FileData --&gt; raw file data</p>
+                <p>The raw file data is the data from the individual files named above.</p>
             	
             </subsection>
 
@@ -1096,7 +1099,10 @@
                             particular, it is the difference between the position of this term's
                             entry in that file and the position of the previous term's entry.
                         </p>
-                        <p>TODO: document skipInterval information</p>
+                        <p>SkipInterval is the fraction of TermDocs stored in skip tables. It is used to accelerate TermDocs.skipTo(int).
+                            Larger values result in smaller indexes, greater acceleration, but fewer accelerable cases, while
+                            smaller values result in bigger indexes, less acceleration and more
+                            accelerable cases.</p>
                     </li>
                 </ol>
             </subsection>
