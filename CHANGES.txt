@@ -10,7 +10,8 @@ New features
     (Samphan Raruenrom va Chris Hostetter)
 
  2. LUCENE-545: New FieldSelector API and associated changes to IndexReader and implementations.
-    New Fieldable interface for use with the lazy field loading mechanism. (Grant Ingersoll and Chuck Williams via Grant Ingersoll)
+    New Fieldable interface for use with the lazy field loading mechanism.
+    (Grant Ingersoll and Chuck Williams via Grant Ingersoll)
 
 API Changes
 
@@ -21,9 +22,13 @@ API Changes
     and is supposed to be replaced with the WordlistLoader class in
     package org.apache.lucene.analysis (Daniel Naber)
     
-10. LUCENE-609: Revert return type of Document.getField(s) to Field
+ 3. LUCENE-609: Revert return type of Document.getField(s) to Field
     for backward compatibility, added new Document.getFieldable(s)
     for access to new lazy loaded fields. (Yonik Seeley)
+    
+ 4. LUCENE-608: Document.fields() has been deprecated and a new method 
+    Document.getFields() has been added that returns a List instead of
+    an Enumeration (Daniel Naber)
        
 Bug fixes
 

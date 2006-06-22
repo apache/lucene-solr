@@ -168,9 +168,20 @@ public final class Document implements java.io.Serializable {
     return null;
   }
 
-  /** Returns an Enumeration of all the fields in a document. */
+  /** Returns an Enumeration of all the fields in a document.
+   * @deprecated use {@link #getFields()} instead
+   */
   public final Enumeration fields() {
     return ((Vector)fields).elements();
+  }
+
+  /** Returns a List of all the fields in a document.
+   * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
+   * <i>not</i> available in documents retrieved from the index, e.g. with {@link
+   * Hits#doc(int)}, {@link Searcher#doc(int)} or {@link IndexReader#document(int)}.
+   */
+  public final List getFields() {
+    return fields;
   }
 
   /**
@@ -202,7 +213,7 @@ public final class Document implements java.io.Serializable {
    * This method can return <code>null</code>.
    *
    * @param name the name of the field
-   * @return a <code>Fieldable[]</code> array
+   * @return a <code>Fieldable[]</code> array or <code>null</code>
    */
    public Fieldable[] getFieldables(String name) {
      List result = new ArrayList();
@@ -225,7 +236,7 @@ public final class Document implements java.io.Serializable {
    * This method can return <code>null</code>.
    *
    * @param name the name of the field
-   * @return a <code>String[]</code> of field values
+   * @return a <code>String[]</code> of field values or <code>null</code>
    */
   public final String[] getValues(String name) {
     List result = new ArrayList();
@@ -247,7 +258,7 @@ public final class Document implements java.io.Serializable {
   * binary fields with the specified name are available.
   *
   * @param name the name of the field
-  * @return a  <code>byte[][]</code> of binary field values.
+  * @return a  <code>byte[][]</code> of binary field values or <code>null</code>
   */
   public final byte[][] getBinaryValues(String name) {
     List result = new ArrayList();
@@ -270,7 +281,7 @@ public final class Document implements java.io.Serializable {
   * There may be non-binary fields with the same name.
   *
   * @param name the name of the field.
-  * @return a <code>byte[]</code> containing the binary field value.
+  * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
   */
   public final byte[] getBinaryValue(String name) {
     for (int i=0; i < fields.size(); i++) {
