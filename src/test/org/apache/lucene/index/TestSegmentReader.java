@@ -16,16 +16,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.DefaultSimilarity;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Enumeration;
+import java.util.List;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.store.RAMDirectory;
 
 public class TestSegmentReader extends TestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -62,9 +63,9 @@ public class TestSegmentReader extends TestCase {
     //There are 2 unstored fields on the document that are not preserved across writing
     assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
     
-    Enumeration fields = result.fields();
-    while (fields.hasMoreElements()) {
-      Fieldable field = (Fieldable) fields.nextElement();
+    List fields = result.getFields();
+    for (Iterator iter = fields.iterator(); iter.hasNext();) {
+      Fieldable field = (Fieldable) iter.next();
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }

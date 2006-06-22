@@ -16,17 +16,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.Directory;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Enumeration;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.Directory;
 
 class DocHelper {
   public static final String FIELD_1_TEXT = "field one text";
@@ -257,13 +258,6 @@ class DocHelper {
   }
 
   public static int numFields(Document doc) {
-    Enumeration fields = doc.fields();
-    int result = 0;
-    while (fields.hasMoreElements()) {
-      String name = fields.nextElement().toString();
-      name += "";   // avoid compiler warning
-      result++;
-    }
-    return result;
+    return doc.getFields().size();
   }
 }

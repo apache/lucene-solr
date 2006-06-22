@@ -16,25 +16,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+
 import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;  
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
 
 public class TestParallelReader extends TestCase {
 
@@ -87,22 +87,14 @@ public class TestParallelReader extends TestCase {
     Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList(new String[] {"f4"})));
     Document doc223 = pr.document(1, new MapFieldSelector(new String[] {"f2", "f3"}));
     
-    assertEquals(1, numFields(doc11));
-    assertEquals(1, numFields(doc24));
-    assertEquals(2, numFields(doc223));
+    assertEquals(1, doc11.getFields().size());
+    assertEquals(1, doc24.getFields().size());
+    assertEquals(2, doc223.getFields().size());
     
     assertEquals("v1", doc11.get("f1"));
     assertEquals("v2", doc24.get("f4"));
     assertEquals("v2", doc223.get("f2"));
     assertEquals("v2", doc223.get("f3"));
-  }
-  
-  private int numFields(Document doc) {
-    int num;
-    Enumeration e = doc.fields();
-    for (num=0; e.hasMoreElements(); num++)
-      e.nextElement();
-    return num;
   }
   
   public void testIncompatibleIndexes() throws IOException {

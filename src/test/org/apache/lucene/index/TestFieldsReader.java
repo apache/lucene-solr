@@ -16,19 +16,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
-import java.util.Enumeration;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.LoadFirstFieldSelector;
+import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 
 public class TestFieldsReader extends TestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -137,9 +143,9 @@ public class TestFieldsReader extends TestCase {
     Document doc = reader.doc(0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
     int count = 0;
-    Enumeration enumeration = doc.fields();
-    while (enumeration.hasMoreElements()) {
-      Field field = (Field) enumeration.nextElement();
+    List l = doc.getFields();
+    for (Iterator iter = l.iterator(); iter.hasNext();) {
+      Field field = (Field) iter.next();
       assertTrue("field is null and it shouldn't be", field != null);
       String sv = field.stringValue();
       assertTrue("sv is null and it shouldn't be", sv != null);
