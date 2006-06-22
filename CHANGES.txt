@@ -44,5 +44,8 @@ Bug Fixes
  3. Added empty extractTerms() to FunctionQuery to enable use in
     a MultiSearcher (Yonik)
 
+Other Changes
+ 1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,
+    http://svn.apache.org/viewvc/lucene/java/trunk/CHANGES.txt?view=markup&pathrev=416224
 
 2006/01/17 Solr open sourced, moves to Apache Incubator
