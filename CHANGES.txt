@@ -52,9 +52,9 @@ Bug fixes
  8. LUCENE-607: ParallelReader's TermEnum fails to advance properly to
     new fields (Chuck Williams, Christian Kohlschuetter via Yonik Seeley)
 
- 9. LUCENE-610: Simple syntax change to allow compilation with ecj : 
-    disambiguate inner class scorer's use of doc() in BooleanScorer2.
-    (DM Smith via Yonik Seeley)
+ 9. LUCENE-610,LUCENE-611: Simple syntax changes to allow compilation with ecj: 
+    disambiguate inner class scorer's use of doc() in BooleanScorer2,
+    other test code changes.  (DM Smith via Yonik Seeley)
 
 Optimizations
 

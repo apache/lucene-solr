@@ -27,6 +27,8 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 
+import junit.framework.Assert;
+
 public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
     
     /** threshold for comparing floats */
@@ -44,7 +46,11 @@ public class TestConstantScoreRangeQuery extends BaseTestRangeFilter {
     void assertEquals(String m, float e, float a) {
         assertEquals(m, e, a, SCORE_COMP_THRESH);
     }
-    
+
+    static public void assertEquals(String m, int e, int a) {
+        Assert.assertEquals(m, e, a);
+    }
+
     public void setUp() throws Exception {
         super.setUp();
         
