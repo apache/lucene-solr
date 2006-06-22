@@ -52,11 +52,7 @@ Bug fixes
  8. LUCENE-607: ParallelReader's TermEnum fails to advance properly to
     new fields (Chuck Williams, Christian Kohlschuetter via Yonik Seeley)
 
- 9. LUCENE-415: A previously unclean shutdown during indexing can cause
-    a non-empty segment file to be re-used, causing index corruption.
-    (Andy Hind via Yonik Seeley)
-
-10. LUCENE-610: Simple syntax change to allow compilation with ecj : 
+ 9. LUCENE-610: Simple syntax change to allow compilation with ecj : 
     disambiguate inner class scorer's use of doc() in BooleanScorer2.
     (DM Smith via Yonik Seeley)
 
@@ -68,7 +64,7 @@ Optimizations
 
 
 
-Release 2.0.0 2005-05-26
+Release 2.0.0 2006-05-26
 
 API Changes
 
