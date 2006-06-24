@@ -21,7 +21,7 @@ import org.apache.lucene.util.Parameter;
 /** A clause in a BooleanQuery. */
 public class BooleanClause implements java.io.Serializable {
   
-  /** Specifies how terms may occur in matching documents. */
+  /** Specifies how clauses are to occur in matching documents. */
   public static final class Occur extends Parameter implements java.io.Serializable {
     
     private Occur(String name) {
@@ -35,24 +35,24 @@ public class BooleanClause implements java.io.Serializable {
       return "";
     }
 
-    /** Use this operator for terms that <i>must</i> appear in the matching documents. */
+    /** Use this operator for clauses that <i>must</i> appear in the matching documents. */
     public static final Occur MUST = new Occur("MUST");
-    /** Use this operator for terms that <i>should</i> appear in the 
+    /** Use this operator for clauses that <i>should</i> appear in the 
      * matching documents. For a BooleanQuery with two <code>SHOULD</code> 
-     * subqueries, at least one of the queries must appear in the matching documents. */
+     * subqueries, at least one of the clauses must appear in the matching documents. */
     public static final Occur SHOULD = new Occur("SHOULD");
-    /** Use this operator for terms that <i>must not</i> appear in the matching documents.
+    /** Use this operator for clauses that <i>must not</i> appear in the matching documents.
      * Note that it is not possible to search for queries that only consist
-     * of a <code>MUST_NOT</code> query. */
+     * of a <code>MUST_NOT</code> clause. */
     public static final Occur MUST_NOT = new Occur("MUST_NOT");
     
   }
 
   /** The query whose matching documents are combined by the boolean query.
    */
-  private Query query;    // TODO: decrease visibility for Lucene 2.0
+  private Query query;
 
-  private Occur occur = Occur.SHOULD;
+  private Occur occur;
 
 
   /** Constructs a BooleanClause.
