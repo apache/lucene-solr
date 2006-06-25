@@ -379,7 +379,7 @@ final public class XMLWriter {
     } else if (val instanceof Double) {
       writeDouble(name, ((Double)val).doubleValue());
     } else if (val instanceof Document) {
-      writeDoc(name, (Document)val, null, 0.0f, false);
+      writeDoc(name, (Document)val, defaultFieldList, 0.0f, false);
     } else if (val instanceof DocList) {
       // requires access to IndexReader
       writeDocList(name, (DocList)val, defaultFieldList);
