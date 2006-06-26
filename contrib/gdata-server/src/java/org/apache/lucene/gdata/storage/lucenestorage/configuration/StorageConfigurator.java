@@ -37,7 +37,8 @@ public class StorageConfigurator {
     private final boolean keepRecoveredFiles; 
  
     private final boolean recover; 
- 
+    
+    private final boolean ramDirectory;
     private static StorageConfigurator INSTANCE = null; 
  
     private final int indexOptimizeInterval; 
@@ -64,7 +65,8 @@ public class StorageConfigurator {
                 .getProperty("gdata.server.storage.lucene.directory"); 
         this.indexOptimizeInterval = Integer.parseInt(properties 
                 .getProperty("gdata.server.storage.lucene.optimizeInterval")); 
- 
+        this.ramDirectory = Boolean.parseBoolean(properties 
+                .getProperty("gdata.server.storage.lucene.directory.ramDirectory"));
     } 
  
     /** 
@@ -139,6 +141,13 @@ public class StorageConfigurator {
     public int getIndexOptimizeInterval() { 
  
         return this.indexOptimizeInterval; 
+    }
+
+    /**
+     * @return Returns the ramDirectory.
+     */
+    public boolean isRamDirectory() {
+        return this.ramDirectory;
     } 
  
 } 

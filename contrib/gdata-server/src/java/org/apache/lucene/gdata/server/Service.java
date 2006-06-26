@@ -16,6 +16,8 @@
  
 package org.apache.lucene.gdata.server; 
  
+import java.util.Date;
+
 import com.google.gdata.data.BaseEntry; 
 import com.google.gdata.data.BaseFeed; 
  
@@ -39,7 +41,7 @@ import com.google.gdata.data.BaseFeed;
  *  
  *  
  */ 
-public abstract class Service { 
+public interface Service { 
  
     /** 
      * Service method to create an entry in an already created and existing 
@@ -133,6 +135,27 @@ public abstract class Service {
     public abstract BaseEntry getSingleEntry(final GDataRequest request, final GDataResponse response) 
             throws ServiceException; 
      
+    /**
+     * will close the Service - service should not be used after this method has been called
+     */
+    public void close();
+
+    /**
+     * Retruns the date of the last modification for the given feed id
+     * @param feedId - the id of the feed 
+     * @return - the last modified date or the current date if the date can not be retrieved
+     * @throws ServiceException - if the storage can not be accessed
+     */
+    public abstract Date getFeedLastModified(String feedId)throws ServiceException;
+
+    /**
+     * Retruns the date of the last modification for the given entry id
+     * @param entryId - the id of the entry
+     * @param feedId  - the feed id this entry belongs to
+     * @return - the last modified date or the current date if the date can not be retrieved
+     * @throws ServiceException - if the storage can not be accessed 
+     */
+    public abstract Date getEntryLastModified(String entryId, String feedId)throws ServiceException;
      
  
  

@@ -16,7 +16,11 @@
         <pathelement location="lib/gdata-client-1.0.jar" /> 
         <pathelement location="lib/commons-logging-1.1.jar" /> 
         <pathelement location="lib/commons-jxpath-1.2.jar" /> 
-        <pathelement location="lib/je.jar" /> 
+        <pathelement location="lib/commons-digester-1.7.jar" /> 
+        <pathelement location="lib/commons-beanutils.jar" /> 
+        <pathelement location="lib/commons-collections-3.2.jar" /> 
+
+  
          
          
     </path> 
@@ -36,15 +40,19 @@
      <target name="war-gdata" depends="prepare-dist"> 
          <echo>Distributing GData War </echo> 
         <war destfile="${dist.dir}/${gdata.war.name}.war" 
-             webxml="webroot/WEB-INF/web.xml"> 
+             webxml="webroot/WEB-INF/web.xml" > 
+        	<metainf dir="webroot/meta-inf"/>
+        		
+
         <fileset dir="webroot" excludes="WEB-INF/web.xml"/> 
- 
             <lib dir="${gdata.lib.dir}" includes="commons-logging-1.1.jar"/> 
             <lib dir="${gdata.lib.dir}" includes="gdata-client-1.0.jar"/> 
- 
+        	<lib dir="${gdata.lib.dir}" includes="commons-digester-1.7.jar" /> 
+        	<lib dir="${gdata.lib.dir}" includes="commons-beanutils.jar" /> 
+        	<lib dir="${gdata.lib.dir}" includes="commons-collections-3.2.jar" /> 
         <lib dir="${build.dir}" includes="${final.name}.jar"/> 
         <lib file="${lucene.jar}" /> 
         </war> 
       </target> 
- 
+
 </project> 

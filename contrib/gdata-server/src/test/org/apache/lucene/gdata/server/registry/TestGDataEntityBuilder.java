@@ -15,22 +15,24 @@
  */ 
 package org.apache.lucene.gdata.server.registry; 
  
-import java.io.File; 
-import java.io.FileReader; 
-import java.io.IOException; 
-import java.io.Reader; 
- 
-import junit.framework.TestCase; 
- 
-import org.apache.lucene.gdata.server.FeedNotFoundException; 
-import org.apache.lucene.gdata.server.GDataEntityBuilder; 
- 
-import com.google.gdata.data.BaseEntry; 
-import com.google.gdata.data.BaseFeed; 
-import com.google.gdata.data.Entry; 
-import com.google.gdata.data.ExtensionProfile; 
-import com.google.gdata.data.Feed; 
-import com.google.gdata.util.ParseException; 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.gdata.data.ServerBaseEntry;
+import org.apache.lucene.gdata.data.ServerBaseFeed;
+import org.apache.lucene.gdata.server.GDataEntityBuilder;
+
+import com.google.gdata.data.BaseEntry;
+import com.google.gdata.data.BaseFeed;
+import com.google.gdata.data.Entry;
+import com.google.gdata.data.ExtensionProfile;
+import com.google.gdata.data.Feed;
+import com.google.gdata.data.Source;
+import com.google.gdata.util.ParseException;
  
 /** 
  * @author Simon Willnauer 
@@ -44,8 +46,9 @@ public class TestGDataEntityBuilder extends TestCase {
     private static GDataServerRegistry reg = GDataServerRegistry.getRegistry(); 
     private Reader reader;  
     private static String feedID = "myFeed"; 
-    private ExtensionProfile profile; 
+    private ProvidedServiceConfig config;
     private static Class feedType = Feed.class; 
+    private static Class entryType = Entry.class;
      
      
     /** 
@@ -53,11 +56,12 @@ public class TestGDataEntityBuilder extends TestCase {
      */ 
     @Override 
     protected void setUp() throws Exception { 
-        FeedInstanceConfigurator config = new FeedInstanceConfigurator(); 
-        config.setFeedId(feedID); 
-        config.setFeedType(feedType); 
-        this.profile = new ExtensionProfile(); 
-        reg.registerFeed(config); 
+        this.config = new ProvidedServiceConfig(); 
+        
+        this.config.setFeedType(feedType); 
+        this.config.setEntryType(entryType);
+        this.config.setExtensionProfile(new ExtensionProfile()); 
+        reg.registerService(this.config); 
     } 
  
     /** 
@@ -72,24 +76,27 @@ public class TestGDataEntityBuilder extends TestCase {
     /** 
      * Test method for 'org.apache.lucene.gdata.data.GDataEntityBuilder.buildFeed(String, Reader)' 
      */ 
-    public void testBuildFeedStringReader() throws FeedNotFoundException, ParseException, IOException { 
+    public void testBuildFeedStringReader() throws  ParseException, IOException { 
         this.reader = new FileReader(incomingFeed); 
-        BaseFeed feed = GDataEntityBuilder.buildFeed(feedID,this.reader,this.profile); 
+        BaseFeed feed = GDataEntityBuilder.buildFeed(this.reader,this.config); 
         assertNotNull(feed); 
-        assertEquals("feed title",feed.getTitle().getPlainText(), feedTitleFromXML); 
-        assertTrue( feed instanceof Feed); 
+        assertEquals("feed title",feed.getTitle().getPlainText(), feedTitleFromXML);
+        
+       
          
     } 
  
-    /* 
+    /**
      * Test method for 'org.apache.lucene.gdata.data.GDataEntityBuilder.buildEntry(String, Reader)' 
      */ 
-    public void testBuildEntryStringReader() throws FeedNotFoundException, ParseException, IOException { 
+    public void testBuildEntryStringReader() throws  ParseException, IOException { 
         this.reader = new FileReader(incomingEntry); 
-        BaseEntry entry = GDataEntityBuilder.buildEntry(feedID,this.reader,this.profile); 
+        BaseEntry entry = GDataEntityBuilder.buildEntry(this.reader,this.config); 
         assertNotNull(entry); 
         assertEquals("entry summary",entry.getSummary().getPlainText(),entrySummaryFromXML); 
-        assertTrue(entry instanceof Entry); 
+        
+        
+
          
     } 
      

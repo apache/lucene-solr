@@ -70,12 +70,12 @@ public class TestGDataResponse extends TestCase {
         StringWriter stringWriter = new StringWriter(); 
         PrintWriter writer = new PrintWriter(stringWriter); 
          
-        this.control.expectAndReturn(this.httpResponse.getWriter(),writer); 
+        this.control.expectAndReturn(this.httpResponse.getWriter(),writer);
+        this.httpResponse.setContentType(GDataResponse.XMLMIME_ATOM);
         this.response.setOutputFormat(OutputFormat.ATOM); 
         this.control.replay(); 
          
-        this.response.sendResponse(createFeed(),new ExtensionProfile 
-                ()); 
+        this.response.sendResponse(createFeed(),new ExtensionProfile()); 
         assertEquals("Simple XML representation",stringWriter.toString(),generatedFeedAtom); 
         this.control.reset(); 
          
@@ -84,6 +84,7 @@ public class TestGDataResponse extends TestCase {
          
         this.control.expectAndReturn(this.httpResponse.getWriter(),writer); 
         this.response.setOutputFormat(OutputFormat.RSS); 
+        this.httpResponse.setContentType(GDataResponse.XMLMIME_RSS);
         this.control.replay(); 
          
         this.response.sendResponse(createFeed(),new ExtensionProfile 

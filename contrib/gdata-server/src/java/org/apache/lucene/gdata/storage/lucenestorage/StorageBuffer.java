@@ -16,19 +16,26 @@
  
 package org.apache.lucene.gdata.storage.lucenestorage; 
  
-import java.util.ArrayList; 
-import java.util.Collection; 
-import java.util.Collections; 
-import java.util.HashMap; 
-import java.util.List; 
-import java.util.Map; 
-import java.util.concurrent.locks.Lock; 
-import java.util.concurrent.locks.ReadWriteLock; 
-import java.util.concurrent.locks.ReentrantReadWriteLock; 
- 
-import org.apache.commons.logging.Log; 
-import org.apache.commons.logging.LogFactory; 
-import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation; 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation;
+
+import com.google.gdata.data.BaseEntry;
+import com.google.gdata.data.ExtensionProfile;
+import com.google.gdata.data.Link;
  
 /** 
  * The StorageBuffer is used to buffer incoming updates, deletes and inserts to 
@@ -55,7 +62,9 @@ import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.Storage
 public class StorageBuffer { 
     private static final Log LOG = LogFactory.getLog(StorageBuffer.class); 
  
-    private final Map<String, Map<String, StorageEntryWrapper>> bufferMap; 
+    private final Map<String, Map<String, StorageEntryWrapper>> bufferMap;
+    
+    private final Map<String, Long> modifiyMap;
  
     private final List<String> excludeList; 
  
@@ -86,6 +95,9 @@ public class StorageBuffer {
         this.excludeList = new ArrayList<String>( 
                 expectedBufferCount < DEFAULT_BUFFER_COUNT ? DEFAULT_BUFFER_COUNT 
                         : expectedBufferCount); 
+        this.modifiyMap = new HashMap<String, Long>( 
+                expectedBufferCount < DEFAULT_BUFFER_COUNT ? DEFAULT_BUFFER_COUNT 
+                        : expectedBufferCount); 
     } 
  
     /** 
@@ -114,7 +126,9 @@ public class StorageBuffer {
                         20); 
                 newFeedMap.put(wrapper.getEntryId(), wrapper); 
                 this.bufferMap.put(feedId, newFeedMap); 
+                
             } 
+            addLastModified(wrapper.getFeedId(),wrapper.getTimestamp());
         } finally { 
             /* 
              * add all to exclude from searches doc will be available via the 
@@ -124,6 +138,22 @@ public class StorageBuffer {
             this.writeLock.unlock(); 
         } 
     } 
+    
+    private void addLastModified(final String feedId,Long timestamp){
+        if(this.modifiyMap.containsKey(feedId))
+            this.modifiyMap.remove(feedId);
+        this.modifiyMap.put(feedId,timestamp);
+        
+    }
+    
+    protected Long getFeedLastModified(final String feedId){
+        return this.modifiyMap.get(feedId);
+    }
+    protected Set<Entry<String,Long>> getLastModified(){
+        return this.modifiyMap.entrySet();
+    }
+    
+    
  
     /** 
      * Returns all entries for the given feed id sorted by the update timestamp 
@@ -173,6 +203,7 @@ public class StorageBuffer {
             if (tempMap == null) 
                 return; 
             tempMap.remove(entryId); 
+            this.addLastModified(feedId,new Long(System.currentTimeMillis()));
         } finally { 
             this.writeLock.unlock(); 
  
@@ -230,6 +261,7 @@ public class StorageBuffer {
     private void clearBuffer() { 
         this.bufferMap.clear(); 
         this.excludeList.clear(); 
+        this.modifiyMap.clear();
  
     } 
  
@@ -245,5 +277,36 @@ public class StorageBuffer {
         } 
  
     } 
+    
+    
+    static class BufferableEntry extends BaseEntry{
+        
+        /**
+         * 
+         */
+        @SuppressWarnings("unchecked")
+        public BufferableEntry() {
+            super();
+            this.links = new LinkedList<Link>();
+        }
+
+        /**
+         * @param arg0
+         */
+        @SuppressWarnings("unchecked")
+        public BufferableEntry(BaseEntry arg0) {
+            super(arg0);
+            this.links = new LinkedList<Link>();
+        }
+
+        /**
+         * @see com.google.gdata.data.BaseEntry#declareExtensions(com.google.gdata.data.ExtensionProfile)
+         */
+        @Override
+        public void declareExtensions(ExtensionProfile arg0) {
+            //
+        }
+        
+    }
  
 } 

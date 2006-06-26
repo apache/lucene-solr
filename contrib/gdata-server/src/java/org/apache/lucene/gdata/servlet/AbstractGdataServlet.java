@@ -18,10 +18,15 @@ package org.apache.lucene.gdata.servlet;
  
 import java.io.IOException; 
  
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException; 
 import javax.servlet.http.HttpServlet; 
 import javax.servlet.http.HttpServletRequest; 
 import javax.servlet.http.HttpServletResponse; 
+
+import org.apache.lucene.gdata.server.registry.ComponentType;
+import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
+import org.apache.lucene.gdata.servlet.handler.RequestHandlerFactory;
  
 /** 
  *  
@@ -42,7 +47,9 @@ public abstract class AbstractGdataServlet extends HttpServlet {
  
     private static final String METHOD_POST = "POST"; 
  
-    private static final String METHOD_PUT = "PUT"; 
+    private static final String METHOD_PUT = "PUT";
+
+    protected static RequestHandlerFactory HANDLER_FACTORY = null; 
  
     /** 
      * This overwrites the protected <code>service</code> method to dispatch 
@@ -92,6 +99,17 @@ public abstract class AbstractGdataServlet extends HttpServlet {
             super.service(arg0, arg1); 
         } 
  
+    }
+
+    /**
+     * 
+     * @see javax.servlet.GenericServlet#init(javax.servlet.ServletConfig)
+     */
+    public void init(ServletConfig arg0) throws ServletException {
+        HANDLER_FACTORY = GDataServerRegistry.getRegistry().lookup(RequestHandlerFactory.class,ComponentType.REQUESTHANDLERFACTORY);
+        if(HANDLER_FACTORY == null)
+            throw new ServletException("service not available");
+        
     } 
  
 } 

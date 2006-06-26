@@ -51,7 +51,9 @@ public class IDGenerator {
  
     private static final int DEFAULT_CAPACITY = 10; 
  
-    protected static final Log LOGGER = LogFactory.getLog(IDGenerator.class); 
+    protected static final Log LOGGER = LogFactory.getLog(IDGenerator.class);
+
+    private static final String RUNNER_THREAD_NAME = "GDATA-ID Generator"; 
  
     /** 
      * Constructs a new ID generator. with a fixed capacity of prebuild ids. The 
@@ -91,7 +93,9 @@ public class IDGenerator {
         if (this.runner == null) { 
             UIDProducer producer = new UIDProducer(this.blockingQueue, 
                     this.secureRandom, this.mdigest); 
-            this.runner = new Thread(producer); 
+            this.runner = new Thread(producer);
+            this.runner.setDaemon(true);
+            this.runner.setName(RUNNER_THREAD_NAME);
             this.runner.start(); 
         } 
     } 
