@@ -55,14 +55,53 @@ public class CheckHits {
     }
     
   }
-    
+  
   /**
-   * Tests that a query matches the an expected set of documents
+   * Tests that a query matches the an expected set of documents using a
+   * HitCollector.
    *
+   * <p>
+   * Note that when using the HitCollector API, documents will be collected
+   * if they "match" regardless of what their score is.
+   * </p>
    * @param query the query to test
    * @param searcher the searcher to test the query against
    * @param defaultFieldName used for displaing the query in assertion messages
    * @param results a list of documentIds that must match the query
+   * @see Searcher#search(Query,HitCollector)
+   * @see #checkHits
+   */
+  public static void checkHitCollector(Query query, String defaultFieldName,
+                                       Searcher searcher, int[] results)
+    throws IOException {
+    
+    Set correct = new TreeSet();
+    for (int i = 0; i < results.length; i++) {
+      correct.add(new Integer(results[i]));
+    }
+    
+    final Set actual = new TreeSet();
+    searcher.search(query, new HitCollector() {
+        public void collect(int doc, float score) {
+          actual.add(new Integer(doc));
+        }
+      });
+    TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+  }
+  
+  /**
+   * Tests that a query matches the an expected set of documents using Hits.
+   *
+   * <p>
+   * Note that when using the Hits API, documents will only be returned
+   * if they have a positive normalized score.
+   * </p>
+   * @param query the query to test
+   * @param searcher the searcher to test the query against
+   * @param defaultFieldName used for displaing the query in assertion messages
+   * @param results a list of documentIds that must match the query
+   * @see Searcher#search(Query)
+   * @see #checkHitCollector
    */
   public static void checkHits(
         Query query,

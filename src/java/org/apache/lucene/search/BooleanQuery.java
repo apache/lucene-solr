@@ -263,7 +263,7 @@ public class BooleanQuery extends Query {
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
-      Explanation sumExpl = new Explanation();
+      ComplexExplanation sumExpl = new ComplexExplanation();
       sumExpl.setDescription("sum of:");
       int coord = 0;
       int maxCoord = 0;
@@ -275,14 +275,14 @@ public class BooleanQuery extends Query {
         Weight w = (Weight)weights.elementAt(i);
         Explanation e = w.explain(reader, doc);
         if (!c.isProhibited()) maxCoord++;
-        if (e.getValue() > 0) {
+        if (e.isMatch()) {
           if (!c.isProhibited()) {
             sumExpl.addDetail(e);
             sum += e.getValue();
             coord++;
           } else {
             Explanation r =
-              new Explanation(0.0f, "match on prohibited clause");
+              new Explanation(0.0f, "match on prohibited clause (" + c.getQuery().toString() + ")");
             r.addDetail(e);
             sumExpl.addDetail(r);
             fail = true;
@@ -290,36 +290,39 @@ public class BooleanQuery extends Query {
           if (c.getOccur().equals(Occur.SHOULD))
             shouldMatchCount++;
         } else if (c.isRequired()) {
-          Explanation r = new Explanation(0.0f, "no match on required clause");
+          Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
           r.addDetail(e);
           sumExpl.addDetail(r);
           fail = true;
         }
       }
       if (fail) {
+        sumExpl.setMatch(Boolean.FALSE);
         sumExpl.setValue(0.0f);
         sumExpl.setDescription
           ("Failure to meet condition(s) of required/prohibited clause(s)");
         return sumExpl;
       } else if (shouldMatchCount < minShouldMatch) {
+        sumExpl.setMatch(Boolean.FALSE);
         sumExpl.setValue(0.0f);
         sumExpl.setDescription("Failure to match minimum number "+
                                "of optional clauses: " + minShouldMatch);
         return sumExpl;
       }
       
+      sumExpl.setMatch(0 < coord ? Boolean.TRUE : Boolean.FALSE);
       sumExpl.setValue(sum);
       
       float coordFactor = similarity.coord(coord, maxCoord);
       if (coordFactor == 1.0f)                      // coord is no-op
         return sumExpl;                             // eliminate wrapper
       else {
-        Explanation result = new Explanation();
-        result.setDescription("product of:");
+        ComplexExplanation result = new ComplexExplanation(sumExpl.isMatch(),
+                                                           sum*coordFactor,
+                                                           "product of:");
         result.addDetail(sumExpl);
         result.addDetail(new Explanation(coordFactor,
                                          "coord("+coord+"/"+maxCoord+")"));
-        result.setValue(sum*coordFactor);
         return result;
       }
     }

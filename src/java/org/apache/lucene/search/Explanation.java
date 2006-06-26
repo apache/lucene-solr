@@ -31,6 +31,20 @@ public class Explanation implements java.io.Serializable {
     this.description = description;
   }
 
+  /**
+   * Indicates wether or not this Explanation models a good match.
+   *
+   * <p>
+   * By default, an Explanation represents a "match" if the value is positive.
+   * </p>
+   * @see #getValue
+   */
+  public boolean isMatch() {
+    return (0.0f < getValue());
+  }
+
+
+  
   /** The value assigned to this explanation node. */
   public float getValue() { return value; }
   /** Sets the value assigned to this explanation node. */
@@ -43,6 +57,14 @@ public class Explanation implements java.io.Serializable {
     this.description = description;
   }
 
+  /**
+   * A short one line summary which should contain all high level
+   * information about this Explanation, without the "Details"
+   */
+  protected String getSummary() {
+    return getValue() + " = " + getDescription();
+  }
+  
   /** The sub-nodes of this explanation node. */
   public Explanation[] getDetails() {
     if (details == null)
@@ -61,14 +83,12 @@ public class Explanation implements java.io.Serializable {
   public String toString() {
     return toString(0);
   }
-  private String toString(int depth) {
+  protected String toString(int depth) {
     StringBuffer buffer = new StringBuffer();
     for (int i = 0; i < depth; i++) {
       buffer.append("  ");
     }
-    buffer.append(getValue());
-    buffer.append(" = ");
-    buffer.append(getDescription());
+    buffer.append(getSummary());
     buffer.append("\n");
 
     Explanation[] details = getDetails();
@@ -88,9 +108,7 @@ public class Explanation implements java.io.Serializable {
     buffer.append("<ul>\n");
 
     buffer.append("<li>");
-    buffer.append(getValue());
-    buffer.append(" = ");
-    buffer.append(getDescription());
+    buffer.append(getSummary());
     buffer.append("<br />\n");
 
     Explanation[] details = getDetails();

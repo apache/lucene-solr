@@ -189,7 +189,7 @@ public class MultiPhraseQuery extends Query {
 
     public Explanation explain(IndexReader reader, int doc)
       throws IOException {
-      Explanation result = new Explanation();
+      ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
       Explanation idfExpl = new Explanation(idf, "idf("+getQuery()+")");
@@ -214,7 +214,7 @@ public class MultiPhraseQuery extends Query {
       result.addDetail(queryExpl);
 
       // explain field weight
-      Explanation fieldExpl = new Explanation();
+      ComplexExplanation fieldExpl = new ComplexExplanation();
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
@@ -230,11 +230,13 @@ public class MultiPhraseQuery extends Query {
       fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
       fieldExpl.addDetail(fieldNormExpl);
 
+      fieldExpl.setMatch(Boolean.valueOf(tfExpl.isMatch()));
       fieldExpl.setValue(tfExpl.getValue() *
                          idfExpl.getValue() *
                          fieldNormExpl.getValue());
 
       result.addDetail(fieldExpl);
+      result.setMatch(fieldExpl.getMatch());
 
       // combine them
       result.setValue(queryExpl.getValue() * fieldExpl.getValue());

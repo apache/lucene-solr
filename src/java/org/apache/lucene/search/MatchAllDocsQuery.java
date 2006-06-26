@@ -118,9 +118,8 @@ public class MatchAllDocsQuery extends Query {
 
     public Explanation explain(IndexReader reader, int doc) {
       // explain query weight
-      Explanation queryExpl = new Explanation();
-      queryExpl.setDescription("MatchAllDocsQuery, product of:");
-      queryExpl.setValue(getValue());
+      Explanation queryExpl = new ComplexExplanation
+        (true, getValue(), "MatchAllDocsQuery, product of:");
       if (getBoost() != 1.0f) {
         queryExpl.addDetail(new Explanation(getBoost(),"boost"));
       }

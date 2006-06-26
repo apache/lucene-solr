@@ -68,8 +68,7 @@ public class TestExplanations extends TestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    searcher = new CheckHits.ExplanationAssertingSearcher(directory);
-    //searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory);
   }
 
   protected String[] docFields = {
@@ -87,7 +86,9 @@ public class TestExplanations extends TestCase {
     qtest(makeQuery(queryText), expDocNrs);
   }
   public void qtest(Query q, int[] expDocNrs) throws Exception {
-    CheckHits.checkHits(q, FIELD, searcher, expDocNrs);
+    // check that the expDocNrs first, then check the explanations
+    CheckHits.checkHitCollector(q, FIELD, searcher, expDocNrs);
+    CheckHits.checkExplanations(q, FIELD, searcher);
   }
 
   /**
@@ -191,38 +192,37 @@ public class TestExplanations extends TestCase {
 
   /**
    * MACRO: Wraps a Query in a BooleanQuery so that it is optional, along
-   * with a second clause which will never match anything
+   * with a second prohibited clause which will never match anything
    */
   public Query optB(String q) throws Exception {
     return optB(makeQuery(q));
   }
   /**
    * MACRO: Wraps a Query in a BooleanQuery so that it is optional, along
-   * with a second clause which will never match anything
+   * with a second prohibited clause which will never match anything
    */
   public Query optB(Query q) throws Exception {
-    return buildWrappingB(q, BooleanClause.Occur.SHOULD);
+    BooleanQuery bq = new BooleanQuery(true);
+    bq.add(q, BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.MUST_NOT);
+    return bq;
   }
   
   /**
    * MACRO: Wraps a Query in a BooleanQuery so that it is required, along
-   * with a second clause which will never match anything
+   * with a second optional clause which will match everything
    */
   public Query reqB(String q) throws Exception {
     return reqB(makeQuery(q));
   }
   /**
    * MACRO: Wraps a Query in a BooleanQuery so that it is required, along
-   * with a second clause which will never match anything
+   * with a second optional clause which will match everything
    */
   public Query reqB(Query q) throws Exception {
-    return buildWrappingB(q, BooleanClause.Occur.MUST);
-  }
-
-  private Query buildWrappingB(Query q, BooleanClause.Occur o) {
     BooleanQuery bq = new BooleanQuery(true);
-    bq.add(q, o);
-    bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.MUST_NOT);
+    bq.add(q, BooleanClause.Occur.MUST);
+    bq.add(new TermQuery(new Term(FIELD,"w1")), BooleanClause.Occur.SHOULD);
     return bq;
   }
   

@@ -81,18 +81,20 @@ public class ConstantScoreQuery extends Query {
       ConstantScorer cs = (ConstantScorer)scorer(reader);
       boolean exists = cs.bits.get(doc);
 
-      Explanation result = new Explanation();
+      ComplexExplanation result = new ComplexExplanation();
 
       if (exists) {
         result.setDescription("ConstantScoreQuery(" + filter
         + "), product of:");
         result.setValue(queryWeight);
+        result.setMatch(Boolean.TRUE);
         result.addDetail(new Explanation(getBoost(), "boost"));
         result.addDetail(new Explanation(queryNorm,"queryNorm"));
       } else {
         result.setDescription("ConstantScoreQuery(" + filter
         + ") doesn't match id " + doc);
         result.setValue(0);
+        result.setMatch(Boolean.FALSE);
       }
       return result;
     }

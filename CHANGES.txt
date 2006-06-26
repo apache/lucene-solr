@@ -29,7 +29,12 @@ API Changes
  4. LUCENE-608: Document.fields() has been deprecated and a new method 
     Document.getFields() has been added that returns a List instead of
     an Enumeration (Daniel Naber)
-       
+
+ 5. LUCENE-605: New Explanation.isMatch() method and new ComplexExplanation
+    subclass allows explain methods to produce Explanations which model
+    "matching" independent of having a positive value.
+    (Chris Hostetter)
+           
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
@@ -60,7 +65,11 @@ Bug fixes
  9. LUCENE-610,LUCENE-611: Simple syntax changes to allow compilation with ecj: 
     disambiguate inner class scorer's use of doc() in BooleanScorer2,
     other test code changes.  (DM Smith via Yonik Seeley)
-
+    
+10. LUCENE-451: All core query types now use ComplexExplanations so that
+    boosts of zero don't confuse the BooleanWeight explain method.
+    (Chris Hostetter)
+    
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment

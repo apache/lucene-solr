@@ -30,6 +30,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Similarity;
 
 class SpanWeight implements Weight {
@@ -75,7 +76,7 @@ class SpanWeight implements Weight {
   public Explanation explain(IndexReader reader, int doc)
     throws IOException {
 
-    Explanation result = new Explanation();
+    ComplexExplanation result = new ComplexExplanation();
     result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
     String field = ((SpanQuery)getQuery()).getField();
 
@@ -114,7 +115,7 @@ class SpanWeight implements Weight {
     result.addDetail(queryExpl);
 
     // explain field weight
-    Explanation fieldExpl = new Explanation();
+    ComplexExplanation fieldExpl = new ComplexExplanation();
     fieldExpl.setDescription("fieldWeight("+field+":"+query.toString(field)+
                              " in "+doc+"), product of:");
 
@@ -130,11 +131,13 @@ class SpanWeight implements Weight {
     fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
     fieldExpl.addDetail(fieldNormExpl);
 
+    fieldExpl.setMatch(Boolean.valueOf(tfExpl.isMatch()));
     fieldExpl.setValue(tfExpl.getValue() *
                        idfExpl.getValue() *
                        fieldNormExpl.getValue());
 
     result.addDetail(fieldExpl);
+    result.setMatch(fieldExpl.getMatch());
 
     // combine them
     result.setValue(queryExpl.getValue() * fieldExpl.getValue());
