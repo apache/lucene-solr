@@ -1,0 +1,12 @@
+<!--
+    Context configuration file for the GDATA Server Web App
+-->
+
+
+<Context docBase="${catalina.home}/webapps/gdata-server"
+         privileged="false" reloadable="true" cookies="false" antiResourceLocking="false" antiJARLocking="false">
+
+
+
+</Context>
+

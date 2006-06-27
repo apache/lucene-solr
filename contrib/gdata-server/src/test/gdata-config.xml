@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gdata>
+	<service name="feed" public="true">
+		<feed-class>com.google.gdata.data.Feed</feed-class>
+		<entry-class>com.google.gdata.data.Entry</entry-class>
+		<extension-profile>
+			com.google.gdata.data.ExtensionProfile
+		</extension-profile>
+	</service>
+	<service name="calendar" public="true">
+		<feed-class>
+			com.google.gdata.data.extensions.EventFeed
+		</feed-class>
+		<entry-class>
+			com.google.gdata.data.extensions.EventEntry
+		</entry-class>
+		<extension-profile>
+			com.google.gdata.data.ExtensionProfile
+		</extension-profile>
+	</service>
+	<server-components>
+		<component>
+			org.apache.lucene.gdata.storage.lucenestorage.StorageCoreController
+		</component>
+		<component>
+			org.apache.lucene.gdata.servlet.handler.DefaultRequestHandlerFactory
+		</component>
+		<component>
+			org.apache.lucene.gdata.server.ServiceFactory
+		</component>
+		<component>
+			org.apache.lucene.gdata.server.authentication.BlowfishAuthenticationController
+		</component>
+	</server-components>
+</gdata>

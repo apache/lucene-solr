@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="password">
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:minLength value="5" />
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element> 
+	<xs:element name="account-name">
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:whiteSpace value="collapse" />
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+
+	<xs:element name="email-address" type="xs:string" />
+	<xs:element name="url" type="xs:anyURI" />
+	<xs:element name="name" type="xs:string" />
+	<xs:element name="account-role">
+		<xs:simpleType>
+			<xs:restriction base="xs:positiveInteger">
+				<xs:fractionDigits value="2" />
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+
+
+	<xs:element name="account-owner">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="name" />
+				<xs:element ref="email-address" />
+				<xs:element ref="url" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="account">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="account-name" />
+				<xs:element ref="password" />
+				<xs:element ref="account-role" />
+				<xs:element ref="account-owner" minOccurs="0" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
