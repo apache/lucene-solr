@@ -21,6 +21,7 @@ import org.apache.lucene.xmlparser.builders.SpanOrTermsBuilder;
 import org.apache.lucene.xmlparser.builders.SpanQueryBuilderFactory;
 import org.apache.lucene.xmlparser.builders.SpanTermBuilder;
 import org.apache.lucene.xmlparser.builders.TermQueryBuilder;
+import org.apache.lucene.xmlparser.builders.TermsQueryBuilder;
 import org.apache.lucene.xmlparser.builders.UserInputQueryBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -48,6 +49,7 @@ public class CoreParser implements QueryBuilder
 		
 		queryFactory = new QueryBuilderFactory();
 		queryFactory.addBuilder("TermQuery",new TermQueryBuilder());
+		queryFactory.addBuilder("TermsQuery",new TermsQueryBuilder(analyzer));
 		queryFactory.addBuilder("MatchAllDocsQuery",new MatchAllDocsQueryBuilder());
 		queryFactory.addBuilder("BooleanQuery",new BooleanQueryBuilder(queryFactory));
 		queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(parser));

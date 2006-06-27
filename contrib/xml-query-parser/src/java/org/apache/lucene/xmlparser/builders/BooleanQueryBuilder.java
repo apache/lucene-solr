@@ -29,7 +29,8 @@ public class BooleanQueryBuilder implements QueryBuilder {
 	 * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
 	 */
 	public Query getQuery(Element e) throws ParserException {
-		BooleanQuery bq=new BooleanQuery();
+		BooleanQuery bq=new BooleanQuery(DOMUtils.getAttribute(e,"disableCoord",false));
+		bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e,"minimumNumberShouldMatch",0));
 		bq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 		NodeList nl = e.getElementsByTagName("Clause");
 		for(int i=0;i<nl.getLength();i++)

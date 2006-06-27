@@ -85,6 +85,11 @@ public class TestParser extends TestCase {
 			Query q=parse("TermQuery.xml");
 			dumpResults("TermQuery", q, 5);
 	}
+	public void testSimpleTermsQueryXML() throws ParserException, IOException
+	{
+			Query q=parse("TermsQuery.xml");
+			dumpResults("TermsQuery", q, 5);
+	}
 	public void testBooleanQueryXML() throws ParserException, IOException
 	{
 			Query q=parse("BooleanQuery.xml");
