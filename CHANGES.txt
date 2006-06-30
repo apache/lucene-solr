@@ -69,7 +69,10 @@ Bug fixes
 10. LUCENE-451: All core query types now use ComplexExplanations so that
     boosts of zero don't confuse the BooleanWeight explain method.
     (Chris Hostetter)
-    
+
+11. LUCENE-593: Fixed inner Iterator
+    (Kåre Fiedler Christiansen via Otis Gospodnetic)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment

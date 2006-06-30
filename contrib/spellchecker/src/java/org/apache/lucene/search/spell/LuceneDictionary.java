@@ -66,6 +66,9 @@ public class LuceneDictionary implements Dictionary {
     }
 
     public boolean hasNext() {
+      if (hasNextCalled) {
+        return actualTerm != null;
+      }
       hasNextCalled = true;
       try {
         // if there are no more words
@@ -87,6 +90,8 @@ public class LuceneDictionary implements Dictionary {
       }
     }
 
-    public void remove() {}
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
   }
 }
