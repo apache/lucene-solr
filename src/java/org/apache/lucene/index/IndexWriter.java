@@ -60,15 +60,17 @@ public class IndexWriter {
 
   /**
    * Default value for the write lock timeout (1,000).
+   * @see #setDefaultWriteLockTimeout
    */
-  public final static long WRITE_LOCK_TIMEOUT = 1000;
+  public static long WRITE_LOCK_TIMEOUT = 1000;
 
   private long writeLockTimeout = WRITE_LOCK_TIMEOUT;
 
   /**
    * Default value for the commit lock timeout (10,000).
+   * @see #setDefaultCommitLockTimeout
    */
-  public final static long COMMIT_LOCK_TIMEOUT = 10000;
+  public static long COMMIT_LOCK_TIMEOUT = 10000;
 
   private long commitLockTimeout = COMMIT_LOCK_TIMEOUT;
 
@@ -370,7 +372,8 @@ public class IndexWriter {
   }
 
   /**
-   * Sets the maximum time to wait for a commit lock (in milliseconds).
+   * Sets the maximum time to wait for a commit lock (in milliseconds) for this instance of IndexWriter.  @see
+   * @see #setDefaultCommitLockTimeout to change the default value for all instances of IndexWriter.
    */
   public void setCommitLockTimeout(long commitLockTimeout) {
     this.commitLockTimeout = commitLockTimeout;
@@ -384,7 +387,22 @@ public class IndexWriter {
   }
 
   /**
-   * Sets the maximum time to wait for a write lock (in milliseconds).
+   * Sets the default (for any instance of IndexWriter) maximum time to wait for a commit lock (in milliseconds)
+   */
+  public static void setDefaultCommitLockTimeout(long commitLockTimeout) {
+    IndexWriter.COMMIT_LOCK_TIMEOUT = commitLockTimeout;
+  }
+
+  /**
+   * @see #setDefaultCommitLockTimeout
+   */
+  public static long getDefaultCommitLockTimeout() {
+    return IndexWriter.COMMIT_LOCK_TIMEOUT;
+  }
+
+  /**
+   * Sets the maximum time to wait for a write lock (in milliseconds) for this instance of IndexWriter.  @see
+   * @see #setDefaultWriteLockTimeout to change the default value for all instances of IndexWriter.
    */
   public void setWriteLockTimeout(long writeLockTimeout) {
     this.writeLockTimeout = writeLockTimeout;
@@ -395,6 +413,21 @@ public class IndexWriter {
    */
   public long getWriteLockTimeout() {
     return writeLockTimeout;
+  }
+
+  /**
+   * Sets the default (for any instance of IndexWriter) maximum time to wait for a write lock (in
+   * milliseconds).
+   */
+  public static void setDefaultWriteLockTimeout(long writeLockTimeout) {
+    IndexWriter.WRITE_LOCK_TIMEOUT = writeLockTimeout;
+  }
+
+  /**
+   * @see #setDefaultWriteLockTimeout
+   */
+  public static long getDefaultWriteLockTimeout() {
+    return IndexWriter.WRITE_LOCK_TIMEOUT;
   }
 
   /** Flushes all changes to an index and closes all associated files. */

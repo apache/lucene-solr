@@ -27,7 +27,15 @@ public class TestIndexWriter extends TestCase
         IndexReader reader = null;
         int i;
 
+        IndexWriter.setDefaultWriteLockTimeout(2000);
+        IndexWriter.setDefaultCommitLockTimeout(2000);
+        assertEquals(2000, IndexWriter.getDefaultWriteLockTimeout());
+        assertEquals(2000, IndexWriter.getDefaultCommitLockTimeout());
+
         writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+
+        IndexWriter.setDefaultWriteLockTimeout(1000);
+        IndexWriter.setDefaultCommitLockTimeout(1000);
 
         // add 100 documents
         for (i = 0; i < 100; i++) {

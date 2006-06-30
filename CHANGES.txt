@@ -34,7 +34,15 @@ API Changes
     subclass allows explain methods to produce Explanations which model
     "matching" independent of having a positive value.
     (Chris Hostetter)
-           
+
+ 6. LUCENE-621: New static methods IndexWriter.setDefaultWriteLockTimeout
+    and IndexWriter.setDefaultCommitLockTimeout for overriding default
+    timeout values for all future instances of IndexWriter (as well
+    as for any other classes that may refrence the static values,
+    ie: IndexReader).
+    (Michael McCandless via Chris Hostetter)
+
+ 
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
