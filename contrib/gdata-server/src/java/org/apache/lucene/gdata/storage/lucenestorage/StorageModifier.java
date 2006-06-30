@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -67,10 +68,12 @@ public class StorageModifier {
     private IndexModifier modifier;
 
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
+    
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
+    
+    private final Lock readLock = this.lock.readLock();
 
-    private Lock readLock = this.lock.readLock();
-
-    private Lock writeLock = this.lock.writeLock();
+    private final Lock writeLock = this.lock.writeLock();
 
     private final static int DEFAULT_OPTIMIZE_INTERVAL = 10;
 
@@ -315,10 +318,14 @@ public class StorageModifier {
     }
 
     private void storageModified() throws StorageException {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageModifier is already closed");
         this.readLock.unlock();
         this.writeLock.lock();
 
         try {
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageModifier is already closed");
             incrementCounter();
             if (this.persistFactor > this.modifiedCounter
                     && this.forceWriteDocuments.size() <= 0
@@ -345,6 +352,8 @@ public class StorageModifier {
     }
 
     protected void forceWrite() throws IOException {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageModifier is already closed");
         this.writeLock.lock();
         try {
             if (LOG.isInfoEnabled())
@@ -424,8 +433,13 @@ public class StorageModifier {
     }
 
     protected void close() throws IOException {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageModifier is already closed");
         this.writeLock.lock();
         try {
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageModifier is already closed");
+        	this.isClosed.set(true);
             if (LOG.isInfoEnabled())
                 LOG.info("ForceWrite called -- current modifiedCounter: "
                         + this.modifiedCounter + " - persisting changes");

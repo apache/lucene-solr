@@ -136,16 +136,27 @@ public class TestStorageModifier extends TestCase {
 
         Thread b = getRunnerThread((this.count += 10));
         b.start();
-        a.join();
+        // wait for the first thread to check for the inserted entries
+        a.join();  
+        try{
         for (int i = 1; i < this.count; i++) {
             ReferenceCounter<StorageQuery> innerQuery = this.controller
                     .getStorageQuery();
             BaseEntry e = innerQuery.get().singleEntryQuery("" + i, feedId,
                     this.configurator);
+            assertNotNull(e);
             assertEquals("get entry for id" + i, "" + i, e.getId());
 
         }
-        b.join();
+        }finally{
+        	/*
+        	 * if an exception occures the tread can at least finnish running before the
+        	 * controller will be closed in the tearDown method
+        	 */
+        	 b.join();	
+        }
+      
+       
         ReferenceCounter<StorageQuery> query = this.controller
                 .getStorageQuery();
 

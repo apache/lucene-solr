@@ -2,6 +2,9 @@ package org.apache.lucene.gdata.storage.lucenestorage;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,8 +45,9 @@ public class StorageCoreController implements StorageController {
     private ReferenceCounter<StorageQuery> storageQuery;
 
     private StorageBuffer currentBuffer;
-
-    private Object storageControllerLock = new Object();
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
+    private final ReentrantLock storageControllerLock = new ReentrantLock();
+    private final Condition closeCondition;
 
     private static final int DEFAULT_STORAGE_BUFFER_SIZE = 10;
 
@@ -77,6 +81,7 @@ public class StorageCoreController implements StorageController {
      */
     public StorageCoreController() throws IOException, StorageException {
         synchronized (StorageCoreController.class) {
+        	this.closeCondition = this.storageControllerLock.newCondition();
             try {
                 this.idGenerator = new IDGenerator(10);
             } catch (Exception e) {
@@ -168,8 +173,12 @@ public class StorageCoreController implements StorageController {
      * 
      */
     protected ReferenceCounter<StorageQuery> getStorageQuery() {
-        synchronized (this.storageControllerLock) {
-
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+        this.storageControllerLock.lock();
+        try{
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
             if (this.storageQuery == null) {
                 this.storageQuery = getNewStorageQueryHolder(new StorageQuery(
                         this.currentBuffer, this.searcher));
@@ -178,6 +187,9 @@ public class StorageCoreController implements StorageController {
             }
             this.storageQuery.increamentReference();
             return this.storageQuery;
+        }finally{
+        	this.closeCondition.signalAll();
+        	this.storageControllerLock.unlock();
         }
     }
 
@@ -185,7 +197,8 @@ public class StorageCoreController implements StorageController {
             final StorageQuery query) {
         ReferenceCounter<StorageQuery> holder = new ReferenceCounter<StorageQuery>(
                 query) {
-            public void close() {
+            @Override
+			public void close() {
                 try {
                     if (LOG.isInfoEnabled())
                         LOG
@@ -210,15 +223,24 @@ public class StorageCoreController implements StorageController {
      *             if an IO exception occures
      */
     protected void registerNewStorageQuery() throws IOException {
-        if (LOG.isInfoEnabled())
-            LOG.info("new StorageQuery requested -- create new storage buffer");
-        synchronized (this.storageControllerLock) {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+        this.storageControllerLock.lock();
+        try{
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+	        if (LOG.isInfoEnabled())
+	            LOG.info("new StorageQuery requested -- create new storage buffer");
+        
             if (this.storageQuery != null)
                 this.storageQuery.decrementRef();
             this.searcher = new IndexSearcher(this.storageDir);
             this.storageQuery = null;
             this.currentBuffer = new StorageBuffer(this.storageBufferSize);
 
+        }finally{
+        	this.closeCondition.signalAll();
+        	this.storageControllerLock.unlock();
         }
 
     }
@@ -229,8 +251,16 @@ public class StorageCoreController implements StorageController {
      * @return the new StorageBuffer
      */
     protected StorageBuffer releaseNewStorageBuffer() {
-        synchronized (this.storageControllerLock) {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+        this.storageControllerLock.lock();
+        try{
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
             return this.currentBuffer;
+        }finally{
+        	this.closeCondition.signalAll();
+        	this.storageControllerLock.unlock();
         }
     }
 
@@ -242,23 +272,45 @@ public class StorageCoreController implements StorageController {
      *             if an IO exception occures
      */
     protected IndexModifier createIndexModifier() throws IOException {
-        if (LOG.isInfoEnabled())
-            LOG.info("new IndexModifier created - release to StorageModifier");
-        synchronized (this.storageControllerLock) {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+        this.storageControllerLock.lock();
+        try{
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+	        if (LOG.isInfoEnabled())
+	            LOG.info("new IndexModifier created - release to StorageModifier");
+        
             return new IndexModifier(this.storageDir, new StandardAnalyzer(),
                     false);
+        }finally{
+        	this.closeCondition.signalAll();
+        	this.storageControllerLock.unlock();
         }
     }
 
     private void close() throws IOException {
-        synchronized (this.storageControllerLock) {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+    	
+        this.storageControllerLock.lock();
+        try{
+        	if(this.isClosed.get())
+        		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
+        	this.isClosed.set(true);
+        	while(this.storageControllerLock.getQueueLength()>0)
+        		try{
+        		this.closeCondition.await();
+        		}catch (Exception e) {
+					//
+				}
             if (LOG.isInfoEnabled())
-                LOG
-                        .info("StorageController has been closed -- server is shutting down -- release all resources");
+                LOG.info("StorageController has been closed -- server is shutting down -- release all resources");
             if (this.storageQuery != null)
                 this.storageQuery.decrementRef();
             this.modifier.close();
-            // TODO make sure all resources will be released
+		}finally{
+        	this.storageControllerLock.unlock();
         }
     }
 
@@ -307,6 +359,8 @@ public class StorageCoreController implements StorageController {
      * 
      */
     public void forceWrite() throws IOException {
+    	if(this.isClosed.get())
+    		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
         this.modifier.forceWrite();
     }
 

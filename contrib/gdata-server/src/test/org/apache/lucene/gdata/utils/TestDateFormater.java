@@ -25,13 +25,16 @@ public class TestDateFormater extends TestCase {
     public void testFormatDate() throws ParseException {
         
         // this reg. --> bit weak but does the job
-            java.util.regex.Pattern pattern =  java.util.regex.Pattern.compile("[A-Z][a-z]{2}, [0-9]{1,2} [A-Z][a-z]{2} [0-9]{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2} [A-Z]{2,4}");
+            java.util.regex.Pattern pattern =  java.util.regex.Pattern.compile("[A-Z][a-z]{1,2}, [0-9]{1,2} [A-Z][a-z]{2} [0-9]{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2} [A-Z]{2,4}");
             Date date = new Date();
-            System.out.println(date.getTime());
+           
             String formatedDate = DateFormater.formatDate(date,DateFormater.HTTP_HEADER_DATE_FORMAT);
+           
             assertTrue(pattern.matcher(formatedDate).matches());    
-            System.out.println(DateFormater.parseDate(formatedDate,DateFormater.HTTP_HEADER_DATE_FORMAT).getTime());
-            DateFormater.parseDate("Sun, 25 Jun 2006 13:51:23 +0000",DateFormater.HTTP_HEADER_DATE_FORMAT,DateFormater.HTTP_HEADER_DATE_FORMAT_TIME_OFFSET);
+           
+            DateFormater.parseDate("Sun, 25 Jun 2006 13:51:23 CEST",DateFormater.HTTP_HEADER_DATE_FORMAT,DateFormater.HTTP_HEADER_DATE_FORMAT_TIME_OFFSET);
+            //TODO extend this
+            
         
     }
 

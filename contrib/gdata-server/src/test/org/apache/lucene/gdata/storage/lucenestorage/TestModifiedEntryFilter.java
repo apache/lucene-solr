@@ -55,11 +55,11 @@ public class TestModifiedEntryFilter extends TestCase {
         Hits hits = s.search(q); 
         assertEquals(2,hits.length()); 
          
-        hits = s.search(q,new ModifiedEntryFilter(this.excludeList)); 
+        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]))); 
         assertEquals(1,hits.length()); 
         this.excludeList.add("2"); 
  
-        hits = s.search(q,new ModifiedEntryFilter(this.excludeList)); 
+        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]))); 
         assertEquals(0,hits.length()); 
          
     } 

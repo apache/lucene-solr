@@ -19,6 +19,7 @@ package org.apache.lucene.gdata.utils;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Stack;
 
 /**
@@ -106,6 +107,7 @@ public class DateFormater {
         if(dateString == null|| pattern == null)
             throw new IllegalArgumentException(
             "given parameters must not be null");
+        
         SimpleDateFormat inst = formater.getFormater();
         inst.applyPattern(pattern);
         return inst.parse(dateString);
@@ -113,7 +115,7 @@ public class DateFormater {
 
     private SimpleDateFormat getFormater() {
         if (this.objectStack.empty())
-            return new SimpleDateFormat();
+            return new SimpleDateFormat(DateFormater.HTTP_HEADER_DATE_FORMAT,Locale.ENGLISH);
         return this.objectStack.pop();
     }
 

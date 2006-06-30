@@ -16,14 +16,13 @@
  
 package org.apache.lucene.gdata.storage.lucenestorage; 
  
-import java.io.IOException; 
-import java.util.BitSet; 
-import java.util.List; 
- 
-import org.apache.lucene.index.IndexReader; 
-import org.apache.lucene.index.Term; 
-import org.apache.lucene.index.TermDocs; 
-import org.apache.lucene.search.Filter; 
+import java.io.IOException;
+import java.util.BitSet;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.search.Filter;
  
 /** 
  * The {@link ModifiedEntryFilter} filters the given entryIds from the lucene 
@@ -42,14 +41,14 @@ public class ModifiedEntryFilter extends Filter {
      */ 
     private static final long serialVersionUID = -1551686287704213591L; 
  
-    private final List<String> entyIds; 
+    private final String[] entyIds; 
  
     /** 
      * Creates a new {@link ModifiedEntryFilter} 
      * @param entryIds the entry id's to filter  
      *  
      */ 
-    public ModifiedEntryFilter(List<String> entryIds) { 
+    public ModifiedEntryFilter(final String[] entryIds) { 
         super(); 
         this.entyIds = entryIds; 
     } 
