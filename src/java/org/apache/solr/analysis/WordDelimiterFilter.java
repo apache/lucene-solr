@@ -123,10 +123,6 @@ final class WordDelimiterFilter extends TokenFilter {
     }
   }
 
-  private int charType(String s, int pos) {
-    return charType(s.charAt(pos));
-  }
-
   // use the type of the first char as the type
   // of the token.
   private int tokType(Token t) {
@@ -170,15 +166,17 @@ final class WordDelimiterFilter extends TokenFilter {
     // Would it actually be faster to check for the common form
     // of isLetter() isLower()*, and then backtrack if it doesn't match?
 
+    int origPosIncrement;
     while(true) {
       Token t = input.next();
       if (t == null) return null;
 
       String s = t.termText();
-      int off=t.startOffset();
       int start=0;
       int end=s.length();
       if (end==0) continue;
+
+      origPosIncrement = t.getPositionIncrement();
 
       // Avoid calling charType more than once for each char (basically
       // avoid any backtracking).
@@ -273,6 +271,7 @@ final class WordDelimiterFilter extends TokenFilter {
             // optimization... if this is the only token,
             // return it immediately.
             if (queue.size()==0) {
+              newtok.setPositionIncrement(origPosIncrement);
               return newtok;
             }
 
@@ -376,7 +375,9 @@ final class WordDelimiterFilter extends TokenFilter {
     // System.out.println("##########AFTER COMBINATIONS:"+ str(queue));
 
     queuePos=1;
-    return queue.get(0);
+    Token tok = queue.get(0);
+    tok.setPositionIncrement(origPosIncrement);
+    return tok;
   }
 
 
@@ -416,29 +417,10 @@ final class WordDelimiterFilter extends TokenFilter {
     }
   }
 
-  private String str(List<Token> lst) {
-    StringBuilder sb = new StringBuilder();
-    sb.append('{');
-    for (Token t : lst) {
-      sb.append('(');
-      sb.append('"');
-      sb.append(t.termText());
-      sb.append("\",increment=");
-      sb.append(Integer.toString(t.getPositionIncrement()));
-      sb.append(')');
-
-      sb.append(',');
-    }
-    sb.append('}');
-    return sb.toString();
-  }
-
-
 
   // questions:
   // negative numbers?  -42 indexed as just 42?
   // dollar sign?  $42
   // percent sign?  33%
   // downsides:  if source text is "powershot" then a query of "PowerShot" won't match!
-
 }

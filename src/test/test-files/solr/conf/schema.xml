@@ -174,7 +174,7 @@
       </analyzer>
     </fieldtype>
 
-    <fieldtype name="subword" class="solr.TextField">
+    <fieldtype name="subword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
       <analyzer type="index">
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
           <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>

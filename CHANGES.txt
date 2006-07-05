@@ -43,6 +43,7 @@ Bug Fixes
  2. Added escaping of attribute values in the XML response (Erik Hatcher)
  3. Added empty extractTerms() to FunctionQuery to enable use in
     a MultiSearcher (Yonik)
+ 4. WordDelimiterFilter sometimes lost token positionIncrement information
 
 Other Changes
  1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,
