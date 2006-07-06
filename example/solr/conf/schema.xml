@@ -85,6 +85,7 @@
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory"/>
         <filter class="solr.EnglishPorterFilterFactory"/>
+        <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldtype>
     <!-- One could also specify an existing Analyzer implementation in Java 
@@ -104,7 +105,10 @@
     <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
         words on case-change, alpha numeric boundaries, and non-alphanumeric chars
         so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
-        Synonyms and stopwords are customized by external files, and stemming is enabled -->
+        Synonyms and stopwords are customized by external files, and stemming is enabled
+        Duplicate tokens at the same position (which may result from Stemmed Synonyms or
+        WordDelim parts) are removed.
+        -->
     <fieldtype name="text" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -115,6 +119,7 @@
           <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+          <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
       <analyzer type="query">
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -123,6 +128,7 @@
           <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+          <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldtype>
 
@@ -137,6 +143,7 @@
         <filter class="solr.WordDelimiterFilterFactory" generateWordParts="0" generateNumberParts="0" catenateWords="1" catenateNumbers="1" catenateAll="0"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldtype>
 

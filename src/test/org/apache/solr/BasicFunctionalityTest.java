@@ -17,6 +17,9 @@
 package org.apache.solr;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.solr.search.*;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
 import org.apache.solr.schema.*;
@@ -200,6 +203,16 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
   }
 
+  /** @see TestRemoveDuplicatesTokenFilter */
+  public void testRemoveDuplicatesTokenFilter() {
+    Query q = QueryParsing.parseQuery("TV", "dedup",
+                                      h.getCore().getSchema());
+    assertTrue("not boolean?", q instanceof BooleanQuery);
+    assertEquals("unexpected number of stemmed synonym tokens",
+                 2, ((BooleanQuery) q).getClauses().length);
+  }
+
+  
   public void testTermVectorFields() {
     
     IndexSchema ischema = new IndexSchema(getSchemaFile());

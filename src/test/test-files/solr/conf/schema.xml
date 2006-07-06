@@ -226,6 +226,19 @@
           <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
       </analyzer>
     </fieldtype>
+    
+    <!-- Demonstrates How RemoveDuplicatesTokenFilter makes stemmed
+         synonyms "better"
+      -->
+    <fieldtype name="dedup" class="solr.TextField">
+      <analyzer>
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.SynonymFilterFactory"
+                  synonyms="synonyms.txt" expand="true" />
+          <filter class="solr.EnglishPorterFilterFactory"/>
+          <filter class="solr.RemoveDuplicatesTokenFilterFactory" />
+      </analyzer>
+    </fieldtype>
 
     <fieldtype  name="unstored" class="solr.StrField" indexed="true" stored="false"/>
 
@@ -296,6 +309,7 @@
    <field name="stopfilt" type="stopfilt" indexed="true" stored="true"/>
    <field name="custstopfilt" type="custstopfilt" indexed="true" stored="true"/>
    <field name="lengthfilt" type="lengthfilt" indexed="true" stored="true"/>
+   <field name="dedup" type="dedup" indexed="true" stored="true"/>
 
 
    <field name="subword" type="subword" indexed="true" stored="true"/>

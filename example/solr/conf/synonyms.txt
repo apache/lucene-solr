@@ -16,3 +16,5 @@ MB,mib,megabyte,megabytes
 #spelling correction
 pixima => pixma
 
+Television, Televisions, TV, TVs
+
