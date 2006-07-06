@@ -21,7 +21,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset data_dir solr_port rsyncd_port user verbose
+unset data_dir solr_port rsyncd_port user verbose debug
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -35,10 +35,11 @@ usage: $prog [-d dir] [-p portnum] [-u username] [-v]
        -p          specify rsyncd port number
        -u          specify user to sudo to before running script
        -v          increase verbosity
+       -V          output debugging info
 "
 
 # parse args
-while getopts d:p:u:v OPTION
+while getopts d:p:u:vV OPTION
 do
     case $OPTION in
     d)
@@ -53,11 +54,16 @@ do
     v)
         verbose="v"
         ;;
+    V)
+        debug="V"
+        ;;
     *)
         echo "$USAGE"
         exit 1
     esac
 done
+
+[[ -n $debug ]] && set -x
 
 fixUser "$@"
 

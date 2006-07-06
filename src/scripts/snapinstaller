@@ -22,7 +22,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset master_host master_status_dir data_dir user verbose
+unset master_host master_status_dir data_dir user verbose debug
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -38,10 +38,11 @@ usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v]
        -d          specify directory holding index data on local machine
        -u          specify user to sudo to before running script
        -v          increase verbosity
+       -V          output debugging info
 "
 
 # parse args
-while getopts M:S:d:u:v OPTION
+while getopts M:S:d:u:vV OPTION
 do
     case $OPTION in
     M)
@@ -59,11 +60,16 @@ do
     v)
         verbose="v"
         ;;
+    V)
+        debug="V"
+        ;;
     *)
         echo "$USAGE"
         exit 1
     esac
 done
+
+[[ -n $debug ]] && set -x
 
 if [[ -z ${master_host} ]]
 then

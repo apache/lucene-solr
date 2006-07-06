@@ -22,7 +22,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset solr_hostname solr_port webapp_name user verbose
+unset solr_hostname solr_port webapp_name user verbose debug
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -37,11 +37,12 @@ usage: $prog [-p hostname] [-p port] [-w webapp_name] [-u username] [-v]
        -w          specify name of Solr webapp (defaults to solr)
        -u          specify user to sudo to before running script
        -v          increase verbosity
+       -V          output debugging info
 "
 
 # parse args
 originalargs="$@"
-while getopts h:p:w:u:v OPTION
+while getopts h:p:w:u:vV OPTION
 do
     case $OPTION in
     h)
@@ -59,11 +60,16 @@ do
     v)
         verbose="v"
         ;;
+    V)
+        debug="V"
+        ;;
     *)
         echo "$USAGE"
         exit 1
     esac
 done
+
+[[ -n $debug ]] && set -x
 
 if [[ -z ${solr_port} ]]
 then

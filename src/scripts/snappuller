@@ -22,7 +22,7 @@ solr_root=$(pwd)
 cd ${orig_dir}
 
 unset master_host rsyncd_port master_data_dir master_status_dir snap_name
-unset sizeonly stats data_dir user verbose compress startStatus
+unset sizeonly stats data_dir user verbose debug compress startStatus
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -43,11 +43,12 @@ usage: $prog [-M master] [-P portnum] [-D mdir] [-S sdir] [-n snapshot] [-d dir]
        -u          specify user to sudo to before running script
        -s          use the --size-only option with rsync
        -v          increase verbosity (-vv show file transfer stats also)
+       -V          output debugging info
        -z          enable compression of data
 "
 
 # parse args
-while getopts M:P:D:S:n:d:u:svz OPTION
+while getopts M:P:D:S:n:d:u:svVz OPTION
 do
     case $OPTION in
     M)
@@ -77,6 +78,9 @@ do
     v)
         [[ -n $verbose ]] && stats="--stats" || verbose=v
         ;;
+    V)
+        debug="V"
+        ;;
     z)
         compress="z"
         ;;
@@ -85,6 +89,8 @@ do
         exit 1
     esac
 done
+
+[[ -n $debug ]] && set -x
 
 if [[ -z ${master_host} ]]
 then

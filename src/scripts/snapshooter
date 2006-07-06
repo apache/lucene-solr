@@ -21,7 +21,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset data_dir user verbose
+unset data_dir user verbose debug
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -34,10 +34,11 @@ usage: $prog [-d dir] [-u username] [-v]
        -d          specify directory holding index data
        -u          specify user to sudo to before running script
        -v          increase verbosity
+       -V          output debugging info
 "
 
 # parse args
-while getopts d:u:v OPTION
+while getopts d:u:vV OPTION
 do
     case $OPTION in
     d)
@@ -49,11 +50,16 @@ do
     v)
         verbose="v"
         ;;
+    V)
+        debug="V"
+        ;;
     *)
         echo "$USAGE"
         exit 1
     esac
 done
+
+[[ -n $debug ]] && set -x
 
 fixUser "$@"
 

@@ -21,7 +21,7 @@ cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
 
-unset days num data_dir user verbose
+unset days num data_dir user verbose debug
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -37,10 +37,11 @@ usage: $prog -D <days> | -N <num> [-d dir] [-u username] [-v]
        -d          specify directory holding index data
        -u          specify user to sudo to before running script
        -v          increase verbosity
+       -V          output debugging info
 "
 
 # parse args
-while getopts D:N:d:u:v OPTION
+while getopts D:N:d:u:vV OPTION
 do
     case $OPTION in
     D)
@@ -58,11 +59,16 @@ do
     v)
         verbose="v"
         ;;
+    V)
+        debug="V"
+        ;;
     *)
         echo "$USAGE"
         exit 1
     esac
 done
+
+[[ -n $debug ]] && set -x
 
 if [[ -z ${days} && -z ${num} ]]
 then
