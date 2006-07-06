@@ -61,9 +61,9 @@ public class TestIndexWriterMerging extends TestCase
 
     writer.addIndexes(new Directory[]{indexA, indexB});
     writer.close();
-    merged.close();
 
     fail = verifyIndex(merged, 0);
+    merged.close();
 
     assertFalse("The merged index is invalid", fail);
   }

@@ -87,7 +87,9 @@ Optimizations
      indexes.  This will improve the performance of many types of queries
      against a non-optimized index. (Andrew Hudson via Yonik Seeley)
 
-
+  2. LUCENE-623: RAMDirectory.close now nulls out it's reference to all
+     internal "files", allowing them to be GCed even if references to the
+     RAMDirectory itself still exist. (Nadav Har'El via Chris Hostetter)
 
 Release 2.0.0 2006-05-26
 
