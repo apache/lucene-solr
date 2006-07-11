@@ -91,7 +91,7 @@
   <td>
   </td>
   <td>
-	<input type="submit" value="search">
+	<input class="stdbutton" type="submit" value="search">
   </td>
 </tr>
 </table>

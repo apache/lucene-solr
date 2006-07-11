@@ -45,7 +45,7 @@
 	<strong>Field name</strong>
   </td>
   <td>
-	<input name="name" type="text" value="<%= name %>">
+	<input class="std" name="name" type="text" value="<%= name %>">
   </td>
 </tr>
 <tr>
@@ -61,7 +61,7 @@
      <%= highlight ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea rows="3" cols="70" name="val"><%= val %></textarea>
+	<textarea class="std" rows="3" cols="70" name="val"><%= val %></textarea>
   </td>
 </tr>
 <tr>
@@ -73,7 +73,7 @@
      <%= qverbose ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea rows="1" cols="70" name="qval"><%= qval %></textarea>
+	<textarea class="std" rows="1" cols="70" name="qval"><%= qval %></textarea>
   </td>
 </tr>
 <tr>
@@ -82,7 +82,7 @@
   </td>
 
   <td>
-	<input type="submit" value="analyze">
+	<input class="stdbutton" type="submit" value="analyze">
   </td>
 
 </tr>
@@ -235,9 +235,9 @@
       for (List<Tok> lst : arrLst) {
         if (lst.size() <= idx) continue;
         if (match!=null && match.contains(lst.get(idx))) {
-          out.print("<td name=\"highlight\"");
+          out.print("<td class=\"highlight\"");
         } else {
-          out.print("<td name=\"debugdata\"");
+          out.print("<td class=\"debugdata\"");
         }
 
         if (idx==0 && lst.size()==1 && maxSz > 1) {
@@ -313,7 +313,7 @@
 
     );
 
-    out.println("<table width=\"auto\" name=\"table\" border=\"1\">");
+    out.println("<table width=\"auto\" class=\"analysis\" border=\"1\">");
 
     if (verbose) {
       printRow(out,"term position", arr, new ToStr() {
