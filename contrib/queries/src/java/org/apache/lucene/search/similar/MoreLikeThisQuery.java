@@ -5,6 +5,7 @@ package org.apache.lucene.search.similar;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
@@ -29,6 +30,7 @@ public class MoreLikeThisQuery extends Query
     float percentTermsToMatch=0.3f;
     int minTermFrequency=1;
     int maxQueryTerms=5;
+    Set stopWords=null;
     
     
     /**
@@ -50,6 +52,7 @@ public class MoreLikeThisQuery extends Query
         mlt.setAnalyzer(analyzer);
         mlt.setMinTermFreq(minTermFrequency);
         mlt.setMaxQueryTerms(maxQueryTerms);
+        mlt.setStopWords(stopWords);
         BooleanQuery bq= (BooleanQuery) mlt.like(new ByteArrayInputStream(likeText.getBytes()));        
         BooleanClause[] clauses = bq.getClauses();
         //make at least half the terms match
@@ -120,4 +123,12 @@ public class MoreLikeThisQuery extends Query
 	{
 		this.moreLikeFields = moreLikeFields;
 	}
+    public Set getStopWords()
+    {
+        return stopWords;
+    }
+    public void setStopWords(Set stopWords)
+    {
+        this.stopWords = stopWords;
+    }
 }
