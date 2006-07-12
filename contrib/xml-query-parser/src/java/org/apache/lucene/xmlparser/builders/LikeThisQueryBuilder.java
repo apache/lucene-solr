@@ -3,7 +3,14 @@
  */
 package org.apache.lucene.xmlparser.builders;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.similar.MoreLikeThisQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.DOMUtils;
@@ -43,10 +50,41 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 				fields[i]=fields[i].trim();
 			}
 		}
+		
+		//Parse any "stopWords" attribute
+		//TODO MoreLikeThis needs to ideally have per-field stopWords lists - until then 
+		//I use all analyzers/fields to generate multi-field compatible stop list
+		String stopWords=e.getAttribute("stopWords");
+		Set stopWordsSet=null;
+		if((stopWords!=null)&&(fields!=null))
+		{
+		    stopWordsSet=new HashSet();
+		    for (int i = 0; i < fields.length; i++)
+            {
+                TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));
+                try
+                {
+	                Token stopToken=ts.next();
+	                while(stopToken!=null)
+	                {
+	                    stopWordsSet.add(stopToken.termText());
+	                    stopToken=ts.next();
+	                }
+                }
+                catch(IOException ioe)
+                {
+                    throw new ParserException("IoException parsing stop words list in "
+                            +getClass().getName()+":"+ioe.getLocalizedMessage());
+                }
+            }
+		}
+		
+		
 		MoreLikeThisQuery mlt=new MoreLikeThisQuery(DOMUtils.getText(e),fields,analyzer);
 		mlt.setMaxQueryTerms(DOMUtils.getAttribute(e,"maxQueryTerms",defaultMaxQueryTerms));
 		mlt.setMinTermFrequency(DOMUtils.getAttribute(e,"minTermFrequency",defaultMinTermFrequency));
 		mlt.setPercentTermsToMatch(DOMUtils.getAttribute(e,"percentTermsToMatch",defaultPercentTermsToMatch)/100);
+		mlt.setStopWords(stopWordsSet);
 
 		mlt.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 
