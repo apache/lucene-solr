@@ -43,8 +43,6 @@ public class SolrServlet extends HttpServlet {
     
   final Logger log = Logger.getLogger(SolrServlet.class.getName());
   SolrCore core;
-  private static String CONTENT_TYPE="text/xml;charset=UTF-8";
-    
     
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
@@ -90,13 +88,11 @@ public class SolrServlet extends HttpServlet {
     try {
       solrRsp = new SolrQueryResponse();
       solrReq = new SolrServletRequest(core, request);
-      // log.severe("REQUEST PARAMS:" + solrReq.getParamString());
       core.execute(solrReq, solrRsp);
       if (solrRsp.getException() == null) {
-        response.setContentType(CONTENT_TYPE);
-        PrintWriter out = response.getWriter();
-
         QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
+        response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
+        PrintWriter out = response.getWriter();
         responseWriter.write(out, solrReq, solrRsp);
       } else {
         Exception e = solrRsp.getException();
@@ -122,7 +118,7 @@ public class SolrServlet extends HttpServlet {
     try {
       // hmmm, what if this was already set to text/xml?
       try{
-        response.setContentType(CONTENT_TYPE);
+        response.setContentType(QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8);
         // response.setCharacterEncoding("UTF-8");
       } catch (Exception e) {}
       try{response.setStatus(rc);} catch (Exception e) {}

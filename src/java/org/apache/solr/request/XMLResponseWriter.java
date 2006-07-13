@@ -28,6 +28,10 @@ public class XMLResponseWriter implements QueryResponseWriter {
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter.writeResponse(writer,req,rsp);
   }
+
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+    return CONTENT_TYPE_XML_UTF8;
+  }
 }
 
 

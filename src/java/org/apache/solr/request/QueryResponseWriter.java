@@ -24,6 +24,11 @@ import java.io.IOException;
  * @version $Id$
  */
 public interface QueryResponseWriter {
+  public static String CONTENT_TYPE_XML_UTF8="text/xml;charset=UTF-8";
+  public static String CONTENT_TYPE_TEXT_UTF8="text/plain;charset=UTF-8";
+  public static String CONTENT_TYPE_TEXT_ASCII="text/plain;charset=US-ASCII";
+
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException;
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response);
 }
 
