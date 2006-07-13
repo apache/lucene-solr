@@ -41,6 +41,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.DisMaxParams;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -161,7 +162,7 @@ public class DisMaxRequestHandler
     /* :NOOP */
   }
 
-  protected final U.CommonParams params = new U.CommonParams();
+  protected final DisMaxParams params = new DisMaxParams();
     
   public DisMaxRequestHandler() {
     super();
@@ -218,7 +219,8 @@ public class DisMaxRequestHandler
     numRequests++;
         
     try {
-            
+
+      int flags = 0;
       SolrIndexSearcher s = req.getSearcher();
       IndexSchema schema = req.getSchema();
             
@@ -267,7 +269,7 @@ public class DisMaxRequestHandler
 
       if (dis instanceof BooleanQuery) {
         BooleanQuery t = new BooleanQuery();
-        U.flatenBooleanQuery(t, (BooleanQuery)dis);
+        U.flattenBooleanQuery(t, (BooleanQuery)dis);
 
         U.setMinShouldMatch(t, minShouldMatch);
                 
@@ -332,19 +334,19 @@ public class DisMaxRequestHandler
             
       /* * * Generate Main Results * * */
 
+      flags |= U.setReturnFields(U.getParam(req, params.FL, params.fl), rsp);
       DocList results = s.getDocList(query, restrictions,
                                      SolrPluginUtils.getSort(req),
                                      req.getStart(), req.getLimit(),
-                                     SolrIndexSearcher.GET_SCORES);
+                                     flags);
       rsp.add("search-results",results);
 
-      U.setReturnFields(U.getParam(req, params.FL, params.fl), rsp);
 
             
       /* * * Debugging Info * * */
 
       try {
-        NamedList debug = U.doStandardDebug(req, userQuery, query, results);
+        NamedList debug = U.doStandardDebug(req, userQuery, query, results, params);
         if (null != debug) {
           debug.add("boostquery", boostQuery);
           debug.add("boostfunc", boostFunc);
@@ -362,6 +364,18 @@ public class DisMaxRequestHandler
         SolrException.logOnce(SolrCore.log,
                               "Exception durring debug", e);
         rsp.add("exception_during_debug", SolrException.toStr(e));
+      }
+
+      /* * * Highlighting/Summarizing  * * */
+      if(U.getBooleanParam(req, params.HIGHLIGHT, params.highlight)) {
+
+        BooleanQuery highlightQuery = new BooleanQuery();
+        U.flattenBooleanQuery(highlightQuery, query);
+        NamedList sumData = U.doStandardHighlighting(results, highlightQuery, 
+                                                     req, params, 
+                                                     queryFields.keySet().toArray(new String[0]));
+        if(sumData != null)
+          rsp.add("highlighting", sumData);
       }
             
     } catch (Exception e) {

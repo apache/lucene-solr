@@ -18,14 +18,15 @@ New Features
 10. copyField accepts dynamicfield-like names as the source.
     (Darren Erik Vengroff via yonik, SOLR-21)
 11. new DocSet.andNot(), DocSet.andNotSize() (yonik)
-12. Ability to store term vectors. (Note: standard request handler does
-    not currently do anything with term vectors) (Mike Klaas via yonik, SOLR-23)
+12. Ability to store term vectors for fields. (Mike Klaas via yonik, SOLR-23)
 13. New abstract BufferedTokenStream for people who want to write
     Tokenizers or TokenFilters that require arbitrary buffering of the
     stream. (SOLR-11 / yonik, hossman)    
 14. New RemoveDuplicatesToken - useful in situations where
     synonyms, stemming, or word-deliminater-ing produce identical tokens at
     the same position. (SOLR-11 / yonik, hossman)
+15. Added highlighting to SolrPluginUtils and implemented in StandardRequestHandler
+    and DisMaxRequestHandler (SOLR-24 / Mike Klaas via hossman,yonik)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache

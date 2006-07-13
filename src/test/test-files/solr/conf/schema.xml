@@ -339,6 +339,8 @@
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
    <dynamicField name="t_*"  type="text"    indexed="true"  stored="true"/>
+   <dynamicField name="tv_*"  type="text" indexed="true"  stored="true" 
+      termVectors="true" termPositions="true" termOffsets="true"/>
    
 
    <!-- for testing to ensure that longer patterns are matched first -->

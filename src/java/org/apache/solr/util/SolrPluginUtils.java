@@ -16,6 +16,7 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.core.Config; // highlighting
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrException;
@@ -40,6 +41,7 @@ import org.apache.solr.schema.FieldType;
 
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.XML;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -53,9 +55,22 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.highlight.Highlighter; // highlighting
+import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.Encoder;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.search.highlight.Formatter;
+import org.apache.lucene.search.highlight.SimpleFragmenter;
+import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.highlight.NullFragmenter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.Token;
+
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -73,6 +88,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter; // highlighting
 import java.net.URL;
     
 /**
@@ -84,6 +101,9 @@ import java.net.URL;
  * </p>
  *
  * <p>:TODO: refactor StandardRequestHandler to use these utilities</p>
+ *
+ * <p>:TODO: Many "standard" functionality methods are not cognisant of
+ * default parameter settings.  
  */
 public class SolrPluginUtils {
     
@@ -108,6 +128,8 @@ public class SolrPluginUtils {
                                 String param, String def) {
         
     String v = req.getParam(param);
+    // Note: parameters passed but given only white-space value are
+    // considered equvalent to passing nothing for that parameter.
     if (null == v || "".equals(v.trim())) {
       return def;
     }
@@ -134,7 +156,18 @@ public class SolrPluginUtils {
     return r;
   }
         
-
+  /**
+   * Treats parameter value as a boolean.  The string 'false' is false; 
+   * any other non-empty string is true.
+   */
+  public static boolean getBooleanParam(SolrQueryRequest req,
+                                       String param, boolean def) {        
+    String v = req.getParam(param);
+    if (null == v || "".equals(v.trim())) {
+      return def;
+    }
+    return !"false".equals(v.trim());
+  }
     
   private final static Pattern splitList=Pattern.compile(",| ");
 
@@ -142,29 +175,36 @@ public class SolrPluginUtils {
    * Assumes the standard query param of "fl" to specify the return fields
    * @see #setReturnFields(String,SolrQueryResponse)
    */
-  public static void setReturnFields(SolrQueryRequest req,
-                                     SolrQueryResponse res) {
+  public static int setReturnFields(SolrQueryRequest req,
+                                    SolrQueryResponse res) {
 
-    setReturnFields(req.getParam(FL), res);
+    return setReturnFields(req.getParam(FL), res);
   }
 
   /**
    * Given a space seperated list of field names, sets the field list on the
    * SolrQueryResponse.
+   *
+   * @return bitfield of SolrIndexSearcher flags that need to be set
    */
-  public static void setReturnFields(String fl,
-                                     SolrQueryResponse res) {
-
+  public static int setReturnFields(String fl,
+                                    SolrQueryResponse res) {
+    int flags = 0;
     if (fl != null) {
       // TODO - this could become more efficient if widely used.
       // TODO - should field order be maintained?
       String[] flst = splitList.split(fl.trim(),0);
       if (flst.length > 0 && !(flst.length==1 && flst[0].length()==0)) {
         Set<String> set = new HashSet<String>();
-        for (String fname : flst) set.add(fname);
+        for (String fname : flst) {
+          if("score".equalsIgnoreCase(fname))
+            flags |= SolrIndexSearcher.GET_SCORES;
+          set.add(fname);
+        }
         res.setReturnFields(set);
       }
     }
+    return flags;
   }
 
   /**
@@ -201,24 +241,24 @@ public class SolrPluginUtils {
    * @param query the query built from the userQuery
    *              (and perhaps other clauses) that identifies the main
    *              result set of the response.
-   * @param results the main result set of hte response
+   * @param results the main result set of the response
    */
   public static NamedList doStandardDebug(SolrQueryRequest req,
                                           String userQuery,
                                           Query query,
-                                          DocList results)
+                                          DocList results,
+                                          CommonParams params)
     throws IOException {
         
-        
-    String debug = req.getParam("debugQuery");
+    String debug = getParam(req, params.DEBUG_QUERY, params.debugQuery);
 
     NamedList dbg = null;
     if (debug!=null) {
       dbg = new NamedList();          
 
       /* userQuery may have been pre-processes .. expose that */
-      dbg.add("rawquerystring",req.getQueryString());
-      dbg.add("querystring",userQuery);
+      dbg.add("rawquerystring", req.getQueryString());
+      dbg.add("querystring", userQuery);
 
       /* QueryParsing.toString isn't perfect, use it to see converted
        * values, use regular toString to see any attributes of the
@@ -272,6 +312,177 @@ public class SolrPluginUtils {
       explainList.add(docname, "\n" +explain.toString());
     }
     return explainList;
+  }
+
+  /**
+   * Retrieve a default Highlighter instance for a given query.
+   *
+   * @param query Query instance
+   */
+  public static Highlighter getDefaultHighlighter(Query query) {
+    Highlighter highlighter = new Highlighter(
+      new SimpleHTMLFormatter("<em>", "</em>"), 
+      new QueryScorer(query));
+    highlighter.setTextFragmenter(new GapFragmenter());
+    return highlighter;
+  }
+
+  /**
+   * Generates a list of Highlighted query fragments for each item in a list
+   * of documents.  Convenience method that constructs a Highlighter from a
+   * Query.
+   *
+   * @param docs query results
+   * @param fieldNames list of fields to summarize
+   * @param query resulting query object
+   * @param searcher the SolrIndexSearcher corresponding to a request
+   * @param numFragments maximum number of summary fragments to return for
+   *        a given field   
+   */
+  public static NamedList getHighlights(DocList docs, 
+                                        String[] fieldNames, 
+                                        Query query,
+                                        SolrIndexSearcher searcher,
+                                        int numFragments
+                                        ) throws IOException {  
+    
+    return getHighlights(docs, fieldNames, searcher, 
+                         getDefaultHighlighter(query), numFragments);
+  }
+
+  /**
+   * Generates a list of Highlighted query fragments for each item in a list
+   * of documents
+   *
+   * @param docs query results
+   * @param fieldNames list of fields to summarize
+   * @param searcher the SolrIndexSearcher corresponding to a request
+   * @param numFragments maximum number of summary fragments to return for
+   *        a given field   
+   * @param highlighter a customized Highlighter instance
+   *
+   * @return NamedList containing a NamedList for each document, which in
+   * turns contains sets (field, summary) pairs.
+   */
+  public static NamedList getHighlights(DocList docs, 
+                                        String[] fieldNames, 
+                                        SolrIndexSearcher searcher,
+                                        Highlighter highlighter,
+                                        int numFragments
+                                        ) throws IOException {
+    NamedList fragments = new NamedList();
+    DocIterator iterator = docs.iterator();
+    for (int i=0; i<docs.size(); i++) {
+      int docId = iterator.nextDoc();
+      // use the Searcher's doc cache
+      Document doc = searcher.doc(docId);
+      NamedList docSummaries = new NamedList();
+      for(String fieldName : fieldNames) {
+        fieldName = fieldName.trim();
+        String[] docTexts = doc.getValues(fieldName);
+        if(docTexts == null) 
+          continue;        
+        String[] summaries;
+        TextFragment[] frag;
+        if(docTexts.length == 1) {
+          // single-valued field
+          TokenStream tstream;
+          try {
+            // attempt term vectors
+            tstream = TokenSources.getTokenStream(
+              searcher.getReader(), docId, fieldName);
+          } catch (IllegalArgumentException e) {
+            // fall back to analyzer
+            tstream = searcher.getSchema().getAnalyzer().tokenStream(
+             fieldName, new StringReader(docTexts[0]));
+          }
+          frag = highlighter.getBestTextFragments(
+            tstream, docTexts[0], false, numFragments);
+
+        } else {
+          // multi-valued field
+          MultiValueTokenStream tstream;
+          tstream = new MultiValueTokenStream(fieldName,
+                                              docTexts,
+                                              searcher.getSchema().getAnalyzer());
+          frag = highlighter.getBestTextFragments(
+            tstream, tstream.asSingleValue(), false, numFragments);
+        }
+        // convert fragments back into text
+        // TODO: we can include score and position information in output as
+        // snippet attributes
+        if(frag.length > 0) {
+          ArrayList fragTexts = new ArrayList();
+          for (int j = 0; j < frag.length; j++) {
+              if ((frag[j] != null) && (frag[j].getScore() > 0)) {
+                  fragTexts.add(frag[j].toString());
+                }
+            }
+          summaries =  (String[]) fragTexts.toArray(new String[0]);
+          if(summaries.length > 0)
+            docSummaries.add(fieldName, summaries);
+        }
+      }      
+      String printId = searcher.getSchema().printableUniqueKey(doc);
+      fragments.add(printId == null ? null : printId, docSummaries);
+    }    
+    return fragments;
+  }
+
+  /**
+   * Perform highlighting of selected fields.
+   *
+   * @param docs query results
+   * @param query the (possibly re-written query)
+   * @param req associated SolrQueryRequest
+   * @param defaultFields default search field list
+   *
+   * @return NamedList containing summary data, or null if highlighting is 
+   * disabled.
+   *
+   */
+  public static NamedList doStandardHighlighting(DocList docs,
+                                                 Query query,
+                                                 SolrQueryRequest req,
+                                                 CommonParams params,
+                                                 String[] defaultFields
+                                                 ) throws IOException {
+    if(!getBooleanParam(req, params.HIGHLIGHT, params.highlight)) 
+      return null;
+    String fieldParam = getParam(req, params.HIGHLIGHT_FIELDS, 
+                                 params.highlightFields);
+    String fields[];
+    if(fieldParam == null || fieldParam.trim().equals("")) {
+      // use default search field if highlight fieldlist not specified.
+      if (defaultFields == null || defaultFields.length == 0 ||
+          defaultFields[0] == null) {
+        fields = new String[]{req.getSchema().getDefaultSearchFieldName()};
+      } else
+        fields = defaultFields;
+    } else 
+      fields = splitList.split(fieldParam.trim());
+
+    Highlighter highlighter;
+    String formatterSpec = getParam(req, params.HIGHLIGHT_FORMATTER_CLASS,
+                                    params.highlightFormatterClass);
+    if(formatterSpec == null || formatterSpec.equals("")) {
+      highlighter = getDefaultHighlighter(query);
+    } else {
+      highlighter = new Highlighter(
+        (Formatter)Config.newInstance(formatterSpec),
+        new QueryScorer(query));
+      highlighter.setTextFragmenter(new GapFragmenter());
+    }
+    
+    int numFragments = getNumberParam(req, params.MAX_SNIPPETS,
+                                      params.maxSnippets).intValue();
+
+    return getHighlights(
+      docs, 
+      fields, 
+      req.getSearcher(),
+      highlighter,
+      numFragments);
   }
 
   /**
@@ -455,7 +666,7 @@ public class SolrPluginUtils {
    * so do not attempt to reuse it.
    * </p>
    */
-  public static void flatenBooleanQuery(BooleanQuery to, BooleanQuery from) {
+  public static void flattenBooleanQuery(BooleanQuery to, BooleanQuery from) {
 
     BooleanClause[] c = from.getClauses();
     for (int i = 0; i < c.length; i++) {
@@ -468,7 +679,7 @@ public class SolrPluginUtils {
           && !c[i].isProhibited()) {
                 
         /* we can recurse */
-        flatenBooleanQuery(to, (BooleanQuery)ci);
+        flattenBooleanQuery(to, (BooleanQuery)ci);
                 
       } else {
         to.add(c[i]);
@@ -510,169 +721,6 @@ public class SolrPluginUtils {
       return s;
     }
     return s.toString().replace("\"","");
-  }
-
-     
-
-  /**
-   * A collection on common params, both for Plugin initialization and
-   * for Requests.
-   */
-  public static class CommonParams {
-
-    /** query and init param for tiebreaker value */
-    public static String TIE = "tie";
-    /** query and init param for query fields */
-    public static String QF = "qf";
-    /** query and init param for phrase boost fields */
-    public static String PF = "pf";
-    /** query and init param for MinShouldMatch specification */
-    public static String MM = "mm";
-    /** query and init param for Phrase Slop value */
-    public static String PS = "ps";
-    /** query and init param for boosting query */
-    public static String BQ = "bq";
-    /** query and init param for boosting functions */
-    public static String BF = "bf";
-    /** query and init param for filtering query */
-    public static String FQ = "fq";
-    /** query and init param for field list */
-    public static String FL = "fl";
-    /** query and init param for field list */
-    public static String GEN = "gen";
-        
-    /** the default tie breaker to use in DisjunctionMaxQueries */
-    public float tiebreaker = 0.0f;
-    /** the default query fields to be used */
-    public String qf = null;
-    /** the default phrase boosting fields to be used */
-    public String pf = null;
-    /** the default min should match to be used */
-    public String mm = "100%";
-    /** the default phrase slop to be used */
-    public int pslop = 0;
-    /** the default boosting query to be used */
-    public String bq = null;
-    /** the default boosting functions to be used */
-    public String bf = null;
-    /** the default filtering query to be used */
-    public String fq = null;
-    /** the default field list to be used */
-    public String fl = null;
-
-    public CommonParams() {
-      /* :NOOP: */
-    }
-
-    /** @see #setValues */
-    public CommonParams(NamedList args) {
-      this();
-      setValues(args);
-    }
-
-    /**
-     * Sets the params using values from a NamedList, usefull in the
-     * init method for your handler.
-     *
-     * <p>
-     * If any param is not of the expected type, a severe error is
-     * logged,and the param is skipped.
-     * </p>
-     *
-     * <p>
-     * If any param is not of in the NamedList, it is skipped and the
-     * old value is left alone.
-     * </p>
-     *
-     */
-    public void setValues(NamedList args) {
-
-      Object tmp;
-
-      tmp = args.get(TIE);
-      if (null != tmp) {
-        if (tmp instanceof Float) {
-          tiebreaker = ((Float)tmp).floatValue();
-        } else {
-          SolrCore.log.severe("init param is not a float: " + TIE);
-        }
-      }
-
-      tmp = args.get(QF);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          qf = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + QF);
-        }
-      }
-
-      tmp = args.get(PF);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          pf = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + PF);
-        }
-      }
-
-        
-      tmp = args.get(MM);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          mm = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + MM);
-        }
-      }
-        
-      tmp = args.get(PS);
-      if (null != tmp) {
-        if (tmp instanceof Integer) {
-          pslop = ((Integer)tmp).intValue();
-        } else {
-          SolrCore.log.severe("init param is not an int: " + PS);
-        }
-      }
-
-      tmp = args.get(BQ);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          bq = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + BQ);
-        }
-      }
- 
-      tmp = args.get(BF);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          bf = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + BF);
-        }
-      }
- 
-      tmp = args.get(FQ);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          fq = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + FQ);
-        }
-      }
-        
-      tmp = args.get(FL);
-      if (null != tmp) {
-        if (tmp instanceof String) {
-          fl = tmp.toString();
-        } else {
-          SolrCore.log.severe("init param is not a str: " + FL);
-        }
-      }
-        
-    }
-
   }
 
   /**
@@ -763,8 +811,6 @@ public class SolrPluginUtils {
         
   }
 
-
-    
   /**
    * Determines the correct Sort based on the request parameter "sort"
    *
@@ -818,6 +864,105 @@ public class SolrPluginUtils {
     }
             
   }
+}
+
+/** 
+ * Helper class which creates a single TokenStream out of values from a 
+ * multi-valued field.
+ */
+class MultiValueTokenStream extends TokenStream {
+  private String fieldName;
+  private String[] values;
+  private Analyzer analyzer;
+  private int curIndex;                  // next index into the values array
+  private int curOffset;                 // offset into concatenated string
+  private TokenStream currentStream;     // tokenStream currently being iterated
+
+  /** Constructs a TokenStream for consecutively-analyzed field values
+   *
+   * @param fieldName name of the field
+   * @param values array of field data
+   * @param analyzer analyzer instance
+   */
+  public MultiValueTokenStream(String fieldName, String[] values, 
+                               Analyzer analyzer) {
+    this.fieldName = fieldName;
+    this.values = values;
+    this.analyzer = analyzer;
+    curIndex = -1;
+    curOffset = 0;
+    currentStream = null;
     
-    
+  }
+
+  /** Returns the next token in the stream, or null at EOS. */
+  public Token next() throws IOException {
+    int extra = 0;
+    if(currentStream == null) {
+      curIndex++;        
+      if(curIndex < values.length) {
+        currentStream = analyzer.tokenStream(fieldName, 
+                                             new StringReader(values[curIndex]));
+        // add extra space between multiple values
+        if(curIndex > 0) 
+          extra = analyzer.getPositionIncrementGap(fieldName);
+      } else {
+        return null;
+      }
+    }
+    Token nextToken = currentStream.next();
+    if(nextToken == null) {
+      curOffset += values[curIndex].length();
+      currentStream = null;
+      return next();
+    }
+    // create an modified token which is the offset into the concatenated
+    // string of all values
+    Token offsetToken = new Token(nextToken.termText(), 
+                                  nextToken.startOffset() + curOffset,
+                                  nextToken.endOffset() + curOffset);
+    offsetToken.setPositionIncrement(nextToken.getPositionIncrement() + extra*10);
+    return offsetToken;
+  }
+
+  /**
+   * Returns all values as a single String into which the Tokens index with
+   * their offsets.
+   */
+  public String asSingleValue() {
+    StringBuilder sb = new StringBuilder();
+    for(String str : values)
+      sb.append(str);
+    return sb.toString();
+  }
+
+}
+
+/**
+ * A simple modification of SimpleFragmenter which additionally creates new
+ * fragments when an unusually-large position increment is encountered
+ * (this behaves much better in the presence of multi-valued fields).
+ */
+class GapFragmenter extends SimpleFragmenter {
+  public static final int INCREMENT_THRESHOLD = 50;
+  protected int fragOffsetAccum = 0;
+  /* (non-Javadoc)
+   * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
+   */
+  public void start(String originalText) {
+    fragOffsetAccum = 0;
+  }
+
+  /* (non-Javadoc)
+   * @see org.apache.lucene.search.highlight.TextFragmenter#isNewFragment(org.apache.lucene.analysis.Token)
+   */
+  public boolean isNewFragment(Token token) {
+    boolean isNewFrag = 
+      token.endOffset() >= fragOffsetAccum + getFragmentSize() ||
+      token.getPositionIncrement() > INCREMENT_THRESHOLD;
+    if(isNewFrag) {
+        fragOffsetAccum += token.endOffset() - fragOffsetAccum;
+    }
+    return isNewFrag;
+  }
 }

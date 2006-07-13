@@ -29,6 +29,8 @@ import java.net.URL;
 
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.CommonParams;
 import org.apache.solr.search.*;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrCore;
@@ -47,13 +49,17 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
   long numRequests;
   long numErrors;
 
+  /** shorten the class referneces for utilities */
+  private static class U extends SolrPluginUtils {
+    /* :NOOP */
+  }
+  /** parameters garnered from config file */
+  protected final CommonParams params = new CommonParams();
+
 
   public void init(NamedList args) {
-    SolrCore.log.log(Level.INFO, "Unused request handler arguments:" + args);
+    params.setValues(args);
   }
-
-
-  private final Pattern splitList=Pattern.compile(",| ");
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
@@ -63,24 +69,14 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
     // we need to un-escape them before we pass to QueryParser
     try {
       String sreq = req.getQueryString();
-      String debug = req.getParam("debugQuery");
-      String defaultField = req.getParam("df");
+      String debug = U.getParam(req, params.DEBUG_QUERY, params.debugQuery);
+      String defaultField = U.getParam(req, params.DF, params.df);
 
       // find fieldnames to return (fieldlist)
-      String fl = req.getParam("fl");
-      int flags=0;
+      String fl = U.getParam(req, params.FL, params.fl);
+      int flags = 0; 
       if (fl != null) {
-        // TODO - this could become more efficient if widely used.
-        // TODO - should field order be maintained?
-        String[] flst = splitList.split(fl,0);
-        if (flst.length > 0 && !(flst.length==1 && flst[0].length()==0)) {
-          Set<String> set = new HashSet<String>();
-          for (String fname : flst) {
-            if ("score".equals(fname)) flags |= SolrIndexSearcher.GET_SCORES;
-            set.add(fname);
-          }
-          rsp.setReturnFields(set);
-        }
+        flags |= U.setReturnFields(fl, rsp);
       }
 
       if (sreq==null) throw new SolrException(400,"Missing queryString");
@@ -104,24 +100,19 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
       DocList results = req.getSearcher().getDocList(query, null, sort, req.getStart(), req.getLimit(), flags);
       rsp.add(null,results);
 
-      if (debug!=null) {
-        NamedList dbg = new NamedList();
-        try {
-          dbg.add("querystring",qs);
-          dbg.add("parsedquery",QueryParsing.toString(query,req.getSchema()));
-          dbg.add("explain", getExplainList(query, results, req.getSearcher(), req.getSchema()));
-          String otherQueryS = req.getParam("explainOther");
-          if (otherQueryS != null && otherQueryS.length() > 0) {
-            DocList otherResults = doQuery(otherQueryS,req.getSearcher(), req.getSchema(),0,10);
-            dbg.add("otherQuery",otherQueryS);
-            dbg.add("explainOther", getExplainList(query, otherResults, req.getSearcher(), req.getSchema()));
-          }
-        } catch (Exception e) {
-          SolrException.logOnce(SolrCore.log,"Exception during debug:",e);
-          dbg.add("exception_during_debug", SolrException.toStr(e));
-        }
-        rsp.add("debug",dbg);
+      try {
+        NamedList dbg = U.doStandardDebug(req, qs, query, results, params);
+        if (null != dbg) 
+          rsp.add("debug", dbg);
+      } catch (Exception e) {
+        SolrException.logOnce(SolrCore.log, "Exception durring debug", e);
+        rsp.add("exception_during_debug", SolrException.toStr(e));
       }
+
+      NamedList sumData = SolrPluginUtils.doStandardHighlighting(
+        results, query, req, params, new String[]{defaultField});
+      if(sumData != null)
+        rsp.add("highlighting", sumData);
 
     } catch (SolrException e) {
       rsp.setException(e);
@@ -134,52 +125,6 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
       return;
     }
   }
-
-  private NamedList getExplainList(Query query, DocList results, SolrIndexSearcher searcher, IndexSchema schema) throws IOException {
-    NamedList explainList = new NamedList();
-    DocIterator iterator = results.iterator();
-    for (int i=0; i<results.size(); i++) {
-      int id = iterator.nextDoc();
-
-      Explanation explain = searcher.explain(query, id);
-      //explainList.add(Integer.toString(id), explain.toString().split("\n"));
-
-      Document doc = searcher.doc(id);
-      String strid = schema.printableUniqueKey(doc);
-      String docname = "";
-      if (strid != null) docname="id="+strid+",";
-      docname = docname + "internal_docid="+id;
-
-      explainList.add(docname, "\n" +explain.toString());
-    }
-    return explainList;
-  }
-
-
-  private DocList doQuery(String sreq, SolrIndexSearcher searcher, IndexSchema schema, int start, int limit) throws IOException {
-    List<String> commands = StrUtils.splitSmart(sreq,';');
-
-    String qs = commands.size() >= 1 ? commands.get(0) : "";
-    Query query = QueryParsing.parseQuery(qs, schema);
-
-    // If the first non-query, non-filter command is a simple sort on an indexed field, then
-    // we can use the Lucene sort ability.
-    Sort sort = null;
-    if (commands.size() >= 2) {
-      QueryParsing.SortSpec sortSpec = QueryParsing.parseSort(commands.get(1), schema);
-      if (sortSpec != null) {
-        sort = sortSpec.getSort();
-        if (sortSpec.getCount() >= 0) {
-          limit = sortSpec.getCount();
-        }
-      }
-    }
-
-    DocList results = searcher.getDocList(query,(DocSet)null, sort, start, limit);
-    return results;
-  }
-
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
