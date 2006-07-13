@@ -61,13 +61,19 @@ public class OutputWriterTest extends AbstractSolrTestCase {
     public static class UselessOutputWriter implements QueryResponseWriter {
         
         public UselessOutputWriter() {}
+
+
         
         public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
         throws IOException {
             
             writer.write(USELESS_OUTPUT);
         }
-        
+
+      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+        return CONTENT_TYPE_TEXT_UTF8;
+      }
+
     }
     
 }
