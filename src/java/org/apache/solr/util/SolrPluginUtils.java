@@ -888,7 +888,7 @@ class MultiValueTokenStream extends TokenStream {
     curIndex = -1;
     curOffset = 0;
     currentStream = null;
-    
+    this.orderTokenOffsets=orderTokenOffsets;
   }
 
   /** Returns the next token in the stream, or null at EOS. */
