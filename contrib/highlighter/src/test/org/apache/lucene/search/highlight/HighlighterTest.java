@@ -20,19 +20,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -535,8 +530,131 @@ public class HighlighterTest extends TestCase implements Formatter
 		reader.close();
 		
 	}
-	
-	
+
+  protected TokenStream getTS2() {
+    //String s = "Hi-Speed10 foo";
+    return new TokenStream() {
+      Iterator iter;
+      List lst;
+      {
+        lst = new ArrayList();
+        Token t;
+        t = new Token("hi",0,2);
+        lst.add(t);
+        t = new Token("hispeed",0,8);
+        lst.add(t);
+        t = new Token("speed",3,8);
+        t.setPositionIncrement(0);
+        lst.add(t);
+        t = new Token("10",8,10);
+        lst.add(t);
+        t = new Token("foo",11,14);
+        lst.add(t);
+        iter = lst.iterator();
+      }
+      public Token next() throws IOException {
+        return iter.hasNext() ? (Token)iter.next() : null;
+      }
+    };
+  }
+
+  // same token-stream as above, but the bigger token comes first this time
+  protected TokenStream getTS2a() {
+    //String s = "Hi-Speed10 foo";
+    return new TokenStream() {
+      Iterator iter;
+      List lst;
+      {
+        lst = new ArrayList();
+        Token t;
+        t = new Token("hispeed",0,8);
+        lst.add(t);
+        t = new Token("hi",0,2);
+        t.setPositionIncrement(0);
+        lst.add(t);
+        t = new Token("speed",3,8);
+        lst.add(t);
+        t = new Token("10",8,10);
+        lst.add(t);
+        t = new Token("foo",11,14);
+        lst.add(t);
+        iter = lst.iterator();
+      }
+      public Token next() throws IOException {
+        return iter.hasNext() ? (Token)iter.next() : null;
+      }
+    };
+  }
+
+  public void testOverlapAnalyzer2() throws Exception
+  {
+
+    String s = "Hi-Speed10 foo";
+
+    Query query; Highlighter highlighter; String result;
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("foo");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2(), s, 3, "...");
+    assertEquals("Hi-Speed10 <B>foo</B>",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("10");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2(), s, 3, "...");
+    assertEquals("Hi-Speed<B>10</B> foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("hi");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2(), s, 3, "...");
+    assertEquals("<B>Hi</B>-Speed10 foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("speed");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2(), s, 3, "...");
+    assertEquals("Hi-<B>Speed</B>10 foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("hispeed");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2(), s, 3, "...");
+    assertEquals("<B>Hi-Speed</B>10 foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("hi speed");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2(), s, 3, "...");
+    assertEquals("<B>Hi-Speed</B>10 foo",result);
+
+    /////////////////// same tests, just put the bigger overlapping token first
+        query = new QueryParser("text",new WhitespaceAnalyzer()).parse("foo");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
+    assertEquals("Hi-Speed10 <B>foo</B>",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("10");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
+    assertEquals("Hi-Speed<B>10</B> foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("hi");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
+    assertEquals("<B>Hi</B>-Speed10 foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("speed");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
+    assertEquals("Hi-<B>Speed</B>10 foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("hispeed");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
+    assertEquals("<B>Hi-Speed</B>10 foo",result);
+
+    query = new QueryParser("text",new WhitespaceAnalyzer()).parse("hi speed");
+    highlighter = new Highlighter(new QueryScorer(query));
+    result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
+    assertEquals("<B>Hi-Speed</B>10 foo",result);
+  }
+
 
 /*
 
