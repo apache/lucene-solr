@@ -311,6 +311,7 @@
    <field name="lengthfilt" type="lengthfilt" indexed="true" stored="true"/>
    <field name="dedup" type="dedup" indexed="true" stored="true"/>
 
+   <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true"/>
 
    <field name="subword" type="subword" indexed="true" stored="true"/>
    <field name="sku1" type="skutype1" indexed="true" stored="true"/>
