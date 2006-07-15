@@ -25,8 +25,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Class used to markup highlighted terms found in the best sections of a 
- * text, using configurable {@link Fragmenter}, {@link Scorer}, {@link Formatter}, 
+ * Class used to markup highlighted terms found in the best sections of a
+ * text, using configurable {@link Fragmenter}, {@link Scorer}, {@link Formatter},
  * {@link Encoder} and tokenizers.
  * @author mark@searcharea.co.uk
  */
@@ -36,7 +36,7 @@ public class Highlighter
 	public static final  int DEFAULT_MAX_DOC_BYTES_TO_ANALYZE=50*1024;
 	private int maxDocBytesToAnalyze=DEFAULT_MAX_DOC_BYTES_TO_ANALYZE;
 	private Formatter formatter;
-	private Encoder encoder;	
+	private Encoder encoder;
 	private Fragmenter textFragmenter=new SimpleFragmenter();
 	private Scorer fragmentScorer=null;
 
@@ -44,14 +44,14 @@ public class Highlighter
 	{
 		this(new SimpleHTMLFormatter(),fragmentScorer);
 	}
-	
-	
+
+
  	public Highlighter(Formatter formatter, Scorer fragmentScorer)
  	{
 		this(formatter,new DefaultEncoder(),fragmentScorer);
 	}
-	
-	
+
+
 	public Highlighter(Formatter formatter, Encoder encoder, Scorer fragmentScorer)
 	{
  		this.formatter = formatter;
@@ -65,9 +65,9 @@ public class Highlighter
 	 * {@link #getBestFragment(TokenStream, String)}
 	 *
 	 * @param analyzer   the analyzer that will be used to split <code>text</code>
-	 * into chunks  
+	 * into chunks
 	 * @param text text to highlight terms in
-	 * @param fieldName Name of field used to influence analyzer's tokenization policy 
+	 * @param fieldName Name of field used to influence analyzer's tokenization policy
 	 *
 	 * @return highlighted text fragment or null if no terms found
 	 */
@@ -77,18 +77,18 @@ public class Highlighter
 		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragment(tokenStream, text);
 	}
-  
+
 	/**
 	 * Highlights chosen terms in a text, extracting the most relevant section.
 	 * The document text is analysed in chunks to record hit statistics
 	 * across the document. After accumulating stats, the fragment with the highest score
 	 * is returned
 	 *
-	 * @param tokenStream   a stream of tokens identified in the text parameter, including offset information. 
-	 * This is typically produced by an analyzer re-parsing a document's 
-	 * text. Some work may be done on retrieving TokenStreams more efficently 
+	 * @param tokenStream   a stream of tokens identified in the text parameter, including offset information.
+	 * This is typically produced by an analyzer re-parsing a document's
+	 * text. Some work may be done on retrieving TokenStreams more efficently
 	 * by adding support for storing original text position data in the Lucene
-	 * index but this support is not currently available (as of Lucene 1.4 rc2).  
+	 * index but this support is not currently available (as of Lucene 1.4 rc2).
 	 * @param text text to highlight terms in
 	 *
 	 * @return highlighted text fragment or null if no terms found
@@ -110,7 +110,7 @@ public class Highlighter
 	 * {@link #getBestFragments(TokenStream, String, int)}
 	 *
 	 * @param analyzer   the analyzer that will be used to split <code>text</code>
-	 * into chunks  
+	 * into chunks
 	 * @param text        	text to highlight terms in
 	 * @param maxNumFragments  the maximum number of fragments.
 	 * @deprecated This method incorrectly hardcodes the choice of fieldname. Use the
@@ -118,7 +118,7 @@ public class Highlighter
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
 	 */
 	public final String[] getBestFragments(
-		Analyzer analyzer,	
+		Analyzer analyzer,
 		String text,
 		int maxNumFragments)
 		throws IOException
@@ -132,7 +132,7 @@ public class Highlighter
 	 * {@link #getBestFragments(TokenStream, String, int)}
 	 *
 	 * @param analyzer   the analyzer that will be used to split <code>text</code>
-	 * into chunks  
+	 * into chunks
 	 * @param fieldName     the name of the field being highlighted (used by analyzer)
 	 * @param text        	text to highlight terms in
 	 * @param maxNumFragments  the maximum number of fragments.
@@ -140,7 +140,7 @@ public class Highlighter
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
 	 */
 	public final String[] getBestFragments(
-		Analyzer analyzer,	
+		Analyzer analyzer,
 		String fieldName,
 		String text,
 		int maxNumFragments)
@@ -149,12 +149,12 @@ public class Highlighter
 		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		return getBestFragments(tokenStream, text, maxNumFragments);
 	}
-	
+
 	/**
 	 * Highlights chosen terms in a text, extracting the most relevant sections.
 	 * The document text is analysed in chunks to record hit statistics
 	 * across the document. After accumulating stats, the fragments with the highest scores
-	 * are returned as an array of strings in order of score (contiguous fragments are merged into 
+	 * are returned as an array of strings in order of score (contiguous fragments are merged into
 	 * one in their original order to improve readability)
 	 *
 	 * @param text        	text to highlight terms in
@@ -163,13 +163,13 @@ public class Highlighter
 	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
 	 */
 	public final String[] getBestFragments(
-		TokenStream tokenStream,	
+		TokenStream tokenStream,
 		String text,
 		int maxNumFragments)
 		throws IOException
 	{
 		maxNumFragments = Math.max(1, maxNumFragments); //sanity check
-	
+
 		TextFragment[] frag =getBestTextFragments(tokenStream,text, true,maxNumFragments);
 
 		//Get text
@@ -183,12 +183,12 @@ public class Highlighter
 		}
 		return (String[]) fragTexts.toArray(new String[0]);
 	}
-	
+
 
 	/**
 	 * Low level api to get the most relevant (formatted) sections of the document.
 	 * This method has been made public to allow visibility of score information held in TextFragment objects.
-	 * Thanks to Jason Calabrese for help in redefining the interface.  
+	 * Thanks to Jason Calabrese for help in redefining the interface.
 	 * @param tokenStream
 	 * @param text
 	 * @param maxNumFragments
@@ -196,7 +196,7 @@ public class Highlighter
 	 * @throws IOException
 	 */
 	public final TextFragment[] getBestTextFragments(
-		TokenStream tokenStream,	
+		TokenStream tokenStream,
 		String text,
 		boolean mergeContiguousFragments,
 		int maxNumFragments)
@@ -208,7 +208,7 @@ public class Highlighter
 		TextFragment currentFrag =	new TextFragment(newText,newText.length(), docFrags.size());
 		fragmentScorer.startFragment(currentFrag);
 		docFrags.add(currentFrag);
-	
+
 		FragmentQueue fragQueue = new FragmentQueue(maxNumFragments);
 
 		try
@@ -219,27 +219,27 @@ public class Highlighter
 			int endOffset;
 			int lastEndOffset = 0;
 			textFragmenter.start(text);
-		
+
 			TokenGroup tokenGroup=new TokenGroup();
 
 			while ((token = tokenStream.next()) != null)
 			{
 				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(token)))
 				{
-					//the current token is distinct from previous tokens - 
+					//the current token is distinct from previous tokens -
 					// markup the cached token group info
-					startOffset = tokenGroup.startOffset;
-					endOffset = tokenGroup.endOffset;		
+					startOffset = tokenGroup.matchStartOffset;
+					endOffset = tokenGroup.matchEndOffset;
 					tokenText = text.substring(startOffset, endOffset);
 					String markedUpText=formatter.highlightTerm(encoder.encodeText(tokenText), tokenGroup);
 					//store any whitespace etc from between this and last group
 					if (startOffset > lastEndOffset)
 						newText.append(encoder.encodeText(text.substring(lastEndOffset, startOffset)));
 					newText.append(markedUpText);
-					lastEndOffset=endOffset;
+					lastEndOffset=Math.max(endOffset, lastEndOffset);
 					tokenGroup.clear();
 
-					//check if current token marks the start of a new fragment						
+					//check if current token marks the start of a new fragment
 					if(textFragmenter.isNewFragment(token))
 					{
 						currentFrag.setScore(fragmentScorer.getFragmentScore());
@@ -250,28 +250,28 @@ public class Highlighter
 						docFrags.add(currentFrag);
 					}
 				}
-						
-				tokenGroup.addToken(token,fragmentScorer.getTokenScore(token));
-				
+
+        tokenGroup.addToken(token,fragmentScorer.getTokenScore(token));
+
 				if(lastEndOffset>maxDocBytesToAnalyze)
 				{
 					break;
 				}
 			}
 			currentFrag.setScore(fragmentScorer.getFragmentScore());
-	
+
 			if(tokenGroup.numTokens>0)
 			{
 				//flush the accumulated text (same code as in above loop)
-				startOffset = tokenGroup.startOffset;
-				endOffset = tokenGroup.endOffset;		
+				startOffset = tokenGroup.matchStartOffset;
+				endOffset = tokenGroup.matchEndOffset;
 				tokenText = text.substring(startOffset, endOffset);
 				String markedUpText=formatter.highlightTerm(encoder.encodeText(tokenText), tokenGroup);
 				//store any whitespace etc from between this and last group
 				if (startOffset > lastEndOffset)
 					newText.append(encoder.encodeText(text.substring(lastEndOffset, startOffset)));
 				newText.append(markedUpText);
-				lastEndOffset=endOffset;						
+				lastEndOffset=Math.max(lastEndOffset,endOffset);
 			}
 
 			// append text after end of last token
@@ -286,7 +286,7 @@ public class Highlighter
 				currentFrag = (TextFragment) i.next();
 
 				//If you are running with a version of Lucene before 11th Sept 03
-				// you do not have PriorityQueue.insert() - so uncomment the code below					
+				// you do not have PriorityQueue.insert() - so uncomment the code below
 				/*
 									if (currentFrag.getScore() >= minScore)
 									{
@@ -296,8 +296,8 @@ public class Highlighter
 											fragQueue.pop(); // remove lowest in hit queue
 											minScore = ((TextFragment) fragQueue.top()).getScore(); // reset minScore
 										}
-										
-					
+
+
 									}
 				*/
 				//The above code caused a problem as a result of Christoph Goller's 11th Sept 03
@@ -312,7 +312,7 @@ public class Highlighter
 			{
 				frag[i] = (TextFragment) fragQueue.pop();
 			}
-			
+
 			//merge any contiguous fragments to improve readability
 			if(mergeContiguousFragments)
 			{
@@ -325,9 +325,9 @@ public class Highlighter
 						fragTexts.add(frag[i]);
 					}
 				}
-				frag= (TextFragment[]) fragTexts.toArray(new TextFragment[0]);				
+				frag= (TextFragment[]) fragTexts.toArray(new TextFragment[0]);
 			}
-			
+
 			return frag;
 
 		}
@@ -347,7 +347,7 @@ public class Highlighter
 	}
 
 
-	/** Improves readability of a score-sorted list of TextFragments by merging any fragments 
+	/** Improves readability of a score-sorted list of TextFragments by merging any fragments
 	 * that were contiguous in the original text into one larger fragment with the correct order.
 	 * This will leave a "null" in the array entry for the lesser scored fragment. 
 	 * 

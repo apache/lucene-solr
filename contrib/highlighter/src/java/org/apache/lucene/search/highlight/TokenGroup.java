@@ -30,37 +30,52 @@ public class TokenGroup
 	int numTokens=0;
 	int startOffset=0;
 	int endOffset=0;
-	
+	float tot;
 
-	void addToken(Token token, float score)
+  int matchStartOffset, matchEndOffset;
+
+
+  void addToken(Token token, float score)
 	{
 	    if(numTokens < MAX_NUM_TOKENS_PER_GROUP)
         {	    
 			if(numTokens==0)
 			{
-				startOffset=token.startOffset();		
-				endOffset=token.endOffset();		
+				startOffset=matchStartOffset=token.startOffset();
+				endOffset=matchEndOffset=token.endOffset();
+				tot += score;
 			}
 			else
 			{
-				startOffset=Math.min(startOffset,token.startOffset());		
-				endOffset=Math.max(endOffset,token.endOffset());		
-			}
+				startOffset=Math.min(startOffset,token.startOffset());
+				endOffset=Math.max(endOffset,token.endOffset());
+        if (score>0) {
+          if (tot==0) {
+            matchStartOffset=token.startOffset();
+            matchEndOffset=token.endOffset();
+          } else {
+            matchStartOffset=Math.min(matchStartOffset,token.startOffset());
+            matchEndOffset=Math.max(matchEndOffset,token.endOffset());
+          }
+          tot+=score;
+        }
+      }
 			tokens[numTokens]=token;
 			scores[numTokens]=score;
 			numTokens++;
         }
 	}
-	
+
 	boolean isDistinct(Token token)
 	{
 		return token.startOffset()>=endOffset;
 	}
-	
-	
+
+
 	void clear()
 	{
 		numTokens=0;
+		tot=0;
 	}
 	
 	/**
@@ -112,11 +127,6 @@ public class TokenGroup
 	 */
 	public float getTotalScore()
 	{
-		float total=0;
-		for (int i = 0; i < numTokens; i++)
-		{
-			total+=scores[i];
-		}
-		return total;
+		return tot;
 	}
 }
