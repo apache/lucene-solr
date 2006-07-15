@@ -78,14 +78,7 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.logging.Handler;
 
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collection;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.io.IOException;
 import java.io.StringReader;
@@ -393,8 +386,10 @@ public class SolrPluginUtils {
               searcher.getReader(), docId, fieldName);
           } catch (IllegalArgumentException e) {
             // fall back to analyzer
-            tstream = searcher.getSchema().getAnalyzer().tokenStream(
-             fieldName, new StringReader(docTexts[0]));
+            tstream = new TokenOrderingFilter(
+                    searcher.getSchema().getAnalyzer().tokenStream(
+                      fieldName, new StringReader(docTexts[0])),
+                    10);
           }
           frag = highlighter.getBestTextFragments(
             tstream, docTexts[0], false, numFragments);
@@ -404,7 +399,7 @@ public class SolrPluginUtils {
           MultiValueTokenStream tstream;
           tstream = new MultiValueTokenStream(fieldName,
                                               docTexts,
-                                              searcher.getSchema().getAnalyzer());
+                                              searcher.getSchema().getAnalyzer(), true);
           frag = highlighter.getBestTextFragments(
             tstream, tstream.asSingleValue(), false, numFragments);
         }
@@ -877,6 +872,7 @@ class MultiValueTokenStream extends TokenStream {
   private int curIndex;                  // next index into the values array
   private int curOffset;                 // offset into concatenated string
   private TokenStream currentStream;     // tokenStream currently being iterated
+  private boolean orderTokenOffsets;
 
   /** Constructs a TokenStream for consecutively-analyzed field values
    *
@@ -885,7 +881,7 @@ class MultiValueTokenStream extends TokenStream {
    * @param analyzer analyzer instance
    */
   public MultiValueTokenStream(String fieldName, String[] values, 
-                               Analyzer analyzer) {
+                               Analyzer analyzer, boolean orderTokenOffsets) {
     this.fieldName = fieldName;
     this.values = values;
     this.analyzer = analyzer;
@@ -903,6 +899,7 @@ class MultiValueTokenStream extends TokenStream {
       if(curIndex < values.length) {
         currentStream = analyzer.tokenStream(fieldName, 
                                              new StringReader(values[curIndex]));
+        if (orderTokenOffsets) currentStream = new TokenOrderingFilter(currentStream,10);
         // add extra space between multiple values
         if(curIndex > 0) 
           extra = analyzer.getPositionIncrementGap(fieldName);
@@ -964,5 +961,48 @@ class GapFragmenter extends SimpleFragmenter {
         fragOffsetAccum += token.endOffset() - fragOffsetAccum;
     }
     return isNewFrag;
+  }
+}
+
+
+/** Orders Tokens in a window first by their startOffset ascending.
+ * endOffset is currently ignored.
+ * This is meant to work around fickleness in the highlighter only.  It
+ * can mess up token positions and should not be used for indexing or querying.
+ */
+class TokenOrderingFilter extends TokenFilter {
+  private final int windowSize;
+  private final LinkedList<Token> queue = new LinkedList<Token>();
+  private boolean done=false;
+
+  protected TokenOrderingFilter(TokenStream input, int windowSize) {
+    super(input);
+    this.windowSize = windowSize;
+  }
+
+  public Token next() throws IOException {
+    while (!done && queue.size() < windowSize) {
+      Token newTok = input.next();
+      if (newTok==null) {
+        done=true;
+        break;
+      }
+
+      // reverse iterating for better efficiency since we know the
+      // list is already sorted, and most token start offsets will be too.
+      ListIterator<Token> iter = queue.listIterator(queue.size());
+      while(iter.hasPrevious()) {
+        if (newTok.startOffset() >= iter.previous().startOffset()) {
+          // insertion will be before what next() would return (what
+          // we just compared against), so move back one so the insertion
+          // will be after.
+          iter.next();
+          break;
+        }
+      }
+      iter.add(newTok);
+    }
+
+    return queue.isEmpty() ? null : queue.removeFirst();
   }
 }
