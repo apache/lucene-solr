@@ -729,8 +729,8 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     // test sorting  with some docs missing the sort field
 
     assertU("<delete><query>id_i:[1000 TO 1010]</query></delete>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1000</field><field name=\"a_i\">1</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1001</field><field name=\"a_i\">10</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1000</field><field name=\"a_i\">1</field><field name=\"nullfirst\">Z</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1001</field><field name=\"a_i\">10</field><field name=\"nullfirst\">A</field></doc></add>");
     assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1002</field><field name=\"a_i\">1</field><field name=\"b_i\">100</field></doc></add>");
     assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1003</field><field name=\"a_i\">-1</field></doc></add>");
     assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1004</field><field name=\"a_i\">15</field></doc></add>");
@@ -762,7 +762,19 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             ,"//doc[4]/int[.='100']  "
             ,"//doc[5]/int[.='1000']"
             );
-
+    // nullfirst tests
+    assertQ(req("id_i:[1000 TO 1002]; nullfirst asc")
+            ,"*[count(//doc)=3] "
+            ,"//doc[1]/int[.='1002']"
+            ,"//doc[2]/int[.='1001']  "
+            ,"//doc[3]/int[.='1000']"
+            );
+    assertQ(req("id_i:[1000 TO 1002]; nullfirst desc")
+            ,"*[count(//doc)=3] "
+            ,"//doc[1]/int[.='1002']"
+            ,"//doc[2]/int[.='1000']  "
+            ,"//doc[3]/int[.='1001']"
+            );
 
     // test prefix query
 
