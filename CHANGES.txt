@@ -57,6 +57,11 @@ Bug Fixes
  4. WordDelimiterFilter sometimes lost token positionIncrement information
  5. Fix reverse sorting for fields were sortMissingFirst=true
     (Rob Staveley, yonik)
+ 5. Worked around a Jetty bug that caused invalid XML responses for fields
+    containing non ASCII chars.  (Bertrand Delacretaz via yonik, SOLR-32)
+
+ reverse sorting for fields were sortMissingFirst=true
+    (Rob Staveley, yonik)
 
 Other Changes
  1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,

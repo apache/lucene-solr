@@ -159,8 +159,9 @@ public class XML {
       }
       if (subst != null) {
         if (start<i) {
-          // out.write(str.substring(start,i));
-          out.write(str, start, i-start);
+          out.write(str.substring(start,i));
+          // write(str,off,len) causes problems for Jetty with chars > 127
+          //out.write(str, start, i-start);
           // n+=i-start;
         }
         out.write(subst);
@@ -172,8 +173,9 @@ public class XML {
       out.write(str);
       // n += str.length();
     } else if (start<str.length()) {
-      // out.write(str.substring(start));
-      out.write(str, start, str.length()-start);
+      out.write(str.substring(start));
+      // write(str,off,len) causes problems for Jetty with chars > 127
+      // out.write(str, start, str.length()-start);
       // n += str.length()-start;
     }
     // return n;
