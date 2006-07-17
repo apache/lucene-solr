@@ -13,22 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.analysis;
+
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
+import org.apache.solr.core.SolrCore;
 
 /**
+ * Factory for SnowballFilters, with configurable language
+ * 
+ * Browsing the code, SnowballFilter uses reflection to adapt to Lucene... don't
+ * use this if you are concerned about speed. Use EnglishPorterFilterFactory.
+ * 
  * @author yonik
  * @version $Id$
  */
-public class SnowballPorterFilterFactory extends BaseTokenFilterFactory {
-  public TokenStream create(TokenStream input) {
-    // Browsing the code, SnowballFilter uses reflection to adapt to Lucene...
-    // don't use this if you are concerned about speed.  Use EnglishPorterFilterFactory.
 
-    // TODO: make language configurable
-    return new SnowballFilter(input,"English");
+public class SnowballPorterFilterFactory extends BaseTokenFilterFactory {
+  private String language = "English";
+  
+  public void init(Map<String, String> args) {
+    super.init(args);
+    final String cfgLanguage = args.get("language");
+    if(cfgLanguage!=null) language = cfgLanguage;
+    SolrCore.log.fine("SnowballPorterFilterFactory: language=" + language);
+  }
+  
+  public TokenStream create(TokenStream input) {
+    return new SnowballFilter(input,language);
   }
 }
+
