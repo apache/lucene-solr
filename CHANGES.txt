@@ -29,6 +29,8 @@ New Features
     and DisMaxRequestHandler (SOLR-24 / Mike Klaas via hossman,yonik)
 16. SnowballPorterFilterFactory language is configurable via the "language"
     attribute, with the default being "English".  (Bertrand Delacretaz via yonik, SOLR-27)
+17. ISOLatin1AccentFilterFactory, instantiates ISOLatin1AccentFilter to remove accents.
+    (Bertrand Delacretaz via yonik, SOLR-28)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
