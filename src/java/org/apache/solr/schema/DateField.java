@@ -18,7 +18,9 @@ package org.apache.solr.schema;
 
 import org.apache.solr.core.SolrException;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
@@ -99,5 +101,9 @@ public class DateField extends FieldType {
 
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     xmlWriter.writeDate(name, toExternal(f));
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeDate(name, toExternal(f));
   }
 }

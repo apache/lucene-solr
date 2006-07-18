@@ -184,7 +184,13 @@ public class NamedList implements Cloneable, Serializable {
       Map.Entry entry = (Map.Entry)iter.next();
       add(entry.getKey().toString(), entry.getValue());
     }
-    return false;
+    return args.size()>0;
+  }
+
+  /** Appends the elements of the given NamedList to this one. */
+  public boolean addAll(NamedList nl) {
+    nvPairs.addAll(nl.nvPairs);
+    return nl.size()>0;
   }
 
   /**

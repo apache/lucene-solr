@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -26,6 +27,7 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.core.SolrException;
 
@@ -208,7 +210,7 @@ public abstract class FieldType extends FieldProperties {
    * value
    * @see #toInternal
    */
-  public String toExternal(Field f) {
+  public String toExternal(Fieldable f) {
     // currently used in writing XML of the search result (but perhaps
     // a more efficient toXML(Field f, Writer w) should be used
     // in the future.
@@ -221,12 +223,12 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** :TODO: document this method */
-  public String storedToReadable(Field f) {
+  public String storedToReadable(Fieldable f) {
     return toExternal(f);
   }
 
   /** :TODO: document this method */
-  public String storedToIndexed(Field f) {
+  public String storedToIndexed(Fieldable f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
     // that the indexed form is the same as the stored field form.
@@ -343,6 +345,11 @@ public abstract class FieldType extends FieldProperties {
    * Renders the specified field as XML
    */
   public abstract void write(XMLWriter xmlWriter, String name, Field f) throws IOException;
+
+  /**
+   * calls back to TextResponseWriter to write the field value
+   */
+  public abstract void write(TextResponseWriter writer, String name, Fieldable f) throws IOException;
 
   
   /**

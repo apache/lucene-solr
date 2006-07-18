@@ -22,9 +22,11 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -64,6 +66,11 @@ public class SortableIntField extends FieldType {
     // since writeInt an int instead of a String since that may be more efficient
     // in the future (saves the construction of one String)
     xmlWriter.writeInt(name, NumberUtils.SortableStr2int(sval,0,sval.length()));
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    String sval = f.stringValue();
+    writer.writeInt(name, NumberUtils.SortableStr2int(sval,0,sval.length()));
   }
 }
 

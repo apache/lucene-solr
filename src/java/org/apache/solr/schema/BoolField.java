@@ -24,7 +24,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 
 import java.util.Map;
@@ -94,5 +96,9 @@ public class BoolField extends FieldType {
 
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     xmlWriter.writeBool(name, f.stringValue().charAt(0) =='T');
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeBool(name, f.stringValue().charAt(0) =='T');
   }
 }

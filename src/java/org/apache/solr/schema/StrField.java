@@ -18,7 +18,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -26,7 +28,6 @@ import java.io.IOException;
  * @author yonik
  * @version $Id$
  */
-//TODO: allow specification of max string size?
 public class StrField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {
   }
@@ -37,5 +38,9 @@ public class StrField extends FieldType {
 
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     xmlWriter.writeStr(name, f.stringValue());
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeStr(name, f.stringValue(), true);
   }
 }

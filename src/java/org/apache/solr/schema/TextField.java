@@ -18,7 +18,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -39,5 +41,9 @@ public class TextField extends FieldType {
 
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     xmlWriter.writeStr(name, f.stringValue());
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeStr(name, f.stringValue(), true);
   }
 }

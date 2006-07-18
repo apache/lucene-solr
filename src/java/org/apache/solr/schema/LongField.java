@@ -20,7 +20,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.IntFieldSource;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -48,5 +50,9 @@ public class LongField extends FieldType {
 
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     xmlWriter.writeLong(name, f.stringValue());
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeLong(name, f.stringValue());
   }
 }

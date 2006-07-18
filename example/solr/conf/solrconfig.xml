@@ -228,6 +228,10 @@
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
 
+    <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
+    <queryResponseWriter name="python" class="org.apache.solr.request.PythonResponseWriter"/>
+    <queryResponseWriter name="ruby" class="org.apache.solr.request.RubyResponseWriter"/>
+
     
   <!-- config for the admin interface --> 
   <admin>

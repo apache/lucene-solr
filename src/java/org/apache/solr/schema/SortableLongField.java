@@ -22,9 +22,11 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -59,6 +61,11 @@ public class SortableLongField extends FieldType {
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     String sval = f.stringValue();
     xmlWriter.writeLong(name, NumberUtils.SortableStr2long(sval,0,sval.length()));
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    String sval = f.stringValue();
+    writer.writeLong(name, NumberUtils.SortableStr2long(sval,0,sval.length()));
   }
 }
 

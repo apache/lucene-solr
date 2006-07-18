@@ -17,8 +17,10 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -91,6 +93,11 @@ public final class SchemaField extends FieldProperties {
   }
 
   public void write(XMLWriter writer, String name, Field val) throws IOException {
+    // name is passed in because it may be null if name should not be used.
+    type.write(writer,name,val);
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable val) throws IOException {
     // name is passed in because it may be null if name should not be used.
     type.write(writer,name,val);
   }

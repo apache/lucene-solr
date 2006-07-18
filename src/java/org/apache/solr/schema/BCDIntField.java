@@ -19,8 +19,10 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.solr.util.BCDUtils;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.request.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;
@@ -54,6 +56,10 @@ public class BCDIntField extends FieldType {
 
   public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
     xmlWriter.writeInt(name,toExternal(f));
+  }
+
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
+    writer.writeInt(name,toExternal(f));
   }
 }
 
