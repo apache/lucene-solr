@@ -28,6 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.*;
 import org.apache.solr.util.DOMUtil;
@@ -693,7 +694,14 @@ public final class SolrCore {
             cmd.doc = builder.getDoc();
             log.finest("adding doc...");
             updateHandler.addDoc(cmd);
-	          log.info("add "+status+" "+(System.currentTimeMillis()-startTime));
+            SchemaField uniqueKeyField = schema.getUniqueKeyField();
+            StringBuilder addMsg = new StringBuilder("add ");
+            if (uniqueKeyField!=null) addMsg.append("(")
+                                .append(uniqueKeyField.getName())
+                                .append("=")
+                                .append(schema.printableUniqueKey(cmd.doc))
+                                .append(") ");
+            log.info(addMsg.toString()+status+" "+(System.currentTimeMillis()-startTime));
             writer.write("<result status=\"" + status + "\"></result>");
           } catch (SolrException e) {
             log(e);
