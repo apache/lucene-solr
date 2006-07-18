@@ -45,5 +45,9 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     posTst("zoo-foo-123","456-bar-baz","foo","bar");
   }
 
+  public void testNoGenerationEdgeCase() {
+    assertU(adoc("id", "222", "numberpartfail", "123.123.123.123"));
+  }
+
 
 }

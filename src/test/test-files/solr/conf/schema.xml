@@ -52,6 +52,15 @@
     <fieldtype name="bcdlong" class="solr.BCDLongField" sortMissingLast="true"/>
     <fieldtype name="bcdstr" class="solr.BCDStrField" sortMissingLast="true"/>
 
+    <!-- Field type demonstrating an Analyzer failure -->
+    <fieldtype name="failtype1" class="solr.TextField">
+      <analyzer type="index">
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
 
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
@@ -310,6 +319,8 @@
    <field name="custstopfilt" type="custstopfilt" indexed="true" stored="true"/>
    <field name="lengthfilt" type="lengthfilt" indexed="true" stored="true"/>
    <field name="dedup" type="dedup" indexed="true" stored="true"/>
+
+   <field name="numberpartfail" type="failtype1" indexed="true" stored="true"/>
 
    <field name="nullfirst" type="string" indexed="true" stored="true" sortMissingFirst="true"/>
 

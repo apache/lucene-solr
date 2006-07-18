@@ -329,16 +329,16 @@ final class WordDelimiterFilter extends TokenFilter {
       if (numWords==0) {
         // all numbers
         addCombos(tlist,0,numtok,generateNumberParts!=0,catenateNumbers!=0 || catenateAll!=0, 1);
-        break;
+        if (queue.size() > 0) break; else continue;
       } else if (numNumbers==0) {
         // all words
         addCombos(tlist,0,numtok,generateWordParts!=0,catenateWords!=0 || catenateAll!=0, 1);
-        break;
+        if (queue.size() > 0) break; else continue;
       } else if (generateNumberParts==0 && generateWordParts==0 && catenateNumbers==0 && catenateWords==0) {
         // catenate all *only*
         // OPT:could be optimized to add to current queue...
         addCombos(tlist,0,numtok,false,catenateAll!=0, 1);
-        break;
+        if (queue.size() > 0) break; else continue;
       }
 
       //
@@ -369,7 +369,10 @@ final class WordDelimiterFilter extends TokenFilter {
         addCombos(tlist,0,numtok,false,true,0);
       }
 
-      break;
+      // NOTE: in certain cases, queue may be empty (for instance, if catenate
+      // and generate are both set to false).  In this case, we should proceed
+      // to next token rather than throwing ArrayOutOfBounds
+      if (queue.size() > 0) break; else continue;
     }
 
     // System.out.println("##########AFTER COMBINATIONS:"+ str(queue));
