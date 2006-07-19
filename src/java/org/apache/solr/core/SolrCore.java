@@ -16,17 +16,11 @@
 
 package org.apache.solr.core;
 
-import java.util.Map;
-import java.util.TreeMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.solr.request.QueryResponseWriter;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.request.*;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -47,8 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -956,8 +949,7 @@ public final class SolrCore {
   
   
   private QueryResponseWriter defaultResponseWriter;
-  private Map<String, QueryResponseWriter> responseWriters
-    = new TreeMap<String, QueryResponseWriter>();
+  private final Map<String, QueryResponseWriter> responseWriters = new HashMap<String, QueryResponseWriter>();
   
   /** Configure the query response writers. There will always be a default writer; additional 
    * writers may also be configured. */
@@ -988,6 +980,18 @@ public final class SolrCore {
     if (defaultResponseWriter == null) {
       defaultResponseWriter = new XMLResponseWriter();
     }
+
+    // make JSON response writers available by default
+    if (responseWriters.get("json")==null) {
+      responseWriters.put("json", new JSONResponseWriter());
+    }
+    if (responseWriters.get("python")==null) {
+      responseWriters.put("python", new PythonResponseWriter());
+    }
+    if (responseWriters.get("ruby")==null) {
+      responseWriters.put("ruby", new RubyResponseWriter());
+    }
+
   }
   
   /** Finds a writer by name, or returns the default writer if not found. */

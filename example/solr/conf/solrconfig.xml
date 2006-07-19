@@ -223,14 +223,16 @@
     writer.
     The "standard" writer is the default and will be used if 'wt' is not specified 
     in the request. XMLResponseWriter will be used if nothing specified here.
-    
-    <queryResponseWriter name="standard" class="org.apache.solr.request.XMLResponseWriter"/>
-    <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
-  -->
+    The json, python, and ruby writers are also available by default.
 
+    <queryResponseWriter name="standard" class="org.apache.solr.request.XMLResponseWriter"/>
     <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
     <queryResponseWriter name="python" class="org.apache.solr.request.PythonResponseWriter"/>
     <queryResponseWriter name="ruby" class="org.apache.solr.request.RubyResponseWriter"/>
+
+    <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
+  -->
+
 
     
   <!-- config for the admin interface --> 
