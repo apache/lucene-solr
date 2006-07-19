@@ -33,6 +33,8 @@ New Features
     (Bertrand Delacretaz via yonik, SOLR-28)
 18. JSON, Python, Ruby QueryResponseWriters: use wt="json", "python" or "ruby"
     (yonik, SOLR-31)
+19. Make web admin pages return UTF-8, change Content-type declaration to include a
+    space between the mime-type and charset (Philip Jacob, SOLR-35)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
