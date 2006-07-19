@@ -1,4 +1,3 @@
-<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
 <%@ page import="org.apache.solr.core.SolrConfig,
                  org.apache.solr.core.SolrCore,
                  org.apache.solr.schema.IndexSchema,

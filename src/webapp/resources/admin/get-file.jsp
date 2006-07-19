@@ -1,4 +1,4 @@
-<%@ page contentType="text/plain; charset=utf-8" pageEncoding="UTF-8"%>
+<%@ page contentType="text/plain; charset=utf-8" pageEncoding="UTF-8" %>
 <%@ page import="org.apache.solr.core.Config,
                  org.apache.solr.core.SolrConfig,
                  java.io.InputStream,

@@ -1,11 +1,10 @@
-<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
 <%@ page import="org.apache.solr.core.SolrInfoMBean,
                  org.apache.solr.core.SolrInfoRegistry,
                  java.net.URL,
                  java.util.Date,
                  java.util.Map"%>
 
-<%@ page contentType="text/xml;charset=UTF-8" language="java" %>
+<%@ page contentType="text/xml; charset=utf-8" pageEncoding="UTF-8" language="java" %>
 <?xml-stylesheet type="text/xsl" href="registry.xsl"?>
 
 <%@include file="_info.jsp" %>

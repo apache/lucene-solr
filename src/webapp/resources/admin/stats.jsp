@@ -1,11 +1,9 @@
-<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
+<%@ page contentType="text/xml; charset=utf-8" pageEncoding="UTF-8" language="java" %>
 <%@ page import="org.apache.solr.core.SolrInfoMBean,
                  org.apache.solr.core.SolrInfoRegistry,
                  org.apache.solr.util.NamedList,
                  java.util.Date,
                  java.util.Map"%>
-
-<%@ page contentType="text/xml;charset=UTF-8" language="java" %>
 <?xml-stylesheet type="text/xsl" href="stats.xsl"?>
 <%@include file="_info.jsp" %>
 
