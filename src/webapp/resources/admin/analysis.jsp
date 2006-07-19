@@ -1,3 +1,4 @@
+<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
 <%@ page import="org.apache.lucene.analysis.Analyzer,
                  org.apache.lucene.analysis.Token,
                  org.apache.lucene.analysis.TokenStream,

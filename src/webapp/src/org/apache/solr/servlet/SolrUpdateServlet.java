@@ -18,6 +18,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.request.XMLResponseWriter;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.QueryResponseWriter;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,7 +36,6 @@ import java.io.PrintWriter;
 public class SolrUpdateServlet extends HttpServlet {
   final Logger log = Logger.getLogger(SolrUpdateServlet.class.getName());
   private SolrCore core;
-  private static String CONTENT_TYPE="text/xml;charset=UTF-8";
 
   XMLResponseWriter xmlResponseWriter;
 
@@ -47,7 +47,7 @@ public class SolrUpdateServlet extends HttpServlet {
 
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     BufferedReader requestReader = request.getReader();
-    response.setContentType(CONTENT_TYPE);
+    response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
     PrintWriter responseWriter = response.getWriter();
     core.update(requestReader, responseWriter);
   }

@@ -1,10 +1,10 @@
+<%@ page contentType="text/plain; charset=utf-8" pageEncoding="UTF-8"%>
 <%@ page import="org.apache.solr.core.Config,
                  org.apache.solr.core.SolrConfig,
                  java.io.InputStream,
                  java.io.InputStreamReader,
                  java.io.Reader,
                  java.util.StringTokenizer"%>
-<%@ page contentType="text/plain;charset=UTF-8" language="java" %>
 <%
   String fname = request.getParameter("file");
   String optional = request.getParameter("optional");

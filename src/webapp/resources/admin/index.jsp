@@ -1,4 +1,4 @@
-
+<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
 <!-- $Id$ -->
 <!-- $Source: /cvs/main/searching/SolrServer/resources/admin/index.jsp,v $ -->
 <!-- $Name:  $ -->

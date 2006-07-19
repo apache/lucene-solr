@@ -1,3 +1,4 @@
+<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
 <%@ page import="java.lang.management.ManagementFactory,
                  java.lang.management.ThreadMXBean,
                  java.lang.management.ThreadInfo,
