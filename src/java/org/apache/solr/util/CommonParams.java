@@ -73,13 +73,13 @@ import java.io.IOException;
     /** no default other explanation query **/
     public String explainOther = null;
     /** whether to highlight */
-    public static boolean highlight = false;
+    public boolean highlight = false;
     /** fields to highlight */
-    public static String highlightFields = null;
+    public String highlightFields = null;
     /** maximum highlight fragments to return */
-    public static int maxSnippets = 1;
+    public int maxSnippets = 1;
     /** override default highlight Formatter class */
-    public static String highlightFormatterClass = null;
+    public String highlightFormatterClass = null;
 
 
     public CommonParams() {
