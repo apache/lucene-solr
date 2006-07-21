@@ -115,10 +115,4 @@ public class TestSpellChecker extends TestCase {
     rs.close();
     return num;
   }
-
-  protected void tearDown() throws Exception {
-    spellChecker = null;
-    super.tearDown();
-  }
-
 }
