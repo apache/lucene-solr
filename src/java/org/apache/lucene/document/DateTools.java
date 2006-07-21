@@ -40,6 +40,26 @@ public class DateTools {
   
   private final static TimeZone GMT = TimeZone.getTimeZone("GMT");
 
+  private static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy");
+  private static final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat("yyyyMM");
+  private static final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("yyyyMMdd");
+  private static final SimpleDateFormat HOUR_FORMAT = new SimpleDateFormat("yyyyMMddHH");
+  private static final SimpleDateFormat MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm");
+  private static final SimpleDateFormat SECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+  private static final SimpleDateFormat MILLISECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+  static {
+    // times need to be normalized so the value doesn't depend on the 
+    // location the index is created/used:
+    YEAR_FORMAT.setTimeZone(GMT);
+    MONTH_FORMAT.setTimeZone(GMT);
+    DAY_FORMAT.setTimeZone(GMT);
+    HOUR_FORMAT.setTimeZone(GMT);
+    MINUTE_FORMAT.setTimeZone(GMT);
+    SECOND_FORMAT.setTimeZone(GMT);
+    MILLISECOND_FORMAT.setTimeZone(GMT);
+  }
+
+  // cannot create, the class has static methods only
   private DateTools() {}
 
   /**
@@ -54,7 +74,7 @@ public class DateTools {
   public static String dateToString(Date date, Resolution resolution) {
     return timeToString(date.getTime(), resolution);
   }
-  
+
   /**
    * Converts a millisecond time to a string suitable for indexing.
    * 
@@ -72,30 +92,41 @@ public class DateTools {
     
     cal.setTime(new Date(round(time, resolution)));
 
-    SimpleDateFormat sdf = new SimpleDateFormat();
-    sdf.setTimeZone(GMT);
-    String pattern = null;
+    String result;
     if (resolution == Resolution.YEAR) {
-      pattern = "yyyy";
+      synchronized (YEAR_FORMAT) {
+        result = YEAR_FORMAT.format(cal.getTime());
+      }
     } else if (resolution == Resolution.MONTH) {
-      pattern = "yyyyMM";
+      synchronized (MONTH_FORMAT) {
+        result = MONTH_FORMAT.format(cal.getTime());
+      }
     } else if (resolution == Resolution.DAY) {
-      pattern = "yyyyMMdd";
+      synchronized (DAY_FORMAT) {
+        result = DAY_FORMAT.format(cal.getTime());
+      }
     } else if (resolution == Resolution.HOUR) {
-      pattern = "yyyyMMddHH";
+      synchronized (HOUR_FORMAT) {
+        result = HOUR_FORMAT.format(cal.getTime());
+      }
     } else if (resolution == Resolution.MINUTE) {
-      pattern = "yyyyMMddHHmm";
+      synchronized (MINUTE_FORMAT) {
+        result = MINUTE_FORMAT.format(cal.getTime());
+      }
     } else if (resolution == Resolution.SECOND) {
-      pattern = "yyyyMMddHHmmss";
+      synchronized (SECOND_FORMAT) {
+        result = SECOND_FORMAT.format(cal.getTime());
+      }
     } else if (resolution == Resolution.MILLISECOND) {
-      pattern = "yyyyMMddHHmmssSSS";
+      synchronized (MILLISECOND_FORMAT) {
+        result = MILLISECOND_FORMAT.format(cal.getTime());
+      }
     } else {
       throw new IllegalArgumentException("unknown resolution " + resolution);
     }
-    sdf.applyPattern(pattern);
-    return sdf.format(cal.getTime());
+    return result;
   }
-
+  
   /**
    * Converts a string produced by <code>timeToString</code> or
    * <code>dateToString</code> back to a time, represented as the
@@ -121,26 +152,38 @@ public class DateTools {
    *  expected format 
    */
   public static Date stringToDate(String dateString) throws ParseException {
-    String pattern = null;
-    if (dateString.length() == 4 )
-      pattern = "yyyy";
-    else if (dateString.length() == 6 )
-      pattern = "yyyyMM";
-    else if (dateString.length() == 8 )
-      pattern = "yyyyMMdd";
-    else if (dateString.length() == 10 )
-      pattern = "yyyyMMddHH";
-    else if (dateString.length() == 12 )
-      pattern = "yyyyMMddHHmm";
-    else if (dateString.length() == 14 )
-      pattern = "yyyyMMddHHmmss";
-    else if (dateString.length() == 17 )
-      pattern = "yyyyMMddHHmmssSSS";
-    else
+    Date date;
+    if (dateString.length() == 4) {
+      synchronized (YEAR_FORMAT) {
+        date = YEAR_FORMAT.parse(dateString);
+      }
+    } else if (dateString.length() == 6) {
+      synchronized (MONTH_FORMAT) {
+        date = MONTH_FORMAT.parse(dateString);
+      }
+    } else if (dateString.length() == 8) {
+      synchronized (DAY_FORMAT) {
+        date = DAY_FORMAT.parse(dateString);
+      }
+    } else if (dateString.length() == 10) {
+      synchronized (HOUR_FORMAT) {
+        date = HOUR_FORMAT.parse(dateString);
+      }
+    } else if (dateString.length() == 12) {
+      synchronized (MINUTE_FORMAT) {
+        date = MINUTE_FORMAT.parse(dateString);
+      }
+    } else if (dateString.length() == 14) {
+      synchronized (SECOND_FORMAT) {
+        date = SECOND_FORMAT.parse(dateString);
+      }
+    } else if (dateString.length() == 17) {
+      synchronized (MILLISECOND_FORMAT) {
+        date = MILLISECOND_FORMAT.parse(dateString);
+      }
+    } else {
       throw new ParseException("Input is not valid date string: " + dateString, 0);
-    SimpleDateFormat sdf = new SimpleDateFormat(pattern);
-    sdf.setTimeZone(GMT);
-    Date date = sdf.parse(dateString);
+    }
     return date;
   }
   
