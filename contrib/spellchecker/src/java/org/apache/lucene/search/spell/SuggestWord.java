@@ -38,8 +38,8 @@ final class SuggestWord {
    */
   public String string;
 
-  public final int compareTo (SuggestWord a) {
-    //first criteria: the edit distance
+  public final int compareTo(SuggestWord a) {
+    // first criteria: the edit distance
     if (score > a.score) {
       return 1;
     }
@@ -47,7 +47,7 @@ final class SuggestWord {
       return -1;
     }
 
-    //second criteria (if first criteria is equal): the popularity
+    // second criteria (if first criteria is equal): the popularity
     if (freq > a.freq) {
       return 1;
     }
