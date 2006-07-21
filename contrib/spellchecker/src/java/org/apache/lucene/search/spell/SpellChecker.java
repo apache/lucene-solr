@@ -69,26 +69,27 @@ public class SpellChecker {
    * Boost value for start and end grams
    */
   private float bStart = 2.0f;
-
   private float bEnd = 1.0f;
 
   private IndexReader reader;
+  private IndexSearcher searcher;
 
   float min = 0.5f;
 
-  public void setSpellIndex(Directory spellindex) {
+  public SpellChecker(Directory spellIndex) throws IOException {
+    this.setSpellIndex(spellIndex);
+  }
+
+  public void setSpellIndex(Directory spellindex) throws IOException {
     this.spellindex = spellindex;
+    searcher = new IndexSearcher(this.spellindex);
   }
 
   /**
-   *  Set the accuracy 0 &lt; min &lt; 1; default 0.5
+   * Sets the accuracy 0 &lt; min &lt; 1; default 0.5
    */
-  public void setAccuraty(float min) {
+  public void setAccuracy(float min) {
     this.min = min;
-  }
-
-  public SpellChecker(Directory gramIndex) {
-    this.setSpellIndex(gramIndex);
   }
 
   /**
@@ -123,10 +124,10 @@ public class SpellChecker {
     final TRStringDistance sd = new TRStringDistance(word);
     final int lengthWord = word.length();
 
-    final int goalFreq = (morePopular && ir != null) ? ir.docFreq(new Term(
-        field, word)) : 0;
+    final int goalFreq = (morePopular && ir != null) ? ir.docFreq(new Term(field, word)) : 0;
+    // if the word exists in the real index and we don't care for word frequency, return the word itself
     if (!morePopular && goalFreq > 0) {
-      return new String[] { word }; // return the word if it exist in the index and i don't want a more popular word
+      return new String[] { word };
     }
 
     BooleanQuery query = new BooleanQuery();
@@ -154,24 +155,25 @@ public class SpellChecker {
       for (int i = 0; i < grams.length; i++) {
         add(query, key, grams[i]);
       }
-
     }
 
-    IndexSearcher searcher = new IndexSearcher(this.spellindex);
+//    System.out.println("Q: " + query);
     Hits hits = searcher.search(query);
     SuggestWordQueue sugqueue = new SuggestWordQueue(num_sug);
 
-    int stop = Math.min(hits.length(), 10 * num_sug); // go thru more than 'maxr' matches in case the distance filter triggers
+    // go thru more than 'maxr' matches in case the distance filter triggers
+    int stop = Math.min(hits.length(), 10 * num_sug);
     SuggestWord sugword = new SuggestWord();
     for (int i = 0; i < stop; i++) {
 
-      sugword.string = hits.doc(i).get(F_WORD); // get orig word)
+      sugword.string = hits.doc(i).get(F_WORD); // get orig word
 
+      // don't suggest a word for itself, that would be silly
       if (sugword.string.equals(word)) {
-        continue; // don't suggest a word for itself, that would be silly
+        continue;
       }
 
-      //edit distance/normalize with the min word length
+      // edit distance/normalize with the min word length
       sugword.score = 1.0f - ((float) sd.getDistance(sugword.string) / Math
           .min(sugword.string.length(), lengthWord));
       if (sugword.score < min) {
@@ -180,13 +182,14 @@ public class SpellChecker {
 
       if (ir != null) { // use the user index
         sugword.freq = ir.docFreq(new Term(field, sugword.string)); // freq in the index
-        if ((morePopular && goalFreq > sugword.freq) || sugword.freq < 1) { // don't suggest a word that is not present in the field
+        // don't suggest a word that is not present in the field
+        if ((morePopular && goalFreq > sugword.freq) || sugword.freq < 1) {
           continue;
         }
       }
       sugqueue.insert(sugword);
       if (sugqueue.size() == num_sug) {
-        //if queue full , maintain the min score
+        // if queue full, maintain the min score
         min = ((SuggestWord) sugqueue.top()).score;
       }
       sugword = new SuggestWord();
@@ -198,15 +201,14 @@ public class SpellChecker {
       list[i] = ((SuggestWord) sugqueue.pop()).string;
     }
 
-    searcher.close();
     return list;
   }
 
   /**
    * Add a clause to a boolean query.
    */
-  private static void add(BooleanQuery q, String k, String v, float boost) {
-    Query tq = new TermQuery(new Term(k, v));
+  private static void add(BooleanQuery q, String name, String value, float boost) {
+    Query tq = new TermQuery(new Term(name, value));
     tq.setBoost(boost);
     q.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
   }
@@ -214,9 +216,8 @@ public class SpellChecker {
   /**
    * Add a clause to a boolean query.
    */
-  private static void add(BooleanQuery q, String k, String v) {
-    q.add(new BooleanClause(new TermQuery(new Term(k, v)),
-        BooleanClause.Occur.SHOULD));
+  private static void add(BooleanQuery q, String name, String value) {
+    q.add(new BooleanClause(new TermQuery(new Term(name, value)), BooleanClause.Occur.SHOULD));
   }
 
   /**
@@ -285,10 +286,6 @@ public class SpellChecker {
     // close writer
     writer.optimize();
     writer.close();
-
-    // close reader
-    //        reader.close();
-    //        reader=null;
   }
 
   private int getMin(int l) {
@@ -325,17 +322,14 @@ public class SpellChecker {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        doc
-            .add(new Field(key, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field(key, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
         if (i == 0) {
-          doc.add(new Field("start" + ng, gram, Field.Store.YES,
-              Field.Index.UN_TOKENIZED));
+          doc.add(new Field("start" + ng, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
         }
         end = gram;
       }
       if (end != null) { // may not be present if len==ng1
-        doc.add(new Field("end" + ng, end, Field.Store.YES,
-            Field.Index.UN_TOKENIZED));
+        doc.add(new Field("end" + ng, end, Field.Store.YES, Field.Index.UN_TOKENIZED));
       }
     }
   }
