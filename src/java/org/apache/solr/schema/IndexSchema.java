@@ -140,10 +140,16 @@ public final class IndexSchema {
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
   private String defaultSearchFieldName=null;
+  private String queryParserDefaultOperator = "OR";
 
   /** Name of the default search field specified in the schema file */
   public String getDefaultSearchFieldName() {
     return defaultSearchFieldName;
+  }
+
+  /** default operator ("AND" or "OR") for QueryParser */
+  public String getQueryParserDefaultOperator() {
+    return queryParserDefaultOperator;
   }
 
   private SchemaField uniqueKeyField;
@@ -364,6 +370,14 @@ public final class IndexSchema {
       // throw exception if specified, but not found or not indexed
       if (defaultSearchFieldName!=null) getIndexedField(defaultSearchFieldName);
       log.info("default search field is "+defaultSearchFieldName);
+    }
+
+    node = (Node) xpath.evaluate("/schema/solrQueryParser/@defaultOperator", document, XPathConstants.NODE);
+    if (node==null) {
+      log.fine("using default query parser operator (OR)");
+    } else {
+      queryParserDefaultOperator=node.getNodeValue().trim();
+      log.info("query parser default operator is "+queryParserDefaultOperator);
     }
 
     node = (Node) xpath.evaluate("/schema/uniqueKey/text()", document, XPathConstants.NODE);

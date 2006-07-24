@@ -35,6 +35,9 @@ New Features
     (yonik, SOLR-31)
 19. Make web admin pages return UTF-8, change Content-type declaration to include a
     space between the mime-type and charset (Philip Jacob, SOLR-35)
+20. Made query parser default operator configurable via schema.xml:
+         <solrQueryParser defaultOperator="AND|OR"/>
+    The default operator remains "OR".
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
