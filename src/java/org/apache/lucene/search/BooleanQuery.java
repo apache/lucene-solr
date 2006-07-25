@@ -41,7 +41,12 @@ public class BooleanQuery extends Query {
    * a PrefixQuery, FuzzyQuery, WildcardQuery, or RangeQuery 
    * is expanded to many terms during search. 
    */
-  public static class TooManyClauses extends RuntimeException {}
+  public static class TooManyClauses extends RuntimeException {
+    public TooManyClauses() {}
+    public String getMessage() {
+      return "maxClauseCount is set to " + maxClauseCount;
+    }
+  }
 
   /** Return the maximum number of clauses permitted, 1024 by default.
    * Attempts to add more than the permitted number of clauses cause {@link
