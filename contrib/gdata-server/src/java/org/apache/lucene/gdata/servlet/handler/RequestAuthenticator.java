@@ -92,6 +92,11 @@ public class RequestAuthenticator implements GDataHttpAuthenticator {
                     + request.getFeedId(), e);
             throw new AuthenticatorException(" Service exception occured", e);
 
+        }finally{
+        
+            if(adminService!=null)
+                adminService.close();
+        
         }
 
         return false;

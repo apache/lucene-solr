@@ -35,4 +35,7 @@ public class ProvidedServiceStub implements ProvidedService {
         return SERVICE_NAME;
     }
 
+    public void destroy() {
+    }
+
 }

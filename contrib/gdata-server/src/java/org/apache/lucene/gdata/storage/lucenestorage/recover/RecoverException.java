@@ -16,11 +16,13 @@
 
 package org.apache.lucene.gdata.storage.lucenestorage.recover;
 
+import org.apache.lucene.gdata.storage.StorageException;
+
 /**
  * @author Simon Willnauer
  *
  */
-public class RecoverException extends Exception {
+public class RecoverException extends StorageException {
 
     /**
      * 

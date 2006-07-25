@@ -212,6 +212,8 @@ public interface Storage {
             throws StorageException;
 
     /**
+     * 
+     * Retrieves the {@link GDataAccount} for the given account name
      * @param accountName -
      *            the name of the requested account
      * @return - a {@link GDataAccount} instance for the requested account name

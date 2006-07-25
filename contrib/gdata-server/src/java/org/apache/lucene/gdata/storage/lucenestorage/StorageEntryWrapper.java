@@ -17,6 +17,7 @@
 package org.apache.lucene.gdata.storage.lucenestorage;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.StringWriter;
 
 import org.apache.lucene.document.Document;
@@ -37,11 +38,13 @@ import com.google.gdata.util.common.xml.XmlWriter;
  * @author Simon Willnauer
  * 
  */
-public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
+public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>, Serializable,
         StorageWrapper {
 
     private static final long serialVersionUID = -4619985652059888526L;
-
+    /*
+     * client api uses UTF-8 to encode server requests and entries
+     */
     private static final String INTERNAL_ENCODING = "UTF-8";
 
     /**
@@ -64,21 +67,27 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
      */
     public final static String FIELD_TIMESTAMP = "timestamp";
 
-    private final String entryId;
+    /**
+     * lucene field name entry version
+     */
+    public final static String FIELD_VERSION = "entryVersion";
+    private  int version;
 
-    private final String feedId;
+    private  String entryId;
+
+    private  String feedId;
 
     private  String content;
 
-    private final ServerBaseEntry entry;
+    private transient ServerBaseEntry entry;
 
     private Long timestamp;
 
-    private transient Document document;
+    private Document document;
 
     private StorageOperation operation;
 
-    private ProvidedService config;
+    private transient ProvidedService config;
 
     /**
      * Creates a new StorageEntryWrapper.
@@ -94,14 +103,15 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
      */
     public StorageEntryWrapper(final ServerBaseEntry entry,
             StorageOperation operation) throws IOException {
-
         this.entry = entry;
         this.operation = operation;
         this.entryId = entry.getId();
         this.feedId = entry.getFeedId();
+        this.version = entry.getVersion();
         if (operation != StorageOperation.DELETE) {
             this.config = entry.getServiceConfig();
             this.content = buildContent();
+            
          
         }
         this.timestamp = new Long(
@@ -110,7 +120,8 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
             
 
     }
-
+   
+ 
     private String buildContent() throws IOException {
         StringWriter writer = new StringWriter();
         XmlWriter xmlWriter = new XmlWriter(writer, INTERNAL_ENCODING);
@@ -132,9 +143,11 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
                 Field.Store.YES, Field.Index.UN_TOKENIZED));
         this.document.add(new Field(FIELD_FEED_REFERENCE, this.feedId,
                 Field.Store.YES, Field.Index.UN_TOKENIZED));
-        this.document.add(new Field(FIELD_CONTENT, this.content,
+        this.document.add(new Field(FIELD_CONTENT,this.content,
                 Field.Store.COMPRESS, Field.Index.NO));
         this.document.add(new Field(FIELD_TIMESTAMP, this.timestamp.toString(),
+                Field.Store.YES, Field.Index.UN_TOKENIZED));
+        this.document.add(new Field(FIELD_VERSION, Integer.toString(this.version),
                 Field.Store.YES, Field.Index.UN_TOKENIZED));
 
         return this.document;
@@ -205,7 +218,7 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
      * 
      */
     public int compareTo(StorageEntryWrapper arg0) {
-        return arg0.timestamp == this.timestamp ? 0
+        return arg0.timestamp.equals(this.timestamp) ? 0
                 : (arg0.timestamp > this.timestamp ? 1 : -1);
     }
 
@@ -222,5 +235,15 @@ public class StorageEntryWrapper implements Comparable<StorageEntryWrapper>,
     public Long getTimestamp() {
         return this.timestamp;
     }
+
+    /**
+     * @return - the version of the entry
+     */
+    public int getVersion() {
+        
+        return this.version;
+    }
+
+
 
 }

@@ -28,6 +28,7 @@ import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
+import org.apache.lucene.gdata.server.administration.AdminService;
 import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 
@@ -48,6 +49,7 @@ public class UpdateFeedHandler extends AbstractFeedHandler {
             HttpServletResponse response) throws ServletException, IOException {
         super.processRequest(request, response);
         if (this.authenticated) {
+            AdminService service= null;
             try {
                 ServerBaseFeed feed = createFeedFromRequest(request);
                 GDataAccount account = createRequestedAccount(request);
@@ -62,7 +64,8 @@ public class UpdateFeedHandler extends AbstractFeedHandler {
                     throw new FeedHandlerException(
                             "Can't update feed - ServiceFactory is null");
                 }
-                serviceFactory.getAdminService().updateFeed(feed, account);
+                service = serviceFactory.getAdminService();
+                service.updateFeed(feed, account);
             } catch (ServiceException e) {
                 setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                         "can not update feed");
@@ -71,10 +74,13 @@ public class UpdateFeedHandler extends AbstractFeedHandler {
 
                 LOG.error("Can not update feed -- " + e.getMessage(), e);
 
+            }finally{
+                if(service != null)
+                    service.close();
             }
         }
         sendResponse(response);
-
+        
     }
 
 }

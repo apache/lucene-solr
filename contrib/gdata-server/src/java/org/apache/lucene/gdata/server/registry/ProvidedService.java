@@ -45,4 +45,9 @@ public interface ProvidedService {
      */
     public abstract String getName();
 
+    /**
+     * releases all dependencies and resources
+     */
+    public abstract void destroy();
+
 }

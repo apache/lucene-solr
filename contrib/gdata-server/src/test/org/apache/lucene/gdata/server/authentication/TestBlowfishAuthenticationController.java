@@ -84,7 +84,7 @@ public class TestBlowfishAuthenticationController extends TestCase {
         }catch (Exception e) {
             // TODO: handle exception
         }
-        this.controller.setMinuteOffset(0);
+        this.controller.setLoginTimeout(0);
         assertFalse(this.controller.authenticateToken(token,this.clientIp,AccountRole.ENTRYAMINISTRATOR,this.accountName));
         
     }

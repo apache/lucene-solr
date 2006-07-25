@@ -57,4 +57,9 @@ public class StorageControllerStub implements StorageController {
     public void initialize() {
     }
 
+    public String releaseId() {
+        
+        return null;
+    }
+
 }

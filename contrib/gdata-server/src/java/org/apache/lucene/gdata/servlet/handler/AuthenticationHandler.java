@@ -100,8 +100,14 @@ public class AuthenticationHandler implements GDataRequestHandler {
     
     
    private GDataAccount getAccount(String accountName) throws ServiceException{
+       
        AdminService service = this.serviceFactory.getAdminService();
+       try{
        return service.getAccount(accountName);
+       }finally{
+            service.close();
+       }
+            
         
     }
    private void sendError(HttpServletResponse response, int code, String message)throws IOException{

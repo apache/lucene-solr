@@ -41,7 +41,10 @@ public abstract class AbstractGdataRequestHandler extends RequestAuthenticator i
         GDataRequestHandler {
     private final static Log LOG = LogFactory
             .getLog(AbstractGdataRequestHandler.class);
-
+    /*
+     * UTF-8 is the encoding used in the client API to send the entries to the server
+     */
+    private final static String ENCODING = "UTF-8";
     protected Service service;
     protected GDataRequest feedRequest;
     protected GDataResponse feedResponse;
@@ -57,6 +60,7 @@ public abstract class AbstractGdataRequestHandler extends RequestAuthenticator i
             throws GDataRequestException, ServletException {
         this.feedRequest = new GDataRequest(request, type);
         this.feedResponse = new GDataResponse(response);
+        this.feedResponse.setEncoding(ENCODING);
         getService();
         try {       
             this.feedRequest.initializeRequest();

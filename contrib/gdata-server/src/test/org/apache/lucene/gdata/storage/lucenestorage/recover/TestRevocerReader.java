@@ -8,7 +8,6 @@ import java.util.List;
 import junit.framework.TestCase;
 
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
-import org.apache.lucene.gdata.server.registry.ProvidedService;
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper;
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation;
 import org.apache.lucene.gdata.utils.ProvidedServiceStub;

@@ -66,7 +66,8 @@ public class ServerBaseEntry {
 
     private ProvidedService serviceConfig;
     private BaseEntry entry;
-    
+    private static final int DEFAULTVERSION = 1;
+    private int version;
 
     
    
@@ -100,8 +101,8 @@ public class ServerBaseEntry {
      */
     @SuppressWarnings("unchecked")
     public ServerBaseEntry() {
+        this(new Entry());
         
-        this.entry = new Entry();
     }
 
     /**
@@ -110,7 +111,7 @@ public class ServerBaseEntry {
     @SuppressWarnings("unchecked")
     public ServerBaseEntry(BaseEntry arg0) {
         this.entry = arg0;
-
+        this.setVersion(DEFAULTVERSION);
     }
 
 
@@ -612,6 +613,23 @@ public class ServerBaseEntry {
     
     public void declareExtensions(ExtensionProfile arg0) {
         this.entry.declareExtensions(arg0);
+    }
+
+    /**
+     * @return Returns the version.
+     */
+    public int getVersion() {
+        return this.version;
+    }
+
+    /**
+     * @param version The version to set.
+     */
+    public void setVersion(int version) {
+        if(version < this.version)
+            throw new IllegalArgumentException("Version must be greater than the current version -- current version: "+this.version);
+        this.version = version;
+        setVersionId(""+this.version);
     }
     
     

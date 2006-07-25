@@ -226,9 +226,11 @@ public class GDataAccount {
      * @see java.lang.Object#equals(java.lang.Object)
      */
     public boolean equals(Object o) {
+        if(o == null)
+            return false;
         if (this == o)
             return true;
-        if (!(o instanceof GDataAccount) || o == null)
+        if (!(o instanceof GDataAccount))
             return false;
         GDataAccount toCompare = (GDataAccount) o;
         if (this.name.equals(toCompare.name))
@@ -301,6 +303,8 @@ public class GDataAccount {
         retVal.setRole(AccountRole.ENTRYAMINISTRATOR);
         return retVal;
     }
+    
+
 
     /**
      * This enum respesents all account roles an account can have.

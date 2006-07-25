@@ -12,18 +12,18 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.server.registry.Component;
 import org.apache.lucene.gdata.server.registry.ComponentType;
+import org.apache.lucene.gdata.server.registry.configuration.Requiered;
 import org.apache.lucene.gdata.storage.IDGenerator;
 import org.apache.lucene.gdata.storage.Storage;
 import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
-import org.apache.lucene.gdata.storage.lucenestorage.configuration.StorageConfigurator;
+import org.apache.lucene.gdata.storage.lucenestorage.recover.RecoverController;
+import org.apache.lucene.gdata.storage.lucenestorage.recover.RecoverException;
 import org.apache.lucene.gdata.storage.lucenestorage.util.ReferenceCounter;
 import org.apache.lucene.index.IndexModifier;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 
 /**
  *  
@@ -33,14 +33,15 @@ import org.apache.lucene.store.RAMDirectory;
  */
 @Component(componentType = ComponentType.STORAGECONTROLLER)
 public class StorageCoreController implements StorageController {
+    
     protected static final Log LOG = LogFactory
             .getLog(StorageCoreController.class);
 
     private IndexSearcher searcher;
 
-    private final Directory storageDir;
+    private Directory storageDir;
 
-    private final StorageModifier modifier;
+    private StorageModifier modifier;
 
     private ReferenceCounter<StorageQuery> storageQuery;
 
@@ -49,39 +50,39 @@ public class StorageCoreController implements StorageController {
     private final ReentrantLock storageControllerLock = new ReentrantLock();
     private final Condition closeCondition;
 
-    private static final int DEFAULT_STORAGE_BUFFER_SIZE = 10;
+    private static final int DEFAULT_STORAGE_BUFFER_SIZE = 3;
 
-    private static final int DEFAULT_STORAGE_PERSIST_FACTOR = 10;
+    private static final int DEFAULT_STORAGE_PERSIST_FACTOR = 3;
+    
+    private static final String RECOVERDIRECTORY = "recover";
 
     private static final String STORAGELOG = ".lucenestorage";
 
+    private IDGenerator idGenerator;
+
+    private final ConcurrentStorageLock storageLock;
+    /*
+     *properties set by configuration file e.g. Registry
+     */
+    private int indexOptimizeInterval;
+    
+    private String storageDirectory; 
+ 
+    private boolean keepRecoveredFiles; 
+ 
+    private boolean recover; 
+    
     private int storageBufferSize;
 
     private int storagePersistFactor;
-
-    private StorageConfigurator configurator;
-
-    private IDGenerator idGenerator;
-
-    private int indexOptimizeInterval;
     
-//    private RecoverController recoverController;
-
+    private RecoverController recoverController;
     /**
-     * Creates a new <tt>StoragCoreController</tt> and sets up the storage
-     * environment reading the configuration file.
-     * 
-     * 
-     * 
-     * @throws IOException -
-     *             if an IOException occures
-     * @throws StorageException -
-     *             if the storage lock can not be created or the
-     *             {@link IDGenerator} can not be loaded
+     * @see org.apache.lucene.gdata.server.registry.ServerComponent#initialize()
      */
-    public StorageCoreController() throws IOException, StorageException {
+    public void initialize() {
         synchronized (StorageCoreController.class) {
-        	this.closeCondition = this.storageControllerLock.newCondition();
+         
             try {
                 this.idGenerator = new IDGenerator(10);
             } catch (Exception e) {
@@ -89,11 +90,11 @@ public class StorageCoreController implements StorageController {
             }
 
             boolean createNewStorage = false;
-            this.configurator = StorageConfigurator.getStorageConfigurator();
-            if (!this.configurator.isRamDirectory()) {
+          
+            if (this.storageDir == null) {
 
-                String storageDirPath = this.configurator.getStorageDirectory();
-                File storeDir = new File(storageDirPath);
+                
+                File storeDir = new File(this.storageDirectory);
                 File storageLog = new File(storeDir.getAbsolutePath()
                         + System.getProperty("file.separator") + STORAGELOG);
                 try {
@@ -106,35 +107,83 @@ public class StorageCoreController implements StorageController {
                         } else
                             throw new StorageException(
                                     "could not create storage lock file in "
-                                            + storageDirPath);
+                                            + this.storageDirectory);
 
                     } else
                         this.storageDir = FSDirectory.getDirectory(storeDir,
                                 false);
                 } catch (IOException e) {
                     storageLog.delete();
-                    throw e;
+                    throw new StorageException(e);
                 }
-                this.indexOptimizeInterval = this.configurator
-                        .getIndexOptimizeInterval();
-                this.storageBufferSize = this.configurator
-                        .getStorageBufferSize() < DEFAULT_STORAGE_BUFFER_SIZE ? DEFAULT_STORAGE_BUFFER_SIZE
-                        : this.configurator.getStorageBufferSize();
-                this.storagePersistFactor = this.configurator
-                        .getStoragepersistFactor() < DEFAULT_STORAGE_PERSIST_FACTOR ? DEFAULT_STORAGE_PERSIST_FACTOR
-                        : this.configurator.getStoragepersistFactor();
+                
+                this.storageBufferSize = this.storageBufferSize < DEFAULT_STORAGE_BUFFER_SIZE ? DEFAULT_STORAGE_BUFFER_SIZE
+                        : this.storageBufferSize;
+                this.storagePersistFactor = this.storagePersistFactor < DEFAULT_STORAGE_PERSIST_FACTOR ? DEFAULT_STORAGE_PERSIST_FACTOR
+                        : this.storagePersistFactor;
 
-            } else
-                this.storageDir = getRamDirectory();
+            }else
+                createNewStorage = true;
+               
 
             this.currentBuffer = new StorageBuffer(this.storageBufferSize);
+            try{
             this.modifier = createStorageModifier(createNewStorage);
             this.searcher = new IndexSearcher(this.storageDir);
-//            this.recoverController = new RecoverController(null,this.configurator.isRecover(),this.configurator.isKeepRecoveredFiles());
+            }catch (Exception e) {
+               throw new StorageException("Can not create Searcher/Modifier -- "+e.getMessage(),e);
+            }
+           
+            
             if(createNewStorage)
                 createAdminAccount();
+            if(!this.recover)
+                return;
+            try{
+            tryRecover();
+            }catch (Exception e) {
+                LOG.fatal("Recovering failed",e);
+                throw new StorageException("Recovering failed -- "+e.getMessage(),e); 
+            }
+            
+            this.recoverController = createRecoverController(false,false);
+            try{
+            this.recoverController.initialize();
+            }catch (Exception e) {
+                LOG.fatal("Can not initialize recover controller",e);
+                throw new StorageException("Can not initialize recover controller -- "+e.getMessage(),e);
+            }
 
         }
+    }
+    /*
+     * reads the remaining recover files to store the failed entries
+     */
+    private void tryRecover() throws IOException, RecoverException{
+        if(!this.recover)
+            return;
+        LOG.info("try to recover files if there are any");
+        this.recoverController = createRecoverController(true,false);
+        this.recoverController.initialize();
+        this.recoverController.recoverEntries(this.modifier);
+        this.recoverController.destroy();
+    }
+    
+    private RecoverController createRecoverController(boolean doRecover, boolean keepfiles){
+        String recoverDirectory = null;
+        if(this.storageDirectory.endsWith("/") || this.storageDirectory.endsWith("\\"))
+            recoverDirectory = this.storageDirectory.substring(0,this.storageDirectory.length()-1)+System.getProperty("file.separator")+RECOVERDIRECTORY;
+        else
+            recoverDirectory = this.storageDirectory+System.getProperty("file.separator")+RECOVERDIRECTORY;
+        File recoverDirectoryFile = new File(recoverDirectory);
+       return new RecoverController(recoverDirectoryFile,doRecover,keepfiles);
+    }
+    /**
+     * Creates a new <tt>StoragCoreController</tt>
+     */
+    public StorageCoreController() {
+        this.closeCondition = this.storageControllerLock.newCondition();
+        this.storageLock = SingleHostConcurrentStorageLock.getConcurrentStorageLock();
 
     }
 
@@ -188,7 +237,9 @@ public class StorageCoreController implements StorageController {
             this.storageQuery.increamentReference();
             return this.storageQuery;
         }finally{
+            try{
         	this.closeCondition.signalAll();
+            }catch (Throwable e) {/**/}
         	this.storageControllerLock.unlock();
         }
     }
@@ -239,7 +290,9 @@ public class StorageCoreController implements StorageController {
             this.currentBuffer = new StorageBuffer(this.storageBufferSize);
 
         }finally{
-        	this.closeCondition.signalAll();
+            try{
+                this.closeCondition.signalAll();
+                }catch (Throwable e) {/**/}
         	this.storageControllerLock.unlock();
         }
 
@@ -259,7 +312,9 @@ public class StorageCoreController implements StorageController {
         		throw new IllegalStateException("StorageController is already closed -- server is shutting down");
             return this.currentBuffer;
         }finally{
+            try{
         	this.closeCondition.signalAll();
+            }catch (Throwable e) {/**/}
         	this.storageControllerLock.unlock();
         }
     }
@@ -284,7 +339,9 @@ public class StorageCoreController implements StorageController {
             return new IndexModifier(this.storageDir, new StandardAnalyzer(),
                     false);
         }finally{
-        	this.closeCondition.signalAll();
+            try{
+                this.closeCondition.signalAll();
+                }catch (Throwable e) {/**/}
         	this.storageControllerLock.unlock();
         }
     }
@@ -308,48 +365,16 @@ public class StorageCoreController implements StorageController {
                 LOG.info("StorageController has been closed -- server is shutting down -- release all resources");
             if (this.storageQuery != null)
                 this.storageQuery.decrementRef();
+            if(this.recoverController != null)
+                this.recoverController.destroy();
+            this.storageLock.close();
             this.modifier.close();
+            this.idGenerator.stopIDGenerator();
 		}finally{
         	this.storageControllerLock.unlock();
         }
     }
 
-    /**
-     * The size of the <tt>StorageBuffer</tt>.
-     * 
-     * @return - storage buffer size
-     */
-    public int getStorageBufferSize() {
-        return this.storageBufferSize;
-    }
-
-    /**
-     * The size of the <tt>StorageBuffer</tt>. This size should be at least
-     * as big as the persist factor to prevent the <tt>StorageBuffer</tt> from
-     * resizing
-     * 
-     * @param storageBufferSize
-     */
-    public void setStorageBufferSize(int storageBufferSize) {
-        this.storageBufferSize = storageBufferSize;
-    }
-
-    /**
-     * An integer value after how many changes to the StorageModifier the
-     * buffered changes will be persisted / wirtten to the index
-     * 
-     * @return - the persist factor
-     */
-    public int getStoragePersistFactor() {
-        return this.storagePersistFactor;
-    }
-
-    /**
-     * @param storagePersistFactor
-     */
-    public void setStoragePersistFactor(int storagePersistFactor) {
-        this.storagePersistFactor = storagePersistFactor;
-    }
 
     /**
      * Forces the StorageModifier to write all buffered changes.
@@ -364,12 +389,13 @@ public class StorageCoreController implements StorageController {
         this.modifier.forceWrite();
     }
 
-    private boolean createLuceneStorageLog(File storageDirectory)
+    private boolean createLuceneStorageLog(File directory)
             throws IOException {
-        if (storageDirectory.isDirectory() && !storageDirectory.exists()) {
-            storageDirectory.createNewFile();
+        if (directory.isDirectory() && !directory.exists()) {
+            if(!directory.createNewFile())
+                throw new StorageException("Can not create directory -- "+directory);
         }
-        File file = new File(storageDirectory.getAbsolutePath()
+        File file = new File(directory.getAbsolutePath()
                 + System.getProperty("file.separator") + STORAGELOG);
         return file.createNewFile();
 
@@ -383,7 +409,7 @@ public class StorageCoreController implements StorageController {
      * @throws StorageException -
      *             if no id can be released
      */
-    public synchronized String releaseID() throws StorageException {
+    public synchronized String releaseId() {
         try {
             return this.idGenerator.getUID();
         } catch (InterruptedException e) {
@@ -427,26 +453,142 @@ public class StorageCoreController implements StorageController {
         }
     }
 
-    // TODO Try to remove this --> testcases
-    private RAMDirectory getRamDirectory() throws IOException {
-        IndexWriter writer;
-        RAMDirectory retVal = new RAMDirectory();
-        writer = new IndexWriter(retVal, new StandardAnalyzer(), true);
-        writer.close();
-        return retVal;
-    }
 
-    /**
-     * @see org.apache.lucene.gdata.server.registry.ServerComponent#initialize()
-     */
-    public void initialize() {
-        //
-    }
+
+
+    
     
     private void createAdminAccount() throws StorageException{
         GDataAccount adminAccount = GDataAccount.createAdminAccount();
         StorageAccountWrapper wrapper = new StorageAccountWrapper(adminAccount);
         this.getStorageModifier().createAccount(wrapper);
+    }
+    
+    protected ConcurrentStorageLock getLock(){
+        return this.storageLock;
+    }
+
+    
+    /**
+     * The size of the <tt>StorageBuffer</tt>.
+     * 
+     * @return - storage buffer size
+     */
+    public int getBufferSize() {
+        return this.storageBufferSize;
+    }
+
+    /**
+     * The size of the <tt>StorageBuffer</tt>. This size should be at least
+     * as big as the persist factor to prevent the <tt>StorageBuffer</tt> from
+     * resizing
+     * 
+     * @param storageBufferSize
+     */
+    @Requiered
+    public void setBufferSize(int storageBufferSize) {
+        this.storageBufferSize = storageBufferSize;
+    }
+
+    /**
+     * An integer value after how many changes to the StorageModifier the
+     * buffered changes will be persisted / wirtten to the index
+     * 
+     * @return - the persist factor
+     */
+    public int getPersistFactor() {
+        return this.storagePersistFactor;
+    }
+
+    /**
+     * @param storagePersistFactor
+     */
+    @Requiered
+    public void setPersistFactor(int storagePersistFactor) {
+        this.storagePersistFactor = storagePersistFactor;
+    }
+
+
+    /**
+     * @return Returns the indexOptimizeInterval.
+     */
+    public int getIndexOptimizeInterval() {
+        return this.indexOptimizeInterval;
+    }
+
+
+    /**
+     * @param indexOptimizeInterval The indexOptimizeInterval to set.
+     */
+    @Requiered
+    public void setOptimizeInterval(int indexOptimizeInterval) {
+        this.indexOptimizeInterval = indexOptimizeInterval;
+    }
+
+
+    /**
+     * @return Returns the keepRecoveredFiles.
+     */
+    public boolean isKeepRecoveredFiles() {
+        return this.keepRecoveredFiles;
+    }
+
+
+    /**
+     * @param keepRecoveredFiles The keepRecoveredFiles to set.
+     */
+    @Requiered
+    public void setKeepRecoveredFiles(boolean keepRecoveredFiles) {
+        this.keepRecoveredFiles = keepRecoveredFiles;
+    }
+
+
+
+    /**
+     * @return Returns the recover.
+     */
+    public boolean isRecover() {
+        return this.recover;
+    }
+
+
+    /**
+     * @param recover The recover to set.
+     */
+    @Requiered
+    public void setRecover(boolean recover) {
+        this.recover = recover;
+    }
+
+
+    /**
+     * @param storageDir The storageDir to set.
+     */
+   
+    public void setStorageDir(Directory storageDir) {
+        this.storageDir = storageDir;
+    }
+
+
+    /**
+     * @param storageDirectory The storageDirectory to set.
+     */
+    @Requiered
+    public void setDirectory(String storageDirectory) {
+        this.storageDirectory = storageDirectory;
+    }
+    
+    protected void writeRecoverEntry(StorageEntryWrapper wrapper) throws RecoverException{
+        if(this.recoverController!= null &&!this.recoverController.isRecovering() )
+            this.recoverController.storageModified(wrapper);
+    }
+    protected void registerNewRecoverWriter() throws IOException {
+        if(this.recoverController == null || this.recoverController.isRecovering())
+            return;
+        this.recoverController.destroy();
+        this.recoverController = createRecoverController(false,false);
+        this.recoverController.initialize();
+            
     }
 
 }

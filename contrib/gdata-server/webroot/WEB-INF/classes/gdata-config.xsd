@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="feed-class" type="xs:string" />
+	<xs:element name="entry-class" type="xs:string" />
+	<xs:element name="extension-profile" type="xs:string" />
+	<xs:element name="class" type="xs:string" />
+
+	<xs:element name="property">
+		<xs:complexType mixed="true">
+			<xs:attribute name="name" type="xs:string" use="required" />
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="configuration">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="property" minOccurs="1"
+					maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="service">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="feed-class" maxOccurs="1"
+					minOccurs="1" />
+				<xs:element ref="entry-class" maxOccurs="1"
+					minOccurs="1" />
+				<xs:element ref="extension-profile" maxOccurs="1"
+					minOccurs="1" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:string" use="required" />
+			<xs:attribute name="public" type="xs:boolean" />
+			<xs:attribute name="poolSize" type="xs:nonNegativeInteger"
+				use="required" />
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="component">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="class" maxOccurs="1" minOccurs="1" />
+				<xs:element ref="configuration" minOccurs="0"
+					maxOccurs="1" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="server-components">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="component" minOccurs="1"
+					maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="gdata">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="service" minOccurs="1"
+					maxOccurs="unbounded" />
+				<xs:element ref="server-components" maxOccurs="1"
+					minOccurs="1" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

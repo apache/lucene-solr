@@ -55,6 +55,7 @@ public class GDataAdminService extends GDataService implements AdminService {
         if(account.getName() == null)
             throw new ServiceException("Account name is null -- can't create feed");
     try {
+        feed.setUpdated(getCurrentDateTime());
         feed.setAccount(account);
         this.storage.storeFeed(feed,account.getName());
     } catch (StorageException e) {
@@ -81,6 +82,7 @@ public class GDataAdminService extends GDataService implements AdminService {
             throw new ServiceException("Account name is null -- can't update feed");
     try {
         feed.setAccount(account);
+        feed.setUpdated(getCurrentDateTime());
         this.storage.updateFeed(feed,account.getName());
     } catch (StorageException e) {
         if(LOG.isInfoEnabled())

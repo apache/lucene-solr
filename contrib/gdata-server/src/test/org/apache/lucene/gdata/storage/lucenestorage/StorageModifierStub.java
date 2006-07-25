@@ -32,7 +32,10 @@ import org.apache.lucene.store.RAMDirectory;
  *
  */
 public class StorageModifierStub extends StorageModifier {
-
+    public boolean throwException = false;
+    public StorageModifierStub() throws IOException, StorageException{
+        super(new StorageCoreControllerStub(), new IndexModifier(new RAMDirectory(),new StandardAnalyzer(),true), new StorageBuffer(1),1, 1);
+    }
     /**
      * @param controller
      * @param modifier
@@ -46,7 +49,7 @@ public class StorageModifierStub extends StorageModifier {
             IndexModifier modifier, StorageBuffer buffer, int persitsFactor,
             int optimizeInterval) throws IOException, StorageException {
         
-        super(new StorageCoreController(), new IndexModifier(new RAMDirectory(),new StandardAnalyzer(),true), new StorageBuffer(1),1, 1);
+        super(new StorageCoreControllerStub(), new IndexModifier(new RAMDirectory(),new StandardAnalyzer(),true), new StorageBuffer(1),1, 1);
         
         // TODO Auto-generated constructor stub
     }
@@ -56,7 +59,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     protected void close() throws IOException {
-        
+        if(throwException)
+            throw new IOException();
         
     }
 
@@ -65,7 +69,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void createAccount(StorageAccountWrapper account) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -74,7 +79,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void createFeed(StorageFeedWrapper wrapper) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -83,7 +89,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void deleteAccount(String accountName) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -92,7 +99,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void deleteEntry(StorageEntryWrapper wrapper) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -101,7 +109,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void deleteFeed(String feedId) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -109,8 +118,9 @@ public class StorageModifierStub extends StorageModifier {
      * @see org.apache.lucene.gdata.storage.lucenestorage.StorageModifier#forceWrite()
      */
     @Override
-    protected void forceWrite() throws IOException {
-        
+   public void forceWrite() throws IOException {
+        if(throwException)
+            throw new IOException();
         
     }
 
@@ -119,7 +129,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void insertEntry(StorageEntryWrapper wrapper) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -128,7 +139,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void updateAccount(StorageAccountWrapper user) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();
         
     }
 
@@ -137,8 +149,10 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void updateEntry(StorageEntryWrapper wrapper) throws StorageException {
-        
-        
+        if(throwException)
+            throw new StorageException();
+        if(wrapper != null)
+            wrapper.getEntry();
     }
 
     /**
@@ -146,7 +160,8 @@ public class StorageModifierStub extends StorageModifier {
      */
     @Override
     public void updateFeed(StorageFeedWrapper wrapper) throws StorageException {
-        
+        if(throwException)
+            throw new StorageException();   
         
     }
 

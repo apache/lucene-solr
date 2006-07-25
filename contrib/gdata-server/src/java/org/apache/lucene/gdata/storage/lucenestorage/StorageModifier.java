@@ -1,3 +1,18 @@
+/**
+ * Copyright 2004 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.lucene.gdata.storage.lucenestorage;
 
 import java.io.IOException;
@@ -9,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -67,13 +82,9 @@ public class StorageModifier {
 
     private IndexModifier modifier;
 
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
+    private Lock lock = new ReentrantLock();
     
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
-    
-    private final Lock readLock = this.lock.readLock();
-
-    private final Lock writeLock = this.lock.writeLock();
 
     private final static int DEFAULT_OPTIMIZE_INTERVAL = 10;
 
@@ -130,17 +141,33 @@ public class StorageModifier {
             throws StorageException {
         if(wrapper.getOperation() != StorageOperation.UPDATE)
             throw new StorageException("Illegal method call -- updateEntry does not accept other storageOperations than update");
-        this.readLock.lock();
+        this.lock.lock();
         try {
+            
             Term tempTerm = new Term(StorageEntryWrapper.FIELD_ENTRY_ID,
                     wrapper.getEntryId());
             this.documentMap.put(wrapper.getEntryId(), wrapper
                     .getLuceneDocument());
             this.deletedForUpdateDocumentQueue.add(tempTerm);
-            this.buffer.addEntry(wrapper);
             storageModified();
+            /*
+             * If storage not written write entry to recoverfile
+             * and make the entry available via the buffer
+             */
+            if(this.modifiedCounter != 0)
+                try{
+                    this.controller.writeRecoverEntry(wrapper);
+                    this.buffer.addEntry(wrapper);
+                }catch (Exception e) {
+                    /*
+                     * remove from all resources
+                     */
+                    this.documentMap.remove(wrapper.getEntryId());
+                    this.deletedForUpdateDocumentQueue.remove(tempTerm);
+                    
+                }
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -156,14 +183,27 @@ public class StorageModifier {
             throws StorageException {
         if(wrapper.getOperation() != StorageOperation.INSERT)
             throw new StorageException("Illegal method call -- insertEntry does not accept other storage operations than insert");
-        this.readLock.lock();
+        this.lock.lock();
         try {
             this.documentMap.put(wrapper.getEntryId(), wrapper
                     .getLuceneDocument());
-            this.buffer.addEntry(wrapper);
             storageModified();
+            /*
+             * If storage not written write entry to recoverfile
+             * and make the entry available via the buffer
+             */
+            if(this.modifiedCounter != 0)
+                try{
+                    this.controller.writeRecoverEntry(wrapper);
+                    this.buffer.addEntry(wrapper);
+                }catch (Exception e) {
+                    /*
+                     * remove from all resources
+                     */
+                    this.documentMap.remove(wrapper.getEntryId());
+                }
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -179,15 +219,30 @@ public class StorageModifier {
             throws StorageException {
         if(wrapper.getOperation() != StorageOperation.DELETE)
             throw new StorageException("Illegal method call -- insertEntry does not accept other storage operations than delete");
-        this.readLock.lock();
+        this.lock.lock();
         try {
+            
             Term tempTerm = new Term(StorageEntryWrapper.FIELD_ENTRY_ID,
                     wrapper.getEntryId());
             this.deletedDocumentQueue.add(tempTerm);
-            this.buffer.addDeleted(wrapper.getEntryId(), wrapper.getFeedId());
             storageModified();
+            /*
+             * If storage not written write entry to recoverfile
+             * and make the entry available via the buffer
+             */
+            if(this.modifiedCounter != 0)
+                try{
+                    this.controller.writeRecoverEntry(wrapper);
+                    this.buffer.addDeleted(wrapper.getEntryId(), wrapper.getFeedId());
+                }catch (Exception e) {
+                    /*
+                     * remove from all resources
+                     */
+                 this.deletedDocumentQueue.remove(tempTerm);
+                    
+                }
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -201,12 +256,12 @@ public class StorageModifier {
      *             if the feed can not be written
      */
     public void createFeed(StorageFeedWrapper wrapper) throws StorageException {
-        this.readLock.lock();
+        this.lock.lock();
         try {
             this.forceWriteDocuments.add(wrapper.getLuceneDocument());
             storageModified();
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -220,12 +275,12 @@ public class StorageModifier {
      *             if the user can not be persisted.
      */
     public void createAccount(StorageAccountWrapper account) throws StorageException {
-        this.readLock.lock();
+        this.lock.lock();
         try {
             this.forceWriteDocuments.add(account.getLuceneDocument());
             storageModified();
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -239,14 +294,14 @@ public class StorageModifier {
      *             If the user could not be deleted
      */
     public void deleteAccount(String accountName) throws StorageException {
-        this.readLock.lock();
+        this.lock.lock();
         try {
             //TODO delete all feeds and entries of this account
             this.forceWriteTerms.add(new Term(
                     StorageAccountWrapper.FIELD_ACCOUNTNAME, accountName));
             storageModified();
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -261,7 +316,7 @@ public class StorageModifier {
      */
     public void updateAccount(final StorageAccountWrapper user)
             throws StorageException {
-        this.readLock.lock();
+        this.lock.lock();
         try {
             this.forceWriteTerms.add(new Term(
                     StorageAccountWrapper.FIELD_ACCOUNTNAME, user.getUser()
@@ -269,7 +324,7 @@ public class StorageModifier {
             this.forceWriteDocuments.add(user.getLuceneDocument());
             storageModified();
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -284,14 +339,14 @@ public class StorageModifier {
      */
     public void updateFeed(final StorageFeedWrapper wrapper)
             throws StorageException {
-        this.readLock.lock();
+        this.lock.lock();
         try {
             this.forceWriteTerms.add(new Term(StorageFeedWrapper.FIELD_FEED_ID,
                     wrapper.getFeed().getId()));
             this.forceWriteDocuments.add(wrapper.getLuceneDocument());
             storageModified();
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
@@ -305,7 +360,7 @@ public class StorageModifier {
      *             if the feed can not be deleted
      */
     public void deleteFeed(final String feedId) throws StorageException {
-        this.readLock.lock();
+        this.lock.lock();
         try {
             this.deletedDocumentQueue.add(new Term(StorageEntryWrapper.FIELD_FEED_REFERENCE,feedId));
             this.forceWriteTerms.add(new Term(StorageFeedWrapper.FIELD_FEED_ID,
@@ -313,16 +368,14 @@ public class StorageModifier {
 
             storageModified();
         } finally {
-            this.readLock.unlock();
+            this.lock.unlock();
         }
     }
 
     private void storageModified() throws StorageException {
     	if(this.isClosed.get())
     		throw new IllegalStateException("StorageModifier is already closed");
-        this.readLock.unlock();
-        this.writeLock.lock();
-
+       
         try {
         	if(this.isClosed.get())
         		throw new IllegalStateException("StorageModifier is already closed");
@@ -343,18 +396,18 @@ public class StorageModifier {
 
             LOG.error("Writing persistent index failed - Recovering", e);
             throw new StorageException("could not write to storage index -- "+e.getMessage(),e);
-
-        } finally {
-            this.readLock.lock();
-            this.writeLock.unlock();
         }
-
+       
     }
 
-    protected void forceWrite() throws IOException {
+    /**
+     * Persists all changes imediately
+     * @throws IOException -- if an IO Exception  occures
+     */
+    public void forceWrite() throws IOException {
     	if(this.isClosed.get())
     		throw new IllegalStateException("StorageModifier is already closed");
-        this.writeLock.lock();
+        this.lock.lock();
         try {
             if (LOG.isInfoEnabled())
                 LOG.info("ForceWrite called -- current modifiedCounter: "
@@ -363,12 +416,12 @@ public class StorageModifier {
             requestNewIndexModifier();
             this.modifiedCounter = 0;
         } finally {
-            this.writeLock.unlock();
+            this.lock.unlock();
         }
     }
 
     private void requestNewIndexModifier() throws IOException {
-
+        this.controller.registerNewRecoverWriter();
         this.controller.registerNewStorageQuery();
         this.buffer = this.controller.releaseNewStorageBuffer();
         this.modifier = this.controller.createIndexModifier();
@@ -435,7 +488,7 @@ public class StorageModifier {
     protected void close() throws IOException {
     	if(this.isClosed.get())
     		throw new IllegalStateException("StorageModifier is already closed");
-        this.writeLock.lock();
+        this.lock.lock();
         try {
         	if(this.isClosed.get())
         		throw new IllegalStateException("StorageModifier is already closed");
@@ -447,7 +500,7 @@ public class StorageModifier {
             writePersistentIndex(true);
             this.modifiedCounter = 0;
         } finally {
-            this.writeLock.unlock();
+            this.lock.unlock();
         }
     }
 

@@ -75,9 +75,9 @@ public class DefaultDeleteHandler extends AbstractGdataRequestHandler {
 			LOG.error("Could not process DeleteFeed request - "
 					+ e.getMessage(), e);
 			sendError();
-		}
+		}finally{
         closeService();
-
+        }
 	}
 
 }

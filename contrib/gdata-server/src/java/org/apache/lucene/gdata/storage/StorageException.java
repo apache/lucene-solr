@@ -23,7 +23,7 @@ package org.apache.lucene.gdata.storage;
  * @author Simon Willnauer 
  *  
  */ 
-public class StorageException extends Exception { 
+public class StorageException extends RuntimeException { 
  
     /** 
      *  

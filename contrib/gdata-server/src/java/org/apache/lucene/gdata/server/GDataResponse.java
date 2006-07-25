@@ -22,6 +22,8 @@ import java.util.Date;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.server.GDataRequest.OutputFormat;
 import org.apache.lucene.gdata.utils.DateFormater;
 
@@ -68,6 +70,7 @@ import com.google.gdata.util.common.xml.XmlWriter.Namespace;
  * 
  */
 public class GDataResponse {
+    private static final Log LOG = LogFactory.getLog(GDataResponse.class);
     private int error;
 
     private boolean isError = false;
@@ -169,7 +172,7 @@ public class GDataResponse {
         if (time != null)
             setLastModifiedHeader(time.getValue());
         XmlWriter writer = createWriter();
-
+        
         if (this.outputFormat.equals(OutputFormat.ATOM)) {
             this.response.setContentType(XMLMIME_ATOM);
             feed.generateAtom(writer, profile);
@@ -177,7 +180,7 @@ public class GDataResponse {
             this.response.setContentType(XMLMIME_RSS);
             feed.generateRss(writer, profile);
         }
-
+        writer.close();
     }
 
     /**
@@ -210,6 +213,8 @@ public class GDataResponse {
             entry.generateAtom(writer, profile);
         else
             entry.generateRss(writer, profile);
+        writer.close();
+        
     }
 
     private XmlWriter createWriter() throws IOException {

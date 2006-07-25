@@ -20,6 +20,7 @@ import java.io.Reader;
 
 import org.apache.commons.digester.Digester;
 import org.apache.lucene.gdata.data.GDataAccount;
+import org.apache.lucene.gdata.utils.SimpleSaxErrorHandler;
 import org.xml.sax.SAXException;
 
 /**
@@ -42,9 +43,12 @@ public class AccountBuilder {
             SAXException {
         if (reader == null)
             throw new IllegalArgumentException("Reader must not be null");
+        String schemaFile = AccountBuilder.class.getResource("/gdata-account.xsd").getFile();
         GDataAccount account = null;
         Digester digester = new Digester();
-        digester.setValidating(false);
+        digester.setValidating(true);
+        digester.setErrorHandler(new SimpleSaxErrorHandler());
+        digester.setSchema(schemaFile);
         digester.addObjectCreate("account", GDataAccount.class);
         digester.addBeanPropertySetter("account/account-name", "name");
         digester.addBeanPropertySetter("account/password", "password");
@@ -55,8 +59,12 @@ public class AccountBuilder {
                 "authorMail");
         digester.addBeanPropertySetter("account/account-owner/url",
                 "authorLink");
+
         account = (GDataAccount) digester.parse(reader);
+
         return account;
     }
-
+    
+    
+  
 }

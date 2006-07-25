@@ -61,8 +61,8 @@ public class TestAbstractFeedHandler extends TestCase {
         
         try {
             
-            GDataServerRegistry.getRegistry().registerComponent(StorageStub.class);
-            GDataServerRegistry.getRegistry().registerComponent(ServiceFactoryStub.class);
+            GDataServerRegistry.getRegistry().registerComponent(StorageStub.class,null);
+            GDataServerRegistry.getRegistry().registerComponent(ServiceFactoryStub.class,null);
         } catch (RegistryException e) {
             
             e.printStackTrace();

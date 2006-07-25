@@ -141,7 +141,7 @@ public abstract class AbstractFeedHandler extends RequestAuthenticator implement
         return this.errorMessage;
     }
     
-    class FeedHandlerException extends Exception{
+    static class FeedHandlerException extends Exception{
 
         /**
          * 

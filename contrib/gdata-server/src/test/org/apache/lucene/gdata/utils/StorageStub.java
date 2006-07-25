@@ -170,4 +170,9 @@ public static String SERVICE_TYPE_RETURN = "service";
         return null;
     }
 
+    public String releaseId() {
+        
+        return null;
+    }
+
 }

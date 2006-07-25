@@ -29,8 +29,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.server.authentication.AuthenticationController;
 import org.apache.lucene.gdata.server.registry.ComponentType;
-import org.apache.lucene.gdata.server.registry.ProvidedService;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
+import org.apache.lucene.gdata.server.registry.ProvidedService;
 import org.apache.lucene.gdata.storage.Storage;
 import org.apache.lucene.gdata.storage.StorageController;
 
@@ -129,6 +129,7 @@ public class GDataRequest {
             Storage storage = controller.getStorage();
 
             String service = storage.getServiceForFeed(this.feedId);
+            storage.close();
             /*
              * ExtensionProfile and the type is used for building the Entry /
              * Feed Instances from an inputstream or reader
@@ -141,8 +142,11 @@ public class GDataRequest {
                         "feed is not registered or extension profile could not be created");
 
         } catch (Exception e) {
+            e.printStackTrace();
+            
             throw new GDataRequestException(
-                    "feed is not registered or extension profile could not be created");
+                    "feed is not registered or extension profile could not be created -- "
+                            + e.getMessage(), e);
         }
 
     }
@@ -307,27 +311,27 @@ public class GDataRequest {
         builder.append(buildRequestIDString(false));
         builder.append("?");
 
+        if (builder.charAt(builder.length() - 1) != '?')
+            builder.append('&');
         Enumeration parameters = this.request.getParameterNames();
         while (parameters.hasMoreElements()) {
             String element = (String) parameters.nextElement();
-            String[] values = this.request.getParameterValues(element);
-            for (int i = 0; i < values.length; i++) {
+            String values = this.request.getParameter(element);
 
-                builder.append(element).append("=");
-                if (element.equals(START_INDEX_NEXT_PAGE_PARAMETER)) {
-                    int tempVal = DEFAULT_START_INDEX;
-                    try {
-                        tempVal = Integer.parseInt(values[i]);
-                    } catch (Exception e) {
-                        LOG.info("Can not parse StartIndex -- use defaut");
-                    }
-                    builder.append(tempVal + getItemsPerPage());
-                    break;
+            builder.append(element).append("=");
+            if (element.equals(START_INDEX_NEXT_PAGE_PARAMETER)) {
+                int tempVal = DEFAULT_START_INDEX;
+                try {
+                    tempVal = Integer.parseInt(values);
+                } catch (Exception e) {
+                    LOG.info("Can not parse StartIndex -- use defaut");
                 }
-
-                builder.append(values[i]);
-
+                builder.append(tempVal + getItemsPerPage());
+                continue;
             }
+
+            builder.append(values);
+
             if (parameters.hasMoreElements())
                 builder.append("&");
 
@@ -339,9 +343,10 @@ public class GDataRequest {
                     DEFAULT_ITEMS_PER_PAGE);
         }
         if (this.request.getParameter(START_INDEX_NEXT_PAGE_PARAMETER) == null) {
-            builder.append('&');
+            if (builder.charAt(builder.length() - 1) != '?')
+                builder.append('&');
             builder.append(START_INDEX_NEXT_PAGE_PARAMETER).append("=");
-            builder.append(DEFAULT_ITEMS_PER_PAGE + 1);
+            builder.append(getItemsPerPage() + 1);
         }
 
         return builder.toString();
@@ -352,7 +357,9 @@ public class GDataRequest {
         StringBuilder builder = new StringBuilder("http://");
         builder.append(this.request.getHeader("Host"));
         builder.append(this.request.getRequestURI());
-        if (endingSlash && !this.request.getRequestURI().endsWith("/"))
+        if (!endingSlash && builder.charAt(builder.length() - 1) == '/')
+            builder.setLength(builder.length() - 1);
+        if (endingSlash && builder.charAt(builder.length() - 1) != '/')
             builder.append("/");
 
         return builder.toString();
@@ -454,7 +461,7 @@ public class GDataRequest {
      */
     public boolean isFeedRequested() {
 
-        return (this.type.equals(GDataRequestType.GET) && (this.entryId == null
+        return (this.type == GDataRequestType.GET && (this.entryId == null
                 || this.entryId.length() == 0 || (this.entryId.equals('/'))));
     }
 

@@ -65,6 +65,7 @@ public class RecoverWriter {
         writer.write(META_DATA_ENTRY_SEPARATOR);
         writer.write(STORAGE_OPERATION_SEPARATOR);
         writer.write(META_DATA_ENTRY_SEPARATOR);
+        writer.flush();
     }
 
    

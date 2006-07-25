@@ -43,6 +43,7 @@
   <property name="junit.output.dir" location="${build.dir}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
+  <property name="junit.excludes" value=""/>
 
   <available
     property="javacc.present"
@@ -179,7 +180,7 @@
       <formatter type="xml"/>
       <formatter type="brief" usefile="false"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-        <fileset dir="src/test" includes="${junit.includes}"/>
+        <fileset dir="src/test" includes="${junit.includes}" excludes="${junit.excludes}"/>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test" includes="**/${testcase}.java"/>

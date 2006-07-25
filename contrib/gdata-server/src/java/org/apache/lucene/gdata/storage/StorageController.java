@@ -58,4 +58,10 @@ public interface StorageController extends ServerComponent {
      *             if the storage instance can not be created
      */
     public abstract Storage getStorage() throws StorageException;
+    
+    /**
+     * Releases a new unique ID
+     * @return - unique ID
+     */
+    public abstract String releaseId();
 }

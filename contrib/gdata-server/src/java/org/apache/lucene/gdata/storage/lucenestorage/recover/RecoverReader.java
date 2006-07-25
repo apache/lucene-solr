@@ -140,24 +140,24 @@ public class RecoverReader {
                 throw new RecoverException("Illegal metadata --- "+recoverString);
             temp = tokenizer.nextToken();
             if(temp == null)
-                throw new RecoverException("Can't recover feed Id -- "+temp);
+                throw new RecoverException("Can't recover feed Id -- is null");
             this.feedId = temp;
             temp = tokenizer.nextToken();
             if(temp == null)
-                throw new RecoverException("Can't recover entry Id -- "+temp);
+                throw new RecoverException("Can't recover entry Id -- is null");
              this.entryId = temp;
             
             temp = tokenizer.nextToken();
             try{
                 this.timestamp = Long.parseLong(temp);
             }catch (Exception e) {
-                throw new RecoverException("Can't recover timestamp -- "+temp,e);
+                throw new RecoverException("Can't recover timestamp -- is null",e);
             }
             
             if(this.operation != StorageOperation.DELETE){
                 temp = tokenizer.nextToken();
                 if(temp == null)
-                    throw new RecoverException("Can't recover service -- "+temp);  
+                    throw new RecoverException("Can't recover service -- is null");  
                 if(!GDataServerRegistry.getRegistry().isServiceRegistered(temp))
                     throw new RecoverException("Service in recover metadata is not registered  - "+temp);
                 this.config = GDataServerRegistry.getRegistry().getProvidedService(temp);

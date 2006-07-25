@@ -10,15 +10,13 @@ import junit.framework.TestCase;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseEntry;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
-import org.apache.lucene.gdata.server.registry.ComponentType;
-import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
-import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation;
 import org.apache.lucene.gdata.storage.lucenestorage.util.ReferenceCounter;
 import org.apache.lucene.gdata.utils.ProvidedServiceStub;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 import com.google.gdata.data.BaseEntry;
 import com.google.gdata.data.BaseFeed;
@@ -37,12 +35,17 @@ public class TestStorageQuery extends TestCase {
     private static String accountName = "simon";
     private static String service = ProvidedServiceStub.SERVICE_NAME;
     protected void setUp() throws Exception {
-        GDataServerRegistry.getRegistry().registerComponent(StorageCoreController.class);
         this.configurator = new ProvidedServiceStub();
-        
-        
-        GDataServerRegistry.getRegistry().registerService(this.configurator);
-        this.controller = (StorageCoreController)GDataServerRegistry.getRegistry().lookup(StorageController.class,ComponentType.STORAGECONTROLLER);
+        this.controller = new StorageCoreController();
+        this.dir = new RAMDirectory();
+        this.controller.setStorageDir(this.dir);
+        this.controller.setKeepRecoveredFiles(false);
+        this.controller.setOptimizeInterval(10);
+        this.controller.setRecover(false);
+        this.controller.setBufferSize(10);
+        this.controller.setPersistFactor(10);
+        this.controller.initialize();
+        this.configurator = new ProvidedServiceStub();
         this.modifier = this.controller.getStorageModifier();
         this.dir = this.controller.getDirectory();        
         ServerBaseFeed feed = new ServerBaseFeed();
@@ -55,11 +58,7 @@ public class TestStorageQuery extends TestCase {
         insertEntries(this.count);
         this.query = this.controller.getStorageQuery();
         
-       
-        
-        
     }
-    
     
     /**
      * @param entrycount
@@ -93,7 +92,7 @@ public class TestStorageQuery extends TestCase {
 
     protected void tearDown() throws Exception {
         this.query.decrementRef();
-        GDataServerRegistry.getRegistry().destroy();
+        this.controller.destroy();
     }
     
     /*
@@ -245,6 +244,43 @@ public class TestStorageQuery extends TestCase {
         this.query = this.controller.getStorageQuery();
         assertEquals(entry.getUpdated().getValue(),this.query.get().getFeedLastModified(feedId));
     }
+    
+    public void testCheckVersionId() throws IOException, StorageException{
+        this.modifier.forceWrite();
+        ReferenceCounter<StorageQuery> sQuery = this.controller.getStorageQuery();
+        ServerBaseEntry entry = new ServerBaseEntry(new Entry());
+        entry.setId("test");
+        entry.setServiceConfig(this.configurator);
+        entry.setUpdated(new DateTime(System.currentTimeMillis(),0));
+        entry.setFeedId(feedId);
+        entry.setVersion(5);
+        StorageEntryWrapper wrapper = new StorageEntryWrapper(entry,StorageOperation.INSERT);
+        this.modifier.insertEntry(wrapper);
+        //test in buffer
+        assertTrue(sQuery.get().checkEntryVersion(entry.getId(),entry.getFeedId(),entry.getVersion()));
+        assertFalse(sQuery.get().checkEntryVersion(entry.getId(),entry.getFeedId(),10000));
+        assertFalse(sQuery.get().checkEntryVersion(entry.getId(),"someOtherFeed",entry.getVersion()));
+        assertFalse(sQuery.get().checkEntryVersion("foobar",entry.getFeedId(),entry.getVersion()));
+        
+        
+        this.modifier.forceWrite();
+        //test in buffer after written
+        assertTrue(sQuery.get().checkEntryVersion(entry.getId(),entry.getFeedId(),entry.getVersion()));
+        assertFalse(sQuery.get().checkEntryVersion(entry.getId(),entry.getFeedId(),10000));
+        assertFalse(sQuery.get().checkEntryVersion(entry.getId(),"someOtherFeed",entry.getVersion()));
+        assertFalse(sQuery.get().checkEntryVersion("foobar",entry.getFeedId(),entry.getVersion()));
+        sQuery.decrementRef();
+        sQuery = this.controller.getStorageQuery();
+        //test in index
+        assertTrue(sQuery.get().checkEntryVersion(entry.getId(),entry.getFeedId(),entry.getVersion()));
+        assertFalse(sQuery.get().checkEntryVersion(entry.getId(),entry.getFeedId(),10000));
+        assertFalse(sQuery.get().checkEntryVersion("foobar",entry.getFeedId(),entry.getVersion()));
+        sQuery.decrementRef();
+        
+        
+        
+        
+    }
     private void entryQueryHelper(ReferenceCounter<StorageQuery> currentQuery) throws IOException,  ParseException{
         
         List<String> entryIdList = new ArrayList<String>();
@@ -255,7 +291,9 @@ public class TestStorageQuery extends TestCase {
         assertEquals(entryIdList.size(),entryList.size());
         List<String> entryIdCompare = new ArrayList<String>();
         for (BaseEntry entry : entryList) {
+            assertEquals("1",entry.getVersionId());
             entryIdCompare.add(entry.getId());
+            
         }
         assertTrue(entryIdList.containsAll(entryIdCompare));
         

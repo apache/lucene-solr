@@ -13,6 +13,8 @@ import org.xml.sax.SAXException;
 public class TestAccountBuilder extends TestCase {
     private StringReader reader;
     private String inputXML;
+    private StringReader invalidReader;
+    private String invalidInputXML;
     protected void setUp() throws Exception {
         this.inputXML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                 "<account>" +
@@ -27,6 +29,18 @@ public class TestAccountBuilder extends TestCase {
                 "</account>";
 
         this.reader = new StringReader(this.inputXML);
+        this.invalidInputXML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+        "<account>" +
+        "<account-name>simon</account-name>" +
+        "<account-role>6</account-role>" +
+        "<account-owner>" +
+        "<name>simon willnauer</name>" +
+        "<email-address>simon@gmail.com</email-address>" +
+        "<url>http://www.javawithchopsticks.de</url>" +
+        "</account-owner>" +
+        "</account>";
+
+        this.invalidReader = new StringReader(this.invalidInputXML);
         
     }
 
@@ -49,6 +63,15 @@ public class TestAccountBuilder extends TestCase {
         assertTrue(user.isUserInRole(AccountRole.FEEDAMINISTRATOR));
         assertFalse(user.isUserInRole(AccountRole.USERADMINISTRATOR));
         
+    }
+    
+    public void testBuildUserWrongXML() throws IOException{
+        try{
+        AccountBuilder.buildAccount(this.invalidReader);
+        fail("invalid xml");
+        }catch (SAXException e) {
+            
+        }
     }
 
 }

@@ -13,6 +13,11 @@
 			org.apache.lucene.gdata.server.registry.RegistryContextListener
 		</listener-class>
 	</listener>
+	<listener>
+		<listener-class>
+			org.apache.lucene.gdata.server.registry.GDataRequestListener
+		</listener-class>
+	</listener>
 	<servlet>
 		<servlet-name>ControllerServlet</servlet-name>
 		<servlet-class>

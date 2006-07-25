@@ -102,9 +102,9 @@ public class DefaultGetHandler extends AbstractGdataRequestHandler {
             LOG.error("Could not process GetFeed request - " + e.getMessage(),
                     e);
             sendError();
-        }
+        }finally{
         closeService();
-
+        }
     }
 
     /**

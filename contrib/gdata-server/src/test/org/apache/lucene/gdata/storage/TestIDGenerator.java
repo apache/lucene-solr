@@ -24,8 +24,10 @@ public class TestIDGenerator extends TestCase {
     } 
  
     @Override 
-    protected void tearDown() throws Exception { 
-        this.idgen.stopIDGenerator(); 
+    protected void tearDown() throws Exception {
+        
+        this.idgen.stopIDGenerator();
+       
     } 
  
     /** 

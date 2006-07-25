@@ -1,5 +1,8 @@
 package org.apache.lucene.gdata.data;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
 
 import junit.framework.TestCase;
@@ -59,6 +62,7 @@ public class TestGDataUser extends TestCase {
         assertEquals(4,this.user.getRoles().size());
         
     }
+
     
     
 

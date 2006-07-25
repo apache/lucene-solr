@@ -27,6 +27,7 @@ import org.apache.lucene.gdata.data.ServerBaseEntry;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
+import org.apache.lucene.gdata.storage.ModificationConflictException;
 import org.apache.lucene.gdata.storage.ResourceNotFoundException;
 import org.apache.lucene.gdata.storage.Storage;
 import org.apache.lucene.gdata.storage.StorageController;
@@ -103,7 +104,9 @@ public class GDataService implements Service {
         ServerBaseEntry entry = buildEntry(request, response);
         entry.setFeedId(request.getFeedId());
         entry.setServiceConfig(request.getConfigurator());
-        setTimeStamps(entry.getEntry());
+        BaseEntry tempEntry = entry.getEntry();
+        tempEntry.setPublished(getCurrentDateTime());
+        tempEntry.setUpdated(getCurrentDateTime());
         BaseEntry retVal = null;
         try {
             retVal = this.storage.storeEntry(entry);
@@ -129,6 +132,7 @@ public class GDataService implements Service {
         entry.setServiceConfig(request.getConfigurator());
         entry.setFeedId(request.getFeedId());
         entry.setId(request.getEntryId());
+        setVersionId(entry,request,response);
         if (entry.getId() == null)
             throw new ServiceException(
                     "entry id is null -- can not delete null entry");
@@ -140,7 +144,13 @@ public class GDataService implements Service {
                     "Could not delete entry", e);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
-        } catch (Exception e) {
+        }catch (ModificationConflictException e) {
+            response.setError(HttpServletResponse.SC_CONFLICT);
+            ServiceException ex = new ServiceException(
+                    "Could not delete entry - version confilict", e);
+            ex.setStackTrace(e.getStackTrace());
+            throw ex;  
+        }catch (StorageException e) {
             response.setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             ServiceException ex = new ServiceException(
                     "Could not delete entry", e);
@@ -160,7 +170,7 @@ public class GDataService implements Service {
 
         ServerBaseEntry entry = buildEntry(request, response);
         entry.setFeedId(request.getFeedId());
-
+        setVersionId(entry,request,response);
         entry.setServiceConfig(request.getConfigurator());
         if (LOGGER.isInfoEnabled())
             LOGGER.info("update Entry" + entry.getId() + " for feedId: "
@@ -180,7 +190,11 @@ public class GDataService implements Service {
             throw new ServiceException(
                     "Entry id in the entry xml does not match the requested resource");
         }
-        setTimeStamps(entry.getEntry());
+        BaseEntry tempEntry = entry.getEntry();
+        tempEntry.setUpdated(getCurrentDateTime());
+        Link selfLink = entry.getSelfLink();
+        if(selfLink != null)
+            entry.getLinks().remove(selfLink);
         BaseEntry retVal = null;
         try {
             retVal = this.storage.updateEntry(entry);
@@ -190,7 +204,13 @@ public class GDataService implements Service {
                     "Could not update entry", e);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
-        } catch (StorageException e) {
+        }catch (ModificationConflictException e) {
+            response.setError(HttpServletResponse.SC_CONFLICT);
+            ServiceException ex = new ServiceException(
+                    "Could not update entry - version confilict", e);
+            ex.setStackTrace(e.getStackTrace());
+            throw ex;
+        }catch (StorageException e) {
             response.setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             ServiceException ex = new ServiceException(
                     "Could not update entry", e);
@@ -261,13 +281,6 @@ public class GDataService implements Service {
         }
     }
 
-    private BaseEntry setTimeStamps(final BaseEntry entry) {
-        if (entry.getUpdated() == null)
-            entry.setUpdated(DateTime.now());
-        if (entry.getPublished() == null)
-            entry.setPublished(DateTime.now());
-        return entry;
-    }
 
     /**
      * @see org.apache.lucene.gdata.server.Service#getSingleEntry(org.apache.lucene.gdata.server.GDataRequest,
@@ -282,6 +295,8 @@ public class GDataService implements Service {
             entry.setServiceConfig(request.getConfigurator());
             entry.setFeedId(request.getFeedId());
             entry.setId(request.getEntryId());
+
+            
             if(entry.getId() == null){
                 response.setError(HttpServletResponse.SC_BAD_REQUEST);
                 throw new ServiceException("entry is null can't get entry");
@@ -318,10 +333,10 @@ public class GDataService implements Service {
     @SuppressWarnings("unchecked")
     private void dynamicElementFeedStragey(final BaseFeed feed,
             final GDataRequest request) {
-        buildDynamicFeedElements(request, feed);
+         buildDynamicFeedElements(request, feed);
         List<BaseEntry> entryList = feed.getEntries();
         for (BaseEntry entry : entryList) {
-            String id = request.getContextPath() + entry.getId();
+            String id = new StringBuilder(request.getContextPath()).append(entry.getId()).append("/").toString();
             setSelfLink(entry, id);
         }
 
@@ -334,7 +349,12 @@ public class GDataService implements Service {
      */@SuppressWarnings("unchecked")
     private BaseEntry setSelfLink(final BaseEntry entry, String id) {
         Link self = buildLink(Link.Rel.SELF, XMLMIME, id);
-        entry.getLinks().add(self);
+        StringBuilder builder = new StringBuilder(id);
+        builder.append(entry.getVersionId());
+        Link edit = buildLink(Link.Rel.ENTRY_EDIT,XMLMIME,builder.toString());
+        List<Link> list = entry.getLinks();
+        list.add(edit);
+        list.add(self);
         return entry;
     }
 
@@ -347,10 +367,12 @@ public class GDataService implements Service {
         feed.setItemsPerPage(request.getItemsPerPage());
         feed.setStartIndex(request.getStartIndex());
         feed.setId(request.getContextPath());
-        feed.getLinks().add(
+        List<Link> links = feed.getLinks();
+        links.add(
                 buildLink(Link.Rel.SELF, Link.Type.ATOM, request.getSelfId()));
-        feed.getLinks().add(
+        links.add(
                 buildLink(Link.Rel.NEXT, XMLMIME, request.getNextId()));
+        
 
     }
 
@@ -394,5 +416,23 @@ public class GDataService implements Service {
             }
         
     }
-
+    private ServerBaseEntry setVersionId(final ServerBaseEntry entry, final GDataRequest request, final GDataResponse response)throws ServiceException{
+        try{
+            entry.setVersion(Integer.parseInt(request.getEntryVersion()));
+            return entry;
+        }catch (Exception e) {
+            LOGGER.error("Can not parse entry version -- version is not an integer -- versionid: "+request.getEntryVersion(),e);
+            response.setError(HttpServletResponse.SC_BAD_REQUEST);
+            throw new ServiceException("Can not parse entry version -- version is not an integer -- versionid: "+request.getEntryVersion(),e);
+           
+        }
+    }
+    /*
+     * provide current time to set as published / updated values
+     * always use servertime to prevent client / server time lag
+     * Timezoneshift is 0
+     */
+    protected DateTime getCurrentDateTime(){
+        return new DateTime(System.currentTimeMillis(),0);
+    }
 }

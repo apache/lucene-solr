@@ -17,6 +17,7 @@
 package org.apache.lucene.gdata.storage.lucenestorage;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.server.GDataEntityBuilder;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
@@ -66,6 +68,7 @@ import com.google.gdata.util.ParseException;
  */
 public class StorageQuery {
     private static final Log LOG = LogFactory.getLog(StorageQuery.class);
+
     private final StorageBuffer buffer;
 
     private final Searcher searcher;
@@ -178,20 +181,19 @@ public class StorageQuery {
     @SuppressWarnings("unchecked")
     public BaseFeed getLatestFeedQuery(final String feedId,
             final int resultCount, final int startIndex,
-            final ProvidedService config) throws IOException,
-            ParseException {
+            final ProvidedService config) throws IOException, ParseException {
         DateTime updated = null;
         Hits feedHits = storageFeedQuery(feedId);
-        if(feedHits.length() == 0)
+        if (feedHits.length() == 0)
             return null;
-        BaseFeed retVal = buildFeedFromLuceneDocument(feedHits.doc(0),config);
-        
+        BaseFeed retVal = buildFeedFromLuceneDocument(feedHits.doc(0), config);
+
         List<BaseEntry> returnList = new ArrayList<BaseEntry>(resultCount);
         List<StorageEntryWrapper> bufferedWrapperList = this.buffer
                 .getSortedEntries(feedId);
         int alreadyAdded = 0;
         int offset = startIndex - 1;
-        
+
         if (bufferedWrapperList != null
                 && bufferedWrapperList.size() >= startIndex) {
             updated = bufferedWrapperList.get(0).getEntry().getUpdated();
@@ -199,14 +201,13 @@ public class StorageQuery {
                 if ((bufferedWrapperList.size() - offset) > 0) {
                     StorageEntryWrapper wrappedEntry = bufferedWrapperList
                             .get(offset++);
-                    returnList
-                            .add(wrappedEntry.getEntry());
+                    returnList.add(wrappedEntry.getEntry());
                 } else
                     break;
             }
             // reset offset
             offset = startIndex - 1;
-            if (alreadyAdded == resultCount){
+            if (alreadyAdded == resultCount) {
                 retVal.getEntries().addAll(returnList);
                 retVal.setUpdated(updated);
                 return retVal;
@@ -229,14 +230,17 @@ public class StorageQuery {
                 BaseEntry entry = buildEntryFromLuceneDocument(doc, config);
                 returnList.add(entry);
             }
-            if(updated == null){
-            try{
-                long updatedTimeStamp = Long.parseLong(hits.doc(0).get(StorageEntryWrapper.FIELD_TIMESTAMP));
-                updated = new DateTime(updatedTimeStamp);
-            }catch (Exception e) {
-                LOG.warn("could not create DateTime -- "+e.getMessage(),e);
-                updated = buildEntryFromLuceneDocument(hits.doc(0),config).getUpdated();
-            }
+            if (updated == null) {
+                try {
+                    long updatedTimeStamp = Long.parseLong(hits.doc(0).get(
+                            StorageEntryWrapper.FIELD_TIMESTAMP));
+                    updated = new DateTime(updatedTimeStamp);
+                } catch (Exception e) {
+                    LOG.warn("could not create DateTime -- " + e.getMessage(),
+                            e);
+                    updated = buildEntryFromLuceneDocument(hits.doc(0), config)
+                            .getUpdated();
+                }
             }
         }
         retVal.setUpdated(updated);
@@ -351,21 +355,18 @@ public class StorageQuery {
     }
 
     private BaseEntry buildEntryFromLuceneDocument(final Document doc,
-            final ProvidedService config) throws ParseException,
-            IOException {
-        StringReader reader = new StringReader(doc.getField(
-                StorageEntryWrapper.FIELD_CONTENT).stringValue());
-        return GDataEntityBuilder.buildEntry( reader, config);
+            final ProvidedService config) throws ParseException, IOException {
+        Reader reader = new StringReader(doc.getField(StorageEntryWrapper.FIELD_CONTENT).stringValue());
+        BaseEntry entry = GDataEntityBuilder.buildEntry(reader, config);
+        entry.setVersionId(doc.getField(StorageEntryWrapper.FIELD_VERSION).stringValue());
+        return entry;
 
     }
 
     private BaseFeed buildFeedFromLuceneDocument(final Document doc,
-            final ProvidedService config) throws ParseException,
-            IOException {
-        StringReader reader = new StringReader(doc.getField(
-                StorageFeedWrapper.FIELD_CONTENT).stringValue());
-        return GDataEntityBuilder
-                .buildFeed(reader, config);
+            final ProvidedService config) throws ParseException, IOException {
+        Reader reader = new StringReader(doc.getField(StorageFeedWrapper.FIELD_CONTENT).stringValue());
+        return GDataEntityBuilder.buildFeed(reader, config);
 
     }
 
@@ -403,21 +404,28 @@ public class StorageQuery {
 
     /**
      * Checks whether a feed for the given feedID is stored
-     * @param feedId - the feed ID
-     * @return <code>true</code> if and only if a feed is stored for the provided feed ID, <code>false</code> if no feed for the given id is stored
+     * 
+     * @param feedId -
+     *            the feed ID
+     * @return <code>true</code> if and only if a feed is stored for the
+     *         provided feed ID, <code>false</code> if no feed for the given
+     *         id is stored
      * @throws IOException
      */
-    public boolean isFeedStored(String feedId)throws IOException{
+    public boolean isFeedStored(String feedId) throws IOException {
         Hits h = storageFeedQuery(feedId);
         return (h.length() > 0);
-            
+
     }
 
     /**
      * Looks up the feedtype for the given feed ID
-     * @param feedID - the feed ID
+     * 
+     * @param feedID -
+     *            the feed ID
      * @return - the feed type
-     * @throws IOException - if the storage can not be accessed
+     * @throws IOException -
+     *             if the storage can not be accessed
      */
     public String getService(String feedID) throws IOException {
         Hits hits = storageFeedQuery(feedID);
@@ -427,6 +435,7 @@ public class StorageQuery {
         String feedType = doc.get(StorageFeedWrapper.FIELD_SERVICE_ID);
         return feedType;
     }
+
     private Hits storageFeedQuery(String feedId) throws IOException {
         TermQuery query = new TermQuery(new Term(
                 StorageFeedWrapper.FIELD_FEED_ID, feedId));
@@ -435,58 +444,103 @@ public class StorageQuery {
 
     /**
      * Looks up the account reference for the given feed id
-     * @param feedId - id of the feed
-     * @return - the name of the account associated with the feed for the given feed id, or <code>null</code> if the feed is not stored
-     * @throws IOException - if the storage can not be accessed
+     * 
+     * @param feedId -
+     *            id of the feed
+     * @return - the name of the account associated with the feed for the given
+     *         feed id, or <code>null</code> if the feed is not stored
+     * @throws IOException -
+     *             if the storage can not be accessed
      */
     public String getAccountNameForFeedId(String feedId) throws IOException {
         Hits h = storageFeedQuery(feedId);
-        if(h.length() == 0)
+        if (h.length() == 0)
             return null;
         Document doc = h.doc(0);
         return doc.get(StorageFeedWrapper.FIELD_ACCOUNTREFERENCE);
-        
+
     }
-    protected long getEntryLastModified(final String entryId,final String feedId) throws IOException, StorageException{
-        StorageEntryWrapper wrapper = this.buffer.getEntry(entryId,feedId);
-        if(wrapper != null)
+
+    protected long getEntryLastModified(final String entryId,
+            final String feedId) throws IOException, StorageException {
+        StorageEntryWrapper wrapper = this.buffer.getEntry(entryId, feedId);
+        if (wrapper != null)
             return wrapper.getTimestamp();
-        
+
         Hits h = storageQuery(entryId);
-        if(h.length() > 0)
-            try{
-            return Long.parseLong(h.doc(0).get(StorageEntryWrapper.FIELD_TIMESTAMP));
-            }catch (Exception e) {
-                LOG.warn("Can not parse timestamp from entry -- "+h.doc(0).get(StorageEntryWrapper.FIELD_TIMESTAMP));
+        if (h.length() > 0)
+            try {
+                return Long.parseLong(h.doc(0).get(
+                        StorageEntryWrapper.FIELD_TIMESTAMP));
+            } catch (Exception e) {
+                LOG.warn("Can not parse timestamp from entry -- "
+                        + h.doc(0).get(StorageEntryWrapper.FIELD_TIMESTAMP));
             }
-        else 
+        else
             throw new StorageException("Entry not found");
         return 0;
-        
+
     }
-    
-    protected long getFeedLastModified(final String feedId)throws IOException{
+
+    protected long getFeedLastModified(final String feedId) throws IOException {
         Long bufferedTime = this.buffer.getFeedLastModified(feedId);
-        if(bufferedTime != null)
+        if (bufferedTime != null)
             return bufferedTime;
-        Hits entryHits = storageFeedQuery(feedId,this.timeStampSort);
-        if(entryHits.length() > 0){
-            try{
-            return Long.parseLong(entryHits.doc(0).getField(StorageEntryWrapper.FIELD_TIMESTAMP).stringValue());
-            }catch (Exception e) {
-                LOG.warn("Can not parse timestamp from entry -- "+entryHits.doc(0).get(StorageEntryWrapper.FIELD_TIMESTAMP));
+        Hits entryHits = storageFeedQuery(feedId, this.timeStampSort);
+        if (entryHits.length() > 0) {
+            try {
+                return Long.parseLong(entryHits.doc(0).getField(
+                        StorageEntryWrapper.FIELD_TIMESTAMP).stringValue());
+            } catch (Exception e) {
+                LOG.warn("Can not parse timestamp from entry -- "
+                        + entryHits.doc(0).get(
+                                StorageEntryWrapper.FIELD_TIMESTAMP));
             }
         }
         return 0;
-        
+
     }
-    protected boolean isEntryStored(String entryId,String feedId) throws IOException{
-        if(this.buffer.getEntry(entryId,feedId)!=null)
-                return true;
-        
-        Hits h = storageQuery(entryId);
-        if(h.length() > 0)
+
+    protected boolean isEntryStored(String entryId, String feedId)
+            throws IOException {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Checking isEntryStored for entryid " + entryId
+                    + " feedid: " + feedId);
+        if (this.buffer.getEntry(entryId, feedId) != null)
             return true;
+
+        Hits h = storageQuery(entryId);
+        if (h.length() > 0)
+            return true;
+        return false;
+    }
+
+    protected boolean checkEntryVersion(String id, String feedId, int version)
+            throws IOException {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Checking entry version for entryid " + id + " feedid: "
+                    + feedId + " version: " + version);
+        StorageEntryWrapper wrapper = this.buffer.getEntry(id, feedId);
+
+        if (wrapper != null)
+            return wrapper.getVersion() == version;
+
+        Hits h = storageQuery(id);
+        if (h.length() < 1)
+            return false;
+        Document doc = h.doc(0);
+        String fieldValue = null;
+        try {
+            fieldValue = doc.getField(StorageEntryWrapper.FIELD_VERSION)
+                    .stringValue();
+            int storedVersion = Integer.parseInt(fieldValue);
+        if(LOG.isDebugEnabled())
+            LOG.debug("StoredEntry has version "+storedVersion +" return compare result");
+            return storedVersion == version;
+        } catch (Exception e) {
+            LOG.error("Entry has no parable Version id or field is not set -- "
+                    + fieldValue);
+        }
         return false;
     }
 }

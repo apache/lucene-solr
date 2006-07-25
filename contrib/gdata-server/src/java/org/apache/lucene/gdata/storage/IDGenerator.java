@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom; 
 import java.util.concurrent.ArrayBlockingQueue; 
 import java.util.concurrent.BlockingQueue; 
+import java.util.concurrent.atomic.AtomicBoolean;
  
 import org.apache.commons.logging.Log; 
 import org.apache.commons.logging.LogFactory; 
@@ -41,6 +42,8 @@ import org.apache.commons.logging.LogFactory;
  *  
  */ 
 public class IDGenerator { 
+    final AtomicBoolean stopped = new AtomicBoolean(false);
+    
     private final SecureRandom secureRandom; 
  
     private final MessageDigest mdigest; 
@@ -110,8 +113,10 @@ public class IDGenerator {
     /** 
      * Stops the id-producer 
      */ 
-    public void stopIDGenerator() { 
+    public void stopIDGenerator() {
+        this.stopped.set(true);
         this.runner.interrupt(); 
+        
     } 
  
     private class UIDProducer implements Runnable { 
@@ -134,10 +139,10 @@ public class IDGenerator {
          */ 
         public void run() { 
  
-            while (true) { 
+            while (!IDGenerator.this.stopped.get()) { 
                 try { 
                     this.queue.put(produce()); 
-                } catch (InterruptedException e) { 
+                } catch (InterruptedException e) {
                     LOGGER 
                             .warn("UIDProducer has been interrupted -- runner is going down"); 
                     return; 
@@ -147,7 +152,7 @@ public class IDGenerator {
         } 
  
         private String produce() { 
-            String randomNumber = new Integer(this.random.nextInt()).toString(); 
+            String randomNumber = Integer.toString(this.random.nextInt()); 
             byte[] byteResult = this.digest.digest(randomNumber.getBytes()); 
             return hexEncode(byteResult); 
         } 

@@ -60,7 +60,7 @@ public abstract class AbstractAccountHandler extends RequestAuthenticator
     @SuppressWarnings("unused")
     public void processRequest(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
-        
+      try{  
             this.authenticated = authenticateAccount(request,
                 AccountRole.USERADMINISTRATOR);
         
@@ -92,6 +92,10 @@ public abstract class AbstractAccountHandler extends RequestAuthenticator
             setError(HttpServletResponse.SC_UNAUTHORIZED,"Authorization failed");
         }
         sendResponse(response);
+      }finally{
+          if(this.service!=null)
+              this.service.close();
+      }
 
     }
     

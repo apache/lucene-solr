@@ -40,21 +40,21 @@ import java.util.Stack;
  */
 public class DateFormater {
     private final Stack<SimpleDateFormat> objectStack = new Stack<SimpleDateFormat>();
-
+    
     private static final DateFormater formater = new DateFormater();
 
     /**
      * Date format as it is used in Http Last modified header (Tue, 15 Nov 1994
      * 12:45:26 GMT)
      */
-    public static String HTTP_HEADER_DATE_FORMAT = "EEE, d MMM yyyy HH:mm:ss z";
+    public final static String HTTP_HEADER_DATE_FORMAT = "EEE, d MMM yyyy HH:mm:ss z";
     /**
      *  Date format as it is used in Http Last modified header (Tue, 15 Nov 1994
      * 12:45:26 +0000)
      */
-    public static String HTTP_HEADER_DATE_FORMAT_TIME_OFFSET = "EEE, d MMM yyyy HH:mm:ss Z";
+    public final static String HTTP_HEADER_DATE_FORMAT_TIME_OFFSET = "EEE, d MMM yyyy HH:mm:ss Z";
 
-    private DateFormater() {
+    protected DateFormater() {
         super();
     }
 
@@ -74,8 +74,11 @@ public class DateFormater {
                     "given parameters must not be null");
         SimpleDateFormat inst = formater.getFormater();
         inst.applyPattern(format);
-        formater.returnFomater(inst);
-        return inst.format(date);
+        try{
+            return inst.format(date);
+        }finally{
+            formater.returnFomater(inst);
+        }
     }
     /**
      * Parses the given string into one of the specified formates
@@ -109,19 +112,26 @@ public class DateFormater {
             "given parameters must not be null");
         
         SimpleDateFormat inst = formater.getFormater();
+        try{
         inst.applyPattern(pattern);
         return inst.parse(dateString);
+        }finally{
+            formater.returnFomater(inst);
+        }
+        
     }
 
-    private SimpleDateFormat getFormater() {
+    protected SimpleDateFormat getFormater() {
         if (this.objectStack.empty())
             return new SimpleDateFormat(DateFormater.HTTP_HEADER_DATE_FORMAT,Locale.ENGLISH);
         return this.objectStack.pop();
+    
     }
 
-    private void returnFomater(final SimpleDateFormat format) {
+    protected void returnFomater(final SimpleDateFormat format) {
         if (this.objectStack.size() <= 25)
             this.objectStack.push(format);
+        
     }
 
 }

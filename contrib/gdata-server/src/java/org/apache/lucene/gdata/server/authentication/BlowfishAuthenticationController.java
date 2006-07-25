@@ -35,6 +35,7 @@ import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
 import org.apache.lucene.gdata.server.registry.Component;
 import org.apache.lucene.gdata.server.registry.ComponentType;
+import org.apache.lucene.gdata.server.registry.configuration.Requiered;
 
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
@@ -81,7 +82,6 @@ public class BlowfishAuthenticationController implements
 
     private Cipher enCrypt;
 
-    // TODO make this configurable
     private int minuteOffset = 30;
 
     private long milisecondOffset;
@@ -92,8 +92,8 @@ public class BlowfishAuthenticationController implements
 
     private ReentrantLock lock = new ReentrantLock();
 
-    // TODO make this configurable
-    private String key = "myTestKey";
+    
+    private  String key;
 
     /**
      * @see org.apache.lucene.gdata.server.authentication.AuthenticationController#initialize()
@@ -236,7 +236,8 @@ public class BlowfishAuthenticationController implements
     /**
      * @return Returns the minuteOffset.
      */
-    public int getMinuteOffset() {
+    @Requiered
+    public int getLoginTimeout() {
         return this.minuteOffset;
     }
 
@@ -244,7 +245,8 @@ public class BlowfishAuthenticationController implements
      * @param minuteOffset
      *            The minuteOffset to set.
      */
-    public void setMinuteOffset(int minuteOffset) {
+    @Requiered
+    public void setLoginTimeout(int minuteOffset) {
         this.minuteOffset = minuteOffset;
         calculateTimeOffset();
     }

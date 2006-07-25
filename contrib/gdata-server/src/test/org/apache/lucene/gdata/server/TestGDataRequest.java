@@ -15,6 +15,9 @@
  */ 
 package org.apache.lucene.gdata.server; 
  
+import java.util.Enumeration;
+import java.util.StringTokenizer;
+
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.TestCase;
@@ -39,17 +42,15 @@ public class TestGDataRequest extends TestCase {
     private MockControl control; 
  
     private GDataRequest feedRequest; 
-    static{
-        try {
-            GDataServerRegistry.getRegistry().registerComponent(StorageStub.class);
-        } catch (RegistryException e) {
-            
-            e.printStackTrace();
-        }
-    }
+    
     
     @Override 
-    protected void setUp() throws Exception { 
+    protected void setUp() throws Exception {
+        try{
+            GDataServerRegistry.getRegistry().registerComponent(StorageStub.class,null);
+        }catch (Exception e) {
+
+        }
         ProvidedService configurator = new ProvidedServiceStub();
         GDataServerRegistry.getRegistry().registerService(configurator); 
         
@@ -225,7 +226,7 @@ public class TestGDataRequest extends TestCase {
         String feedAndEntryID = "/feed/entryid"; 
         String queryString = "max-results=25"; 
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed/entryId/15/"); 
         this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
         this.control.expectAndReturn(this.request.getParameter("max-results"),"25",2); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
@@ -235,7 +236,6 @@ public class TestGDataRequest extends TestCase {
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
         String selfID = "http://"+host+"/host/feed/entryId/15?"+queryString; 
-     
         assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
         this.control.reset(); 
          
@@ -354,67 +354,95 @@ public class TestGDataRequest extends TestCase {
         this.control.replay();
         assertEquals("bla",this.feedRequest.getAuthToken());
         this.control.verify();
+        this.control.reset();
         
     } 
      
     public void testGetNextId() throws GDataRequestException{ 
-//        String host = "www.apache.org"; 
-//        String feedAndEntryID = "/feed/entryid"; 
-//        String queryString = "?max-results=25"; 
-//        String startIndex = "&start-index=26"; 
-//        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-//        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
-//        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/"); 
-//        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",2); 
-//        this.control.expectAndReturn(this.request.getParameter("start-index"),null); 
-//        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
-//                null); 
-//        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
-//                queryString); 
-//        this.control.replay(); 
-//        this.feedRequest.initializeRequest(); 
-//        String nextID = "http://"+host+"/feed/"+queryString+startIndex; 
-//     
-//        assertEquals("Next ID",nextID,this.feedRequest.getNextId()); 
-//        this.control.reset(); 
+        String host = "www.apache.org"; 
+        String feedAndEntryID = "/feed/entryid"; 
+        String queryString = "?max-results=25"; 
+        String startIndex = "&start-index=26"; 
+        Enumeration enu = new StringTokenizer("max-results",",");
+        
+        
+        this.control.expectAndDefaultReturn(this.request.getParameterNames(),enu);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/"); 
+        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",4); 
+        this.control.expectAndReturn(this.request.getParameter("start-index"),null); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                queryString); 
+        this.control.replay(); 
+
+        this.feedRequest.initializeRequest(); 
+        String nextID = "http://"+host+"/feed"+queryString+startIndex; 
+     
+        assertEquals("Next ID",nextID,this.feedRequest.getNextId());
+        this.control.verify();
+        this.control.reset(); 
          
+        enu = new StringTokenizer("alt,max-results,start-index",",");
+        queryString = "?alt=rss&max-results=25"; 
          
-//        queryString = "?alt=rss&max-results=25"; 
-//         
-//        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-//        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
-//        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/"); 
-//        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",2); 
-//        this.control.expectAndReturn(this.request.getParameter("start-index"),"26",2); 
-//        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
-//                null); 
-//        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
-//                queryString+startIndex); 
-//        Enumeration e = 
-//        this.control.expectAndDefaultReturn(this.request.getParameterNames(),)
-//        
-//        
-//        this.control.replay(); 
-//        this.feedRequest.initializeRequest(); 
-//        startIndex = "&start-index=51"; 
-//        nextID = "http://"+host+"/feed"+queryString+startIndex; 
-//     
-//        assertEquals("Next ID 51",nextID,this.feedRequest.getNextId()); 
-//        this.control.reset(); 
-//         
-//        queryString = ""; 
-//        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-//        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
-//        this.control.expectAndDefaultReturn(this.request.getParameter("max-results"),null); 
-//        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
-//                null); 
-//        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
-//                null); 
-//        this.control.replay(); 
-//        this.feedRequest.initializeRequest(); 
-//        String selfID = "http://"+host+"/feed"+"?max-results=25"; 
-//     
-//        assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
-//        this.control.reset(); 
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/"); 
+        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",4); 
+        this.control.expectAndReturn(this.request.getParameter("start-index"),"26",4); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                "rss"); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                queryString+startIndex); 
+        
+        this.control.expectAndDefaultReturn(this.request.getParameterNames(),enu);
+        
+        
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+        startIndex = "&start-index=51"; 
+        nextID = "http://"+host+"/feed"+queryString+startIndex; 
+     
+        assertEquals("Next ID 51",nextID,this.feedRequest.getNextId()); 
+        this.control.reset(); 
+         
+        queryString = ""; 
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("max-results"),null); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+        String selfID = "http://"+host+"/feed"+"?max-results=25"; 
+     
+        assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
+        this.control.reset(); 
     } 
+    
+    public void testGetContextPath(){
+        String host = "www.apache.org"; 
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/id/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/id/"); 
+        this.control.replay();
+        String result = "http://"+host+"/feed/id/";
+        assertEquals(result,this.feedRequest.getContextPath());
+        this.control.verify();
+        this.control.reset();
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/id"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/id"); 
+        this.control.replay();
+        
+        assertEquals(result,this.feedRequest.getContextPath());
+        this.control.verify();
+        
+    }
 } 

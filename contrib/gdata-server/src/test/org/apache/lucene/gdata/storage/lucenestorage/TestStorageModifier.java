@@ -7,10 +7,7 @@ import junit.framework.TestCase;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseEntry;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
-import org.apache.lucene.gdata.server.registry.ComponentType;
-import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
-import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation;
 import org.apache.lucene.gdata.storage.lucenestorage.util.ReferenceCounter;
@@ -23,6 +20,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 import com.google.gdata.data.BaseEntry;
 import com.google.gdata.data.DateTime;
@@ -50,13 +48,16 @@ public class TestStorageModifier extends TestCase {
     private static String service = "myService";
 
     protected void setUp() throws Exception {
-        GDataServerRegistry.getRegistry().registerComponent(
-                StorageCoreController.class);
+        this.controller = new StorageCoreController();
+        this.dir = new RAMDirectory();
+        this.controller.setStorageDir(this.dir);
+        this.controller.setKeepRecoveredFiles(false);
+        this.controller.setOptimizeInterval(10);
+        this.controller.setRecover(false);
+        this.controller.setBufferSize(10);
+        this.controller.setPersistFactor(10);
+        this.controller.initialize();
         this.configurator = new ProvidedServiceStub();
-        GDataServerRegistry.getRegistry().registerService(this.configurator);
-        this.controller = (StorageCoreController) GDataServerRegistry
-                .getRegistry().lookup(StorageController.class,
-                        ComponentType.STORAGECONTROLLER);
         this.modifier = this.controller.getStorageModifier();
         this.dir = this.controller.getDirectory();
 
@@ -65,8 +66,9 @@ public class TestStorageModifier extends TestCase {
     protected void tearDown() throws Exception {
         this.count = 1;
         // destroy all resources
-        GDataServerRegistry.getRegistry().destroy();// TODO remove dependency
-                                                    // here
+        this.controller.destroy();
+        
+
 
     }
 
@@ -121,7 +123,8 @@ public class TestStorageModifier extends TestCase {
             assertEquals("updated Title:", insertString, fetchedEntry
                     .getTitle().getPlainText());
         }
-
+        
+       
     }
 
     /*
@@ -132,14 +135,16 @@ public class TestStorageModifier extends TestCase {
             ParseException, StorageException {
 
         Thread a = getRunnerThread(this.count);
-        a.start();
+        
 
         Thread b = getRunnerThread((this.count += 10));
         b.start();
-        // wait for the first thread to check for the inserted entries
+        a.start();
+//         wait for the first thread to check for the inserted entries
         a.join();  
         try{
         for (int i = 1; i < this.count; i++) {
+           
             ReferenceCounter<StorageQuery> innerQuery = this.controller
                     .getStorageQuery();
             BaseEntry e = innerQuery.get().singleEntryQuery("" + i, feedId,
@@ -358,6 +363,7 @@ public class TestStorageModifier extends TestCase {
                     StorageEntryWrapper wrapper = new StorageEntryWrapper(en,
                             StorageOperation.INSERT);
                     modifier.insertEntry(wrapper);
+//                    System.out.println("insert: "+i+" Thread: "+Thread.currentThread().getName());
                 } catch (Exception e1) {
 
                     e1.printStackTrace();

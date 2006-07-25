@@ -78,9 +78,9 @@ public class DefaultInsertHandler extends AbstractGdataRequestHandler {
         }catch (ServiceException e) {
            LOG.error("Could not process GetFeed request - "+e.getMessage(),e);
            this.feedResponse.sendError();
-        }
+        }finally{
         closeService();
-        
+        }
     }
 
 }

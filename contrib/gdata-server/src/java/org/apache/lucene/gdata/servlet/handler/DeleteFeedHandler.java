@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.server.ServiceFactory;
+import org.apache.lucene.gdata.server.administration.AdminService;
 import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 
@@ -44,6 +45,7 @@ public class DeleteFeedHandler extends AbstractFeedHandler{
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
             super.processRequest(request,response);
             if(this.authenticated){
+                AdminService service = null;
             try {
                 ServerBaseFeed feed = createDeleteFeed(request);
                 
@@ -53,13 +55,17 @@ public class DeleteFeedHandler extends AbstractFeedHandler{
                     setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,"required component is not available");
                     throw new FeedHandlerException("Can't save feed - ServiceFactory is null");
                 }
-                serviceFactory.getAdminService().deleteFeed(feed);
+                service = serviceFactory.getAdminService();
+                service.deleteFeed(feed);
             } catch (FeedHandlerException e) {
                 LOG.error("Can not delete feed -- "+e.getMessage(),e);
             }catch (Exception e) {
                 LOG.error("Can not delete feed -- "+e.getMessage(),e);
                 setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,"can not create feed");
-            } 
+            }finally{
+                if(service != null)
+                    service.close();
+            }
             }
             sendResponse(response);
            

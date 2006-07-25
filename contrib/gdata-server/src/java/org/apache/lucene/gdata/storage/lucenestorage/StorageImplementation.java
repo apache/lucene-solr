@@ -25,6 +25,7 @@ import org.apache.lucene.gdata.data.ServerBaseEntry;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
+import org.apache.lucene.gdata.storage.ModificationConflictException;
 import org.apache.lucene.gdata.storage.ResourceNotFoundException;
 import org.apache.lucene.gdata.storage.Storage;
 import org.apache.lucene.gdata.storage.StorageController;
@@ -76,11 +77,16 @@ public class StorageImplementation implements Storage {
      */
     public BaseEntry storeEntry(final ServerBaseEntry entry)
             throws StorageException {
-
         if (entry == null)
             throw new StorageException("entry is null");
+        if(entry.getFeedId() == null)
+            throw new StorageException("feedid is null");
+        if(entry.getVersion() != 1)
+            throw new StorageException("entry version must be 1");
+        if(entry.getServiceConfig() == null)
+            throw new StorageException("ProvidedService must not be null");
         StorageModifier modifier = this.controller.getStorageModifier();
-        String id = this.controller.releaseID();
+        String id = this.controller.releaseId();
         entry.setId(entry.getFeedId() + id);
         if (LOG.isInfoEnabled())
             LOG.info("Store entry " + id + " -- feed: " + entry.getFeedId());
@@ -108,23 +114,34 @@ public class StorageImplementation implements Storage {
 
         if (entry == null)
             throw new StorageException("Entry is null");
-
+        if(entry.getId() == null)
+            throw new StorageException("Entry id is null");
+        if(entry.getFeedId() == null)
+            throw new StorageException("feed id is null");
         if (LOG.isInfoEnabled())
             LOG.info("delete entry " + entry.getId() + " -- feed: "
                     + entry.getFeedId());
         StorageModifier modifier = this.controller.getStorageModifier();
         ReferenceCounter<StorageQuery> query = this.controller.getStorageQuery();
+        // try to set concurrency Lock
+        String key = entry.getId();
+        setLock(key);
         try{
         if(query.get().isEntryStored(entry.getId(),entry.getFeedId())){
-            
-            modifier.deleteEntry(new StorageEntryWrapper(entry,StorageOperation.DELETE));
+            if(query.get().checkEntryVersion(entry.getId(),entry.getFeedId(),entry.getVersion())){
+                modifier.deleteEntry(new StorageEntryWrapper(entry,StorageOperation.DELETE));
+            }else
+                throw new ModificationConflictException("The entry version does not match -- entry "+entry.getId()+" feed:"+entry.getFeedId()+" version: "+entry.getVersion());
         }
         else
             throw new ResourceNotFoundException("Entry for entry id: "+entry.getId()+" is not stored");
         }catch (IOException e) {
             throw new StorageException("Can not access storage");
         }finally{
-            query.decrementRef();
+            if(query != null)
+                query.decrementRef();
+            // release lock for concurrency
+            releaseLock(key);
         }
     }
 
@@ -137,6 +154,8 @@ public class StorageImplementation implements Storage {
             throw new StorageException("entry is null");
         if(entry.getId() == null)
             throw new StorageException("entry id is null");
+        if(entry.getServiceConfig() == null)
+            throw new StorageException("service config is not set -- null");
         if(entry.getFeedId() == null)
             throw new StorageException("feed id is null");
         if (LOG.isInfoEnabled())
@@ -144,27 +163,55 @@ public class StorageImplementation implements Storage {
                     + entry.getFeedId());
         StorageModifier modifier = this.controller.getStorageModifier();
         ReferenceCounter<StorageQuery> query = this.controller.getStorageQuery();
+        // try to set concurrency Lock
+        String key = entry.getId();
+        setLock(key);
         try {
-            StorageEntryWrapper wrapper = new StorageEntryWrapper(entry,
-                    StorageOperation.UPDATE);
-            if(query.get().isEntryStored(entry.getId(),entry.getFeedId()))
-                modifier.updateEntry(wrapper);
-            else
+            
+            
+            if(query.get().isEntryStored(entry.getId(),entry.getFeedId())){
+                
+                if(query.get().checkEntryVersion(entry.getId(),entry.getFeedId(),entry.getVersion())){
+                    entry.setVersion(entry.getVersion()+1);
+                    StorageEntryWrapper wrapper = new StorageEntryWrapper(entry,
+                            StorageOperation.UPDATE);  
+                    modifier.updateEntry(wrapper);
+                }else
+                    throw new ModificationConflictException("The entry version does not match -- entry "+entry.getId()+" feed:"+entry.getFeedId()+" version: "+entry.getVersion());
+              
+            }else
                 throw new ResourceNotFoundException("Entry for entry id: "+entry.getId()+" is not stored");
             
         } catch (IOException e) {
             LOG.error("Can't update entry for feedID: " + entry.getFeedId()
                     + "; entryId: " + entry.getId() + " -- " + e.getMessage(),
                     e);
-            StorageException ex = new StorageException("Can't create Entry -- "
+            StorageException ex = new StorageException("Can't update Entry -- "
                     + e.getMessage(), e);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
 
         }
 
+        finally{
+            if(query != null)
+                query.decrementRef();
+            // release lock for concurrency
+            releaseLock(key);
+        }
+
         return entry.getEntry();
 
+    }
+    private void setLock(String key) throws ModificationConflictException{
+        if(!this.controller.getLock().setLock(key))
+            throw new ModificationConflictException("Can not set lock for entry -- "+key);
+            
+    }
+    
+    private void releaseLock(String key) throws StorageException{
+        if(!this.controller.getLock().releaseLock(key))
+            throw new StorageException("Can not release lock for key: "+key);
     }
 
     /**
@@ -382,7 +429,7 @@ public class StorageImplementation implements Storage {
             throw ex;
 
         } finally {
-            if (query == null)
+            if (query != null)
                 query.decrementRef();
         }
     }
@@ -415,7 +462,7 @@ public class StorageImplementation implements Storage {
             throw ex;
 
         } finally {
-            if (query == null)
+            if (query != null)
                 query.decrementRef();
         }
 

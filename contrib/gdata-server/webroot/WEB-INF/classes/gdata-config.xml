@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gdata>
-	<service name="feed" public="true">
+	<service name="feed" poolSize="20" public="true">
 		<feed-class>com.google.gdata.data.Feed</feed-class>
 		<entry-class>com.google.gdata.data.Entry</entry-class>
 		<extension-profile>
 			com.google.gdata.data.ExtensionProfile
 		</extension-profile>
 	</service>
-	<service name="calendar" public="true">
+	<service name="calendar" poolSize="20" public="true">
 		<feed-class>
 			com.google.gdata.data.extensions.EventFeed
 		</feed-class>
@@ -20,16 +20,34 @@
 	</service>
 	<server-components>
 		<component>
-			org.apache.lucene.gdata.storage.lucenestorage.StorageCoreController
+			<class>
+				org.apache.lucene.gdata.storage.lucenestorage.StorageCoreController
+			</class>
+			<configuration>
+				<property name="bufferSize">20</property>
+				<property name="optimizeInterval">20</property>
+				<property name="persistFactor">20</property>
+				<property name="directory">/tmp/storage</property>
+				<property name="recover">true</property>
+	            <property name="keepRecoveredFiles">false</property>
+			</configuration>
 		</component>
 		<component>
-			org.apache.lucene.gdata.servlet.handler.DefaultRequestHandlerFactory
+			<class>
+				org.apache.lucene.gdata.servlet.handler.DefaultRequestHandlerFactory
+			</class>
 		</component>
 		<component>
-			org.apache.lucene.gdata.server.ServiceFactory
+			<class>org.apache.lucene.gdata.server.ServiceFactory</class>
 		</component>
 		<component>
-			org.apache.lucene.gdata.server.authentication.BlowfishAuthenticationController
+			<class>
+				org.apache.lucene.gdata.server.authentication.BlowfishAuthenticationController
+			</class>
+			<configuration>
+				<property name="key">cryptKey</property>
+				<property name="loginTimeout">60</property>
+			</configuration>
 		</component>
 	</server-components>
 </gdata>

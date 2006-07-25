@@ -60,18 +60,29 @@ public class RecoverController {
     private final boolean recover;
     private final boolean keepRecoverFiles;
 
+    /**
+     * @param recoverDirectory
+     * @param recover
+     * @param keepRecoverFiles
+     */
     public RecoverController(final File recoverDirectory, boolean recover, boolean keepRecoverFiles) {
         if (recoverDirectory == null)
             throw new IllegalArgumentException("directory must not be null");
+        if(!recoverDirectory.exists())
+            recoverDirectory.mkdirs();
         if (!recoverDirectory.isDirectory())
-            throw new IllegalStateException("the given File is not a directory");
+            throw new IllegalStateException("the given File is not a directory -- "+recoverDirectory);
         this.recover = recover;
         this.keepRecoverFiles = keepRecoverFiles;
         this.recoverDirectory = recoverDirectory;
        
     }
 
-   public void storageModified(StorageEntryWrapper wrapper)
+   /**
+ * @param wrapper
+ * @throws RecoverException
+ */
+public void storageModified(StorageEntryWrapper wrapper)
             throws RecoverException {
         // prevent deadlock either recovering or writing
         if(this.recover){
@@ -92,6 +103,9 @@ public class RecoverController {
         }
     }
     
+    /**
+     * @param modifier
+     */
     public void recoverEntries(final StorageModifier modifier){
         // prevent deadlock either recovering or writing
         if(!this.recover){
@@ -105,14 +119,17 @@ public class RecoverController {
         for (int i = 0; i < files.length; i++) {
             if(!files[i].isDirectory()){
                 try{
+                LOG.info("Recover file -- "+files[i]);
                 this.fileReader = new BufferedReader(new FileReader(files[i]));
                 List<StorageEntryWrapper> entryList = this.reader.recoverEntries(this.fileReader);
                 if(entryList.size() == 0)
                     continue;
                 storeEntries(entryList,modifier);
                 this.fileReader.close();
-                if(!this.keepRecoverFiles)
+                if(!this.keepRecoverFiles){
+                    LOG.info("Recovering file -- "+files[i]+" successful, delete file");
                     files[i].delete();
+                }
                 }catch (StorageException e) {
                     LOG.error("Can't store recover entries for file: "+files[i].getName()+" -- keep file "+e.getMessage(),e);
                 }catch (IOException e) {
@@ -126,7 +143,7 @@ public class RecoverController {
         }
     }
     
-    protected void storeEntries(final List<StorageEntryWrapper> entries, final StorageModifier modifier) throws StorageException{
+    protected void storeEntries(final List<StorageEntryWrapper> entries, final StorageModifier modifier) throws StorageException, IOException{
         for (StorageEntryWrapper wrapper : entries) {
             if(wrapper.getOperation() == StorageOperation.DELETE)
                 modifier.deleteEntry(wrapper);
@@ -134,12 +151,15 @@ public class RecoverController {
                 modifier.insertEntry(wrapper);
             else if(wrapper.getOperation() == StorageOperation.UPDATE)
                 modifier.updateEntry(wrapper);
-                
-            
+            modifier.forceWrite();
+          
         }
     }
 
-    protected synchronized void initialize() throws IOException {
+    /**
+     * @throws IOException
+     */
+    public synchronized void initialize() throws IOException {
         if(this.recover)
             return;
         String filename = System.currentTimeMillis() + FILE_SUFFIX;
@@ -150,18 +170,32 @@ public class RecoverController {
 
     }
 
-    protected void destroy() throws RecoverException {
+    /**
+     * @throws RecoverException
+     */
+    public synchronized void destroy() throws RecoverException {
         if (this.fileWriter != null) {
             this.lock.lock();
             try {
+                
                 this.fileWriter.flush();
                 this.fileWriter.close();
+                if(!this.keepRecoverFiles && this.currentRecoverFile != null)
+                    this.currentRecoverFile.delete();
             } catch (IOException e) {
                 throw new RecoverException("Can't close recover writer ", e);
             } finally {
                 this.lock.unlock();
             }
         }
+    }
+
+    /**
+     * @return <code>true</code> if the RecoverController is initialized in recover mode, otherwise <code>false</code>
+     */
+    public boolean isRecovering() {
+        
+        return this.recover;
     }
     
     

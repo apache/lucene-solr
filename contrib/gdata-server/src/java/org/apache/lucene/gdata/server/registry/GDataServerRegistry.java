@@ -15,11 +15,16 @@
  */
 package org.apache.lucene.gdata.server.registry;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration;
+import org.apache.lucene.gdata.server.registry.configuration.PropertyInjector;
 
 /**
  * 
@@ -41,7 +46,9 @@ import org.apache.commons.logging.LogFactory;
  * occures the server will not start up. To cause of the exception or error will
  * be logged to the standart server output.
  * </p>
- * <p>The GDataServerRegistry is a Singleton</p>
+ * <p>
+ * The GDataServerRegistry is a Singleton
+ * </p>
  * 
  * 
  * @author Simon Willnauer
@@ -53,10 +60,18 @@ public class GDataServerRegistry {
     private static final Log LOGGER = LogFactory
             .getLog(GDataServerRegistry.class);
 
+    private ScopeVisitable requestVisitable;
+
+    private ScopeVisitable sessionVisitable;
+    //not available yet
+    private ScopeVisitable contextVisitable;
+
+    private List<ScopeVisitor> visitorBuffer = new ArrayList<ScopeVisitor>(5);
+
     private final Map<String, ProvidedService> serviceTypeMap = new HashMap<String, ProvidedService>();
 
     private final Map<ComponentType, ComponentBean> componentMap = new HashMap<ComponentType, ComponentBean>(
-            10);
+            ComponentType.values().length);
 
     private GDataServerRegistry() {
         // private - singleton
@@ -86,6 +101,72 @@ public class GDataServerRegistry {
     }
 
     /**
+     * @param visitor -
+     *            the visitor to register
+     * @throws RegistryException
+     */
+    public synchronized void registerScopeVisitor(final ScopeVisitor visitor)
+            throws RegistryException {
+        if (visitor == null)
+            throw new IllegalArgumentException("visitor must not be null");
+        Scope scope = visitor.getClass().getAnnotation(Scope.class);
+        if (scope == null)
+            throw new RegistryException("Visitor has not Scope");
+        if (LOGGER.isInfoEnabled())
+            LOGGER.info("Register scope visitor -- " + visitor.getClass());
+        if (scope.scope().equals(Scope.ScopeType.REQUEST)
+                && this.requestVisitable != null)
+            this.requestVisitable.accept(visitor);
+        else if (scope.scope() == Scope.ScopeType.SESSION
+                && this.sessionVisitable != null)
+            this.sessionVisitable.accept(visitor);
+        else if (scope.scope() == Scope.ScopeType.CONTEXT
+                && this.contextVisitable != null)
+            this.sessionVisitable.accept(visitor);
+        else if (!this.visitorBuffer.contains(visitor))
+            this.visitorBuffer.add(visitor);
+    }
+
+    /**
+     * @param visitable -
+     *            the instance to register
+     * @throws RegistryException
+     * @see ScopeVisitable
+     */
+    public synchronized void registerScopeVisitable(
+            final ScopeVisitable visitable) throws RegistryException {
+        if (visitable == null)
+            throw new IllegalArgumentException("visitable must not be null");
+
+        Scope scope = visitable.getClass().getAnnotation(Scope.class);
+        if (scope == null)
+            throw new RegistryException("Visitable has not Scope");
+        if (LOGGER.isInfoEnabled())
+            LOGGER.info("Register scope visitable -- " + visitable.getClass());
+        if (scope.scope() == Scope.ScopeType.REQUEST
+                && this.requestVisitable == null)
+            this.requestVisitable = visitable;
+        else if (scope.scope() == Scope.ScopeType.SESSION
+                && this.sessionVisitable == null)
+            this.sessionVisitable = visitable;
+        else if (scope.scope() == Scope.ScopeType.CONTEXT
+                && this.contextVisitable == null)
+            this.sessionVisitable = visitable;
+
+        if (!this.visitorBuffer.isEmpty()) {
+
+            List<ScopeVisitor> tempList = this.visitorBuffer;
+            this.visitorBuffer = new ArrayList<ScopeVisitor>(5);
+            for (ScopeVisitor visitor : tempList) {
+                registerScopeVisitor(visitor);
+            }
+            tempList.clear();
+
+        }
+
+    }
+
+    /**
      * Looks up the {@link ProvidedServiceConfig} by the given service name.
      * 
      * @param service
@@ -100,6 +181,10 @@ public class GDataServerRegistry {
     }
 
     protected void flushRegistry() {
+        Collection<ProvidedService> services = this.serviceTypeMap.values();
+        for (ProvidedService service : services) {
+            service.destroy();
+        }
         this.serviceTypeMap.clear();
         this.componentMap.clear();
     }
@@ -122,6 +207,7 @@ public class GDataServerRegistry {
         for (ComponentBean component : this.componentMap.values()) {
             component.getObject().destroy();
         }
+
         flushRegistry();
 
     }
@@ -157,23 +243,51 @@ public class GDataServerRegistry {
     }
 
     /**
-     * @param <E> 
-     * @param componentClass
-     * @throws RegistryException
+     * All registered {@link ServerComponent} registered via this method are
+     * available via the
+     * {@link GDataServerRegistry#lookup(Class, ComponentType)} method. For each
+     * {@link ComponentType} there will be one single instance registered in the
+     * registry.
+     * <p>
+     * Eventually this method invokes the initialize method of the
+     * ServerComponent interface to prepare the component to be available via
+     * the lookup service
+     * </p>
+     * 
+     * @param <E> -
+     *            The interface of the component to register
+     * @param componentClass -
+     *            a implementation of a ServerComponent interface to register in
+     *            the registry
+     * @param configuration -
+     *            the component configuration {@link ComponentConfiguration}
+     * @throws RegistryException -
+     *             if the provided class does not implement the
+     *             {@link ServerComponent} interface, if the mandatory
+     *             annotations not visible at runtime or not set, if the super
+     *             type provided by the {@link ComponentType} for the class to
+     *             register is not a super type of the class or if the
+     *             invokation of the {@link ServerComponent#initialize()} method
+     *             throws an exception.
      */
     @SuppressWarnings("unchecked")
-    public  <E extends ServerComponent> void  registerComponent(final Class<E> componentClass)
+    public <E extends ServerComponent> void registerComponent(
+            final Class<E> componentClass,
+            final ComponentConfiguration configuration)
             throws RegistryException {
-        
+
         if (componentClass == null)
             throw new IllegalArgumentException(
                     "component class must not be null");
-  
-        if(!checkImplementsServerComponent(componentClass))
-            throw new RegistryException("can not register component. the given class does not implement ServerComponent interface -- "+componentClass.getName());
+
+        if (!checkSuperType(componentClass, ServerComponent.class))
+            throw new RegistryException(
+                    "can not register component. the given class does not implement ServerComponent interface -- "
+                            + componentClass.getName());
         try {
 
-            Component annotation =  componentClass.getAnnotation(Component.class);
+            Component annotation = componentClass
+                    .getAnnotation(Component.class);
             if (annotation == null)
                 throw new RegistryException(
                         "can not register component. the given class is not a component -- "
@@ -189,49 +303,53 @@ public class GDataServerRegistry {
                         + superType.getName() + "> is not a super type of <"
                         + componentClass + ">");
             ServerComponent comp = componentClass.newInstance();
+            if (configuration == null) {
+                if (LOGGER.isInfoEnabled())
+                    LOGGER.info("no configuration for ComponentType: "
+                            + type.name());
+            } else
+                configureComponent(comp, type, configuration);
             comp.initialize();
             ComponentBean bean = new ComponentBean(comp, superType);
-            
-            this.componentMap.put(type, bean);
 
+            this.componentMap.put(type, bean);
+            if (checkSuperType(componentClass, ScopeVisitor.class))
+                this.registerScopeVisitor((ScopeVisitor) comp);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RegistryException("Can not register component -- "
                     + e.getMessage(), e);
         }
 
     }
-    
-    private static boolean checkImplementsServerComponent(Class type){
-        if(type == null)
-            return false;
-        if(type.equals(Object.class))
-            return false;
-        if(type.equals(ServerComponent.class))
-            return true;
-        Class[] compInterfaces = type.getInterfaces();
-        for (int i = 0; i < compInterfaces.length; i++) {
-           if(checkImplementsServerComponent(compInterfaces[i]))
-               return true;
-        }
-        return checkImplementsServerComponent(type.getSuperclass());
-        
+
+    /*
+     * Injects the configured properties located in the configuration into the
+     * given server component
+     */
+    private void configureComponent(final ServerComponent component,
+            final ComponentType type, final ComponentConfiguration configuration) {
+        PropertyInjector injector = new PropertyInjector();
+        injector.setTargetObject(component);
+        injector.injectProperties(configuration);
     }
 
     private static boolean checkSuperType(Class type, Class consideredSuperType) {
-
+        if (type == null)
+            return false;
         if (type.equals(Object.class))
             return false;
         if (type.equals(consideredSuperType))
             return true;
         Class[] interfaces = type.getInterfaces();
         for (int i = 0; i < interfaces.length; i++) {
-            if (interfaces[i].equals(consideredSuperType))
+            if (checkSuperType(interfaces[i], consideredSuperType))
                 return true;
         }
         return checkSuperType(type.getSuperclass(), consideredSuperType);
     }
 
-    private class ComponentBean {
+    private static class ComponentBean {
         private final Class superType;
 
         private final ServerComponent object;

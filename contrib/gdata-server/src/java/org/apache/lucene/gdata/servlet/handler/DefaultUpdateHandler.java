@@ -82,8 +82,9 @@ public class DefaultUpdateHandler extends AbstractGdataRequestHandler {
 			LOG.error("Could not process UpdateFeed request - "
 					+ e.getMessage(), e);
 			sendError();
-		}
+		}finally{
         closeService();
+        }
 	}
 
 }

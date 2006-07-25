@@ -18,6 +18,8 @@ package org.apache.lucene.gdata.server.registry;
 import java.io.IOException;
 
 import org.apache.commons.digester.Digester;
+import org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration;
+import org.apache.lucene.gdata.utils.SimpleSaxErrorHandler;
 import org.xml.sax.SAXException;
 
 /**
@@ -49,11 +51,14 @@ class RegistryBuilder {
 
     private static void buildFromConfiguration(Digester digester,
             GDataServerRegistry registry) throws IOException, SAXException {
-        
-        digester.setValidating(false);
+        String schemaFile = RegistryBuilder.class.getResource("/gdata-config.xsd").getFile();
+        digester.setValidating(true);
+        digester.setSchema(schemaFile);
+        digester.setErrorHandler(new SimpleSaxErrorHandler());
         digester.push(registry);
-        digester.addCallMethod("gdata/server-components/component",
-                "registerComponent", 0, new Class[] { Class.class });
+        /*
+         * register services
+         */
         digester.addObjectCreate("gdata/service", ProvidedServiceConfig.class);
         digester.addSetProperties("gdata/service");
         digester.addSetNext("gdata/service", "registerService");
@@ -61,10 +66,22 @@ class RegistryBuilder {
         digester.addBeanPropertySetter("gdata/service/entry-class", "entryType");
         digester.addBeanPropertySetter("gdata/service/extension-profile",
                 "extensionProfileClass");
+      
+        /*
+         * load components and configurations
+         */
+        digester.addCallMethod("gdata/server-components/component",
+                "registerComponent", 2, new Class[] { Class.class , ComponentConfiguration.class});
+        digester.addCallParam("gdata/server-components/component/class",0);
+            digester.addObjectCreate("gdata/server-components/component/configuration",ComponentConfiguration.class);
+            digester.addCallMethod("gdata/server-components/component/configuration/property","set",2,new Class[]{String.class,String.class});
+            digester.addCallParam("gdata/server-components/component/configuration/property",0,"name");
+            digester.addCallParam("gdata/server-components/component/configuration/property",1);
+        digester.addCallParam("gdata/server-components/component/configuration",1,0);    
         digester.parse(RegistryBuilder.class
                 .getResourceAsStream("/gdata-config.xml"));
+        
     }
 
-   
 
 }
