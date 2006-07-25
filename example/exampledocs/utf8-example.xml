@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+  After posting this to SOLR with post.sh, searching for "êâîôû" from 
+  the solr/admin/ search page must return this document.
+ -->
+
+<add>
+  <doc>
+    <field name="id">UTF8TEST</field>
+    <field name="name">Test with some UTF-8 encoded characters</field>
+    <field name="manu">Apache Software Foundation</field>
+    <field name="cat">software</field>
+    <field name="cat">search</field>
+    <field name="features">No accents here</field>
+    <field name="features">This is an e acute: é</field>
+    <field name="features">eaiou with circumflexes: êâîôû</field>
+    <field name="features">eaiou with umlauts: ëäïöü</field>
+    <field name="features">tag with escaped chars: &lt;nicetag/&gt;</field>
+    <field name="features">escaped ampersand: Bonnie &amp; Clyde</field>
+    <field name="price">0</field>
+    <field name="popularity">10</field>
+    <field name="inStock">true</field>
+  </doc>
+</add>
+

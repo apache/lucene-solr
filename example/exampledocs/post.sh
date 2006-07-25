@@ -5,6 +5,7 @@ URL=http://localhost:8983/solr/update
 for f in $FILES; do
   echo Posting file $f to $URL
   curl $URL --data-binary @$f
+  curl $URL --data-binary @$f -H 'Content-type:text/xml; charset=utf-8' 
   echo
 done
 
