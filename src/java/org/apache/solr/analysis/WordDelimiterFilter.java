@@ -91,12 +91,51 @@ final class WordDelimiterFilter extends TokenFilter {
     defaultWordDelimTable = tab;
   }
 
+  /**
+   * If 1, causes parts of words to be generated:
+   * <p/>
+   * "PowerShot" => "Power" "Shot"
+   */
   final int generateWordParts;
+
+  /**
+   * If 1, causes number subwords to be generated:
+   * <p/>
+   * "500-42" => "500" "42"
+   */
   final int generateNumberParts;
+
+  /**
+   * If 1, causes maximum runs of word parts to be catenated:
+   * <p/>
+   * "wi-fi" => "wifi"
+   */
   final int catenateWords;
+
+  /**
+   * If 1, causes maximum runs of number parts to be catenated:
+   * <p/>
+   * "500-42" => "50042"
+   */
   final int catenateNumbers;
+
+  /**
+   * If 1, causes all subword parts to be catenated:
+   * <p/>
+   * "wi-fi-4000" => "wifi4000"
+   */
   final int catenateAll;
 
+  /**
+   *
+   * @param in Token stream to be filtered.
+   * @param charTypeTable
+   * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot" => "Power" "Shot"
+   * @param generateNumberParts If 1, causes number subwords to be generated: "500-42" => "500" "42"
+   * @param catenateWords  1, causes maximum runs of word parts to be catenated: "wi-fi" => "wifi"
+   * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
+   * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
+   */
   public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
     super(in);
     this.generateWordParts = generateWordParts;
@@ -107,6 +146,14 @@ final class WordDelimiterFilter extends TokenFilter {
     this.charTypeTable = charTypeTable;
   }
 
+  /**
+   * @param in Token stream to be filtered.
+   * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot" => "Power" "Shot"
+   * @param generateNumberParts If 1, causes number subwords to be generated: "500-42" => "500" "42"
+   * @param catenateWords  1, causes maximum runs of word parts to be catenated: "wi-fi" => "wifi"
+   * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
+   * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
+   */
   public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
     this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll);
   }
@@ -370,9 +417,9 @@ final class WordDelimiterFilter extends TokenFilter {
       }
 
       // NOTE: in certain cases, queue may be empty (for instance, if catenate
-      // and generate are both set to false).  In this case, we should proceed
-      // to next token rather than throwing ArrayOutOfBounds
-      if (queue.size() > 0) break; else continue;
+      // and generate are both set to false).  Only exit the loop if the queue
+      // is not empty.
+      if (queue.size() > 0) break;
     }
 
     // System.out.println("##########AFTER COMBINATIONS:"+ str(queue));
