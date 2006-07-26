@@ -1008,15 +1008,49 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
-    List<Query> filterList = null;
-    if (filter != null) {
-      filterList = new ArrayList<Query>(2);
-      filterList.add(filter);
-    }
+    List<Query> filterList = buildQueryList(filter);
     return getDocListAndSet(query, filterList, lsort, offset, len);
 
   }
-
+  /**
+   * Returns documents matching both <code>query</code> and <code>filter</code>
+   * and sorted by <code>sort</code>.  Also returns the compete set of documents
+   * matching <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len</code>).
+   * <p>
+   * This method is cache aware and may retrieve <code>filter</code> from
+   * the cache or make an insertion into the cache as a result of this call.
+   * <p>
+   * FUTURE: The returned DocList may be retrieved from a cache.
+   * <p>
+   * The DocList and DocSet returned should <b>not</b> be modified.
+   *
+   * @param query
+   * @param filter   may be null
+   * @param lsort    criteria by which to sort (if null, query relevance is used)
+   * @param offset   offset into the list of documents to return
+   * @param len      maximum number of documents to return
+   * @param flags    user supplied flags for the result set
+   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @throws IOException
+   */
+  public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
+	List<Query> filterList = buildQueryList(filter);
+	return getDocListAndSet(query, filterList, lsort, offset, len, flags);
+  }
+  
+  /**
+   * A simple utility method for to build a filterList from a query
+   * @param filter
+   * @return
+   */
+  private List<Query> buildQueryList(Query filter) {
+	List<Query> filterList = null;
+	if (filter != null) {
+	  filterList = new ArrayList<Query>(2);
+	  filterList.add(filter);
+	}
+	return filterList;
+  }
 
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
     DocListAndSet ret = new DocListAndSet();
@@ -1024,7 +1058,11 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return ret;
   }
 
-
+  public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
+	    DocListAndSet ret = new DocListAndSet();
+	    getDocListC(ret,query,filterList,null,lsort,offset,len, flags |= GET_DOCSET);
+	    return ret;
+  }
 
   /**
    * Returns documents matching both <code>query</code> and <code>filter</code>
@@ -1047,6 +1085,11 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return ret;
   }
 
+  public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
+	    DocListAndSet ret = new DocListAndSet();
+	    getDocListC(ret,query,null,filter,lsort,offset,len, flags |= GET_DOCSET);
+	    return ret;
+	  }
 
   protected DocList sortDocSet(DocSet set, Sort sort, int nDocs) throws IOException {
     final FieldSortedHitQueue hq =

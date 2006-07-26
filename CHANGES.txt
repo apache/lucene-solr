@@ -38,6 +38,8 @@ New Features
 20. Made query parser default operator configurable via schema.xml:
          <solrQueryParser defaultOperator="AND|OR"/>
     The default operator remains "OR".
+21. JAVA API: new version of SolrIndexSearcher.getDocListAndSet() which takes
+    flags (Greg Ludington via yonik, SOLR-39)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
