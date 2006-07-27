@@ -417,6 +417,8 @@ class JSONWriter extends TextResponseWriter {
       isFirstVal=true;
     }
 
+    boolean doIndent = excludeOuter || val.size() > 1;
+
     for (Map.Entry entry : (Set<Map.Entry>)val.entrySet()) {
       Object e = entry.getKey();
       String k = e==null ? null : e.toString();
@@ -428,7 +430,7 @@ class JSONWriter extends TextResponseWriter {
         writer.write(',');
       }
 
-      indent();
+      if (doIndent) indent();
       writeKey(k,true);
       writeVal(k,v);
     }
@@ -455,7 +457,7 @@ class JSONWriter extends TextResponseWriter {
       } else {
         writer.write(',');
       }
-      if (sz>0) indent();
+      if (sz>1) indent();
       writeVal(null, o);
     }
     decLevel();
