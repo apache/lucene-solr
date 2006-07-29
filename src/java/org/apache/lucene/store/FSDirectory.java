@@ -211,9 +211,9 @@ public class FSDirectory extends Directory {
     }
   }
 
-  /** Returns an array of strings, one for each file in the directory. */
+  /** Returns an array of strings, one for each Lucene index file in the directory. */
   public String[] list() {
-    return directory.list();
+    return directory.list(new IndexFileNameFilter());
   }
 
   /** Returns true iff a file with the given name exists. */
@@ -296,18 +296,21 @@ public class FSDirectory extends Directory {
         throw newExc;
       }
       finally {
-        if (in != null) {
-          try {
-            in.close();
-          } catch (IOException e) {
-            throw new RuntimeException("Cannot close input stream: " + e.toString(), e);
+        try {
+          if (in != null) {
+            try {
+              in.close();
+            } catch (IOException e) {
+              throw new RuntimeException("Cannot close input stream: " + e.toString(), e);
+            }
           }
-        }
-        if (out != null) {
-          try {
-            out.close();
-          } catch (IOException e) {
-            throw new RuntimeException("Cannot close output stream: " + e.toString(), e);
+        } finally {
+          if (out != null) {
+            try {
+              out.close();
+            } catch (IOException e) {
+              throw new RuntimeException("Cannot close output stream: " + e.toString(), e);
+            }
           }
         }
       }

@@ -7,7 +7,7 @@ Trunk (not yet released)
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers
-    (Samphan Raruenrom va Chris Hostetter)
+    (Samphan Raruenrom via Chris Hostetter)
 
  2. LUCENE-545: New FieldSelector API and associated changes to IndexReader and implementations.
     New Fieldable interface for use with the lazy field loading mechanism.
@@ -42,6 +42,11 @@ API Changes
     ie: IndexReader).
     (Michael McCandless via Chris Hostetter)
 
+ 7. LUCENE-638: FSDirectory.list() now only returns the directory's 
+    Lucene-related files. Thanks to this change one can now construct
+    a RAMDirectory from a file system directory that contains files
+    not related to Lucene.
+    (Simon Willnauer via Daniel Naber)
  
 Bug fixes
 
@@ -87,7 +92,7 @@ Optimizations
      indexes.  This will improve the performance of many types of queries
      against a non-optimized index. (Andrew Hudson via Yonik Seeley)
 
-  2. LUCENE-623: RAMDirectory.close now nulls out it's reference to all
+  2. LUCENE-623: RAMDirectory.close now nulls out its reference to all
      internal "files", allowing them to be GCed even if references to the
      RAMDirectory itself still exist. (Nadav Har'El via Chris Hostetter)
 
@@ -384,7 +389,7 @@ New features
     must match in a BooleanQuery.  See BooleanQuery.setMinimumNumberShouldMatch().
     (Paul Elschot, Chris Hostetter via Yonik Seeley, LUCENE-395)
 
-27. Added DisjunctionMaxQuery which provides the maximum score across it's clauses.
+27. Added DisjunctionMaxQuery which provides the maximum score across its clauses.
     It's very useful for searching across multiple fields.
     (Chuck Williams via Yonik Seeley, LUCENE-323)
 
@@ -766,7 +771,7 @@ Infrastructure
 
  8. Added new method Query.getSimilarity(Searcher), and changed
     scorers to use it.  This permits one to subclass a Query class so
-    that it can specify it's own Similarity implementation, perhaps
+    that it can specify its own Similarity implementation, perhaps
     one that delegates through that of the Searcher.  (Julien Nioche
     via Cutting)
 
