@@ -171,7 +171,7 @@ final class DocumentWriter {
                 addPosition(fieldName, t.termText(), position++, null);
               
               lastToken = t;
-              if (++length > maxFieldLength) {
+              if (++length >= maxFieldLength) {
                 if (infoStream != null)
                   infoStream.println("maxFieldLength " +maxFieldLength+ " reached, ignoring following tokens");
                 break;

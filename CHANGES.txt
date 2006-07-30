@@ -86,6 +86,9 @@ Bug fixes
 11. LUCENE-593: Fixed inner Iterator
     (Kåre Fiedler Christiansen via Otis Gospodnetic)
 
+12. LUCENE-641: fixed an off-by-one bug with IndexWriter.setMaxFieldLength()
+    (Daniel Naber)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
