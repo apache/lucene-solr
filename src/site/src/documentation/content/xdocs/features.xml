@@ -60,6 +60,8 @@
 
   <section><title>Query</title>
     <ul>
+      <li>XML/HTTP and JSON/HTTP interfaces</li>
+      <li>Highlighted context snippets</li>
       <li>Sort specifications added to query language</li>
       <li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
       <li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
