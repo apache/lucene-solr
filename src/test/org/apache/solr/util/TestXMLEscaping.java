@@ -28,7 +28,7 @@ public class TestXMLEscaping extends TestCase {
   }
 
   public void testAmpAndTagAscii() throws IOException {
-    doSimpleTest("Bonnie & Cl<em>y</em>de","Bonnie &amp; Cl&lt;em>y&lt;/em>de");
+    doSimpleTest("Bonnie & Cl<em>y</em>de","Bonnie &amp; Cl&lt;em&gt;y&lt;/em&gt;de");
   }
 
   public void testAmpWithAccents() throws IOException {
@@ -43,7 +43,11 @@ public class TestXMLEscaping extends TestCase {
 
   public void testAmpAndTagWithAccents() throws IOException {
     // 00e9 is unicode eacute
-    doSimpleTest("Les \u00e9v\u00e9nements <chez/> Bonnie & Clyde","Les \u00e9v\u00e9nements &lt;chez/> Bonnie &amp; Clyde");
+    doSimpleTest("Les \u00e9v\u00e9nements <chez/> Bonnie & Clyde","Les \u00e9v\u00e9nements &lt;chez/&gt; Bonnie &amp; Clyde");
+  }
+
+  public void testGt() throws IOException {
+    doSimpleTest("a ]]> b","a ]]&gt; b");
   }
 }
 
