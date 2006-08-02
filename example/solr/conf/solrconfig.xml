@@ -126,7 +126,7 @@
 
    <!-- An optimization for use with the queryResultCache.  When a search
          is requested, a superset of the requested number of document ids
-         are collected.  For example, of a search for a particular query
+         are collected.  For example, if a search for a particular query
          requests matching documents 10 through 19, and queryWindowSize is 50,
          then documents 0 through 50 will be collected and cached.  Any further
          requests in that range can be satisfied via the cache.  -->
@@ -182,7 +182,7 @@
 
   <!-- DisMaxRequestHandler is an example of a request handler that
        supports optional parameters which are passed to
-       it's init() method.
+       its init() method.
    -->
   <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
      <float name="tie">0.01</float>
@@ -222,7 +222,7 @@
     writer specified by the 'wt' request parameter matching the name of a registered
     writer.
     The "standard" writer is the default and will be used if 'wt' is not specified 
-    in the request. XMLResponseWriter will be used if nothing specified here.
+    in the request. XMLResponseWriter will be used if nothing is specified here.
     The json, python, and ruby writers are also available by default.
 
     <queryResponseWriter name="standard" class="org.apache.solr.request.XMLResponseWriter"/>
