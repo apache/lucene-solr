@@ -40,6 +40,8 @@ New Features
     The default operator remains "OR".
 21. JAVA API: new version of SolrIndexSearcher.getDocListAndSet() which takes
     flags (Greg Ludington via yonik, SOLR-39)
+22. A HyphenatedWordsFilter, a text analysis filter used during indexing to rejoin
+    words that were hyphenated and split by a newline. (Boris Vitez via yonik, SOLR-41)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
