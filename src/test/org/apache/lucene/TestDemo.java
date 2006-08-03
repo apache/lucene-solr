@@ -61,7 +61,7 @@ public class TestDemo extends TestCase {
     // Now search the index:
     IndexSearcher isearcher = new IndexSearcher(directory);
     // Parse a simple query that searches for "text":
-      QueryParser parser = new QueryParser("fieldname", analyzer);
+    QueryParser parser = new QueryParser("fieldname", analyzer);
     Query query = parser.parse("text");
     Hits hits = isearcher.search(query);
     assertEquals(1, hits.length());
