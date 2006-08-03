@@ -1,4 +1,4 @@
-<%@ page import = "  javax.servlet.*, javax.servlet.http.*, java.io.*, org.apache.lucene.analysis.*, org.apache.lucene.document.*, org.apache.lucene.index.*, org.apache.lucene.search.*, org.apache.lucene.queryParser.*, org.apache.lucene.demo.*, org.apache.lucene.demo.html.Entities, java.net.URLEncoder" %>
+<%@ page import = "  javax.servlet.*, javax.servlet.http.*, java.io.*, org.apache.lucene.analysis.*, org.apache.lucene.analysis.standard.StandardAnalyzer, org.apache.lucene.document.*, org.apache.lucene.index.*, org.apache.lucene.search.*, org.apache.lucene.queryParser.*, org.apache.lucene.demo.*, org.apache.lucene.demo.html.Entities, java.net.URLEncoder" %>
 
 <%
 /*
@@ -76,7 +76,7 @@ public String escapeHTML(String s) {
                                                                       //query string so you get the 
                                                                       //treatment
 
-                Analyzer analyzer = new StopAnalyzer();               //construct our usual analyzer
+                Analyzer analyzer = new StandardAnalyzer();           //construct our usual analyzer
                 try {
                         QueryParser qp = new QueryParser("contents", analyzer);
                         query = qp.parse(queryString); //parse the 
@@ -126,8 +126,11 @@ public String escapeHTML(String s) {
 <%
                         Document doc = hits.doc(i);                    //get the next document 
                         String doctitle = doc.get("title");            //get its title
-                        String url = doc.get("url");                   //get its url field
-                        if ((doctitle == null) || doctitle.equals("")) //use the url if it has no title
+                        String url = doc.get("path");                  //get its path field
+                        if (url != null && url.startsWith("../webapps/")) { // strip off ../webapps prefix if present
+                                url = url.substring(10);
+                        }
+                        if ((doctitle == null) || doctitle.equals("")) //use the path if it has no title
                                 doctitle = url;
                                                                        //then output!
 %>

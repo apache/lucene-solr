@@ -114,10 +114,10 @@ limitations under the License.
       <tr><td>
         <blockquote>
                                     <p>
-In this section we walk through the sources behind the basic Lucene Web Application demo.  
-Where to find it, its parts, and their function.  This section is intended for Java developers
-wishing to understand how to use Apache Lucene in their applications or for those involved
-in deploying web applications based on Lucene.
+In this section we walk through the sources behind the basic Lucene Web Application demo: where to
+find them, their parts and their function.  This section is intended for Java developers wishing to
+understand how to use Lucene in their applications or for those involved in deploying web
+applications based on Lucene.
 </p>
                             </blockquote>
         </p>
@@ -133,13 +133,13 @@ in deploying web applications based on Lucene.
       <tr><td>
         <blockquote>
                                     <p>
-Relative the directory created when you extracted Lucene or retreived it from Subversion, you 
-should see a directory called "src" which in turn contains a directory called "jsp".
-This is the root for all of the Lucene web demo. 
+Relative to the directory created when you extracted Lucene or retrieved it from Subversion, you
+should see a directory called <code>src</code> which in turn contains a directory called
+<code>jsp</code>.  This is the root for all of the Lucene web demo.
 </p>
                                                 <p>
-Within this directory you should see the index.jsp class.  Bring this up in vi or your 
-editor of choice.
+Within this directory you should see <code>index.jsp</code>.  Bring this up in vi or your editor of
+choice.
 </p>
                             </blockquote>
         </p>
@@ -155,14 +155,12 @@ editor of choice.
       <tr><td>
         <blockquote>
                                     <p>
-This jsp page is pretty boring by itself.  All it does is include a header, display a form and 
-include a footer.  If you look at the form, it has two fields: query (where you enter your 
-search criteria) and maxresults where you specify the number of results per page.  If you look
-at the form tag, you'll notice it uses the get method as opposed to the post.  While this is 
-considered deprecated functionality by the latest w3c specs, its unlikely to go away due to the
-usefulness of being able to bookmark things like searches.  By the structure of this JSP it should
-be easy to customize it without even editing this particular file.  You could simply change the 
-header and footer.  Let's look at the header.jsp (located in the same directory) next.
+This jsp page is pretty boring by itself.  All it does is include a header, display a form and
+include a footer.  If you look at the form, it has two fields: <code>query</code> (where you enter
+your search criteria) and <code>maxresults</code> where you specify the number of results per page.
+By the structure of this JSP it should be easy to customize it without even editing this particular
+file.  You could simply change the header and footer.  Let's look at the <code>header.jsp</code>
+(located in the same directory) next.
 </p>
                             </blockquote>
         </p>
@@ -178,11 +176,11 @@ header and footer.  Let's look at the header.jsp (located in the same directory)
       <tr><td>
         <blockquote>
                                     <p>
-The header is also very simple by itself.  The only thing it does is include the configuration.jsp
-(which you looked at in the last section of this guide) and set the title and a brief header.  This
-would be a good place to put your own custom HTML to "pretty" things up a bit.  We won't cover the 
-footer because all it does is display the footer and close your tags.  Let's look at the results.jsp,
-the meat of this application next.
+The header is also very simple by itself.  The only thing it does is include the
+<code>configuration.jsp</code> (which you looked at in the last section of this guide) and set the
+title and a brief header.  This would be a good place to put your own custom HTML to "pretty" things
+up a bit.  We won't cover the footer because all it does is display the footer and close your tags.
+Let's look at the <code>results.jsp</code>, the meat of this application, next.
 </p>
                             </blockquote>
         </p>
@@ -198,43 +196,52 @@ the meat of this application next.
       <tr><td>
         <blockquote>
                                     <p>
-The results.jsp had a lot more functionality.  Much of it is for paging the search results we'll not
-cover this as it's commented well enough.  It does not perform any optimizations such as caching results, 
-etc. as that would make this a more complex example.  The first thing in this page is the actual imports
-for the Lucene classes and Lucene demo classes.  These classes are loaded from the jars included in the 
-WEB-INF/lib directory in the final war file.  
+Most of the functionality lies in <code>results.jsp</code>.  Much of it is for paging the search
+results, which we'll not cover here as it's commented well enough.  The first thing in this page is
+the actual imports for the Lucene classes and Lucene demo classes.  These classes are loaded from
+the jars included in the <code>WEB-INF/lib</code> directory in the <code>luceneweb.war</code> file.
 </p>
                                                 <p>
-You'll notice that this file includes the same header and footer as the "index.jsp".  From there the jsp
-constructs an IndexSearcher with the "indexLocation" that was specified in the "configuration.jsp".  If there
-is an error of any kind in opening the index, it is diplayed to the user and a boolean flag is set to tell 
-the rest of the sections of the jsp not to continue.
+You'll notice that this file includes the same header and footer as <code>index.jsp</code>.  From
+there it constructs an <code><a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code> with the
+<code>indexLocation</code> that was specified in <code>configuration.jsp</code>.  If there is an
+error of any kind in opening the index, it is displayed to the user and the boolean flag
+<code>error</code> is set to tell the rest of the sections of the jsp not to continue.
 </p>
                                                 <p>
-From there, this jsp attempts to get the search criteria, the start index (used for paging) and the maximum
-number of results per page.  If the maximum results per page is not set or not valid then it and the 
-start index are set to default values.  If only the start index is invalid it is set to a default value.  If 
-the criteria isn't provided then a servlet error is thrown (it is assumed that this is the result of url tampering
-or some form of browser malfunction).
+From there, this jsp attempts to get the search criteria, the start index (used for paging) and the
+maximum number of results per page.  If the maximum results per page is not set or not valid then it
+and the start index are set to default values.  If only the start index is invalid it is set to a
+default value.  If the criteria isn't provided then a servlet error is thrown (it is assumed that
+this is the result of url tampering or some form of browser malfunction).
 </p>
                                                 <p>
-The jsp moves on to construct a StandardAnalyzer just as in the simple demo, to analyze the search critieria, it 
-is passed to the QueryParser along with the criteria to construct a Query object.  You'll also notice the 
-string literal "contents" included.  This is to specify the search should include the  contents and not 
-the title, url or some other field in the indexed documents.  If there is any error in constructing a Query 
-object an error is displayed to the user.
+The jsp moves on to construct a <code><a href="api/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a></code> to
+analyze the search text.  This matches the analyzer used during indexing (<code><a href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code>), which is generally
+recommended.  This is passed to the <code><a href="api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a></code> along with the
+criteria to construct a <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code>
+object.  You'll also notice the string literal <code>"contents"</code> included.  This specifies
+that the search should cover the <code>contents</code> field and not the <code>title</code>,
+<code>url</code> or some other field in the indexed documents.  If there is any error in
+constructing a <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code> object an
+error is displayed to the user.
 </p>
                                                 <p>
-In the next section of the jsp the IndexSearcher is asked to search given the query object.  The results are
-returned in a collection called "hits".  If the length property of the hits collection is 0 then an error 
-is displayed to the user and the error flag is set.
+In the next section of the jsp the <code><a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code> is asked to search
+given the query object.  The results are returned in a collection called <code>hits</code>.  If the
+length property of the <code>hits</code> collection is 0 (meaning there were no results) then an
+error is displayed to the user and the error flag is set.
 </p>
                                                 <p>
-Finally the jsp iterates through the hits collection and displayed properties of the "Document" objects we talked
-about in the first walkthrough.  These objects contain "known" fields specific to their indexer (in this case 
-"IndexHTML" constructs a document with "url", "title" and "contents").  You'll notice that these results are paged
-but the search is repeated every time.  This is an area where optimization could improve performance for large 
-result sets.
+Finally the jsp iterates through the <code>hits</code> collection, taking the current page into
+account, and displays properties of the <code><a href="api/org/apache/lucene/document/Document.html">Document</a></code> objects we talked about in
+the first walkthrough.  These objects contain "known" fields specific to their indexer (in this case
+<code><a href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code> constructs a document
+with "url", "title" and "contents").
+</p>
+                                                <p>
+Please note that in a real deployment of Lucene, it's best to instantiate <code><a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code> and <code><a href="api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a></code> once, and then
+share them across search requests, instead of re-instantiating per search request.
 </p>
                             </blockquote>
         </p>
@@ -250,10 +257,11 @@ result sets.
       <tr><td>
         <blockquote>
                                     <p>
-There are additional sources used by the web app that were not specifically covered by either walkthrough.  For 
-example the HTML parser, the IndexHTML class and HTMLDocument class.  These are very similar to the classes 
-covered in the first example, however they have properties sepecific to parsing and indexing HTML.  This is 
-beyond our scope; however, by now you should feel like you're "getting started" with Lucene.
+There are additional sources used by the web app that were not specifically covered by either
+walkthrough.  For example the HTML parser, the <code><a href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code> class and <code><a href="api/org/apache/lucene/demo/HTMLDocument.html">HTMLDocument</a></code> class.  These are very
+similar to the classes covered in the first example, with properties specific to parsing and
+indexing HTML.  This is beyond our scope; however, by now you should feel like you're "getting
+started" with Lucene.
 </p>
                             </blockquote>
         </p>
@@ -263,24 +271,26 @@ beyond our scope; however, by now you should feel like you're "getting started" 
                                                 <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#525D76">
         <font color="#ffffff" face="arial,helvetica,sanserif">
-          <a name="Where to go from here? (Everyone!)"><strong>Where to go from here? (Everyone!)</strong></a>
+          <a name="Where to go from here? (everyone!)"><strong>Where to go from here? (everyone!)</strong></a>
         </font>
       </td></tr>
       <tr><td>
         <blockquote>
                                     <p>
-There are a number of things this demo doesn't do or doesn't do quite right.  For instance, you may 
+There are a number of things this demo doesn't do or doesn't do quite right.  For instance, you may
 have noticed that documents in the root context are unreachable (unless you reconfigure Tomcat to
-support that context or redirect to it), anywhere where the directory doesn't quite match the context mapping,
-you'll have a broken link in your results.  If you want to index non-local files or have some other 
-needs this isn't supported, plus there may be security issues with running the indexing application from
-your webapps directory.  There are a number of things left for you the implementor or developer to do.
+support that context or redirect to it), anywhere where the directory doesn't quite match the
+context mapping, you'll have a broken link in your results.  If you want to index non-local files or
+have some other needs this isn't supported, plus there may be security issues with running the
+indexing application from your webapps directory.  There are a number of things left for you the
+developer to do.
 </p>
                                                 <p>
-In time some of these things may be added to Lucene as features (if you've got a good idea we'd love to hear it!),
-but for now: this is where you begin and the search engine/indexer ends.  Lastly, one would assume you'd
-want to follow the above advice and customize the application to look a little more fancy than black on 
-white with "Lucene Template" at the top.  We'll see you on the Lucene Users' or Developers' mailing lists!
+In time some of these things may be added to Lucene as features (if you've got a good idea we'd love
+to hear it!), but for now: this is where you begin and the search engine/indexer ends.  Lastly, one
+would assume you'd want to follow the above advice and customize the application to look a little
+more fancy than black on white with "Lucene Template" at the top.  We'll see you on the Lucene
+Users' or Developers' <a href="mailinglists.html">mailing lists</a>!
 </p>
                             </blockquote>
         </p>
@@ -296,11 +306,12 @@ white with "Lucene Template" at the top.  We'll see you on the Lucene Users' or 
       <tr><td>
         <blockquote>
                                     <p>
-Please resist the urge to contact the authors of this document (without bribes of fame and fortune attached).  First
-contact the <a href="http://lucene.apache.org/java/docs/mailinglists.html">mailing lists</a>.  That being said feedback, 
-and modifications to this document and samples are ever so greatly appreciated. They are just best sent to the 
-lists so that everyone can share in them.  Certainly you'll get the most help there as well.  
-Thanks for understanding.  
+Please resist the urge to contact the authors of this document (without bribes of fame and fortune
+attached).  First contact the <a href="mailinglists.html">mailing lists</a>, taking care to <a href="http://www.catb.org/~esr/faqs/smart-questions.html">Ask Questions The Smart Way</a>.
+Certainly you'll get the most help that way as well.  That being said, feedback, and modifications
+to this document and samples are ever so greatly appreciated.  They are just best sent to the lists
+or <a href="http://wiki.apache.org/jakarta-lucene/HowToContribute">posted as patches</a>, so that
+everyone can share in them.  Thanks for understanding!
 </p>
                             </blockquote>
         </p>

@@ -34,7 +34,7 @@ limitations under the License.
            
                                     
                         
-            <title>Apache Lucene - Apache Lucene - Basic Demo Sources Walkthrough</title>
+            <title>Apache Lucene - Apache Lucene - Basic Demo Sources Walk-through</title>
         </head>
 
         <body bgcolor="#ffffff" text="#000000" link="#525D76">        
@@ -114,9 +114,9 @@ limitations under the License.
       <tr><td>
         <blockquote>
                                     <p>
-In this section we walk through the sources behind the basic Lucene demo such as where to 
-find it, its parts and their function.  This section is intended for Java developers
-wishing to understand how to use Apache Lucene in their applications.
+In this section we walk through the sources behind the command-line Lucene demo: where to find them,
+their parts and their function.  This section is intended for Java developers wishing to understand
+how to use Lucene in their applications.
 </p>
                             </blockquote>
         </p>
@@ -132,14 +132,14 @@ wishing to understand how to use Apache Lucene in their applications.
       <tr><td>
         <blockquote>
                                     <p>
-Relative to the directory created when you extracted Lucene or retreived it from Subversion, you
-should see a directory called "src" which in turn contains a directory called "demo".
-This is the root for all of the Lucene demos.  Under this directory is org/apache/lucene/demo,
-this is where all the Java sources live.  
+Relative to the directory created when you extracted Lucene or retrieved it from Subversion, you
+should see a directory called <code>src</code> which in turn contains a directory called
+<code>demo</code>.  This is the root for all of the Lucene demos.  Under this directory is
+<code>org/apache/lucene/demo</code>.  This is where all the Java sources for the demos live.
 </p>
                                                 <p>
-Within this directory you should see the IndexFiles class we executed earlier.  Bring that
-up in vi or your alternative text editor and lets take a look at it.
+Within this directory you should see the <code>IndexFiles.java</code> class we executed earlier.
+Bring it up in <code>vi</code> or your editor of choice and let's take a look at it.
 </p>
                             </blockquote>
         </p>
@@ -155,43 +155,45 @@ up in vi or your alternative text editor and lets take a look at it.
       <tr><td>
         <blockquote>
                                     <p>
-As we discussed in the previous walkthrough, the IndexFiles class creates a Lucene Index.
-Lets take a look at how it does this.  
+As we discussed in the previous walk-through, the <code><a href="api/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a></code> class creates a Lucene
+Index. Let's take a look at how it does this.
 </p>
                                                 <p>
-The first substantial thing the main function does is instantiate an instance
-of IndexWriter.  It passes a string called "index" and a new instance of a class called
-"StandardAnalyzer".  The "index" string is the name of the directory that all index information
-should be stored in.  Because we're not passing any path information, one must assume this
-will be created as a subdirectory of the current directory (if it does not already exist). On
-some platforms this may actually result in it being created in other directories (such as 
-the user's home directory). 
+The first substantial thing the <code>main</code> function does is instantiate <code><a href="api/org/apache/lucene/index/IndexWriter.html">IndexWriter</a></code>.  It passes the string
+"<code>index</code>" and a new instance of a class called <code><a href="api/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a></code>.
+The "<code>index</code>" string is the name of the filesystem directory where all index information
+should be stored.  Because we're not passing a full path, this will be created as a subdirectory of
+the current working directory (if it does not already exist). On some platforms, it may be created
+in other directories (such as the user's home directory).
 </p>
                                                 <p>
-The <b>IndexWriter</b> is the main class responsible for creating indicies. To use it you
-must instantiate it with a path that it can write the index into, if this path does not 
-exist it will create it, otherwise it will refresh the index living at that path.  You 
-must a also pass an instance of <b>org.apache.lucene.analysis.Analyzer</b>. 
+The <code><a href="api/org/apache/lucene/index/IndexWriter.html">IndexWriter</a></code> is the main
+class responsible for creating indices.  To use it you must instantiate it with a path that it can
+write the index into.  If this path does not exist it will first create it.  Otherwise it will
+refresh the index at that path.  You can also create an index using one of the subclasses of <code><a href="api/org/apache/lucene/store/Directory.html">Directory</a></code>.  In any case, you must also pass an
+instance of <code><a href="api/org/apache/lucene/analysis/Analyzer.html">org.apache.lucene.analysis.Analyzer</a></code>.
 </p>
                                                 <p>
-The <b>Analyzer</b>, in this case, the <b>StandardAnalyzer</b> is little more than a standard Java
-Tokenizer, converting all strings to lowercase and filtering out useless words and characters from the index.
-By useless words and characters I mean common language words such as articles (a, an, the, etc.) and other 
-strings that would be useless for searching (e.g. <b>'s</b>) .  It should be noted that there are different 
-rules for every  language, and you should use the proper analyzer for each.  Lucene currently 
-provides Analyzers for English and German, more can be found in the Lucene Sandbox.
+The particular <code><a href="api/org/apache/lucene/analysis/Analyzer.html">Analyzer</a></code> we
+are using, <code><a href="api/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a></code>, is
+little more than a standard Java Tokenizer, converting all strings to lowercase and filtering out
+useless words and characters from the index.  By useless words and characters I mean common language
+words such as articles (a, an, the, etc.) and other strings that would be useless for searching
+(e.g. <b>'s</b>) .  It should be noted that there are different rules for every language, and you
+should use the proper analyzer for each.  Lucene currently provides Analyzers for a number of
+different languages (see the <code>*Analyzer.java</code> sources under <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/analyzers/src/java/org/apache/lucene/analysis/">contrib/analyzers/src/java/org/apache/lucene/analysis</a>).
 </p>
                                                 <p>
-Looking down further in the file, you should see the indexDocs() code.  This recursive function 
-simply crawls the directories and uses FileDocument to create Document objects.  The Document
-is simply a data object to represent the content in the file as well as its creation time and 
-location.  These instances are added to the indexWriter.  Take a look inside FileDocument.  It's
-not particularly complicated, it just adds fields to the Document.
+Looking further down in the file, you should see the <code>indexDocs()</code> code.  This recursive
+function simply crawls the directories and uses <code><a href="api/org/apache/lucene/demo/FileDocument.html">FileDocument</a></code> to create <code><a href="api/org/apache/lucene/document/Document.html">Document</a></code> objects.  The <code><a href="api/org/apache/lucene/document/Document.html">Document</a></code> is simply a data object to
+represent the content in the file as well as its creation time and location.  These instances are
+added to the <code>indexWriter</code>.  Take a look inside <code><a href="api/org/apache/lucene/demo/FileDocument.html">FileDocument</a></code>.  It's not particularly
+complicated.  It just adds fields to the <code><a href="api/org/apache/lucene/document/Document.html">Document</a></code>.
 </p>
                                                 <p>
 As you can see there isn't much to creating an index.  The devil is in the details.  You may also
-wish to examine the other samples in this directory, particularly the IndexHTML class.  It is 
-a bit more complex but builds upon this example.
+wish to examine the other samples in this directory, particularly the <code><a href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code> class.  It is a bit more
+complex but builds upon this example.
 </p>
                             </blockquote>
         </p>
@@ -207,12 +209,19 @@ a bit more complex but builds upon this example.
       <tr><td>
         <blockquote>
                                     <p>
-The SearchFiles class is quite simple.  It primarily collaborates with an IndexSearcher, StandardAnalyzer
-(which is used in the IndexFiles class as well) and a QueryParser.  The query parser is constructed
-with an analyzer used to interperate your query in the same way the Index was interperated: finding 
-the end of words and removing useless words like 'a', 'an' and 'the'.  The Query object contains the 
-results from the QueryParser which is passed to the searcher.  The searcher results are returned in 
-a collection of Documents called "Hits" which is then iterated through and displayed to the user.
+The <code><a href="api/org/apache/lucene/demo/SearchFiles.html">SearchFiles</a></code> class is
+quite simple.  It primarily collaborates with an <code><a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code>, <code><a href="api/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a></code>
+(which is used in the <code><a href="api/org/apache/lucene/demo/IndexFiles.html">IndexFiles</a></code> class as well) and a
+<code><a href="api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a></code>.  The
+query parser is constructed with an analyzer used to interpret your query text in the same way the
+documents are interpreted: finding the end of words and removing useless words like 'a', 'an' and
+'the'.  The <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code> object contains
+the results from the <code><a href="api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a></code> which is passed to
+the searcher.  Note that it's also possible to programmatically construct a rich <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code> object without using the query
+parser.  The query parser just enables decoding the <a href="queryparsersyntax.html">Lucene query
+syntax</a> into the corresponding <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code> object.  The searcher results are
+returned in a collection of Documents called <code><a href="api/org/apache/lucene/search/Hits.html">Hits</a></code> which is then iterated through and
+displayed to the user.
 </p>
                             </blockquote>
         </p>
