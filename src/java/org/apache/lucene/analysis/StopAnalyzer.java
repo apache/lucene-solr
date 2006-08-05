@@ -31,8 +31,8 @@ public final class StopAnalyzer extends Analyzer {
   public static final String[] ENGLISH_STOP_WORDS = {
     "a", "an", "and", "are", "as", "at", "be", "but", "by",
     "for", "if", "in", "into", "is", "it",
-    "no", "not", "of", "on", "or", "s", "such",
-    "t", "that", "the", "their", "then", "there", "these",
+    "no", "not", "of", "on", "or", "such",
+    "that", "the", "their", "then", "there", "these",
     "they", "this", "to", "was", "will", "with"
   };
 

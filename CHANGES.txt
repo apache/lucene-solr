@@ -4,6 +4,15 @@ $Id$
 
 Trunk (not yet released)
 
+Changes in runtime behavior
+
+ 1. 's' and 't' have been removed from the list of default stopwords
+    in StopAnalyzer (also used in by StandardAnalyzer). Having e.g. 's'
+    as a stopword meant that 's-class' led to the same results as 'class'.
+    Note that this problem still exists for 'a', e.g. in 'a-class' as
+    'a' continues to be a stopword.
+    (Daniel Naber)
+    
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers

@@ -55,7 +55,17 @@ public class TestStandardAnalyzer extends TestCase {
     // possessives are actually removed by StardardFilter, not the tokenizer
     assertAnalyzesTo(a, "O'Reilly", new String[]{"o'reilly"});
     assertAnalyzesTo(a, "you're", new String[]{"you're"});
+    assertAnalyzesTo(a, "she's", new String[]{"she"});
+    assertAnalyzesTo(a, "Jim's", new String[]{"jim"});
+    assertAnalyzesTo(a, "don't", new String[]{"don't"});
     assertAnalyzesTo(a, "O'Reilly's", new String[]{"o'reilly"});
+
+    // t and s had been stopwords in Lucene <= 2.0, which made it impossible
+    // to correctly search for these terms:
+    assertAnalyzesTo(a, "s-class", new String[]{"s", "class"});
+    assertAnalyzesTo(a, "t-com", new String[]{"t", "com"});
+    // 'a' is still a stopword:
+    assertAnalyzesTo(a, "a-class", new String[]{"class"});
 
     // company names
     assertAnalyzesTo(a, "AT&T", new String[]{"at&t"});
