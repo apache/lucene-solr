@@ -384,6 +384,15 @@ class JSONWriter extends TextResponseWriter {
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
     if (needsEscaping) {
+
+
+     /* http://www.ietf.org/internet-drafts/draft-crockford-jsonorg-json-04.txt
+      All Unicode characters may be placed within
+      the quotation marks except for the characters which must be
+      escaped: quotation mark, reverse solidus, and the control
+      characters (U+0000 through U+001F).
+     */
+
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
         switch(ch) {
@@ -392,15 +401,19 @@ class JSONWriter extends TextResponseWriter {
             writer.write('\\');
             writer.write(ch);
             break;
-            /*** the following are not required to be escaped
-             case '\r':
-             case '\n':
-             case '\t':
-             case '\b':
-             case '\f':
-             case '/':
-             ***/
-          default: writer.write(ch);
+          case '\r': writer.write("\\r"); break;
+          case '\n': writer.write("\\n"); break;
+          case '\t': writer.write("\\t"); break;
+          case '\b': writer.write("\\b"); break;
+          case '\f': writer.write("\\f"); break;
+          // case '/':
+          default: {
+            if (ch <= 0x1F) {
+              unicodeEscape(writer,ch);
+            } else {
+              writer.write(ch);
+            }
+          }
         }
       }
     } else {
@@ -608,17 +621,18 @@ class PythonWriter extends JSONWriter {
         case '\\': sb.append('\\'); sb.append(ch); break;
         case '\r': sb.append("\\r"); break;
         case '\n': sb.append("\\n"); break;
-          default:
-            // we don't strictly have to escape these chars, but it will probably increase
-            // portability to stick to visible ascii
-            if (ch<' ' || ch>127) {
-              unicodeEscape(sb, ch);
-              needUnicode=true;
-            } else {
-              sb.append(ch);
-            }
-        }
+        case '\t': sb.append("\\t"); break;
+        default:
+          // we don't strictly have to escape these chars, but it will probably increase
+          // portability to stick to visible ascii
+          if (ch<' ' || ch>127) {
+            unicodeEscape(sb, ch);
+            needUnicode=true;
+          } else {
+            sb.append(ch);
+          }
       }
+    }
 
     writer.write( needUnicode ? "u'" : "'");
     writer.append(sb);
