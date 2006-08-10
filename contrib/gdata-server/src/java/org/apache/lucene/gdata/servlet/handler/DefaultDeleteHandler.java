@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
 import org.apache.lucene.gdata.server.GDataRequestException;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.GDataRequest.GDataRequestType;
 
@@ -37,7 +38,7 @@ import org.apache.lucene.gdata.server.GDataRequest.GDataRequestType;
  * </p>
  * <ol>
  * <li>if the entry could be deleted - HTTP status code <i>200 OK</i></li>
- * <li>if an error occures - HTTP status code <i>500 INTERNAL SERVER ERROR</i></li>
+ * <li>if an error occurs - HTTP status code <i>500 INTERNAL SERVER ERROR</i></li>
  * <li>if the resource could not found - HTTP status code <i>404 NOT FOUND</i></li>
  * </ol>
  *  
@@ -63,7 +64,7 @@ public class DefaultDeleteHandler extends AbstractGdataRequestHandler {
 			return;
 		}
         if(!authenticateAccount(request,AccountRole.ENTRYAMINISTRATOR)){
-            setError(HttpServletResponse.SC_UNAUTHORIZED);
+            setError(GDataResponse.UNAUTHORIZED);
             sendError();
             return;
         }
@@ -74,6 +75,7 @@ public class DefaultDeleteHandler extends AbstractGdataRequestHandler {
 		} catch (ServiceException e) {
 			LOG.error("Could not process DeleteFeed request - "
 					+ e.getMessage(), e);
+            setError(e.getErrorCode());
 			sendError();
 		}finally{
         closeService();

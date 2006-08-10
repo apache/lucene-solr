@@ -19,13 +19,12 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.ServerBaseEntry;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.server.registry.ComponentType;
+import org.apache.lucene.gdata.server.registry.EntryEventMediator;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 import org.apache.lucene.gdata.storage.ModificationConflictException;
 import org.apache.lucene.gdata.storage.ResourceNotFoundException;
@@ -48,7 +47,7 @@ import com.google.gdata.util.ParseException;
  * 
  */
 public class GDataService implements Service {
-    private static final Log LOGGER = LogFactory.getLog(GDataService.class);
+    private static final Log LOG = LogFactory.getLog(GDataService.class);
 
     protected Storage storage;
 
@@ -61,6 +60,8 @@ public class GDataService implements Service {
     private static final String generatorURI = "http://lucene.apache.org";
 
     private static final String XMLMIME = "application/atom+xml";
+    
+    private final EntryEventMediator entryEventMediator;
     static {
         generator = new Generator();
         generator.setName(generatorName);
@@ -77,14 +78,14 @@ public class GDataService implements Service {
                 throw new StorageException(
                         "StorageController is not registered");
             this.storage = controller.getStorage();
-
+            this.entryEventMediator = GDataServerRegistry.getRegistry().getEntryEventMediator();
         } catch (StorageException e) {
-            LOGGER
+            LOG
                     .fatal(
                             "Can't get Storage Instance -- can't serve any requests",
                             e);
             ServiceException ex = new ServiceException(
-                    "Can't get Storage instance" + e.getMessage(), e);
+                    "Can't get Storage instance" + e.getMessage(), e,GDataResponse.SERVER_ERROR);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
@@ -98,8 +99,8 @@ public class GDataService implements Service {
     public BaseEntry createEntry(GDataRequest request, GDataResponse response)
             throws ServiceException {
 
-        if (LOGGER.isInfoEnabled())
-            LOGGER.info("create Entry for feedId: " + request.getFeedId());
+        if (LOG.isInfoEnabled())
+            LOG.info("create Entry for feedId: " + request.getFeedId());
 
         ServerBaseEntry entry = buildEntry(request, response);
         entry.setFeedId(request.getFeedId());
@@ -108,15 +109,17 @@ public class GDataService implements Service {
         tempEntry.setPublished(getCurrentDateTime());
         tempEntry.setUpdated(getCurrentDateTime());
         BaseEntry retVal = null;
+        removeDynamicElements(entry.getEntry());
         try {
             retVal = this.storage.storeEntry(entry);
         } catch (Exception e) {
-            response.setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            
             ServiceException ex = new ServiceException("Could not store entry",
-                    e);
+                    e,GDataResponse.SERVER_ERROR);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
+        this.entryEventMediator.entryAdded(entry);
         return retVal;
     }
 
@@ -135,28 +138,31 @@ public class GDataService implements Service {
         setVersionId(entry,request,response);
         if (entry.getId() == null)
             throw new ServiceException(
-                    "entry id is null -- can not delete null entry");
+                    "entry id is null -- can not delete null entry",GDataResponse.SERVER_ERROR);
         try {
             this.storage.deleteEntry(entry);
+            
         } catch (ResourceNotFoundException e) {
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
+            
             ServiceException ex = new ServiceException(
-                    "Could not delete entry", e);
+                    "Could not delete entry", e,GDataResponse.BAD_REQUEST);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }catch (ModificationConflictException e) {
-            response.setError(HttpServletResponse.SC_CONFLICT);
+            
             ServiceException ex = new ServiceException(
-                    "Could not delete entry - version confilict", e);
+                    "Could not delete entry - version conflict",e, GDataResponse.CONFLICT);
             ex.setStackTrace(e.getStackTrace());
             throw ex;  
         }catch (StorageException e) {
-            response.setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            
             ServiceException ex = new ServiceException(
-                    "Could not delete entry", e);
+                    "Could not delete entry", e,GDataResponse.SERVER_ERROR);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
+        this.entryEventMediator.entryDeleted(entry);
+        //TODO change ret value
         return null;
     }
 
@@ -172,51 +178,50 @@ public class GDataService implements Service {
         entry.setFeedId(request.getFeedId());
         setVersionId(entry,request,response);
         entry.setServiceConfig(request.getConfigurator());
-        if (LOGGER.isInfoEnabled())
-            LOGGER.info("update Entry" + entry.getId() + " for feedId: "
+        if (LOG.isInfoEnabled())
+            LOG.info("update Entry" + entry.getId() + " for feedId: "
                     + request.getFeedId());
         if (entry.getId() == null) {
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
-            throw new ServiceException("Entry id is null can not update entry");
+            throw new ServiceException("Entry id is null can not update entry",GDataResponse.BAD_REQUEST);
         }
         if (!entry.getId().equals(request.getEntryId())) {
-            if (LOGGER.isInfoEnabled())
-                LOGGER
+            if (LOG.isInfoEnabled())
+                LOG
                         .info("Entry id in the entry xml does not match the requested resource -- XML-ID:"
                                 + entry.getId()
                                 + "; Requested resource: "
                                 + request.getEntryId());
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
+
             throw new ServiceException(
-                    "Entry id in the entry xml does not match the requested resource");
+                    "Entry id in the entry xml does not match the requested resource",GDataResponse.BAD_REQUEST);
         }
         BaseEntry tempEntry = entry.getEntry();
         tempEntry.setUpdated(getCurrentDateTime());
-        Link selfLink = entry.getSelfLink();
-        if(selfLink != null)
-            entry.getLinks().remove(selfLink);
+        removeDynamicElements(entry.getEntry());
+        
         BaseEntry retVal = null;
+     
         try {
             retVal = this.storage.updateEntry(entry);
         } catch (ResourceNotFoundException e) {
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
+            
             ServiceException ex = new ServiceException(
-                    "Could not update entry", e);
+                    "Could not update entry", e,GDataResponse.BAD_REQUEST);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }catch (ModificationConflictException e) {
-            response.setError(HttpServletResponse.SC_CONFLICT);
             ServiceException ex = new ServiceException(
-                    "Could not update entry - version confilict", e);
+                    "Could not update entry - version conflict", e,GDataResponse.CONFLICT);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }catch (StorageException e) {
-            response.setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
             ServiceException ex = new ServiceException(
-                    "Could not update entry", e);
+                    "Could not update entry", e,GDataResponse.SERVER_ERROR);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
+        this.entryEventMediator.entryUpdated(entry);
         return retVal;
     }
 
@@ -234,17 +239,19 @@ public class GDataService implements Service {
         feed.setItemsPerPage(request.getItemsPerPage());
         feed.setServiceConfig(request.getConfigurator());
         try {
+            /*
+             * the strategy executes either a search or a direct access.
+             */
             BaseFeed retVal = this.storage.getFeed(feed);
             dynamicElementFeedStragey(retVal, request);
 
             return retVal;
             /*
-             * resouce not found will be detected in Gdata request.
-             * the request queries the storage for the feed to get the serivce for the feed
+             * Resource not found will be detected in Gdata request.
+             * the request queries the storage for the feed to get the service for the feed
              */
         } catch (StorageException e) {
-            response.setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            ServiceException ex = new ServiceException("Could not get feed", e);
+            ServiceException ex = new ServiceException("Could not get feed", e,GDataResponse.NOT_FOUND);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
@@ -267,15 +274,13 @@ public class GDataService implements Service {
             return entry;
 
         } catch (ParseException e) {
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
             ServiceException ex = new ServiceException(
-                    "Could not parse entry from incoming request", e);
+                    "Could not parse entry from incoming request", e, GDataResponse.BAD_REQUEST);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         } catch (IOException e) {
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
             ServiceException ex = new ServiceException(
-                    "Could not read or open input stream", e);
+                    "Could not read or open input stream", e, GDataResponse.BAD_REQUEST);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
@@ -298,8 +303,7 @@ public class GDataService implements Service {
 
             
             if(entry.getId() == null){
-                response.setError(HttpServletResponse.SC_BAD_REQUEST);
-                throw new ServiceException("entry is null can't get entry");
+                throw new ServiceException("entry is null can't get entry", GDataResponse.BAD_REQUEST);
             }
                 
             BaseEntry retVal = null;
@@ -307,13 +311,12 @@ public class GDataService implements Service {
             dynamicElementEntryStragey(retVal, request);
             return retVal;
         } catch (ResourceNotFoundException e) {
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
             ServiceException ex = new ServiceException(
-                    "Could not get entry", e);
+                    "Could not get entry", e, GDataResponse.BAD_REQUEST);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         } catch (StorageException e) {
-            ServiceException ex = new ServiceException("Could not get feed", e);
+            ServiceException ex = new ServiceException("Could not get entry", e, GDataResponse.SERVER_ERROR);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
@@ -331,7 +334,7 @@ public class GDataService implements Service {
      * adds all dynamic element to the feed entries
      */
     @SuppressWarnings("unchecked")
-    private void dynamicElementFeedStragey(final BaseFeed feed,
+    protected void dynamicElementFeedStragey(final BaseFeed feed,
             final GDataRequest request) {
          buildDynamicFeedElements(request, feed);
         List<BaseEntry> entryList = feed.getEntries();
@@ -372,6 +375,9 @@ public class GDataService implements Service {
                 buildLink(Link.Rel.SELF, Link.Type.ATOM, request.getSelfId()));
         links.add(
                 buildLink(Link.Rel.NEXT, XMLMIME, request.getNextId()));
+        String prevLink = request.getPreviousId();
+        if(prevLink != null)
+            links.add(buildLink(Link.Rel.PREVIOUS,XMLMIME,prevLink));
         
 
     }
@@ -392,7 +398,7 @@ public class GDataService implements Service {
            
         } catch (StorageException e) {
             ServiceException ex = new ServiceException(
-                    "Could not get Last update for feed -- "+feedId, e);
+                    "Could not get Last update for feed -- "+feedId, e, GDataResponse.SERVER_ERROR);
             ex.setStackTrace(e.getStackTrace());
             throw ex;
         }
@@ -405,12 +411,9 @@ public class GDataService implements Service {
     public Date getEntryLastModified(final String entryId,final String feedId) throws ServiceException {
             try {
                 return new Date(this.storage.getEntryLastModified(entryId, feedId));
-                
-               
-                
             } catch (StorageException e) {
                 ServiceException ex = new ServiceException(
-                        "Could not get Last update for entry  -- "+entryId, e);
+                        "Could not get Last update for entry  -- "+entryId, e, GDataResponse.SERVER_ERROR);
                 ex.setStackTrace(e.getStackTrace());
                 throw ex;
             }
@@ -421,9 +424,8 @@ public class GDataService implements Service {
             entry.setVersion(Integer.parseInt(request.getEntryVersion()));
             return entry;
         }catch (Exception e) {
-            LOGGER.error("Can not parse entry version -- version is not an integer -- versionid: "+request.getEntryVersion(),e);
-            response.setError(HttpServletResponse.SC_BAD_REQUEST);
-            throw new ServiceException("Can not parse entry version -- version is not an integer -- versionid: "+request.getEntryVersion(),e);
+            LOG.error("Can not parse entry version -- version is not an integer -- versionid: "+request.getEntryVersion(),e);
+            throw new ServiceException("Can not parse entry version -- version is not an integer -- versionid: "+request.getEntryVersion(),e, GDataResponse.BAD_REQUEST);
            
         }
     }
@@ -434,5 +436,14 @@ public class GDataService implements Service {
      */
     protected DateTime getCurrentDateTime(){
         return new DateTime(System.currentTimeMillis(),0);
+    }
+    
+    private void removeDynamicElements(BaseEntry entry){
+        Link selfLink = entry.getSelfLink();
+        if(selfLink != null)
+            entry.getLinks().remove(selfLink);
+        Link editLink = entry.getEditLink();
+        if(editLink != null)
+            entry.getLinks().remove(editLink);
     }
 }

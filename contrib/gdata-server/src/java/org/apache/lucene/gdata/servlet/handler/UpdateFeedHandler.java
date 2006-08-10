@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
@@ -59,7 +60,7 @@ public class UpdateFeedHandler extends AbstractFeedHandler {
                 ServiceFactory serviceFactory = registry.lookup(
                         ServiceFactory.class, ComponentType.SERVICEFACTORY);
                 if (serviceFactory == null) {
-                    setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    setError(GDataResponse.SERVER_ERROR,
                             "required component is not available");
                     throw new FeedHandlerException(
                             "Can't update feed - ServiceFactory is null");
@@ -67,7 +68,7 @@ public class UpdateFeedHandler extends AbstractFeedHandler {
                 service = serviceFactory.getAdminService();
                 service.updateFeed(feed, account);
             } catch (ServiceException e) {
-                setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                setError(e.getErrorCode(),
                         "can not update feed");
                 LOG.error("Can not update feed -- " + e.getMessage(), e);
             } catch (Exception e) {

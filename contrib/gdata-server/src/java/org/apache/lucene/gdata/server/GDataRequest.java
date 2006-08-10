@@ -27,23 +27,22 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.lucene.gdata.search.config.IndexSchema;
+import org.apache.lucene.gdata.search.query.QueryTranslator;
 import org.apache.lucene.gdata.server.authentication.AuthenticationController;
-import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
-import org.apache.lucene.gdata.storage.Storage;
-import org.apache.lucene.gdata.storage.StorageController;
 
 /**
  * The GDataRequest Class wraps the incoming HttpServletRequest. Needed
  * information coming with the HttpServletRequest can be accessed directly. It
  * represents an abstraction on the plain HttpServletRequest. Every GData
- * specific data coming from the client will be availiable and can be accessed
+ * specific data coming from the client will be available and can be accessed
  * via the GDataRequest.
  * <p>
  * GDataRequest instances will be passed to any action requested by the client.
  * This class also holds the logic to retrieve important information like
- * response format, the reqeusted feed instance and query parameters.
+ * response format, the requested feed instance and query parameters.
  * 
  * </p>
  * 
@@ -52,7 +51,8 @@ import org.apache.lucene.gdata.storage.StorageController;
  */
 /* this class might be extracted as an interface in later development */
 public class GDataRequest {
-
+    
+    
     private static final Log LOG = LogFactory.getLog(GDataRequest.class);
 
     private static final String RESPONSE_FORMAT_PARAMETER = "alt";
@@ -76,7 +76,9 @@ public class GDataRequest {
 
     private static final String HTTP_HEADER_AUTH = "Authorization";
 
-    // Atom is the default resopnse format
+    private static final Object CATEGORY_QUERY_INDICATOR = "-";
+
+    // Atom is the default response format
     private OutputFormat responseFormat = OutputFormat.ATOM;
 
     private final HttpServletRequest request;
@@ -85,11 +87,21 @@ public class GDataRequest {
 
     private String entryId = null;
 
+    private String service = null;
+
     private ProvidedService configurator = null;
+
+    private boolean isSearchRequest = false;
 
     private String entryVersion = null;
 
     private GDataRequestType type;
+
+    private String categoryQuery;
+    
+    private String translatedSearchQuery;
+
+    private boolean isFeedRequest = false;
 
     /**
      * Creates a new FeedRequest
@@ -120,35 +132,40 @@ public class GDataRequest {
     public void initializeRequest() throws GDataRequestException {
         generateIdentificationProperties();
         setOutputFormat();
-        // TODO remove this dependency
-        StorageController controller = GDataServerRegistry.getRegistry()
-                .lookup(StorageController.class,
-                        ComponentType.STORAGECONTROLLER);
+        
         try {
-
-            Storage storage = controller.getStorage();
-
-            String service = storage.getServiceForFeed(this.feedId);
-            storage.close();
             /*
              * ExtensionProfile and the type is used for building the Entry /
-             * Feed Instances from an inputstream or reader
+             * Feed Instances from an input stream or reader
              * 
              */
             this.configurator = GDataServerRegistry.getRegistry()
-                    .getProvidedService(service);
+                    .getProvidedService(this.service);
+            
             if (this.configurator == null)
                 throw new GDataRequestException(
-                        "feed is not registered or extension profile could not be created");
-
+                        "no Provided Service found for service id: "+this.service,GDataResponse.NOT_FOUND);
+            applyRequestParameter();
+            if(this.translatedSearchQuery != null)
+                this.isSearchRequest = true;
+        } catch(GDataRequestException ex){
+            throw ex;
         } catch (Exception e) {
-            e.printStackTrace();
-            
             throw new GDataRequestException(
-                    "feed is not registered or extension profile could not be created -- "
-                            + e.getMessage(), e);
+                    "failed to initialize GDataRequest -- "
+                            + e.getMessage(), e,GDataResponse.SERVER_ERROR);
         }
-
+        
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void applyRequestParameter() throws GDataRequestException{
+        IndexSchema schema = this.configurator.getIndexSchema();
+        try{
+        this.translatedSearchQuery = QueryTranslator.translateHttpSearchRequest(schema,this.request.getParameterMap(),this.categoryQuery);
+        }catch (Exception e) {
+            throw new GDataRequestException("Can not translate user query to search query",e,GDataResponse.BAD_REQUEST);
+        }
     }
 
     /**
@@ -181,15 +198,15 @@ public class GDataRequest {
      * 
      * @return - the HttpServletRequest {@link Reader}
      * @throws IOException -
-     *             if an I/O Exception occures
+     *             if an I/O Exception occurs
      */
     public Reader getReader() throws IOException {
         return this.request.getReader();
     }
 
     /**
-     * Returns the {@link HttpServletRequest} parameter map containig all <i>GET</i>
-     * request parameters.
+     * Returns the {@link HttpServletRequest} parameter map containing all
+     * <i>GET</i> request parameters.
      * 
      * @return the parameter map
      */
@@ -222,19 +239,34 @@ public class GDataRequest {
             throws GDataRequestException {
         /* generate all needed data to identify the requested feed/entry */
         String pathInfo = this.request.getPathInfo();
-        /*
-         * TODO this has to be changed to support the category queries. Category
-         * queries could also be rewrited in the Servlet.
-         */
-        if (pathInfo.length() <= 1)
+              if (pathInfo.length() <= 1)
             throw new GDataRequestException(
-                    "No feed or entry specified for this request");
+                    "No feed or entry specified for this request",GDataResponse.BAD_REQUEST);
         StringTokenizer tokenizer = new StringTokenizer(pathInfo, "/");
+        this.service = tokenizer.nextToken();
+        if (!tokenizer.hasMoreTokens())
+            throw new GDataRequestException(
+                    "Can not find feed id in requested path " + pathInfo,GDataResponse.BAD_REQUEST);
         this.feedId = tokenizer.nextToken();
-        this.entryId = tokenizer.hasMoreTokens() ? tokenizer.nextToken() : "";
-        this.entryVersion = tokenizer.hasMoreTokens() ? tokenizer.nextToken()
-                : "";
 
+        String appendix = tokenizer.hasMoreTokens() ? tokenizer.nextToken()
+                : null;
+        if (appendix == null){
+            this.isFeedRequest = true;
+            return;
+        }
+        if (appendix.equals(CATEGORY_QUERY_INDICATOR)) {
+            StringBuilder builder = new StringBuilder();
+            while (tokenizer.hasMoreTokens())
+                builder.append("/").append(tokenizer.nextToken());
+            this.categoryQuery = builder.toString();
+        } else {
+            this.entryId = appendix;
+            this.entryVersion = tokenizer.hasMoreTokens() ? tokenizer
+                    .nextToken() : "";
+        }
+        this.isFeedRequest = (this.type == GDataRequestType.GET && (this.entryId == null
+                || this.entryId.length() == 0 || (this.entryId.equals('/'))));
     }
 
     private void setOutputFormat() {
@@ -259,7 +291,7 @@ public class GDataRequest {
             retval = new Integer(this.request
                     .getParameter(ITEMS_PER_PAGE_PARAMETER)).intValue();
         } catch (Exception e) {
-            LOG.warn("Intems per page could not be parsed - " + e.getMessage(),
+            LOG.warn("Items per page could not be parsed - " + e.getMessage(),
                     e);
         }
 
@@ -269,26 +301,26 @@ public class GDataRequest {
     /**
      * Start index represents the number of the first entry of the query -
      * result. The order depends on the query. Is the query a search query the
-     * this value will be assinged to the score in a common feed query the value
+     * this value will be assigned to the score in a common feed query the value
      * will be assigned to the update time of the entries.
      * 
      * @return - the requested start index
      */
     public int getStartIndex() {
-        if (this.request.getParameter(START_INDEX_NEXT_PAGE_PARAMETER) == null)
+        String startIndex = this.request.getParameter(START_INDEX_NEXT_PAGE_PARAMETER);
+        if (startIndex == null)
             return DEFAULT_START_INDEX;
         int retval = -1;
         try {
-            retval = new Integer(this.request
-                    .getParameter(START_INDEX_NEXT_PAGE_PARAMETER)).intValue();
+            retval = new Integer(startIndex).intValue();
         } catch (Exception e) {
-            LOG.warn("Start-index could not be parsed - " + e.getMessage(), e);
+            LOG.warn("Start-index could not be parsed - not an integer - " + e.getMessage());
         }
         return retval < 0 ? DEFAULT_START_INDEX : retval;
     }
 
     /**
-     * The selfid is <i>href</i> pointing to the requested resource
+     * The self id is the feeds <i>href</i> pointing to the requested resource
      * 
      * @return - the self id
      */
@@ -300,55 +332,59 @@ public class GDataRequest {
 
         return builder.toString();
     }
+    
+    /**
+       * The previous id is the feeds <i>href</i> pointing to the previous result of the requested resource
+     * 
+     * @return - the self id
+     */
+    public String getPreviousId(){
+        
+        int startIndex = getStartIndex();
+        if(startIndex == DEFAULT_START_INDEX )
+            return null;
+        StringBuilder builder = new StringBuilder();
+        builder.append(buildRequestIDString(false));
+        startIndex = startIndex-getItemsPerPage();
+        builder.append(getPreparedQueryString(startIndex<1?DEFAULT_START_INDEX:startIndex));
+        return builder.toString();
+    }
+  
 
+    
+    private String getPreparedQueryString(int startIndex){
+        String queryString = this.request.getQueryString();
+        String startIndexValue = this.request.getParameter(START_INDEX_NEXT_PAGE_PARAMETER);
+        String maxResultsValue = this.request.getParameter(ITEMS_PER_PAGE_PARAMETER);
+        
+        StringBuilder builder = new StringBuilder("?");
+        if(maxResultsValue == null){
+            builder.append(ITEMS_PER_PAGE_PARAMETER).append("=").append(DEFAULT_ITEMS_PER_PAGE);
+            builder.append("&");
+        }
+        if(startIndexValue== null){
+            builder.append(START_INDEX_NEXT_PAGE_PARAMETER).append("=");
+            builder.append(Integer.toString(startIndex));
+            if(queryString!=null){
+                builder.append("&");
+                builder.append(queryString);
+            }
+        }else{
+            builder.append(queryString.replaceAll("start-index=[\\d]*",START_INDEX_NEXT_PAGE_PARAMETER+"="+Integer.toString(startIndex)));
+        }
+        return builder.toString();
+    }
     /**
      * The <i>href</i> id of the next page of the requested resource.
      * 
      * @return the id of the next page
      */
     public String getNextId() {
+        int startIndex = getStartIndex();
         StringBuilder builder = new StringBuilder();
         builder.append(buildRequestIDString(false));
-        builder.append("?");
-
-        if (builder.charAt(builder.length() - 1) != '?')
-            builder.append('&');
-        Enumeration parameters = this.request.getParameterNames();
-        while (parameters.hasMoreElements()) {
-            String element = (String) parameters.nextElement();
-            String values = this.request.getParameter(element);
-
-            builder.append(element).append("=");
-            if (element.equals(START_INDEX_NEXT_PAGE_PARAMETER)) {
-                int tempVal = DEFAULT_START_INDEX;
-                try {
-                    tempVal = Integer.parseInt(values);
-                } catch (Exception e) {
-                    LOG.info("Can not parse StartIndex -- use defaut");
-                }
-                builder.append(tempVal + getItemsPerPage());
-                continue;
-            }
-
-            builder.append(values);
-
-            if (parameters.hasMoreElements())
-                builder.append("&");
-
-        }
-        if (this.request.getParameter(ITEMS_PER_PAGE_PARAMETER) == null) {
-            if (builder.charAt(builder.length() - 1) != '?')
-                builder.append('&');
-            builder.append(ITEMS_PER_PAGE_PARAMETER).append("=").append(
-                    DEFAULT_ITEMS_PER_PAGE);
-        }
-        if (this.request.getParameter(START_INDEX_NEXT_PAGE_PARAMETER) == null) {
-            if (builder.charAt(builder.length() - 1) != '?')
-                builder.append('&');
-            builder.append(START_INDEX_NEXT_PAGE_PARAMETER).append("=");
-            builder.append(getItemsPerPage() + 1);
-        }
-
+        startIndex = startIndex+getItemsPerPage();
+        builder.append(getPreparedQueryString(startIndex));
         return builder.toString();
 
     }
@@ -367,14 +403,14 @@ public class GDataRequest {
 
     /**
      * This will return the current query string including all parameters.
-     * Additionaly the <code>max-resul</code> parameter will be added if not
+     * Additionally the <code>max-resul</code> parameter will be added if not
      * specified.
      * <p>
      * <code>max-resul</code> indicates the number of results returned to the
      * client. The default value is 25.
      * </p>
      * 
-     * @return - the query string incluing all parameters
+     * @return - the query string including all parameters
      */
     public String getQueryString() {
         String retVal = this.request.getQueryString();
@@ -453,7 +489,7 @@ public class GDataRequest {
     }
 
     /**
-     * If the reuquest is a {@link GDataRequestType#GET} request and there is no
+     * If the request is a {@link GDataRequestType#GET} request and there is no
      * entry id specified, the requested resource is a feed.
      * 
      * @return - <code>true</code> if an only if the requested resource is a
@@ -461,12 +497,11 @@ public class GDataRequest {
      */
     public boolean isFeedRequested() {
 
-        return (this.type == GDataRequestType.GET && (this.entryId == null
-                || this.entryId.length() == 0 || (this.entryId.equals('/'))));
+        return this.isFeedRequest ;
     }
 
     /**
-     * * If the reuquest is a {@link GDataRequestType#GET} request and there is
+     * * If the request is a {@link GDataRequestType#GET} request and there is
      * an entry id specified, the requested resource is an entry.
      * 
      * @return - <code>true</code> if an only if the requested resource is an
@@ -474,6 +509,12 @@ public class GDataRequest {
      */
     public boolean isEntryRequested() {
         return !this.isFeedRequested();
+    }
+    /**
+     * @return - <code>true</code> if an only if the user request is a search request, otherwise <code>false</code>
+     */
+    public boolean isSearchRequested(){
+        return this.isSearchRequest;
     }
 
     /**
@@ -505,7 +546,7 @@ public class GDataRequest {
 
     /**
      * @return - Returns an array containing all of the Cookie objects the
-     *         client sent with underlaying HttpServletRequest.
+     *         client sent with underlying HttpServletRequest.
      */
     public Cookie[] getCookies() {
         return this.request.getCookies();
@@ -513,7 +554,7 @@ public class GDataRequest {
 
     /**
      * @return - the cookie set instead of the authentication token or
-     *         <code>null</code> if not auth cookie is set
+     *         <code>null</code> if no auth cookie is set
      */
     public Cookie getAuthCookie() {
         Cookie[] cookies = this.request.getCookies();
@@ -535,10 +576,16 @@ public class GDataRequest {
     }
 
     /**
-     * @return - the underlaying HttpServletRequest
+     * @return - the underlying HttpServletRequest
      */
     public HttpServletRequest getHttpServletRequest() {
 
         return this.request;
     }
+    
+    protected String getTranslatedQuery(){
+        return this.translatedSearchQuery;
+    }
+
+ 
 }

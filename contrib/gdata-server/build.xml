@@ -25,11 +25,14 @@
             <include name="commons-digester-1.7.jar" /> 
             <include name="commons-beanutils.jar" /> 
             <include name="commons-collections-3.2.jar" /> 
+            <include name="nekohtml.jar" /> 
+            <include name="xercesImpl.jar" /> 
             <include name="${db4o.jar}" if="db4o.jar.present" /> 
-        </fileset> 
+            </fileset> 
     </path> 
-
-    <!-- redefine compile-core and compile-test to exclude 3rd party dependend sources --> 
+	
+	
+	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources --> 
     <target name="compile-core" depends="init"> 
         <echo>Use gdata - compile-core task </echo> 
         <compile srcdir="src/java" destdir="${build.dir}/classes/java"> 
@@ -74,7 +77,10 @@
                 <include name="commons-digester-1.7.jar" /> 
                 <include name="commons-beanutils.jar" /> 
                 <include name="commons-collections-3.2.jar" /> 
+            	<include name="nekohtml.jar" /> 
+  	            <include name="xercesImpl.jar" /> 
                 <include name="${db4o.jar}" if="db4o.jar.present" /> 
+            
             </lib> 
             <lib dir="${build.dir}" includes="${final.name}.jar" /> 
             <lib file="${lucene.jar}" /> 

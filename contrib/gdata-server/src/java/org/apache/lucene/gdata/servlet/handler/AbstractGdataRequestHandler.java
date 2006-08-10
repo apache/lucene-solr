@@ -61,14 +61,15 @@ public abstract class AbstractGdataRequestHandler extends RequestAuthenticator i
         this.feedRequest = new GDataRequest(request, type);
         this.feedResponse = new GDataResponse(response);
         this.feedResponse.setEncoding(ENCODING);
-        getService();
+        
         try {       
             this.feedRequest.initializeRequest();
         } catch (GDataRequestException e) {
-            this.feedResponse.setError(HttpServletResponse.SC_NOT_FOUND);
+            setError(e.getErrorCode());
             LOG.warn("Couldn't initialize FeedRequest - " + e.getMessage(), e);
             throw e;
         }
+        getService(this.feedRequest);
     }
 
     
@@ -90,10 +91,10 @@ public abstract class AbstractGdataRequestHandler extends RequestAuthenticator i
 		this.feedResponse.setError(error);
 	}
 
-    private void getService() throws ServletException {
+    private void getService(GDataRequest request) throws ServletException {
         GDataServerRegistry registry = GDataServerRegistry.getRegistry();
         ServiceFactory serviceFactory = registry.lookup(ServiceFactory.class,ComponentType.SERVICEFACTORY);
-        this.service = serviceFactory.getService();
+        this.service = serviceFactory.getService(request);
         if(this.service == null)
             throw new ServletException("Service not available"); 
         

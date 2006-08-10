@@ -19,14 +19,15 @@ package org.apache.lucene.gdata.server.registry.configuration;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.apache.lucene.gdata.utils.ReflectionUtils;
+
 /**
  * PropertyInjector is used to set member variables / properties of classes via
- * <i>setter</i> methodes using the
+ * <i>setter</i> methods using the
  * {@link org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration}
  * class.
  * <p>
@@ -34,8 +35,8 @@ import java.util.Map.Entry;
  * the class or a superclass of the object to populate has to provide at least
  * one setter method with a single parameter. The object to populate is set via
  * the {@link PropertyInjector#setTargetObject} method. The class of the object
- * will be analyzed for setter methodes having a "set" prefix in their method
- * name. If one of the found setter methodes is annotated with
+ * will be analyzed for setter methods having a "set" prefix in their method
+ * name. If one of the found setter methods is annotated with
  * {@link org.apache.lucene.gdata.server.registry.configuration.Requiered} this
  * property is interpreted as a mandatory property. Mandatory properties must be
  * available in the provided ComponentConfiguration, if not the injection will
@@ -46,14 +47,14 @@ import java.util.Map.Entry;
  * setter method without the 'set' prefix and must begin with a lower case
  * character. <span>Key<code>bufferSize</code> does match a method signature
  * of <code>setBufferSize</code></span> The type of the parameter will be
- * reflected via the Reflection API and instanciated with the given value if
+ * reflected via the Reflection API and instantiated with the given value if
  * possible.
  * </p>
  * <p>
- * Setter methodes without a <code>Requiered</code> anntoation will be set if
+ * Setter methods without a <code>Required</code> annotation will be set if
  * the property is present in the ComponentConfiguration
  * </p>
- * <p>This class does not support overloaded setter methodes.</p>
+ * <p>This class does not support overloaded setter methods.</p>
  * @author Simon Willnauer
  * @see org.apache.lucene.gdata.server.registry.configuration.Requiered
  * @see org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration
@@ -88,7 +89,7 @@ public class PropertyInjector {
         if (this.requieredProperties.isEmpty()
                 && this.optionalProperties.isEmpty())
             throw new InjectionException(
-                    "Given type has no public setter methodes -- "
+                    "Given type has no public setter methods -- "
                             + o.getClass().getName());
 
     }
@@ -132,7 +133,7 @@ public class PropertyInjector {
 
     /**
      * Injects the properties stored in the <code>ComponentConfiguration</code>
-     * to the corresponding methodes of the target object
+     * to the corresponding methods of the target object
      * @param bean - configuration bean containing all properties to set.
      * 
      */
@@ -143,11 +144,11 @@ public class PropertyInjector {
             throw new IllegalStateException("target is not set -- null");
         Set<Entry<String, Method>> requiered = this.requieredProperties
                 .entrySet();
-        // set requiered properties
+        // set required properties
         for (Entry<String, Method> entry : requiered) {
             if (!bean.contains(entry.getKey()))
                 throw new InjectionException(
-                        "requiered property can not be set -- value not in configuration bean; Property: "
+                        "Required property can not be set -- value not in configuration bean; Property: "
                                 + entry.getKey()
                                 + "for class "
                                 + this.targetClass.getName());
@@ -196,12 +197,12 @@ public class PropertyInjector {
     private Object createObject(String s, Class<?> clazz) {
 
         try {
-            // if class is requested use s as fully qualified classname
+            // if class is requested use s as fully qualified class name
             if (clazz == Class.class)
                 return Class.forName(s);
             // check for primitive type
             if (clazz.isPrimitive())
-                clazz = getPrimitiveWrapper(clazz);
+                clazz = ReflectionUtils.getPrimitiveWrapper(clazz);
             boolean defaultConst = false;
             boolean stringConst = false;
             Constructor[] constructors = clazz.getConstructors();
@@ -226,8 +227,8 @@ public class PropertyInjector {
                 return constructor.newInstance(new Object[] { s });
             }
             /*
-             * if no string const. but a default const -- use the string as a
-             * classname
+             * if no string const. but a default const. -- use the string as a
+             * class name
              */
             if (defaultConst)
                 return Class.forName(s).newInstance();
@@ -255,28 +256,6 @@ public class PropertyInjector {
         this.requieredProperties.clear();
     }
 
-    /*
-     * return the wrappertype for the given primitive type. Wrappers can be
-     * easily instanciated via reflection and will be boxed by the vm
-     */
-    private static final Class getPrimitiveWrapper(Class primitive) {
-
-        if (primitive == Integer.TYPE)
-            return Integer.class;
-        if (primitive == Float.TYPE)
-            return Float.class;
-        if (primitive == Long.TYPE)
-            return Long.class;
-        if (primitive == Short.TYPE)
-            return Short.class;
-        if (primitive == Byte.TYPE)
-            return Byte.class;
-        if (primitive == Double.TYPE)
-            return Double.class;
-        if (primitive == Boolean.TYPE)
-            return Boolean.class;
-
-        return primitive;
-    }
+    
 
 }

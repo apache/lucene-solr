@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
 import org.apache.lucene.gdata.server.GDataRequestException;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.GDataRequest.GDataRequestType;
 
@@ -40,7 +41,7 @@ import com.google.gdata.data.BaseEntry;
  * </p>
  * <ol>
  * <li>if the entry was added - HTTP status code <i>200 OK</i></li>
- * <li>if an error occures - HTTP status code <i>500 INTERNAL SERVER ERROR</i></li>
+ * <li>if an error occurs - HTTP status code <i>500 INTERNAL SERVER ERROR</i></li>
  * <li>if the resource could not found - HTTP status code <i>404 NOT FOUND</i></li>
  * </ol>
  * <p>The added entry will be send back to the client if the insert request was successful.</p>
@@ -64,7 +65,7 @@ public class DefaultInsertHandler extends AbstractGdataRequestHandler {
             return;
         }
         if(!authenticateAccount(this.feedRequest,AccountRole.ENTRYAMINISTRATOR)){
-            setError(HttpServletResponse.SC_UNAUTHORIZED);
+            setError(GDataResponse.UNAUTHORIZED);
             sendError();
             return;
         }
@@ -72,12 +73,13 @@ public class DefaultInsertHandler extends AbstractGdataRequestHandler {
         try{        
         BaseEntry entry = this.service.createEntry(this.feedRequest,this.feedResponse);
         setFeedResponseFormat();
-        setFeedResponseStatus(HttpServletResponse.SC_CREATED);        
+        setFeedResponseStatus(GDataResponse.CREATED);        
         this.feedResponse.sendResponse(entry, this.feedRequest.getConfigurator().getExtensionProfile());
         
         }catch (ServiceException e) {
            LOG.error("Could not process GetFeed request - "+e.getMessage(),e);
-           this.feedResponse.sendError();
+           setError(e.getErrorCode());
+           sendError();
         }finally{
         closeService();
         }

@@ -32,6 +32,7 @@ package org.apache.lucene.gdata.server.registry;
 public interface ServerComponent {
     /**
      * will be call when the component is registered.
+     * if this fails the server must not startup.
      */
     public abstract void initialize();
 

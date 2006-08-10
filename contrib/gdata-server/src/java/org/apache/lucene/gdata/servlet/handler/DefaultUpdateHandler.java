@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
 import org.apache.lucene.gdata.server.GDataRequestException;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.GDataRequest.GDataRequestType;
 
@@ -39,7 +40,7 @@ import com.google.gdata.data.BaseEntry;
  * </p>
  * <ol>
  * <li>if the entry was successfully updated - HTTP status code <i>200 OK</i></li>
- * <li>if an error occures - HTTP status code <i>500 INTERNAL SERVER ERROR</i></li>
+ * <li>if an error occurs - HTTP status code <i>500 INTERNAL SERVER ERROR</i></li>
  * <li>if the resource could not found - HTTP status code <i>404 NOT FOUND</i></li>
  * </ol>
  * 
@@ -61,7 +62,7 @@ public class DefaultUpdateHandler extends AbstractGdataRequestHandler {
 		try {
 			initializeRequestHandler(request, response,GDataRequestType.UPDATE);
 		} catch (GDataRequestException e) {
-            setError(HttpServletResponse.SC_UNAUTHORIZED);
+            setError(GDataResponse.UNAUTHORIZED);
 			sendError();
 			return;
 		}
@@ -74,13 +75,13 @@ public class DefaultUpdateHandler extends AbstractGdataRequestHandler {
 			BaseEntry entry = this.service.updateEntry(this.feedRequest,
 					this.feedResponse);
 			setFeedResponseFormat();
-			setFeedResponseStatus(HttpServletResponse.SC_OK);
 			this.feedResponse.sendResponse(entry, this.feedRequest.getConfigurator().getExtensionProfile());
 		
 		}
 		catch (ServiceException e) {
 			LOG.error("Could not process UpdateFeed request - "
 					+ e.getMessage(), e);
+            setError(e.getErrorCode());
 			sendError();
 		}finally{
         closeService();

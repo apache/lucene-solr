@@ -19,20 +19,25 @@ import java.lang.reflect.Constructor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.lucene.gdata.search.config.IndexSchema;
 import org.apache.lucene.gdata.utils.Pool;
 import org.apache.lucene.gdata.utils.PoolObjectFactory;
 import org.apache.lucene.gdata.utils.SimpleObjectPool;
 
+import com.google.gdata.data.BaseEntry;
+import com.google.gdata.data.BaseFeed;
+import com.google.gdata.data.Entry;
 import com.google.gdata.data.ExtensionProfile;
+import com.google.gdata.data.Feed;
 
 /**
- * Standart implementation of
+ * Standard implementation of
  * {@link org.apache.lucene.gdata.server.registry.ProvidedService} to be used
  * inside the
  * {@link org.apache.lucene.gdata.server.registry.GDataServerRegistry}
  * <p>
  * ExtensionProfiles are used to generate and parse xml by the gdata api. For
- * that case all methodes are synchronized. This will slow down the application
+ * that case all methods are synchronized. This will slow down the application
  * when performing lots of xml generation concurrently. For that case the
  * extensionProfile for a specific service will be pooled and reused.
  * </p>
@@ -47,13 +52,13 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
             .getLog(ProvidedServiceConfig.class);
 
     private static final int DEFAULT_POOL_SIZE = 5;
-
+    private IndexSchema indexSchema;
     /*
-     * To ensure a extensionprofile instance will not be shared within multiple
+     * To ensure a extension profile instance will not be shared within multiple
      * threads each thread requesting a config will have one instance for the
      * entire request.
      */
-    private final ThreadLocal<ExtensionProfile> extProfThreadLocal = new ThreadLocal<ExtensionProfile>();
+    protected final ThreadLocal<ExtensionProfile> extProfThreadLocal = new ThreadLocal<ExtensionProfile>();
 
     /*
      * ExtensionProfiles are used to generate and parse xml by the gdata api.
@@ -66,9 +71,9 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
 
     private String serviceName;
 
-    private Class entryType;
+    private Class<? extends BaseEntry> entryType;
 
-    private Class feedType;
+    private Class<? extends BaseFeed> feedType;
 
     private ExtensionProfile extensionProfile;
 
@@ -92,7 +97,7 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
     }
 
     /**
-     * Default constructor to instanciate via reflection
+     * Default constructor to instantiate via reflection
      */
     public ProvidedServiceConfig() {
         try {
@@ -126,6 +131,8 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
         if (ext != null) {
             return ext;
         }
+        if(this.extensionProfile == null)
+            return null;
         if (this.profilPool == null)
             createProfilePool();
         ext = this.profilPool.aquire();
@@ -135,7 +142,7 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
 
     /**
      * @param extensionProfil -
-     *            the extensionprofile for this feed configuration
+     *            the extension profile for this feed configuration
      */
     @SuppressWarnings("unchecked")
     public void setExtensionProfile(ExtensionProfile extensionProfil) {
@@ -150,11 +157,11 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
 
     private void createProfilePool() {
         if (LOG.isInfoEnabled())
-            LOG.info("Create ExtensionProfile pool with poolsize:"
+            LOG.info("Create ExtensionProfile pool with pool size:"
                     + this.poolSize + " for service " + this.serviceName);
         this.profilPool = new SimpleObjectPool<ExtensionProfile>(this.poolSize,
                 new ExtensionProfileFactory<ExtensionProfile>(
-                        this.extensionProfile.getClass()));
+                        this.extensionProfile.getClass(),this.entryType,this.feedType));
     }
 
     /**
@@ -225,14 +232,19 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
         private final Constructor<? extends ExtensionProfile> constructor;
 
         private static final Object[] constArray = new Object[0];
+        
+        private BaseEntry entry;
+        private BaseFeed feed;
 
-        ExtensionProfileFactory(Class<? extends ExtensionProfile> clazz) {
+        ExtensionProfileFactory(Class<? extends ExtensionProfile> clazz, Class<? extends BaseEntry> entryClass, Class<? extends BaseFeed> feedClass) {
             this.clazz = clazz;
             try {
                 this.constructor = clazz.getConstructor(new Class[0]);
+                this.entry = entryClass.newInstance();
+                this.feed = feedClass.newInstance();
             } catch (Exception e) {
                 throw new IllegalArgumentException(
-                        "The given class has no defaul constructor -- can not use as a ExtensionProfile -- "
+                        "The given class has no default constructor -- can not use as a ExtensionProfile -- "
                                 + this.clazz.getName(), e);
             }
         }
@@ -244,10 +256,13 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
         public Type getInstance() {
 
             try {
-                return (Type) this.constructor.newInstance(constArray);
+                Type retValue = (Type) this.constructor.newInstance(constArray);
+                this.entry.declareExtensions(retValue);
+                this.feed.declareExtensions(retValue);
+                return retValue; 
             } catch (Exception e) {
                 throw new RuntimeException(
-                        "Can not instanciate new ExtensionProfile -- ", e);
+                        "Can not instantiate new ExtensionProfile -- ", e);
 
             }
         }
@@ -271,7 +286,7 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
             createProfilePool();
         /*
          * don't set a extension profile for each thread. The current thread
-         * might use another service and does not need the extensionprofile of
+         * might use another service and does not need the extension profile of
          * this service
          */
     }
@@ -293,6 +308,22 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
         }
         this.extProfThreadLocal.set(null);
         this.profilPool.release(ext);
+    }
+
+    /**
+     * @return Returns the indexSchema.
+     */
+    public IndexSchema getIndexSchema() {
+        return this.indexSchema;
+    }
+
+    /**
+     * @param indexSchema The indexSchema to set.
+     */
+    public void setIndexSchema(IndexSchema indexSchema) {
+        this.indexSchema = indexSchema;
+        if(this.indexSchema != null)
+            this.indexSchema.setName(this.serviceName);
     }
 
 }

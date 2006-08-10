@@ -27,6 +27,7 @@ import junit.framework.TestCase;
 
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
@@ -184,7 +185,7 @@ public class TestAbstractFeedHandler extends TestCase {
                 .getParameter(AbstractFeedHandler.PARAMETER_ACCOUNT), this.accountName);
         
         a.setName("helloworld");
-        this.adminServiceMockControl.expectAndDefaultThrow(this.adminService.getAccount(this.accountName),new ServiceException() );
+        this.adminServiceMockControl.expectAndDefaultThrow(this.adminService.getAccount(this.accountName),new ServiceException(GDataResponse.BAD_REQUEST) );
         this.requestMockControl.replay();
         this.adminServiceMockControl.replay();
          handler = new InsertFeedHandler();

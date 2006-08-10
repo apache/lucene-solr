@@ -26,11 +26,11 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.server.GDataEntityBuilder;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
 import org.apache.lucene.gdata.storage.StorageException;
+import org.apache.lucene.gdata.utils.ModifiedEntryFilter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -48,7 +48,7 @@ import com.google.gdata.data.DateTime;
 import com.google.gdata.util.ParseException;
 
 /**
- * StorageQuery wrapps a Lucene {@link org.apache.lucene.search.IndexSearcher}
+ * StorageQuery wraps a Lucene {@link org.apache.lucene.search.IndexSearcher}
  * and a {@link org.apache.lucene.gdata.storage.lucenestorage.StorageBuffer} to
  * perform all request on the lucene storage. The wrapped components are thread -
  * safe.
@@ -109,7 +109,7 @@ public class StorageQuery {
         }
 
         return this.searcher.search(query, new ModifiedEntryFilter(this.buffer
-                .getExculdList()));
+                .getExculdList(),StorageEntryWrapper.FIELD_ENTRY_ID));
     }
 
     /*
@@ -120,7 +120,7 @@ public class StorageQuery {
         TermQuery query = new TermQuery(new Term(
                 StorageEntryWrapper.FIELD_FEED_REFERENCE, feedId));
         return this.searcher.search(query, new ModifiedEntryFilter(this.buffer
-                .getExculdList()), sort);
+                .getExculdList(),StorageEntryWrapper.FIELD_ENTRY_ID), sort);
 
     }
 
@@ -135,21 +135,21 @@ public class StorageQuery {
          * deleted entries. These entries must be found!!
          */
         return this.searcher.search(termQuery, new ModifiedEntryFilter(
-                this.buffer.getExculdList()));
+                this.buffer.getExculdList(),StorageEntryWrapper.FIELD_ENTRY_ID));
 
     }
 
     /**
      * This method fetches the latest feed entries from the storage. Feed
-     * ususaly requested via a search query or as a simple query to the REST
+     * usually requested via a search query or as a simple query to the REST
      * interface.
      * <p>
-     * The REST interface requestes all the entries from a Storage. The Storage
+     * The REST interface requests all the entries from a Storage. The Storage
      * retrieves the entries corresponding to the parameters specified. This
      * method first requests the latest entries or updated entries from the
-     * {@link StorageBuffer}. If the buffer already contains enought entries
-     * for the the specified result count the entires will be returned. If not,
-     * the underlaying lucene index will be searcher for all documents of the
+     * {@link StorageBuffer}. If the buffer already contains enough entries
+     * for the the specified result count the entries will be returned. If not,
+     * the underlying lucene index will be searcher for all documents of the
      * specified feed sorted by storing timestamp desc.
      * </p>
      * <p>
@@ -164,10 +164,10 @@ public class StorageQuery {
      * @param resultCount -
      *            how many entries are requested
      * @param startIndex -
-     *            the offset of the entriy to start from.
+     *            the offset of the entry to start from.
      * @param config -
-     *            the FeedInstanceConfiguration contaning extension profile used
-     *            to create the entriy instances
+     *            the FeedInstanceConfiguration containing extension profile used
+     *            to create the entry instances
      * @return - an ordered list of {@link BaseEntry} objects, or an empty list
      *         if no entries could be found
      * @throws IOException -
@@ -214,7 +214,7 @@ public class StorageQuery {
             }
         } else {
             /*
-             * if the buffersize is less than the startindex the buffersize must
+             * if the buffer size is less than the start index the buffer size must
              * be considered. Sublists would not be a repeatable read part of
              * the whole list
              */
@@ -251,7 +251,7 @@ public class StorageQuery {
     /**
      * This method retrieves a single entry from the storage. If the
      * {@link StorageBuffer} does not contain the requested entry the
-     * underlaying storage index will be searched.
+     * underlying storage index will be searched.
      * <p>
      * The Entry will be searched in a feed context specified by the given feed
      * ID
@@ -260,10 +260,10 @@ public class StorageQuery {
      * @param entryId -
      *            the entry to fetch
      * @param feedId -
-     *            the feedid eg. feed context
+     *            the feed id e.g. feed context
      * @param config -
-     *            the FeedInstanceConfiguration contaning extension profile used
-     *            to create the entriy instances
+     *            the FeedInstanceConfiguration containing extension profile used
+     *            to create the entry instances
      * @return - the requested {@link BaseEntry} or <code>null</code> if the
      *         entry can not be found
      * @throws IOException -
@@ -297,9 +297,9 @@ public class StorageQuery {
 
     /**
      * Fetches the requested entries from the storage. The given list contains
-     * entry ids to be looked up in the storage. First the {@link StorageBuffer}
-     * will be queried for the entry ids. If not all of the entries remain in
-     * the buffer the underlaying lucene index will be searched. The entries are
+     * entry id's to be looked up in the storage. First the {@link StorageBuffer}
+     * will be queried for the entry id's. If not all of the entries remain in
+     * the buffer the underlying lucene index will be searched. The entries are
      * not guaranteed to be in the same order as they are in the given id list.
      * Entry ID's not found in the index or the buffer will be omitted.
      * <p>
@@ -308,12 +308,12 @@ public class StorageQuery {
      * </p>
      * 
      * @param entryIds -
-     *            the entriy ids to fetch.
+     *            the entry id's to fetch.
      * @param feedId -
-     *            the feed id eg. feed context.
+     *            the feed id e.g. feed context.
      * @param config -
-     *            the FeedInstanceConfiguration contaning extension profile used
-     *            to create the entriy instances
+     *            the FeedInstanceConfiguration containing extension profile used
+     *            to create the entry instances
      * 
      * @return - the list of entries corresponding to the given entry id list.
      * @throws IOException -
@@ -395,7 +395,7 @@ public class StorageQuery {
      * not be reused after invoking this method.
      * 
      * @throws IOException -
-     *             if the resouces can not be closed
+     *             if the resources can not be closed
      */
     public void close() throws IOException {
         this.searcher.close();
@@ -419,7 +419,7 @@ public class StorageQuery {
     }
 
     /**
-     * Looks up the feedtype for the given feed ID
+     * Looks up the feed type for the given feed ID
      * 
      * @param feedID -
      *            the feed ID

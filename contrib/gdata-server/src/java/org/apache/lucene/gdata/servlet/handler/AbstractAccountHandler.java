@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AccountBuilder;
@@ -72,10 +73,10 @@ public abstract class AbstractAccountHandler extends RequestAuthenticator
 
                 GDataAccount account = getAccountFromRequest(request);
                 if (!account.requiredValuesSet()) {
-                    setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            "requiered server component not available");
+                    setError(GDataResponse.SERVER_ERROR,
+                            "Required server component not available");
                     throw new AccountHandlerException(
-                            "requiered values are not set -- account can not be saved -- "
+                            "Required values are not set -- account can not be saved -- "
                                     + account);
                 }
                 this.service = factory.getAdminService();
@@ -83,13 +84,14 @@ public abstract class AbstractAccountHandler extends RequestAuthenticator
             } catch (ServiceException e) {
                 LOG.error("Can't process account action -- " + e.getMessage(),
                         e);
-                setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "");
-            } catch (Exception e) {
+                setError(e.getErrorCode(), "");
+            } 
+            catch (AccountHandlerException e) {
                 LOG.error("Can't process account action -- " + e.getMessage(),
                         e);
             }
         }else{
-            setError(HttpServletResponse.SC_UNAUTHORIZED,"Authorization failed");
+            setError(GDataResponse.UNAUTHORIZED,"Authorization failed");
         }
         sendResponse(response);
       }finally{

@@ -1,3 +1,18 @@
+/**
+ * Copyright 2004 The Apache Software Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.lucene.gdata.storage.lucenestorage;
 
 import java.io.File;
@@ -19,7 +34,7 @@ import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
 import org.apache.lucene.gdata.storage.lucenestorage.recover.RecoverController;
 import org.apache.lucene.gdata.storage.lucenestorage.recover.RecoverException;
-import org.apache.lucene.gdata.storage.lucenestorage.util.ReferenceCounter;
+import org.apache.lucene.gdata.utils.ReferenceCounter;
 import org.apache.lucene.index.IndexModifier;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
@@ -212,7 +227,7 @@ public class StorageCoreController implements StorageController {
      * <p>
      * if the reference counter has no remaining references the resource e.g.
      * the <tt>StorageQuery</tt> will be closed. This ensures that a
-     * <tt>StorageQuery</tt> instance will be arround as long as needed and
+     * <tt>StorageQuery</tt> instance will be around as long as needed and
      * the resources will be released. The reference counter should be
      * decremented by clients after finished using the query instance.
      * </p>
@@ -232,7 +247,7 @@ public class StorageCoreController implements StorageController {
                 this.storageQuery = getNewStorageQueryHolder(new StorageQuery(
                         this.currentBuffer, this.searcher));
                 if (LOG.isInfoEnabled())
-                    LOG.info("Relese new StorageQuery");
+                    LOG.info("Release new StorageQuery");
             }
             this.storageQuery.increamentReference();
             return this.storageQuery;
@@ -271,7 +286,7 @@ public class StorageCoreController implements StorageController {
      * changes available for searching.
      * 
      * @throws IOException -
-     *             if an IO exception occures
+     *             if an IO exception occurs
      */
     protected void registerNewStorageQuery() throws IOException {
     	if(this.isClosed.get())
@@ -324,7 +339,7 @@ public class StorageCoreController implements StorageController {
      * 
      * @return - a new modifier
      * @throws IOException -
-     *             if an IO exception occures
+     *             if an IO exception occurs
      */
     protected IndexModifier createIndexModifier() throws IOException {
     	if(this.isClosed.get())
@@ -380,7 +395,7 @@ public class StorageCoreController implements StorageController {
      * Forces the StorageModifier to write all buffered changes.
      * 
      * @throws IOException -
-     *             if an IO exception occures
+     *             if an IO exception occurs
      * 
      */
     public void forceWrite() throws IOException {
@@ -492,7 +507,7 @@ public class StorageCoreController implements StorageController {
 
     /**
      * An integer value after how many changes to the StorageModifier the
-     * buffered changes will be persisted / wirtten to the index
+     * buffered changes will be persisted / written to the index
      * 
      * @return - the persist factor
      */

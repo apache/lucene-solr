@@ -27,7 +27,7 @@ import org.apache.commons.logging.LogFactory;
  * {@link org.apache.lucene.gdata.server.registry.GDataServerRegistry} when the
  * context is loaded. The registry will be loaded before the
  * {@link org.apache.lucene.gdata.servlet.RequestControllerServlet} is loaded.
- * The Registry will be loaded and set up befor the REST interface is available.
+ * The Registry will be loaded and set up before the REST interface is available.
  * <p>
  * This ContextListener has to be configured in the <code>web.xml</code>
  * deployment descriptor.
@@ -58,9 +58,13 @@ public class RegistryContextListener implements ServletContextListener {
         try {
             RegistryBuilder.buildRegistry();
             this.serverRegistry = GDataServerRegistry.getRegistry();
-        } catch (Exception e) {
-            this.serverRegistry.destroy();
-            LOG.error("can not register requiered components", e);
+            /*
+             * catch all exceptions and destroy the registry to release all resources.
+             * some components start lots of threads, the will remain running if the registry is not destroyed
+             */
+        } catch (Throwable e) {
+            GDataServerRegistry.getRegistry().destroy();
+            LOG.error("can not register required components", e);
             throw new RuntimeException("Can not register required components",
                     e);
         }
@@ -73,7 +77,12 @@ public class RegistryContextListener implements ServletContextListener {
      */
     public void contextDestroyed(ServletContextEvent arg0) {
         LOG.info("Destroying context");
-        this.serverRegistry.destroy();
+        /*
+         * this might be null if startup fails
+         * --> prevent null pointer exception
+         */
+        if(this.serverRegistry != null)
+            this.serverRegistry.destroy();
 
     }
 

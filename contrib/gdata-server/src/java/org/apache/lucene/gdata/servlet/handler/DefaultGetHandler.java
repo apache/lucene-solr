@@ -37,10 +37,10 @@ import com.google.gdata.data.BaseFeed;
 /**
  * Default Handler implementation. This handler processes the incoming
  * {@link org.apache.lucene.gdata.server.GDataRequest} and retrieves the
- * requested feed from the underlaying storage.
+ * requested feed from the underlying storage.
  * <p>
- * This hander also processes search queries and retrives the search hits from
- * the underlaying search component. The user query will be accessed via the
+ * This hander also processes search queries and retrieves the search hits from
+ * the underlying search component. The user query will be accessed via the
  * {@link org.apache.lucene.gdata.server.GDataRequest} instance passed to the
  * {@link Service} class.
  * </p>
@@ -101,6 +101,7 @@ public class DefaultGetHandler extends AbstractGdataRequestHandler {
         } catch (ServiceException e) {
             LOG.error("Could not process GetFeed request - " + e.getMessage(),
                     e);
+            setError(e.getErrorCode());
             sendError();
         }finally{
         closeService();
@@ -110,9 +111,9 @@ public class DefaultGetHandler extends AbstractGdataRequestHandler {
     /**
      * 
      * returns true if the resource has been modified since the specified
-     * reqeust header value
+     * request header value
      */
-    private boolean checkIsModified(String lastModified)
+    protected boolean checkIsModified(String lastModified)
             throws ServiceException {
         if (lastModified == null)
             return true;
@@ -126,7 +127,7 @@ public class DefaultGetHandler extends AbstractGdataRequestHandler {
                 entityDate = this.service.getEntryLastModified(this.feedRequest
                         .getEntryId(),this.feedRequest.getFeedId());
             if(LOG.isInfoEnabled())
-                LOG.info("comparing date clientDate: "+clientDate+"; lastmodified: "+entityDate);
+                LOG.info("comparing date clientDate: "+clientDate+"; last modified: "+entityDate);
             return (entityDate.getTime()-clientDate.getTime() > 1000);
         } catch (java.text.ParseException e) {
             LOG.info("Couldn't parse Last-Modified header -- "+lastModified,e);

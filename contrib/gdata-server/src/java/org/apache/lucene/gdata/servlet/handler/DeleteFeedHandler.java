@@ -25,6 +25,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
+import org.apache.lucene.gdata.server.GDataResponse;
+import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
 import org.apache.lucene.gdata.server.registry.ComponentType;
@@ -52,16 +54,16 @@ public class DeleteFeedHandler extends AbstractFeedHandler{
                 GDataServerRegistry registry = GDataServerRegistry.getRegistry();
                 ServiceFactory serviceFactory = registry.lookup(ServiceFactory.class,ComponentType.SERVICEFACTORY);
                 if(serviceFactory == null){
-                    setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,"required component is not available");
+                    setError(GDataResponse.SERVER_ERROR,"required component is not available");
                     throw new FeedHandlerException("Can't save feed - ServiceFactory is null");
                 }
                 service = serviceFactory.getAdminService();
                 service.deleteFeed(feed);
             } catch (FeedHandlerException e) {
                 LOG.error("Can not delete feed -- "+e.getMessage(),e);
-            }catch (Exception e) {
+            }catch (ServiceException e) {
                 LOG.error("Can not delete feed -- "+e.getMessage(),e);
-                setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,"can not create feed");
+                setError(e.getErrorCode(),"can not create feed");
             }finally{
                 if(service != null)
                     service.close();
@@ -76,7 +78,7 @@ public class DeleteFeedHandler extends AbstractFeedHandler{
     private ServerBaseFeed createDeleteFeed(final HttpServletRequest request) throws FeedHandlerException {
         String feedId = request.getParameter("feedid");
         if(feedId == null){
-            setError(HttpServletResponse.SC_BAD_REQUEST,"No feed id specified");
+            setError(GDataResponse.BAD_REQUEST,"No feed id specified");
             throw new FeedHandlerException("no feed Id specified");
         }
         ServerBaseFeed retVal = new ServerBaseFeed();

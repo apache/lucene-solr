@@ -16,17 +16,21 @@
 package org.apache.lucene.gdata.server; 
  
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.gdata.search.config.IndexSchema;
+import org.apache.lucene.gdata.search.config.IndexSchemaField;
+import org.apache.lucene.gdata.search.config.IndexSchemaField.ContentType;
 import org.apache.lucene.gdata.server.GDataRequest.GDataRequestType;
 import org.apache.lucene.gdata.server.GDataRequest.OutputFormat;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
-import org.apache.lucene.gdata.server.registry.RegistryException;
 import org.apache.lucene.gdata.utils.ProvidedServiceStub;
 import org.apache.lucene.gdata.utils.StorageStub;
 import org.easymock.MockControl;
@@ -43,6 +47,7 @@ public class TestGDataRequest extends TestCase {
  
     private GDataRequest feedRequest; 
     
+    private Map parametermap = new HashMap();
     
     @Override 
     protected void setUp() throws Exception {
@@ -52,8 +57,14 @@ public class TestGDataRequest extends TestCase {
 
         }
         ProvidedService configurator = new ProvidedServiceStub();
-        GDataServerRegistry.getRegistry().registerService(configurator); 
+        GDataServerRegistry.getRegistry().registerService(configurator);
+        IndexSchema schema = new IndexSchema();
+        //must be set
+        schema.setDefaultSearchField("field");
+        schema.setIndexLocation("/tmp/");
+        schema.setName(ProvidedServiceStub.SERVICE_NAME);
         
+        ((ProvidedServiceStub)configurator).setIndexSchema(schema);
             
         this.control = MockControl.createControl(HttpServletRequest.class); 
         this.request = (HttpServletRequest) this.control.getMock(); 
@@ -64,6 +75,7 @@ public class TestGDataRequest extends TestCase {
     protected void tearDown() throws Exception { 
         super.tearDown(); 
         this.control.reset(); 
+        GDataServerRegistry.getRegistry().destroy();
     } 
  
     public void testConstructor() { 
@@ -88,9 +100,9 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testGetFeedId() throws GDataRequestException { 
- 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getPathInfo(), 
-                "/feed/1/1"); 
+                "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/1/1"); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
         this.control.replay(); 
@@ -118,8 +130,9 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testGetFeedIdWithoutEntry() throws GDataRequestException { 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control 
-                .expectAndDefaultReturn(this.request.getPathInfo(), "/feed"); 
+                .expectAndDefaultReturn(this.request.getPathInfo(), "/"+ProvidedServiceStub.SERVICE_NAME+"/feed"); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
         this.control.replay(); 
@@ -128,9 +141,9 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testGetEntyId() throws GDataRequestException { 
- 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getPathInfo(), 
-                "/feed/1/15"); 
+                "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/1/15"); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
         this.control.replay(); 
@@ -143,10 +156,11 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testSetResponseFormatAtom() throws GDataRequestException { 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 "atom"); 
         this.control 
-                .expectAndDefaultReturn(this.request.getPathInfo(), "/feed"); 
+                .expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+ "/feed"); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
         assertEquals("ResponseFromat Atom", this.feedRequest 
@@ -155,10 +169,11 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testSetResponseFormatRSS() throws GDataRequestException { 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 "rss"); 
         this.control 
-                .expectAndDefaultReturn(this.request.getPathInfo(), "/feed"); 
+                .expectAndDefaultReturn(this.request.getPathInfo(), "/"+ProvidedServiceStub.SERVICE_NAME+"/feed"); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
         assertEquals("ResponseFromat RSS", this.feedRequest 
@@ -167,10 +182,11 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testSetResponseFormatKeepAtom() throws GDataRequestException { 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 "fooBar"); 
         this.control 
-                .expectAndDefaultReturn(this.request.getPathInfo(), "/feed"); 
+                .expectAndDefaultReturn(this.request.getPathInfo(), "/"+ProvidedServiceStub.SERVICE_NAME+"/feed"); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
         assertEquals("ResponseFromat Atom", this.feedRequest 
@@ -179,11 +195,12 @@ public class TestGDataRequest extends TestCase {
     } 
  
     public void testSetResponseFormatNull() throws GDataRequestException { 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
  
         this.control 
-                .expectAndDefaultReturn(this.request.getPathInfo(), "/feed"); 
+                .expectAndDefaultReturn(this.request.getPathInfo(), "/"+ProvidedServiceStub.SERVICE_NAME+"/feed"); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
         assertEquals("ResponseFromat Atom", this.feedRequest 
@@ -223,11 +240,12 @@ public class TestGDataRequest extends TestCase {
      
     public void testGetSelfId() throws GDataRequestException{ 
         String host = "www.apache.org"; 
-        String feedAndEntryID = "/feed/entryid"; 
+        String feedAndEntryID = "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryid"; 
         String queryString = "max-results=25"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed/entryId/15/"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
         this.control.expectAndReturn(this.request.getParameter("max-results"),"25",2); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
@@ -235,15 +253,16 @@ public class TestGDataRequest extends TestCase {
                 queryString); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
-        String selfID = "http://"+host+"/host/feed/entryId/15?"+queryString; 
+        String selfID = "http://"+host+"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15?"+queryString; 
         assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
         this.control.reset(); 
          
          
-        queryString = "alt=rss&max-results=25"; 
+        queryString = "alt=rss&max-results=25";
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed/entryId/15"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
         this.control.expectAndReturn(this.request.getParameter("max-results"),"25",2); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
@@ -251,15 +270,16 @@ public class TestGDataRequest extends TestCase {
                 queryString); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
-        selfID = "http://"+host+"/host/feed/entryId/15?"+queryString; 
+        selfID = "http://"+host+"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15?"+queryString; 
      
         assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
         this.control.reset(); 
          
         queryString = ""; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed/entryId/15"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
         this.control.expectAndDefaultReturn(this.request.getParameter("max-results"),null); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
@@ -267,7 +287,7 @@ public class TestGDataRequest extends TestCase {
                 null); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
-        selfID = "http://"+host+"/host/feed/entryId/15"+"?max-results=25"; 
+        selfID = "http://"+host+"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"+"?max-results=25"; 
      
         assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
         this.control.reset(); 
@@ -311,10 +331,10 @@ public class TestGDataRequest extends TestCase {
     public void testIsFeedRequest() throws GDataRequestException{ 
         String host = "www.apache.org"; 
         String feedAndEntryID = "/feed"; 
-         
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed"); 
          
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
@@ -329,10 +349,10 @@ public class TestGDataRequest extends TestCase {
         this.control.reset(); 
          
         host = "www.apache.org"; 
-        feedAndEntryID = "/feed/1"; 
-         
+        feedAndEntryID = "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/1"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host/feed/1"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/1"); 
         this.control.expectAndDefaultReturn(this.request.getPathInfo(),feedAndEntryID); 
          
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
@@ -346,6 +366,46 @@ public class TestGDataRequest extends TestCase {
         assertFalse(this.feedRequest.isFeedRequested()); 
         assertTrue(this.feedRequest.isEntryRequested()); 
         this.control.reset(); 
+        
+        host = "www.apache.org"; 
+        feedAndEntryID = "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/1"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+"NOTREGISTERED"+"/feed/1"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+"NOTREGISTERED"+"/feed/1"); 
+         
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        try{
+        this.feedRequest.initializeRequest();
+        fail("service not registered");
+        }catch (GDataRequestException e) {
+            //
+        }
+        this.control.reset(); 
+        
+        host = "www.apache.org"; 
+        feedAndEntryID = "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/1"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/"); 
+         
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        try{
+        this.feedRequest.initializeRequest();
+        fail("service not registered");
+        }catch (GDataRequestException e) {
+//
+        }
+        this.control.reset(); 
          
          
     } 
@@ -356,21 +416,45 @@ public class TestGDataRequest extends TestCase {
         this.control.verify();
         this.control.reset();
         
+        this.control.expectAndDefaultReturn(this.request.getHeader("Authentication"),null);
+        this.control.replay();
+        assertNull(this.feedRequest.getAuthToken());
+        this.control.verify();
+        this.control.reset();
+        
     } 
+    
+    public void testGetStartIndex(){
+        this.control.expectAndDefaultReturn(this.request.getParameter("start-index"),"5");
+        this.control.replay();
+        assertEquals(5,this.feedRequest.getStartIndex());
+        this.control.verify();
+        this.control.reset();
+        this.control.expectAndDefaultReturn(this.request.getParameter("start-index"),"-5");
+        this.control.replay();
+        assertEquals(1,this.feedRequest.getStartIndex());
+        this.control.verify();
+        this.control.reset();
+        this.control.expectAndDefaultReturn(this.request.getParameter("start-index"),"unparsable");
+        this.control.replay();
+        assertEquals(1,this.feedRequest.getStartIndex());
+        this.control.verify();
+        this.control.reset();
+    }
      
     public void testGetNextId() throws GDataRequestException{ 
         String host = "www.apache.org"; 
-        String feedAndEntryID = "/feed/entryid"; 
-        String queryString = "?max-results=25"; 
-        String startIndex = "&start-index=26"; 
+        String feedAndEntryID = "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryid"; 
+        String queryString = "max-results=25"; 
+        String startIndex = "start-index=26"; 
         Enumeration enu = new StringTokenizer("max-results",",");
         
-        
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getParameterNames(),enu);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/"); 
-        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",4); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",3); 
         this.control.expectAndReturn(this.request.getParameter("start-index"),null); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
@@ -379,24 +463,24 @@ public class TestGDataRequest extends TestCase {
         this.control.replay(); 
 
         this.feedRequest.initializeRequest(); 
-        String nextID = "http://"+host+"/feed"+queryString+startIndex; 
+        String nextID = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed?"+startIndex+"&"+queryString; 
      
         assertEquals("Next ID",nextID,this.feedRequest.getNextId());
         this.control.verify();
         this.control.reset(); 
          
         enu = new StringTokenizer("alt,max-results,start-index",",");
-        queryString = "?alt=rss&max-results=25"; 
-         
+        queryString = "alt=rss&max-results=25"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
         this.control.expectAndReturn(this.request.getParameter("max-results"),"25",4); 
         this.control.expectAndReturn(this.request.getParameter("start-index"),"26",4); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 "rss"); 
         this.control.expectAndDefaultReturn(this.request.getQueryString(), 
-                queryString+startIndex); 
+                queryString+"&"+startIndex); 
         
         this.control.expectAndDefaultReturn(this.request.getParameterNames(),enu);
         
@@ -404,15 +488,16 @@ public class TestGDataRequest extends TestCase {
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
         startIndex = "&start-index=51"; 
-        nextID = "http://"+host+"/feed"+queryString+startIndex; 
+        nextID = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed?"+queryString+startIndex; 
      
         assertEquals("Next ID 51",nextID,this.feedRequest.getNextId()); 
         this.control.reset(); 
          
         queryString = ""; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
         this.control.expectAndDefaultReturn(this.request.getParameter("max-results"),null); 
         this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
                 null); 
@@ -420,29 +505,177 @@ public class TestGDataRequest extends TestCase {
                 null); 
         this.control.replay(); 
         this.feedRequest.initializeRequest(); 
-        String selfID = "http://"+host+"/feed"+"?max-results=25"; 
+        String nextId = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed"+"?max-results=25&start-index=26"; 
      
-        assertEquals("Self ID",selfID,this.feedRequest.getSelfId()); 
+        assertEquals("next ID",nextId,this.feedRequest.getNextId()); 
+        this.control.reset();
+
+        
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
+        this.control.expectAndReturn(this.request.getParameter("max-results"),null,3); 
+        this.control.expectAndReturn(this.request.getParameter("start-index"),null,3);
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+        nextId = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed"+"?max-results=25&start-index=26"; 
+        assertEquals("nextID",nextId,this.feedRequest.getNextId());
+    } 
+    
+    public void testGetpreviousId() throws GDataRequestException{ 
+        String host = "www.apache.org"; 
+        String feedAndEntryID = "/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryid"; 
+        String queryString = "max-results=25"; 
+         
+        Enumeration enu = new StringTokenizer("max-results",",");
+        
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getParameterNames(),enu);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndReturn(this.request.getParameter("start-index"),null); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                queryString); 
+        this.control.replay(); 
+
+        this.feedRequest.initializeRequest(); 
+         
+     
+        assertNull(this.feedRequest.getPreviousId());
+        this.control.verify();
         this.control.reset(); 
+        String startIndex = "start-index="; 
+        enu = new StringTokenizer("alt,max-results,start-index",",");
+        queryString = "alt=rss&max-results=25&start-index=26"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndReturn(this.request.getParameter("max-results"),"25",4); 
+        this.control.expectAndReturn(this.request.getParameter("start-index"),"26",4); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                "rss"); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                queryString); 
+        
+        this.control.expectAndDefaultReturn(this.request.getParameterNames(),enu);
+        
+        
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+        
+        String prevId = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed"+"?alt=rss&max-results=25&start-index=1"; 
+        assertEquals("prevID",prevId,this.feedRequest.getPreviousId());
+        
+        this.control.reset(); 
+         
+        queryString = ""; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("max-results"),null); 
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+        assertNull(this.feedRequest.getPreviousId());
+     
+        
+        this.control.reset(); 
+        
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/entryId/15"); 
+        this.control.expectAndReturn(this.request.getParameter("max-results"),"35",3); 
+        this.control.expectAndReturn(this.request.getParameter("start-index"),"5",3);
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                "max-results=35&start-index=5"); 
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+        prevId = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed"+"?max-results=35&start-index=1"; 
+        assertEquals("prevID",prevId,this.feedRequest.getPreviousId());
+        
+        
+        
+        
     } 
     
     public void testGetContextPath(){
         String host = "www.apache.org"; 
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/id/"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/id/"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/id/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/id/"); 
         this.control.replay();
-        String result = "http://"+host+"/feed/id/";
+        String result = "http://"+host+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/id/";
         assertEquals(result,this.feedRequest.getContextPath());
         this.control.verify();
         this.control.reset();
         this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
-        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/feed/id"); 
-        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/feed/id"); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/id"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/id"); 
         this.control.replay();
         
         assertEquals(result,this.feedRequest.getContextPath());
         this.control.verify();
         
     }
+    
+    public void testCategoryQuery() throws GDataRequestException{
+        String host = "www.apache.org"; 
+        String feedAndEntryID = "/feed"; 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/-/test"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/-/test"); 
+         
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+         
+     
+        assertTrue(this.feedRequest.isFeedRequested()); 
+        assertFalse(this.feedRequest.isEntryRequested()); 
+        assertNotNull(this.feedRequest.getTranslatedQuery());
+        this.control.verify();
+        this.control.reset();
+        this.feedRequest = new GDataRequest(this.request,GDataRequestType.GET); 
+        this.control.expectAndDefaultReturn(this.request.getParameterMap(),this.parametermap);
+        this.control.expectAndDefaultReturn(this.request.getHeader("Host"),host); 
+        this.control.expectAndDefaultReturn(this.request.getRequestURI(),"/host"+"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+        this.control.expectAndDefaultReturn(this.request.getPathInfo(),"/"+ProvidedServiceStub.SERVICE_NAME+"/feed/"); 
+         
+        this.control.expectAndDefaultReturn(this.request.getParameter("alt"), 
+                null); 
+        this.control.expectAndDefaultReturn(this.request.getQueryString(), 
+                null); 
+        this.control.replay(); 
+        this.feedRequest.initializeRequest(); 
+         
+     
+        assertTrue(this.feedRequest.isFeedRequested()); 
+        assertFalse(this.feedRequest.isEntryRequested()); 
+        assertNull(this.feedRequest.getTranslatedQuery());
+        this.control.verify();
+        this.control.reset(); 
+    }
+    
+    
+    
 } 

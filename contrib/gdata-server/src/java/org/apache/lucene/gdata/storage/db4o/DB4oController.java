@@ -156,13 +156,14 @@ public class DB4oController implements StorageController, ScopeVisitor {
                 false);
         Db4o.configure().objectClass(ServerBaseFeed.class)
                 .maximumActivationDepth(0);
-        Db4o.configure().objectClass(BaseFeed.class).minimumActivationDepth(10);
+        Db4o.configure().objectClass(BaseFeed.class).minimumActivationDepth(1);
         Db4o.configure().objectClass(BaseEntry.class)
-                .minimumActivationDepth(10);
+                .minimumActivationDepth(1);
         Db4o.configure().objectClass(BaseFeed.class).cascadeOnDelete(true);
         Db4o.configure().objectClass(DB4oEntry.class).cascadeOnDelete(true);
         Db4o.configure().objectClass(GDataAccount.class).cascadeOnDelete(true);
         Db4o.configure().weakReferences(this.weakReferences);
+        Db4o.configure().optimizeNativeQueries(false);
         if (this.runAsServer) {
             this.server = Db4o.openServer(this.filePath, this.port);
             this.server.grantAccess(this.user, this.password);
@@ -181,8 +182,7 @@ public class DB4oController implements StorageController, ScopeVisitor {
         try {
             createAdminAccount();
         } catch (StorageException e) {
-
-            e.printStackTrace();
+            LOG.error("Can not create admin account -- ",e);
         }
     }
 

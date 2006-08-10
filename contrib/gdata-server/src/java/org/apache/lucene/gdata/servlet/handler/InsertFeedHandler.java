@@ -26,11 +26,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
 import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.server.registry.GDataServerRegistry;
+
+import com.google.gdata.util.ParseException;
 
 /**
  * @author Simon Willnauer
@@ -66,12 +69,14 @@ public class InsertFeedHandler extends AbstractFeedHandler {
                 service = serviceFactory.getAdminService();
                 service.createFeed(feed, account);
             } catch (ServiceException e) {
-                setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                setError(GDataResponse.SERVER_ERROR,
                         "can not create feed");
                 LOG.error("Can not create feed -- " + e.getMessage(), e);
-            } catch (Exception e) {
+            } catch (FeedHandlerException e) {
                 LOG.error("Can not create feed -- " + e.getMessage(), e);
 
+            }catch (ParseException e) {
+                LOG.error("Can not create feed -- " + e.getMessage(), e);
             }finally{
                 if(service != null)
                     service.close();

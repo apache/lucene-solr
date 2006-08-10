@@ -19,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.GDataService;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.storage.StorageException;
@@ -47,13 +48,13 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public void createFeed(final ServerBaseFeed feed,final GDataAccount account) throws ServiceException {
         if(feed == null)
-            throw new ServiceException("Can not create feed -- feed is null");
+            throw new ServiceException("Can not create feed -- feed is null", GDataResponse.BAD_REQUEST);
         if(account == null)
-            throw new ServiceException("Can not create feed -- account is null");
+            throw new ServiceException("Can not create feed -- account is null", GDataResponse.UNAUTHORIZED);
         if(feed.getId() == null)
-            throw new ServiceException("Feed ID is null can not create feed");
+            throw new ServiceException("Feed ID is null can not create feed", GDataResponse.BAD_REQUEST);
         if(account.getName() == null)
-            throw new ServiceException("Account name is null -- can't create feed");
+            throw new ServiceException("Account name is null -- can't create feed", GDataResponse.UNAUTHORIZED);
     try {
         feed.setUpdated(getCurrentDateTime());
         feed.setAccount(account);
@@ -61,7 +62,7 @@ public class GDataAdminService extends GDataService implements AdminService {
     } catch (StorageException e) {
         if(LOG.isInfoEnabled())
             LOG.info("Can not save feed -- "+e.getMessage(),e);
-        throw new ServiceException("Can not save feed",e);
+        throw new ServiceException("Can not save feed",e, GDataResponse.SERVER_ERROR);
     }
  
     }
@@ -73,13 +74,13 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public void updateFeed(ServerBaseFeed feed, GDataAccount account) throws ServiceException {
         if(feed == null)
-            throw new ServiceException("Can not update null feed");
+            throw new ServiceException("Can not update null feed", GDataResponse.BAD_REQUEST);
         if(account == null)
-            throw new ServiceException("Can not update feed -- account is null");
+            throw new ServiceException("Can not update feed -- account is null", GDataResponse.UNAUTHORIZED);
         if(feed.getId() == null)
-            throw new ServiceException("Feed ID is null can not update feed");
+            throw new ServiceException("Feed ID is null can not update feed", GDataResponse.BAD_REQUEST);
         if(account.getName() == null)
-            throw new ServiceException("Account name is null -- can't update feed");
+            throw new ServiceException("Account name is null -- can't update feed", GDataResponse.UNAUTHORIZED);
     try {
         feed.setAccount(account);
         feed.setUpdated(getCurrentDateTime());
@@ -87,7 +88,7 @@ public class GDataAdminService extends GDataService implements AdminService {
     } catch (StorageException e) {
         if(LOG.isInfoEnabled())
             LOG.info("Can not update feed -- "+e.getMessage(),e);
-        throw new ServiceException("Can not update feed",e);
+        throw new ServiceException("Can not update feed",e, GDataResponse.SERVER_ERROR);
     }
 
     }
@@ -99,15 +100,15 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public void deleteFeed(ServerBaseFeed feed) throws ServiceException {
         if(feed == null)
-            throw new ServiceException("Can not delete null feed");
+            throw new ServiceException("Can not delete null feed", GDataResponse.BAD_REQUEST);
         if(feed.getId() == null)
-            throw new ServiceException("Feed ID is null can not delete feed");
+            throw new ServiceException("Feed ID is null can not delete feed", GDataResponse.BAD_REQUEST);
     try {
         this.storage.deleteFeed(feed.getId());
     } catch (StorageException e) {
         if(LOG.isInfoEnabled())
             LOG.info("Can not delete feed -- "+e.getMessage(),e);
-        throw new ServiceException("Can not delete feed",e);
+        throw new ServiceException("Can not delete feed",e, GDataResponse.SERVER_ERROR);
     }
 
     }
@@ -117,13 +118,13 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public void createAccount(GDataAccount account) throws ServiceException {
         if(account == null)
-            throw new ServiceException("Can not save null account");
+            throw new ServiceException("Can not save null account", GDataResponse.BAD_REQUEST);
         try {
             this.storage.storeAccount(account);
         } catch (StorageException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("Can not save account -- "+e.getMessage(),e);
-            throw new ServiceException("Can not save account",e);
+            throw new ServiceException("Can not save account",e, GDataResponse.SERVER_ERROR);
         }
     }
 
@@ -132,13 +133,13 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public void deleteAccount(GDataAccount account) throws ServiceException {
         if(account == null)
-            throw new ServiceException("Can not delete null account");
+            throw new ServiceException("Can not delete null account", GDataResponse.BAD_REQUEST);
         try {
             this.storage.deleteAccount(account.getName());
         } catch (StorageException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("Can not save account -- "+e.getMessage(),e);
-            throw new ServiceException("Can not save account",e);
+            throw new ServiceException("Can not save account",e, GDataResponse.SERVER_ERROR);
         }
     }
 
@@ -147,13 +148,13 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public void updateAccount(GDataAccount account) throws ServiceException {
         if(account == null)
-            throw new ServiceException("Can not update null account");
+            throw new ServiceException("Can not update null account", GDataResponse.BAD_REQUEST);
         try {
             this.storage.updateAccount(account);
         } catch (StorageException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("Can not save account -- "+e.getMessage(),e);
-            throw new ServiceException("Can not save account",e);
+            throw new ServiceException("Can not save account",e, GDataResponse.SERVER_ERROR);
         }
     }
     
@@ -162,13 +163,13 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public GDataAccount getAccount(String accountName)throws ServiceException{
         if(accountName == null)
-            throw new ServiceException("Can not get null account");
+            throw new ServiceException("Can not get null account", GDataResponse.BAD_REQUEST);
         try {
             return this.storage.getAccount(accountName);
         } catch (StorageException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("Can not get account -- "+e.getMessage(),e);
-            throw new ServiceException("Can not get account",e);
+            throw new ServiceException("Can not get account",e, GDataResponse.SERVER_ERROR);
         }
        
     }
@@ -180,7 +181,7 @@ public class GDataAdminService extends GDataService implements AdminService {
      */
     public GDataAccount getFeedOwningAccount(String feedId) throws ServiceException {
         if(feedId == null)
-            throw new ServiceException("Can not get account - feed id must not be null");
+            throw new ServiceException("Can not get account - feed id must not be null", GDataResponse.BAD_REQUEST);
         try {
             String accountName =  this.storage.getAccountNameForFeedId(feedId);
            return this.storage.getAccount(accountName);
@@ -188,7 +189,7 @@ public class GDataAdminService extends GDataService implements AdminService {
         } catch (StorageException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("Can not get account for feed Id -- "+e.getMessage(),e);
-            throw new ServiceException("Can not get account for the given feed id",e);
+            throw new ServiceException("Can not get account for the given feed id",e, GDataResponse.SERVER_ERROR);
         }
     }
 

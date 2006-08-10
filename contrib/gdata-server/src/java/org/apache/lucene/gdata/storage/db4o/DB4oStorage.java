@@ -25,6 +25,7 @@ import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseEntry;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.storage.ModificationConflictException;
+import org.apache.lucene.gdata.storage.ResourceNotFoundException;
 import org.apache.lucene.gdata.storage.Storage;
 import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
@@ -38,7 +39,7 @@ import com.google.gdata.data.DateTime;
 
 /**
  * 
- * Storage implementaion for the DB4o storage component
+ * Storage implementation for the DB4o storage component
  * @author Simon Willnauer
  * 
  */
@@ -92,7 +93,7 @@ public class DB4oStorage implements Storage {
             throw new StorageException("can not store entry -- feed id is null");
         if (LOG.isDebugEnabled())
             LOG.debug("Storing entry for feed: " + entry.getFeedId());
-        BaseFeed<BaseFeed, BaseEntry> feed = getFeedOnly(entry.getFeedId());
+        BaseFeed<BaseFeed, BaseEntry> feed = getFeedOnly(entry.getFeedId(),entry.getServiceType());
        refreshPersistentObject(feed);
         try {
             StringBuilder idBuilder = new StringBuilder(entry.getFeedId());
@@ -181,7 +182,7 @@ public class DB4oStorage implements Storage {
         if(persistentEntry.getVersion() != entry.getVersion())
             throw new ModificationConflictException(
                     "Current version does not match given version  -- currentVersion: "+persistentEntry.getVersion()+"; given Version: "+entry.getVersion() );
-        BaseFeed<BaseFeed, BaseEntry> feed = getFeedOnly(entry.getFeedId());
+        BaseFeed<BaseFeed, BaseEntry> feed = getFeedOnly(entry.getFeedId(),entry.getServiceType());
         refreshPersistentObject(feed);
         DateTime time = DateTime.now();
         if (persistentEntry.getEntry().getUpdated() != null)
@@ -226,7 +227,7 @@ public class DB4oStorage implements Storage {
                     "Current version does not match given version  -- currentVersion: "+persistentEntry.getVersion()+"; given Version: "+entry.getVersion() );
         
         setUpdated(entry, persistentEntry);
-        BaseFeed<BaseFeed, BaseEntry> feed = getFeedOnly(entry.getFeedId());
+        BaseFeed<BaseFeed, BaseEntry> feed = getFeedOnly(entry.getFeedId(),entry.getServiceType());
         refreshPersistentObject(feed);
         BaseEntry retVal = entry.getEntry(); 
         DB4oEntry newEntry = new DB4oEntry();
@@ -255,6 +256,8 @@ public class DB4oStorage implements Storage {
         return retVal;
 
     }
+    
+
 
     /**
      * @see org.apache.lucene.gdata.storage.Storage#getFeed(org.apache.lucene.gdata.data.ServerBaseFeed)
@@ -270,10 +273,10 @@ public class DB4oStorage implements Storage {
 
         if (LOG.isInfoEnabled())
             LOG.info("Fetching feed for feedID: " + feed.getId()
-                    + "; startindex: " + feed.getStartIndex()
+                    + "; start-index: " + feed.getStartIndex()
                     + "; items per page: " + feed.getItemsPerPage());
 
-       BaseFeed<BaseFeed, BaseEntry> persistentFeed = getFeedOnly(feed.getId());
+       BaseFeed<BaseFeed, BaseEntry> persistentFeed = getFeedOnly(feed.getId(),feed.getServiceType());
        /*
         * prevent previously added entries in long running storage instances
         */
@@ -290,7 +293,7 @@ public class DB4oStorage implements Storage {
         if (size < feed.getStartIndex()) {
             if (LOG.isDebugEnabled())
                 LOG.debug("no entries found for feed constrain -- feedID: "
-                        + feed.getId() + "; startindex: "
+                        + feed.getId() + "; start-index: "
                         + feed.getStartIndex() + "; items per page: "
                         + feed.getItemsPerPage());
             return persistentFeed;
@@ -311,22 +314,34 @@ public class DB4oStorage implements Storage {
     }
 
     @SuppressWarnings("unchecked")
-    private BaseFeed<BaseFeed, BaseEntry> getFeedOnly(String feedId)
+    private BaseFeed<BaseFeed, BaseEntry> getFeedOnly(final String feedId, final String serviceId)
             throws StorageException {
+        if(!checkService(feedId,serviceId))
+            throw new StorageException();
         Query query = this.container.query();
+        query.constrain(ServerBaseFeed.class);
+      
         query.constrain(BaseFeed.class);
+
         query.descend("id").constrain(feedId).equal();
+
         ObjectSet set = query.execute();
         if (set.size() > 1)
             throw new StorageException("Query for feed id " + feedId
                     + " returns more than one result");
         if (set.hasNext())
-            return (BaseFeed<BaseFeed, BaseEntry>) set.next();
-        throw new StorageException("can not find feed for given feed id -- "
+        return (BaseFeed<BaseFeed, BaseEntry>) set.next();
+        throw new ResourceNotFoundException("can not find feed for given feed id -- "
                 + feedId);
 
     }
-
+    private boolean checkService(String feedId,String serviceId){
+        Query query = this.container.query();
+        query.constrain(ServerBaseFeed.class);
+        query.descend("feed").descend("id").constrain(feedId).equal();
+        query.descend("serviceType").constrain(serviceId).equal();
+        return query.execute().size() == 1;
+    }
     private ObjectSet getEnriesForFeedID(String feedId) {
         Query query = this.container.query();
         query.constrain(DB4oEntry.class);
@@ -360,7 +375,7 @@ public class DB4oStorage implements Storage {
                     "Entry query returned not a unique result");
         if (resultSet.hasNext())
             return resultSet.next();
-        throw new StorageException("no entry with entryID: " + id
+        throw new ResourceNotFoundException("no entry with entryID: " + id
                 + " stored -- query returned no result");
     }
 
@@ -432,7 +447,7 @@ public class DB4oStorage implements Storage {
     public void deleteAccount(String accountname) throws StorageException {
         if (accountname == null)
             throw new StorageException(
-                    "can not delete account -- accountname is null");
+                    "can not delete account -- account name is null");
         GDataAccount account = this.getAccount(accountname);
         refreshPersistentObject(account);
         if (LOG.isInfoEnabled())
@@ -474,7 +489,7 @@ public class DB4oStorage implements Storage {
         refreshPersistentObject(account);
         feed.setAccount(account);
         /*
-         * service config not requiered in db4o storage.
+         * service config not required in db4o storage.
          * Entries/Feeds don't have to be build from xml
          */
         feed.setServiceConfig(null);
@@ -566,7 +581,7 @@ public class DB4oStorage implements Storage {
             this.container.commit();
         } catch (Exception e) {
             LOG
-                    .error("Error occured on persisting changes -- rollback changes");
+                    .error("Error occurred on persisting changes -- rollback changes");
             this.container.rollback();
             throw new StorageException("Can not persist changes -- "
                     + e.getMessage(), e);
@@ -582,7 +597,7 @@ public class DB4oStorage implements Storage {
         if(feedId == null)
             throw new StorageException("can not get Service for feed -- feed id is null");
         if(LOG.isInfoEnabled())
-            LOG.info("retriving Service for feed -- feed id: "+feedId);
+            LOG.info("Retrieving Service for feed -- feed id: "+feedId);
         Query query = this.container.query();
         query.constrain(ServerBaseFeed.class);
         query.descend("feed").descend("id").constrain(feedId);
@@ -593,9 +608,10 @@ public class DB4oStorage implements Storage {
         if (feed.size() < 1)
             throw new StorageException("can not find feed for given feed id -- "
                 + feedId);
+        
         ServerBaseFeed result = feed.next();
         if(LOG.isInfoEnabled())
-            LOG.info("retrived Service for feed -- serviceType: "+result.getServiceType());
+            LOG.info("Retrieved Service for feed -- serviceType: "+result.getServiceType());
         return result.getServiceType();
     }
 
@@ -605,7 +621,7 @@ public class DB4oStorage implements Storage {
     public GDataAccount getAccount(String accountName) throws StorageException {
         if (accountName == null)
             throw new StorageException(
-                    "Can not get account -- accountname is null");
+                    "Can not get account -- account name is null");
         if (LOG.isInfoEnabled())
             LOG.info("Retrieving account for account name: " + accountName);
         Query query = this.container.query();
@@ -617,7 +633,7 @@ public class DB4oStorage implements Storage {
                     "Account query returned not a unique result -- account name: "
                             + accountName);
         if (!set.hasNext())
-            throw new StorageException(
+            throw new ResourceNotFoundException(
                     "No such account stored -- query returned not result for account name: "
                             + accountName);
 
@@ -676,8 +692,8 @@ public class DB4oStorage implements Storage {
     }
     
     /*
-     * !Caution! -- could instanciate a lot of objects if used with certain classes!!
-     * refreshs a persistend object with a depth of 100
+     * !Caution! -- could instantiate a lot of objects if used with certain classes!!
+     * Refresh a persisted object with a depth of 100
      * 
      */
     private void refreshPersistentObject(Object o){

@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.GDataAccount;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
@@ -91,10 +92,10 @@ public class AuthenticationHandler implements GDataRequestHandler {
         }
         } catch (AuthenticationException e){
             LOG.error("BadAuthentication -- "+e.getMessage(),e);
-            sendError(response, HttpServletResponse.SC_FORBIDDEN,"BadAuthentication");
+            sendError(response, GDataResponse.FORBIDDEN,"BadAuthentication");
         }catch (Exception e) {
             LOG.error("Unexpected Exception -- SERVERERROR -- "+e.getMessage(),e);
-            sendError(response,HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Service not available");
+            sendError(response,GDataResponse.SERVER_ERROR, "Service not available");
         }
     }
     

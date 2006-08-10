@@ -25,12 +25,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.server.registry.configuration.ComponentConfiguration;
 import org.apache.lucene.gdata.server.registry.configuration.PropertyInjector;
+import org.apache.lucene.gdata.utils.ReflectionUtils;
 
 /**
  * 
  * The GDataServerRegistry represents the registry component of the GData
  * Server. All provided services and server components will be registered here.
- * The Gdata Server serves RSS / ATOM feeds for defined services. Each service
+ * The GData Server serves RSS / ATOM feeds for defined services. Each service
  * provides <i>n</i> feeds of a defined subclass of
  * {@link com.google.gdata.data.BaseFeed}. Each feed contains <i>m</i> entries
  * of a defined subclass of {@link com.google.gdata.data.BaseEntry}. To
@@ -42,9 +43,9 @@ import org.apache.lucene.gdata.server.registry.configuration.PropertyInjector;
  * </p>
  * <p>
  * The components defined in the gdata-config.xml will also be loaded and
- * instanciated at startup. If a component can not be loaded or an Exception
- * occures the server will not start up. To cause of the exception or error will
- * be logged to the standart server output.
+ * instantiated at startup. If a component can not be loaded or an Exception
+ * occurs the server will not start up. To cause of the exception or error will
+ * be logged to the standard server output.
  * </p>
  * <p>
  * The GDataServerRegistry is a Singleton
@@ -54,16 +55,17 @@ import org.apache.lucene.gdata.server.registry.configuration.PropertyInjector;
  * @author Simon Willnauer
  * 
  */
-public class GDataServerRegistry {
+public class GDataServerRegistry extends EntryEventMediator{
     private static GDataServerRegistry INSTANCE;
 
-    private static final Log LOGGER = LogFactory
+    private static final Log LOG = LogFactory
             .getLog(GDataServerRegistry.class);
 
     private ScopeVisitable requestVisitable;
 
     private ScopeVisitable sessionVisitable;
-    //not available yet
+
+    // not available yet
     private ScopeVisitable contextVisitable;
 
     private List<ScopeVisitor> visitorBuffer = new ArrayList<ScopeVisitor>(5);
@@ -78,7 +80,7 @@ public class GDataServerRegistry {
     }
 
     /**
-     * @return a Sinleton registry instance
+     * @return a Singleton registry instance
      */
     public static synchronized GDataServerRegistry getRegistry() {
         if (INSTANCE == null)
@@ -94,7 +96,7 @@ public class GDataServerRegistry {
      */
     public void registerService(ProvidedService configurator) {
         if (configurator == null) {
-            LOGGER.warn("Feedconfigurator is null -- skip registration");
+            LOG.warn("Feed configurator is null -- skip registration");
             return;
         }
         this.serviceTypeMap.put(configurator.getName(), configurator);
@@ -112,8 +114,8 @@ public class GDataServerRegistry {
         Scope scope = visitor.getClass().getAnnotation(Scope.class);
         if (scope == null)
             throw new RegistryException("Visitor has not Scope");
-        if (LOGGER.isInfoEnabled())
-            LOGGER.info("Register scope visitor -- " + visitor.getClass());
+        if (LOG.isInfoEnabled())
+            LOG.info("Register scope visitor -- " + visitor.getClass());
         if (scope.scope().equals(Scope.ScopeType.REQUEST)
                 && this.requestVisitable != null)
             this.requestVisitable.accept(visitor);
@@ -141,8 +143,8 @@ public class GDataServerRegistry {
         Scope scope = visitable.getClass().getAnnotation(Scope.class);
         if (scope == null)
             throw new RegistryException("Visitable has not Scope");
-        if (LOGGER.isInfoEnabled())
-            LOGGER.info("Register scope visitable -- " + visitable.getClass());
+        if (LOG.isInfoEnabled())
+            LOG.info("Register scope visitable -- " + visitable.getClass());
         if (scope.scope() == Scope.ScopeType.REQUEST
                 && this.requestVisitable == null)
             this.requestVisitable = visitable;
@@ -176,7 +178,7 @@ public class GDataServerRegistry {
     public ProvidedService getProvidedService(String service) {
         if (service == null)
             throw new IllegalArgumentException(
-                    "Service is null - must not be null to get registered feedtype");
+                    "Service is null - must not be null to get registered feed type");
         return this.serviceTypeMap.get(service);
     }
 
@@ -267,7 +269,7 @@ public class GDataServerRegistry {
      *             annotations not visible at runtime or not set, if the super
      *             type provided by the {@link ComponentType} for the class to
      *             register is not a super type of the class or if the
-     *             invokation of the {@link ServerComponent#initialize()} method
+     *             invocation of the {@link ServerComponent#initialize()} method
      *             throws an exception.
      */
     @SuppressWarnings("unchecked")
@@ -280,7 +282,8 @@ public class GDataServerRegistry {
             throw new IllegalArgumentException(
                     "component class must not be null");
 
-        if (!checkSuperType(componentClass, ServerComponent.class))
+        if (!ReflectionUtils.implementsType(componentClass,
+                ServerComponent.class))
             throw new RegistryException(
                     "can not register component. the given class does not implement ServerComponent interface -- "
                             + componentClass.getName());
@@ -298,14 +301,14 @@ public class GDataServerRegistry {
                         + type.name());
             Class superType = type.getClass().getField(type.name())
                     .getAnnotation(SuperType.class).superType();
-            if (!checkSuperType(componentClass, superType))
-                throw new RegistryException("Considered Supertype <"
+            if (!ReflectionUtils.isTypeOf(componentClass, superType))
+                throw new RegistryException("Considered super type <"
                         + superType.getName() + "> is not a super type of <"
                         + componentClass + ">");
             ServerComponent comp = componentClass.newInstance();
             if (configuration == null) {
-                if (LOGGER.isInfoEnabled())
-                    LOGGER.info("no configuration for ComponentType: "
+                if (LOG.isInfoEnabled())
+                    LOG.info("no configuration for ComponentType: "
                             + type.name());
             } else
                 configureComponent(comp, type, configuration);
@@ -313,7 +316,8 @@ public class GDataServerRegistry {
             ComponentBean bean = new ComponentBean(comp, superType);
 
             this.componentMap.put(type, bean);
-            if (checkSuperType(componentClass, ScopeVisitor.class))
+            if (ReflectionUtils.implementsType(componentClass,
+                    ScopeVisitor.class))
                 this.registerScopeVisitor((ScopeVisitor) comp);
         } catch (Exception e) {
             e.printStackTrace();
@@ -334,21 +338,6 @@ public class GDataServerRegistry {
         injector.injectProperties(configuration);
     }
 
-    private static boolean checkSuperType(Class type, Class consideredSuperType) {
-        if (type == null)
-            return false;
-        if (type.equals(Object.class))
-            return false;
-        if (type.equals(consideredSuperType))
-            return true;
-        Class[] interfaces = type.getInterfaces();
-        for (int i = 0; i < interfaces.length; i++) {
-            if (checkSuperType(interfaces[i], consideredSuperType))
-                return true;
-        }
-        return checkSuperType(type.getSuperclass(), consideredSuperType);
-    }
-
     private static class ComponentBean {
         private final Class superType;
 
@@ -367,6 +356,23 @@ public class GDataServerRegistry {
             return this.superType;
         }
 
+    }
+
+    /**
+     * @see org.apache.lucene.gdata.server.registry.EntryEventMediator#getEntryEventMediator()
+     */
+    @Override
+    public EntryEventMediator getEntryEventMediator() {
+        
+        return this;
+    }
+
+    /**
+     * @return - all registered services
+     */
+    public Collection<ProvidedService> getServices() {
+        
+        return this.serviceTypeMap.values();
     }
 
 }

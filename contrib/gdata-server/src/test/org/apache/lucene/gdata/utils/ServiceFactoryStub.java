@@ -16,11 +16,14 @@
 
 package org.apache.lucene.gdata.utils;
 
+import org.apache.lucene.gdata.server.GDataRequest;
 import org.apache.lucene.gdata.server.Service;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
 import org.apache.lucene.gdata.server.registry.Component;
 import org.apache.lucene.gdata.server.registry.ComponentType;
+
+
 
 /**
  * @author Simon Willnauer
@@ -44,7 +47,7 @@ public class ServiceFactoryStub extends ServiceFactory {
      * @see org.apache.lucene.gdata.server.ServiceFactory#getService()
      */
     @Override
-    public Service getService() {
+    public Service getService(GDataRequest request) {
         
         return service;
     }

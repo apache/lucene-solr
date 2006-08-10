@@ -28,6 +28,7 @@ import org.apache.lucene.gdata.data.GDataAccount;
 import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.data.GDataAccount.AccountRole;
 import org.apache.lucene.gdata.server.GDataEntityBuilder;
+import org.apache.lucene.gdata.server.GDataResponse;
 import org.apache.lucene.gdata.server.ServiceException;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.administration.AdminService;
@@ -62,7 +63,7 @@ public abstract class AbstractFeedHandler extends RequestAuthenticator implement
             HttpServletResponse response) throws ServletException, IOException {
             this.authenticated = authenticateAccount(request,AccountRole.FEEDAMINISTRATOR);
             if(!this.authenticated)
-                setError(HttpServletResponse.SC_UNAUTHORIZED,"Authorization failed");
+                setError(GDataResponse.UNAUTHORIZED,"Authorization failed");
         
     }
     
@@ -70,12 +71,12 @@ public abstract class AbstractFeedHandler extends RequestAuthenticator implement
         GDataServerRegistry registry = GDataServerRegistry.getRegistry();
         String providedService = request.getParameter(PARAMETER_SERVICE);
         if(!registry.isServiceRegistered(providedService)){
-            setError(HttpServletResponse.SC_NOT_FOUND,"no such service");
+            setError(GDataResponse.NOT_FOUND,"no such service");
             throw new FeedHandlerException("ProvicdedService is not registered -- Name: "+providedService);
          }
         ProvidedService provServiceInstance = registry.getProvidedService(providedService);  
         if(providedService == null){
-            setError(HttpServletResponse.SC_BAD_REQUEST,"no such service");
+            setError(GDataResponse.BAD_REQUEST,"no such service");
             throw new FeedHandlerException("no such service registered -- "+providedService);
         }
         try{
@@ -85,12 +86,12 @@ public abstract class AbstractFeedHandler extends RequestAuthenticator implement
         }catch (IOException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("Can not read from input stream - ",e);
-            setError(HttpServletResponse.SC_BAD_REQUEST,"Can not read from input stream");
+            setError(GDataResponse.BAD_REQUEST,"Can not read from input stream");
             throw e;
         }catch (ParseException e) {
             if(LOG.isInfoEnabled())
                 LOG.info("feed can not be parsed - ",e);
-            setError(HttpServletResponse.SC_BAD_REQUEST,"incoming feed can not be parsed");
+            setError(GDataResponse.BAD_REQUEST,"incoming feed can not be parsed");
             throw e;
         }
         
@@ -102,7 +103,7 @@ public abstract class AbstractFeedHandler extends RequestAuthenticator implement
            ServiceFactory serviceFactory = registry.lookup(ServiceFactory.class,ComponentType.SERVICEFACTORY);
         
         if(serviceFactory == null){
-            setError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Required server component not available");
+            setError(GDataResponse.SERVER_ERROR, "Required server component not available");
             throw new FeedHandlerException("Required server component not available -- "+ServiceFactory.class.getName());
         }
         AdminService service = serviceFactory.getAdminService();

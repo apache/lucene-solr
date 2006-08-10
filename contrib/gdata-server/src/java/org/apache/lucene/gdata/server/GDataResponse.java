@@ -35,18 +35,18 @@ import com.google.gdata.util.common.xml.XmlWriter;
 import com.google.gdata.util.common.xml.XmlWriter.Namespace;
 
 /**
- * The FeedRequest Class wraps the curren HttpServletResponse. Any action on the
+ * The FeedRequest Class wraps the current HttpServletResponse. Any action on the
  * HttpServletRequest will be executed via this class. This represents an
  * abstraction on the plain {@link HttpServletResponse}. Any action which has
- * to be performed on the underlaying {@link HttpServletResponse} will be
+ * to be performed on the underlying {@link HttpServletResponse} will be
  * executed within this class.
  * <p>
- * The GData basicly writes two different kinds ouf reponse to the output
+ * The GData basically writes two different kinds of response to the output
  * stream.
  * <ol>
- * <li>update, delete or insert requests will respond with a statuscode and if
+ * <li>update, delete or insert requests will respond with a status code and if
  * successful the feed entry modified or created</li>
- * <li>get requests will respond with a statuscode and if successful the
+ * <li>get requests will respond with a status code and if successful the
  * requested feed</li>
  * </ol>
  * 
@@ -70,6 +70,40 @@ import com.google.gdata.util.common.xml.XmlWriter.Namespace;
  * 
  */
 public class GDataResponse {
+    /**
+     * Response code bad request
+     */
+    public static final int BAD_REQUEST = HttpServletResponse.SC_BAD_REQUEST;
+    /**
+     * Response code version conflict
+     */
+    public static final int CONFLICT = HttpServletResponse.SC_CONFLICT;
+    /**
+     * Response code forbidden access
+     */
+    public static final int FORBIDDEN = HttpServletResponse.SC_FORBIDDEN;
+    /**
+     * Response code internal server error
+     */
+    public static final int SERVER_ERROR = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+    /**
+     * Response code not found
+     */
+    public static final int NOT_FOUND = HttpServletResponse.SC_NOT_FOUND;
+    /**
+     * Response code not modified since
+     */
+    public static final int NOT_MODIFIED = HttpServletResponse.SC_NOT_MODIFIED;
+    /**
+     * Response code created
+     */
+    public static final int CREATED = HttpServletResponse.SC_CREATED;
+    /**
+     * Response code unauthorized access
+     */
+    public static final int UNAUTHORIZED = HttpServletResponse.SC_UNAUTHORIZED;
+    
+    
     private static final Log LOG = LogFactory.getLog(GDataResponse.class);
     private int error;
 
@@ -96,7 +130,7 @@ public class GDataResponse {
      * Creates a new GDataResponse
      * 
      * @param response -
-     *            The underlaying {@link HttpServletResponse}
+     *            The underlying {@link HttpServletResponse}
      */
     public GDataResponse(HttpServletResponse response) {
         if (response == null)
@@ -117,7 +151,7 @@ public class GDataResponse {
     }
 
     /**
-     * Sets the status of the underlaying response
+     * Sets the status of the underlying response
      * 
      * @see HttpServletResponse
      * @param responseCode -
@@ -131,7 +165,7 @@ public class GDataResponse {
      * This method sends the specified error to the user if set
      * 
      * @throws IOException -
-     *             if an I/O Exception occures
+     *             if an I/O Exception occurs
      */
     public void sendError() throws IOException {
         if (this.isError)
@@ -142,7 +176,7 @@ public class GDataResponse {
     /**
      * @return - the {@link HttpServletResponse} writer
      * @throws IOException -
-     *             If an I/O exception occures
+     *             If an I/O exception occurs
      */
     public Writer getWriter() throws IOException {
         return this.response.getWriter();
@@ -150,14 +184,14 @@ public class GDataResponse {
 
     /**
      * Sends a response for a get e.g. query request. This method must not
-     * invoked in a case of an error performing the requeste action.
+     * invoked in a case of an error performing the requested action.
      * 
      * @param feed -
      *            the feed to respond to the client
      * @param profile -
-     *            the extension profil for the feed to write
+     *            the extension profile for the feed to write
      * @throws IOException -
-     *             if an I/O exception accures, often caused by an already
+     *             if an I/O exception occurs, often caused by an already
      *             closed Writer or OutputStream
      * 
      */
@@ -167,7 +201,7 @@ public class GDataResponse {
             throw new IllegalArgumentException("feed must not be null");
         if (profile == null)
             throw new IllegalArgumentException(
-                    "extension profil must not be null");
+                    "extension profile must not be null");
         DateTime time = feed.getUpdated();
         if (time != null)
             setLastModifiedHeader(time.getValue());
@@ -186,7 +220,7 @@ public class GDataResponse {
     /**
      * 
      * Sends a response for an update, insert or delete request. This method
-     * must not invoked in a case of an error performing the requeste action. If
+     * must not invoked in a case of an error performing the requested action. If
      * the specified response format is ATOM the default namespace will be set
      * to ATOM.
      * 
@@ -195,7 +229,7 @@ public class GDataResponse {
      * @param profile -
      *            the entries extension profile
      * @throws IOException -
-     *             if an I/O exception accures, often caused by an already
+     *             if an I/O exception occurs, often caused by an already
      *             closed Writer or OutputStream
      */
     public void sendResponse(BaseEntry entry, ExtensionProfile profile)
@@ -204,7 +238,7 @@ public class GDataResponse {
             throw new IllegalArgumentException("entry must not be null");
         if (profile == null)
             throw new IllegalArgumentException(
-                    "extension profil must not be null");
+                    "extension profile must not be null");
         DateTime time = entry.getUpdated();
         if (time != null)
             setLastModifiedHeader(time.getValue());

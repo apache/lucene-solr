@@ -23,12 +23,10 @@ import org.apache.lucene.gdata.server.registry.Component;
 import org.apache.lucene.gdata.server.registry.ComponentType;
 import org.apache.lucene.gdata.storage.IDGenerator;
 import org.apache.lucene.gdata.storage.Storage;
-import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
-import org.apache.lucene.gdata.storage.lucenestorage.util.ReferenceCounter;
+import org.apache.lucene.gdata.utils.ReferenceCounter;
 import org.apache.lucene.index.IndexModifier;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 /**
  * @author Simon Willnauer

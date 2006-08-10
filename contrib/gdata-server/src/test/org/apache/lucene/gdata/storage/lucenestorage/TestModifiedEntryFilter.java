@@ -9,8 +9,8 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer; 
 import org.apache.lucene.document.Document; 
 import org.apache.lucene.document.Field; 
-import org.apache.lucene.gdata.storage.lucenestorage.ModifiedEntryFilter; 
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper; 
+import org.apache.lucene.gdata.utils.ModifiedEntryFilter;
 import org.apache.lucene.index.IndexReader; 
 import org.apache.lucene.index.IndexWriter; 
 import org.apache.lucene.index.Term; 
@@ -55,11 +55,15 @@ public class TestModifiedEntryFilter extends TestCase {
         Hits hits = s.search(q); 
         assertEquals(2,hits.length()); 
          
-        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]))); 
+        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]),StorageEntryWrapper.FIELD_ENTRY_ID)); 
         assertEquals(1,hits.length()); 
         this.excludeList.add("2"); 
  
-        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]))); 
+        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]),StorageEntryWrapper.FIELD_ENTRY_ID)); 
+        assertEquals(0,hits.length());
+        this.excludeList.add(null);
+        this.excludeList.add("5"); 
+        hits = s.search(q,new ModifiedEntryFilter(this.excludeList.toArray(new String[0]),StorageEntryWrapper.FIELD_ENTRY_ID)); 
         assertEquals(0,hits.length()); 
          
     } 

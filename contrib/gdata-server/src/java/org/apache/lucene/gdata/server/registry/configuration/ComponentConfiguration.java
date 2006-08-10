@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * Simple configuration class storing properties as key with defined property
- * values as values in a <code>Map<String,String></code>. As amap cannot
+ * values as values in a <code>Map<String,String></code>. As a map cannot
  * contain duplicate keys the first use of a key can not be replaced. If a key
  * is used twice a {@link java.lang.IllegalArgumentException} will be thrown.
  * @see Map

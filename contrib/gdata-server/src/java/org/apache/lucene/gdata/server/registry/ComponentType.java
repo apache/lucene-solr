@@ -1,12 +1,13 @@
 package org.apache.lucene.gdata.server.registry;
 
+import org.apache.lucene.gdata.search.SearchComponent;
 import org.apache.lucene.gdata.server.ServiceFactory;
 import org.apache.lucene.gdata.server.authentication.AuthenticationController;
 import org.apache.lucene.gdata.servlet.handler.RequestHandlerFactory;
 import org.apache.lucene.gdata.storage.StorageController;
 
 /**
- * The enmueration {@link ComponentType} defines the GDATA-Server Components 
+ * The enumeration {@link ComponentType} defines the GDATA-Server Components 
  * available via {@link org.apache.lucene.gdata.server.registry.GDataServerRegistry#lookup(Class, ComponentType)} 
  * method.
  * @see org.apache.lucene.gdata.server.registry.Component
@@ -30,12 +31,11 @@ public enum ComponentType {
     @SuperType(superType = RequestHandlerFactory.class)
     REQUESTHANDLERFACTORY,
     /**
-     * INDEXER TYPE
-     * 
+     * SearchComponent Type
+     * @see SearchComponent
      */
-    // TODO not available yet
-    @SuperType(superType = Object.class)
-    INDEXER,
+    @SuperType(superType = SearchComponent.class)
+    SEARCHCONTROLLER,
     /**
      * ServiceFactory Type
      * 
@@ -44,7 +44,7 @@ public enum ComponentType {
     @SuperType(superType = ServiceFactory.class)
     SERVICEFACTORY,
     /**
-     * Supertype for AuthenticationController implementations
+     * Super type for AuthenticationController implementations
      * @see AuthenticationController
      */
     @SuperType(superType = AuthenticationController.class)

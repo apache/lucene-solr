@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation;
+import org.apache.lucene.gdata.utils.ModifiedEntryFilter;
 
 import com.google.gdata.data.BaseEntry;
 import com.google.gdata.data.ExtensionProfile;

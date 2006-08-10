@@ -226,6 +226,8 @@ public class GDataAccount {
      * @see java.lang.Object#equals(java.lang.Object)
      */
     public boolean equals(Object o) {
+        if(this.name == null)
+            return super.equals(o);
         if(o == null)
             return false;
         if (this == o)
@@ -243,6 +245,8 @@ public class GDataAccount {
      * @see java.lang.Object#hashCode()
      */
     public int hashCode() {
+        if(this.name == null)
+            return super.hashCode();
         int ret = 37;
         ret = 9 * ret + this.name.hashCode();
         return ret;
@@ -269,14 +273,14 @@ public class GDataAccount {
         builder.append(" password: ").append((this.password!= null?" length: "+this.password.length():null));
         builder.append(" author: ").append(this.authorname);
         builder.append(" author email: ").append(this.authorMail);
-        builder.append(" author link: ").append(this.authorLink);
+        builder.append(" author link: ").append(this.authorLink!=null?"":this.authorLink);
         return builder.toString();
     }
     
     /**
      * checks whether the given integer matches the account role.
      * @param intRole - integer representation of a role
-     * @param role - the accountrole to match
+     * @param role - the account role to match
      * @return <code>true</code> if and only if the given roles match, otherwise <code>false</code>
      */
     public static boolean isInRole(int intRole, AccountRole role){
@@ -292,7 +296,7 @@ public class GDataAccount {
     }
     
     /**
-     * @return - a new Administartor accoutn 
+     * @return - a new Administrator account 
      */
     public static final GDataAccount createAdminAccount(){
         GDataAccount retVal = new GDataAccount();

@@ -51,11 +51,14 @@ public class ServiceFactory implements ServerComponent {
 
 	/**
 	 * Creates a {@link Service} instance.
+	 * @param request - the request for this service
 	 * 
 	 * @return a Service instance
 	 */
-	public Service getService() {
+	public Service getService(GDataRequest request) {
 		try{
+            if(request.isSearchRequested())
+                return new GDataSearchService();
 		return new GDataService();
         }catch (Exception e) {
             //

@@ -15,6 +15,8 @@
  */ 
 package org.apache.lucene.gdata.server.registry;
 
+import org.apache.lucene.gdata.search.config.IndexSchema;
+
 import com.google.gdata.data.ExtensionProfile;
 
 /**
@@ -41,7 +43,7 @@ public interface ProvidedService {
     public abstract Class getEntryType();
 
     /**
-     * @return - the servicename
+     * @return - the service name
      */
     public abstract String getName();
 
@@ -49,5 +51,8 @@ public interface ProvidedService {
      * releases all dependencies and resources
      */
     public abstract void destroy();
-
+    /**
+     * @return the index schema configuration for this service
+     */
+    public abstract IndexSchema getIndexSchema();
 }

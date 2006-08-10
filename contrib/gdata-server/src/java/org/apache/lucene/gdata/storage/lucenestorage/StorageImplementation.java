@@ -31,7 +31,7 @@ import org.apache.lucene.gdata.storage.Storage;
 import org.apache.lucene.gdata.storage.StorageController;
 import org.apache.lucene.gdata.storage.StorageException;
 import org.apache.lucene.gdata.storage.lucenestorage.StorageEntryWrapper.StorageOperation;
-import org.apache.lucene.gdata.storage.lucenestorage.util.ReferenceCounter;
+import org.apache.lucene.gdata.utils.ReferenceCounter;
 
 import com.google.gdata.data.BaseEntry;
 import com.google.gdata.data.BaseFeed;
@@ -42,7 +42,7 @@ import com.google.gdata.data.BaseFeed;
  * StorageImplementation provides access to the
  * {@link org.apache.lucene.gdata.storage.lucenestorage.StorageQuery} and the
  * {@link org.apache.lucene.gdata.storage.lucenestorage.StorageModifier}. This
- * class will be instanciated per client request.
+ * class will be instantiated per client request.
  * 
  * 
  * 
@@ -80,7 +80,7 @@ public class StorageImplementation implements Storage {
         if (entry == null)
             throw new StorageException("entry is null");
         if(entry.getFeedId() == null)
-            throw new StorageException("feedid is null");
+            throw new StorageException("feed-id is null");
         if(entry.getVersion() != 1)
             throw new StorageException("entry version must be 1");
         if(entry.getServiceConfig() == null)
@@ -223,7 +223,7 @@ public class StorageImplementation implements Storage {
         if (feed == null)
             throw new StorageException("feed is null");
         if (LOG.isInfoEnabled())
-            LOG.info("get feed: " + feed.getId() + " startindex: "
+            LOG.info("get feed: " + feed.getId() + " start-index: "
                     + feed.getStartIndex() + " resultCount: "
                     + feed.getItemsPerPage());
         ReferenceCounter<StorageQuery> query = null;
@@ -514,7 +514,7 @@ public class StorageImplementation implements Storage {
     public String getAccountNameForFeedId(String feedId)
             throws StorageException {
         if (feedId == null)
-            throw new StorageException("feedid must not be null");
+            throw new StorageException("feed-id must not be null");
         ReferenceCounter<StorageQuery> query = null;
         try {
             query = this.controller.getStorageQuery();

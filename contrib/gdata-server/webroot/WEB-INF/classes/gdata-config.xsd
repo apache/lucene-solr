@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-
 	<xs:element name="feed-class" type="xs:string" />
 	<xs:element name="entry-class" type="xs:string" />
 	<xs:element name="extension-profile" type="xs:string" />
 	<xs:element name="class" type="xs:string" />
+	<xs:annotation>
+		<xs:documentation xml:lang="en">
+			This Schema defines the configuration for the
+			gdata-config.xml file.
+		</xs:documentation>
+	</xs:annotation>
+
 
 	<xs:element name="property">
 		<xs:complexType mixed="true">
 			<xs:attribute name="name" type="xs:string" use="required" />
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="configuration">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element ref="property" minOccurs="1"
-					maxOccurs="unbounded" />
-			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 
@@ -30,6 +27,8 @@
 					minOccurs="1" />
 				<xs:element ref="extension-profile" maxOccurs="1"
 					minOccurs="1" />
+				<xs:element ref="index-schema" maxOccurs="1"
+					minOccurs="1" />
 			</xs:sequence>
 			<xs:attribute name="name" type="xs:string" use="required" />
 			<xs:attribute name="public" type="xs:boolean" />
@@ -37,6 +36,17 @@
 				use="required" />
 		</xs:complexType>
 	</xs:element>
+	<xs:element name="configuration">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="property" minOccurs="1"
+					maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+
+	</xs:element>
+
+
 
 	<xs:element name="component">
 		<xs:complexType>
@@ -55,6 +65,10 @@
 					maxOccurs="unbounded" />
 			</xs:sequence>
 		</xs:complexType>
+		<xs:unique name="component-class">
+			<xs:selector xpath="component" />
+			<xs:field xpath="class" />
+		</xs:unique>
 	</xs:element>
 
 	<xs:element name="gdata">
@@ -66,5 +80,164 @@
 					minOccurs="1" />
 			</xs:sequence>
 		</xs:complexType>
+		<xs:unique name="service-name">
+			<xs:selector xpath="service" />
+			<xs:field xpath="@name" />
+		</xs:unique>
+
 	</xs:element>
+
+
+	<!-- Index / Search -->
+	<!-- field boost -->
+	<xs:simpleType name="boostType">
+		<xs:restriction base="xs:decimal">
+			<xs:minExclusive value="0.0" />
+			<xs:fractionDigits value="3" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<!-- all possible Field.Store constants -->
+	<xs:simpleType name="storeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="YES" />
+			<xs:enumeration value="NO" />
+			<xs:enumeration value="COMPRESS" />
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- all possible Field.Index constants -->
+	<xs:simpleType name="indexType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="TOKENIZED" />
+			<xs:enumeration value="UN_TOKENIZED" />
+			<xs:enumeration value="NO" />
+			<xs:enumeration value="NO_NORMS" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<!-- 
+	This type correspond to  
+	org.apache.lucene.gdata.search.config.IndexSchemaField$ContentType
+	-->
+	<xs:simpleType name="fieldType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="html" />
+			<xs:enumeration value="xhtml" />
+			<xs:enumeration value="gdatadate" />
+			<xs:enumeration value="category" />
+			<xs:enumeration value="keyword" />
+			<xs:enumeration value="text" />
+		</xs:restriction>
+	</xs:simpleType>
+<!-- type of fields see: org.apache.lucene.gdata.search.config.IndexSchemaField -->
+	<xs:group name="fields">
+		<xs:choice>
+			<xs:element ref="field" />
+			<xs:element ref="custom" />
+			<xs:element ref="mixed" />
+
+		</xs:choice>
+	</xs:group>
+	<!-- index configuration see: org.apache.lucene.gdata.search.config.IndexSchema -->
+	<xs:element name="index">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="defaultAnalyzer" type="xs:string"
+					maxOccurs="1" minOccurs="1" />
+				<xs:element name="indexLocation" type="xs:string"
+					maxOccurs="1" minOccurs="1" />
+				<xs:element name="useCompoundFile" type="xs:boolean"
+					maxOccurs="1" />
+				<xs:element name="mergeFactor" type="xs:unsignedInt"
+					maxOccurs="1" />
+				<xs:element name="maxBufferedDocs" type="xs:unsignedInt"
+					maxOccurs="1" />
+				<xs:element name="maxMergeDocs" type="xs:unsignedInt"
+					maxOccurs="1" />
+				<xs:element name="maxFieldLength" type="xs:unsignedInt"
+					maxOccurs="1" />
+			</xs:sequence>
+			<xs:attribute name="useTimedIndexer" type="xs:boolean"
+				use="required" />
+			<xs:attribute name="indexerIdleTime" type="xs:unsignedLong" />
+			<xs:attribute name="optimizeAfterCommit" type="xs:unsignedInt" use="required"/>
+			<xs:attribute name="commitAfterDocuments" type="xs:unsignedInt" use="required"/>
+		</xs:complexType>
+	</xs:element>
+
+<!-- index configuration see: org.apache.lucene.gdata.search.config.IndexSchema -->
+	<xs:element name="index-schema">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="index" maxOccurs="1" minOccurs="1" />
+				<xs:group ref="fields" maxOccurs="unbounded"
+					minOccurs="1" />
+			</xs:sequence>
+
+			<xs:attribute name="defaultSearchField" type="xs:string"
+				use="required" />
+
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="field">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="path" type="xs:string" maxOccurs="1"
+					minOccurs="1" />
+				<xs:element name="analyzer" type="xs:string"
+					maxOccurs="1" minOccurs="0" />
+				<xs:element name="index" type="indexType" maxOccurs="1"
+					minOccurs="0" />
+				<xs:element name="store" type="storeType" maxOccurs="1"
+					minOccurs="0" />
+			</xs:all>
+			<xs:attribute name="name" type="xs:string" use="required" />
+			<xs:attribute name="boost" type="boostType" />
+			<xs:attribute name="type" type="fieldType" use="required" />
+		</xs:complexType>
+
+	</xs:element>
+
+	<xs:element name="custom">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="path" type="xs:string" maxOccurs="1"
+					minOccurs="1" />
+				<xs:element name="field-class" type="xs:string"
+					maxOccurs="1" minOccurs="1" />
+				<xs:element name="analyzer" type="xs:string"
+					maxOccurs="1" minOccurs="0" />
+				<xs:element name="index" type="indexType" maxOccurs="1"
+					minOccurs="0" />
+				<xs:element name="store" type="storeType" maxOccurs="1"
+					minOccurs="0" />
+			</xs:all>
+			<xs:attribute name="name" type="xs:string" use="required" />
+			<xs:attribute name="boost" type="boostType" />
+		</xs:complexType>
+
+	</xs:element>
+
+	<xs:element name="mixed">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="path" type="xs:string" maxOccurs="1"
+					minOccurs="1" />
+				<xs:element name="contenttype" type="xs:string"
+					maxOccurs="1" minOccurs="1" />
+				<xs:element name="analyzer" type="xs:string"
+					maxOccurs="1" minOccurs="0" />
+				<xs:element name="index" type="indexType" maxOccurs="1"
+					minOccurs="0" />
+				<xs:element name="store" type="storeType" maxOccurs="1"
+					minOccurs="0" />
+			</xs:all>
+			<xs:attribute name="name" type="xs:string" use="required" />
+			<xs:attribute name="boost" type="boostType" />
+		</xs:complexType>
+
+	</xs:element>
+
+
 </xs:schema>
