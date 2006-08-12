@@ -137,6 +137,28 @@ public class TestOpenBitSet extends TestCase {
     // doRandomSets(2000,200000);
   }
 
+  public void testEquals() {
+    OpenBitSet b1 = new OpenBitSet(1111);
+    OpenBitSet b2 = new OpenBitSet(2222);
+    assertTrue(b1.equals(b2));
+    assertTrue(b2.equals(b1));
+    b1.set(10);
+    assertFalse(b1.equals(b2));
+    assertFalse(b2.equals(b1));
+    b2.set(10);
+    assertTrue(b1.equals(b2));
+    assertTrue(b2.equals(b1));
+    b2.set(2221);
+    assertFalse(b1.equals(b2));
+    assertFalse(b2.equals(b1));
+    b1.set(2221);
+    assertTrue(b1.equals(b2));
+    assertTrue(b2.equals(b1));
+
+    // try different type of object
+    assertFalse(b1.equals(1));
+  }
+
 }
 
 

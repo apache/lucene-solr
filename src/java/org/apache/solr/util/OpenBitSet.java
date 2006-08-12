@@ -655,7 +655,7 @@ public class OpenBitSet implements Cloneable, Serializable {
   /** returns true if both sets have the same bits set */
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(this instanceof OpenBitSet)) return false;
+    if (!(o instanceof OpenBitSet)) return false;
     OpenBitSet a;
     OpenBitSet b = (OpenBitSet)o;
     // make a the larger set.
