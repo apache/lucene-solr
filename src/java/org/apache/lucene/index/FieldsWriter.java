@@ -23,6 +23,7 @@ import java.util.zip.Deflater;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 
@@ -55,7 +56,7 @@ final class FieldsWriter
         int storedCount = 0;
         Enumeration fields = doc.fields();
         while (fields.hasMoreElements()) {
-            Field field = (Field) fields.nextElement();
+            Fieldable field = (Fieldable) fields.nextElement();
             if (field.isStored())
                 storedCount++;
         }
@@ -63,7 +64,11 @@ final class FieldsWriter
 
         fields = doc.fields();
         while (fields.hasMoreElements()) {
-            Field field = (Field) fields.nextElement();
+            Fieldable field = (Fieldable) fields.nextElement();
+            // if the field as an instanceof FieldsReader.FieldForMerge, we're in merge mode
+            // and field.binaryValue() already returns the compressed value for a field
+            // with isCompressed()==true, so we disable compression in that case
+            boolean disableCompression = (field instanceof FieldsReader.FieldForMerge);
             if (field.isStored()) {
                 fieldsStream.writeVInt(fieldInfos.fieldNumber(field.name()));
 
@@ -80,12 +85,19 @@ final class FieldsWriter
                 if (field.isCompressed()) {
                   // compression is enabled for the current field
                   byte[] data = null;
-                  // check if it is a binary field
-                  if (field.isBinary()) {
-                    data = compress(field.binaryValue());
-                  }
-                  else {
-                    data = compress(field.stringValue().getBytes("UTF-8"));
+                  
+                  if (disableCompression) {
+                      // optimized case for merging, the data
+                      // is already compressed
+                      data = field.binaryValue();
+                  } else {
+                      // check if it is a binary field
+                      if (field.isBinary()) {
+                        data = compress(field.binaryValue());
+                      }
+                      else {
+                        data = compress(field.stringValue().getBytes("UTF-8"));
+                      }
                   }
                   final int len = data.length;
                   fieldsStream.writeVInt(len);

@@ -21,6 +21,8 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.io.IOException;
 
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
@@ -177,13 +179,22 @@ final class SegmentMerger {
 
     FieldsWriter fieldsWriter = // merge field values
             new FieldsWriter(directory, segment, fieldInfos);
+    
+    // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
+    // in  merge mode, we use this FieldSelector
+    FieldSelector fieldSelectorMerge = new FieldSelector() {
+      public FieldSelectorResult accept(String fieldName) {
+        return FieldSelectorResult.LOAD_FOR_MERGE;
+      }        
+    };
+    
     try {
       for (int i = 0; i < readers.size(); i++) {
         IndexReader reader = (IndexReader) readers.elementAt(i);
         int maxDoc = reader.maxDoc();
         for (int j = 0; j < maxDoc; j++)
           if (!reader.isDeleted(j)) {               // skip deleted docs
-            fieldsWriter.addDocument(reader.document(j));
+            fieldsWriter.addDocument(reader.document(j, fieldSelectorMerge));
             docCount++;
           }
       }

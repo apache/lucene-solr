@@ -26,11 +26,11 @@ public final class FieldSelectorResult {
   public static final FieldSelectorResult LAZY_LOAD = new FieldSelectorResult(1);
   public static final FieldSelectorResult NO_LOAD = new FieldSelectorResult(2);
   public static final FieldSelectorResult LOAD_AND_BREAK = new FieldSelectorResult(3);
-  
+  public static final FieldSelectorResult LOAD_FOR_MERGE = new FieldSelectorResult(4);
+
   private int id;
 
-  private FieldSelectorResult(int id)
-  {
+  private FieldSelectorResult(int id) {
     this.id = id;
   }
 

@@ -108,6 +108,10 @@ Optimizations
      internal "files", allowing them to be GCed even if references to the
      RAMDirectory itself still exist. (Nadav Har'El via Chris Hostetter)
 
+  3. LUCENE-629: Compressed fields are no longer uncompressed and recompressed
+     during segment merges (e.g. during indexing or optimizing), thus improving
+     performance . (Michael Busch via Otis Gospodnetic)
+
 Release 2.0.0 2006-05-26
 
 API Changes

@@ -16,15 +16,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.*;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+
+import org.apache.lucene.document.AbstractField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
 
 /**
  * Class responsible for access to stored document fields.
@@ -88,6 +93,9 @@ final class FieldsReader {
       boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;
       if (acceptField.equals(FieldSelectorResult.LOAD) == true) {
         addField(doc, fi, binary, compressed, tokenize);
+      }
+      else if (acceptField.equals(FieldSelectorResult.LOAD_FOR_MERGE) == true) {
+        addFieldForMerge(doc, fi, binary, compressed, tokenize);
       }
       else if (acceptField.equals(FieldSelectorResult.LOAD_AND_BREAK) == true){
         addField(doc, fi, binary, compressed, tokenize);
@@ -161,6 +169,22 @@ final class FieldsReader {
 
   }
 
+  // in merge mode we don't uncompress the data of a compressed field
+  private void addFieldForMerge(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
+    Object data;
+      
+    if (binary || compressed) {
+      int toRead = fieldsStream.readVInt();
+      final byte[] b = new byte[toRead];
+      fieldsStream.readBytes(b, 0, b.length);
+      data = b;
+    } else {
+      data = fieldsStream.readString();
+    }
+      
+    doc.add(new FieldForMerge(data, fi, binary, compressed, tokenize));
+  }
+  
   private void addField(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
 
     //we have a binary stored field, and it may be compressed
@@ -369,5 +393,38 @@ final class FieldsReader {
     
     // Get the decompressed data
     return bos.toByteArray();
+  }
+  
+  // Instances of this class hold field properties and data
+  // for merge
+  final static class FieldForMerge extends AbstractField {
+    public String stringValue() {
+      return (String) this.fieldsData;
+    }
+
+    public Reader readerValue() {
+      // not needed for merge
+      return null;
+    }
+
+    public byte[] binaryValue() {
+      return (byte[]) this.fieldsData;
+    }
+    
+    public FieldForMerge(Object value, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) {
+      this.isStored = true;  
+      this.fieldsData = value;
+      this.isCompressed = compressed;
+      this.isBinary = binary;
+      this.isTokenized = tokenize;
+
+      this.name = fi.name.intern();
+      this.isIndexed = fi.isIndexed;
+      this.omitNorms = fi.omitNorms;          
+      this.storeOffsetWithTermVector = fi.storeOffsetWithTermVector;
+      this.storePositionWithTermVector = fi.storePositionWithTermVector;
+      this.storeTermVector = fi.storeTermVector;            
+    }
+     
   }
 }
