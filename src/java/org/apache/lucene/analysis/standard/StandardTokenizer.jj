@@ -110,17 +110,32 @@ TOKEN : {					  // token patterns
 | < CJ:                                          // Chinese, Japanese
       [
        "\u3040"-"\u318f",
-       "\u31f0"-"\u31ff",
+       "\u3100"-"\u312f",    // BaPoMoFo (aka ZhuYin)
+       "\u3040"-"\u309F",    // Japanese: Hiragana
+       "\u30A0"-"\u30FF",    // Japanese: Katakana
+       "\u31F0"-"\u31FF",    // Japanese: Katakana Phonetic Extensions
        "\u3300"-"\u337f",
-       "\u3400"-"\u4db5",
+       "\u3400"-"\u4dbf",    // CJK Unified Ideographs Ext. A
        "\u4e00"-"\u9fff",
        "\uf900"-"\ufaff",
        "\uff65"-"\uff9f"
+
+// Otis: consider adding these, too
+//
+// 2E80-2EFF: CJK Radicals Supplement
+// 2F00-2FDF: Kangxi Radicals
+// 3190-319F: Kanbun
+// 31C0-31EF: CJK Strokes
+// 4E00-9FBF: CJK Unified
+// F900-FAFF: CJK Compatibility Ideographs
+
       ]
   >
 | < KOREAN:                                          // Korean
       [
-       "\uac00"-"\ud7a3"
+       "\uac00"-"\ud7af",     // Hangul Syllables
+       "\u1100"-"\u11ff"      // Hangul Jamo
+       // "\uac00"-"\ud7a3"
       ]
   >
 | < #DIGIT:					  // unicode digits

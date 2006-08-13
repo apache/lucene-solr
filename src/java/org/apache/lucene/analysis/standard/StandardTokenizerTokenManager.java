@@ -53,16 +53,16 @@ static final long[] jjbitVec4 = {
    0xffffffffffffffffL, 0xffffffffffffffffL, 0x0L, 0x0L
 };
 static final long[] jjbitVec5 = {
-   0xffffffffffffffffL, 0xffffffffffffffffL, 0x3fffffffffffffL, 0x0L
+   0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0x0L
 };
 static final long[] jjbitVec6 = {
    0x0L, 0xffffffe000000000L, 0xffffffffL, 0x0L
 };
 static final long[] jjbitVec7 = {
-   0x0L, 0x0L, 0xfffff00000000000L, 0x7fffffL
+   0x20000L, 0x0L, 0xfffff00000000000L, 0x7fffffL
 };
 static final long[] jjbitVec8 = {
-   0xffffffffffffffffL, 0xffffffffffffffffL, 0xfffffffffL, 0x0L
+   0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffL, 0x0L
 };
 static final long[] jjbitVec9 = {
    0xfffffffeL, 0x0L, 0x0L, 0x0L

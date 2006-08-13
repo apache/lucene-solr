@@ -15,7 +15,12 @@ Changes in runtime behavior
 
  2. LUCENE-478: Updated the list of Unicode code point ranges for CJK (now
     split into CJ and K) in StandardAnalyzer.
-    (John Want and Steven Rowe via Otis Gospodnetic)
+    (John Wang and Steven Rowe via Otis Gospodnetic)
+
+ 3. Modified some CJK Unicode code point ranges in StandardTokenizer.jj,
+    and added a few more of them to increase CJK character coverage.
+    Also documented some of the ranges.
+    (Otis Gospodnetic)
 
 New features
 
