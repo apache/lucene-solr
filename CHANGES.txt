@@ -200,7 +200,7 @@ Bug fixes
 
 1.9 final
 
-Note that this realease is mostly but not 100% source compatible with
+Note that this release is mostly but not 100% source compatible with
 the previous release of Lucene (1.4.3). In other words, you should
 make sure your application compiles with this version of Lucene before
 you replace the old Lucene JAR with the new one.  Many methods have
