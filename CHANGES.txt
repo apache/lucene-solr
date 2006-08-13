@@ -12,7 +12,11 @@ Changes in runtime behavior
     Note that this problem still exists for 'a', e.g. in 'a-class' as
     'a' continues to be a stopword.
     (Daniel Naber)
-    
+
+ 2. LUCENE-478: Updated the list of Unicode code point ranges for CJK (now
+    split into CJ and K) in StandardAnalyzer.
+    (John Want and Steven Rowe via Otis Gospodnetic)
+
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers

@@ -103,21 +103,24 @@ TOKEN : {					  // token patterns
        "\u00c0"-"\u00d6",
        "\u00d8"-"\u00f6",
        "\u00f8"-"\u00ff",
-       "\u0100"-"\u1fff"
+       "\u0100"-"\u1fff",
+       "\uffa0"-"\uffdc"
       ]
   >
 | < CJ:                                          // Chinese, Japanese
       [
        "\u3040"-"\u318f",
+       "\u31f0"-"\u31ff",
        "\u3300"-"\u337f",
-       "\u3400"-"\u3d2d",
+       "\u3400"-"\u4db5",
        "\u4e00"-"\u9fff",
-       "\uf900"-"\ufaff"
+       "\uf900"-"\ufaff",
+       "\uff65"-"\uff9f"
       ]
   >
 | < KOREAN:                                          // Korean
       [
-       "\uac00"-"\ud7af"
+       "\uac00"-"\ud7a3"
       ]
   >
 | < #DIGIT:					  // unicode digits

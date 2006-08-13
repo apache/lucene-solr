@@ -41,54 +41,60 @@ private final void jjCheckNAddStates(int start)
    jjCheckNAdd(jjnextStates[start + 1]);
 }
 static final long[] jjbitVec0 = {
-   0x1ff0000000000000L, 0xffffffffffffc000L, 0xffffffffL, 0x600000000000000L
+   0xfff0000000000000L, 0xffffffffffffdfffL, 0xffffffffL, 0x600000000000000L
 };
 static final long[] jjbitVec2 = {
    0x0L, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
 };
 static final long[] jjbitVec3 = {
-   0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffL, 0x0L
+   0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffL, 0xffff000000000000L
 };
 static final long[] jjbitVec4 = {
    0xffffffffffffffffL, 0xffffffffffffffffL, 0x0L, 0x0L
 };
 static final long[] jjbitVec5 = {
-   0x3fffffffffffL, 0x0L, 0x0L, 0x0L
+   0xffffffffffffffffL, 0xffffffffffffffffL, 0x3fffffffffffffL, 0x0L
 };
 static final long[] jjbitVec6 = {
-   0x0L, 0x0L, 0xfffff00000000000L, 0x7fffffL
+   0x0L, 0xffffffe000000000L, 0xffffffffL, 0x0L
 };
 static final long[] jjbitVec7 = {
-   0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffL, 0x0L
+   0x0L, 0x0L, 0xfffff00000000000L, 0x7fffffL
 };
 static final long[] jjbitVec8 = {
-   0xfffffffeL, 0x0L, 0x0L, 0x0L
+   0xffffffffffffffffL, 0xffffffffffffffffL, 0xfffffffffL, 0x0L
 };
 static final long[] jjbitVec9 = {
-   0x0L, 0x0L, 0x0L, 0xff7fffffff7fffffL
+   0xfffffffeL, 0x0L, 0x0L, 0x0L
 };
 static final long[] jjbitVec10 = {
-   0x1600L, 0x0L, 0x0L, 0x0L
+   0x0L, 0x0L, 0x0L, 0xff7fffffff7fffffL
 };
 static final long[] jjbitVec11 = {
-   0x0L, 0xffc000000000L, 0x0L, 0xffc000000000L
+   0x0L, 0x0L, 0xffffffff00000000L, 0x1fffffffL
 };
 static final long[] jjbitVec12 = {
-   0x0L, 0x3ff00000000L, 0x0L, 0x3ff000000000000L
+   0x1600L, 0x0L, 0x0L, 0x0L
 };
 static final long[] jjbitVec13 = {
-   0x0L, 0xffc000000000L, 0x0L, 0xff8000000000L
+   0x0L, 0xffc000000000L, 0x0L, 0xffc000000000L
 };
 static final long[] jjbitVec14 = {
-   0x0L, 0xffc000000000L, 0x0L, 0x0L
+   0x0L, 0x3ff00000000L, 0x0L, 0x3ff000000000000L
 };
 static final long[] jjbitVec15 = {
-   0x0L, 0x3ff0000L, 0x0L, 0x3ff0000L
+   0x0L, 0xffc000000000L, 0x0L, 0xff8000000000L
 };
 static final long[] jjbitVec16 = {
-   0x0L, 0x3ffL, 0x0L, 0x0L
+   0x0L, 0xffc000000000L, 0x0L, 0x0L
 };
 static final long[] jjbitVec17 = {
+   0x0L, 0x3ff0000L, 0x0L, 0x3ff0000L
+};
+static final long[] jjbitVec18 = {
+   0x0L, 0x3ffL, 0x0L, 0x0L
+};
+static final long[] jjbitVec19 = {
    0xfffffffeL, 0x0L, 0xfffff00000000000L, 0x7fffffL
 };
 private final int jjMoveNfa_0(int startState, int curPos)
@@ -1012,8 +1018,10 @@ private static final boolean jjCanMove_0(int hiByte, int i1, int i2, long l1, lo
          return ((jjbitVec3[i2] & l2) != 0L);
       case 51:
          return ((jjbitVec4[i2] & l2) != 0L);
-      case 61:
+      case 77:
          return ((jjbitVec5[i2] & l2) != 0L);
+      case 255:
+         return ((jjbitVec6[i2] & l2) != 0L);
       default : 
          if ((jjbitVec0[i1] & l1) != 0L)
             return true;
@@ -1025,9 +1033,9 @@ private static final boolean jjCanMove_1(int hiByte, int i1, int i2, long l1, lo
    switch(hiByte)
    {
       case 215:
-         return ((jjbitVec7[i2] & l2) != 0L);
+         return ((jjbitVec8[i2] & l2) != 0L);
       default : 
-         if ((jjbitVec6[i1] & l1) != 0L)
+         if ((jjbitVec7[i1] & l1) != 0L)
             return true;
          return false;
    }
@@ -1037,9 +1045,11 @@ private static final boolean jjCanMove_2(int hiByte, int i1, int i2, long l1, lo
    switch(hiByte)
    {
       case 0:
-         return ((jjbitVec9[i2] & l2) != 0L);
+         return ((jjbitVec10[i2] & l2) != 0L);
+      case 255:
+         return ((jjbitVec11[i2] & l2) != 0L);
       default : 
-         if ((jjbitVec8[i1] & l1) != 0L)
+         if ((jjbitVec9[i1] & l1) != 0L)
             return true;
          return false;
    }
@@ -1049,18 +1059,18 @@ private static final boolean jjCanMove_3(int hiByte, int i1, int i2, long l1, lo
    switch(hiByte)
    {
       case 6:
-         return ((jjbitVec12[i2] & l2) != 0L);
-      case 11:
-         return ((jjbitVec13[i2] & l2) != 0L);
-      case 13:
          return ((jjbitVec14[i2] & l2) != 0L);
-      case 14:
+      case 11:
          return ((jjbitVec15[i2] & l2) != 0L);
-      case 16:
+      case 13:
          return ((jjbitVec16[i2] & l2) != 0L);
+      case 14:
+         return ((jjbitVec17[i2] & l2) != 0L);
+      case 16:
+         return ((jjbitVec18[i2] & l2) != 0L);
       default : 
-         if ((jjbitVec10[i1] & l1) != 0L)
-            if ((jjbitVec11[i2] & l2) == 0L)
+         if ((jjbitVec12[i1] & l1) != 0L)
+            if ((jjbitVec13[i2] & l2) == 0L)
                return false;
             else
             return true;
@@ -1072,11 +1082,13 @@ private static final boolean jjCanMove_4(int hiByte, int i1, int i2, long l1, lo
    switch(hiByte)
    {
       case 0:
-         return ((jjbitVec9[i2] & l2) != 0L);
+         return ((jjbitVec10[i2] & l2) != 0L);
       case 215:
-         return ((jjbitVec7[i2] & l2) != 0L);
+         return ((jjbitVec8[i2] & l2) != 0L);
+      case 255:
+         return ((jjbitVec11[i2] & l2) != 0L);
       default : 
-         if ((jjbitVec17[i1] & l1) != 0L)
+         if ((jjbitVec19[i1] & l1) != 0L)
             return true;
          return false;
    }
