@@ -121,6 +121,9 @@ Optimizations
      during segment merges (e.g. during indexing or optimizing), thus improving
      performance . (Michael Busch via Otis Gospodnetic)
 
+  4. LUCENE-388: Changes to maybeMergeSegments() to improve indexing speed.
+     (Paul Smith via Otis Gospodnetic)
+
 Release 2.0.0 2006-05-26
 
 API Changes
