@@ -368,7 +368,7 @@ public class OpenBitSet implements Cloneable, Serializable {
     ***/
 
     long startmask = -1L << startIndex;
-    long endmask = (endIndex&0x3c)==0 ? 0 : -1L >>> (64-endIndex);
+    long endmask = (endIndex&0x3f)==0 ? 0 : -1L >>> (64-endIndex);
 
     if (this.wlen <= endWord) {
       this.wlen = endWord;

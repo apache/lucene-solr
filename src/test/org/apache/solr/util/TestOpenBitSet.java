@@ -64,6 +64,11 @@ public class TestOpenBitSet extends TestCase {
           idx = rand.nextInt(sz);
           a.flip(idx);
           b.fastFlip(idx);
+          int idx1 = rand.nextInt(sz);
+          int idx2 = rand.nextInt(sz);
+          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
+          a.flip(idx1,idx2);
+          b.flip(idx1,idx2);
 
           boolean val = b.flipAndGet(idx);
           boolean val2 = b.flipAndGet(idx);
