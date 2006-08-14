@@ -110,7 +110,6 @@ public class IndexWriter {
   private SegmentInfos segmentInfos = new SegmentInfos(); // the segments
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
 
-  private long bufferedDocCount = 0;
   private Lock writeLock;
 
   private int termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
@@ -510,7 +509,6 @@ public class IndexWriter {
     dw.addDocument(segmentName, doc);
     synchronized (this) {
       segmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory));
-      bufferedDocCount++;
       maybeMergeSegments();
     }
   }
@@ -693,15 +691,6 @@ public class IndexWriter {
 
   /** Incremental segment merger.  */
   private final void maybeMergeSegments() throws IOException {
-    /**
-     *  do not bother checking the segment details to determine
-     *  if we should merge, but instead honour the maxBufferedDocs(minMergeDocs)
-     *  property to ensure we do not spend time checking for merge conditions
-     *  
-     */
-    if(bufferedDocCount<minMergeDocs) {
-        return;
-    }
     long targetMergeDocs = minMergeDocs;
     while (targetMergeDocs <= maxMergeDocs) {
       // find segments smaller than current target size
@@ -752,8 +741,6 @@ public class IndexWriter {
 
     int mergedDocCount = merger.merge();
 
-    bufferedDocCount -= mergedDocCount; // update bookkeeping about how many docs we have buffered
-    
     if (infoStream != null) {
       infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
     }
