@@ -108,5 +108,28 @@ public class IndexDocumentStub implements IndexDocument {
     public void setOptimizeAfter(boolean optimizeAfter) {
         this.optimizeAfter = optimizeAfter;
     }
+    
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public final boolean equals(Object obj) {
+        if(obj == null)
+            return false;
+        if(obj instanceof IndexDocumentStub){
+            IndexDocumentStub other = (IndexDocumentStub)obj;
+            return this.document.getField(IndexDocument.FIELD_ENTRY_ID).stringValue().equals(other.document.getField(IndexDocument.FIELD_ENTRY_ID).stringValue());
+              
+        }
+        return false; 
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public final int hashCode() {
+        return this.document.getField(IndexDocument.FIELD_ENTRY_ID).stringValue().hashCode();
+    }
 
 }

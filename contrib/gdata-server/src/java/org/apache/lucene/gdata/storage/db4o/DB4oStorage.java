@@ -46,6 +46,8 @@ import com.google.gdata.data.DateTime;
 public class DB4oStorage implements Storage {
     private static final Log LOG = LogFactory.getLog(DB4oStorage.class);
 
+    private static final int RENDER_ACTIVATION_DEPTH = 100;
+
     private final ObjectContainer container;
 
     private final StorageController controller;
@@ -309,6 +311,7 @@ public class DB4oStorage implements Storage {
         for (DB4oEntry entry : sublist) {
             persistentFeed.getEntries().add(clearDynamicElements(entry.getEntry()));
         }
+        this.container.activate(persistentFeed,RENDER_ACTIVATION_DEPTH);
         return persistentFeed;
 
     }
@@ -361,7 +364,9 @@ public class DB4oStorage implements Storage {
             throw new StorageException("can not retrieve entry -- id is null");
         if (LOG.isInfoEnabled())
             LOG.info("Retrieving entry for entryID: " + entry.getId());
-        return clearDynamicElements(getInternalEntry(entry.getId()).getEntry());
+        DB4oEntry retval = getInternalEntry(entry.getId());
+        this.container.activate(retval.getEntry(),RENDER_ACTIVATION_DEPTH);
+        return clearDynamicElements(retval.getEntry());
     }
 
     @SuppressWarnings("unchecked")

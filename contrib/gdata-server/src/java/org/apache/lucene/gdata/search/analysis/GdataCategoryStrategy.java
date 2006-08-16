@@ -94,10 +94,13 @@ public class GdataCategoryStrategy extends ContentStrategy {
 
         StringBuilder contentBuilder = new StringBuilder();
         StringBuilder schemeBuilder = new StringBuilder();
+        String nodeName = node.getNodeName();
         /*
-         * enable more than one category element
+         * enable more than one category element -- check the node name if
+         * category strategy is used with an element not named "category"
          */
-        while (node != null) {
+        while (node != null && nodeName != null
+                && nodeName.equals(node.getNodeName())) {
             NamedNodeMap attributeMap = node.getAttributes();
             if (attributeMap == null)
                 throw new NotIndexableException(
@@ -112,7 +115,7 @@ public class GdataCategoryStrategy extends ContentStrategy {
                 throw new NotIndexableException(
                         "category term attribute not present");
             contentBuilder.append(termNode.getTextContent()).append(" ");
-            
+
             Node labelNode = attributeMap.getNamedItem(LABEL);
             if (labelNode != null)
                 contentBuilder.append(labelNode.getTextContent()).append(" ");

@@ -11,7 +11,7 @@
     <property name="db4o.jar" value="db4o-5.2-java5.jar" /> 
     <!-- set property for third party jars --> 
     <available property="db4o.jar.present" type="file" file="${gdata.lib.dir}/${db4o.jar}" value="test"/> 
-    <condition property="junit.excludes" value="**/TestDb4o*.java"> 
+    <condition property="junit.excludes" value="**/db4o/**/*.java"> 
         <not> 
             <isset property="db4o.jar.present"/> 
         </not> 

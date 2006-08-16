@@ -133,4 +133,34 @@ class GDataIndexDocument implements IndexDocument {
         return this.optimizeAfter;
     }
 
+    /**
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    @Override
+    public final boolean equals(Object obj) {
+        if(obj == null)
+            return false;
+        if(this == obj)
+            return true;
+        if(obj instanceof GDataIndexDocument){
+            GDataIndexDocument other = (GDataIndexDocument)obj; 
+            if(this.id == null)
+                return false;
+            return this.id.equals(other.id);
+        }
+        return false; 
+    }
+
+    /**
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public final int hashCode() {
+        if(this.id == null)
+            return super.hashCode();
+        return this.id.hashCode();
+    }
+    
+    
+
 }

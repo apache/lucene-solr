@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.data.ServerBaseEntry;
+import org.apache.lucene.gdata.data.ServerBaseFeed;
 import org.apache.lucene.gdata.search.GDataSearcher;
 import org.apache.lucene.gdata.search.SearchComponent;
 import org.apache.lucene.gdata.search.StandardGdataSearcher;
@@ -115,10 +117,8 @@ public class IndexController implements SearchComponent, IndexEventListener,
      * add a schema to the index controller and create the indexer. create
      * directories and check out existing indexes
      */
-    protected void addIndexSchema(IndexSchema schema) {
-        if (this.destroyed.get())
-            throw new IllegalStateException(
-                    "IndexController has been destroyed");
+    protected void addIndexSchema(final IndexSchema schema) {
+        checkDestroyed();
         if (schema.getName() == null)
             throw new IllegalStateException(
                     "schema has no name -- is not associated with any service");
@@ -142,7 +142,7 @@ public class IndexController implements SearchComponent, IndexEventListener,
 
     }
 
-    protected ServiceIndex createIndexer(IndexSchema schema) throws IOException {
+    protected ServiceIndex createIndexer(final IndexSchema schema) throws IOException {
         GDataIndexer indexer;
         File indexLocation = createIndexLocation(schema.getIndexLocation(),
                 schema.getName());
@@ -166,7 +166,7 @@ public class IndexController implements SearchComponent, IndexEventListener,
     /*
      * if this fails the server must not startup!!
      */
-    protected File createIndexLocation(String path, String name) {
+    protected File createIndexLocation(final String path,final  String name) {
         if (path == null || name == null)
             throw new GdataIndexerException(
                     "Path or Name of the index location is not set Path: "
@@ -205,7 +205,7 @@ public class IndexController implements SearchComponent, IndexEventListener,
         return file;
     }
 
-    protected boolean createIndexDirectory(File file) {
+    protected boolean createIndexDirectory(final File file) {
         /*
          * use a lucene filename filter to figure out if there is an existing
          * index in the defined directory
@@ -218,10 +218,8 @@ public class IndexController implements SearchComponent, IndexEventListener,
     /**
      * @see org.apache.lucene.gdata.search.index.IndexEventListener#commitCallBack(java.lang.String)
      */
-    public synchronized void commitCallBack(String service) {
-        if (this.destroyed.get())
-            throw new IllegalStateException(
-                    "IndexController has been destroyed");
+    public synchronized void commitCallBack(final String service) {
+        checkDestroyed();
         if(LOG.isInfoEnabled())
             LOG.info("CommitCallback triggered - register new searcher for service: "+service);
         /*
@@ -245,7 +243,7 @@ public class IndexController implements SearchComponent, IndexEventListener,
      * create a new ReferenceCounter for the indexSearcher.
      * The reference is already incremented before returned
      */
-    private ReferenceCounter<IndexSearcher> getNewServiceSearcher(Directory dir)
+    private ReferenceCounter<IndexSearcher> getNewServiceSearcher(final Directory dir)
             throws IOException {
         if(LOG.isInfoEnabled())
             LOG.info("Create new ServiceSearcher");
@@ -272,34 +270,58 @@ public class IndexController implements SearchComponent, IndexEventListener,
     /**
      * @see org.apache.lucene.gdata.server.registry.EntryEventListener#fireUpdateEvent(org.apache.lucene.gdata.data.ServerBaseEntry)
      */
-    public void fireUpdateEvent(ServerBaseEntry entry) {
+    public void fireUpdateEvent(final ServerBaseEntry entry) {
         createNewIndexerTask(entry, IndexAction.UPDATE);
     }
 
     /**
      * @see org.apache.lucene.gdata.server.registry.EntryEventListener#fireInsertEvent(org.apache.lucene.gdata.data.ServerBaseEntry)
      */
-    public void fireInsertEvent(ServerBaseEntry entry) {
+    public void fireInsertEvent(final ServerBaseEntry entry) {
         createNewIndexerTask(entry, IndexAction.INSERT);
     }
 
     /**
      * @see org.apache.lucene.gdata.server.registry.EntryEventListener#fireDeleteEvent(org.apache.lucene.gdata.data.ServerBaseEntry)
      */
-    public void fireDeleteEvent(ServerBaseEntry entry) {
+    public void fireDeleteEvent(final ServerBaseEntry entry) {
         createNewIndexerTask(entry, IndexAction.DELETE);
 
     }
+    
+    /**
+     * @see org.apache.lucene.gdata.server.registry.EntryEventListener#fireDeleteAllEntries(org.apache.lucene.gdata.data.ServerBaseFeed)
+     */
+    public void fireDeleteAllEntries(final ServerBaseFeed feed) {
+        createNewDeleteAllEntriesTask(feed);
+    }
+    
+    private void createNewDeleteAllEntriesTask(final ServerBaseFeed feed){
+        checkDestroyed();
+        checkInitialized();
+        if(LOG.isInfoEnabled())
+            LOG.info("Deleting all entries for feed dispatch new IndexDocumentBuilder -- "+feed.getId());
+        String serviceName = feed.getServiceConfig().getName();
+        ServiceIndex bean = this.indexerMap.get(serviceName);
+        if (bean == null)
+            throw new RuntimeException("no indexer for service " + serviceName
+                    + " registered");
+        Lock lock = bean.getLock();
+        lock.lock();
+        try{
+            IndexDocumentBuilder<IndexDocument> callable = new IndexFeedDeleteTask(feed.getId());
+            sumbitTask(callable,bean.getIndexer());
+        }finally{
+            lock.unlock();
+        }
+            
+        
+    }
 
     // TODO add test for this method!!
-    private void createNewIndexerTask(ServerBaseEntry entry, IndexAction action) {
-        if (this.destroyed.get())
-            throw new IllegalStateException(
-                    "IndexController has been destroyed");
-        if(!this.isInitialized.get())
-            throw new IllegalStateException(
-            "IndexController has not been initialized");
-
+    private void createNewIndexerTask(final ServerBaseEntry entry, final IndexAction action) {
+        checkDestroyed();
+        checkInitialized();
         String serviceName = entry.getServiceConfig().getName();
         if (LOG.isInfoEnabled())
             LOG.info("New Indexer Task submitted - Action: " + action
@@ -320,15 +342,7 @@ public class IndexController implements SearchComponent, IndexEventListener,
             boolean commitAfter = bean.incrementActionAndReset(schema.getCommitAfterDocuments());
             IndexDocumentBuilder<IndexDocument> callable = new IndexDocumentBuilderTask<IndexDocument>(
                     entry, bean.getSchema(), action, commitAfter,bean.getOptimize(schema.getOptimizeAfterCommit()));
-            Future<IndexDocument> task = this.taskExecutor.submit(callable);
-            GDataIndexer indexer = bean.getIndexer();
-            try {
-                indexer.addIndexableDocumentTask(task);
-            } catch (InterruptedException e) {
-                throw new GdataIndexerException(
-                        "Can not accept any index tasks -- interrupted. ", e);
-
-            }
+            sumbitTask(callable,bean.getIndexer());
         } finally {
             /*
              * make sure to unlock
@@ -338,15 +352,24 @@ public class IndexController implements SearchComponent, IndexEventListener,
 
     }
 
-    
+    private void sumbitTask(final Callable<IndexDocument> callable, final GDataIndexer indexer){
+        Future<IndexDocument> task = this.taskExecutor.submit(callable);
+        try {
+            indexer.addIndexableDocumentTask(task);
+        } catch (InterruptedException e) {
+            throw new GdataIndexerException(
+                    "Can not accept any index tasks -- interrupted. ", e);
+
+        }
+    }    
 
     /**
      * @see org.apache.lucene.gdata.search.SearchComponent#getServiceSearcher(org.apache.lucene.gdata.server.registry.ProvidedService)
      */
-    public GDataSearcher<String> getServiceSearcher(ProvidedService service) {
-        if (this.destroyed.get())
-            throw new IllegalStateException(
-                    "IndexController has been destroyed");
+    public GDataSearcher<String> getServiceSearcher(final ProvidedService service) {
+        checkDestroyed();
+        checkInitialized();
+
         /*
          * get and increment. searcher will be decremented if GdataSearcher is
          * closed
@@ -367,10 +390,8 @@ public class IndexController implements SearchComponent, IndexEventListener,
      * @see org.apache.lucene.gdata.search.SearchComponent#destroy()
      */
     public synchronized void destroy() {
-        if (this.destroyed.get())
-            throw new IllegalStateException(
-                    "IndexController has been destroyed");
-        if (!this.isInitialized.get())
+        checkDestroyed();
+        if(!this.isInitialized.get())
             return;
         this.destroyed.set(true);
         this.isInitialized.set(false);
@@ -391,7 +412,19 @@ public class IndexController implements SearchComponent, IndexEventListener,
         this.indexerMap.clear();
     }
 
-    static class ServiceIndex {
+    private void checkDestroyed(){
+        if (this.destroyed.get())
+            throw new IllegalStateException(
+                    "IndexController has been destroyed");   
+    }
+    private void checkInitialized(){
+        if(!this.isInitialized.get())
+            throw new IllegalStateException(
+            "IndexController has not been initialized");
+    }   
+    
+    
+    final static class ServiceIndex {
         private AtomicInteger actionCount = new AtomicInteger(0);
         
         private AtomicInteger commitCount = new AtomicInteger(0);
@@ -508,4 +541,6 @@ public class IndexController implements SearchComponent, IndexEventListener,
             return false;
         }
     }
+
+
 }

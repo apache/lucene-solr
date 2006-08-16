@@ -55,6 +55,7 @@ public class GDataSearchService extends GDataService {
     /**
      * @see org.apache.lucene.gdata.server.GDataService#getFeed(org.apache.lucene.gdata.server.GDataRequest, org.apache.lucene.gdata.server.GDataResponse)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public BaseFeed getFeed(GDataRequest request, GDataResponse response) throws ServiceException {
         String translatedQuery = request.getTranslatedQuery();
@@ -85,8 +86,12 @@ public class GDataSearchService extends GDataService {
         requestFeed.setStartIndex(0);
         requestFeed.setItemsPerPage(0);
         requestFeed.setId(request.getFeedId());
-        
-        BaseFeed feed = this.storage.getFeed(requestFeed);
+        BaseFeed feed = null;
+        try{
+         feed = this.storage.getFeed(requestFeed);
+        }catch (StorageException e) {
+            throw new ServiceException("Search Failed -- can not get feed, feed not stored ",e,GDataResponse.NOT_FOUND);
+        }
         for (String entryId : result) {
             ServerBaseEntry requestEntry = new ServerBaseEntry();
             requestEntry.setId(entryId);

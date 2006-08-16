@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.gdata.data.ServerBaseEntry;
+import org.apache.lucene.gdata.data.ServerBaseFeed;
 
 /**
  * This class will be informed about every successful entry event and
@@ -40,8 +41,8 @@ public abstract class EntryEventMediator {
     public abstract EntryEventMediator getEntryEventMediator();
 
     /**
-     * Registers a {@link EntryEventListener}. This listner will be fired if an
-     * entry update, insert or delete occures
+     * Registers a {@link EntryEventListener}. This listener will be fired if an
+     * entry update, insert or delete occurs
      * 
      * @param listener -
      *            listener to register
@@ -71,6 +72,15 @@ public abstract class EntryEventMediator {
             listener.fireInsertEvent(entry);
         }
     }
+    
+    /**
+     * @param feed - the feed to delete all entries for
+     */
+    public void allEntriesDeleted(final ServerBaseFeed feed){
+        for (EntryEventListener listener : this.entryEventListener) {
+            listener.fireDeleteAllEntries(feed);
+        }
+    }
 
     /**
      * @param entry -
@@ -82,6 +92,11 @@ public abstract class EntryEventMediator {
         }
     }
     
+    /**
+     * checks if the listener is already registered.
+     * @param listner - the listener to check
+     * @return <code>true</code> if and only if the given listener is already registered, otherwise <code>false</code>.
+     */
     public boolean isListenerRegistered(final EntryEventListener listner){
         return listner!=null&&this.entryEventListener.contains(listner);
     }

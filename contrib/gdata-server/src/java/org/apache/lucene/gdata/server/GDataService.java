@@ -61,7 +61,7 @@ public class GDataService implements Service {
 
     private static final String XMLMIME = "application/atom+xml";
     
-    private final EntryEventMediator entryEventMediator;
+    protected final EntryEventMediator entryEventMediator;
     static {
         generator = new Generator();
         generator.setName(generatorName);

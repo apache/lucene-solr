@@ -166,6 +166,8 @@ public class DB4oController implements StorageController, ScopeVisitor {
         Db4o.configure().optimizeNativeQueries(false);
         if (this.runAsServer) {
             this.server = Db4o.openServer(this.filePath, this.port);
+            if(this.server == null)
+                throw new RuntimeException("Can't create server at confiugred destination -- "+this.filePath);
             this.server.grantAccess(this.user, this.password);
         } else {
             InvocationHandler handler = new ObjectServerDecorator(this.user,

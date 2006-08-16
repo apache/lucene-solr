@@ -17,6 +17,7 @@
 package org.apache.lucene.gdata.server.registry;
 
 import org.apache.lucene.gdata.data.ServerBaseEntry;
+import org.apache.lucene.gdata.data.ServerBaseFeed;
 
 /**
  * The EntryEventListener interface should be implemented by any class needs to be informed about any changes on entries.
@@ -45,4 +46,10 @@ public interface EntryEventListener {
      * @param entry
      */
     public abstract void fireDeleteEvent(ServerBaseEntry entry);
+    
+    /**
+     * will be invoked on every successful feed delete
+     * @param feed - the feed containing the feed id to delete all entries for
+     */
+    public abstract void fireDeleteAllEntries(ServerBaseFeed feed);
 }

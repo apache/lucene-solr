@@ -18,9 +18,9 @@ package org.apache.lucene.gdata.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.document.Document;
@@ -46,7 +46,7 @@ public class StandardGdataSearcher implements GDataSearcher<String> {
 
     private final ReferenceCounter<IndexSearcher> searcher;
 
-    private static final Map<String, QueryFilter> queryFilterCache = new WeakHashMap<String, QueryFilter>();
+    private static final Map<String, QueryFilter> queryFilterCache = new HashMap<String, QueryFilter>();
 
     /** constructs a new GdataSearcher
      * @param searcher - the current lucene searcher instance
@@ -77,15 +77,15 @@ public class StandardGdataSearcher implements GDataSearcher<String> {
         QueryFilter filter = null;
         synchronized (queryFilterCache) {
             filter = queryFilterCache.get(feedId);
-        }
+        
         if (filter == null)
             filter = new QueryFilter(new TermQuery(new Term(
                     IndexDocument.FIELD_FEED_ID, feedId)));
-        IndexSearcher indexSearcher = this.searcher.get();
-        Hits hits = indexSearcher.search(query, filter);
-        synchronized (queryFilterCache) {
             queryFilterCache.put(feedId, filter);
         }
+        IndexSearcher indexSearcher = this.searcher.get();
+        Hits hits = indexSearcher.search(query, filter);
+        
         return collectHits(hits, hitcount, offset);
 
     }
@@ -126,7 +126,10 @@ public class StandardGdataSearcher implements GDataSearcher<String> {
     }
 
     static void flushFilterCache() {
-        queryFilterCache.clear();
+        synchronized (queryFilterCache) {
+            queryFilterCache.clear();
+        }
+        
     }
 
 }

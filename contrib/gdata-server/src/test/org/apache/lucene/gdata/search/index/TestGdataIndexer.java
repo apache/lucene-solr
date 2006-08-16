@@ -46,7 +46,7 @@ public class TestGdataIndexer extends TestCase {
 
     private static IndexSchema config;
 
-    private static String FIELD_ID = "id";
+    private static String FIELD_ID = IndexDocument.FIELD_ENTRY_ID;
 
     static {
         config = new IndexSchema();
@@ -244,7 +244,8 @@ public void testAddDocument() throws IOException {
         Hits h = s.search(new TermQuery(delTerm));
         assertEquals(1, h.length());
         s.close();
-        
+        String testFieldName = "someTestFieldupdate";
+        doc.add(new Field(testFieldName,"someText",Field.Store.YES,Field.Index.TOKENIZED));
         iDoc = new IndexDocumentStub(doc,delTerm,
                 IndexAction.UPDATE);
         /*
@@ -261,6 +262,7 @@ public void testAddDocument() throws IOException {
         s = new IndexSearcher(this.dir);
         h = s.search(new TermQuery(delTerm));
         assertEquals(1, h.length());
+        assertNotNull(h.doc(0).getField(testFieldName));
         s.close();
         
         iDoc = new IndexDocumentStub(doc,delTerm,
@@ -313,7 +315,7 @@ public void testAddDocument() throws IOException {
         s.close();
         
         /*
-         * test insert / del without commit
+         * test insert / del without optimize
          */ 
         iDoc = new IndexDocumentStub(doc,delTerm,
                  IndexAction.INSERT);
@@ -327,8 +329,31 @@ public void testAddDocument() throws IOException {
         assertEquals(0, h.length());
         s.close();
         
+        
+        
         /*
-         * test insert / update / del without commit
+         * test insert / del / update without optimize
+         */ 
+        iDoc = new IndexDocumentStub(doc,delTerm,
+                 IndexAction.INSERT);
+        this.indexer.addDocument(iDoc);
+        iDoc = new IndexDocumentStub(doc,delTerm,
+                IndexAction.DELETE);
+        this.indexer.deleteDocument(iDoc);
+        iDoc = new IndexDocumentStub(doc,delTerm,
+                IndexAction.INSERT);
+       this.indexer.addDocument(iDoc);
+        this.indexer.commit(false);
+        s = new IndexSearcher(this.dir);
+        h = s.search(new TermQuery(delTerm));
+        assertEquals(1, h.length());
+        s.close();
+        
+        
+        
+        
+        /*
+         * test insert / update / del without optimize
          */
         iDoc = new IndexDocumentStub(doc,delTerm,
                 IndexAction.INSERT);
@@ -344,6 +369,8 @@ public void testAddDocument() throws IOException {
         h = s.search(new TermQuery(delTerm));
         assertEquals(0, h.length());
         s.close();
+        
+        
         
         iDoc = new IndexDocumentStub(doc,delTerm,
                 IndexAction.UPDATE);

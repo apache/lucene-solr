@@ -320,7 +320,6 @@ public class GDataServerRegistry extends EntryEventMediator{
                     ScopeVisitor.class))
                 this.registerScopeVisitor((ScopeVisitor) comp);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RegistryException("Can not register component -- "
                     + e.getMessage(), e);
         }
