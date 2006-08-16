@@ -62,9 +62,10 @@ final class FieldInfos {
 
   /** Adds field info for a Document. */
   public void add(Document doc) {
-    Enumeration fields = doc.fields();
-    while (fields.hasMoreElements()) {
-      Fieldable field = (Fieldable) fields.nextElement();
+    List fields = doc.getFields();
+    Iterator fieldIterator = fields.iterator();
+    while (fieldIterator.hasNext()) {
+      Fieldable field = (Fieldable) fieldIterator.next();
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
               field.isStoreOffsetWithTermVector(), field.getOmitNorms());
     }
