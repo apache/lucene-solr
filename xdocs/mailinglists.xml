@@ -4,7 +4,7 @@
         <title>Apache Lucene - Mailing Lists</title>
     </properties>
     <body>
-       <section name="Java User list">
+       <section name="Java User List">
             <p>
               This list is for users of Java Lucene to ask questions, share knowledge,
               and discuss issues.
@@ -72,7 +72,7 @@
           </p>
         </section>
 
-        <section name="General Lucene list">
+        <section name="General Lucene List">
             <p>
               General discussion concerning all Lucene subprojects.
             </p>
