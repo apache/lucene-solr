@@ -85,7 +85,7 @@
                     <li>Case Studies from <a href="http://www.cnlp.org">CNLP</a>: Crosslingual/multilingual retrieval in Arabic, English and Dutch;
                         Sublanguage specialization for commercial trouble ticket analysis; Passage retrieval and
                         analysis for Question Answering application</li>                    
-                </ol>     
+                </ol>
       		<p>Topics 1 through 3 will provide technical details on implementing the advanced Lucene features, while the fourth topic will provide a broader context for understanding when and where to use these features.
             </p>
             
@@ -108,7 +108,7 @@
           <h3>29 November 2004 - Lucene 1.4.3 Released</h3>
 
              <p>This fixes a few bugs in 1.4.2.  See <a
-                href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96.2.6">CHANGES.txt</a>
+                href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_1_4_3/CHANGES.txt">CHANGES.txt</a>
                 for details.  Binary and source distributions are
                 available <a href="http://www.apache.org/dyn/closer.cgi/lucene/">here</a>.  After choosing your mirror, navigate to the archive section via the java link.
              </p>
