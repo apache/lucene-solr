@@ -44,6 +44,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RangeFilter;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -155,6 +156,17 @@ public class HighlighterTest extends TestCase implements Formatter
 		//Currently highlights "John" and "Kennedy" separately
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 2);
 	}
+
+	public void testOffByOne() throws IOException 
+	{
+	    TermQuery query= new TermQuery( new Term( "data", "help" ));
+	    Highlighter hg = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer( query ));
+	    hg.setTextFragmenter( new NullFragmenter() );
+
+	    String match = null;
+	    match = hg.getBestFragment( new StandardAnalyzer(), "data", "help me [54-65]");
+	    assertEquals("<B>help</B> me [54-65]", match);
+	} 	
 	public void testGetBestFragmentsFilteredQuery() throws Exception
 	{
 		RangeFilter rf=new RangeFilter("contents","john","john",true,true);
@@ -338,6 +350,40 @@ public class HighlighterTest extends TestCase implements Formatter
 			"us from finding matches for this record: " + numHighlights +
 			 " found", numHighlights == 0);
 	}
+	public void testMaxSizeHighlightTruncates() throws IOException 
+	{
+	    String goodWord="goodtoken";
+	    String stopWords[]={"stoppedtoken"};
+	    
+	    TermQuery query= new TermQuery( new Term( "data", goodWord ));
+	    SimpleHTMLFormatter fm=new SimpleHTMLFormatter();
+	    Highlighter hg = new Highlighter(fm, new QueryScorer( query ));
+	    hg.setTextFragmenter( new NullFragmenter() );
+
+	    String match = null;
+	    StringBuffer sb=new StringBuffer();
+	    sb.append(goodWord);
+	    for(int i=0;i<10000;i++)
+	    {
+	    	sb.append(" ");
+	    	sb.append(stopWords[0]);
+	    }
+	    	    	
+	    hg.setMaxDocBytesToAnalyze(100);
+	    match = hg.getBestFragment( new StandardAnalyzer(stopWords), "data", sb.toString());
+	    assertTrue("Matched text should be no more than 100 chars in length ", 
+	    		match.length()<hg.getMaxDocBytesToAnalyze());
+	    
+	    //add another tokenized word to the overrall length - but set way beyond 
+	    //the length of text under consideration (after a large slug of stop words + whitespace)
+	    sb.append(" ");
+	    sb.append(goodWord);
+	    match = hg.getBestFragment( new StandardAnalyzer(stopWords), "data", sb.toString());
+	    assertTrue("Matched text should be no more than 100 chars in length ", 
+	    		match.length()<hg.getMaxDocBytesToAnalyze());
+	    
+	    
+	} 	
 
 
 

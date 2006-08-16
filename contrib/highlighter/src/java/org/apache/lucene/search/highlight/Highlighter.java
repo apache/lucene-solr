@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -221,8 +222,8 @@ public class Highlighter
 			textFragmenter.start(text);
 
 			TokenGroup tokenGroup=new TokenGroup();
-
-			while ((token = tokenStream.next()) != null)
+			token = tokenStream.next();
+			while ((token!= null)&&(token.startOffset()<maxDocBytesToAnalyze))
 			{
 				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(token)))
 				{
@@ -251,12 +252,13 @@ public class Highlighter
 					}
 				}
 
-        tokenGroup.addToken(token,fragmentScorer.getTokenScore(token));
+				tokenGroup.addToken(token,fragmentScorer.getTokenScore(token));
 
-				if(lastEndOffset>maxDocBytesToAnalyze)
-				{
-					break;
-				}
+//				if(lastEndOffset>maxDocBytesToAnalyze)
+//				{
+//					break;
+//				}
+				token = tokenStream.next();
 			}
 			currentFrag.setScore(fragmentScorer.getFragmentScore());
 
@@ -274,9 +276,18 @@ public class Highlighter
 				lastEndOffset=Math.max(lastEndOffset,endOffset);
 			}
 
-			// append text after end of last token
-//			if (lastEndOffset < text.length())
-//				newText.append(encoder.encodeText(text.substring(lastEndOffset)));
+			//Test what remains of the original text beyond the point where we stopped analyzing 
+			if (
+//					if there is text beyond the last token considered..
+					(lastEndOffset < text.length()) 
+					&&
+//					and that text is not too large...
+					(text.length()<maxDocBytesToAnalyze)
+				)				
+			{
+				//append it to the last fragment
+				newText.append(encoder.encodeText(text.substring(lastEndOffset)));
+			}
 
 			currentFrag.textEndPos = newText.length();
 
