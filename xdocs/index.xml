@@ -110,7 +110,7 @@
              <p>This fixes a few bugs in 1.4.2.  See <a
                 href="http://cvs.apache.org/viewcvs.cgi/*checkout*/jakarta-lucene/CHANGES.txt?rev=1.96.2.6">CHANGES.txt</a>
                 for details.  Binary and source distributions are
-                available <a href="http://www.apache.org/dyn/closer.cgi/jakarta/lucene/">here</a>.
+                available <a href="http://www.apache.org/dyn/closer.cgi/lucene/">here</a>.  After choosing your mirror, navigate to the archive section via the java link.
              </p>
 
         </section>
