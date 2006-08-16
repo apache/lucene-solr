@@ -38,6 +38,15 @@
       <title>News</title>
 
       <section>
+      <title>15 August 2006: Solr at ApacheCon US</title>
+      <p>Chris Hostetter will be presenting
+        <strong><a href="http://www.us.apachecon.com/html/sessions.html#FR26">"Faceted Searching With Apache Solr"</a></strong>  
+        at ApacheCon US 2006, on October 13th at 4:30pm.
+        See the <a href="http://www.us.apachecon.com/">ApacheCon</a> website for more details.
+      </p>
+      </section>
+ 
+      <section>
       <title>21 April 2006: Solr at ApacheCon</title>
       <p>Yonik Seeley will be presenting
         <strong>"Apache Solr, a Full-Text Search Server based on Lucene"</strong>  
