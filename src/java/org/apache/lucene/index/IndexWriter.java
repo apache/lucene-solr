@@ -110,6 +110,7 @@ public class IndexWriter {
   private SegmentInfos segmentInfos = new SegmentInfos(); // the segments
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
 
+  private int singleDocSegmentsCount = 0; // for speeding decision on merge candidates
   private Lock writeLock;
 
   private int termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
@@ -119,7 +120,7 @@ public class IndexWriter {
    * may also cause file handle problems.
    */
   private boolean useCompoundFile = true;
-  
+
   private boolean closeDir;
 
   /** Get the current setting of whether to use the compound file format.
@@ -245,7 +246,7 @@ public class IndexWriter {
        throws IOException {
     this(d, a, create, false);
   }
-  
+
   private IndexWriter(Directory d, Analyzer a, final boolean create, boolean closeDir)
     throws IOException {
       this.closeDir = closeDir;
@@ -303,7 +304,7 @@ public class IndexWriter {
   public void setMaxFieldLength(int maxFieldLength) {
     this.maxFieldLength = maxFieldLength;
   }
-  
+
   /**
    * @see #setMaxFieldLength
    */
@@ -318,7 +319,7 @@ public class IndexWriter {
    * the number of files open in a FSDirectory.
    *
    * <p> The default value is 10.
-   * 
+   *
    * @throws IllegalArgumentException if maxBufferedDocs is smaller than 2
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
@@ -433,6 +434,7 @@ public class IndexWriter {
   /** Flushes all changes to an index and closes all associated files. */
   public synchronized void close() throws IOException {
     flushRamSegments();
+    // testInvariants();
     ramDirectory.close();
     if (writeLock != null) {
       writeLock.release();                          // release write lock
@@ -509,14 +511,16 @@ public class IndexWriter {
     dw.addDocument(segmentName, doc);
     synchronized (this) {
       segmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory));
+      singleDocSegmentsCount++;
       maybeMergeSegments();
     }
+    // testInvariants();
   }
 
   final int getSegmentsCounter(){
     return segmentInfos.counter;
   }
-  
+
   private final synchronized String newSegmentName() {
     return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
   }
@@ -575,6 +579,7 @@ public class IndexWriter {
       int minSegment = segmentInfos.size() - mergeFactor;
       mergeSegments(minSegment < 0 ? 0 : minSegment);
     }
+    // testInvariants();
   }
 
   /** Merges all segments from an array of indexes into this index.
@@ -599,7 +604,7 @@ public class IndexWriter {
         segmentInfos.addElement(sis.info(j));	  // add each info
       }
     }
-    
+
     // merge newly added segments in log(n) passes
     while (segmentInfos.size() > start+mergeFactor) {
       for (int base = start; base < segmentInfos.size(); base++) {
@@ -610,6 +615,7 @@ public class IndexWriter {
     }
 
     optimize();					  // final cleanup
+    // testInvariants();
   }
 
   /** Merges the provided indexes into this index.
@@ -631,7 +637,7 @@ public class IndexWriter {
         merger.add(sReader);
         segmentsToDelete.addElement(sReader);   // queue segment for deletion
     }
-      
+
     for (int i = 0; i < readers.length; i++)      // add new indexes
       merger.add(readers[i]);
 
@@ -639,7 +645,7 @@ public class IndexWriter {
 
     segmentInfos.setSize(0);                      // pop old infos & add new
     segmentInfos.addElement(new SegmentInfo(mergedName, docCount, directory));
-    
+
     if(sReader != null)
         sReader.close();
 
@@ -651,7 +657,7 @@ public class IndexWriter {
 	  }
 	}.run();
     }
-    
+
     deleteSegments(segmentsToDelete);  // delete now-unused segments
 
     if (useCompoundFile) {
@@ -666,9 +672,11 @@ public class IndexWriter {
         }.run();
       }
 
-      // delete now unused files of segment 
-      deleteFiles(filesToDelete);   
+      // delete now unused files of segment
+      deleteFiles(filesToDelete);
     }
+
+    // testInvariants();
   }
 
   /** Merges all RAM-resident segments. */
@@ -694,8 +702,8 @@ public class IndexWriter {
     long targetMergeDocs = minMergeDocs;
     while (targetMergeDocs <= maxMergeDocs) {
       // find segments smaller than current target size
-      int minSegment = segmentInfos.size();
-      int mergeDocs = 0;
+      int minSegment = segmentInfos.size() - singleDocSegmentsCount; // top 1-doc segments are taken for sure
+      int mergeDocs = singleDocSegmentsCount;
       while (--minSegment >= 0) {
         SegmentInfo si = segmentInfos.info(minSegment);
         if (si.docCount >= targetMergeDocs)
@@ -703,10 +711,12 @@ public class IndexWriter {
         mergeDocs += si.docCount;
       }
 
-      if (mergeDocs >= targetMergeDocs)		  // found a merge to do
+      if (mergeDocs >= targetMergeDocs)	{	  // found a merge to do
         mergeSegments(minSegment+1);
-      else
+        singleDocSegmentsCount = 0;
+      } else {
         break;
+      }
 
       targetMergeDocs *= mergeFactor;		  // increase target size
     }
@@ -780,6 +790,50 @@ public class IndexWriter {
       deleteFiles(filesToDelete);   
     }
   }
+
+  /***
+  private synchronized void testInvariants() {
+    // index segments should decrease in size
+    int maxSegLevel = 0;
+    for (int i=segmentInfos.size()-1; i>=0; i--) {
+      SegmentInfo si = segmentInfos.info(i);
+      int segLevel = (si.docCount)/minMergeDocs;
+      if (segLevel < maxSegLevel) {
+
+        throw new RuntimeException("Segment #" + i + " is too small. " + segInfo());
+      }
+      maxSegLevel = Math.max(maxSegLevel,segLevel);
+    }
+
+    // check if merges needed
+    long targetMergeDocs = minMergeDocs;
+    int minSegment = segmentInfos.size();
+
+    while (targetMergeDocs <= maxMergeDocs && minSegment>=0) {
+      int mergeDocs = 0;
+      while (--minSegment >= 0) {
+        SegmentInfo si = segmentInfos.info(minSegment);
+        if (si.docCount >= targetMergeDocs) break;
+        mergeDocs += si.docCount;
+      }
+
+      if (mergeDocs >= targetMergeDocs) {
+        throw new RuntimeException("Merge needed at level "+targetMergeDocs + " :"+segInfo());
+      }
+
+      targetMergeDocs *= mergeFactor;		  // increase target size
+    }
+  }
+
+  private String segInfo() {
+    StringBuffer sb = new StringBuffer("minMergeDocs="+minMergeDocs+" singleDocSegmentsCount="+singleDocSegmentsCount+" segsizes:");
+    for (int i=0; i<segmentInfos.size(); i++) {
+      sb.append(segmentInfos.info(i).docCount);
+      sb.append(",");
+    }
+    return sb.toString();
+  }
+  ***/
 
   /*
    * Some operating systems (e.g. Windows) don't permit a file to be deleted

@@ -121,6 +121,10 @@ Optimizations
      during segment merges (e.g. during indexing or optimizing), thus improving
      performance . (Michael Busch via Otis Gospodnetic)
 
+  4. LUCENE-388: Improve indexing performance when maxBufferedDocs is large by
+     keeping a count of buffered documents rather than counting after each
+     document addition.  (Doron Cohen, Paul Smith, Yonik Seeley)
+
 Release 2.0.0 2006-05-26
 
 API Changes
