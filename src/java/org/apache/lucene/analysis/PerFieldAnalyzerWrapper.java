@@ -74,6 +74,14 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
     return analyzer.tokenStream(fieldName, reader);
   }
   
+  /** Return the positionIncrementGap from the analyzer assigned to fieldName */
+  public int getPositionIncrementGap(String fieldName) {
+    Analyzer analyzer = (Analyzer) analyzerMap.get(fieldName);
+    if (analyzer == null)
+      analyzer = defaultAnalyzer;
+    return analyzer.getPositionIncrementGap(fieldName);
+  }
+  
   public String toString() {
     return "PerFieldAnalyzerWrapper(" + analyzerMap + ", default=" + defaultAnalyzer + ")";
   }

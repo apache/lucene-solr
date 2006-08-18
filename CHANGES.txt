@@ -107,6 +107,9 @@ Bug fixes
 12. LUCENE-641: fixed an off-by-one bug with IndexWriter.setMaxFieldLength()
     (Daniel Naber)
 
+13. LUCENE-659: Make PerFieldAnalyzerWrapper delegate getPositionIncrementGap()
+    to the correct analyzer for the field. (Chuck Williams via Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
