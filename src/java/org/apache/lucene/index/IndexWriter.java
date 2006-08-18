@@ -711,12 +711,10 @@ public class IndexWriter {
         mergeDocs += si.docCount;
       }
 
-      if (mergeDocs >= targetMergeDocs)	{	  // found a merge to do
+      if (mergeDocs >= targetMergeDocs)	 	  // found a merge to do
         mergeSegments(minSegment+1);
-        singleDocSegmentsCount = 0;
-      } else {
+      else
         break;
-      }
 
       targetMergeDocs *= mergeFactor;		  // increase target size
     }
@@ -747,6 +745,11 @@ public class IndexWriter {
       if ((reader.directory() == this.directory) || // if we own the directory
           (reader.directory() == this.ramDirectory))
         segmentsToDelete.addElement(reader);   // queue segment for deletion
+    }
+
+    // update 1-doc segments counter accordin to range of merged segments
+    if (singleDocSegmentsCount>0) {
+      singleDocSegmentsCount = Math.min(singleDocSegmentsCount, segmentInfos.size()-end);
     }
 
     int mergedDocCount = merger.merge();
