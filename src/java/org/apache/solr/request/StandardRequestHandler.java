@@ -17,14 +17,8 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.search.*;
-import org.apache.lucene.document.Document;
 
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.logging.Level;
-import java.util.regex.Pattern;
-import java.io.IOException;
 import java.net.URL;
 
 import org.apache.solr.util.StrUtils;
@@ -32,7 +26,6 @@ import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.CommonParams;
 import org.apache.solr.search.*;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrException;
@@ -40,6 +33,22 @@ import org.apache.solr.core.SolrException;
 /**
  * @author yonik
  * @version $Id$
+ *
+ * All of the following options may be configured for this handler
+ * in the solrconfig as defaults, and may be overriden as request parameters.
+ * (TODO: complete documentation of request parameters here, rather than only
+ * on the wiki).
+ * </p>
+ *
+ * <ul>
+ * <li> highlight - Set to any value not .equal() to "false" to enable highlight
+ * generation</li>
+ * <li> highlightFields - Set to a comma- or space-delimited list of fields to
+ * highlight.  If unspecified, uses the default query field</li>
+ * <li> maxSnippets - maximum number of snippets to generate per field-highlight.
+ * </li>
+ * </ul>
+ *
  */
 public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean {
 
@@ -49,7 +58,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
   long numRequests;
   long numErrors;
 
-  /** shorten the class referneces for utilities */
+  /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
     /* :NOOP */
   }
@@ -63,7 +72,6 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
-
 
     // TODO: test if lucene will accept an escaped ';', otherwise
     // we need to un-escape them before we pass to QueryParser
