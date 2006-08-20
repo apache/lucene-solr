@@ -316,9 +316,19 @@ extends PriorityQueue {
     final String[] index = FieldCache.DEFAULT.getStrings (reader, field);
     return new ScoreDocComparator() {
 
-      public final int compare (final ScoreDoc i, final ScoreDoc j) {
-        return collator.compare (index[i.doc], index[j.doc]);
-      }
+    	public final int compare(final ScoreDoc i, final ScoreDoc j) {
+			String is = index[i.doc];
+			String js = index[j.doc];
+			if (is == js) {
+				return 0;
+			} else if (is == null) {
+				return -1;
+			} else if (js == null) {
+				return 1;
+			} else {
+				return collator.compare(is, js);
+			}
+		}
 
       public Comparable sortValue (final ScoreDoc i) {
         return index[i.doc];

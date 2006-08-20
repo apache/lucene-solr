@@ -261,6 +261,12 @@ implements Serializable {
 
 		sort.setSort ("string", true);
 		assertMatches (full, queryF, sort, "IJZ");
+		
+		sort.setSort (new SortField ("i18n", Locale.ENGLISH));
+		assertMatches (full, queryF, sort, "ZJI");
+		
+		sort.setSort (new SortField ("i18n", Locale.ENGLISH, true));
+		assertMatches (full, queryF, sort, "IJZ");
 
 		sort.setSort ("int");
 		assertMatches (full, queryF, sort, "IZJ");
