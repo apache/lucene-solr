@@ -157,7 +157,6 @@ final class TermScorer extends Scorer {
    * <br>When this method is used, the {@link #next()} method
    * and the {@link #score(HitCollector)} method should not be used.
    * @param doc The document number for the explanation.
-   * @todo Modify to make use of {@link TermDocs#skipTo(int)}.
    */
   public Explanation explain(int doc) throws IOException {
     TermQuery query = (TermQuery)weight.getQuery();
@@ -169,11 +168,13 @@ final class TermScorer extends Scorer {
       pointer++;
     }
     if (tf == 0) {
-      while (termDocs.next()) {
-        if (termDocs.doc() == doc) {
-          tf = termDocs.freq();
+        if (termDocs.skipTo(doc))
+        {
+            if (termDocs.doc() == doc)
+            {
+                tf = termDocs.freq();
+            }
         }
-      }
     }
     termDocs.close();
     tfExplanation.setValue(getSimilarity().tf(tf));
