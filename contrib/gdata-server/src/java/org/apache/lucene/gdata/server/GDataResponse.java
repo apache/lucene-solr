@@ -17,14 +17,23 @@
 package org.apache.lucene.gdata.server;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Date;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.transform.Source;
+import javax.xml.transform.Templates;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.server.GDataRequest.OutputFormat;
+import org.apache.lucene.gdata.server.registry.ProvidedService;
 import org.apache.lucene.gdata.utils.DateFormater;
 
 import com.google.gdata.data.BaseEntry;
@@ -104,7 +113,7 @@ public class GDataResponse {
     public static final int UNAUTHORIZED = HttpServletResponse.SC_UNAUTHORIZED;
     
     
-    private static final Log LOG = LogFactory.getLog(GDataResponse.class);
+    static final Log LOG = LogFactory.getLog(GDataResponse.class);
     private int error;
 
     private boolean isError = false;
@@ -118,11 +127,6 @@ public class GDataResponse {
     protected static final String XMLMIME_ATOM = "text/xml";
 
     protected static final String XMLMIME_RSS = "text/xml";
-
-    private static final String DEFAUL_NAMESPACE_URI = "http://www.w3.org/2005/Atom";
-
-    private static final Namespace DEFAULT_NAMESPACE = new Namespace("",
-            DEFAUL_NAMESPACE_URI);
 
     private static final String HEADER_LASTMODIFIED = "Last-Modified";
 
@@ -188,33 +192,26 @@ public class GDataResponse {
      * 
      * @param feed -
      *            the feed to respond to the client
-     * @param profile -
-     *            the extension profile for the feed to write
+     * @param service - the service to render the feed
+     * 
      * @throws IOException -
      *             if an I/O exception occurs, often caused by an already
      *             closed Writer or OutputStream
      * 
      */
-    public void sendResponse(BaseFeed feed, ExtensionProfile profile)
+    public void sendResponse(final BaseFeed feed, final ProvidedService service)
             throws IOException {
         if (feed == null)
             throw new IllegalArgumentException("feed must not be null");
-        if (profile == null)
+        if (service == null)
             throw new IllegalArgumentException(
-                    "extension profile must not be null");
+                    "provided service must not be null");
         DateTime time = feed.getUpdated();
         if (time != null)
             setLastModifiedHeader(time.getValue());
-        XmlWriter writer = createWriter();
-        
-        if (this.outputFormat.equals(OutputFormat.ATOM)) {
-            this.response.setContentType(XMLMIME_ATOM);
-            feed.generateAtom(writer, profile);
-        } else {
-            this.response.setContentType(XMLMIME_RSS);
-            feed.generateRss(writer, profile);
-        }
-        writer.close();
+        FormatWriter writer = FormatWriter.getFormatWriter(this,service);
+        writer.generateOutputFormat(feed,this.response);
+
     }
 
     /**
@@ -226,38 +223,27 @@ public class GDataResponse {
      * 
      * @param entry -
      *            the modified / created entry to send
-     * @param profile -
-     *            the entries extension profile
+     * @param service - the service to render the feed
      * @throws IOException -
      *             if an I/O exception occurs, often caused by an already
      *             closed Writer or OutputStream
      */
-    public void sendResponse(BaseEntry entry, ExtensionProfile profile)
+    public void sendResponse(BaseEntry entry, ProvidedService service)
             throws IOException {
         if (entry == null)
             throw new IllegalArgumentException("entry must not be null");
-        if (profile == null)
+        if (service == null)
             throw new IllegalArgumentException(
-                    "extension profile must not be null");
+                    "service must not be null");
         DateTime time = entry.getUpdated();
         if (time != null)
             setLastModifiedHeader(time.getValue());
-        XmlWriter writer = createWriter();
-        if (this.outputFormat.equals(OutputFormat.ATOM))
-            entry.generateAtom(writer, profile);
-        else
-            entry.generateRss(writer, profile);
-        writer.close();
+        FormatWriter writer = FormatWriter.getFormatWriter(this,service);
+        writer.generateOutputFormat(entry,this.response);
+
         
     }
 
-    private XmlWriter createWriter() throws IOException {
-        XmlWriter writer = new XmlWriter(getWriter(), this.encoding);
-        // set the default namespace to Atom if Atom is the response format
-        if (this.outputFormat.equals(OutputFormat.ATOM))
-            writer.setDefaultNamespace(DEFAULT_NAMESPACE);
-        return writer;
-    }
 
     /**
      * This encoding will be used to encode the xml representation of feed or
@@ -326,4 +312,138 @@ public class GDataResponse {
         this.response.setStatus(status);
     }
 
+    private static abstract class FormatWriter{
+        
+        static FormatWriter getFormatWriter(final GDataResponse response, final ProvidedService service ){
+            OutputFormat format = response.getOutputFormat();
+            if(format == OutputFormat.HTML){
+                return new HTMLFormatWriter(service);
+            }
+            return new SyndicateFormatWriter(service,format,response.getEncoding());
+        }
+        
+        abstract void generateOutputFormat(final BaseFeed feed, final HttpServletResponse response) throws IOException;
+        abstract void generateOutputFormat(final BaseEntry entry, final HttpServletResponse response) throws IOException;
+        
+        private static class HTMLFormatWriter extends FormatWriter{
+            private static final String CONTENT_TYPE = "text/html";
+            private final ProvidedService service;
+            
+            HTMLFormatWriter(final ProvidedService service){
+                this.service = service;
+            }
+            @Override
+            void generateOutputFormat(BaseFeed feed, final HttpServletResponse response) throws IOException {
+                Templates template = this.service.getTransformTemplate();
+                response.setContentType(CONTENT_TYPE);
+                if(template == null){
+                    sendNotAvailable(response);
+                    return;
+                }
+                StringWriter writer = new StringWriter();
+                XmlWriter xmlWriter = new XmlWriter(writer);
+                feed.generateAtom(xmlWriter,this.service.getExtensionProfile());
+                try {
+                    writeHtml(template,response.getWriter(),writer);
+                } catch (TransformerException e) {
+                 LOG.error("Can not transform feed for service "+this.service.getName(),e);
+                 sendNotAvailable(response);
+                    
+                }
+            }
+
+            @Override
+            void generateOutputFormat(BaseEntry entry, final HttpServletResponse response)  throws IOException{
+                Templates template = this.service.getTransformTemplate();
+                response.setContentType(CONTENT_TYPE);
+                if(template == null){
+                    sendNotAvailable(response);
+                    return;
+                }
+                StringWriter writer = new StringWriter();
+                XmlWriter xmlWriter = new XmlWriter(writer);
+                entry.generateAtom(xmlWriter,this.service.getExtensionProfile());
+                try {
+                    writeHtml(template,response.getWriter(),writer);
+                } catch (TransformerException e) {
+                 LOG.error("Can not transform feed for service "+this.service.getName(),e);
+                 sendNotAvailable(response);
+                    
+                }
+
+            }
+            
+            private void writeHtml(final Templates template, final Writer writer, final StringWriter source ) throws TransformerException{
+                Transformer transformer = template.newTransformer();
+                Source tranformSource = new StreamSource(new StringReader(source.toString())); 
+                transformer.transform(tranformSource,new StreamResult(writer));
+            }
+            
+            private void sendNotAvailable(final HttpServletResponse response) throws IOException{
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "No transformation stylesheet available");
+            }
+            
+        }
+        private static class SyndicateFormatWriter extends FormatWriter{
+            private static final String DEFAUL_NAMESPACE_URI = "http://www.w3.org/2005/Atom";
+
+            private static final Namespace DEFAULT_NAMESPACE = new Namespace("",
+                    DEFAUL_NAMESPACE_URI);
+            private final ProvidedService service;
+            private final String encoding;
+            private final OutputFormat format;
+            
+            SyndicateFormatWriter(final ProvidedService service,final OutputFormat format, String encoding){
+                this.service = service;
+                this.format = format;
+                this.encoding = encoding;
+                
+            }
+            @Override
+            void generateOutputFormat(final BaseFeed feed, final HttpServletResponse response) throws IOException {
+                XmlWriter writer = null;
+                try{
+                 writer = createWriter(response.getWriter());
+                if (this.format == OutputFormat.ATOM) {
+                    response.setContentType(XMLMIME_ATOM);
+                    feed.generateAtom(writer, this.service.getExtensionProfile());
+                } else {
+                    response.setContentType(XMLMIME_RSS);
+                    feed.generateRss(writer, this.service.getExtensionProfile());
+                }
+                }finally{
+                    if(writer != null)
+                        writer.close();
+                }
+            }
+
+            @Override
+            void generateOutputFormat(final BaseEntry entry, final HttpServletResponse response) throws IOException {
+                XmlWriter writer = null;
+                try{
+                 writer = createWriter(response.getWriter());
+                if (this.format == OutputFormat.ATOM) {
+                    response.setContentType(XMLMIME_ATOM);
+                    entry.generateAtom(writer, this.service.getExtensionProfile());
+                } else {
+                    response.setContentType(XMLMIME_RSS);
+                    entry.generateRss(writer, this.service.getExtensionProfile());
+                }
+                }finally{
+                    if(writer != null)
+                        writer.close();
+                }
+            }
+            private XmlWriter createWriter(final Writer target) throws IOException {
+                XmlWriter writer = new XmlWriter(target, this.encoding);
+                // set the default namespace to Atom if Atom is the response format
+                if (this.format == OutputFormat.ATOM)
+                    writer.setDefaultNamespace(DEFAULT_NAMESPACE);
+                return writer;
+            }
+        }
+    }
+    
+    
+    
 }

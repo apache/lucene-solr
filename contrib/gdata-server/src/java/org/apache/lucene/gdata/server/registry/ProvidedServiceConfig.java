@@ -17,6 +17,11 @@ package org.apache.lucene.gdata.server.registry;
 
 import java.lang.reflect.Constructor;
 
+import javax.xml.transform.Templates;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamSource;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.gdata.search.config.IndexSchema;
@@ -26,9 +31,7 @@ import org.apache.lucene.gdata.utils.SimpleObjectPool;
 
 import com.google.gdata.data.BaseEntry;
 import com.google.gdata.data.BaseFeed;
-import com.google.gdata.data.Entry;
 import com.google.gdata.data.ExtensionProfile;
-import com.google.gdata.data.Feed;
 
 /**
  * Standard implementation of
@@ -78,6 +81,9 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
     private ExtensionProfile extensionProfile;
 
     private int poolSize = DEFAULT_POOL_SIZE;
+    
+    private Templates transformerTemplate;
+    
 
     /**
      * @return Returns the poolSize.
@@ -326,4 +332,33 @@ public class ProvidedServiceConfig implements ProvidedService, ScopeVisitor {
             this.indexSchema.setName(this.serviceName);
     }
 
+    /**
+     * @see org.apache.lucene.gdata.server.registry.ProvidedService#getTransformTemplate()
+     */
+    public Templates getTransformTemplate() {
+        
+        return this.transformerTemplate;
+    }
+    
+    /**
+     * Sets and creates the preview transformer xslt template to provide a html formate for feeds and entries.
+     * The given file name must be available in the classpath. 
+     * @param filename - the name of the file in the classpath
+     */
+    public void setXsltStylesheet(String filename){
+        if(filename == null || filename.length() == 0){
+            LOG.info("No preview stylesheet configured for service "+this.serviceName);
+            return;
+        }
+        
+        TransformerFactory factory = TransformerFactory.newInstance();
+        
+        try {
+            this.transformerTemplate = factory.newTemplates(new StreamSource(ProvidedServiceConfig.class.getResourceAsStream(filename.startsWith("/")?filename:"/"+filename)));
+        } catch (TransformerConfigurationException e) {
+            throw new RuntimeException("Can not compile xslt stylesheet path: "+filename,e);
+        }
+        
+    }
+    
 }

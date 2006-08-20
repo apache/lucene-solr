@@ -3,6 +3,7 @@
 	<xs:element name="feed-class" type="xs:string" />
 	<xs:element name="entry-class" type="xs:string" />
 	<xs:element name="extension-profile" type="xs:string" />
+		<xs:element name="previewStyleSheet" type="xs:string" />
 	<xs:element name="class" type="xs:string" />
 	<xs:annotation>
 		<xs:documentation xml:lang="en">
@@ -27,6 +28,8 @@
 					minOccurs="1" />
 				<xs:element ref="extension-profile" maxOccurs="1"
 					minOccurs="1" />
+				<xs:element ref="previewStyleSheet" maxOccurs="1"
+					minOccurs="0" />
 				<xs:element ref="index-schema" maxOccurs="1"
 					minOccurs="1" />
 			</xs:sequence>

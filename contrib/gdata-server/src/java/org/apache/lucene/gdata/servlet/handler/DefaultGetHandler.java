@@ -90,12 +90,12 @@ public class DefaultGetHandler extends AbstractGdataRequestHandler {
                         this.feedResponse);
 
                 this.feedResponse.sendResponse(feed, this.feedRequest
-                        .getConfigurator().getExtensionProfile());
+                        .getConfigurator());
             } else {
                 BaseEntry entry = this.service.getSingleEntry(this.feedRequest,
                         this.feedResponse);
                 this.feedResponse.sendResponse(entry, this.feedRequest
-                        .getConfigurator().getExtensionProfile());
+                        .getConfigurator());
             }
 
         } catch (ServiceException e) {

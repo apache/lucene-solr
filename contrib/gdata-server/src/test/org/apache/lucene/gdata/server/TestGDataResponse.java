@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.TestCase; 
  
 import org.apache.lucene.gdata.server.GDataRequest.OutputFormat; 
+import org.apache.lucene.gdata.utils.ProvidedServiceStub;
 import org.easymock.MockControl; 
  
 import com.google.gdata.data.Entry; 
@@ -69,7 +70,7 @@ public class TestGDataResponse extends TestCase {
     public void testSendResponseBaseFeedExtensionProfile() throws IOException { 
         try{ 
             Feed f = null; 
-            this.response.sendResponse(f,new ExtensionProfile()); 
+            this.response.sendResponse(f, new ProvidedServiceStub()); 
             fail("Exception expected"); 
         }catch (IllegalArgumentException e) { 
             // 
@@ -90,7 +91,7 @@ public class TestGDataResponse extends TestCase {
         this.response.setOutputFormat(OutputFormat.ATOM); 
         this.control.replay(); 
          
-        this.response.sendResponse(createFeed(),new ExtensionProfile()); 
+        this.response.sendResponse(createFeed(), new ProvidedServiceStub()); 
         assertEquals("Simple XML representation",stringWriter.toString(),generatedFeedAtom); 
         this.control.reset(); 
          
@@ -102,8 +103,7 @@ public class TestGDataResponse extends TestCase {
         this.httpResponse.setContentType(GDataResponse.XMLMIME_RSS);
         this.control.replay(); 
          
-        this.response.sendResponse(createFeed(),new ExtensionProfile 
-                ()); 
+        this.response.sendResponse(createFeed(), new ProvidedServiceStub()); 
         assertEquals("Simple XML representation",stringWriter.toString(),generatedFeedRSS); 
          
          
@@ -117,7 +117,7 @@ public class TestGDataResponse extends TestCase {
     public void testSendResponseBaseEntryExtensionProfile() throws IOException { 
         try{ 
             Entry e = null; 
-            this.response.sendResponse(e,new ExtensionProfile()); 
+            this.response.sendResponse(e, new ProvidedServiceStub()); 
             fail("Exception expected"); 
         }catch (IllegalArgumentException e) { 
             // 
@@ -134,11 +134,11 @@ public class TestGDataResponse extends TestCase {
         PrintWriter writer = new PrintWriter(stringWriter); 
          
         this.control.expectAndReturn(this.httpResponse.getWriter(),writer); 
+        this.httpResponse.setContentType(GDataResponse.XMLMIME_ATOM);
         this.response.setOutputFormat(OutputFormat.ATOM); 
         this.control.replay(); 
          
-        this.response.sendResponse(createEntry(),new ExtensionProfile 
-                ()); 
+        this.response.sendResponse(createEntry(), new ProvidedServiceStub()); 
         assertEquals("Simple XML representation ATOM",stringWriter.toString(),generatedEntryAtom); 
          
         // test rss output 
@@ -147,11 +147,11 @@ public class TestGDataResponse extends TestCase {
         writer = new PrintWriter(stringWriter); 
          
         this.control.expectAndReturn(this.httpResponse.getWriter(),writer); 
+        this.httpResponse.setContentType(GDataResponse.XMLMIME_RSS);
         this.response.setOutputFormat(OutputFormat.RSS); 
         this.control.replay(); 
          
-        this.response.sendResponse(createEntry(),new ExtensionProfile 
-                ()); 
+        this.response.sendResponse(createEntry(), new ProvidedServiceStub()); 
          
         assertEquals("Simple XML representation RSS",stringWriter.toString(),generatedEntryRSS); 
          

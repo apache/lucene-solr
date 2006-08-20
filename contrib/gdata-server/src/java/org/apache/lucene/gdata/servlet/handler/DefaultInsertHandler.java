@@ -74,7 +74,7 @@ public class DefaultInsertHandler extends AbstractGdataRequestHandler {
         BaseEntry entry = this.service.createEntry(this.feedRequest,this.feedResponse);
         setFeedResponseFormat();
         setFeedResponseStatus(GDataResponse.CREATED);        
-        this.feedResponse.sendResponse(entry, this.feedRequest.getConfigurator().getExtensionProfile());
+        this.feedResponse.sendResponse(entry, this.feedRequest.getConfigurator());
         
         }catch (ServiceException e) {
            LOG.error("Could not process GetFeed request - "+e.getMessage(),e);

@@ -75,7 +75,7 @@ public class DefaultUpdateHandler extends AbstractGdataRequestHandler {
 			BaseEntry entry = this.service.updateEntry(this.feedRequest,
 					this.feedResponse);
 			setFeedResponseFormat();
-			this.feedResponse.sendResponse(entry, this.feedRequest.getConfigurator().getExtensionProfile());
+			this.feedResponse.sendResponse(entry, this.feedRequest.getConfigurator());
 		
 		}
 		catch (ServiceException e) {

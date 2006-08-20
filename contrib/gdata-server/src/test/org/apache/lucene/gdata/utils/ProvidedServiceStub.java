@@ -15,6 +15,8 @@
  */
 package org.apache.lucene.gdata.utils;
 
+import javax.xml.transform.Templates;
+
 import org.apache.lucene.gdata.search.config.IndexSchema;
 import org.apache.lucene.gdata.server.registry.ProvidedService;
 
@@ -62,5 +64,12 @@ public class ProvidedServiceStub implements ProvidedService {
         
         return this.indexSchema;
     }
+
+    public Templates getTransformTemplate() {
+        
+        return null;
+    }
+
+  
 
 }

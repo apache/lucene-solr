@@ -77,6 +77,7 @@ class RegistryBuilder {
         digester.addBeanPropertySetter("gdata/service/entry-class", "entryType");
         digester.addBeanPropertySetter("gdata/service/extension-profile",
                 "extensionProfileClass");
+        digester.addBeanPropertySetter("gdata/service/previewStyleSheet","xsltStylesheet");
         addIndexRule(digester);
         /*
          * load components and configurations

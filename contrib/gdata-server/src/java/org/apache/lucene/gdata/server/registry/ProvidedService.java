@@ -15,6 +15,8 @@
  */ 
 package org.apache.lucene.gdata.server.registry;
 
+import javax.xml.transform.Templates;
+
 import org.apache.lucene.gdata.search.config.IndexSchema;
 
 import com.google.gdata.data.ExtensionProfile;
@@ -55,4 +57,9 @@ public interface ProvidedService {
      * @return the index schema configuration for this service
      */
     public abstract IndexSchema getIndexSchema();
+    /**
+     * @return the compiled xslt stylesheet to transform the feed / entry for preview
+     */
+    public abstract Templates getTransformTemplate();
+    
 }

@@ -6,6 +6,7 @@
 		<extension-profile>
 			com.google.gdata.data.ExtensionProfile
 		</extension-profile>
+		<previewStyleSheet>transform.xslt</previewStyleSheet>
 		<index-schema defaultSearchField="content">
 			<index useTimedIndexer="true" indexerIdleTime="120" optimizeAfterCommit="5" commitAfterDocuments="10">
 				<defaultAnalyzer>

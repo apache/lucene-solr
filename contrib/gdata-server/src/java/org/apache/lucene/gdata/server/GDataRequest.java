@@ -58,6 +58,7 @@ public class GDataRequest {
     private static final String RESPONSE_FORMAT_PARAMETER = "alt";
 
     private static final String RESPONSE_FORMAT_PARAMETER_RSS = "rss";
+    private static final String RESPONSE_FORMAT_PARAMETER_HTML = "html";
 
     private static final int DEFAULT_ITEMS_PER_PAGE = 25;
 
@@ -276,6 +277,8 @@ public class GDataRequest {
             return;
         if (formatParameter.equalsIgnoreCase(RESPONSE_FORMAT_PARAMETER_RSS))
             this.responseFormat = OutputFormat.RSS;
+        if (formatParameter.equalsIgnoreCase(RESPONSE_FORMAT_PARAMETER_HTML))
+            this.responseFormat = OutputFormat.HTML;
 
     }
 
@@ -439,7 +442,11 @@ public class GDataRequest {
         /**
          * Output format RSS
          */
-        RSS
+        RSS,
+        /**
+         * Output format html if user defined xsl style sheet is present 
+         */
+        HTML
     }
 
     /**
