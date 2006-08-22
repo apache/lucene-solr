@@ -46,6 +46,11 @@
         	<include name="**/*.jpg"/>
     	  </fileset>
     	</copy>
+        <copy todir="../docs/styles" filtering="no">
+            <fileset dir="../xdocs/styles">
+                <include name="**/*.css"/>
+            </fileset>
+        </copy>
     </target>
 	
 </project>

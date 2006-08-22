@@ -39,12 +39,12 @@ API Changes
  2. org.apache.lucene.analysis.nl.WordlistLoader has been deprecated
     and is supposed to be replaced with the WordlistLoader class in
     package org.apache.lucene.analysis (Daniel Naber)
-    
+
  3. LUCENE-609: Revert return type of Document.getField(s) to Field
     for backward compatibility, added new Document.getFieldable(s)
     for access to new lazy loaded fields. (Yonik Seeley)
-    
- 4. LUCENE-608: Document.fields() has been deprecated and a new method 
+
+ 4. LUCENE-608: Document.fields() has been deprecated and a new method
     Document.getFields() has been added that returns a List instead of
     an Enumeration (Daniel Naber)
 
@@ -60,12 +60,12 @@ API Changes
     ie: IndexReader).
     (Michael McCandless via Chris Hostetter)
 
- 7. LUCENE-638: FSDirectory.list() now only returns the directory's 
+ 7. LUCENE-638: FSDirectory.list() now only returns the directory's
     Lucene-related files. Thanks to this change one can now construct
     a RAMDirectory from a file system directory that contains files
     not related to Lucene.
     (Simon Willnauer via Daniel Naber)
- 
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
@@ -93,10 +93,10 @@ Bug fixes
  8. LUCENE-607: ParallelReader's TermEnum fails to advance properly to
     new fields (Chuck Williams, Christian Kohlschuetter via Yonik Seeley)
 
- 9. LUCENE-610,LUCENE-611: Simple syntax changes to allow compilation with ecj: 
+ 9. LUCENE-610,LUCENE-611: Simple syntax changes to allow compilation with ecj:
     disambiguate inner class scorer's use of doc() in BooleanScorer2,
     other test code changes.  (DM Smith via Yonik Seeley)
-    
+
 10. LUCENE-451: All core query types now use ComplexExplanations so that
     boosts of zero don't confuse the BooleanWeight explain method.
     (Chris Hostetter)
@@ -132,6 +132,18 @@ Optimizations
      keeping a count of buffered documents rather than counting after each
      document addition.  (Doron Cohen, Paul Smith, Yonik Seeley)
 
+  5. Modified TermScorer.explain to use TermDocs.skipTo() instead of looping through docs. (Grant Ingersoll)
+
+Test Cases
+  1. Added TestTermScorer.java (Grant Ingersoll)
+
+Documentation
+
+  1. Added style sheet to xdocs named lucene.css and included in the Anakia VSL descriptor.  (Grant Ingersoll)
+
+  2. Added draft scoring.xml document into xdocs. Intent is to be the equivalent of fileformats.xml for scoring.  It is not linked into project.xml, so it will not show up on the
+  website yet. (Grant Ingersoll and Steve Rowe)
+
 Release 2.0.0 2006-05-26
 
 API Changes
@@ -143,8 +155,8 @@ API Changes
 
  2. DisjunctionSumScorer is no longer public.
     (Paul Elschot via Otis Gospodnetic)
-    
- 3. Creating a Field with both an empty name and an empty value 
+
+ 3. Creating a Field with both an empty name and an empty value
     now throws an IllegalArgumentException
     (Daniel Naber)
 

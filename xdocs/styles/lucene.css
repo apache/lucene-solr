@@ -1,0 +1,34 @@
+/*
+  Place for sharing style information across the XDocs
+
+*/
+
+
+.big{
+    font-size: 1.5em;
+}
+
+.formula{
+    font-size: 0.9em;
+    display: block;
+    position: relative;
+    left: -25px;
+}
+
+#summation{
+
+}
+
+.summation-range{
+    position: relative;
+    top: 5px;
+    font-size: 0.85em;
+}
+
+/*
+Useful for highlighting pieces of documentation that others should pay special attention to
+when proof reading
+*/
+.highlight-for-editing{
+    background-color: yellow;
+}

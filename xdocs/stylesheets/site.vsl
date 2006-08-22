@@ -266,6 +266,7 @@ limitations under the License.
             #end
 
             <title>$project.getChild("title").getText() - $root.getChild("properties").getChild("title").getText()</title>
+            <link rel="stylesheet" type="text/css" href="styles/lucene.css">
         </head>
 
         <body bgcolor="$bodybg" text="$bodyfg" link="$bodylink">        

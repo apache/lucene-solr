@@ -1,0 +1,548 @@
+<?xml version="1.0"?>
+
+<document>
+    <properties>
+        <author email="gsingers at apache.org">Grant Ingersoll</author>
+        <title>Scoring - Apache Lucene</title>
+    </properties>
+
+    <body>
+
+        <section name="Introduction">
+            <p>Lucene scoring is the heart of why we all love Lucene.  It is blazingly fast and it hides almost all of the complexity from the user.
+                In a nutshell, it works.  At least, that is, until it doesn't work, or doesn't work as one would expect it to
+            work.  Then we are left digging into Lucene internals or asking for help on java-user@lucene.apache.org to figure out why a document with five of our query terms
+            scores lower than a different document with only one of the query terms. </p>
+            <p>While this document won't answer your specific scoring issues, it will, hopefully, point you to the places that can
+            help you figure out the what and why of Lucene scoring.</p>
+            <p>Lucene scoring uses a combination of the
+                <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model (VSM) of Information
+                    Retrieval</a> and the Boolean model
+                to determine
+                how relevant a given Document is to a User's query.  In general, the idea behind the VSM is the more
+                times a query term appears in a document relative to
+                the number of times the term appears in all the documents in the collection, the more relevant that
+                document is to the query.  It uses the Boolean model to first narrow down the documents that need to
+                be scored based on the use of boolean logic in the Query specification.  Lucene also adds some
+                capabilities and refinements onto this model to support boolean and fuzzy searching, but it
+                essentially remains a VSM based system at the heart.
+                For some valuable references on VSM and IR in general refer to the
+                <a href="http://wiki.apache.org/jakarta-lucene/InformationRetrieval">Lucene Wiki IR references</a>.
+            </p>
+            <p>The rest of this document will cover <a href="#Scoring">Scoring</a> basics and how to change your
+                <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>.  Next it will cover ways you can
+                customize the Lucene internals in <a href="#Changing your Scoring -- Expert Level">Changing your Scoring
+                -- Expert Level</a> which gives details on implementing your own
+                <a href="api/org/apache/lucene/search/Query.html">Query</a> class and related functionality.  Finally, we
+                will finish up with some reference material in the <a href="#Appendix">Appendix</a>.
+            </p>
+        </section>
+        <section name="Scoring">
+            <p>Scoring is very much dependent on the way documents are indexed,
+                so it is important to understand indexing (see
+                <a href="gettingstarted.html">Apache Lucene - Getting Started Guide</a>
+                and the Lucene
+                <a href="fileformats.html">file formats</a>
+                before continuing on with this section.)  It is also assumed that readers know how to use the
+                <a href="api/org/apache/lucene/search/Searcher.html#explain(Query query, int doc)">Searcher.explain(Query query, int doc)</a> functionality,
+                which can go a long way in informing why a score is returned.
+            </p>
+            <subsection name="Fields and Documents">
+                <p>In Lucene, the objects we are scoring are
+                    <a href="api/org/apache/lucene/document/Document.html">Documents</a>.  A Document is a collection
+                of
+                    <a href="api/org/apache/lucene/document/Field.html">Fields</a>.  Each Field has semantics about how
+                it is created and stored (i.e. tokenized, untokenized, raw data, compressed, etc.)  It is important to
+                    note that Lucene scoring works on Fields and then combines the results to return Documents.  This is
+                    important because two Documents with the exact same content, but one having the content in two Fields
+                    and the other in one Field will return different scores for the same query due to length normalization
+                    (assumming the
+                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>
+                    on the Fields.
+                </p>
+            </subsection>
+            <subsection name="Understanding the Scoring Formula">
+                <p>
+                    Lucene's scoring formula, taken from
+                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>
+                    is
+                    <div class="formula">
+                        <!-- Anyone know how to specify sigma in Anakia?  It always seems to strip out my numeric character references-->
+                        score(q,d) =
+                        <span class="big" id="summation">
+                            sum </span><span class="summation-range">t in q</span><span>(
+                        <A HREF="api/org/apache/lucene/search/Similarity.html#tf(int)">tf</A>
+                        (t in d) *
+                        <A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">idf</A>
+                        (t)^2 *
+                        <A HREF="api/org/apache/lucene/search/Query.html#getBoost()">
+                        getBoost
+                        </A>
+                        (t in q) *
+                        getBoost
+                        (t.field in d) *
+                        <A HREF="api/org/apache/lucene/search/Similarity.html#lengthNorm(java.lang.String, int)">
+                            lengthNorm
+                        </A>
+                        (t.field in d) )</span> <span> *
+                        <A HREF="api/org/apache/lucene/search/Similarity.html#coord(int, int)">
+                            coord
+                        </A>
+                        (q,d) *
+                        <A HREF="api/org/apache/lucene/search/Similarity.html#queryNorm(float)">
+                            queryNorm
+                        </A>(sumOfSqaredWeights)</span>
+                    </div>
+
+                </p>
+                <p>
+                    where
+                    <!-- Anyone know how to specify sigma in Anakia?  It always seems to strip out my numeric character references-->
+                    <div id="#sumOfSquares">
+                        sumOfSqaredWeights =
+                        <span class="big">sum</span><span class="summation-range">t in q</span><span>(
+                        <A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">
+                            idf
+                        </A>
+                        (t) *
+                        <A HREF="api/org/apache/lucene/search/Query.html#getBoost()">
+                            getBoost
+                        </A>
+                        (t in q) )^2</span>
+                    </div>
+                </p>
+                <p>This scoring formula is mostly incorporated into the
+                    <a href="api/org/apache/lucene/search/TermScorer.html">TermScorer</a> class, where it makes calls to the
+                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> class to retrieve values for the following:
+                    <ol>
+                        <li>tf - Term Frequency - The number of times the term <i>t</i> appears in the current document being scored.  </li>
+                        <li>idf - Inverse Document Frequency - One divided by the number of documents in which the term <i>t</i> appears in.</li>
+                        <li>getBoost(t in q) - The boost, specified in the query by the user, that should be applied to this term.</li>
+                        <li>lengthNorm(t.field in q) - The factor to apply to account for differing lengths in the fields that are being searched.  Usually longer fields return a smaller value.</li>
+                        <li>coord(q, d) - Score factor based on how many terms the specified document has in common with the query.</li>
+                        <li>queryNorm(sumOfSquaredWeights) - Factor used to make scores between queries comparable
+                            <span class="highlight-for-editing">GSI: might be interesting to have a note on why this formula was chosen.  I have always understood (but not 100% sure)
+                                that it is not a good idea to compare scores across queries or indexes, so any use of normalization may lead to false assumptions.  However, I also seem
+                            to remember some research on using sum of squares as being somewhat suitable for score comparison.  Anyone have any thoughts here?</span></li>
+                    </ol>
+                    Note, the above definitions are summaries of the javadocs which can be accessed by clicking the links in the formula and are merely provided
+                    for context and are not authoratitive.
+                </p>
+            </subsection>
+            <subsection name="The Big Picture">
+                <p>OK, so the tf-idf formula and the
+                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>
+                    is great for understanding the basics of Lucene scoring, but what really drives Lucene scoring are
+                    the use and interactions between the
+                    <a href="api/org/apache/lucene/search/Query.html">Query</a> classes, as created by each application in
+                    response to a user's information need.
+                </p>
+                <p>In this regard, Lucene offers a wide variety of Query implementations, most of which are in the
+                    org.apache.lucene.search package.
+                    These implementations can be combined in a wide variety of ways to provide complex querying
+                    capabilities along with
+                    information about where matches took place in the document collection. The <a href="#Query Classes">Query</a>
+                    section below will
+                    highlight some of the more important Query classes.  For information on the other ones, see the
+                    <a href="api/org/apache/lucene/search/package-summary.html">package summary</a>.  For details on implementing
+                    your own Query class, see <a href="#Changing your Scoring -- Expert Level">Changing your Scoring --
+                    Expert Level</a> below.
+                </p>
+                <p>Once a Query has been created and submitted to the
+                    <a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, the scoring process
+                begins.  (See the <a
+                href="#Appendix">Appendix</a> Algorithm section for more notes on the process.)  After some infrastructure setup,
+                control finally passes to the Weight implementation and it's
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a> instance.  In the case of any type of
+                    <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, scoring is handled by the
+                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a> (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class),
+                    unless the static
+                    <a href="api/org/apache/lucene/search/BooleanQuery.html#setUseScorer14(boolean)">
+                        BooleanQuery#setUseScorer14(boolean)</a> method is set to true,
+                in which case the
+                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight</a>
+                    (link goes to ViewVC BooleanQuery java code, which contains the BooleanWeight inner class) from the 1.4 version of Lucene is used by default.
+                    See <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/CHANGES.txt">CHANGES.txt</a> under release 1.9 RC1 for more information on choosing which Scorer to use.
+                </p>
+                <p>
+                    Assuming the use of the BooleanWeight2, a
+                    BooleanScorer2 is created by bringing together
+                    all of the
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>s from the sub-clauses of the BooleanQuery.
+                    When the BooleanScorer2 is asked to score it delegates its work to an internal Scorer based on the type
+                    of clauses in the Query.  This internal Scorer essentially loops over the sub scorers and sums the scores
+                    provided by each scorer while factoring in the coord() score.
+                    <!-- Do we want to fill in the details of the counting sum scorer, disjunction scorer, etc.? -->
+                </p>
+            </subsection>
+            <subsection name="Query Classes">
+                <h4>
+                    <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>
+                </h4>
+                <p>Of the various implementations of
+                    Query, the
+                    <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>
+                    is the easiest to understand and the most often used in most applications. A TermQuery is a Query
+                    that matches all the documents that contain the specified
+                    <a href="api/org/apache/lucene/index/Term.html">Term</a>
+                    . A Term is a word that occurs in a specific
+                    <a href="api/org/apache/lucene/document/Field.html">Field</a>
+                    . Thus, a TermQuery identifies and scores all
+                    <a href="api/org/apache/lucene/document/Document.html">Document</a>
+                    s that have a Field with the specified string in it.
+                    Constructing a TermQuery is as simple as:
+                    <code>TermQuery tq = new TermQuery(new Term("fieldName", "term");</code>
+                    In this example, the Query would identify all Documents that have the Field named "fieldName" that
+                    contain the word "term".
+                </p>
+                <h4>
+                    <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>
+                </h4>
+                <p>Things start to get interesting when one starts to combine TermQuerys, which is handled by the
+                    <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>
+                    class. The BooleanQuery is a collection
+                    of other
+                    <a href="api/org/apache/lucene/search/Query.html">Query</a>
+                    classes along with semantics about how to combine the different subqueries.
+                    It currently supports three different operators for specifying the logic of the query (see
+                    <a href="api/org/apache/lucene/search/BooleanClause.html">BooleanClause</a>
+                    )
+                    <ol>
+                        <li>SHOULD -- Use this operator when a clause can occur in the result set, but is not required.
+                            If a query is made up of all SHOULD clauses, then a non-empty result
+                            set will have matched at least one of the clauses in the query.</li>
+                        <li>MUST -- Use this operator when a clause is required to occur in the result set.</li>
+                        <li>MUST NOT -- Use this operator when a clause must not occur in the result set.</li>
+                    </ol>
+                    Boolean queries are constructed by adding two or more
+                    <a href="api/org/apache/lucene/search/BooleanClause.html">BooleanClause</a>
+                    instances to the BooleanQuery instance. In some cases,
+                    too many clauses may be added to the BooleanQuery, which will cause a TooManyClauses exception to be
+                    thrown. This
+                    most often occurs when using a Query that is rewritten into many TermQuery instances, such as the
+                    <a href="api/org/apache/lucene/search/WildCardQuery.html">WildCardQuery</a>
+                    . The default
+                    setting for too many clauses is currently set to 1024, but it can be overridden via the
+                    <a href="api/org/apache/lucene/search/BooleanQuery.html#setMaxClauseCount(int)">BooleanQuery#setMaxClauseCount(int)</a> static method on BooleanQuery.
+                </p>
+                <h4>Phrases</h4>
+                <p>Another common task in search is to identify phrases, which can be handled in two different ways.
+                    <ol>
+                        <li>
+                            <a href="api/org/apache/lucene/search/PhraseQuery.html">PhraseQuery</a>
+                            -- Matches a sequence of
+                            <a href="api/org/apache/lucene/index/Term.html">Terms</a>
+                            . The PhraseQuery can specify a slop factor which determines
+                            how many positions may occur between any two terms and still be considered a match.
+                        </li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/spans/SpanNearQuery.html">SpanNearQuery</a>
+                            -- Matches a sequence of other
+                            <a href="api/org/apache/lucene/search/spans/SpanQuery.html">SpanQuery</a>
+                            instances. The SpanNearQuery allows for much more
+                            complicated phrasal queries to be built since it is constructed out of other SpanQuery
+                            objects, not just Terms.
+                        </li>
+                    </ol>
+                </p>
+                <h4>
+                    <a href="api/org/apache/lucene/search/RangeQuery.html">RangeQuery</a>
+                </h4>
+                <p>The
+                    <a href="api/org/apache/lucene/search/RangeQuery.html">RangeQuery</a>
+                    matches all documents that occur in the
+                    exclusive range of a lower
+                    <a href="api/org/apache/lucene/index/Term.html">Term</a>
+                    and an upper
+                    <a href="api/org/apache/lucene/index/Term.html">Term</a>
+                    . For instance, one could find all documents
+                    that have terms beginning with the letters a through c. This type of Query is most often used to
+                    find
+                    documents that occur in a specific date range.
+                </p>
+                <h4>
+                    <a href="api/org/apache/lucene/search/PrefixQuery.html">PrefixQuery</a>
+                    ,
+                    <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a>
+                </h4>
+                <p>While the
+                    <a href="api/org/apache/lucene/search/PrefixQuery.html">PrefixQuery</a>
+                    has a different implementation, it is essentially a special case of the
+                    <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a>
+                    . The PrefixQuery allows an application
+                    to identify all documents with terms that begin with a certain string. The WildcardQuery generalize
+                    this by allowing
+                    for the use of * and ? wildcards. Note that the WildcardQuery can be quite slow. Also note that
+                    WildcardQuerys should
+                    not start with * and ?, as these are extremely slow. For tricks on how to search using a wildcard at
+                    the beginning of a term, see
+                    <a href="http://www.gossamer-threads.com/lists/lucene/java-user/13373?search_string=WildcardQuery%20start;#13373">
+                        Starts With x and Ends With x Queries</a>
+                    from the Lucene archives.
+                </p>
+                <h4>
+                    <a href="api/org/apache/lucene/search/FuzzyQuery.html">FuzzyQuery</a>
+                </h4>
+                <p>A
+                    <a href="api/org/apache/lucene/search/FuzzyQuery.html">FuzzyQuery</a>
+                    matches documents that contain similar terms to the specified term. Similarity is
+                    determined using the
+                    <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit distance) algorithm</a>
+                    . This type of query can be useful when accounting for spelling variations in the collection.
+                </p>
+            </subsection>
+            <subsection name="Changing Similarity">
+                <p>Chances are, the
+                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a> is sufficient for all your searching needs.
+                    However, in some applications it may be necessary to alter your Similarity.  For instance, some applications do not need to
+                    distinguish between shorter documents and longer documents (for example,
+                    see <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967?search_string=Similarity;#38967">a "fair" similarity</a>)
+                    To change the Similarity, one must do so for both indexing and searching and the changes must take place before
+                    any of these actions are undertaken (although in theory there is nothing stopping you from changing mid-stream, it just isn't well-defined what is going to happen).
+                    To make this change, implement your Similarity (you probably want to override
+                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>) and then set the new
+                    class on
+                    <a href="api/org/apache/lucene/index/IndexWriter.html#setSimilarity(org.apache.lucene.search.Similarity)">IndexWriter.setSimilarity(org.apache.lucene.search.Similarity)</a> for indexing and on
+                    <a href="api/org/apache/lucene/search/Searcher.html#setSimilarity(org.apache.lucene.search.Similarity)">Searcher.setSimilarity(org.apache.lucene.search.Similarity)</a>.
+                </p>
+                <p>
+                    If you are interested in use cases for changing your similarity, see the mailing list at <a href="http://www.nabble.com/Overriding-Similarity-tf2128934.html">Overriding Similarity</a>.
+                    In summary, here are a few use cases:
+                    <ol>
+                        <li>SweetSpotSimilarity -- SweetSpotSimilarity gives small increases as the frequency increases a small amount
+                        and then greater increases when you hit the "sweet spot", i.e. where you think the frequency of terms is more significant.</li>
+                        <li>Overriding tf -- In some applications, it doesn't matter what the score of a document is as long as a matching term occurs.  In these
+                        cases people have overridden Similarity to return 1 from the tf() method.</li>
+                        <li >Changing Length Normalization -- By overriding lengthNorm, it is possible to discount how the length of a field contributes
+                        to a score.  In the DefaultSimilarity, lengthNorm = 1/ (numTerms in field)^0.5, but if one changes this to be
+                        1 / (numTerms in field), all fields will be treated
+                            <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967?search_string=Similarity;#38967">"fairly"</a>.</li>
+                    </ol>
+                    In general, Chris Hostetter sums it up best in saying (from <a href="http://www.gossamer-threads.com/lists/lucene/java-user/39125">the mailing list</a>):
+                    <blockquote>[One would override the Similarity in] ... any situation where you know more about your data then just that
+                        it's "text" is a situation where it *might* make sense to to override your
+                        Similarity method.</blockquote>
+                </p>
+            </subsection>
+
+        </section>
+        <section name="Changing your Scoring -- Expert Level">
+            <p>Changing scoring is an expert level task, so tread carefully and be prepared to share your code if
+                you want help.
+            </p>
+            <p>With the warning out of the way, it is possible to change a lot more than just the Similarity
+            when it comes to scoring in Lucene.  Lucene's scoring is a complex mechanism that is grounded by
+                <span class="highlight-for-editing">three main classes</span>:
+                <ol>
+                    <li>
+                        <a href="api/org/apache/lucene/search/Query.html">Query</a> -- The abstract object representation of the user's information need.</li>
+                    <li>
+                        <a href="api/org/apache/lucene/search/Weight.html">Weight</a> -- The internal interface representation of the user's Query, so that Query objects may be reused.</li>
+                    <li>
+                        <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a> -- An abstract class containing common functionality for scoring.  Provides both scoring and explanation capabilities.</li>
+                </ol>
+                Details on each of these classes, and their children can be found in the subsections below.
+            </p>
+            <subsection name="The Query Class">
+                <p>In some sense, the
+                    <a href="api/org/apache/lucene/search/Query.html">Query</a>
+                    class is where it all begins. Without a Query, there would be
+                    nothing to score. Furthermore, the Query class is the catalyst for the other scoring classes as it
+                    is often responsible
+                    for creating them or coordinating the functionality between them. The
+                    <a href="api/org/apache/lucene/search/Query.html">Query</a> class has several methods that are important for
+                    derived classes:
+                    <ol>
+                        <li>createWeight(Searcher searcher) -- A
+                            <a href="api/org/apache/lucene/search/Weight.html">Weight</a> is the internal representation of the Query, so each Query implementation must
+                        provide an implementation of Weight.  See the subsection on <a
+                        href="#The Weight Interface">The Weight Interface</a> below for details on implementing the Weight interface.</li>
+                        <li>rewrite(IndexReader reader) -- Rewrites queries into primitive queries.  Primitive queries are:
+                            <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>,
+                            <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, <span class="highlight-for-editing">OTHERS????</span></li>
+                    </ol>
+                </p>
+            </subsection>
+            <subsection name="The Weight Interface">
+                <p>The
+                    <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                    interface provides an internal representation of the Query so that it can be reused. Any
+                    <a href="api/org/apache/lucene/search/Searcher.html">Searcher</a>
+                    dependent state should be stored in the Weight implementation,
+                    not in the Query class. The interface defines 6 methods that must be implemented:
+                    <ol>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Weight.html#getQuery()">Weight#getQuery()</a> -- Pointer to the Query that this Weight represents.</li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Weight.html#getValue()">Weight#getValue()</a> -- The weight for this Query. For example, the TermQuery.TermWeight value is
+                            equal to the idf^2 * boost * queryNorm <!-- DOUBLE CHECK THIS --></li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Weight.html#sumOfSquaredWeights()">
+                                Weight#sumOfSquaredWeights()</a> -- The sum of squared weights. Tor TermQuery, this is (idf *
+                            boost)^2</li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Weight.html#normalize(float)">
+                                Weight#normalize(float)</a> -- Determine the query normalization factor. The query normalization may
+                            allow for comparing scores between queries.</li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Weight.html#scorer(IndexReader)">
+                                Weight#scorer(IndexReader)</a> -- Construct a new
+                            <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                            for this Weight. See
+                            <a href="#The Scorer Class">The Scorer Class</a>
+                            below for help defining a Scorer. As the name implies, the
+                            Scorer is responsible for doing the actual scoring of documents given the Query.
+                        </li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Weight.html#explain(IndexReader, int)">
+                                Weight#explain(IndexReader, int)</a> -- Provide a means for explaining why a given document was scored
+                            the way it was.</li>
+                    </ol>
+                </p>
+            </subsection>
+            <subsection name="The Scorer Class">
+                <p>The
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    abstract class provides common scoring functionality for all Scorer implementations and
+                    is the heart of the Lucene scoring process. The Scorer defines the following abstract methods which
+                    must be implemented:
+                    <ol>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Scorer.html#next()">Scorer#next()</a> -- Advances to the next document that matches this Query, returning true if and only
+                            if there is another document that matches.</li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Scorer.html#doc()">Scorer#doc()</a> -- Returns the id of the
+                            <a href="api/org/apache/lucene/document/Document.html">Document</a>
+                            that contains the match. Is not valid until next() has been called at least once.
+                        </li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Scorer.html#score()">Scorer#score()</a> -- Return the score of the current document. This value can be determined in any
+                            appropriate way for an application. For instance, the
+                            <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/TermScorer.java?view=log">TermScorer</a>
+                            returns the tf * Weight.getValue() * fieldNorm.
+                        </li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Scorer.html#skipTo(int)">Scorer#skipTo(int)</a> -- Skip ahead in the document matches to the document whose id is greater than
+                            or equal to the passed in value. In many instances, skipTo can be
+                            implemented more efficiently than simply looping through all the matching documents until
+                            the target document is identified.</li>
+                        <li>
+                            <a href="api/org/apache/lucene/search/Scorer.html#explain(int)">Scorer#explain(int)</a> -- Provides details on why the score came about.</li>
+                    </ol>
+                </p>
+            </subsection>
+            <subsection name="Why would I want to add my own Query?">
+                <p>In a nutshell, you want to add your own custom Query implementation when you think that Lucene's
+                    aren't appropriate for the
+                    task that you want to do. You might be doing some cutting edge research or you need more information
+                    back
+                    out of Lucene (similar to Doug adding SpanQuery functionality).</p>
+            </subsection>
+            <subsection name="Examples">
+                <p class="highlight-for-editing">FILL IN HERE</p>
+            </subsection>
+        </section>
+
+        <section name="Appendix">
+            <subsection name="Class Diagrams">
+                <p>
+                    <a href="http://wiki.apache.org/jakarta-lucene/KarlWettin?action=AttachFile&amp;do=view&amp;target=search_uml_1.jpg">
+                        Karl Wettin's UML on the Wiki</a>
+                </p>
+            </subsection>
+            <subsection name="Sequence Diagrams">
+                <p class="highlight-for-editing">FILL IN HERE. Volunteers?</p>
+            </subsection>
+            <subsection name="Algorithm" class="highlight-for-editing">
+                <p>GSI Note: This section is mostly my notes on stepping through the Scoring process and serves as
+                    fertilizer for the earlier sections.</p>
+                <p>In the typical search application, a
+                    <a href="api/org/apache/lucene/search/Query.html">Query</a>
+                    is passed to the
+                    <a
+                            href="api/org/apache/lucene/search/Searcher.html">Searcher</a>
+                    , beginning the scoring process.
+                </p>
+                <p>Once inside the Searcher, a
+                    <a href="api/org/apache/lucene/search/Hits.html">Hits</a>
+                    object is constructed, which handles the scoring and caching of the search results.
+                    The Hits constructor stores references to three or four important objects:
+                    <ol>
+                        <li>The
+                            <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                            object of the Query. The Weight object is an internal representation of the Query that
+                            allows the Query to be reused by the Searcher.
+                        </li>
+                        <li>The Searcher that initiated the call.</li>
+                        <li>A
+                            <a href="api/org/apache/lucene/search/Filter.html">Filter</a>
+                            for limiting the result set. Note, the Filter may be null.
+                        </li>
+                        <li>A
+                            <a href="api/org/apache/lucene/search/Sort.html">Sort</a>
+                            object for specifying how to sort the results if the standard score based sort method is not
+                            desired.
+                        </li>
+                    </ol>
+                </p>
+                <p>Now that the Hits object has been initialized, it begins the process of identifying documents that
+                    match the query by calling getMoreDocs method. Assuming we are not sorting (since sorting doesn't
+                    effect the raw Lucene score),
+                    we call on the "expert" search method of the Searcher, passing in our
+                    <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                    object,
+                    <a href="api/org/apache/lucene/search/Filter.html">Filter</a>
+                    and the number of results we want. This method
+                    returns a
+                    <a href="api/org/apache/lucene/search/TopDocs.html">TopDocs</a>
+                    object, which is an internal collection of search results.
+                    The Searcher creates a
+                    <a href="api/org/apache/lucene/search/TopDocCollector.html">TopDocCollector</a>
+                    and passes it along with the Weight, Filter to another expert search method (for more on the
+                    <a href="api/org/apache/lucene/search/HitCollector.html">HitCollector</a>
+                    mechanism, see
+                    <a href="api/org/apache/lucene/search/Searcher.html">Searcher</a>
+                    .) The TopDocCollector uses a
+                    <a href="api/org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>
+                    to collect the top results for the search.
+                </p>
+                <p>If a Filter is being used, some initial setup is done to determine which docs to include. Otherwise,
+                    we ask the Weight for
+                    a
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    for the
+                    <a href="api/org/apache/lucene/index/IndexReader.html">IndexReader</a>
+                    of the current searcher and we proceed by
+                    calling the score method on the
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    .
+                </p>
+                <p>At last, we are actually going to score some documents. The score method takes in the HitCollector
+                    (most likely the TopDocCollector) and does its business.
+                    Of course, here is where things get involved. The
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    that is returned by the
+                    <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                    object depends on what type of Query was submitted. In most real world applications with multiple
+                    query terms,
+                    the
+                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    is going to be a
+                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanScorer2.java?view=log">BooleanScorer2</a>
+                    (see the section on customizing your scoring for info on changing this.)
+
+                </p>
+                <p>Assuming a BooleanScorer2 scorer, we first initialize the Coordinator, which is used to apply the
+                    coord() factor. We then
+                    get a internal Scorer based on the required, optional and prohibited parts of the query.
+                    Using this internal Scorer, the BooleanScorer2 then proceeds
+                    into a while loop based on the Scorer#next() method. The next() method advances to the next document
+                    matching the query. This is an
+                    abstract method in the Scorer class and is thus overriden by all derived
+                    implementations.  <!-- DOUBLE CHECK THIS -->If you have a simple OR query
+                    your internal Scorer is most likely a DisjunctionSumScorer, which essentially combines the scorers
+                    from the sub scorers of the OR'd terms.</p>
+            </subsection>
+        </section>
+    </body>
+</document>
