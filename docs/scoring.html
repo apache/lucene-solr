@@ -122,7 +122,7 @@ limitations under the License.
             help you figure out the what and why of Lucene scoring.</p>
                                                 <p>Lucene scoring uses a combination of the
                 <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space Model (VSM) of Information
-                    Retrieval</a> and the Boolean model
+                    Retrieval</a> and the <a href="http://en.wikipedia.org/wiki/Standard_Boolean_model">Boolean model</a>
                 to determine
                 how relevant a given Document is to a User's query.  In general, the idea behind the VSM is the more
                 times a query term appears in a document relative to
@@ -181,7 +181,7 @@ limitations under the License.
                     and the other in one Field will return different scores for the same query due to length normalization
                     (assumming the
                     <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>
-                    on the Fields.
+                    on the Fields.)
                 </p>
                             </blockquote>
       </td></tr>
@@ -196,13 +196,15 @@ limitations under the License.
       <tr><td>
         <blockquote>
                                     <p>
-                    Lucene's scoring formula, taken from
-                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>
-                    is
+                    Lucene's scoring formula computes the score of one document <i>d</i> for a given query <i>q</i> across each
+                    term <i>t</i> that occurs in q.  The score attempts to measure relevance, so the higher the score, the more
+		    relevant document <i>d</i> is to the query <i>q</i>.  This is taken from
+		    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>:
+
                     <div class="formula">
                         <!-- Anyone know how to specify sigma in Anakia?  It always seems to strip out my numeric character references-->
                         score(q,d) =
-                        <span class="big" id="summation">
+			<span class="big" id="summation">
                             sum </span><span class="summation-range">t in q</span><span>(
                         <A HREF="api/org/apache/lucene/search/Similarity.html#tf(int)">tf</A>
                         (t in d) *
@@ -224,15 +226,14 @@ limitations under the License.
                         (q,d) *
                         <A HREF="api/org/apache/lucene/search/Similarity.html#queryNorm(float)">
                             queryNorm
-                        </A>(sumOfSqaredWeights)</span>
+                        </A>(sumOfSquaredWeights)</span>
                     </div>
-
                 </p>
                                                 <p>
                     where
                     <!-- Anyone know how to specify sigma in Anakia?  It always seems to strip out my numeric character references-->
                     <div id="#sumOfSquares">
-                        sumOfSqaredWeights =
+                        sumOfSquaredWeights =
                         <span class="big">sum</span><span class="summation-range">t in q</span><span>(
                         <A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">
                             idf
@@ -244,18 +245,26 @@ limitations under the License.
                         (t in q) )^2</span>
                     </div>
                 </p>
-                                                <p>This scoring formula is mostly incorporated into the
+                                                <p>
+		This scoring formula is mostly implemented in the
                     <a href="api/org/apache/lucene/search/TermScorer.html">TermScorer</a> class, where it makes calls to the
-                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> class to retrieve values for the following:
+                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> class to retrieve values for the following.  Note that the descriptions apply to <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a> implementation:
                     <ol>
-                        <li>tf - Term Frequency - The number of times the term <i>t</i> appears in the current document being scored.  </li>
-                        <li>idf - Inverse Document Frequency - One divided by the number of documents in which the term <i>t</i> appears in.</li>
-                        <li>getBoost(t in q) - The boost, specified in the query by the user, that should be applied to this term.</li>
-                        <li>lengthNorm(t.field in q) - The factor to apply to account for differing lengths in the fields that are being searched.  Usually longer fields return a smaller value.</li>
-                        <li>coord(q, d) - Score factor based on how many terms the specified document has in common with the query.</li>
-                        <li>queryNorm(sumOfSquaredWeights) - Factor used to make scores between queries comparable
+
+                        <li><A HREF="api/org/apache/lucene/search/Similarity.html#tf(int)">tf(t in d)</A> - Term Frequency - The number of times the term <i>t</i> appears in the current document <i>d</i> being scored.  Documents that have more occurrences of a given term receive a higher score.</li>
+
+                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">idf(t)</A> - Inverse Document Frequency - One divided by the number of documents in which the term <i>t</i> appears.  This means rarer terms give higher contribution to the total score.</p></li>
+
+                        <li><p><A HREF="api/org/apache/lucene/search/Query.html#getBoost()">getBoost(t in q)</A> - The boost, specified in the query by the user, that should be applied to this term.  A boost over 1.0 will increase the importance of this term; a boost under 1.0 will decrease its importance.  A boost of 1.0 (the default boost) has no effect.</p></li>
+
+                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#lengthNorm(java.lang.String, int)">lengthNorm(t.field in q)</A> - The factor to apply to account for differing lengths in the fields that are being searched.  Typically longer fields return a smaller value.  This means matches against shorter fields receive a higher score than matches against longer fields.</p></li>
+
+                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#coord(int, int)">coord(q, d)</A> - Score factor based on how many terms the specified document has in common with the query.  Typically, a document that contains more of the query's terms will receive a higher score than another document with fewer query terms.</p></li>
+
+                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#queryNorm(float)">queryNorm(sumOfSquaredWeights)</A> - Factor used to make scores between queries comparable
                             <span class="highlight-for-editing">GSI: might be interesting to have a note on why this formula was chosen.  I have always understood (but not 100% sure)
-                                that it is not a good idea to compare scores across queries or indexes, so any use of normalization may lead to false assumptions.</span></li>
+                                that it is not a good idea to compare scores across queries or indexes, so any use of normalization may lead to false assumptions.  However, I also seem
+                            to remember some research on using sum of squares as being somewhat suitable for score comparison.  Anyone have any thoughts here?</span></p></li>
                     </ol>
                     Note, the above definitions are summaries of the javadocs which can be accessed by clicking the links in the formula and are merely provided
                     for context and are not authoratitive.
