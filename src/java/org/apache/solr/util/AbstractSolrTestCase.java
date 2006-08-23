@@ -233,7 +233,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
    * Generates a SolrQueryRequest using the LocalRequestFactory
    * @see #lrf
    */
-  public SolrQueryRequest req( String q ) {
+  public SolrQueryRequest req(String... q) {
     return lrf.makeRequest(q);
   }
     

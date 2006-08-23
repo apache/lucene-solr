@@ -178,7 +178,15 @@
      The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+  <requestHandler name="standard" class="solr.StandardRequestHandler">
+    <!-- default values for query parameters may optionally be defined here
+     <lst name="defaults">
+       <int name="rows">10</int>
+       <str name="fl">*</str>
+       <str name="version">2.1</str>
+     <lst>
+    -->
+  </requestHandler>
 
   <!-- DisMaxRequestHandler is an example of a request handler that
        supports optional parameters which are passed to

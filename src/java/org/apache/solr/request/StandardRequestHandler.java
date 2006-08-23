@@ -24,11 +24,11 @@ import java.net.URL;
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.CommonParams;
 import org.apache.solr.search.*;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrException;
+import static org.apache.solr.request.SolrParams.*;
 
 /**
  * @author yonik
@@ -57,31 +57,32 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
   // acceptable every million requests or so?
   long numRequests;
   long numErrors;
+  SolrParams defaults;
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
     /* :NOOP */
   }
-  /** parameters garnered from config file */
-  protected final CommonParams params = new CommonParams();
-
 
   public void init(NamedList args) {
-    params.setValues(args);
+    Object o = args.get("defaults");
+    if (o != null && o instanceof NamedList) {
+      defaults = SolrParams.toSolrParams((NamedList)o);
+    }
   }
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
 
-    // TODO: test if lucene will accept an escaped ';', otherwise
-    // we need to un-escape them before we pass to QueryParser
     try {
-      String sreq = req.getQueryString();
-      String debug = U.getParam(req, params.DEBUG_QUERY, params.debugQuery);
-      String defaultField = U.getParam(req, params.DF, params.df);
+      U.setDefaults(req,defaults);
+      SolrParams p = req.getParams();
+      String sreq = p.get(Q);
+
+      String defaultField = p.get(DF);
 
       // find fieldnames to return (fieldlist)
-      String fl = U.getParam(req, params.FL, params.fl);
+      String fl = p.get(SolrParams.FL);
       int flags = 0; 
       if (fl != null) {
         flags |= U.setReturnFields(fl, rsp);
@@ -105,11 +106,11 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
         }
       }
 
-      DocList results = req.getSearcher().getDocList(query, null, sort, req.getStart(), req.getLimit(), flags);
+      DocList results = req.getSearcher().getDocList(query, null, sort, p.getInt(START,0), p.getInt(ROWS,10), flags);
       rsp.add(null,results);
 
       try {
-        NamedList dbg = U.doStandardDebug(req, qs, query, results, params);
+        NamedList dbg = U.doStandardDebug(req, qs, query, results);
         if (null != dbg) 
           rsp.add("debug", dbg);
       } catch (Exception e) {
@@ -118,7 +119,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
       }
 
       NamedList sumData = SolrPluginUtils.doStandardHighlighting(
-        results, query, req, params, new String[]{defaultField});
+        results, query, req, new String[]{defaultField});
       if(sumData != null)
         rsp.add("highlighting", sumData);
 

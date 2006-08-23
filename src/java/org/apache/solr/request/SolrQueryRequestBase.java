@@ -37,107 +37,148 @@ import org.apache.solr.core.SolrException;
  * @version $Id$
  */
 public abstract class SolrQueryRequestBase implements SolrQueryRequest {
- // some standard query argument names
- public static final String QUERY_NAME="q";
- public static final String START_NAME="start";
- public static final String ROWS_NAME="rows";
- public static final String XSL_NAME="xsl";
- public static final String QUERYTYPE_NAME="qt";
+  @Deprecated
+  public static final String QUERY_NAME="q";
+  @Deprecated
+  public static final String START_NAME="start";
+  @Deprecated
+  public static final String ROWS_NAME="rows";
+  @Deprecated
+  public static final String XSL_NAME="xsl";
+  @Deprecated
+  public static final String QUERYTYPE_NAME="qt";
+
+  protected final SolrCore core;
+  protected final SolrParams origParams;
+  protected SolrParams params;
+
+  public SolrQueryRequestBase(SolrCore core, SolrParams params) {
+    this.core = core;
+    this.params = this.origParams = params;
+  }
+
+  /** returns the current request parameters */
+  public SolrParams getParams() {
+    return params;
+  }
+
+  /** Returns the original request parameters.  As this
+   * does not normally include configured defaults
+   * it's more suitable for logging.
+   */
+  public SolrParams getOriginalParams() {
+    return origParams;
+  }
+
+  /** Change the parameters for this request.  This does not affect
+   *  the original parameters returned by getOriginalParams()
+   */
+  public void setParams(SolrParams params) {
+    this.params = params;
+  }
+
+  public String getParam(String name) {
+    return params.get(name);
+  }
+
+  public String[] getParams(String name) {
+    return params.getParams(name);
+  }
 
 
- protected final SolrCore core;
+  public int getIntParam(String name) {
+    String s = getParam(name);
+    if (s==null) {
+      throw new SolrException(500,"Missing required parameter '"+name+"' from " + this);
+    }
+    return Integer.parseInt(s);
+  }
 
- public SolrQueryRequestBase(SolrCore core) {
-   this.core=core;
- }
+  public int getIntParam(String name, int defval) {
+    String s = getParam(name);
+    return s==null ? defval : Integer.parseInt(s);
+  }
 
- public int getIntParam(String name) {
-   String s = getParam(name);
-   if (s==null) {
-     throw new SolrException(500,"Missing required parameter '"+name+"' from " + this);
-   }
-   return Integer.parseInt(s);
- }
+  public String getStrParam(String name) {
+    String s = getParam(name);
+    if (s==null) {
+      throw new SolrException(500,"Missing required parameter '"+name+"' from " + this);
+    }
+    return s;
+  }
 
- public int getIntParam(String name, int defval) {
-   String s = getParam(name);
-   return s==null ? defval : Integer.parseInt(s);
- }
+  public String getStrParam(String name, String defval) {
+    String s = getParam(name);
+    return s==null ? defval : s;
+  }
 
- public String getStrParam(String name) {
-   String s = getParam(name);
-   if (s==null) {
-     throw new SolrException(500,"Missing required parameter '"+name+"' from " + this);
-   }
-   return s;
- }
+  public String getQueryString() {
+    return params.get(SolrParams.Q);
+  }
 
- public String getStrParam(String name, String defval) {
-   String s = getParam(name);
-   return s==null ? defval : s;
- }
+  public String getQueryType() {
+    return params.get(SolrParams.QT);
+  }
 
- public String getQueryString() {
-   return getParam(QUERY_NAME);
- }
+  // starting position in matches to return to client
+  public int getStart() {
+    return params.getInt(SolrParams.START, 0);
+  }
 
- public String getQueryType() {
-   return getParam(QUERYTYPE_NAME);
- }
-
- // starting position in matches to return to client
- public int getStart() {
-   return getIntParam(START_NAME, 0);
- }
-
- // number of matching documents to return
- public int getLimit() {
-   return getIntParam(ROWS_NAME, 10);
- }
+  // number of matching documents to return
+  @Deprecated
+  public int getLimit() {
+    return params.getInt(SolrParams.ROWS, 10);
+  }
 
 
- protected final long startTime=System.currentTimeMillis();
- // Get the start time of this request in milliseconds
- public long getStartTime() {
-   return startTime;
- }
+  protected final long startTime=System.currentTimeMillis();
+  // Get the start time of this request in milliseconds
+  public long getStartTime() {
+    return startTime;
+  }
 
- // The index searcher associated with this request
- protected RefCounted<SolrIndexSearcher> searcherHolder;
- public SolrIndexSearcher getSearcher() {
-   // should this reach out and get a searcher from the core singleton, or
-   // should the core populate one in a factory method to create requests?
-   // or there could be a setSearcher() method that Solr calls
+  // The index searcher associated with this request
+  protected RefCounted<SolrIndexSearcher> searcherHolder;
+  public SolrIndexSearcher getSearcher() {
+    // should this reach out and get a searcher from the core singleton, or
+    // should the core populate one in a factory method to create requests?
+    // or there could be a setSearcher() method that Solr calls
 
-   if (searcherHolder==null) {
-     searcherHolder = core.getSearcher();
-   }
+    if (searcherHolder==null) {
+      searcherHolder = core.getSearcher();
+    }
 
-   return searcherHolder.get();
- }
+    return searcherHolder.get();
+  }
 
- // The solr core (coordinator, etc) associated with this request
- public SolrCore getCore() {
-   return core;
- }
+  // The solr core (coordinator, etc) associated with this request
+  public SolrCore getCore() {
+    return core;
+  }
 
- // The index schema associated with this request
- public IndexSchema getSchema() {
-   return core.getSchema();
- }
+  // The index schema associated with this request
+  public IndexSchema getSchema() {
+    return core.getSchema();
+  }
 
- /**
-  * Frees resources associated with this request, this method <b>must</b>
-  * be called when the object is no longer in use.
-  */
- public void close() {
-   if (searcherHolder!=null) {
-     searcherHolder.decref();
-   }
- }
+  /**
+   * Frees resources associated with this request, this method <b>must</b>
+   * be called when the object is no longer in use.
+   */
+  public void close() {
+    if (searcherHolder!=null) {
+      searcherHolder.decref();
+    }
+  }
 
- public String toString() {
-   return this.getClass().getSimpleName() + '{' + getParamString() + '}';
- }
+
+  public String getParamString() {
+    return origParams.toString();
+  }
+
+  public String toString() {
+    return this.getClass().getSimpleName() + '{' + params + '}';
+  }
 
 }

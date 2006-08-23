@@ -16,74 +16,32 @@
 
 package org.apache.solr.util;
 
-import org.apache.solr.core.Config; // highlighting
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.highlight.Formatter;
+import org.apache.lucene.search.highlight.*;
+import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrException;
-
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.SolrCache;
-import org.apache.solr.search.SolrQueryParser;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.CacheRegenerator;
-
-import org.apache.solr.request.StandardRequestHandler;
+import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.SolrRequestHandler;
-
+import org.apache.solr.request.DefaultSolrParams;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.*;
 
-import org.apache.solr.util.StrUtils;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.XML;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.highlight.Highlighter; // highlighting
-import org.apache.lucene.search.highlight.TokenSources;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.Encoder;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.Formatter;
-import org.apache.lucene.search.highlight.SimpleFragmenter;
-import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.NullFragmenter;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.Token;
-
-
-import org.xmlpull.v1.XmlPullParserException;
-
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.Handler;
-
-import java.util.*;
-import java.util.regex.Pattern;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter; // highlighting
-import java.net.URL;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.regex.Pattern;
     
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -99,9 +57,21 @@ import java.net.URL;
  * default parameter settings.  
  */
 public class SolrPluginUtils {
-    
+
+  /** set defaults on a SolrQueryRequest */
+  public static void setDefaults(SolrQueryRequest req, SolrParams defaults) {
+      SolrParams p = req.getParams();
+      if (defaults != null) {
+        p = new DefaultSolrParams(p,defaults);
+        // set params so they will be visible to other components such as the response writer
+        req.setParams(p);
+      }
+  }
+
+
   /** standard param for field list */
-  public static String FL = CommonParams.FL;
+  @Deprecated
+  public static String FL = SolrParams.FL;
 
   /**
    * SolrIndexSearch.numDocs(Query,Query) freaks out if the filtering
@@ -243,7 +213,7 @@ public class SolrPluginUtils {
                                           CommonParams params)
     throws IOException {
         
-    String debug = getParam(req, params.DEBUG_QUERY, params.debugQuery);
+    String debug = getParam(req, SolrParams.DEBUG_QUERY, params.debugQuery);
 
     NamedList dbg = null;
     if (debug!=null) {
@@ -277,7 +247,85 @@ public class SolrPluginUtils {
     return dbg;
   }
 
-    
+
+  /**
+   * <p>
+   * Returns a NamedList containing many "standard" pieces of debugging
+   * information.
+   * </p>
+   *
+   * <ul>
+   * <li>rawquerystring - the 'q' param exactly as specified by the client
+   * </li>
+   * <li>querystring - the 'q' param after any preprocessing done by the plugin
+   * </li>
+   * <li>parsedquery - the main query executed formated by the Solr
+   *     QueryParsing utils class (which knows about field types)
+   * </li>
+   * <li>parsedquery_toString - the main query executed formated by it's
+   *     own toString method (in case it has internal state Solr
+   *     doesn't know about)
+   * </li>
+   * <li>expain - the list of score explanations for each document in
+   *     results against query.
+   * </li>
+   * <li>otherQuery - the query string specified in 'explainOther' query param.
+   * </li>
+   * <li>explainOther - the list of score explanations for each document in
+   *     results against 'otherQuery'
+   * </li>
+   * </ul>
+   *
+   * @param req the request we are dealing with
+   * @param userQuery the users query as a string, after any basic
+   *                  preprocessing has been done
+   * @param query the query built from the userQuery
+   *              (and perhaps other clauses) that identifies the main
+   *              result set of the response.
+   * @param results the main result set of the response
+   */
+  public static NamedList doStandardDebug(SolrQueryRequest req,
+                                          String userQuery,
+                                          Query query,
+                                          DocList results)
+    throws IOException {
+
+    String debug = req.getParam(SolrParams.DEBUG_QUERY);
+
+    NamedList dbg = null;
+    if (debug!=null) {
+      dbg = new NamedList();
+
+      /* userQuery may have been pre-processes .. expose that */
+      dbg.add("rawquerystring", req.getQueryString());
+      dbg.add("querystring", userQuery);
+
+      /* QueryParsing.toString isn't perfect, use it to see converted
+       * values, use regular toString to see any attributes of the
+       * underlying Query it may have missed.
+       */
+      dbg.add("parsedquery",QueryParsing.toString(query, req.getSchema()));
+      dbg.add("parsedquery_toString", query.toString());
+
+      dbg.add("explain", getExplainList
+              (query, results, req.getSearcher(), req.getSchema()));
+      String otherQueryS = req.getParam("explainOther");
+      if (otherQueryS != null && otherQueryS.length() > 0) {
+        DocList otherResults = doSimpleQuery
+          (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
+        dbg.add("otherQuery",otherQueryS);
+        dbg.add("explainOther", getExplainList
+                (query, otherResults,
+                 req.getSearcher(),
+                 req.getSchema()));
+      }
+    }
+
+    return dbg;
+  }
+
+
+
   /**
    * Generates an list of Explanations for each item in a list of docs.
    *
@@ -442,9 +490,9 @@ public class SolrPluginUtils {
                                                  CommonParams params,
                                                  String[] defaultFields
                                                  ) throws IOException {
-    if(!getBooleanParam(req, params.HIGHLIGHT, params.highlight)) 
+    if(!getBooleanParam(req, SolrParams.HIGHLIGHT, params.highlight))
       return null;
-    String fieldParam = getParam(req, params.HIGHLIGHT_FIELDS, 
+    String fieldParam = getParam(req, SolrParams.HIGHLIGHT_FIELDS,
                                  params.highlightFields);
     String fields[];
     if(fieldParam == null || fieldParam.trim().equals("")) {
@@ -458,7 +506,7 @@ public class SolrPluginUtils {
       fields = splitList.split(fieldParam.trim());
 
     Highlighter highlighter;
-    String formatterSpec = getParam(req, params.HIGHLIGHT_FORMATTER_CLASS,
+    String formatterSpec = getParam(req, SolrParams.HIGHLIGHT_FORMATTER_CLASS,
                                     params.highlightFormatterClass);
     if(formatterSpec == null || formatterSpec.equals("")) {
       highlighter = getDefaultHighlighter(query);
@@ -469,7 +517,7 @@ public class SolrPluginUtils {
       highlighter.setTextFragmenter(new GapFragmenter());
     }
     
-    int numFragments = getNumberParam(req, params.MAX_SNIPPETS,
+    int numFragments = getNumberParam(req, SolrParams.MAX_SNIPPETS,
                                       params.maxSnippets).intValue();
 
     return getHighlights(
@@ -479,6 +527,61 @@ public class SolrPluginUtils {
       highlighter,
       numFragments);
   }
+
+
+  /** TODO: API IN PROGRESS... SUBJECT TO CHANGE
+   * Perform highlighting of selected fields.
+   *
+   * @param docs query results
+   * @param query the (possibly re-written query)
+   * @param req associated SolrQueryRequest
+   * @param defaultFields default search field list
+   *
+   * @return NamedList containing summary data, or null if highlighting is
+   * disabled.
+   *
+   */
+  public static NamedList doStandardHighlighting(DocList docs,
+                                                 Query query,
+                                                 SolrQueryRequest req,
+                                                 String[] defaultFields
+                                                 ) throws IOException {
+    SolrParams p = req.getParams();
+    if (!p.getBool(SolrParams.HIGHLIGHT, false)) return null;
+    String fieldParam = p.get(SolrParams.HIGHLIGHT_FIELDS);
+    String fields[];
+    if(fieldParam == null || fieldParam.trim().equals("")) {
+      // use default search field if highlight fieldlist not specified.
+      if (defaultFields == null || defaultFields.length == 0 ||
+          defaultFields[0] == null) {
+        fields = new String[]{req.getSchema().getDefaultSearchFieldName()};
+      } else
+        fields = defaultFields;
+    } else
+      fields = splitList.split(fieldParam.trim());
+
+    Highlighter highlighter;
+    String formatterSpec = p.get(SolrParams.HIGHLIGHT_FORMATTER_CLASS);
+    if(formatterSpec == null) {
+      highlighter = getDefaultHighlighter(query);
+    } else {
+      highlighter = new Highlighter(
+        (Formatter)Config.newInstance(formatterSpec),
+        new QueryScorer(query));
+      highlighter.setTextFragmenter(new GapFragmenter());
+    }
+
+    int numFragments = p.getInt(SolrParams.MAX_SNIPPETS, 1);
+
+    return getHighlights(
+      docs,
+      fields,
+      req.getSearcher(),
+      highlighter,
+      numFragments);
+  }
+
+
 
   /**
    * Executes a basic query in lucene syntax

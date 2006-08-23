@@ -197,6 +197,15 @@
 
   <requestHandler name="test" class="solr.tst.TestRequestHandler" />
 
+  <!-- test query parameter defaults --> 
+  <requestHandler name="defaults" class="solr.StandardRequestHandler">
+    <lst name="defaults">
+      <int name="rows">4</int>
+      <bool name="highlight">true</bool>
+      <str name="highlightFields">text,name,subject,title,whitetok</str>
+    </lst>
+  </requestHandler>
+
 
   <admin>
     <defaultQuery>solr</defaultQuery>

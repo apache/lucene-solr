@@ -21,61 +21,31 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrException;
 
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.CacheRegenerator;
 
-import org.apache.solr.request.StandardRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
 
-import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.DisMaxParams;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.analysis.Analyzer;
-
-import org.xmlpull.v1.XmlPullParserException;
 
 /* this is the standard logging framework for Solr */
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.Handler;
 
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collection;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.regex.Pattern;
-import java.io.IOException;
 import java.net.URL;
     
 /**
@@ -334,7 +304,7 @@ public class DisMaxRequestHandler
             
       /* * * Generate Main Results * * */
 
-      flags |= U.setReturnFields(U.getParam(req, params.FL, params.fl), rsp);
+      flags |= U.setReturnFields(U.getParam(req, SolrParams.FL, params.fl), rsp);
       DocList results = s.getDocList(query, restrictions,
                                      SolrPluginUtils.getSort(req),
                                      req.getStart(), req.getLimit(),
@@ -367,7 +337,7 @@ public class DisMaxRequestHandler
       }
 
       /* * * Highlighting/Summarizing  * * */
-      if(U.getBooleanParam(req, params.HIGHLIGHT, params.highlight)) {
+      if(U.getBooleanParam(req, SolrParams.HIGHLIGHT, params.highlight)) {
 
         BooleanQuery highlightQuery = new BooleanQuery();
         U.flattenBooleanQuery(highlightQuery, query);

@@ -245,6 +245,79 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertTrue(luf.isStoreOffsetWithTermVector() && luf.isStorePositionWithTermVector());
 
   }
+
+
+  public void testSolrParams() throws Exception {
+    NamedList nl = new NamedList();
+    nl.add("i",555);
+    nl.add("s","bbb");
+    nl.add("bt","true");
+    nl.add("bf","false");
+
+    Map<String,String> m = new HashMap<String,String>();
+    m.put("f.field1.i", "1000");
+    m.put("s", "BBB");
+    m.put("ss", "SSS");
+
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(null,nl);
+    SolrParams p = req.getParams();
+
+    assertEquals(p.get("i"), "555");
+    assertEquals(p.getInt("i").intValue(), 555);
+    assertEquals(p.getInt("i",5), 555);
+    assertEquals(p.getInt("iii",5), 5);
+    assertEquals(p.getFieldParam("field1","i"), "555");
+
+    req.setParams(new DefaultSolrParams(p, new MapSolrParams(m)));
+    p = req.getParams();
+    assertEquals(req.getOriginalParams().get("s"), "bbb");
+    assertEquals(p.get("i"), "555");
+    assertEquals(p.getInt("i").intValue(), 555);
+    assertEquals(p.getInt("i",5), 555);
+    assertEquals(p.getInt("iii",5), 5);
+
+    assertEquals(p.getFieldParam("field1","i"), "1000");
+    assertEquals(p.get("s"), "bbb");
+    assertEquals(p.get("ss"), "SSS");
+
+    assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+    assertEquals(p.getBool("foo",true), true);
+    assertEquals(p.getBool("foo",false), false);
+    assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+  }
+
+
+  public void testConfigDefaults() {
+    assertU(adoc("id", "42",
+                 "name", "Zapp Brannigan"));
+    assertU(adoc("id", "43",
+                 "title", "Democratic Order of Planets"));
+    assertU(adoc("id", "44",
+                 "name", "The Zapper"));
+    assertU(adoc("id", "45",
+                 "title", "25 star General"));
+    assertU(adoc("id", "46",
+                 "subject", "Defeated the pacifists of the Gandhi nebula"));
+    assertU(adoc("id", "47",
+                 "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+    assertU(commit());
+
+    assertQ("standard request handler returns all matches",
+            req("id:[42 TO 47]"),
+            "*[count(//doc)=6]"
+            );
+
+    assertQ("defaults handler returns fewer matches",
+            req("q", "id:[42 TO 47]",   "qt","defaults"),
+            "*[count(//doc)=4]"
+            );
+
+    assertQ("defaults handler includes highlighting",
+            req("q", "name:Zapp OR title:General",   "qt","defaults"),
+            "//lst[@name='highlighting']"
+            );
+
+  }
       
             
 

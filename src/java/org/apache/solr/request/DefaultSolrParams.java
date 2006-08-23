@@ -14,23 +14,32 @@
  * limitations under the License.
  */
 
-package org.apache.solr.servlet;
-
-import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.request.ServletSolrParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.StrUtils;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.Map;
-import java.util.Set;
+package org.apache.solr.request;
 
 /**
  * @author yonik
  * @version $Id$
  */
-class SolrServletRequest extends SolrQueryRequestBase {
-  public SolrServletRequest(SolrCore core, HttpServletRequest req) {
-    super(core, new ServletSolrParams(req));
+public class DefaultSolrParams extends SolrParams {
+  protected final SolrParams params;
+  protected final SolrParams defaults;
+
+  public DefaultSolrParams(SolrParams params, SolrParams defaults) {
+    this.params = params;
+    this.defaults = defaults;
+  }
+
+  public String get(String param) {
+    String val = params.get(param);
+    return val!=null ? val : defaults.get(param);
+  }
+
+  public String[] getParams(String param) {
+    String[] vals = params.getParams(param);
+    return vals!=null ? vals : defaults.getParams(param);
+  }
+
+  public String toString() {
+    return "{params("+params+"),defaults("+defaults+")}";
   }
 }

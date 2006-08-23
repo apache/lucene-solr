@@ -387,9 +387,13 @@ public class TestHarness {
     public Map<String,String> args = new HashMap<String,String>();
     public LocalRequestFactory() {
     }
-    public LocalSolrQueryRequest makeRequest(String q) {
+    public LocalSolrQueryRequest makeRequest(String ... q) {
+      if (q.length==1) {
       return new LocalSolrQueryRequest(TestHarness.this.getCore(),
-                                       q, qtype, start, limit, args);
+                                       q[0], qtype, start, limit, args);
+      }
+
+      return new LocalSolrQueryRequest(TestHarness.this.getCore(),new NamedList(Arrays.asList(q)));
     }
   }
 }

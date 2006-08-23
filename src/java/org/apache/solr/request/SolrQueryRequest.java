@@ -27,6 +27,11 @@ import org.apache.solr.core.SolrCore;
  * @version $Id$
  */
 public interface SolrQueryRequest {
+  public SolrParams getParams();
+
+  public void setParams(SolrParams params);
+
+  public SolrParams getOriginalParams();
 
   /**
    * This method should be called when all uses of this request are
@@ -39,29 +44,35 @@ public interface SolrQueryRequest {
    * @return the value, or the first value if the parameter was
    * specified more then once; may be null.
    */
+  @Deprecated
   public String getParam(String name);
 
   /**
    * Returns the input parameter values for the specified name
    * @return the values; may be null or empty depending on implementation
    */
+  @Deprecated
   public String[] getParams(String name);
 
   /**
    * Returns the primary query string parameter of the request
    */
+  @Deprecated
   public String getQueryString();
 
   /**
    * Signifies the syntax and the handler that should be used
    * to execute this query.
    */
+  @Deprecated
   public String getQueryType();
 
   /** starting position in matches to return to client */
+  @Deprecated
   public int getStart();
 
   /** number of matching documents to return */
+  @Deprecated
   public int getLimit();
 
   /** The start time of this request in milliseconds */
