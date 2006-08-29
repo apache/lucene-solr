@@ -58,7 +58,7 @@
                     and the other in one Field will return different scores for the same query due to length normalization
                     (assumming the
                     <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>
-                    on the Fields.)
+                    on the Fields).
                 </p>
             </subsection>
             <subsection name="Understanding the Scoring Formula">
@@ -145,13 +145,13 @@
                     <a href="api/org/apache/lucene/search/Query.html">Query</a> classes, as created by each application in
                     response to a user's information need.
                 </p>
-                <p>In this regard, Lucene offers a wide variety of Query implementations, most of which are in the
-                    org.apache.lucene.search package.
+                <p>In this regard, Lucene offers a wide variety of <a href="api/org/apache/lucene/search/Query.html">Query</a> implementations, most of which are in the
+                    <a href="api/org/apache/lucene/search/package-summary.html">org.apache.lucene.search</a> package.
                     These implementations can be combined in a wide variety of ways to provide complex querying
                     capabilities along with
                     information about where matches took place in the document collection. The <a href="#Query Classes">Query</a>
-                    section below will
-                    highlight some of the more important Query classes.  For information on the other ones, see the
+                    section below 
+                    highlights some of the more important Query classes.  For information on the other ones, see the
                     <a href="api/org/apache/lucene/search/package-summary.html">package summary</a>.  For details on implementing
                     your own Query class, see <a href="#Changing your Scoring -- Expert Level">Changing your Scoring --
                     Expert Level</a> below.
@@ -160,7 +160,7 @@
                     <a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, the scoring process
                 begins.  (See the <a
                 href="#Appendix">Appendix</a> Algorithm section for more notes on the process.)  After some infrastructure setup,
-                control finally passes to the Weight implementation and it's
+                control finally passes to the <a href="api/org/apache/lucene/search/Weight.html">Weight</a> implementation and its
                     <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a> instance.  In the case of any type of
                     <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, scoring is handled by the
                     <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a> (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class),
@@ -188,68 +188,79 @@
                     <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>
                 </h4>
                 <p>Of the various implementations of
-                    Query, the
+                    <a href="api/org/apache/lucene/search/Query.html">Query</a>, the
                     <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>
-                    is the easiest to understand and the most often used in most applications. A TermQuery is a Query
-                    that matches all the documents that contain the specified
-                    <a href="api/org/apache/lucene/index/Term.html">Term</a>
-                    . A Term is a word that occurs in a specific
-                    <a href="api/org/apache/lucene/document/Field.html">Field</a>
-                    . Thus, a TermQuery identifies and scores all
-                    <a href="api/org/apache/lucene/document/Document.html">Document</a>
-                    s that have a Field with the specified string in it.
-                    Constructing a TermQuery is as simple as:
-                    <code>TermQuery tq = new TermQuery(new Term("fieldName", "term");</code>
-                    In this example, the Query would identify all Documents that have the Field named "fieldName" that
-                    contain the word "term".
+                    is the easiest to understand and the most often used in applications. A <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a> matches all the documents that contain the specified
+                    <a href="api/org/apache/lucene/index/Term.html">Term</a>,
+                    which is a word that occurs in a certain
+                    <a href="api/org/apache/lucene/document/Field.html">Field</a>.
+                    Thus, a <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a> identifies and scores all
+                    <a href="api/org/apache/lucene/document/Document.html">Document</a>s that have a <a href="api/org/apache/lucene/document/Field.html">Field</a> with the specified string in it.
+                    Constructing a <a
+                    href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>
+                    is as simple as:
+		    <pre>
+      TermQuery tq = new TermQuery(new Term("fieldName", "term");
+		    </pre>In this example, the <a href="api/org/apache/lucene/search/Query.html">Query</a> identifies all <a href="api/org/apache/lucene/document/Document.html">Document</a>s that have the <a href="api/org/apache/lucene/document/Field.html">Field</a> named <tt>"fieldName"</tt> and
+                    contain the word <tt>"term"</tt>.
                 </p>
                 <h4>
                     <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>
                 </h4>
-                <p>Things start to get interesting when one starts to combine TermQuerys, which is handled by the
-                    <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>
-                    class. The BooleanQuery is a collection
-                    of other
-                    <a href="api/org/apache/lucene/search/Query.html">Query</a>
-                    classes along with semantics about how to combine the different subqueries.
-                    It currently supports three different operators for specifying the logic of the query (see
-                    <a href="api/org/apache/lucene/search/BooleanClause.html">BooleanClause</a>
-                    )
+                <p>Things start to get interesting when one combines multiple
+		   <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a> instances into a <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>.
+                    A <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a> contains multiple
+		    <a href="api/org/apache/lucene/search/BooleanClause.html">BooleanClause</a>s,
+                    where each clause contains a sub-query (<a href="api/org/apache/lucene/search/Query.html">Query</a>
+		   instance) and an operator (from <a href="api/org/apache/lucene/search/BooleanClause.Occur.html">BooleanClause.Occur</a>)
+		   describing how that sub-query is combined with the other clauses:
                     <ol>
-                        <li>SHOULD -- Use this operator when a clause can occur in the result set, but is not required.
-                            If a query is made up of all SHOULD clauses, then a non-empty result
-                            set will have matched at least one of the clauses in the query.</li>
-                        <li>MUST -- Use this operator when a clause is required to occur in the result set.</li>
-                        <li>MUST NOT -- Use this operator when a clause must not occur in the result set.</li>
+
+                        <li><p>SHOULD -- Use this operator when a clause can occur in the result set, but is not required.
+                            If a query is made up of all SHOULD clauses, then every document in the result
+                            set matches at least one of these clauses.</p></li>
+
+                        <li><p>MUST -- Use this operator when a clause is required to occur in the result set.  Every
+			       document in the result set will match
+			       all such clauses.</p></li>
+
+                        <li><p>MUST NOT -- Use this operator when a
+			       clause must not occur in the result set.  No
+		               document in the result set will match
+                               any such clauses.</p></li>
                     </ol>
                     Boolean queries are constructed by adding two or more
                     <a href="api/org/apache/lucene/search/BooleanClause.html">BooleanClause</a>
-                    instances to the BooleanQuery instance. In some cases,
-                    too many clauses may be added to the BooleanQuery, which will cause a TooManyClauses exception to be
-                    thrown. This
-                    most often occurs when using a Query that is rewritten into many TermQuery instances, such as the
-                    <a href="api/org/apache/lucene/search/WildCardQuery.html">WildCardQuery</a>
-                    . The default
-                    setting for too many clauses is currently set to 1024, but it can be overridden via the
-                    <a href="api/org/apache/lucene/search/BooleanQuery.html#setMaxClauseCount(int)">BooleanQuery#setMaxClauseCount(int)</a> static method on BooleanQuery.
+                    instances. If too many clauses are added, a <a href="api/org/apache/lucene/search/BooleanQuery.TooManyClauses.html">TooManyClauses</a>
+	           exception will be thrown during searching. This most often occurs 
+		   when a <a href="api/org/apache/lucene/search/Query.html">Query</a>
+		   is rewritten into a <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a> with many
+		   <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a> clauses,
+		   for example by <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a>.
+                   The default setting for the maximum number
+		   of clauses 1024, but this can be changed via the
+		   static method <a href="api/org/apache/lucene/search/BooleanQuery.html#setMaxClauseCount(int)">setMaxClauseCount</a>
+		   in <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>.
                 </p>
+
                 <h4>Phrases</h4>
-                <p>Another common task in search is to identify phrases, which can be handled in two different ways.
+                <p>Another common search is to find documents containing certain phrases.  This
+                   is handled in two different ways.
                     <ol>
                         <li>
-                            <a href="api/org/apache/lucene/search/PhraseQuery.html">PhraseQuery</a>
+                            <p><a href="api/org/apache/lucene/search/PhraseQuery.html">PhraseQuery</a>
                             -- Matches a sequence of
-                            <a href="api/org/apache/lucene/index/Term.html">Terms</a>
-                            . The PhraseQuery can specify a slop factor which determines
-                            how many positions may occur between any two terms and still be considered a match.
+                            <a href="api/org/apache/lucene/index/Term.html">Terms</a>.
+                            <a href="api/org/apache/lucene/search/PhraseQuery.html">PhraseQuery</a> uses a slop factor to determine
+                            how many positions may occur between any two terms in the phrase and still be considered a match.</p>
                         </li>
                         <li>
-                            <a href="api/org/apache/lucene/search/spans/SpanNearQuery.html">SpanNearQuery</a>
+                            <p><a href="api/org/apache/lucene/search/spans/SpanNearQuery.html">SpanNearQuery</a>
                             -- Matches a sequence of other
                             <a href="api/org/apache/lucene/search/spans/SpanQuery.html">SpanQuery</a>
-                            instances. The SpanNearQuery allows for much more
-                            complicated phrasal queries to be built since it is constructed out of other SpanQuery
-                            objects, not just Terms.
+                            instances. <a href="api/org/apache/lucene/search/spans/SpanNearQuery.html">SpanNearQuery</a> allows for much more
+                            complicated phrase queries since it is constructed from other to <a href="api/org/apache/lucene/search/spans/SpanQuery.html">SpanQuery</a>
+                            instances, instead of only <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a> instances.</p>
                         </li>
                     </ol>
                 </p>
@@ -262,71 +273,70 @@
                     exclusive range of a lower
                     <a href="api/org/apache/lucene/index/Term.html">Term</a>
                     and an upper
-                    <a href="api/org/apache/lucene/index/Term.html">Term</a>
-                    . For instance, one could find all documents
-                    that have terms beginning with the letters a through c. This type of Query is most often used to
+                    <a href="api/org/apache/lucene/index/Term.html">Term</a>.
+                    For example, one could find all documents
+                    that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>. This type of <a href="api/org/apache/lucene/search/Query.html">Query</a> is frequently used to
                     find
                     documents that occur in a specific date range.
                 </p>
                 <h4>
-                    <a href="api/org/apache/lucene/search/PrefixQuery.html">PrefixQuery</a>
-                    ,
+                    <a href="api/org/apache/lucene/search/PrefixQuery.html">PrefixQuery</a>,
                     <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a>
                 </h4>
                 <p>While the
                     <a href="api/org/apache/lucene/search/PrefixQuery.html">PrefixQuery</a>
                     has a different implementation, it is essentially a special case of the
-                    <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a>
-                    . The PrefixQuery allows an application
-                    to identify all documents with terms that begin with a certain string. The WildcardQuery generalize
-                    this by allowing
-                    for the use of * and ? wildcards. Note that the WildcardQuery can be quite slow. Also note that
-                    WildcardQuerys should
-                    not start with * and ?, as these are extremely slow. For tricks on how to search using a wildcard at
+                    <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a>.
+                    The <a href="api/org/apache/lucene/search/PrefixQuery.html">PrefixQuery</a> allows an application
+                    to identify all documents with terms that begin with a certain string. The <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a> generalizes this by allowing
+                    for the use of <tt>*</tt> (matches 0 or more characters) and <tt>?</tt> (matches exactly one character) wildcards. Note that the <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a> can be quite slow. Also note that
+                    <a href="api/org/apache/lucene/search/WildcardQuery.html">WildcardQuery</a> should
+                    not start with <tt>*</tt> and <tt>?</tt>, as these are extremely slow. For tricks on how to search using a wildcard at
                     the beginning of a term, see
-                    <a href="http://www.gossamer-threads.com/lists/lucene/java-user/13373?search_string=WildcardQuery%20start;#13373">
+                    <a href="http://www.gossamer-threads.com/lists/lucene/java-user/13373#13373">
                         Starts With x and Ends With x Queries</a>
-                    from the Lucene archives.
+                    from the Lucene users's mailing list.
                 </p>
                 <h4>
                     <a href="api/org/apache/lucene/search/FuzzyQuery.html">FuzzyQuery</a>
                 </h4>
                 <p>A
                     <a href="api/org/apache/lucene/search/FuzzyQuery.html">FuzzyQuery</a>
-                    matches documents that contain similar terms to the specified term. Similarity is
-                    determined using the
-                    <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit distance) algorithm</a>
-                    . This type of query can be useful when accounting for spelling variations in the collection.
+                    matches documents that contain terms similar to the specified term. Similarity is
+                    determined using
+                    <a href="http://en.wikipedia.org/wiki/Levenshtein">Levenshtein (edit) distance</a>.
+                    This type of query can be useful when accounting for spelling variations in the collection.
                 </p>
             </subsection>
             <subsection name="Changing Similarity">
-                <p>Chances are, the
-                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a> is sufficient for all your searching needs.
-                    However, in some applications it may be necessary to alter your Similarity.  For instance, some applications do not need to
-                    distinguish between shorter documents and longer documents (for example,
-                    see <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967?search_string=Similarity;#38967">a "fair" similarity</a>)
-                    To change the Similarity, one must do so for both indexing and searching and the changes must take place before
-                    any of these actions are undertaken (although in theory there is nothing stopping you from changing mid-stream, it just isn't well-defined what is going to happen).
-                    To make this change, implement your Similarity (you probably want to override
-                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>) and then set the new
-                    class on
-                    <a href="api/org/apache/lucene/index/IndexWriter.html#setSimilarity(org.apache.lucene.search.Similarity)">IndexWriter.setSimilarity(org.apache.lucene.search.Similarity)</a> for indexing and on
-                    <a href="api/org/apache/lucene/search/Searcher.html#setSimilarity(org.apache.lucene.search.Similarity)">Searcher.setSimilarity(org.apache.lucene.search.Similarity)</a>.
+                <p>Chances are <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a> is sufficient for all your searching needs.
+                    However, in some applications it may be necessary to customize your <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> implementation.  For instance, some applications do not need to
+                    distinguish between shorter and longer documents (see <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">a "fair" similarity</a>).</p>
+		    
+                    <p>To change <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>, one must do so for both indexing and searching, and the changes must happen before
+                    either of these actions take place.  Although in theory there is nothing stopping you from changing mid-stream, it just isn't well-defined what is going to happen.
+                    </p>
+
+		    <p>To make this change, implement your own <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> (likely you'll want to simply subclass
+                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>) and then use the new
+                    class by calling
+                    <a href="api/org/apache/lucene/index/IndexWriter.html#setSimilarity(org.apache.lucene.search.Similarity)">IndexWriter.setSimilarity</a> before indexing and
+                    <a href="api/org/apache/lucene/search/Searcher.html#setSimilarity(org.apache.lucene.search.Similarity)">Searcher.setSimilarity</a> before searching.
                 </p>
                 <p>
-                    If you are interested in use cases for changing your similarity, see the mailing list at <a href="http://www.nabble.com/Overriding-Similarity-tf2128934.html">Overriding Similarity</a>.
+                    If you are interested in use cases for changing your similarity, see the Lucene users's mailing list at <a href="http://www.nabble.com/Overriding-Similarity-tf2128934.html">Overriding Similarity</a>.
                     In summary, here are a few use cases:
                     <ol>
-                        <li>SweetSpotSimilarity -- SweetSpotSimilarity gives small increases as the frequency increases a small amount
-                        and then greater increases when you hit the "sweet spot", i.e. where you think the frequency of terms is more significant.</li>
-                        <li>Overriding tf -- In some applications, it doesn't matter what the score of a document is as long as a matching term occurs.  In these
-                        cases people have overridden Similarity to return 1 from the tf() method.</li>
-                        <li >Changing Length Normalization -- By overriding lengthNorm, it is possible to discount how the length of a field contributes
-                        to a score.  In the DefaultSimilarity, lengthNorm = 1/ (numTerms in field)^0.5, but if one changes this to be
+                        <li><p><a href="api/org/apache/lucene/misc/SweetSpotSimilarity.html">SweetSpotSimilarity</a> -- <a href="api/org/apache/lucene/misc/SweetSpotSimilarity.html">SweetSpotSimilarity</a> gives small increases as the frequency increases a small amount
+                        and then greater increases when you hit the "sweet spot", i.e. where you think the frequency of terms is more significant.</p></li>
+                        <li><p>Overriding tf -- In some applications, it doesn't matter what the score of a document is as long as a matching term occurs.  In these
+                        cases people have overridden Similarity to return 1 from the tf() method.</p></li>
+                        <li><p>Changing Length Normalization -- By overriding <a href="api/org/apache/lucene/search/Similarity.html#lengthNorm(java.lang.String,%20int)">lengthNorm</a>, it is possible to discount how the length of a field contributes
+                        to a score.  In <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>, lengthNorm = 1 / (numTerms in field)^0.5, but if one changes this to be
                         1 / (numTerms in field), all fields will be treated
-                            <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967?search_string=Similarity;#38967">"fairly"</a>.</li>
+                            <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">"fairly"</a>.</p></li>
                     </ol>
-                    In general, Chris Hostetter sums it up best in saying (from <a href="http://www.gossamer-threads.com/lists/lucene/java-user/39125">the mailing list</a>):
+                    In general, Chris Hostetter sums it up best in saying (from <a href="http://www.gossamer-threads.com/lists/lucene/java-user/39125#39125">the Lucene users's mailing list</a>):
                     <blockquote>[One would override the Similarity in] ... any situation where you know more about your data then just that
                         it's "text" is a situation where it *might* make sense to to override your
                         Similarity method.</blockquote>
