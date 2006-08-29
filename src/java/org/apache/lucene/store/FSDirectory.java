@@ -29,6 +29,12 @@ import org.apache.lucene.index.IndexFileNameFilter;
 
 /**
  * Straightforward implementation of {@link Directory} as a directory of files.
+ * Locking implementation is by default the {@link SimpleFSLockFactory}, but
+ * can be changed either by passing in a {@link LockFactory} instance to
+ * <code>getDirectory</code>, or specifying the LockFactory class by setting
+ * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code> Java system
+ * property, or by calling {@link #setLockFactory} after creating
+ * the Directory.
  *
  * @see Directory
  * @author Doug Cutting
@@ -45,6 +51,9 @@ public class FSDirectory extends Directory {
   private static final Hashtable DIRECTORIES = new Hashtable();
 
   private static boolean disableLocks = false;
+
+  // TODO: should this move up to the Directory base class?  Also: should we
+  // make a per-instance (in addition to the static "default") version?
 
   /**
    * Set whether Lucene's use of lock files is disabled. By default, 
@@ -63,13 +72,17 @@ public class FSDirectory extends Directory {
     return FSDirectory.disableLocks;
   }
 
+  // TODO: LOCK_DIR really should only appear in the SimpleFSLockFactory
+  // (and any other file-system based locking implementations).  When we
+  // can next break backwards compatibility we should deprecate it and then
+  // move it.
+
   /**
    * Directory specified by <code>org.apache.lucene.lockDir</code>
-   * or <code>java.io.tmpdir</code> system property
+   * or <code>java.io.tmpdir</code> system property.  This may be deprecated in the future.  Please use
+   * {@link SimpleFSLockFactory#LOCK_DIR} instead.
    */
-  public static final String LOCK_DIR =
-    System.getProperty("org.apache.lucene.lockDir",
-      System.getProperty("java.io.tmpdir"));
+  public static final String LOCK_DIR = SimpleFSLockFactory.LOCK_DIR;
 
   /** The default class which implements filesystem-based directories. */
   private static Class IMPL;
@@ -114,7 +127,25 @@ public class FSDirectory extends Directory {
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path, boolean create)
       throws IOException {
-    return getDirectory(new File(path), create);
+    return getDirectory(path, create, null);
+  }
+
+  /** Returns the directory instance for the named location, using the
+   * provided LockFactory implementation.
+   *
+   * <p>Directories are cached, so that, for a given canonical path, the same
+   * FSDirectory instance will always be returned.  This permits
+   * synchronization on directories.
+   *
+   * @param path the path to the directory.
+   * @param create if true, create, or erase any existing contents.
+   * @param lockFactory instance of {@link LockFactory} providing the
+   *        locking implementation.
+   * @return the FSDirectory for the named file.  */
+  public static FSDirectory getDirectory(String path, boolean create,
+                                         LockFactory lockFactory)
+      throws IOException {
+    return getDirectory(new File(path), create, lockFactory);
   }
 
   /** Returns the directory instance for the named location.
@@ -128,6 +159,24 @@ public class FSDirectory extends Directory {
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file, boolean create)
     throws IOException {
+    return getDirectory(file, create, null);
+  }
+
+  /** Returns the directory instance for the named location, using the
+   * provided LockFactory implementation.
+   *
+   * <p>Directories are cached, so that, for a given canonical path, the same
+   * FSDirectory instance will always be returned.  This permits
+   * synchronization on directories.
+   *
+   * @param file the path to the directory.
+   * @param create if true, create, or erase any existing contents.
+   * @param lockFactory instance of  {@link LockFactory} providing the
+   *        locking implementation.
+   * @return the FSDirectory for the named file.  */
+  public static FSDirectory getDirectory(File file, boolean create,
+                                         LockFactory lockFactory)
+    throws IOException {
     file = new File(file.getCanonicalPath());
     FSDirectory dir;
     synchronized (DIRECTORIES) {
@@ -138,10 +187,19 @@ public class FSDirectory extends Directory {
         } catch (Exception e) {
           throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
         }
-        dir.init(file, create);
+        dir.init(file, create, lockFactory);
         DIRECTORIES.put(file, dir);
-      } else if (create) {
-        dir.create();
+      } else {
+
+        // Catch the case where a Directory is pulled from the cache, but has a
+        // different LockFactory instance.
+        if (lockFactory != null && lockFactory != dir.getLockFactory()) {
+          throw new IOException("Directory was previously created with a different LockFactory instance; please pass null as the lockFactory instance and use setLockFactory to change it");
+        }
+
+        if (create) {
+          dir.create();
+        }
       }
     }
     synchronized (dir) {
@@ -152,33 +210,76 @@ public class FSDirectory extends Directory {
 
   private File directory = null;
   private int refCount;
-  private File lockDir;
 
   protected FSDirectory() {};                     // permit subclassing
 
   private void init(File path, boolean create) throws IOException {
     directory = path;
 
-    if (LOCK_DIR == null) {
-      lockDir = directory;
-    }
-    else {
-      lockDir = new File(LOCK_DIR);
-    }
-    // Ensure that lockDir exists and is a directory.
-    if (!lockDir.exists()) {
-      if (!lockDir.mkdirs())
-        throw new IOException("Cannot create directory: " + lockDir.getAbsolutePath());
-    } else if (!lockDir.isDirectory()) {
-      throw new IOException("Found regular file where directory expected: " + 
-          lockDir.getAbsolutePath());
-    }
     if (create) {
       create();
     }
 
     if (!directory.isDirectory())
       throw new IOException(path + " not a directory");
+  }
+
+  private void init(File path, boolean create, LockFactory lockFactory) throws IOException {
+
+    // Set up lockFactory with cascaded defaults: if an instance was passed in,
+    // use that; else if locks are disabled, use NoLockFactory; else if the
+    // system property org.apache.lucene.lockClass is set, instantiate that;
+    // else, use SimpleFSLockFactory:
+
+    if (lockFactory == null) {
+
+      if (disableLocks) {
+        // Locks are disabled:
+        lockFactory = NoLockFactory.getNoLockFactory();
+      } else {
+        String lockClassName = System.getProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass");
+
+        if (lockClassName != null) {
+          Class c;
+
+          try {
+            c = Class.forName(lockClassName);
+          } catch (ClassNotFoundException e) {
+            throw new IOException("unable to find LockClass " + lockClassName);
+          }
+
+          try {
+            lockFactory = (LockFactory) c.newInstance();          
+          } catch (IllegalAccessException e) {
+            throw new IOException("IllegalAccessException when instantiating LockClass " + lockClassName);
+          } catch (InstantiationException e) {
+            throw new IOException("InstantiationException when instantiating LockClass " + lockClassName);
+          } catch (ClassCastException e) {
+            throw new IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
+          }
+        } else {
+          // Our default lock is SimpleFSLockFactory:
+          File lockDir;
+          if (LOCK_DIR == null) {
+            lockDir = directory;
+          } else {
+            lockDir = new File(LOCK_DIR);
+          }
+          lockFactory = new SimpleFSLockFactory(lockDir);
+        }
+      }
+    }
+
+    // Must initialize directory here because setLockFactory uses it
+    // (when the LockFactory calls getLockID).  But we want to create
+    // the lockFactory before calling init() because init() needs to
+    // use the lockFactory to clear old locks.  So this breaks
+    // chicken/egg:
+    directory = path;
+
+    setLockFactory(lockFactory);
+
+    init(path, create);
   }
 
   private synchronized void create() throws IOException {
@@ -198,17 +299,7 @@ public class FSDirectory extends Directory {
         throw new IOException("Cannot delete " + file);
     }
 
-    String lockPrefix = getLockPrefix().toString(); // clear old locks
-    files = lockDir.list();
-    if (files == null)
-      throw new IOException("Cannot read lock directory " + lockDir.getAbsolutePath());
-    for (int i = 0; i < files.length; i++) {
-      if (!files[i].startsWith(lockPrefix))
-        continue;
-      File lockFile = new File(lockDir, files[i]);
-      if (!lockFile.delete())
-        throw new IOException("Cannot delete " + lockFile);
-    }
+    lockFactory.clearAllLocks();
   }
 
   /** Returns an array of strings, one for each Lucene index file in the directory. */
@@ -338,51 +429,8 @@ public class FSDirectory extends Directory {
   private static final char[] HEX_DIGITS =
   {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
-  /** Constructs a {@link Lock} with the specified name.  Locks are implemented
-   * with {@link File#createNewFile()}.
-   *
-   * @param name the name of the lock file
-   * @return an instance of <code>Lock</code> holding the lock
-   */
-  public Lock makeLock(String name) {
-    StringBuffer buf = getLockPrefix();
-    buf.append("-");
-    buf.append(name);
-
-    // create a lock file
-    final File lockFile = new File(lockDir, buf.toString());
-
-    return new Lock() {
-      public boolean obtain() throws IOException {
-        if (disableLocks)
-          return true;
-
-        if (!lockDir.exists()) {
-          if (!lockDir.mkdirs()) {
-            throw new IOException("Cannot create lock directory: " + lockDir);
-          }
-        }
-
-        return lockFile.createNewFile();
-      }
-      public void release() {
-        if (disableLocks)
-          return;
-        lockFile.delete();
-      }
-      public boolean isLocked() {
-        if (disableLocks)
-          return false;
-        return lockFile.exists();
-      }
-
-      public String toString() {
-        return "Lock@" + lockFile;
-      }
-    };
-  }
-
-  private StringBuffer getLockPrefix() {
+  
+  public String getLockID() {
     String dirName;                               // name to be hashed
     try {
       dirName = directory.getCanonicalPath();
@@ -402,7 +450,7 @@ public class FSDirectory extends Directory {
       buf.append(HEX_DIGITS[b & 0xf]);
     }
 
-    return buf;
+    return buf.toString();
   }
 
   /** Closes the store to future operations. */

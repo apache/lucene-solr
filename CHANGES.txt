@@ -66,6 +66,17 @@ API Changes
     not related to Lucene.
     (Simon Willnauer via Daniel Naber)
 
+ 8. LUCENE-635: Decoupling locking implementation from Directory
+    implementation.  Added set/getLockFactory to Directory and moved
+    all locking code into subclasses of abstract class LockFactory.
+    FSDirectory and RAMDirectory still default to their prior locking
+    implementations, but now you can mix & match, for example using
+    SingleInstanceLockFactory (ie, in memory locking) locking with an
+    FSDirectory.  Note that now you must call setDisableLocks before
+    the instantiation a FSDirectory if you wish to disable locking
+    for that Directory. 
+    (Michael McCandless, Jeff Patterson via Yonik Seeley)
+ 
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

@@ -29,9 +29,18 @@ import java.io.IOException;
  * <li> implementation of an index as a single file;
  * </ul>
  *
+ * Directory locking is implemented by an instance of {@link
+ * LockFactory}, and can be changed for each Directory
+ * instance using {@link #setLockFactory}.
+ *
  * @author Doug Cutting
  */
 public abstract class Directory {
+
+  /** Holds the LockFactory instance (implements locking for
+   * this Directory instance). */
+  protected LockFactory lockFactory;
+
   /** Returns an array of strings, one for each file in the directory. */
   public abstract String[] list()
        throws IOException;
@@ -75,9 +84,43 @@ public abstract class Directory {
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
    */
-  public abstract Lock makeLock(String name);
+  public Lock makeLock(String name) {
+      return lockFactory.makeLock(name);
+  }
 
   /** Closes the store. */
   public abstract void close()
        throws IOException;
+
+  /**
+   * Set the LockFactory that this Directory instance should
+   * use for its locking implementation.  Each * instance of
+   * LockFactory should only be used for one directory (ie,
+   * do not share a single instance across multiple
+   * Directories).
+   *
+   * @param lockFactory instance of {@link LockFactory}.
+   */
+  public void setLockFactory(LockFactory lockFactory) {
+      this.lockFactory = lockFactory;
+      lockFactory.setLockPrefix(this.getLockID());
+  }
+  /**
+   * Get the LockFactory that this Directory instance is using for its locking implementation.
+   */
+  public LockFactory getLockFactory() {
+      return this.lockFactory;
+  }
+
+  /**
+   * Return a string identifier that uniquely differentiates
+   * this Directory instance from other Directory instances.
+   * This ID should be the same if two Directory instances
+   * (even in different JVMs and/or on different machines)
+   * are considered "the same index".  This is how locking
+   * "scopes" to the right index.
+   */
+  public String getLockID() {
+      return this.toString();
+  }
 }
