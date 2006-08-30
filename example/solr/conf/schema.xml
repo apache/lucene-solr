@@ -88,10 +88,10 @@
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
     </fieldtype>
-    <!-- One could also specify an existing Analyzer implementation in Java 
-         via the class attribute on the analyzer element:
+    <!-- One could also specify an existing Analyzer class that has a
+         default constructor via the class attribute on the analyzer element
     <fieldtype name="text_lu" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.snowball.SnowballAnalyzer"/>
+      <analyzer class="org.apache.lucene.analysis.el.GreekAnalyzer"/>
     </fieldType>
     -->
     
