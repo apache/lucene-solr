@@ -48,6 +48,9 @@ Changes in runtime behavior
  2. force read of document stored fields in QuerySenderListener
  3. Solr now looks in ./solr/conf for config, ./solr/data for data
     configurable via solr.solr.home system property
+ 4. Highlighter params changed to be prefixed with "hl."; allow fragmentsize
+    customization and per-field overrides on many options 
+    (Andrew May via klaas, SOLR-37)
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 
