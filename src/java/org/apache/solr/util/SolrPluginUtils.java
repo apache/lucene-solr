@@ -25,9 +25,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.highlight.Formatter;
 import org.apache.lucene.search.highlight.*;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.request.SolrParams;
@@ -133,6 +131,11 @@ public class SolrPluginUtils {
   }
     
   private final static Pattern splitList=Pattern.compile(",| ");
+  
+  /** Split a value that may contain a comma, space of bar separated list. */
+  public static String[] split(String value){
+     return splitList.split(value.trim(), 0);
+  }
 
   /**
    * Assumes the standard query param of "fl" to specify the return fields
@@ -156,7 +159,7 @@ public class SolrPluginUtils {
     if (fl != null) {
       // TODO - this could become more efficient if widely used.
       // TODO - should field order be maintained?
-      String[] flst = splitList.split(fl.trim(),0);
+      String[] flst = split(fl);
       if (flst.length > 0 && !(flst.length==1 && flst[0].length()==0)) {
         Set<String> set = new HashSet<String>();
         for (String fname : flst) {
@@ -354,234 +357,6 @@ public class SolrPluginUtils {
     }
     return explainList;
   }
-
-  /**
-   * Retrieve a default Highlighter instance for a given query.
-   *
-   * @param query Query instance
-   */
-  public static Highlighter getDefaultHighlighter(Query query) {
-    Highlighter highlighter = new Highlighter(
-      new SimpleHTMLFormatter("<em>", "</em>"), 
-      new QueryScorer(query));
-    highlighter.setTextFragmenter(new GapFragmenter());
-    return highlighter;
-  }
-
-  /**
-   * Generates a list of Highlighted query fragments for each item in a list
-   * of documents.  Convenience method that constructs a Highlighter from a
-   * Query.
-   *
-   * @param docs query results
-   * @param fieldNames list of fields to summarize
-   * @param query resulting query object
-   * @param searcher the SolrIndexSearcher corresponding to a request
-   * @param numFragments maximum number of summary fragments to return for
-   *        a given field   
-   */
-  public static NamedList getHighlights(DocList docs, 
-                                        String[] fieldNames, 
-                                        Query query,
-                                        SolrIndexSearcher searcher,
-                                        int numFragments
-                                        ) throws IOException {  
-    
-    return getHighlights(docs, fieldNames, searcher, 
-                         getDefaultHighlighter(query), numFragments);
-  }
-
-  /**
-   * Generates a list of Highlighted query fragments for each item in a list
-   * of documents
-   *
-   * @param docs query results
-   * @param fieldNames list of fields to summarize
-   * @param searcher the SolrIndexSearcher corresponding to a request
-   * @param numFragments maximum number of summary fragments to return for
-   *        a given field   
-   * @param highlighter a customized Highlighter instance
-   *
-   * @return NamedList containing a NamedList for each document, which in
-   * turns contains sets (field, summary) pairs.
-   */
-  public static NamedList getHighlights(DocList docs, 
-                                        String[] fieldNames, 
-                                        SolrIndexSearcher searcher,
-                                        Highlighter highlighter,
-                                        int numFragments
-                                        ) throws IOException {
-    NamedList fragments = new NamedList();
-    DocIterator iterator = docs.iterator();
-    for (int i=0; i<docs.size(); i++) {
-      int docId = iterator.nextDoc();
-      // use the Searcher's doc cache
-      Document doc = searcher.doc(docId);
-      NamedList docSummaries = new NamedList();
-      for(String fieldName : fieldNames) {
-        fieldName = fieldName.trim();
-        String[] docTexts = doc.getValues(fieldName);
-        if(docTexts == null) 
-          continue;        
-        String[] summaries;
-        TextFragment[] frag;
-        if(docTexts.length == 1) {
-          // single-valued field
-          TokenStream tstream;
-          try {
-            // attempt term vectors
-            tstream = TokenSources.getTokenStream(
-              searcher.getReader(), docId, fieldName);
-          } catch (IllegalArgumentException e) {
-            // fall back to analyzer
-            tstream = new TokenOrderingFilter(
-                    searcher.getSchema().getAnalyzer().tokenStream(
-                      fieldName, new StringReader(docTexts[0])),
-                    10);
-          }
-          frag = highlighter.getBestTextFragments(
-            tstream, docTexts[0], false, numFragments);
-
-        } else {
-          // multi-valued field
-          MultiValueTokenStream tstream;
-          tstream = new MultiValueTokenStream(fieldName,
-                                              docTexts,
-                                              searcher.getSchema().getAnalyzer(), true);
-          frag = highlighter.getBestTextFragments(
-            tstream, tstream.asSingleValue(), false, numFragments);
-        }
-        // convert fragments back into text
-        // TODO: we can include score and position information in output as
-        // snippet attributes
-        if(frag.length > 0) {
-          ArrayList fragTexts = new ArrayList();
-          for (int j = 0; j < frag.length; j++) {
-              if ((frag[j] != null) && (frag[j].getScore() > 0)) {
-                  fragTexts.add(frag[j].toString());
-                }
-            }
-          summaries =  (String[]) fragTexts.toArray(new String[0]);
-          if(summaries.length > 0)
-            docSummaries.add(fieldName, summaries);
-        }
-      }      
-      String printId = searcher.getSchema().printableUniqueKey(doc);
-      fragments.add(printId == null ? null : printId, docSummaries);
-    }    
-    return fragments;
-  }
-
-  /**
-   * Perform highlighting of selected fields.
-   *
-   * @param docs query results
-   * @param query the (possibly re-written query)
-   * @param req associated SolrQueryRequest
-   * @param defaultFields default search field list
-   *
-   * @return NamedList containing summary data, or null if highlighting is 
-   * disabled.
-   *
-   */
-  public static NamedList doStandardHighlighting(DocList docs,
-                                                 Query query,
-                                                 SolrQueryRequest req,
-                                                 CommonParams params,
-                                                 String[] defaultFields
-                                                 ) throws IOException {
-    if(!getBooleanParam(req, SolrParams.HIGHLIGHT, params.highlight))
-      return null;
-    String fieldParam = getParam(req, SolrParams.HIGHLIGHT_FIELDS,
-                                 params.highlightFields);
-    String fields[];
-    if(fieldParam == null || fieldParam.trim().equals("")) {
-      // use default search field if highlight fieldlist not specified.
-      if (defaultFields == null || defaultFields.length == 0 ||
-          defaultFields[0] == null) {
-        fields = new String[]{req.getSchema().getDefaultSearchFieldName()};
-      } else
-        fields = defaultFields;
-    } else 
-      fields = splitList.split(fieldParam.trim());
-
-    Highlighter highlighter;
-    String formatterSpec = getParam(req, SolrParams.HIGHLIGHT_FORMATTER_CLASS,
-                                    params.highlightFormatterClass);
-    if(formatterSpec == null || formatterSpec.equals("")) {
-      highlighter = getDefaultHighlighter(query);
-    } else {
-      highlighter = new Highlighter(
-        (Formatter)Config.newInstance(formatterSpec),
-        new QueryScorer(query));
-      highlighter.setTextFragmenter(new GapFragmenter());
-    }
-    
-    int numFragments = getNumberParam(req, SolrParams.MAX_SNIPPETS,
-                                      params.maxSnippets).intValue();
-
-    return getHighlights(
-      docs, 
-      fields, 
-      req.getSearcher(),
-      highlighter,
-      numFragments);
-  }
-
-
-  /** TODO: API IN PROGRESS... SUBJECT TO CHANGE
-   * Perform highlighting of selected fields.
-   *
-   * @param docs query results
-   * @param query the (possibly re-written query)
-   * @param req associated SolrQueryRequest
-   * @param defaultFields default search field list
-   *
-   * @return NamedList containing summary data, or null if highlighting is
-   * disabled.
-   *
-   */
-  public static NamedList doStandardHighlighting(DocList docs,
-                                                 Query query,
-                                                 SolrQueryRequest req,
-                                                 String[] defaultFields
-                                                 ) throws IOException {
-    SolrParams p = req.getParams();
-    if (!p.getBool(SolrParams.HIGHLIGHT, false)) return null;
-    String fieldParam = p.get(SolrParams.HIGHLIGHT_FIELDS);
-    String fields[];
-    if(fieldParam == null || fieldParam.trim().equals("")) {
-      // use default search field if highlight fieldlist not specified.
-      if (defaultFields == null || defaultFields.length == 0 ||
-          defaultFields[0] == null) {
-        fields = new String[]{req.getSchema().getDefaultSearchFieldName()};
-      } else
-        fields = defaultFields;
-    } else
-      fields = splitList.split(fieldParam.trim());
-
-    Highlighter highlighter;
-    String formatterSpec = p.get(SolrParams.HIGHLIGHT_FORMATTER_CLASS);
-    if(formatterSpec == null) {
-      highlighter = getDefaultHighlighter(query);
-    } else {
-      highlighter = new Highlighter(
-        (Formatter)Config.newInstance(formatterSpec),
-        new QueryScorer(query));
-      highlighter.setTextFragmenter(new GapFragmenter());
-    }
-
-    int numFragments = p.getInt(SolrParams.MAX_SNIPPETS, 1);
-
-    return getHighlights(
-      docs,
-      fields,
-      req.getSearcher(),
-      highlighter,
-      numFragments);
-  }
-
-
 
   /**
    * Executes a basic query in lucene syntax
@@ -1046,6 +821,14 @@ class MultiValueTokenStream extends TokenStream {
 class GapFragmenter extends SimpleFragmenter {
   public static final int INCREMENT_THRESHOLD = 50;
   protected int fragOffsetAccum = 0;
+  
+  public GapFragmenter() {
+  }
+  
+  public GapFragmenter(int fragsize) {
+     super(fragsize);
+  }
+  
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */

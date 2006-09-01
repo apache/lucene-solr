@@ -201,8 +201,8 @@
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
     <lst name="defaults">
       <int name="rows">4</int>
-      <bool name="highlight">true</bool>
-      <str name="highlightFields">text,name,subject,title,whitetok</str>
+      <bool name="hl">true</bool>
+      <str name="hl.fl">text,name,subject,title,whitetok</str>
     </lst>
   </requestHandler>
 

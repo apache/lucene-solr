@@ -46,10 +46,10 @@ public class HighlighterTest extends AbstractSolrTestCase {
   public void testTermVecHighlight() {
 
     // do summarization using term vectors
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
-    args.put("highlightFields", "tv_text");
-    args.put("maxSnippets", "2");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "tv_text");
+    args.put("hl.snippets", "2");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
     
@@ -68,9 +68,9 @@ public class HighlighterTest extends AbstractSolrTestCase {
   public void testDisMaxHighlight() {
 
     // same test run through dismax handler
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
-    args.put("highlightFields", "tv_text");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "tv_text");
     args.put("qf", "tv_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "dismax",0,200,args);
@@ -90,9 +90,9 @@ public class HighlighterTest extends AbstractSolrTestCase {
   public void testMultiValueAnalysisHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
-    args.put("highlightFields", "textgap");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "textgap");
     args.put("df", "textgap");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
@@ -114,10 +114,10 @@ public class HighlighterTest extends AbstractSolrTestCase {
   public void testDefaultFieldHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
     args.put("df", "t_text");
-    args.put("highlightFields", "");
+    args.put("hl.fl", "");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -137,9 +137,9 @@ public class HighlighterTest extends AbstractSolrTestCase {
   public void testHighlightDisabled() {
 
     // ensure highlighting can be explicitly disabled
-    HashMap args = new HashMap();
-    args.put("highlight", "false");
-    args.put("highlightFields", "t_text");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "false");
+    args.put("hl.fl", "t_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -155,9 +155,9 @@ public class HighlighterTest extends AbstractSolrTestCase {
   public void testTwoFieldHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
-    args.put("highlightFields", "t_text tv_text");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "t_text tv_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -171,17 +171,49 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='1']/arr[@name='t_text']/str",
             "//lst[@name='1']/arr[@name='tv_text']/str"
             );
-
+  }
+  
+  public void testFieldMatch()
+  {
+     assertU(adoc("t_text1", "random words for highlighting tests", "id", "1",
+           "t_text2", "more random words for second field"));
+     assertU(commit());
+     assertU(optimize());
+     
+     HashMap<String,String> args = new HashMap<String,String>();
+     args.put("hl", "true");
+     args.put("hl.fl", "t_text1 t_text2");
+     
+     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+           "standard", 0, 200, args);
+     // default should highlight both random and words in both fields
+     assertQ("Test Default",
+           sumLRF.makeRequest("t_text1:random OR t_text2:words"),
+           "//lst[@name='highlighting']/lst[@name='1']",
+           "//lst[@name='1']/arr[@name='t_text1']/str[.='<em>random</em> <em>words</em> for highlighting tests']",
+           "//lst[@name='1']/arr[@name='t_text2']/str[.='more <em>random</em> <em>words</em> for second field']"
+           );
+     
+     // requireFieldMatch=true - highlighting should only occur if term matched in that field
+     args.put("hl.requireFieldMatch", "true");
+     sumLRF = h.getRequestFactory(
+           "standard", 0, 200, args);
+     assertQ("Test RequireFieldMatch",
+           sumLRF.makeRequest("t_text1:random OR t_text2:words"),
+           "//lst[@name='highlighting']/lst[@name='1']",
+           "//lst[@name='1']/arr[@name='t_text1']/str[.='<em>random</em> words for highlighting tests']",
+           "//lst[@name='1']/arr[@name='t_text2']/str[.='more random <em>words</em> for second field']"
+           );
   }
 
-  public void testCustomFormatterHighlight() {
+  public void testCustomSimpleFormatterHighlight() {
 
     // do summarization using a custom formatter
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
-    args.put("highlightFields", "t_text");
-    args.put("highlightFormatterClass", 
-             "org.apache.lucene.search.highlight.SimpleHTMLFormatter");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "t_text");
+    args.put("hl.simple.pre","<B>");
+    args.put("hl.simple.post","</B>");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -193,16 +225,25 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='t_text']/str[.='a <B>long</B> days night']"
             );
+    
+    // test a per-field override
+    args.put("f.t_text.hl.simple.pre","<I>");
+    args.put("f.t_text.hl.simple.post","</I>");
+    sumLRF = h.getRequestFactory(
+          "standard", 0, 200, args);
+    assertQ("Basic summarization",
+          sumLRF.makeRequest("t_text:long"),
+          "//lst[@name='highlighting']/lst[@name='1']",
+          "//lst[@name='1']/arr[@name='t_text']/str[.='a <I>long</I> days night']"
+          );
+    
   }
 
   public void testLongFragment() {
 
-    // do summarization using a custom formatter
-    HashMap args = new HashMap();
-    args.put("highlight", "true");
-    args.put("highlightFields", "tv_text");
-    args.put("highlightFormatterClass", 
-             "org.apache.lucene.search.highlight.SimpleHTMLFormatter");
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "tv_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -217,5 +258,44 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='tv_text']/str"
             );
+  }
+  
+  public void testVariableFragsize() {
+     assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all", 
+           "id", "1"));
+     assertU(commit());
+     assertU(optimize());
+
+     // default length
+     HashMap<String,String> args = new HashMap<String,String>();
+     args.put("hl", "true");
+     args.put("hl.fl", "tv_text");
+     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+       "standard", 0, 200, args);
+     assertQ("Basic summarization",
+           sumLRF.makeRequest("tv_text:long"),
+           "//lst[@name='highlighting']/lst[@name='1']",
+           "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which']"
+           );
+     
+     // 25
+     args.put("hl.fragsize","25");
+     sumLRF = h.getRequestFactory(
+           "standard", 0, 200, args);
+     assertQ("Basic summarization",
+           sumLRF.makeRequest("tv_text:long"),
+           "//lst[@name='highlighting']/lst[@name='1']",
+           "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night']"
+           );
+     
+     // 0 - NullFragmenter
+     args.put("hl.fragsize","0");
+     sumLRF = h.getRequestFactory(
+           "standard", 0, 200, args);
+     assertQ("Basic summarization",
+           sumLRF.makeRequest("tv_text:long"),
+           "//lst[@name='highlighting']/lst[@name='1']",
+           "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all']"
+           );
   }
 }

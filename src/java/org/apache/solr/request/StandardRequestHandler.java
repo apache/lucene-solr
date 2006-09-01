@@ -23,6 +23,7 @@ import java.net.URL;
 
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.HighlightingUtils;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.search.*;
 import org.apache.solr.core.SolrCore;
@@ -118,7 +119,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
 
-      NamedList sumData = SolrPluginUtils.doStandardHighlighting(
+      NamedList sumData = HighlightingUtils.doHighlighting(
         results, query, req, new String[]{defaultField});
       if(sumData != null)
         rsp.add("highlighting", sumData);

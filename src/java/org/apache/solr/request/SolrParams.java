@@ -95,6 +95,20 @@ public abstract class SolrParams {
     String val = get(param);
     return val==null ? def : parseBool(val);
   }
+  
+  /** Returns the Boolean value of the field param, 
+      or the value for param, or null if neither is set. */
+  public Boolean getFieldBool(String field, String param) {
+    String val = getFieldParam(field, param);
+    return val==null ? null : parseBool(val);
+  }
+  
+  /** Returns the boolean value of the field param, 
+  or the value for param, or def if neither is set. */
+  public boolean getFieldBool(String field, String param, boolean def) {
+    String val = getFieldParam(field, param);
+    return val==null ? def : parseBool(val);
+  }
 
   /** Returns the Integer value of the param, or null if not set */
   public Integer getInt(String param) {

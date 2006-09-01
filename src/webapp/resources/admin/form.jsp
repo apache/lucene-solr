@@ -90,6 +90,22 @@
 </tr>
 <tr>
   <td>
+	<strong>Enable Highlighting</strong>
+  </td>
+  <td>
+	<input name="hl" type="checkbox" >
+  </td>
+</tr>
+<tr>
+  <td>
+	<strong>Fields to Highlight</strong>
+  </td>
+  <td>
+	<input name="hl.fl" type="text" >
+  </td>
+</tr>
+<tr>
+  <td>
   </td>
   <td>
 	<input class="stdbutton" type="submit" value="search">

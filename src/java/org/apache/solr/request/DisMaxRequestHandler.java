@@ -32,6 +32,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.HighlightingUtils;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.DisMaxParams;
 
@@ -337,13 +338,12 @@ public class DisMaxRequestHandler
       }
 
       /* * * Highlighting/Summarizing  * * */
-      if(U.getBooleanParam(req, SolrParams.HIGHLIGHT, params.highlight)) {
+      if(HighlightingUtils.isHighlightingEnabled(req)) {
 
         BooleanQuery highlightQuery = new BooleanQuery();
         U.flattenBooleanQuery(highlightQuery, query);
-        NamedList sumData = U.doStandardHighlighting(results, highlightQuery, 
-                                                     req, params, 
-                                                     queryFields.keySet().toArray(new String[0]));
+        NamedList sumData = HighlightingUtils.doHighlighting(results, highlightQuery, 
+                                                     req, queryFields.keySet().toArray(new String[0]));
         if(sumData != null)
           rsp.add("highlighting", sumData);
       }
