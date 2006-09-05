@@ -30,12 +30,16 @@ public class TestOpenBitSet extends TestCase {
     } while (aa>=0);
   }
 
+  // test interleaving different BitSetIterator.next()
   void doIterate(BitSet a, OpenBitSet b) {
     int aa=-1,bb=-1;
     BitSetIterator iterator = new BitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      bb = iterator.next();
+      if (rand.nextBoolean())
+        bb = iterator.next();
+      else
+        bb = iterator.next(bb+1);
       assertEquals(aa,bb);
     } while (aa>=0);
   }

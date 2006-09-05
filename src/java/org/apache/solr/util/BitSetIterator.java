@@ -108,7 +108,7 @@ public class BitSetIterator {
     return (i<<6) + bitIndex;
   }
 
-  int next(int fromIndex) {
+  public int next(int fromIndex) {
     indexArray=0;
     i = fromIndex >> 6;
     if (i>=words) {
