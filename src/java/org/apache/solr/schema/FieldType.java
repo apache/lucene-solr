@@ -173,6 +173,18 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
 
+    Field f = new Field(field.getName(),
+                        val,
+                        getFieldStore(field, val),
+                        getFieldIndex(field, val),
+                        getFieldTermVec(field, val));
+    f.setOmitNorms(field.omitNorms());
+    f.setBoost(boost);
+    return f;
+  }
+  /* Helpers for field construction */
+  protected Field.TermVector getFieldTermVec(SchemaField field,
+                                             String internalVal) {
     Field.TermVector ftv = Field.TermVector.NO;
     if (field.storeTermPositions() && field.storeTermOffsets())
       ftv = Field.TermVector.WITH_POSITIONS_OFFSETS;
@@ -182,17 +194,17 @@ public abstract class FieldType extends FieldProperties {
       ftv = Field.TermVector.WITH_OFFSETS;            
     else if (field.storeTermVector())
       ftv = Field.TermVector.YES;
-
-    Field f =  new Field(field.getName(),val,
-        field.stored() ? Field.Store.YES : Field.Store.NO ,
-        field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED : 
-                           Field.Index.UN_TOKENIZED) : Field.Index.NO,
-        ftv);
-    f.setOmitNorms(field.omitNorms());
-    f.setBoost(boost);
-    return f;
+    return ftv;
   }
-
+  protected Field.Store getFieldStore(SchemaField field,
+                                      String internalVal) {
+    return field.stored() ? Field.Store.YES : Field.Store.NO;
+  }
+  protected Field.Index getFieldIndex(SchemaField field,
+                                      String internalVal) {
+    return field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED : 
+                              Field.Index.UN_TOKENIZED) : Field.Index.NO;
+  }
 
   /**
    * Convert an external value (from XML update command or from query string)

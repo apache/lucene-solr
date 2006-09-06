@@ -30,9 +30,10 @@ import java.io.IOException;
  * @author yonik
  * @version $Id$
  */
-public class TextField extends FieldType {
+public class TextField extends CompressableField {
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
+    super.init(schema, args);    
   }
 
   public SortField getSortField(SchemaField field, boolean reverse) {

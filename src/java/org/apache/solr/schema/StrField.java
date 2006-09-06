@@ -28,8 +28,9 @@ import java.io.IOException;
  * @author yonik
  * @version $Id$
  */
-public class StrField extends FieldType {
+public class StrField extends CompressableField {
   protected void init(IndexSchema schema, Map<String,String> args) {
+    super.init(schema, args);    
   }
 
   public SortField getSortField(SchemaField field,boolean reverse) {

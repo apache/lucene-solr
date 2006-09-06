@@ -62,6 +62,9 @@
     </fieldtype>
 
 
+    <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
+    <fieldtype name="highlittext" class="solr.TextField" compressThreshold="345" />
+
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
@@ -299,6 +302,10 @@
    <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
    <field name="test_posofftv" type="text" termVectors="true" 
      termPositions="true" termOffsets="true"/>
+
+   <!-- test highlit field settings -->
+   <field name="test_hlt" type="highlittext" indexed="true" compressed="true"/>
+   <field name="test_hlt_off" type="highlittext" indexed="true" compressed="false"/>
 
    <!-- fields to test individual tokenizers and tokenfilters -->
    <field name="teststop" type="teststop" indexed="true" stored="true"/>

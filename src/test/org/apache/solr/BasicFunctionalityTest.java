@@ -319,6 +319,36 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   }
       
+
+  private String mkstr(int len) {
+    StringBuilder sb = new StringBuilder(len);
+    for (int i = 0; i < len; i++) {
+      sb.append((char)(65 + i%26));
+    }
+    return new String(sb);
+  }   
+  public void testCompressableFieldType() {
+    
+    IndexSchema ischema = new IndexSchema(getSchemaFile());
+    SchemaField f; // Solr field type
+    Field luf; // Lucene field
+
+    f = ischema.getField("test_hlt");
+    luf = f.createField("test", 0f);
+    assertFalse(luf.isCompressed());
+    assertTrue(luf.isStored());
+
+    f = ischema.getField("test_hlt");
+    luf = f.createField(mkstr(345), 0f);
+    assertTrue(luf.isCompressed());
+    assertTrue(luf.isStored());
+
+    f = ischema.getField("test_hlt_off");
+    luf = f.createField(mkstr(400), 0f);
+    assertFalse(luf.isCompressed());
+    assertTrue(luf.isStored());
+    
+  }
             
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */

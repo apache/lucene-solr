@@ -76,11 +76,11 @@ public final class SchemaField extends FieldProperties {
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
+  public boolean isCompressed() { return (properties & COMPRESSED)!=0; }
 
   // things that should be determined by field type, not set as options
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
-  boolean isCompressed() { return (properties & COMPRESSED)!=0; }
 
   public Field createField(String val, float boost) {
     return type.createField(this,val,boost);

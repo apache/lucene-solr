@@ -42,6 +42,10 @@ New Features
     flags (Greg Ludington via yonik, SOLR-39)
 22. A HyphenatedWordsFilter, a text analysis filter used during indexing to rejoin
     words that were hyphenated and split by a newline. (Boris Vitez via yonik, SOLR-41)
+23. Added a CompressableField base class which allows fields of derived types to
+    be compressed using the compress=true setting.  The field type also gains the
+    ability to specify a size threshold at which field data is compressed.
+    (klaas, SOLR-45)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
