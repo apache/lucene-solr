@@ -84,6 +84,7 @@ public class SolrPluginUtils {
     
   /**
    * Returns the param, or the default if it's empty or not specified.
+   * @deprecated use SolrParam.get(String,String)
    */
   public static String getParam(SolrQueryRequest req,
                                 String param, String def) {
@@ -100,6 +101,7 @@ public class SolrPluginUtils {
   /**
    * Treats the param value as a Number, returns the default if nothing is
    * there or if it's not a number.
+   * @deprecated use SolrParam.getFloat(String,float)
    */
   public static Number getNumberParam(SolrQueryRequest req,
                                       String param, Number def) {
@@ -120,6 +122,7 @@ public class SolrPluginUtils {
   /**
    * Treats parameter value as a boolean.  The string 'false' is false; 
    * any other non-empty string is true.
+   * @deprecated use SolrParam.getBool(String,boolean)
    */
   public static boolean getBooleanParam(SolrQueryRequest req,
                                        String param, boolean def) {        
@@ -208,6 +211,7 @@ public class SolrPluginUtils {
    *              (and perhaps other clauses) that identifies the main
    *              result set of the response.
    * @param results the main result set of the response
+   * @deprecated Use doStandardDebug(SolrQueryRequest,String,Query,DocList) with setDefaults
    */
   public static NamedList doStandardDebug(SolrQueryRequest req,
                                           String userQuery,

@@ -65,21 +65,45 @@ import java.io.IOException;
     /** query and init param for field list */
     public static String GEN = "gen";
         
-    /** the default tie breaker to use in DisjunctionMaxQueries */
+    /**
+     * the default tie breaker to use in DisjunctionMaxQueries
+     * @deprecated - use explicit default with SolrParams.getFloat
+     */
     public float tiebreaker = 0.0f;
-    /** the default query fields to be used */
+    /**
+     * the default query fields to be used
+     * @deprecated - use explicit default with SolrParams.get
+     */
     public String qf = null;
-    /** the default phrase boosting fields to be used */
+    /**
+     * the default phrase boosting fields to be used
+     * @deprecated - use explicit default with SolrParams.get
+     */
     public String pf = null;
-    /** the default min should match to be used */
+    /**
+     * the default min should match to be used
+     * @deprecated - use explicit default with SolrParams.get
+     */
     public String mm = "100%";
-    /** the default phrase slop to be used */
+    /**
+     * the default phrase slop to be used 
+     * @deprecated - use explicit default with SolrParams.getInt
+     */
     public int pslop = 0;
-    /** the default boosting query to be used */
+    /**
+     * the default boosting query to be used
+     * @deprecated - use explicit default with SolrParams.get
+     */
     public String bq = null;
-    /** the default boosting functions to be used */
+    /**
+     * the default boosting functions to be used
+     * @deprecated - use explicit default with SolrParams.get
+     */
     public String bf = null;
-    /** the default filtering query to be used */
+    /**
+     * the default filtering query to be used
+     * @deprecated - use explicit default with SolrParams.get
+     */
     public String fq = null;
 
 
@@ -96,7 +120,7 @@ import java.io.IOException;
      * If any param is not of in the NamedList, it is skipped and the
      * old value is left alone.
      * </p>
-     *
+     * @deprecated use SolrParams.toSolrParams
      */
     public void setValues(NamedList args) {
 

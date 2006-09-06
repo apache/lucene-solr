@@ -72,6 +72,12 @@ public abstract class SolrParams {
   public abstract String[] getParams(String param);
 
 
+  /** returns the value of the param, or def if not set */
+  public String get(String param, String def) {
+    String val = get(param);
+    return val==null ? def : val;
+  }
+  
   protected String fpname(String field, String param) {
     return "f."+field+'.'+param;
   }

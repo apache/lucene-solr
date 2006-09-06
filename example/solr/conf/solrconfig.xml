@@ -193,6 +193,7 @@
        its init() method.
    -->
   <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
+    <lst name="defaults">
      <float name="tie">0.01</float>
      <str name="qf">
         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
@@ -210,11 +211,15 @@
         2&lt;-1 5&lt;-2 6&lt;90%
      </str>
      <int name="ps">100</int>
+    </lst>
   </requestHandler>
   <!-- Note how you can register the same handler multiple times with
        different names (and different init parameters)
     -->
   <requestHandler name="instock" class="solr.DisMaxRequestHandler" >
+    <!-- for legacy reasons, DisMaxRequestHandler will assume all init
+         params are "defaults" if you don't explicitly specify any defaults.
+      -->
      <str name="fq">
         inStock:true
      </str>

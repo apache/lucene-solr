@@ -96,7 +96,12 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
 
   }
 
-  
+  public void testOldStyleDefaults() throws Exception {
+
+    lrf = h.getRequestFactory
+      ("dismaxOldStyleDefaults",0,20,"version","2.0");
+    testSomeStuff();
+  }
 
 
   

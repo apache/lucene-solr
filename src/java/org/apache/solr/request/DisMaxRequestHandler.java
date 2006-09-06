@@ -35,6 +35,7 @@ import org.apache.solr.util.NamedList;
 import org.apache.solr.util.HighlightingUtils;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.DisMaxParams;
+import static org.apache.solr.request.SolrParams.*;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
@@ -110,6 +111,10 @@ import java.net.URL;
  * <li>sort - (Order By) list of fields and direction to sort on.
  * </li>
  * </ul>
+ *
+ * <pre>
+ * :TODO: make bf,fq,pf,qf multival params now that SolrParams supports them
+ * </pre>
  */
 public class DisMaxRequestHandler
   implements SolrRequestHandler, SolrInfoMBean  {
@@ -127,14 +132,18 @@ public class DisMaxRequestHandler
   // acceptable every million requests or so?
   long numRequests;
   long numErrors;
+  
+  SolrParams defaults;
     
   /** shorten the class referneces for utilities */
   private static class U extends SolrPluginUtils {
     /* :NOOP */
   }
+  /** shorten the class referneces for utilities */
+  private static class DMP extends DisMaxParams {
+    /* :NOOP */
+  }
 
-  protected final DisMaxParams params = new DisMaxParams();
-    
   public DisMaxRequestHandler() {
     super();
   }
@@ -182,28 +191,36 @@ public class DisMaxRequestHandler
    */
   public void init(NamedList args) {
 
-    params.setValues(args);
-        
+    if (-1 == args.indexOf("defaults",0)) {
+      // no explict defaults list, use all args implicitly
+      // indexOf so "<null name="defaults"/> is valid indicator of no defaults
+      defaults = SolrParams.toSolrParams(args);
+    } else {
+      Object o = args.get("defaults");
+      if (o != null && o instanceof NamedList) {
+        defaults = SolrParams.toSolrParams((NamedList)o);
+      }
+    }
   }
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
         
     try {
-
+      U.setDefaults(req,defaults);
+      SolrParams params = req.getParams();
+      
       int flags = 0;
+      
       SolrIndexSearcher s = req.getSearcher();
       IndexSchema schema = req.getSchema();
             
-      Map<String,Float> queryFields =
-        U.parseFieldBoosts(U.getParam(req, params.QF, params.qf));
-      Map<String,Float> phraseFields =
-        U.parseFieldBoosts(U.getParam(req, params.PF, params.pf));
+      Map<String,Float> queryFields = U.parseFieldBoosts(params.get(DMP.QF));
+      Map<String,Float> phraseFields = U.parseFieldBoosts(params.get(DMP.PF));
 
-      float tiebreaker = U.getNumberParam
-        (req, params.TIE, params.tiebreaker).floatValue();
+      float tiebreaker = params.getFloat(DMP.TIE, 0.0f);
             
-      int pslop = U.getNumberParam(req, params.PS, params.pslop).intValue();
+      int pslop = params.getInt(DMP.PS, 0);
 
       /* a generic parser for parsing regular lucene queries */
       QueryParser p = new SolrQueryParser(schema, null);
@@ -227,14 +244,14 @@ public class DisMaxRequestHandler
       /* * * Main User Query * * */
 
       String userQuery = U.partialEscape
-        (U.stripUnbalancedQuotes(req.getQueryString())).toString();
+        (U.stripUnbalancedQuotes(params.get(Q))).toString();
             
       /* the main query we will execute.  we disable the coord because
        * this query is an artificial construct
        */
       BooleanQuery query = new BooleanQuery(true);
 
-      String minShouldMatch = U.getParam(req, params.MM, params.mm);
+      String minShouldMatch = params.get(DMP.MM, "100%");
             
       Query dis = up.parse(userQuery);
 
@@ -266,7 +283,7 @@ public class DisMaxRequestHandler
             
       /* * * Boosting Query * * */
 
-      String boostQuery = U.getParam(req, params.BQ, params.bq);
+      String boostQuery = params.get(DMP.BQ);
       if (null != boostQuery && !boostQuery.equals("")) {
         Query tmp = p.parse(boostQuery);
         /* if the default boost was used, and we've got a BooleanQuery
@@ -283,7 +300,7 @@ public class DisMaxRequestHandler
 
       /* * * Boosting Functions * * */
 
-      String boostFunc = U.getParam(req, params.BF, params.bf);
+      String boostFunc = params.get(DMP.BF);
       if (null != boostFunc && !boostFunc.equals("")) {
         List<Query> funcs = U.parseFuncs(schema, boostFunc);
         for (Query f : funcs) {
@@ -296,7 +313,7 @@ public class DisMaxRequestHandler
       List<Query> restrictions = new ArrayList<Query>(1);
             
       /* User Restriction */
-      String filterQueryString = U.getParam(req, params.FQ, params.fq);
+      String filterQueryString = params.get(DMP.FQ);
       Query filterQuery = null;
       if (null != filterQueryString && !filterQueryString.equals("")) {
         filterQuery = p.parse(filterQueryString);
@@ -305,7 +322,7 @@ public class DisMaxRequestHandler
             
       /* * * Generate Main Results * * */
 
-      flags |= U.setReturnFields(U.getParam(req, SolrParams.FL, params.fl), rsp);
+      flags |= U.setReturnFields(req,rsp);
       DocList results = s.getDocList(query, restrictions,
                                      SolrPluginUtils.getSort(req),
                                      req.getStart(), req.getLimit(),
@@ -317,7 +334,7 @@ public class DisMaxRequestHandler
       /* * * Debugging Info * * */
 
       try {
-        NamedList debug = U.doStandardDebug(req, userQuery, query, results, params);
+        NamedList debug = U.doStandardDebug(req, userQuery, query, results);
         if (null != debug) {
           debug.add("boostquery", boostQuery);
           debug.add("boostfunc", boostFunc);

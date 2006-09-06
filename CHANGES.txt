@@ -55,6 +55,10 @@ Changes in runtime behavior
  4. Highlighter params changed to be prefixed with "hl."; allow fragmentsize
     customization and per-field overrides on many options 
     (Andrew May via klaas, SOLR-37)
+ 5. Default param values for DisMaxRequestHandler should now be specified
+    using a '<lst name="defaults">...</lst>' init param, for backwards
+    compatability all init prams will be used as defaults if an init param
+    with that name does not exist. (hossman, SOLR-43)
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 
