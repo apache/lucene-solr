@@ -60,7 +60,9 @@ import java.io.IOException;
     public static String BQ = "bq";
     /** query and init param for boosting functions */
     public static String BF = "bf";
-    /** query and init param for filtering query */
+    /** query and init param for filtering query
+     * @deprecated use SolrParams.FQ or SolrPluginUtils.parseFilterQueries
+     */
     public static String FQ = "fq";
     /** query and init param for field list */
     public static String GEN = "gen";

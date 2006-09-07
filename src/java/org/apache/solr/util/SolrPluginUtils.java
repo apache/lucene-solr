@@ -719,6 +719,30 @@ public class SolrPluginUtils {
     return ss.getSort();
   }
 
+  /**
+   * Builds a list of Query objects that should be used to filter results
+   * @see SolrParams#FQ
+   * @return null if no filter queries
+   */
+  public static List<Query> parseFilterQueries(SolrQueryRequest req) throws ParseException {
+    String[] in = req.getParams().getParams(SolrParams.FQ);
+    
+    if (null == in || 0 == in.length) return null;
+
+    List<Query> out = new LinkedList<Query>();
+    SolrIndexSearcher s = req.getSearcher();
+    /* Ignore SolrParams.DF - could have init param FQs assuming the
+     * schema default with query param DF intented to only affect Q.
+     * If user doesn't want schema default, they should be explicit in the FQ.
+     */
+    SolrQueryParser qp = new SolrQueryParser(s.getSchema(), null);
+    for (String q : in) {
+      if (null != q && 0 != q.trim().length()) {
+        out.add(qp.parse(q));
+      }
+    }
+    return out;
+  }
 
   /**
    * A CacheRegenerator that can be used whenever the items in the cache

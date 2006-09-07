@@ -22,6 +22,8 @@ import org.apache.solr.core.SolrException;
 
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.QueryParsing;
 
@@ -98,6 +100,8 @@ import java.net.URL;
  * <li> fq - (Filter Query) a raw lucene query that can be used
  *           to restrict the super set of products we are interested in - more
  *           efficient then using bq, but doesn't influence score.
+ *           This param can be specified multiple times, and the filters
+ *           are addative.
  * </li>
  * </ul>
  *
@@ -113,7 +117,9 @@ import java.net.URL;
  * </ul>
  *
  * <pre>
- * :TODO: make bf,fq,pf,qf multival params now that SolrParams supports them
+ * :TODO: document facet param support
+ *
+ * :TODO: make bf,pf,qf multival params now that SolrParams supports them
  * </pre>
  */
 public class DisMaxRequestHandler
@@ -310,41 +316,47 @@ public class DisMaxRequestHandler
             
       /* * * Restrict Results * * */
 
-      List<Query> restrictions = new ArrayList<Query>(1);
-            
-      /* User Restriction */
-      String filterQueryString = params.get(DMP.FQ);
-      Query filterQuery = null;
-      if (null != filterQueryString && !filterQueryString.equals("")) {
-        filterQuery = p.parse(filterQueryString);
-        restrictions.add(filterQuery);
-      }
+      List<Query> restrictions = U.parseFilterQueries(req);
             
       /* * * Generate Main Results * * */
 
       flags |= U.setReturnFields(req,rsp);
-      DocList results = s.getDocList(query, restrictions,
+      
+      DocListAndSet results = new DocListAndSet();
+      NamedList facetInfo = null;
+      if (params.getBool(FACET,false)) {
+        results = s.getDocListAndSet(query, restrictions,
                                      SolrPluginUtils.getSort(req),
                                      req.getStart(), req.getLimit(),
                                      flags);
-      rsp.add("search-results",results);
+        facetInfo = getFacetInfo(req, rsp, results.docSet);
+      } else {
+        results.docList = s.getDocList(query, restrictions,
+                                       SolrPluginUtils.getSort(req),
+                                       req.getStart(), req.getLimit(),
+                                       flags);
+      }
+      rsp.add("search-results",results.docList);
+      
+      if (null != facetInfo) rsp.add("facet_counts", facetInfo);
 
 
             
       /* * * Debugging Info * * */
 
       try {
-        NamedList debug = U.doStandardDebug(req, userQuery, query, results);
+        NamedList debug = U.doStandardDebug(req, userQuery, query, results.docList);
         if (null != debug) {
           debug.add("boostquery", boostQuery);
           debug.add("boostfunc", boostFunc);
-
-          debug.add("filterquery", filterQueryString);
-          if (null != filterQuery) {
-            debug.add("parsedfilterquery",
-                      QueryParsing.toString(filterQuery, schema));
+          if (null != restrictions) {
+            debug.add("filter_queries", params.getParams(FQ));
+            List<String> fqs = new ArrayList<String>(restrictions.size());
+            for (Query fq : restrictions) {
+              fqs.add(QueryParsing.toString(fq, req.getSchema()));
+            }
+            debug.add("parsed_filter_queries",fqs);
           }
-                    
           rsp.add("debug", debug);
         }
 
@@ -359,8 +371,10 @@ public class DisMaxRequestHandler
 
         BooleanQuery highlightQuery = new BooleanQuery();
         U.flattenBooleanQuery(highlightQuery, query);
-        NamedList sumData = HighlightingUtils.doHighlighting(results, highlightQuery, 
-                                                     req, queryFields.keySet().toArray(new String[0]));
+        String[] highFields = queryFields.keySet().toArray(new String[0]);
+        NamedList sumData =
+          HighlightingUtils.doHighlighting(results.docList, highlightQuery, 
+                                           req, highFields);
         if(sumData != null)
           rsp.add("highlighting", sumData);
       }
@@ -372,4 +386,22 @@ public class DisMaxRequestHandler
     }
   }
 
+  /**
+   * Fetches information about Facets for this request.
+   *
+   * Subclasses may with to override this method to provide more 
+   * advanced faceting behavior.
+   * @see SimpleFacets#getFacetCounts
+   */
+  protected NamedList getFacetInfo(SolrQueryRequest req, 
+                                   SolrQueryResponse rsp, 
+                                   DocSet mainSet) {
+
+    SimpleFacets f = new SimpleFacets(req.getSearcher(), 
+                                      mainSet, 
+                                      req.getParams());
+    return f.getFacetCounts();
+  }
+  
+  
 }

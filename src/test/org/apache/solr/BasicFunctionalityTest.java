@@ -167,7 +167,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     builder.parse(new ByteArrayInputStream
-                             (writer.toString().getBytes("UTF-8")));
+                  (writer.toString().getBytes("UTF-8")));
   }
 
   public void testLocalSolrQueryRequestParams() {
@@ -319,7 +319,173 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   }
       
+  public void testSimpleFacetCounts() {
+    assertU(adoc("id", "42", "trait_s", "Tool", "trait_s", "Obnoxious",
+                 "name", "Zapp Brannigan"));
+    assertU(adoc("id", "43" ,
+                 "title", "Democratic Order of Planets"));
+    assertU(adoc("id", "44", "trait_s", "Tool",
+                 "name", "The Zapper"));
+    assertU(adoc("id", "45", "trait_s", "Chauvinist",
+                 "title", "25 star General"));
+    assertU(adoc("id", "46", "trait_s", "Obnoxious",
+                 "subject", "Defeated the pacifists of the Gandhi nebula"));
+    assertU(adoc("id", "47", "trait_s", "Pig",
+                 "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+    assertU(commit());
+ 
+    assertQ("standard request handler returns all matches",
+            req("id:[42 TO 47]"),
+            "*[count(//doc)=6]"
+            );
+ 
+    assertQ("filter results using fq",
+            req("q","id:[42 TO 46]",
+                "fq", "id:[43 TO 47]"),
+            "*[count(//doc)=4]"
+            );
+    
+    assertQ("don't filter results using blank fq",
+            req("q","id:[42 TO 46]",
+                "fq", " "),
+            "*[count(//doc)=5]"
+            );
+     
+    assertQ("filter results using multiple fq params",
+            req("q","id:[42 TO 46]",
+                "fq", "trait_s:Obnoxious",
+                "fq", "id:[43 TO 47]"),
+            "*[count(//doc)=1]"
+            );
+ 
+    assertQ("check counts for facet queries",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"facet.query", "trait_s:Obnoxious"
+                ,"facet.query", "id:[42 TO 45]"
+                ,"facet.query", "id:[43 TO 47]"
+                ,"facet.field", "trait_s"
+                )
+            ,"*[count(//doc)=6]"
+ 
+            ,"//lst[@name='facet_counts']/lst[@name='facet_queries']"
+            ,"//lst[@name='facet_queries']/int[@name='trait_s:Obnoxious'][.='2']"
+            ,"//lst[@name='facet_queries']/int[@name='id:[42 TO 45]'][.='4']"
+            ,"//lst[@name='facet_queries']/int[@name='id:[43 TO 47]'][.='5']"
+ 
+            ,"//lst[@name='facet_counts']/lst[@name='facet_fields']"
+            ,"//lst[@name='facet_fields']/lst[@name='trait_s']"
+            ,"*[count(//lst[@name='trait_s']/int)=4]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
+            );
+ 
+    assertQ("check counts for applied facet queries using filtering (fq)",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                ,"facet.query", "id:[42 TO 45]"
+                ,"facet.query", "id:[43 TO 47]"
+                )
+            ,"*[count(//doc)=4]"
+            ,"//lst[@name='facet_counts']/lst[@name='facet_queries']"
+            ,"//lst[@name='facet_queries']/int[@name='id:[42 TO 45]'][.='4']"
+            ,"//lst[@name='facet_queries']/int[@name='id:[43 TO 47]'][.='3']"
+            ,"*[count(//lst[@name='trait_s']/int)=4]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Pig'][.='0']"
+            );
+ 
+    assertQ("check counts with facet.zero=false&facet.missing=true using fq",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"facet.zeros", "false"
+                ,"f.trait_s.facet.missing", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                )
+            ,"*[count(//doc)=4]"
+            ,"*[count(//lst[@name='trait_s']/int)=4]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
+            ,"//lst[@name='trait_s']/int[not(@name)][.='1']"
+            );
+ 
+  }
+ 
+  public void testSimpleFacetCountsWithLimits() {
+    assertU(adoc("id", "1",  "t_s", "A"));
+    assertU(adoc("id", "2",  "t_s", "B"));
+    assertU(adoc("id", "3",  "t_s", "C"));
+    assertU(adoc("id", "4",  "t_s", "C"));
+    assertU(adoc("id", "5",  "t_s", "D"));
+    assertU(adoc("id", "6",  "t_s", "E"));
+    assertU(adoc("id", "7",  "t_s", "E"));
+    assertU(adoc("id", "8",  "t_s", "E"));
+    assertU(adoc("id", "9",  "t_s", "F"));
+    assertU(adoc("id", "10", "t_s", "G"));
+    assertU(adoc("id", "11", "t_s", "G"));
+    assertU(adoc("id", "12", "t_s", "G"));
+    assertU(adoc("id", "13", "t_s", "G"));
+    assertU(adoc("id", "14", "t_s", "G"));
+    assertU(commit());
+ 
+    assertQ("check counts for unlimited facet",
+            req("q", "id:[* TO *]"
+                ,"facet", "true"
+                ,"facet.field", "t_s"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst[@name='t_s']/int)=7]"
+ 
+            ,"//lst[@name='t_s']/int[@name='G'][.='5']"
+            ,"//lst[@name='t_s']/int[@name='E'][.='3']"
+            ,"//lst[@name='t_s']/int[@name='C'][.='2']"
+ 
+            ,"//lst[@name='t_s']/int[@name='A'][.='1']"
+            ,"//lst[@name='t_s']/int[@name='B'][.='1']"
+            ,"//lst[@name='t_s']/int[@name='D'][.='1']"
+            ,"//lst[@name='t_s']/int[@name='F'][.='1']"
+            );
+ 
+    assertQ("check counts for facet with generous limit",
+            req("q", "id:[* TO *]"
+                ,"facet", "true"
+                ,"facet.limit", "100"
+                ,"facet.field", "t_s"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst[@name='t_s']/int)=7]"
+ 
+            ,"//lst[@name='t_s']/int[1][@name='G'][.='5']"
+            ,"//lst[@name='t_s']/int[2][@name='E'][.='3']"
+            ,"//lst[@name='t_s']/int[3][@name='C'][.='2']"
+ 
+            ,"//lst[@name='t_s']/int[@name='A'][.='1']"
+            ,"//lst[@name='t_s']/int[@name='B'][.='1']"
+            ,"//lst[@name='t_s']/int[@name='D'][.='1']"
+            ,"//lst[@name='t_s']/int[@name='F'][.='1']"
+            );
+ 
+    assertQ("check counts for limited facet",
+            req("q", "id:[* TO *]"
+                ,"facet", "true"
+                ,"facet.limit", "2"
+                ,"facet.field", "t_s"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst[@name='t_s']/int)=2]"
+ 
+            ,"//lst[@name='t_s']/int[1][@name='G'][.='5']"
+            ,"//lst[@name='t_s']/int[2][@name='E'][.='3']"
+            );
+ 
+  }
+  
 
+  
   private String mkstr(int len) {
     StringBuilder sb = new StringBuilder(len);
     for (int i = 0; i < len; i++) {

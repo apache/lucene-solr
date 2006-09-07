@@ -46,6 +46,9 @@ New Features
     be compressed using the compress=true setting.  The field type also gains the
     ability to specify a size threshold at which field data is compressed.
     (klaas, SOLR-45)
+24. Simple faceted search support for fields (enumerating terms)
+    and arbitrary queries added to both StandardRequestHandler and
+    DisMaxRequestHandler. (hossman, SOLR-44)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
@@ -59,6 +62,8 @@ Changes in runtime behavior
     using a '<lst name="defaults">...</lst>' init param, for backwards
     compatability all init prams will be used as defaults if an init param
     with that name does not exist. (hossman, SOLR-43)
+ 6. The DisMaxRequestHandler now supports multiple occurances of the "fq"
+    param. (hossman, SOLR-44)
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 

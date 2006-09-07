@@ -37,6 +37,8 @@ public abstract class SolrParams {
   public static final String WT ="wt";
   /** query string */
   public static final String Q ="q";
+  /** Lucene query string(s) for filtering the results without affecting scoring */
+  public static final String FQ ="fq";
   /** zero based offset of matching documents to retrieve */
   public static final String START ="start";
   /** number of documents to return starting at "start" */
@@ -62,7 +64,38 @@ public abstract class SolrParams {
   /** override default highlight Formatter class */
   public static final String HIGHLIGHT_FORMATTER_CLASS = "highlightFormatterClass";
 
-
+  /**
+   * Should facet counts be calculated?
+   */
+  public static final String FACET = "facet";
+  
+  /**
+   * Any lucene formated queries the user would like to use for
+   * Facet Contraint Counts (multi-value)
+   */
+  public static final String FACET_QUERY = "facet.query";
+  /**
+   * Any field whose terms the user wants to enumerate over for
+   * Facet Contraint Counts (multi-value)
+   */
+  public static final String FACET_FIELD = "facet.field";
+  /**
+   * Numeric option indicating the maximum number of facet field counts
+   * be included in the response for each field - in descending order of count.
+   * Can be overriden on a per field basis.
+   */
+  public static final String FACET_LIMIT = "facet.limit";
+  /**
+   * Boolean option indicating whether facet field counts of "0" should 
+   * be included in the response.  Can be overriden on a per field basis.
+   */
+  public static final String FACET_ZEROS = "facet.zeros";
+  /**
+   * Boolean option indicating whether the response should include a 
+   * facet field count for all records which have no value for the 
+   * facet field. Can be overriden on a per field basis.
+   */
+  public static final String FACET_MISSING = "facet.missing";
 
 
   /** returns the String value of a param, or null if not set */

@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import org.apache.lucene.search.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.net.URL;
 
@@ -107,20 +108,46 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
         }
       }
 
-      DocList results = req.getSearcher().getDocList(query, null, sort, p.getInt(START,0), p.getInt(ROWS,10), flags);
-      rsp.add(null,results);
+      DocListAndSet results = new DocListAndSet();
+      NamedList facetInfo = null;
+      List<Query> filters = U.parseFilterQueries(req);
+      SolrIndexSearcher s = req.getSearcher();
+
+      if (p.getBool(FACET,false)) {
+        results = s.getDocListAndSet(query, filters, sort,
+                                     p.getInt(START,0), p.getInt(ROWS,10),
+                                     flags);
+        facetInfo = getFacetInfo(req, rsp, results.docSet);
+      } else {
+        results.docList = s.getDocList(query, filters, sort,
+                                       p.getInt(START,0), p.getInt(ROWS,10),
+                                       flags);
+      }
+      
+      rsp.add(null,results.docList);
+
+      if (null != facetInfo) rsp.add("facet_counts", facetInfo);
 
       try {
-        NamedList dbg = U.doStandardDebug(req, qs, query, results);
-        if (null != dbg) 
+        NamedList dbg = U.doStandardDebug(req, qs, query, results.docList);
+        if (null != dbg) {
+          if (null != filters) {
+            dbg.add("filter_queries",req.getParams().getParams(FQ));
+            List<String> fqs = new ArrayList<String>(filters.size());
+            for (Query fq : filters) {
+              fqs.add(QueryParsing.toString(fq, req.getSchema()));
+            }
+            dbg.add("parsed_filter_queries",fqs);
+          }
           rsp.add("debug", dbg);
+        }
       } catch (Exception e) {
         SolrException.logOnce(SolrCore.log, "Exception durring debug", e);
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
 
       NamedList sumData = HighlightingUtils.doHighlighting(
-        results, query, req, new String[]{defaultField});
+        results.docList, query, req, new String[]{defaultField});
       if(sumData != null)
         rsp.add("highlighting", sumData);
 
@@ -135,6 +162,25 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
       return;
     }
   }
+
+  /**
+   * Fetches information about Facets for this request.
+   *
+   * Subclasses may with to override this method to provide more 
+   * advanced faceting behavior.
+   * @see SimpleFacets#getFacetCounts
+   */
+  protected NamedList getFacetInfo(SolrQueryRequest req, 
+                                   SolrQueryResponse rsp, 
+                                   DocSet mainSet) {
+
+    SimpleFacets f = new SimpleFacets(req.getSearcher(), 
+                                      mainSet, 
+                                      req.getParams());
+    return f.getFacetCounts();
+  }
+
+
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 

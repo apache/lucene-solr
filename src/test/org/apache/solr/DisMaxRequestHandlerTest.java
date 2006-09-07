@@ -39,31 +39,39 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
   public void setUp() throws Exception {
     super.setUp();
     lrf = h.getRequestFactory
-      ("dismax",0,20,"version","2.0");
+      ("dismax", 0, 20,
+       "version","2.0",
+       "facet", "true",
+       "facet.field","t_s"
+       );
   }
   public void testSomeStuff() throws Exception {
 
     assertU(adoc("id", "666",
                  "features_t", "cool and scary stuff",
                  "subject", "traveling in hell",
+                 "t_s", "movie",
                  "title", "The Omen",
                  "weight", "87.9",
                  "iind", "666"));
     assertU(adoc("id", "42",
                  "features_t", "cool stuff",
                  "subject", "traveling the galaxy",
+                 "t_s", "movie", "t_s", "book",
                  "title", "Hitch Hiker's Guide to the Galaxy",
                  "weight", "99.45",
                  "iind", "42"));
     assertU(adoc("id", "1",
                  "features_t", "nothing",
                  "subject", "garbage",
+                 "t_s", "book",
                  "title", "Most Boring Guide Ever",
                  "weight", "77",
                  "iind", "4"));
     assertU(adoc("id", "8675309",
                  "features_t", "Wikedly memorable chorus and stuff",
                  "subject", "One Cool Hot Chick",
+                 "t_s", "song",
                  "title", "Jenny",
                  "weight", "97.3",
                  "iind", "8675309"));
@@ -72,6 +80,10 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
     assertQ("basic match",
             req("guide")
             ,"//*[@numFound='2']"
+            ,"//lst[@name='facet_fields']/lst[@name='t_s']"
+            ,"*[count(//lst[@name='t_s']/int)=3]"
+            ,"//lst[@name='t_s']/int[@name='book'][.='2']"
+            ,"//lst[@name='t_s']/int[@name='movie'][.='1']"
             );
     
     assertQ("basic cross field matching, boost on same field matching",
@@ -94,12 +106,17 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
             ,"//*[@numFound='3']"
             );
 
+
   }
 
   public void testOldStyleDefaults() throws Exception {
 
     lrf = h.getRequestFactory
-      ("dismaxOldStyleDefaults",0,20,"version","2.0");
+      ("dismax", 0, 20,
+       "version","2.0",
+       "facet", "true",
+       "facet.field","t_s"
+       );
     testSomeStuff();
   }
 
