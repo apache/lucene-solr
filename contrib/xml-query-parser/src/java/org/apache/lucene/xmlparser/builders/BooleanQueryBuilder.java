@@ -10,6 +10,7 @@ import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.apache.lucene.xmlparser.QueryBuilder;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 
@@ -32,15 +33,20 @@ public class BooleanQueryBuilder implements QueryBuilder {
 		BooleanQuery bq=new BooleanQuery(DOMUtils.getAttribute(e,"disableCoord",false));
 		bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e,"minimumNumberShouldMatch",0));
 		bq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
-		NodeList nl = e.getElementsByTagName("Clause");
+		
+		NodeList nl = e.getChildNodes();
 		for(int i=0;i<nl.getLength();i++)
 		{
-			Element clauseElem=(Element) nl.item(i);
-			BooleanClause.Occur occurs=getOccursValue(clauseElem);
-			
- 			Element clauseQuery=DOMUtils.getFirstChildOrFail(clauseElem);
- 			Query q=factory.getQuery(clauseQuery);
- 			bq.add(new BooleanClause(q,occurs));			
+			Node node = nl.item(i);
+			if(node.getNodeName().equals("Clause"))
+			{
+				Element clauseElem=(Element) node;
+				BooleanClause.Occur occurs=getOccursValue(clauseElem);
+				
+	 			Element clauseQuery=DOMUtils.getFirstChildOrFail(clauseElem);
+	 			Query q=factory.getQuery(clauseQuery);
+	 			bq.add(new BooleanClause(q,occurs));
+			}
 		}
 		
 		return bq;

@@ -11,6 +11,7 @@ import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 
@@ -28,15 +29,20 @@ public class BooleanFilterBuilder implements FilterBuilder {
 
 	public Filter getFilter(Element e) throws ParserException {
 		BooleanFilter bf=new BooleanFilter();
-		NodeList nl = e.getElementsByTagName("Clause");
+		NodeList nl = e.getChildNodes();
+		
 		for(int i=0;i<nl.getLength();i++)
 		{
-			Element clauseElem=(Element) nl.item(i);
-			BooleanClause.Occur occurs=BooleanQueryBuilder.getOccursValue(clauseElem);
+			Node node = nl.item(i);
+			if(node.getNodeName().equals("Clause"))
+			{
+				Element clauseElem=(Element) node;
+				BooleanClause.Occur occurs=BooleanQueryBuilder.getOccursValue(clauseElem);
 			
- 			Element clauseFilter=DOMUtils.getFirstChildOrFail(clauseElem);
- 			Filter f=factory.getFilter(clauseFilter);
- 			bf.add(new FilterClause(f,occurs));			
+	 			Element clauseFilter=DOMUtils.getFirstChildOrFail(clauseElem);
+	 			Filter f=factory.getFilter(clauseFilter);
+	 			bf.add(new FilterClause(f,occurs));
+			}
 		}
 		
 		return bf;
