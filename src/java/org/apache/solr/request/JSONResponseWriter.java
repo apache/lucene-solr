@@ -697,8 +697,8 @@ class RubyWriter extends JSONWriter {
     // bytes into the string.
     //
     // Use single quoted strings for safety since no evaluation is done within them.
-    // Also, there are very few escapes recognized in a singe quoted string, so
-    // only escape the backspace and single quote.
+    // Also, there are very few escapes recognized in a single quoted string, so
+    // only escape the backslash and single quote.
     writer.write('\'');
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
