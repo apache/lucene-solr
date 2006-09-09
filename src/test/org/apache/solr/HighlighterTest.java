@@ -61,7 +61,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             sumLRF.makeRequest("tv_text:long"),
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which']",
-            "//arr[@name='tv_text']/str[.=' <em>long</em> fragments']"
+            "//arr[@name='tv_text']/str[.=' <em>long</em> fragments.']"
             );
   }
 
