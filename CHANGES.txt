@@ -96,5 +96,6 @@ Other Changes
  2. Modified admin styles to improve display in Internet Explorer (Greg Ludington via billa, SOLR-6)
  3. Upgrade to Lucene 2.0 nightly build 2006-07-15, lucene SVN revision 422302,
  4. Included unique key field name/value (if available) in log message of add (billa, SOLR-18)
+ 5. Updated to Lucene 2.0 nightly build 2006-09-07
 
 2006/01/17 Solr open sourced, moves to Apache Incubator
