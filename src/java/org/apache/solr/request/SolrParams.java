@@ -160,6 +160,13 @@ public abstract class SolrParams {
     String val = get(param);
     return val==null ? def : Integer.parseInt(val);
   }
+  
+  /** Returns the int value of the field param, 
+  or the value for param, or def if neither is set. */
+  public int getFieldInt(String field, String param, int def) {
+    String val = getFieldParam(field, param);
+    return val==null ? def : Integer.parseInt(val);
+  }
 
   /** Returns the Float value of the param, or null if not set */
   public Float getFloat(String param) {

@@ -182,10 +182,9 @@ public class SimpleFacets {
     Set<CountPair<String,Integer>> counts 
       = new HashSet<CountPair<String,Integer>>();
 
-    String limit = params.getFieldParam(fieldName, params.FACET_LIMIT);
-    if (null != limit) {
-      counts = new BoundedTreeSet<CountPair<String,Integer>>
-        (Integer.parseInt(limit));
+    int limit = params.getFieldInt(fieldName, params.FACET_LIMIT, 100);
+    if (0 <= limit) {
+      counts = new BoundedTreeSet<CountPair<String,Integer>>(limit);
     }
 
     boolean zeros = params.getFieldBool(fieldName, params.FACET_ZEROS, true);
