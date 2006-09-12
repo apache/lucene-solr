@@ -284,6 +284,22 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertEquals(p.getBool("foo",true), true);
     assertEquals(p.getBool("foo",false), false);
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+
+    NamedList more = new NamedList();
+    more.add("s", "aaa");
+    more.add("s", "ccc");
+    more.add("ss","YYY");
+    more.add("xx","XXX");
+    p = new AppendedSolrParams(p, SolrParams.toSolrParams(more));
+    assertEquals(3, p.getParams("s").length);
+    assertEquals("bbb", p.getParams("s")[0]);
+    assertEquals("aaa", p.getParams("s")[1]);
+    assertEquals("ccc", p.getParams("s")[2]);
+    assertEquals(3, p.getParams("s").length);
+    assertEquals("SSS", p.get("ss"));
+    assertEquals("XXX", p.get("xx"));
+
+    
   }
 
 

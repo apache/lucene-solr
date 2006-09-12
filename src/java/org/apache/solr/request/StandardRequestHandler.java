@@ -60,6 +60,8 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
   long numRequests;
   long numErrors;
   SolrParams defaults;
+  SolrParams appends;
+  SolrParams invariants;
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
@@ -71,13 +73,22 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
     if (o != null && o instanceof NamedList) {
       defaults = SolrParams.toSolrParams((NamedList)o);
     }
+    o = args.get("appends");
+    if (o != null && o instanceof NamedList) {
+      appends = SolrParams.toSolrParams((NamedList)o);
+    }
+    o = args.get("invariants");
+    if (o != null && o instanceof NamedList) {
+      invariants = SolrParams.toSolrParams((NamedList)o);
+    }
+    
   }
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
 
     try {
-      U.setDefaults(req,defaults);
+      U.setDefaults(req,defaults,appends,invariants);
       SolrParams p = req.getParams();
       String sreq = p.get(Q);
 

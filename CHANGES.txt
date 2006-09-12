@@ -49,6 +49,10 @@ New Features
 24. Simple faceted search support for fields (enumerating terms)
     and arbitrary queries added to both StandardRequestHandler and
     DisMaxRequestHandler. (hossman, SOLR-44)
+25. In addition to specifying default RequestHandler params in the
+    solrconfig.xml, support has been added for configuring values to be
+    appended to the multi-val request params, as well as for configuring
+    invariant params that can not overridden in the query. (hossman, SOLR-46)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache

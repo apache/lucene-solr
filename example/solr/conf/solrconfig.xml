@@ -216,6 +216,51 @@
   <!-- Note how you can register the same handler multiple times with
        different names (and different init parameters)
     -->
+  <requestHandler name="partitioned" class="solr.DisMaxRequestHandler" >
+    <lst name="defaults">
+     <str name="qf">text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0</str>
+     <str name="mm">2&lt;-1 5&lt;-2 6&lt;90%</str>
+    </lst>
+    <!-- In addition to defaults, "appends" params can be specified
+         to identify values which should be appended to the list of
+         multi-val params from the query (or the existing "defaults").
+
+         In this example, the param "fq=instock:true" will be appended to
+         any query time fq params the user may specify, as a mechanism for
+         partitioning the index, independent of any user selected filtering
+         that may also be desired (perhaps as a result of faceted searching).
+
+         NOTE: there is *absolutely* nothing a client can do to prevent these
+         "appends" values from being used, so don't use this mechanism
+         unless you are sure you always want it.
+      -->
+    <lst name="appends">
+      <str name="fq">inStock:true</str>
+    </lst>
+    <!-- "invariants" are a way of letting the Solr maintainer lock down
+         the options available to Solr clients.  Any params values
+         specified here are used regardless of what values may be specified
+         in either the query, the "defaults", or the "appends" params.
+
+         In this example, the facet.field and facet.query params are fixed,
+         limiting the facets clients can use.  Faceting is not turned on by
+         default - but if the client does specify facet=true in the request,
+         these are the only facets they will be able to see counts for;
+         regardless of what other facet.field or facet.query params they
+         may specify.
+
+         NOTE: there is *absolutely* nothing a client can do to prevent these
+         "invariants" values from being used, so don't use this mechanism
+         unless you are sure you always want it.
+      -->
+    <lst name="invariants">
+      <str name="facet.field">cat</str>
+      <str name="facet.field">manu_exact</str>
+      <str name="facet.query">price:[* TO 500]</str>
+      <str name="facet.query">price:[500 TO *]</str>
+    </lst>
+  </requestHandler>
+  
   <requestHandler name="instock" class="solr.DisMaxRequestHandler" >
     <!-- for legacy reasons, DisMaxRequestHandler will assume all init
          params are "defaults" if you don't explicitly specify any defaults.

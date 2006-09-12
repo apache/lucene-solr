@@ -32,6 +32,7 @@ import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.DefaultSolrParams;
+import org.apache.solr.request.AppendedSolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.*;
 
@@ -56,14 +57,41 @@ import java.util.regex.Pattern;
  */
 public class SolrPluginUtils {
 
-  /** set defaults on a SolrQueryRequest */
+  /**
+   * Set defaults on a SolrQueryRequest.
+   *
+   * RequestHandlers can use this method to ensure their defaults are
+   * visible to other components such as the response writer
+   */
   public static void setDefaults(SolrQueryRequest req, SolrParams defaults) {
+    setDefaults(req, defaults, null, null);
+  }
+  
+  /**
+   * Set default-ish params on a SolrQueryRequest.
+   *
+   * RequestHandlers can use this method to ensure their defaults and
+   * overrides are visible to other components such as the response writer
+   *
+   * @param req The request whose params we are interested i
+   * @param defaults values to be used if no values are specified in the request params
+   * @param appends values to be appended to those from the request (or defaults) when dealing with multi-val params, or treated as another layer of defaults for singl-val params.
+   * @param invariants values which will be used instead of any request, or default values, regardless of context.
+   */
+  public static void setDefaults(SolrQueryRequest req, SolrParams defaults,
+                                 SolrParams appends, SolrParams invariants) {
+    
       SolrParams p = req.getParams();
       if (defaults != null) {
         p = new DefaultSolrParams(p,defaults);
-        // set params so they will be visible to other components such as the response writer
-        req.setParams(p);
       }
+      if (appends != null) {
+        p = new AppendedSolrParams(p,appends);
+      }
+      if (invariants != null) {
+        p = new DefaultSolrParams(invariants,p);
+      }
+      req.setParams(p);
   }
 
 
