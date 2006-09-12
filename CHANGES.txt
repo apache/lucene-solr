@@ -152,8 +152,7 @@ Documentation
 
   1. Added style sheet to xdocs named lucene.css and included in the Anakia VSL descriptor.  (Grant Ingersoll)
 
-  2. Added draft scoring.xml document into xdocs. Intent is to be the equivalent of fileformats.xml for scoring.  It is not linked into project.xml, so it will not show up on the
-  website yet. (Grant Ingersoll and Steve Rowe.  Updates from: Michael McCandless)
+  2. Added scoring.xml document into xdocs.(Grant Ingersoll and Steve Rowe.  Updates from: Michael McCandless)
 
 Release 2.0.0 2006-05-26
 
