@@ -19,6 +19,7 @@
         <item name="Getting Started"   href="/gettingstarted.html"/>
         <item name="Query Syntax"      href="/queryparsersyntax.html"/>
         <item name="File Formats"      href="/fileformats.html"/>
+        <item name="Scoring"           href="/scoring.html"/>
         <item name="Javadoc"           href="/api/index.html"/>
         <item name="Contributions"     href="/contributions.html"/>
         <item name="Benchmarks"        href="/benchmarks.html"/>
