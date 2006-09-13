@@ -458,12 +458,23 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
 
-
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     if (filter==null) {
       DocSetHitCollector hc = new DocSetHitCollector(maxDoc());
-      searcher.search(query,null,hc);
+      if (query instanceof TermQuery) {
+        Term t = ((TermQuery)query).getTerm();
+        TermDocs tdocs = null;
+        try {
+          tdocs = reader.termDocs(t);
+          while (tdocs.next()) hc.collect(tdocs.doc(),0.0f);
+        } finally {
+          if (tdocs!=null) tdocs.close();
+        }
+      } else {
+        searcher.search(query,null,hc);
+      }
       return hc.getDocSet();
+
     } else {
       // FUTURE: if the filter is sorted by docid, could use skipTo (SkipQueryFilter)
       final DocSetHitCollector hc = new DocSetHitCollector(maxDoc());
@@ -1041,7 +1052,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   /**
    * A simple utility method for to build a filterList from a query
    * @param filter
-   * @return
    */
   private List<Query> buildQueryList(Query filter) {
 	List<Query> filterList = null;

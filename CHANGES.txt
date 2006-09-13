@@ -80,6 +80,9 @@ Optimizations
     Iteration is faster, and BitDocSet.intersectionSize(BitDocSet) and unionSize
     is between 3 and 4 times faster. (yonik, SOLR-15)
  4. much faster unionSize when one of the sets is a HashDocSet: O(smaller_set_size)
+ 5. Optimized getDocSet() for term queries resulting in a 36% speedup of facet.field
+    queries where DocSets aren't cached (for example, if the number of terms in the field
+    is larger than the filter cache.) (yonik)
 
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different
