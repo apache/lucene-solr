@@ -5,7 +5,7 @@ New Features
  1. added support for setting Lucene's positionIncrementGap
  2. Admin: new statistics for SolrIndexSearcher
  3. Admin: caches now show config params on stats page
- 3. max() function added to FunctionQuery suite 
+ 3. max() function added to FunctionQuery suite
  4. postOptimize hook, mirroring the functionallity of the postCommit hook,
     but only called on an index optimize.
  5. Ability to HTTP POST query requests to /select in addition to HTTP-GET
@@ -21,7 +21,7 @@ New Features
 12. Ability to store term vectors for fields. (Mike Klaas via yonik, SOLR-23)
 13. New abstract BufferedTokenStream for people who want to write
     Tokenizers or TokenFilters that require arbitrary buffering of the
-    stream. (SOLR-11 / yonik, hossman)    
+    stream. (SOLR-11 / yonik, hossman)
 14. New RemoveDuplicatesToken - useful in situations where
     synonyms, stemming, or word-deliminater-ing produce identical tokens at
     the same position. (SOLR-11 / yonik, hossman)
@@ -53,6 +53,8 @@ New Features
     solrconfig.xml, support has been added for configuring values to be
     appended to the multi-val request params, as well as for configuring
     invariant params that can not overridden in the query. (hossman, SOLR-46)
+26. Default operator for query parsing can now be specified with q.op=AND|OR
+    from the client request, overriding the schema value. (ehatcher)
 
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache

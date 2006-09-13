@@ -33,11 +33,15 @@ import org.apache.solr.schema.FieldType;
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;
 
+  /**
+   *
+   * @param schema Used for default search field name if defaultField is null and field information is used for analysis
+   * @param defaultField default field used for unspecified search terms.  if null, the schema default field is used
+   */
   public SolrQueryParser(IndexSchema schema, String defaultField) {
     super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
     this.schema = schema;
     setLowercaseExpandedTerms(false);
-    setDefaultOperator("AND".equals(schema.getQueryParserDefaultOperator()) ? QueryParser.Operator.AND : QueryParser.Operator.OR);
   }
 
   protected Query getFieldQuery(String field, String queryText) throws ParseException {

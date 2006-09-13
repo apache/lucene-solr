@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.*;
 import org.apache.solr.search.function.*;
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.solr.core.SolrCore;
@@ -26,6 +27,7 @@ import org.apache.solr.core.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.request.SolrParams;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -37,6 +39,7 @@ import java.io.IOException;
  * @version $Id$
  */
 public class QueryParsing {
+  public static final String OP = "q.op";
 
   public static Query parseQuery(String qs, IndexSchema schema) {
     return parseQuery(qs, null, schema);
@@ -58,7 +61,32 @@ public class QueryParsing {
     }
   }
 
+  /**
+   * @param qs query expression
+   * @param defaultField default field used for unqualified search terms in the query expression
+   * @param params used to determine the default operator, overriding the schema specified operator
+   * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
+   * @return
+   */
+  public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
+    try {
+      String opParam = params.get(OP, schema.getQueryParserDefaultOperator());
+      QueryParser.Operator defaultOperator = "AND".equals(opParam) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
+      SolrQueryParser parser = new SolrQueryParser(schema, defaultField);
+      parser.setDefaultOperator(defaultOperator);
+      Query query = parser.parse(qs);
 
+      if (SolrCore.log.isLoggable(Level.FINEST)) {
+        SolrCore.log.finest("After QueryParser:" + query);
+      }
+
+      return query;
+
+    } catch (ParseException e) {
+      SolrCore.log(e);
+      throw new SolrException(400,"Error parsing Lucene query",e);
+    }
+  }
 
   /***
    * SortSpec encapsulates a Lucene Sort and a count of the number of documents
