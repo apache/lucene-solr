@@ -91,7 +91,8 @@
   </target>
 
 
-  <target name="javadoc" depends="compile">
+  <target name="javadoc" depends="compile"
+          description="Generates javadoc documentation.">
 
     <mkdir dir="${build.javadoc}"/>
         
@@ -191,7 +192,7 @@
          conf file, either way we need a specific run directory for
          the tests.
       -->    
-    <junit printsummary="on"
+    <junit printsummary="withOutAndErr"
            haltonfailure="no"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
@@ -213,8 +214,8 @@
     <fail if="tests.failed">Tests failed!</fail>
   </target>
   
-  <target name="test-reports">
-    <!-- no description so it doesn't show up in -projecthelp ... yet -->  
+  <target name="test-reports"
+          description="Generates HTML test reports.">
     <mkdir dir="${junit.reports}"/>
     <junitreport todir="${junit.output.dir}">
       <fileset dir="${junit.output.dir}">
