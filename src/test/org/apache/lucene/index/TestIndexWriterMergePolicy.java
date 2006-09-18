@@ -157,9 +157,9 @@ public class TestIndexWriterMergePolicy extends TestCase {
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(5);
 
+    // merge factor is changed, so check invariants after all adds
     for (int i = 0; i < 10; i++) {
       addDoc(writer);
-      checkInvariants(writer);
     }
     checkInvariants(writer);
     assertEquals(10, writer.docCount());
@@ -173,7 +173,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     writer.addDocument(doc);
   }
 
-  private void checkInvariants(IndexWriter writer) {
+  private void checkInvariants(IndexWriter writer) throws IOException {
     int maxBufferedDocs = writer.getMaxBufferedDocs();
     int mergeFactor = writer.getMergeFactor();
     int maxMergeDocs = writer.getMaxMergeDocs();
@@ -188,10 +188,10 @@ public class TestIndexWriterMergePolicy extends TestCase {
     int segmentCount = writer.getSegmentCount();
     for (int i = segmentCount - 1; i >= 0; i--) {
       int docCount = writer.getDocCount(i);
-      assertTrue(docCount > lowerBound);
+      assertTrue(docCount > lowerBound || docCount == 0);
 
       if (docCount <= upperBound) {
-        segmentCount++;
+        numSegments++;
       } else {
         if (upperBound * mergeFactor <= maxMergeDocs) {
           assertTrue(numSegments < mergeFactor);
@@ -199,12 +199,21 @@ public class TestIndexWriterMergePolicy extends TestCase {
 
         lowerBound = upperBound;
         upperBound *= mergeFactor;
-        segmentCount = 1;
+        numSegments = 1;
       }
     }
     if (upperBound * mergeFactor <= maxMergeDocs) {
       assertTrue(numSegments < mergeFactor);
     }
+
+    String[] files = writer.getDirectory().list();
+    int segmentCfsCount = 0;
+    for (int i = 0; i < files.length; i++) {
+      if (files[i].endsWith(".cfs")) {
+        segmentCfsCount++;
+      }
+    }
+    assertEquals(segmentCount, segmentCfsCount);
   }
 
   private void printSegmentDocCounts(IndexWriter writer) {

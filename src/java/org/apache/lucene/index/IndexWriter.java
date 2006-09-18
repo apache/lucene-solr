@@ -734,15 +734,14 @@ public class IndexWriter {
   /** Merges all RAM-resident segments, then may merge segments. */
   private final void flushRamSegments() throws IOException {
     if (ramSegmentInfos.size() > 0) {
-      if (mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size()) > 0) {
-        maybeMergeSegments();
-      }
+      mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
+      maybeMergeSegments();
     }
   }
 
   /** Incremental segment merger.  */
   private final void maybeMergeSegments() throws IOException {
-    long lowerBound = 0;
+    long lowerBound = -1;
     long upperBound = minMergeDocs;
 
     while (upperBound * mergeFactor <= maxMergeDocs) {
@@ -782,7 +781,7 @@ public class IndexWriter {
             // continue to merge the rest of the worthy segments on this level
             minSegment++;
             exceedsUpperLimit = true;
-          } else if (docCount > 0) {
+          } else {
             // if the merged segment does not exceed upperBound, consider
             // this segment for further merges on this same level
             numSegments++;
@@ -810,7 +809,6 @@ public class IndexWriter {
     if (infoStream != null) infoStream.print("merging segments");
     SegmentMerger merger = new SegmentMerger(this, mergedName);
 
-    boolean fromRAM = false;
     final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < end; i++) {
       SegmentInfo si = sourceSegments.info(i);
@@ -821,9 +819,6 @@ public class IndexWriter {
       if ((reader.directory() == this.directory) || // if we own the directory
           (reader.directory() == this.ramDirectory))
         segmentsToDelete.addElement(reader);   // queue segment for deletion
-      if (!fromRAM && (reader.directory() == this.ramDirectory)) {
-        fromRAM = true;
-      }
     }
 
     int mergedDocCount = merger.merge();
@@ -834,17 +829,13 @@ public class IndexWriter {
 
     SegmentInfo newSegment = new SegmentInfo(mergedName, mergedDocCount,
         directory);
-    if (fromRAM) {
+    if (sourceSegments == ramSegmentInfos) {
       sourceSegments.removeAllElements();
-      if (mergedDocCount > 0)
-        segmentInfos.addElement(newSegment);
+      segmentInfos.addElement(newSegment);
     } else {
       for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
         sourceSegments.remove(i);
-      if (mergedDocCount > 0)
-        segmentInfos.set(minSegment, newSegment);
-      else
-        sourceSegments.remove(minSegment);
+      segmentInfos.set(minSegment, newSegment);
     }
 
     // close readers before we attempt to delete now-obsolete segments
