@@ -4,7 +4,7 @@
 <br clear="all">
 <h2>/select mode</h2>
 
-<form method="GET" action="../select">
+<form name=queryForm method="GET" action="../select">
 <table>
 <tr>
   <td>
@@ -108,7 +108,7 @@
   <td>
   </td>
   <td>
-	<input class="stdbutton" type="submit" value="search">
+	<input class="stdbutton" type="button" value="search" onclick="if (queryForm.q.value.length==0) alert('no empty queries, please'); else queryForm.submit();">
   </td>
 </tr>
 </table>
