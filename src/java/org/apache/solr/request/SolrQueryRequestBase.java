@@ -22,6 +22,9 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 
+import java.util.Map;
+import java.util.HashMap;
+
 /**
  * Base implementation of <code>SolrQueryRequest</code> that provides some
  * convenience methods for accessing parameters, and manages an IndexSearcher
@@ -51,28 +54,27 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected SolrParams params;
+  protected Map<Object,Object> context;
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
     this.core = core;
     this.params = this.origParams = params;
   }
 
-  /** returns the current request parameters */
+  public Map<Object,Object> getContext() {
+    // SolrQueryRequest as a whole isn't thread safe, and this isn't either.
+    if (context==null) context = new HashMap<Object,Object>();
+    return context;
+  }
+
   public SolrParams getParams() {
     return params;
   }
 
-  /** Returns the original request parameters.  As this
-   * does not normally include configured defaults
-   * it's more suitable for logging.
-   */
   public SolrParams getOriginalParams() {
     return origParams;
   }
 
-  /** Change the parameters for this request.  This does not affect
-   *  the original parameters returned by getOriginalParams()
-   */
   public void setParams(SolrParams params) {
     this.params = params;
   }
