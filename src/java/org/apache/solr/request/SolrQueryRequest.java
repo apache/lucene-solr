@@ -20,18 +20,35 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrCore;
 
+import java.util.Map;
+
 /**
- * Container for a request to execute a query.
+ * <p>Container for a request to execute a query.</p>
+ * <p><code>SolrQueryRequest</code> is not thread safe.</p>
  * 
  * @author yonik
  * @version $Id$
  */
 public interface SolrQueryRequest {
+
+  /** returns the current request parameters */
   public SolrParams getParams();
 
+  /** Change the parameters for this request.  This does not affect
+   *  the original parameters returned by getOriginalParams()
+   */
   public void setParams(SolrParams params);
 
+  /** Returns the original request parameters.  As this
+   * does not normally include configured defaults
+   * it's more suitable for logging.
+   */
   public SolrParams getOriginalParams();
+
+  /**
+   * Generic information associated with this request that may be both read and updated.
+   */
+  public Map<Object,Object> getContext();
 
   /**
    * This method should be called when all uses of this request are

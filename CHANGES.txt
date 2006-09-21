@@ -83,6 +83,10 @@ Optimizations
  5. Optimized getDocSet() for term queries resulting in a 36% speedup of facet.field
     queries where DocSets aren't cached (for example, if the number of terms in the field
     is larger than the filter cache.) (yonik)
+ 6. Optimized facet.field faceting by as much as 500 times when the field has
+    a single token per document (not multiValued & not tokenized) by using the
+    Lucene FieldCache entry for that field to tally term counts.  The first request
+    utilizing the FieldCache will take longer than subsequent ones.
 
 Bug Fixes
  1. Fixed delete-by-id for field types who's indexed form is different

@@ -57,7 +57,7 @@ public abstract class FieldType extends FieldProperties {
   int properties;
 
   /** Returns true if fields of this type should be tokenized */
-  protected boolean isTokenized() {
+  public boolean isTokenized() {
     return (properties & TOKENIZED) != 0;
   }
 
