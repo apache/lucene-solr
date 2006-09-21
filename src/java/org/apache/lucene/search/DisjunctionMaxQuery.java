@@ -25,9 +25,9 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A query that generates the union of the documents produced by its subqueries, and that scores each document as the maximum
- * score for that document produced by any subquery plus a tie breaking increment for any additional matching subqueries.
- * This is useful to search for a word in multiple fields with different boost factors (so that the fields cannot be
+ * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
+ * score for that document as produced by any subquery, plus a tie breaking increment for any additional matching subqueries.
+ * This is useful when searching for a word in multiple fields with different boost factors (so that the fields cannot be
  * combined equivalently into a single search field).  We want the primary score to be the one associated with the highest boost,
  * not the sum of the field scores (as BooleanQuery would give).
  * If the query is "albino elephant" this ensures that "albino" matching one field and "elephant" matching
