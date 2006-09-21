@@ -55,7 +55,7 @@ import java.net.URL;
 /**
  * <p>
  * A Generic query plugin designed to be given a simple query expression
- * from a user, which it will then query agaisnt a variety of
+ * from a user, which it will then query against a variety of
  * pre-configured fields, in a variety of ways, using BooleanQueries,
  * DisjunctionMaxQueries, and PhraseQueries.
  * </p>
@@ -67,7 +67,7 @@ import java.net.URL;
  *
  * <ul>
  * <li>tie - (Tie breaker) float value to use as tiebreaker in
- *           DisjunctionMaxQueries (should be something much less then 1)
+ *           DisjunctionMaxQueries (should be something much less than 1)
  * </li>
  * <li> qf - (Query Fields) fields and boosts to use when building
  *           DisjunctionMaxQueries from the users query.  Format is:
@@ -78,21 +78,20 @@ import java.net.URL;
  *           read {@link SolrPluginUtils#setMinShouldMatch SolrPluginUtils.setMinShouldMatch} for full details.
  * </li>
  * <li> pf - (Phrase Fields) fields/boosts to make phrase queries out
- *           of to boost
- *           the users query for exact matches on the specified fields.
+ *           of, to boost the users query for exact matches on the specified fields.
  *           Format is: "<code>fieldA^1.0 fieldB^2.2</code>".
  * </li>
  * <li> ps - (Phrase Slop) amount of slop on phrase queries built for pf
  *           fields.
  * </li>
  * <li> bq - (Boost Query) a raw lucene query that will be included in the 
- *           users query to influcene the score.  If this is a BooleanQuery
- *           with a default boost (1.0f) then the individual clauses will be
- *           added directly to the main query.  Otherwise the query will be
+ *           users query to influence the score.  If this is a BooleanQuery
+ *           with a default boost (1.0f), then the individual clauses will be
+ *           added directly to the main query.  Otherwise, the query will be
  *           included as is.
  * </li>
  * <li> bf - (Boost Functions) functions (with optional boosts) that will be
- *           included in the users query to influcene the score.
+ *           included in the users query to influence the score.
  *           Format is: "<code>funcA(arg1,arg2)^1.2
  *           funcB(arg3,arg4)^2.2</code>".  NOTE: Whitespace is not allowed
  *           in the function arguments.
@@ -101,7 +100,7 @@ import java.net.URL;
  *           to restrict the super set of products we are interested in - more
  *           efficient then using bq, but doesn't influence score.
  *           This param can be specified multiple times, and the filters
- *           are addative.
+ *           are additive.
  * </li>
  * </ul>
  *
@@ -143,11 +142,11 @@ public class DisMaxRequestHandler
   SolrParams appends;
   SolrParams invariants;
     
-  /** shorten the class referneces for utilities */
+  /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
     /* :NOOP */
   }
-  /** shorten the class referneces for utilities */
+  /** shorten the class references for utilities */
   private static class DMP extends DisMaxParams {
     /* :NOOP */
   }
