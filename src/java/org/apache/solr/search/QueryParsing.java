@@ -39,12 +39,24 @@ import java.io.IOException;
  * @version $Id$
  */
 public class QueryParsing {
+  /** the SolrParam used to override the QueryParser "default operator" */
   public static final String OP = "q.op";
 
+  /** 
+   * Helper utility for parsing a query using the Lucene QueryParser syntax. 
+   * @param qs query expression in standard Lucene syntax
+   * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
+   */
   public static Query parseQuery(String qs, IndexSchema schema) {
     return parseQuery(qs, null, schema);
   }
 
+  /** 
+   * Helper utility for parsing a query using the Lucene QueryParser syntax. 
+   * @param qs query expression in standard Lucene syntax
+   * @param defaultField default field used for unqualified search terms in the query expression
+   * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
+   */
   public static Query parseQuery(String qs, String defaultField, IndexSchema schema) {
     try {
       Query query = new SolrQueryParser(schema, defaultField).parse(qs);
@@ -62,11 +74,10 @@ public class QueryParsing {
   }
 
   /**
-   * @param qs query expression
+   * @param qs query expression in standard Lucene syntax
    * @param defaultField default field used for unqualified search terms in the query expression
    * @param params used to determine the default operator, overriding the schema specified operator
    * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
-   * @return
    */
   public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
     try {
@@ -123,12 +134,16 @@ public class QueryParsing {
    * or if the sort specification couldn't be converted into a Lucene Sort
    * (because of a field not being indexed or undefined, etc).
    *
+   * <p>
    * The form of the sort specification string currently parsed is:
+   * </p>
+   * <pre>>
    * SortSpec ::= SingleSort [, SingleSort]* <number>?
    * SingleSort ::= <fieldname> SortDirection
    * SortDirection ::= top | desc | bottom | asc
-   *
+   * </pre>
    * Examples:
+   * <pre>
    *   top 10                        #take the top 10 by score
    *   desc 10                       #take the top 10 by score
    *   score desc 10                 #take the top 10 by score
@@ -136,6 +151,7 @@ public class QueryParsing {
    *   weight desc                   #sort by weight descending
    *   height desc,weight desc       #sort by height descending, and use weight descending to break any ties
    *   height desc,weight asc top 20 #sort by height descending, using weight ascending as a tiebreaker
+   * </pre>
    *
    */
   public static SortSpec parseSort(String sortSpec, IndexSchema schema) {
@@ -240,7 +256,7 @@ public class QueryParsing {
       out.append(val);
     }
   }
-
+  /** @see #toString(Query,IndexSchema) */
   public static void toString(Query query, IndexSchema schema, Appendable out, int flags) throws IOException {
     boolean writeBoost=true;
 
@@ -379,7 +395,20 @@ public class QueryParsing {
     }
 
   }
-
+  
+  /**
+   * Formats a Query for debugging, using the IndexSchema to make 
+   * complex field types readable.
+   *
+   * <p>
+   * The benefit of using this method instead of calling 
+   * <code>Query.toString</code> directly is that it knows about the data
+   *  types of each field, so any field which is encoded in a particularly 
+   * complex way is still readable.  The downside is thta it only knows 
+   * about built in Query types, and will not be able to format custom 
+   * Query classes.
+   * </p>
+   */
   public static String toString(Query query, IndexSchema schema) {
     try {
       StringBuilder sb = new StringBuilder();
@@ -507,7 +536,10 @@ public class QueryParsing {
     return f.getType().getValueSource(f);
   }
 
-  /** Parse a function, returning a FunctionQuery
+  /** 
+   * Parse a function, returning a FunctionQuery
+   *
+   * :TODO: need examples
    */
   public static FunctionQuery parseFunction(String func, IndexSchema schema) throws ParseException {
     return new FunctionQuery(parseValSource(new StrParser(func), schema));

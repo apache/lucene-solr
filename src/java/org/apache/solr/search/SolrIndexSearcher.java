@@ -41,7 +41,7 @@ import java.util.logging.Logger;
 /**
  * SolrIndexSearcher adds schema awareness and caching functionality
  * over the lucene IndexSearcher.
-
+ *
  * @author yonik
  * @version $Id$
  * @since solr 0.9
@@ -78,8 +78,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private final SolrCache[] cacheList;
   private static final SolrCache[] noCaches = new SolrCache[0];
 
-    /** Creates a searcher searching the index in the named directory. */
-    /** Creates a searcher searching the index in the named directory. */
+  /** Creates a searcher searching the index in the named directory. */
   public SolrIndexSearcher(IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
     this(schema,name,IndexReader.open(path), true, enableCache);
   }
@@ -148,7 +147,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
 
-  /*** Register sub-objects such as caches
+  /** Register sub-objects such as caches
    */
   public void register() {
     for (SolrCache cache : cacheList) {
@@ -158,7 +157,11 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     registerTime=System.currentTimeMillis();
   }
 
-
+  /**
+   * Free's resources associated with this searcher.
+   *
+   * In particular, the underlying reader and any cache's in use are closed.
+   */
   public void close() throws IOException {
     // unregister first, so no management actions are tried on a closing searcher.
     SolrInfoRegistry.getRegistry().remove(name);
@@ -185,7 +188,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     }
   }
 
+  /** Direct access to the IndexReader used by this searcher */
   public IndexReader getReader() { return reader; }
+  /** Direct access to the IndexSchema for use with this searcher */
   public IndexSchema getSchema() { return schema; }
 
 
@@ -265,29 +270,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
       Filter[] newFilter = new Filter[1];
       optimizer.optimize((BooleanQuery)query, searcher, 0, newQuery, newFilter);
 
-      // TODO REMOVE
-      if (newFilter[0]!=null) {
-        // System.out.println("OPTIMIZED QUERY: FILTER=" + newFilter[0]);
-      }
-
       return searcher.search(newQuery[0], newFilter[0], sort);
     }
   }
-
-  /******
-   * Shouldn't be needed since IndexReader has it's own finalize method
-   * and there is nothing else to clean up here (for now at least)
-   *
-  protected void finalize() {
-    try {
-      close();
-      super.finalize();
-    } catch (Throwable e) {
-      SolrException.log(log,e);
-    }
-  }
-  ******/
-
 
   public Hits search(Query query, Filter filter) throws IOException {
     return searcher.search(query, filter);
@@ -296,12 +281,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   public Hits search(Query query, Sort sort) throws IOException {
     return searcher.search(query, sort);
   }
-
-  /***  Replaced this one with one that does filter optimization
-  public Hits search(Query query, Filter filter, Sort sort) throws IOException {
-    return searcher.search(query, filter, sort);
-  }
-  ***/
 
   public void search(Query query, HitCollector results) throws IOException {
     searcher.search(query, results);
@@ -581,6 +560,23 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
 
+  /**
+   * Returns documents matching both <code>query</code> and the 
+   * intersection of the <code>filterList</code>, sorted by <code>sort</code>.
+   * <p>
+   * This method is cache aware and may retrieve <code>filter</code> from
+   * the cache or make an insertion into the cache as a result of this call.
+   * <p>
+   * FUTURE: The returned DocList may be retrieved from a cache.
+   *
+   * @param query
+   * @param filterList may be null
+   * @param lsort    criteria by which to sort (if null, query relevance is used)
+   * @param offset   offset into the list of documents to return
+   * @param len      maximum number of documents to return
+   * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @throws IOException
+   */
   public DocList getDocList(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
     DocListAndSet answer = new DocListAndSet();
     getDocListC(answer,query,filterList,null,lsort,offset,len,flags);
@@ -1023,6 +1019,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return getDocListAndSet(query, filterList, lsort, offset, len);
 
   }
+
   /**
    * Returns documents matching both <code>query</code> and <code>filter</code>
    * and sorted by <code>sort</code>.  Also returns the compete set of documents
@@ -1062,12 +1059,57 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
 	return filterList;
   }
 
+  /**
+   * Returns documents matching both <code>query</code> and the intersection 
+   * of <code>filterList</code>, sorted by <code>sort</code>.  
+   * Also returns the compete set of documents
+   * matching <code>query</code> and <code>filter</code> 
+   * (regardless of <code>offset</code> and <code>len</code>).
+   * <p>
+   * This method is cache aware and may retrieve <code>filter</code> from
+   * the cache or make an insertion into the cache as a result of this call.
+   * <p>
+   * FUTURE: The returned DocList may be retrieved from a cache.
+   * <p>
+   * The DocList and DocSet returned should <b>not</b> be modified.
+   *
+   * @param query
+   * @param filterList   may be null
+   * @param lsort    criteria by which to sort (if null, query relevance is used)
+   * @param offset   offset into the list of documents to return
+   * @param len      maximum number of documents to return
+   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @throws IOException
+   */
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
     DocListAndSet ret = new DocListAndSet();
     getDocListC(ret,query,filterList,null,lsort,offset,len,GET_DOCSET);
     return ret;
   }
 
+  /**
+   * Returns documents matching both <code>query</code> and the intersection 
+   * of <code>filterList</code>, sorted by <code>sort</code>.  
+   * Also returns the compete set of documents
+   * matching <code>query</code> and <code>filter</code> 
+   * (regardless of <code>offset</code> and <code>len</code>).
+   * <p>
+   * This method is cache aware and may retrieve <code>filter</code> from
+   * the cache or make an insertion into the cache as a result of this call.
+   * <p>
+   * FUTURE: The returned DocList may be retrieved from a cache.
+   * <p>
+   * The DocList and DocSet returned should <b>not</b> be modified.
+   *
+   * @param query
+   * @param filterList   may be null
+   * @param lsort    criteria by which to sort (if null, query relevance is used)
+   * @param offset   offset into the list of documents to return
+   * @param len      maximum number of documents to return
+   * @param flags    user supplied flags for the result set
+   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @throws IOException
+   */
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
 	    DocListAndSet ret = new DocListAndSet();
 	    getDocListC(ret,query,filterList,null,lsort,offset,len, flags |= GET_DOCSET);
@@ -1095,6 +1137,27 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return ret;
   }
 
+  /**
+   * Returns documents matching both <code>query</code> and <code>filter</code>
+   * and sorted by <code>sort</code>.  Also returns the compete set of documents
+   * matching <code>query</code> and <code>filter</code> (regardless of <code>offset</code> and <code>len</code>).
+   * <p>
+   * This method is cache aware and may make an insertion into the cache 
+   * as a result of this call.
+   * <p>
+   * FUTURE: The returned DocList may be retrieved from a cache.
+   * <p>
+   * The DocList and DocSet returned should <b>not</b> be modified.
+   *
+   * @param query
+   * @param filter   may be null
+   * @param lsort    criteria by which to sort (if null, query relevance is used)
+   * @param offset   offset into the list of documents to return
+   * @param len      maximum number of documents to return
+   * @param flags    user supplied flags for the result set
+   * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @throws IOException
+   */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
 	    DocListAndSet ret = new DocListAndSet();
 	    getDocListC(ret,query,null,filter,lsort,offset,len, flags |= GET_DOCSET);
@@ -1160,14 +1223,20 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
 
-  // Takes a list of docs (the doc ids actually), and returns all of
-  // the stored fields.
+  /**
+   * Takes a list of docs (the doc ids actually), and returns an array 
+   * of Documents containing all of the stored fields.
+   */
   public Document[] readDocs(DocList ids) throws IOException {
      Document[] docs = new Document[ids.size()];
      readDocs(docs,ids);
      return docs;
   }
 
+  /**
+   * Takes a list of docs (the doc ids actually), and reads them into an array 
+   * of Documents.
+   */
   public void readDocs(Document[] docs, DocList ids) throws IOException {
     DocIterator iter = ids.iterator();
     for (int i=0; i<docs.length; i++) {

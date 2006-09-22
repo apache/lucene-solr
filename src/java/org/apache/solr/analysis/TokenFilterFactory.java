@@ -21,14 +21,48 @@ import org.apache.lucene.analysis.TokenStream;
 import java.util.Map;
 
 /**
- * Factory to create a token filter that transforms one TokenStream to another.
- * 
+ * A <code>TokenFilterFactory</code> creates a 
+ * <code>TokenFilter</code> to transform one <code>TokenStream</code> 
+ * into another.
+ *
+ * <p>
+ * TokenFilterFactories are registered for <code>FieldType</code>s with the
+ * <code>IndexSchema</code> through the <code>schema.xml</code> file.
+ * </p>
+ * <p>
+ * Example <code>schema.xml</code> entry to register a TokenFilterFactory 
+ * implementation to transform tokens in a field of type "cool"
+ * </p>
+ * <pre>
+ *  &lt;fieldtype name="cool" class="solr.TextField"&gt;
+ *      &lt;analyzer&gt;
+ *      ...
+ *      &lt;filter class="foo.MyTokenFilterFactory"/&gt;
+ *      ...
+ * </pre>
+ * <p>
+ * A single instance of any registered TokenizerFactory is created
+ * via the default constructor and is reused for each FieldType.
+ * </p>
  * @author yonik
  * @version $Id$
  */
 
 public interface TokenFilterFactory {
+  /** <code>init</code> will be called just once, immediately after creation.
+   * <p>The args are user-level initialization parameters that
+   * may be specified when declaring a the factory in the
+   * schema.xml
+   */
   public void init(Map<String,String> args);
+  /**
+   * Accessor method for reporting the args used to initialize this factory.
+   * <p>
+   * Implementations are <strong>strongly</strong> encouraged to return 
+   * the contents of the Map passed to to the init method
+   * </p>
+   */
   public Map<String,String> getArgs();
+  /** Transform the specified input TokenStream */
   public TokenStream create(TokenStream input);
 }

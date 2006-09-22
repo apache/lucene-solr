@@ -49,7 +49,7 @@ public interface SolrRequestHandler extends SolrInfoMBean {
 
 
   /**
-   * Handles a query request.  This method must be thread safe.
+   * Handles a query request, this method must be thread safe.
    * <p>
    * Information about the request may be obtained from <code>req</code> and
    * response information may be set using <code>rsp</code>.

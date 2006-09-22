@@ -20,10 +20,13 @@ package org.apache.solr.analysis;
 import java.util.Map;
 
 /**
+ * Simple abstract implementation that handles init arg processing.
+ * 
  * @author yonik
  * @version $Id$
  */
 public abstract class BaseTokenFilterFactory implements TokenFilterFactory {
+  /** The init args */
   protected Map<String,String> args;
   public void init(Map<String,String> args) {
     this.args=args;

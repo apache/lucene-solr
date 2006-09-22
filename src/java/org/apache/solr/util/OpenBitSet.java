@@ -98,7 +98,7 @@ public class OpenBitSet implements Cloneable, Serializable {
 
  /**
   * Returns the current capacity of this set.  Included for
-  * compatibility.  This is *not* equal to {@see cardinality}
+  * compatibility.  This is *not* equal to {@link #cardinality}
   */
   public long size() {
 	  return capacity();

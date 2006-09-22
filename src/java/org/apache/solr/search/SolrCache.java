@@ -24,7 +24,8 @@ import java.io.IOException;
 
 
 /**
- *
+ * Primary API for dealing with Solr's internal caches.
+ * 
  * @author yonik
  * @version $Id$
  */
@@ -46,7 +47,7 @@ public interface SolrCache extends SolrInfoMBean {
    * not reference any particular cache instance and prevent it from being
    * garbage collected (no using inner classes unless they are static).
    * <p>
-   * Since the persistence object is designed to be used as a way for statistics
+   * The persistence object is designed to be used as a way for statistics
    * to accumulate across all instances of the same type of cache, however the
    * object may be of any type desired by the cache implementation.
    * <p>
@@ -59,21 +60,49 @@ public interface SolrCache extends SolrInfoMBean {
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
 
-  // symbolic name for this cache
+  /**
+   * Name the Cache can be refrenced with by SolrRequestHandlers.
+   *
+   * This method must return the identifier that the Cache instance 
+   * expects SolrRequestHandlers to use when requesting access to it 
+   * from the SolrIndexSearcher.  It is <strong>strongly</strong> 
+   * recommended thta this method return the value of the "name" 
+   * paramater from the init args.
+   *
+   * :TODO: verify this.
+   */
   public String name();
 
 
   // Should SolrCache just extend the java.util.Map interface?
   // Following the conventions of the java.util.Map interface in any case.
 
+  /** :TODO: copy from Map */
   public int size();
 
+  /** :TODO: copy from Map */
   public Object put(Object key, Object value);
 
+  /** :TODO: copy from Map */
   public Object get(Object key);
 
+  /** :TODO: copy from Map */
   public void clear();
 
+  /** 
+   * Enumeration of possible States for cache instances.
+   * :TODO: only state that seems to ever be set is LIVE ?
+  */
+  public enum State { 
+    /** :TODO */
+    CREATED, 
+    /** :TODO */
+    STATICWARMING, 
+    /** :TODO */
+    AUTOWARMING, 
+    /** :TODO */
+    LIVE 
+  }
 
   /**
    * Set different cache states.
@@ -81,8 +110,13 @@ public interface SolrCache extends SolrInfoMBean {
    * The cache user (SolrIndexSearcher) will take care of switching
    * cache states.
    */
-  public enum State { CREATED, STATICWARMING, AUTOWARMING, LIVE }
   public void setState(State state);
+
+  /**
+   * Returns the last State set on this instance
+   *
+   * @see #setState
+   */
   public State getState();
 
 
