@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -169,6 +170,9 @@ public class MemoryIndex {
   /** pos: positions[3*i], startOffset: positions[3*i +1], endOffset: positions[3*i +2] */
   private final int stride;
   
+  /** Could be made configurable; See {@link Document#setBoost(float)} */
+  private static final float docBoost = 1.0f;
+  
   private static final long serialVersionUID = 2782195016849084649L;
 
   private static final boolean DEBUG = false;
@@ -274,6 +278,18 @@ public class MemoryIndex {
   }
   
   /**
+   * Equivalent to <code>addField(fieldName, stream, 1.0f)</code>.
+   * 
+   * @param fieldName
+   *            a name to be associated with the text
+   * @param stream
+   *            the token stream to retrieve tokens from
+   */
+  public void addField(String fieldName, TokenStream stream) {
+	addField(fieldName, stream, 1.0f);
+  }
+
+  /**
    * Iterates over the given token stream and adds the resulting terms to the index;
    * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
    * Lucene {@link org.apache.lucene.document.Field}.
@@ -284,8 +300,11 @@ public class MemoryIndex {
    *            a name to be associated with the text
    * @param stream
    *            the token stream to retrieve tokens from.
+   * @param boost
+   *            the boost factor for hits for this field
+   * @see Field#setBoost(float)
    */
-  public void addField(String fieldName, TokenStream stream) {
+  public void addField(String fieldName, TokenStream stream, float boost) {
     /*
      * Note that this method signature avoids having a user call new
      * o.a.l.d.Field(...) which would be much too expensive due to the
@@ -308,7 +327,9 @@ public class MemoryIndex {
       if (fieldName == null)
         throw new IllegalArgumentException("fieldName must not be null");
       if (stream == null)
-        throw new IllegalArgumentException("token stream must not be null");
+          throw new IllegalArgumentException("token stream must not be null");
+      if (boost <= 0.0f)
+          throw new IllegalArgumentException("boost factor must be greater than 0.0");
       if (fields.get(fieldName) != null)
         throw new IllegalArgumentException("field must not be added more than once");
       
@@ -338,7 +359,8 @@ public class MemoryIndex {
       
       // ensure infos.numTokens > 0 invariant; needed for correct operation of terms()
       if (numTokens > 0) {
-        fields.put(fieldName, new Info(terms, numTokens));
+        boost = boost * docBoost; // see DocumentWriter.addDocument(...)
+        fields.put(fieldName, new Info(terms, numTokens, boost));
         sortedFields = null;    // invalidate sorted view, if any
       }
     } catch (IOException e) { // can never happen
@@ -435,7 +457,7 @@ public class MemoryIndex {
     while (iter.hasNext()) { // for each Field Info
       Map.Entry entry = (Map.Entry) iter.next();      
       Info info = (Info) entry.getValue();
-      size += HEADER + 4 + PTR + PTR + PTR; // Info instance vars
+      size += HEADER + 4 + 4 + PTR + PTR + PTR; // Info instance vars
       if (info.sortedTerms != null) size += ARR + PTR * info.sortedTerms.length;
       
       int len = info.terms.size();
@@ -545,14 +567,18 @@ public class MemoryIndex {
     /** Number of added tokens for this field */
     private final int numTokens;
     
+    /** Boost factor for hits for this field */
+    private final float boost;
+
     /** Term for this field's fieldName, lazily computed on demand */
     public transient Term template;
 
     private static final long serialVersionUID = 2882195016849084649L;  
 
-    public Info(HashMap terms, int numTokens) {
+    public Info(HashMap terms, int numTokens, float boost) {
       this.terms = terms;
       this.numTokens = numTokens;
+      this.boost = boost;
     }
     
     /**
@@ -575,6 +601,10 @@ public class MemoryIndex {
     /** note that the frequency can be calculated as numPosition(getPositions(x)) */
     public ArrayIntList getPositions(int pos) {
       return (ArrayIntList) sortedTerms[pos].getValue();
+    }
+    
+    public float getBoost() {
+      return boost;
     }
     
   }
@@ -970,6 +1000,8 @@ public class MemoryIndex {
         Info info = getInfo(fieldName);
         int numTokens = info != null ? info.numTokens : 0;
         float n = sim.lengthNorm(fieldName, numTokens);
+        float boost = info != null ? info.getBoost() : 1.0f; 
+        n = n * boost; // see DocumentWriter.writeNorms(String segment)				
         byte norm = Similarity.encodeNorm(n);
         norms = new byte[] {norm};
         
