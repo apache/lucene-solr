@@ -67,10 +67,15 @@ public class PatternAnalyzerTest extends TestCase {
   }
   
   public void testMany() throws Throwable {
+//    String[] files = MemoryIndexTest.listFiles(new String[] {
+//      "*.txt", "*.html", "*.xml", "xdocs/*.xml", 
+//      "src/test/org/apache/lucene/queryParser/*.java",
+//      "src/org/apache/lucene/index/memory/*.java",
+//    });
     String[] files = MemoryIndexTest.listFiles(new String[] {
-      "*.txt", "*.html", "*.xml", "xdocs/*.xml", 
-      "src/test/org/apache/lucene/queryParser/*.java",
-      "src/org/apache/lucene/index/memory/*.java",
+      "../../*.txt", "../../*.html", "../../*.xml", "../../xdocs/*.xml", 
+      "../../src/test/org/apache/lucene/queryParser/*.java",
+      "src/java/org/apache/lucene/index/memory/*.java",
     });
     System.out.println("files = " + java.util.Arrays.asList(files));
     String[] xargs = new String[] {
