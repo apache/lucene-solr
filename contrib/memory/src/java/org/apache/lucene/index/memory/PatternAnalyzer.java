@@ -297,7 +297,7 @@ public class PatternAnalyzer extends Analyzer {
         len += n;
       }
 
-      return new String(output, 0, output.length);
+      return new String(output, 0, len);
     } finally {
       if (input != null) input.close();
     }
