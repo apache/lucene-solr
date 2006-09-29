@@ -33,7 +33,7 @@ import java.util.TreeSet;
  * href="http://www.cogsci.princeton.edu/~wn/">WordNet </a> prolog file <a
  * href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">wn_s.pl </a>
  * into a thread-safe main-memory hash map that can be used for fast
- * high-frequncy lookups of synonyms for any given (lowercase) word string.
+ * high-frequency lookups of synonyms for any given (lowercase) word string.
  * <p>
  * There holds: If B is a synonym for A (A -> B) then A is also a synonym for B (B -> A).
  * There does not necessary hold: A -> B, B -> C then A -> C.
