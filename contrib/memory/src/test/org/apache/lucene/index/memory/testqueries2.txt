@@ -1,0 +1,5 @@
+term
+term*
+term~
+Apache
+Apach~ AND Copy*
