@@ -134,10 +134,9 @@ public class FunctionQuery extends Query {
     public Explanation explain(int doc) throws IOException {
       float sc = qWeight * vals.floatVal(doc);
 
-      Explanation result = new Explanation();
-      result.setDescription("FunctionQuery(" + func
-        + "), product of:");
-      result.setValue(sc);
+      Explanation result = new ComplexExplanation
+        (true, sc, "FunctionQuery(" + func + "), product of:");
+
       result.addDetail(vals.explain(doc));
       result.addDetail(new Explanation(getBoost(), "boost"));
       result.addDetail(new Explanation(weight.queryNorm,"queryNorm"));

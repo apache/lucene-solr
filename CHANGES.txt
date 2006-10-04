@@ -70,6 +70,9 @@ Changes in runtime behavior
     with that name does not exist. (hossman, SOLR-43)
  6. The DisMaxRequestHandler now supports multiple occurances of the "fq"
     param. (hossman, SOLR-44)
+ 7. FunctionQuery.explain now uses ComplexExplanation to provide more
+    accurate score explanations when composed in a BooleanQuery.
+    (hossman, SOLR-25)
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 
