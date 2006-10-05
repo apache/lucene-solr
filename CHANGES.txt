@@ -31,6 +31,8 @@ New features
     New Fieldable interface for use with the lazy field loading mechanism.
     (Grant Ingersoll and Chuck Williams via Grant Ingersoll)
 
+ 3. LUCENE-676: Move Solr's PrefixFilter to Lucene core. (Yura Smolsky, Yonik Seeley)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
