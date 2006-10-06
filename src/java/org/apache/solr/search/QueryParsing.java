@@ -35,6 +35,8 @@ import java.util.logging.Level;
 import java.io.IOException;
 
 /**
+ * Collection of static utilities usefull for query parsing.
+ *
  * @author yonik
  * @version $Id$
  */
@@ -74,6 +76,7 @@ public class QueryParsing {
   }
 
   /**
+   * Helper utility for parsing a query using the Lucene QueryParser syntax. 
    * @param qs query expression in standard Lucene syntax
    * @param defaultField default field used for unqualified search terms in the query expression
    * @param params used to determine the default operator, overriding the schema specified operator
@@ -539,7 +542,37 @@ public class QueryParsing {
   /** 
    * Parse a function, returning a FunctionQuery
    *
-   * :TODO: need examples
+   * <p>
+   * Syntax Examples....
+   * </p>
+   *
+   * <pre>
+   * // Numeric fields default to correct type
+   * // (ie: IntFieldSource or FloatFieldSource)
+   * // Others use implicit ord(...) to generate numeric field value
+   * myfield
+   *
+   * // OrdFieldSource
+   * ord(myfield)
+   *
+   * // ReverseOrdFieldSource
+   * rord(myfield)
+   *
+   * // LinearFloatFunction on numeric field value
+   * linear(myfield,1,2)
+   *
+   * // MaxFloatFunction of LinearFloatFunction on numeric field value or constant
+   * max(linear(myfield,1,2),100)
+   *
+   * // ReciprocalFloatFunction on numeric field value
+   * recip(myfield,1,2,3)
+   *
+   * // ReciprocalFloatFunction on ReverseOrdFieldSource
+   * recip(rord(myfield),1,2,3)
+   *
+   * // ReciprocalFloatFunction on LinearFloatFunction on ReverseOrdFieldSource
+   * recip(linear(rord(myfield),1,2),3,4,5)
+   * </pre>
    */
   public static FunctionQuery parseFunction(String func, IndexSchema schema) throws ParseException {
     return new FunctionQuery(parseValSource(new StrParser(func), schema));
