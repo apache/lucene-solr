@@ -126,6 +126,7 @@ Bug fixes
 14. LUCENE-650: Fixed NPE in Locale specific String Sort when Document
     has no value.
     (Oliver Hutchison via Chris Hostetter)
+
     
 Optimizations
 
@@ -152,6 +153,9 @@ Optimizations
      certain level have been accumulated.  This increases indexing performance
      in the presence of deleted docs or partially full segments as well as
      enabling future optimizations. (Ning Li, Yonik Seeley)
+
+  7. Lazy loaded fields unnecessarily retained an extra copy of loaded
+     String data.  (Yonik Seeley)
 
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)

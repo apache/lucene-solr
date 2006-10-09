@@ -265,9 +265,6 @@ final class FieldsReader {
   private class LazyField extends AbstractField implements Fieldable {
     private int toRead;
     private long pointer;
-    //internal buffer
-    private char[] chars;
-
 
     public LazyField(String name, Field.Store store, int toRead, long pointer) {
       super(name, store, Field.Index.NO, Field.TermVector.NO);
@@ -337,10 +334,9 @@ final class FieldsReader {
         try {
           localFieldsStream.seek(pointer);
           //read in chars b/c we already know the length we need to read
-          if (chars == null || toRead > chars.length)
-            chars = new char[toRead];
+          char[] chars = new char[toRead];
           localFieldsStream.readChars(chars, 0, toRead);
-          fieldsData = new String(chars, 0, toRead);//fieldsStream.readString();
+          fieldsData = new String(chars);
         } catch (IOException e) {
           throw new FieldReaderException(e);
         }
