@@ -166,6 +166,7 @@ Documentation
 
   2. Added scoring.xml document into xdocs.  Updated Similarity.java scoring formula.(Grant Ingersoll and Steve Rowe.  Updates from: Michael McCandless, Doron Cohen, Chris Hostetter, Doug Cutting).  Issue 664.
 
+  3. Added javadocs for FieldSelectorResult.java. (Grant Ingersoll)
 
 Release 2.0.0 2006-05-26
 
