@@ -104,7 +104,7 @@
                 Due to loss of precision, it is not guaranteed that decode(encode(x)) = x,
                 e.g. decode(encode(0.89)) = 0.75.
                 At scoring (search) time, this norm is brought into the score of document
-                as <b>indexBoost</b>, as shown by the formula in
+                as <b>norm(t, d)</b>, as shown by the formula in
                 <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>.
                 </p>
             </subsection>
