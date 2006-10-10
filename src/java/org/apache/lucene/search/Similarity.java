@@ -16,67 +16,271 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.SmallFloat;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.SmallFloat;
+
 /** Expert: Scoring API.
  * <p>Subclasses implement search scoring.
  *
- * <p>The score of query <code>q</code> for document <code>d</code> is defined
- * in terms of these methods as follows:
+ * <p>The score of query <code>q</code> for document <code>d</code> correlates to the
+ * cosine-distance or dot-product between document and query vectors in a
+ * <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">
+ * Vector Space Model (VSM) of Information Retrieval</a>.
+ * A document whose vector is closer to the query vector in that model is scored higher.
  *
- * <table cellpadding="0" cellspacing="0" border="0">
+ * The score is computed as follows:
+ *
+ * <P>
+ * <table cellpadding="1" cellspacing="0" border="1" align="center">
+ * <tr><td>
+ * <table cellpadding="1" cellspacing="0" border="0" align="center">
  *  <tr>
- *    <td valign="middle" align="right" rowspan="2">score(q,d) =<br></td>
- *    <td valign="middle" align="center">
- *    <big><big><big><big><big>&Sigma;</big></big></big></big></big></td>
- *    <td valign="middle"><small>
- *    ( {@link #tf(int) tf}(t in d) *
- *    {@link #idf(Term,Searcher) idf}(t)^2 *
- *    {@link Query#getBoost getBoost}(t in q) *
- *    {@link org.apache.lucene.document.Field#getBoost getBoost}(t.field in d) *
- *    {@link #lengthNorm(String,int) lengthNorm}(t.field in d) )
- *    </small></td>
- *    <td valign="middle" rowspan="2">&nbsp;*
- *    {@link #coord(int,int) coord}(q,d) *
- *    {@link #queryNorm(float) queryNorm}(sumOfSqaredWeights)
+ *    <td valign="middle" align="right" rowspan="1">
+ *      score(q,d) &nbsp; = &nbsp;
+ *      <A HREF="#formula_coord">coord(q,d)</A> &nbsp;&middot;&nbsp;
+ *      <A HREF="#formula_queryNorm">queryNorm(q)</A> &nbsp;&middot;&nbsp;
+ *    </td>
+ *    <td valign="bottom" align="center" rowspan="1">
+ *      <big><big><big>&sum;</big></big></big>
+ *    </td>
+ *    <td valign="middle" align="right" rowspan="1">
+ *      <big><big>(</big></big>
+ *      <A HREF="#formula_tf">tf(t in d)</A> &nbsp;&middot;&nbsp;
+ *      <A HREF="#formula_idf">idf(t)</A><sup>2</sup> &nbsp;&middot;&nbsp;
+ *      <A HREF="#formula_termBoost">t.getBoost()</A>&nbsp;&middot;&nbsp;
+ *      <A HREF="#formula_norm">norm(t,d)</A>
+ *      <big><big>)</big></big>
  *    </td>
  *  </tr>
- *  <tr>
- *   <td valign="top" align="right">
- *    <small>t in q</small>
- *    </td>
+ *  <tr valigh="top">
+ *   <td></td>
+ *   <td align="center"><small>t in q</small></td>
+ *   <td></td>
  *  </tr>
  * </table>
- * 
+ * </td></tr>
+ * </table>
+ *
  * <p> where
- * 
- * <table cellpadding="0" cellspacing="0" border="0">
- *  <tr>
- *    <td valign="middle" align="right" rowspan="2">sumOfSqaredWeights =<br></td>
- *    <td valign="middle" align="center">
- *    <big><big><big><big><big>&Sigma;</big></big></big></big></big></td>
- *    <td valign="middle"><small>
- *    ( {@link #idf(Term,Searcher) idf}(t) *
- *    {@link Query#getBoost getBoost}(t in q) )^2
- *    </small></td>
- *  </tr>
- *  <tr>
- *   <td valign="top" align="right">
- *    <small>t in q</small>
- *    </td>
- *  </tr>
- * </table>
- * 
- * <p> Note that the above formula is motivated by the cosine-distance or dot-product
- * between document and query vector, which is implemented by {@link DefaultSimilarity}.
+ * <ol>
+ *    <li>
+ *      <A NAME="formula_tf"></A>
+ *      <b>tf(t in d)</b>
+ *      correlates to the term's <i>frequency</i>,
+ *      defined as the number of times term <i>t</i> appears in the currently scored document <i>d</i>.
+ *      Documents that have more occurrences of a given term receive a higher score.
+ *      The default computation for <i>tf(t in d)</i> in
+ *      {@link org.apache.lucene.search.DefaultSimilarity#tf(float) DefaultSimilarity} is:
+ *
+ *      <br>&nbsp;<br>
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *        <tr>
+ *          <td valign="middle" align="right" rowspan="1">
+ *            {@link org.apache.lucene.search.DefaultSimilarity#tf(float) tf(t in d)} &nbsp; = &nbsp;
+ *          </td>
+ *          <td valign="top" align="center" rowspan="1">
+ *               frequency<sup><big>&frac12;</big></sup>
+ *          </td>
+ *        </tr>
+ *      </table>
+ *      <br>&nbsp;<br>
+ *    </li>
+ *
+ *    <li>
+ *      <A NAME="formula_idf"></A>
+ *      <b>idf(t)</b> stands for Inverse Document Frequency. This value
+ *      correlates to the inverse of <i>docFreq</i>
+ *      (the number of documents in which the term <i>t</i> appears).
+ *      This means rarer terms give higher contribution to the total score.
+ *      The default computation for <i>idf(t)</i> in
+ *      {@link org.apache.lucene.search.DefaultSimilarity#idf(int, int) DefaultSimilarity} is:
+ *
+ *      <br>&nbsp;<br>
+ *      <table cellpadding="2" cellspacing="2" border="0" align="center">
+ *        <tr>
+ *          <td valign="middle" align="right">
+ *            {@link org.apache.lucene.search.DefaultSimilarity#idf(int, int) idf(t)}&nbsp; = &nbsp;
+ *          </td>
+ *          <td valign="middle" align="center">
+ *            1 + log <big>(</big>
+ *          </td>
+ *          <td valign="middle" align="center">
+ *            <table>
+ *               <tr><td align="center"><small>numDocs</small></td></tr>
+ *               <tr><td align="center">&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;</td></tr>
+ *               <tr><td align="center"><small>docFreq+1</small></td></tr>
+ *            </table>
+ *          </td>
+ *          <td valign="middle" align="center">
+ *            <big>)</big>
+ *          </td>
+ *        </tr>
+ *      </table>
+ *      <br>&nbsp;<br>
+ *    </li>
+ *
+ *    <li>
+ *      <A NAME="formula_coord"></A>
+ *      <b>coord(q,d)</b>
+ *      is a score factor based on how many of the query terms are found in the specified document.
+ *      Typically, a document that contains more of the query's terms will receive a higher score
+ *      than another document with fewer query terms.
+ *      This is a search time factor computed in
+ *      {@link #coord(int, int) coord(q,d)}
+ *      by the Similarity in effect at search time.
+ *      <br>&nbsp;<br>
+ *    </li>
+ *
+ *    <li><b>
+ *      <A NAME="formula_queryNorm"></A>
+ *      queryNorm(q)
+ *      </b>
+ *      is a normalizing factor used to make scores between queries comparable.
+ *      This factor does not affect document ranking (since all ranked documents are multiplied by the same factor),
+ *      but rather just attempts to make scores from different queries (or even different indexes) comparable.
+ *      This is a search time factor computed by the Similarity in effect at search time.
+ *
+ *      The default computation in
+ *      {@link org.apache.lucene.search.DefaultSimilarity#queryNorm(float) DefaultSimilarity}
+ *      is:
+ *      <br>&nbsp;<br>
+ *      <table cellpadding="1" cellspacing="0" border="0" align="center">
+ *        <tr>
+ *          <td valign="middle" align="right" rowspan="1">
+ *            queryNorm(q)  &nbsp; = &nbsp;
+ *            {@link org.apache.lucene.search.DefaultSimilarity#queryNorm(float) queryNorm(sumOfSquaredWeights)}
+ *            &nbsp; = &nbsp;
+ *          </td>
+ *          <td valign="middle" align="center" rowspan="1">
+ *            <table>
+ *               <tr><td align="center"><big>1</big></td></tr>
+ *               <tr><td align="center"><big>
+ *                  &ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;
+ *               </big></td></tr>
+ *               <tr><td align="center">sumOfSquaredWeights<sup><big>&frac12;</big></sup></td></tr>
+ *            </table>
+ *          </td>
+ *        </tr>
+ *      </table>
+ *      <br>&nbsp;<br>
+ *
+ *      The sum of squared weights (of the query terms) is
+ *      computed by the query {@link org.apache.lucene.search.Weight} object.
+ *      For example, a {@link org.apache.lucene.search.BooleanQuery boolean query}
+ *      computes this value as:
+ *
+ *      <br>&nbsp;<br>
+ *      <table cellpadding="1" cellspacing="0" border="0"n align="center">
+ *        <tr>
+ *          <td valign="middle" align="right" rowspan="1">
+ *            {@link org.apache.lucene.search.Weight#sumOfSquaredWeights() sumOfSquaredWeights} &nbsp; = &nbsp;
+ *            {@link org.apache.lucene.search.Query#getBoost() q.getBoost()} <sup><big>2</big></sup>
+ *            &nbsp;&middot;&nbsp;
+ *          </td>
+ *          <td valign="bottom" align="center" rowspan="1">
+ *            <big><big><big>&sum;</big></big></big>
+ *          </td>
+ *          <td valign="middle" align="right" rowspan="1">
+ *            <big><big>(</big></big>
+ *            <A HREF="#formula_idf">idf(t)</A> &nbsp;&middot;&nbsp;
+ *            <A HREF="#formula_termBoost">t.getBoost()</A>
+ *            <big><big>) <sup>2</sup> </big></big>
+ *          </td>
+ *        </tr>
+ *        <tr valigh="top">
+ *          <td></td>
+ *          <td align="center"><small>t in q</small></td>
+ *          <td></td>
+ *        </tr>
+ *      </table>
+ *      <br>&nbsp;<br>
+ *
+ *    </li>
+ *
+ *    <li>
+ *      <A NAME="formula_termBoost"></A>
+ *      <b>t.getBoost()</b>
+ *      is a search time boost of term <i>t</i> in the query <i>q</i> as
+ *      specified in the query text
+ *      (see <A HREF="../../../../../queryparsersyntax.html#Boosting a Term">query syntax</A>),
+ *      or as set by application calls to
+ *      {@link org.apache.lucene.search.Query#setBoost(float) setBoost()}.
+ *      Notice that there is really no direct API for accessing a boost of one term in a multi term query,
+ *      but rather multi terms are represented in a query as multi
+ *      {@link org.apache.lucene.search.TermQuery TermQuery} objects,
+ *      and so the boost of a term in the query is accessible by calling the sub-query
+ *      {@link org.apache.lucene.search.Query#getBoost() getBoost()}.
+ *      <br>&nbsp;<br>
+ *    </li>
+ *
+ *    <li>
+ *      <A NAME="formula_norm"></A>
+ *      <b>norm(t,d)</b> encapsulates a few (indexing time) boost and length factors:
+ *
+ *      <ul>
+ *        <li><b>Document boost</b> - set by calling
+ *        {@link org.apache.lucene.document.Document#setBoost(float) doc.setBoost()}
+ *        before adding the document to the index.
+ *        </li>
+ *        <li><b>Field boost</b> - set by calling
+ *        {@link org.apache.lucene.document.Fieldable#setBoost(float) field.setBoost()}
+ *        before adding the field to a document.
+ *        </li>
+ *        <li>{@link #lengthNorm(String, int) <b>lengthNorm</b>(field)} - computed
+ *        when the document is added to the index in accordance with the number of tokens
+ *        of this field in the document, so that shorter fields contribute more to the score.
+ *        LengthNorm is computed by the Similarity class in effect at indexing.
+ *        </li>
+ *      </ul>
+ *
+ *      <p>
+ *      When a document is added to the index, all the above factors are multiplied.
+ *      If the document has multiple fields with the same name, all their boosts are multiplied together:
+ *
+ *      <br>&nbsp;<br>
+ *      <table cellpadding="1" cellspacing="0" border="0"n align="center">
+ *        <tr>
+ *          <td valign="middle" align="right" rowspan="1">
+ *            norm(t,d) &nbsp; = &nbsp;
+ *            {@link org.apache.lucene.document.Document#getBoost() doc.getBoost()}
+ *            &nbsp;&middot;&nbsp;
+ *            {@link #lengthNorm(String, int) lengthNorm(field)}
+ *            &nbsp;&middot;&nbsp;
+ *          </td>
+ *          <td valign="bottom" align="center" rowspan="1">
+ *            <big><big><big>&prod;</big></big></big>
+ *          </td>
+ *          <td valign="middle" align="right" rowspan="1">
+ *            {@link org.apache.lucene.document.Fieldable#getBoost() f.getBoost}()
+ *          </td>
+ *        </tr>
+ *        <tr valigh="top">
+ *          <td></td>
+ *          <td align="center"><small>field <i><b>f</b></i> in <i>d</i> named as <i><b>t</b></i></small></td>
+ *          <td></td>
+ *        </tr>
+ *      </table>
+ *      <br>&nbsp;<br>
+ *      However the resulted <i>norm</i> value is {@link #encodeNorm(float) encoded} as a single byte
+ *      before being stored.
+ *      At search time, the norm byte value is read from the index
+ *      {@link org.apache.lucene.store.Directory directory} and
+ *      {@link #decodeNorm(byte) decoded} back to a float <i>norm</i> value.
+ *      This encoding/decoding, while reducing index size, comes with the price of
+ *      precision loss - it is not guaranteed that decode(encode(x)) = x.
+ *      For instance, decode(encode(0.89)) = 0.75.
+ *      Also notice that search time is too late to modify this <i>norm</i> part of scoring, e.g. by
+ *      using a different {@link Similarity} for search.
+ *      <br>&nbsp;<br>
+ *    </li>
+ * </ol>
  *
  * @see #setDefault(Similarity)
  * @see IndexWriter#setSimilarity(Similarity)

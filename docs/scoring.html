@@ -192,84 +192,73 @@ limitations under the License.
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
         <font color="#ffffff" face="arial,helvetica,sanserif">
+          <a name="Score Boosting"><strong>Score Boosting</strong></a>
+        </font>
+      </td></tr>
+      <tr><td>
+        <blockquote>
+                                    <p>Lucene allows influencing search results by "boosting" in more than one level:
+                  <ul>
+                    <li><b>Document level boosting</b>
+                    - while indexing - by calling
+                    <a href="api/org/apache/lucene/document/Document.html#setBoost(float)">document.setBoost()</a>
+                    before a document is added to the index.
+                    </li>
+                    <li><b>Document's Field level boosting</b>
+                    - while indexing - by calling
+                    <a href="api/org/apache/lucene/document/Fieldable.html#setBoost(float)">field.setBoost()</a>
+                    before adding a field to the document (and before adding the document to the index).
+                    </li>
+                    <li><b>Query level boosting</b>
+                     - during search, by setting a boost on a query clause, calling
+                     <a href="api/org/apache/lucene/search/Query.html#setBoost(float)">Query.setBoost()</a>.
+                    </li>
+                  </ul>
+                </p>
+                                                <p>Indexing time boosts are preprocessed for storage efficiency and written to
+                  the directory (when writing the document) in a single byte (!) as follows:
+                  For each field of a document, all boosts of that field
+                  (i.e. all boosts under the same field name in that doc) are multiplied.
+                  The result is multiplied by the boost of the document,
+                  and also multiplied by a "field length norm" value
+                  that represents the length of that field in that doc
+                  (so shorter fields are automatically boosted up).
+                  The result is decoded as a single byte
+                  (with some precision loss of course) and stored in the directory.
+                  The similarity object in effect at indexing computes the length-norm of the field.
+                </p>
+                                                <p>This composition of 1-byte representation of norms
+                (that is, indexing time multiplication of field boosts &amp; doc boost &amp; field-length-norm)
+                is nicely described in
+                <a href="api/org/apache/lucene/document/Fieldable.html#setBoost(float)">Fieldable.setBoost()</a>.
+                </p>
+                                                <p>Encoding and decoding of the resulted float norm in a single byte are done by the
+                static methods of the class Similarity:
+                <a href="api/org/apache/lucene/search/Similarity.html#encodeNorm(float)">encodeNorm()</a> and
+                <a href="api/org/apache/lucene/search/Similarity.html#decodeNorm(byte)">decodeNorm()</a>.
+                Due to loss of precision, it is not guaranteed that decode(encode(x)) = x,
+                e.g. decode(encode(0.89)) = 0.75.
+                At scoring (search) time, this norm is brought into the score of document
+                as <b>indexBoost</b>, as shown by the formula in
+                <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>.
+                </p>
+                            </blockquote>
+      </td></tr>
+      <tr><td><br/></td></tr>
+    </table>
+                                                    <table border="0" cellspacing="0" cellpadding="2" width="100%">
+      <tr><td bgcolor="#828DA6">
+        <font color="#ffffff" face="arial,helvetica,sanserif">
           <a name="Understanding the Scoring Formula"><strong>Understanding the Scoring Formula</strong></a>
         </font>
       </td></tr>
       <tr><td>
         <blockquote>
                                     <p>
-                    Lucene's scoring formula computes the score of one document <i>d</i> for a given query <i>q</i> across each
-                    term <i>t</i> that occurs in q.  The score attempts to measure relevance, so the higher the score, the more
-		    relevant document <i>d</i> is to the query <i>q</i>.  This is taken from
-		    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>:
-
-                    <div class="formula">
-                        <!-- Anyone know how to specify sigma in Anakia?  It always seems to strip out my numeric character references-->
-                        score(q,d) =
-			<span class="big" id="summation">
-                            sum </span><span class="summation-range">t in q</span><span>(
-                        <A HREF="api/org/apache/lucene/search/Similarity.html#tf(int)">tf</A>
-                        (t in d) *
-                        <A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">idf</A>
-                        (t)^2 *
-                        <A HREF="api/org/apache/lucene/search/Query.html#getBoost()">
-                        getBoost
-                        </A>
-                        (t in q) *
-                        getBoost
-                        (t.field in d) *
-                        <A HREF="api/org/apache/lucene/search/Similarity.html#lengthNorm(java.lang.String, int)">
-                            lengthNorm
-                        </A>
-                        (t.field in d) )</span> <span> *
-                        <A HREF="api/org/apache/lucene/search/Similarity.html#coord(int, int)">
-                            coord
-                        </A>
-                        (q,d) *
-                        <A HREF="api/org/apache/lucene/search/Similarity.html#queryNorm(float)">
-                            queryNorm
-                        </A>(sumOfSquaredWeights)</span>
-                    </div>
-                </p>
-                                                <p>
-                    where
-                    <!-- Anyone know how to specify sigma in Anakia?  It always seems to strip out my numeric character references-->
-                    <div id="#sumOfSquares">
-                        sumOfSquaredWeights =
-                        <span class="big">sum</span><span class="summation-range">t in q</span><span>(
-                        <A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">
-                            idf
-                        </A>
-                        (t) *
-                        <A HREF="api/org/apache/lucene/search/Query.html#getBoost()">
-                            getBoost
-                        </A>
-                        (t in q) )^2</span>
-                    </div>
-                </p>
-                                                <p>
-		This scoring formula is mostly implemented in the
-                    <a href="api/org/apache/lucene/search/TermScorer.html">TermScorer</a> class, where it makes calls to the
-                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> class to retrieve values for the following.  Note that the descriptions apply to <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a> implementation:
-                    <ol>
-
-                        <li><A HREF="api/org/apache/lucene/search/Similarity.html#tf(int)">tf(t in d)</A> - Term Frequency - The number of times the term <i>t</i> appears in the current document <i>d</i> being scored.  Documents that have more occurrences of a given term receive a higher score.</li>
-
-                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#idf(org.apache.lucene.index.Term, org.apache.lucene.search.Searcher)">idf(t)</A> - Inverse Document Frequency - One divided by the number of documents in which the term <i>t</i> appears.  This means rarer terms give higher contribution to the total score.</p></li>
-
-                        <li><p><A HREF="api/org/apache/lucene/search/Query.html#getBoost()">getBoost(t in q)</A> - The boost, specified in the query by the user, that should be applied to this term.  A boost over 1.0 will increase the importance of this term; a boost under 1.0 will decrease its importance.  A boost of 1.0 (the default boost) has no effect.</p></li>
-
-                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#lengthNorm(java.lang.String, int)">lengthNorm(t.field in q)</A> - The factor to apply to account for differing lengths in the fields that are being searched.  Typically longer fields return a smaller value.  This means matches against shorter fields receive a higher score than matches against longer fields.</p></li>
-
-                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#coord(int, int)">coord(q, d)</A> - Score factor based on how many terms the specified document has in common with the query.  Typically, a document that contains more of the query's terms will receive a higher score than another document with fewer query terms.</p></li>
-
-                        <li><p><A HREF="api/org/apache/lucene/search/Similarity.html#queryNorm(float)">queryNorm(sumOfSquaredWeights)</A> - Factor used to make scores between queries comparable
-                            <span class="highlight-for-editing">GSI: might be interesting to have a note on why this formula was chosen.  I have always understood (but not 100% sure)
-                                that it is not a good idea to compare scores across queries or indexes, so any use of normalization may lead to false assumptions.  However, I also seem
-                            to remember some research on using sum of squares as being somewhat suitable for score comparison.  Anyone have any thoughts here?</span></p></li>
-                    </ol>
-                    Note, the above definitions are summaries of the javadocs which can be accessed by clicking the links in the formula and are merely provided
-                    for context and are not authoratitive.
+                This scoring formula is described in the
+                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> class.  Please take the time to study this formula, as it contains much of the information about how the
+                    basics of Lucene scoring work, especially the
+                    <a href="api/org/apache/lucene/search/TermScorer.html">TermScorer</a>.
                 </p>
                             </blockquote>
       </td></tr>
@@ -295,7 +284,7 @@ limitations under the License.
                     These implementations can be combined in a wide variety of ways to provide complex querying
                     capabilities along with
                     information about where matches took place in the document collection. The <a href="#Query Classes">Query</a>
-                    section below 
+                    section below
                     highlights some of the more important Query classes.  For information on the other ones, see the
                     <a href="api/org/apache/lucene/search/package-summary.html">package summary</a>.  For details on implementing
                     your own Query class, see <a href="#Changing your Scoring -- Expert Level">Changing your Scoring --

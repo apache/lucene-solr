@@ -76,9 +76,9 @@ API Changes
     SingleInstanceLockFactory (ie, in memory locking) locking with an
     FSDirectory.  Note that now you must call setDisableLocks before
     the instantiation a FSDirectory if you wish to disable locking
-    for that Directory. 
+    for that Directory.
     (Michael McCandless, Jeff Patterson via Yonik Seeley)
- 
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
@@ -127,7 +127,7 @@ Bug fixes
     has no value.
     (Oliver Hutchison via Chris Hostetter)
 
-    
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
@@ -164,7 +164,8 @@ Documentation
 
   1. Added style sheet to xdocs named lucene.css and included in the Anakia VSL descriptor.  (Grant Ingersoll)
 
-  2. Added scoring.xml document into xdocs.(Grant Ingersoll and Steve Rowe.  Updates from: Michael McCandless)
+  2. Added scoring.xml document into xdocs.  Updated Similarity.java scoring formula.(Grant Ingersoll and Steve Rowe.  Updates from: Michael McCandless, Doron Cohen, Chris Hostetter, Doug Cutting).  Issue 664.
+
 
 Release 2.0.0 2006-05-26
 
