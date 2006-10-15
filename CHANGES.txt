@@ -114,7 +114,7 @@ Bug fixes
     boosts of zero don't confuse the BooleanWeight explain method.
     (Chris Hostetter)
 
-11. LUCENE-593: Fixed inner Iterator
+11. LUCENE-593: Fixed LuceneDictionary's inner Iterator
     (Kåre Fiedler Christiansen via Otis Gospodnetic)
 
 12. LUCENE-641: fixed an off-by-one bug with IndexWriter.setMaxFieldLength()
