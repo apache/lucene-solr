@@ -549,7 +549,7 @@ public abstract class IndexReader {
   protected abstract void doDelete(int docNum) throws IOException;
 
 
-  /** Deletes all documents containing <code>term</code>.
+  /** Deletes all documents that have a given <code>term</code> indexed.
    * This is useful if one uses a document field to hold a unique ID string for
    * the document.  Then to delete such a document, one merely constructs a
    * term with the appropriate field and the unique ID string as its text and
