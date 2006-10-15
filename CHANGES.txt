@@ -127,6 +127,8 @@ Bug fixes
     has no value.
     (Oliver Hutchison via Chris Hostetter)
 
+15. LUCENE-683: Fixed data corruption when reading lazy loaded fields.
+    (Yonik Seeley)
 
 Optimizations
 

@@ -39,12 +39,12 @@ import org.apache.lucene.store.IndexInput;
  * @version $Id$
  */
 final class FieldsReader {
-  private FieldInfos fieldInfos;
-  private IndexInput fieldsStream;
-  private IndexInput indexStream;
+  private final FieldInfos fieldInfos;
+  private final IndexInput fieldsStream;
+  private final IndexInput indexStream;
   private int size;
 
-  private static ThreadLocal fieldsStreamTL = new ThreadLocal();
+  private ThreadLocal fieldsStreamTL = new ThreadLocal();
 
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
     fieldInfos = fn;
