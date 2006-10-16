@@ -33,6 +33,10 @@ New features
 
  3. LUCENE-676: Move Solr's PrefixFilter to Lucene core. (Yura Smolsky, Yonik Seeley)
 
+ 4. LUCENE-678: Added NativeFSLockFactory, which implements locking
+    using OS native locking (via java.nio.*).  (Michael McCandless via Yonik Seeley)
+
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow

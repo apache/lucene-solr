@@ -40,6 +40,13 @@ public abstract class Lock {
    */
   public abstract boolean obtain() throws IOException;
 
+  /**
+   * If a lock obtain called, this failureReason may be set
+   * with the "root cause" Exception as to why the lock was
+   * not obtained.
+   */
+  protected Throwable failureReason;
+
   /** Attempts to obtain an exclusive lock within amount
    *  of time given. Currently polls once per second until
    *  lockWaitTimeout is passed.
@@ -48,12 +55,21 @@ public abstract class Lock {
    * @throws IOException if lock wait times out or obtain() throws an IOException
    */
   public boolean obtain(long lockWaitTimeout) throws IOException {
+    failureReason = null;
     boolean locked = obtain();
     int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
     int sleepCount = 0;
     while (!locked) {
       if (sleepCount++ == maxSleepCount) {
-        throw new IOException("Lock obtain timed out: " + this.toString());
+        String reason = "Lock obtain timed out: " + this.toString();
+        if (failureReason != null) {
+          reason += ": " + failureReason;
+        }
+        IOException e = new IOException(reason);
+        if (failureReason != null) {
+          e.initCause(failureReason);
+        }
+        throw e;
       }
       try {
         Thread.sleep(LOCK_POLL_INTERVAL);

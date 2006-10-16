@@ -55,7 +55,7 @@ final class FieldsReader {
   }
 
   /**
-   * Cloeses the underlying {@link org.apache.lucene.store.IndexInput} streams, including any ones associated with a
+   * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams, including any ones associated with a
    * lazy implementation of a Field.  This means that the Fields values will not be accessible.
    *
    * @throws IOException

@@ -228,8 +228,8 @@ public class FSDirectory extends Directory {
 
     // Set up lockFactory with cascaded defaults: if an instance was passed in,
     // use that; else if locks are disabled, use NoLockFactory; else if the
-    // system property org.apache.lucene.lockClass is set, instantiate that;
-    // else, use SimpleFSLockFactory:
+    // system property org.apache.lucene.store.FSDirectoryLockFactoryClass is set,
+    // instantiate that; else, use SimpleFSLockFactory:
 
     if (lockFactory == null) {
 

@@ -80,17 +80,19 @@ public class SimpleFSLockFactory extends LockFactory {
   }
 
   public void clearAllLocks() throws IOException {
-    String[] files = lockDir.list();
-    if (files == null)
-      throw new IOException("Cannot read lock directory " +
-                            lockDir.getAbsolutePath());
-    String prefix = lockPrefix + "-";
-    for (int i = 0; i < files.length; i++) {
-      if (!files[i].startsWith(prefix))
-        continue;
-      File lockFile = new File(lockDir, files[i]);
-      if (!lockFile.delete())
-        throw new IOException("Cannot delete " + lockFile);
+    if (lockDir.exists()) {
+        String[] files = lockDir.list();
+        if (files == null)
+          throw new IOException("Cannot read lock directory " +
+                                lockDir.getAbsolutePath());
+        String prefix = lockPrefix + "-";
+        for (int i = 0; i < files.length; i++) {
+          if (!files[i].startsWith(prefix))
+            continue;
+          File lockFile = new File(lockDir, files[i]);
+          if (!lockFile.delete())
+            throw new IOException("Cannot delete " + lockFile);
+        }
     }
   }
 };

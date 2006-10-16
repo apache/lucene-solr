@@ -130,7 +130,8 @@ public class TestLockFactory extends TestCase {
         IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
 
         assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
-                   SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+                   SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()) ||
+                   NativeFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
 
         IndexWriter writer2 = null;
 
@@ -157,7 +158,10 @@ public class TestLockFactory extends TestCase {
         IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
 
         assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
-                   SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+                   SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()) ||
+                   NativeFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+
+        writer.close();
 
         // Create a 2nd IndexWriter.  This should not fail:
         IndexWriter writer2 = null;
@@ -218,10 +222,6 @@ public class TestLockFactory extends TestCase {
             fail("Should not have hit an IOException with locking disabled");
         }
 
-        // Put back to the correct default for subsequent tests:
-        System.setProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass",
-                           "org.apache.lucene.store.SimpleFSLockFactory");
-
         FSDirectory.setDisableLocks(false);
         writer.close();
         if (writer2 != null) {
@@ -266,9 +266,19 @@ public class TestLockFactory extends TestCase {
     // IndexWriters over & over in 2 threads and making sure
     // no unexpected exceptions are raised:
     public void testStressLocks() throws IOException {
+      _testStressLocks(null, "index.TestLockFactory6");
+    }
 
-        String indexDirName = "index.TestLockFactory6";
-        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, true);
+    // Verify: do stress test, by opening IndexReaders and
+    // IndexWriters over & over in 2 threads and making sure
+    // no unexpected exceptions are raised, but use
+    // NativeFSLockFactory:
+    public void testStressLocksNativeFSLockFactory() throws IOException {
+      _testStressLocks(NativeFSLockFactory.getLockFactory(), "index.TestLockFactory7");
+    }
+
+    public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws IOException {
+        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, true, lockFactory);
         // fs1.setLockFactory(NoLockFactory.getNoLockFactory());
 
         // First create a 1 doc index:
@@ -293,6 +303,31 @@ public class TestLockFactory extends TestCase {
 
         // Cleanup
         rmDir(indexDirName);
+    }
+
+    // Verify: NativeFSLockFactory works correctly
+    public void testNativeFSLockFactory() throws IOException {
+
+      // Make sure we get identical instances:
+      NativeFSLockFactory f = NativeFSLockFactory.getLockFactory();
+      NativeFSLockFactory f2 = NativeFSLockFactory.getLockFactory();
+      assertTrue("got different NativeFSLockFactory instances for same directory",
+                 f == f2);
+
+      // Make sure we get identical locks:
+      f.setLockPrefix("test");
+      Lock l = f.makeLock("commit");
+      Lock l2 = f.makeLock("commit");
+      assertTrue("got different Lock instances for same lock name",
+                 l == l2);
+
+      assertTrue("failed to obtain lock", l.obtain());
+      assertTrue("succeeded in obtaining lock twice", !l.obtain());
+      l.release();
+
+      // Make sure we can obtain it again:
+      assertTrue("failed to obtain lock", l.obtain());
+      l.release();
     }
 
     private class WriterThread extends Thread { 
