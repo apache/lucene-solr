@@ -32,6 +32,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Tests QueryParser.
@@ -95,6 +97,33 @@ public class TestMultiFieldQueryParser extends TestCase {
 
   }
   
+  public void testBoostsSimple() throws Exception {
+      Map boosts = new HashMap();
+      boosts.put("b", new Float(5));
+      boosts.put("t", new Float(10));
+      String[] fields = {"b", "t"};
+      MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer(), boosts);
+      
+      
+      //Check for simple
+      Query q = mfqp.parse("one");
+      assertEquals("b:one^5.0 t:one^10.0", q.toString());
+      
+      //Check for AND
+      q = mfqp.parse("one AND two");
+      assertEquals("+(b:one^5.0 t:one^10.0) +(b:two^5.0 t:two^10.0)", q.toString());
+      
+      //Check for OR
+      q = mfqp.parse("one OR two");
+      assertEquals("(b:one^5.0 t:one^10.0) (b:two^5.0 t:two^10.0)", q.toString());
+      
+      //Check for AND and a field
+      q = mfqp.parse("one AND two AND foo:test");
+      assertEquals("+(b:one^5.0 t:one^10.0) +(b:two^5.0 t:two^10.0) +foo:test", q.toString());
+      
+      q = mfqp.parse("one^3 AND two^4");
+      assertEquals("+((b:one^5.0 t:one^10.0)^3.0) +((b:two^5.0 t:two^10.0)^4.0)", q.toString());
+  }
 
   public void testStaticMethod1() throws ParseException {
     String[] fields = {"b", "t"};

@@ -24,6 +24,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 
 import java.util.Vector;
+import java.util.Map;
 
 /**
  * A QueryParser which constructs queries to search multiple fields.
@@ -35,7 +36,40 @@ public class MultiFieldQueryParser extends QueryParser
 {
   
   private String[] fields;
+  private Map      boosts;
 
+  /**
+   * Creates a MultiFieldQueryParser. 
+   * Allows passing of a map with term to Boost, and the boost to apply to each term.
+   *
+   * <p>It will, when parse(String query)
+   * is called, construct a query like this (assuming the query consists of
+   * two terms and you specify the two fields <code>title</code> and <code>body</code>):</p>
+   * 
+   * <code>
+   * (title:term1 body:term1) (title:term2 body:term2)
+   * </code>
+   *
+   * <p>When setDefaultOperator(AND_OPERATOR) is set, the result will be:</p>
+   *  
+   * <code>
+   * +(title:term1 body:term1) +(title:term2 body:term2)
+   * </code>
+   * 
+   * <p>When you pass a boost (title=>5 body=>10) you can get </p>
+   * 
+   * <code>
+   * +(title:term1^5.0 body:term1^10.0) +(title:term2^5.0 body:term2^10.0)
+   * </code>
+   *
+   * <p>In other words, all the query's terms must appear, but it doesn't matter in
+   * what fields they appear.</p>
+   */
+  public MultiFieldQueryParser(String[] fields, Analyzer analyzer, Map boosts) {
+    this(fields,analyzer);
+    this.boosts = boosts;
+  }
+  
   /**
    * Creates a MultiFieldQueryParser.
    *
@@ -67,6 +101,14 @@ public class MultiFieldQueryParser extends QueryParser
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText);
         if (q != null) {
+          //If the user passes a map of boosts
+          if (boosts != null) {
+            //Get the boost from the map and apply them
+            Float boost = (Float)boosts.get(fields[i]);
+            if (boost != null) {
+              q.setBoost(boost.floatValue());
+            }
+          }
           if (q instanceof PhraseQuery) {
             ((PhraseQuery) q).setSlop(slop);
           }

@@ -36,6 +36,8 @@ New features
  4. LUCENE-678: Added NativeFSLockFactory, which implements locking
     using OS native locking (via java.nio.*).  (Michael McCandless via Yonik Seeley)
 
+ 5. LUCENE-544: Added the ability to specify different boosts for different
+    fields when using MultiFieldQueryParser (Matt Ericson via Otis Gospodnetic)
 
 API Changes
 
