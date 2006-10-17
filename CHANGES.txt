@@ -163,6 +163,10 @@ Optimizations
   7. Lazy loaded fields unnecessarily retained an extra copy of loaded
      String data.  (Yonik Seeley)
 
+  8. LUCENE-443: ConjunctionScorer performance increase.  Speed up
+     any BooleanQuery with more than one mandatory clause.
+     (Abdul Chaudhry, Paul Elschot via Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
 
