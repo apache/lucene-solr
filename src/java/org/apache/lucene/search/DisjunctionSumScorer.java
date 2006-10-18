@@ -20,10 +20,11 @@ import java.util.List;
 import java.util.Iterator;
 import java.io.IOException;
 
-import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ScorerDocQueue;
 
-/** A Scorer for OR like queries, counterpart of Lucene's <code>ConjunctionScorer</code>.
+/** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#skipTo(int)} and uses skipTo() on the given Scorers. 
+ * @todo Implement score(HitCollector, int).
  */
 class DisjunctionSumScorer extends Scorer {
   /** The number of subscorers. */ 
@@ -35,19 +36,20 @@ class DisjunctionSumScorer extends Scorer {
   /** The minimum number of scorers that should match. */
   private final int minimumNrMatchers;
   
-  /** The scorerQueue contains all subscorers ordered by their current doc(),
+  /** The scorerDocQueue contains all subscorers ordered by their current doc(),
    * with the minimum at the top.
-   * <br>The scorerQueue is initialized the first time next() or skipTo() is called.
-   * <br>An exhausted scorer is immediately removed from the scorerQueue.
+   * <br>The scorerDocQueue is initialized the first time next() or skipTo() is called.
+   * <br>An exhausted scorer is immediately removed from the scorerDocQueue.
    * <br>If less than the minimumNrMatchers scorers
-   * remain in the scorerQueue next() and skipTo() return false.
+   * remain in the scorerDocQueue next() and skipTo() return false.
    * <p>
    * After each to call to next() or skipTo()
    * <code>currentSumScore</code> is the total score of the current matching doc,
    * <code>nrMatchers</code> is the number of matching scorers,
    * and all scorers are after the matching doc, or are exhausted.
    */
-  private ScorerQueue scorerQueue = null;
+  private ScorerDocQueue scorerDocQueue = null;
+  private int queueSize = -1; // used to avoid size() method calls on scorerDocQueue
   
   /** The document number of the current match. */
   private int currentDoc = -1;
@@ -91,47 +93,65 @@ class DisjunctionSumScorer extends Scorer {
   }
 
   /** Called the first time next() or skipTo() is called to
-   * initialize <code>scorerQueue</code>.
+   * initialize <code>scorerDocQueue</code>.
    */
-  private void initScorerQueue() throws IOException {
+  private void initScorerDocQueue() throws IOException {
     Iterator si = subScorers.iterator();
-    scorerQueue = new ScorerQueue(nrScorers);
+    scorerDocQueue = new ScorerDocQueue(nrScorers);
+    queueSize = 0;
     while (si.hasNext()) {
       Scorer se = (Scorer) si.next();
-      if (se.next()) { // doc() method will be used in scorerQueue.
-        scorerQueue.insert(se);
+      if (se.next()) { // doc() method will be used in scorerDocQueue.
+        if (scorerDocQueue.insert(se)) {
+          queueSize++;
+        }
       }
     }
   }
 
-  /** A <code>PriorityQueue</code> that orders by {@link Scorer#doc()}. */
-  private class ScorerQueue extends PriorityQueue {
-    ScorerQueue(int size) {
-      initialize(size);
-    }
-
-    protected boolean lessThan(Object o1, Object o2) {
-      return ((Scorer)o1).doc() < ((Scorer)o2).doc();
+  /** Scores and collects all matching documents.
+   * @param hc The collector to which all matching documents are passed through
+   * {@link HitCollector#collect(int, float)}.
+   * <br>When this method is used the {@link #explain(int)} method should not be used.
+   */
+  public void score(HitCollector hc) throws IOException {
+    while (next()) {
+      hc.collect(currentDoc, currentScore);
     }
   }
-  
+
+  /** Expert: Collects matching documents in a range.  Hook for optimization.
+   * Note that {@link #next()} must be called once before this method is called
+   * for the first time.
+   * @param hc The collector to which all matching documents are passed through
+   * {@link HitCollector#collect(int, float)}.
+   * @param max Do not score documents past this.
+   * @return true if more matching documents may remain.
+   */
+  protected boolean score(HitCollector hc, int max) throws IOException {
+    while (currentDoc < max) {
+      hc.collect(currentDoc, currentScore);
+      if (!next()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   public boolean next() throws IOException {
-    if (scorerQueue == null) {
-      initScorerQueue();
+    if (scorerDocQueue == null) {
+      initScorerDocQueue();
     }
-    if (scorerQueue.size() < minimumNrMatchers) {
-      return false;
-    } else {
-      return advanceAfterCurrent();
-    }
+    return (scorerDocQueue.size() >= minimumNrMatchers)
+          && advanceAfterCurrent();
   }
 
 
   /** Advance all subscorers after the current document determined by the
-   * top of the <code>scorerQueue</code>.
+   * top of the <code>scorerDocQueue</code>.
    * Repeat until at least the minimum number of subscorers match on the same
    * document and all subscorers are after that document or are exhausted.
-   * <br>On entry the <code>scorerQueue</code> has at least <code>minimumNrMatchers</code>
+   * <br>On entry the <code>scorerDocQueue</code> has at least <code>minimumNrMatchers</code>
    * available. At least the scorer with the minimum document number will be advanced.
    * @return true iff there is a match.
    * <br>In case there is a match, </code>currentDoc</code>, </code>currentSumScore</code>,
@@ -140,39 +160,32 @@ class DisjunctionSumScorer extends Scorer {
    * @todo Investigate whether it is possible to use skipTo() when
    * the minimum number of matchers is bigger than one, ie. try and use the
    * character of ConjunctionScorer for the minimum number of matchers.
+   * Also delay calling score() on the sub scorers until the minimum number of
+   * matchers is reached.
+   * <br>For this, a Scorer array with minimumNrMatchers elements might
+   * hold Scorers at currentDoc that are temporarily popped from scorerQueue.
    */
   protected boolean advanceAfterCurrent() throws IOException {
     do { // repeat until minimum nr of matchers
-      Scorer top = (Scorer) scorerQueue.top();
-      currentDoc = top.doc();
-      currentScore = top.score();
+      currentDoc = scorerDocQueue.topDoc();
+      currentScore = scorerDocQueue.topScore();
       nrMatchers = 1;
       do { // Until all subscorers are after currentDoc
-        if (top.next()) {
-          scorerQueue.adjustTop();
-        } else {
-          scorerQueue.pop();
-          if (scorerQueue.size() < (minimumNrMatchers - nrMatchers)) {
-            // Not enough subscorers left for a match on this document,
-            // and also no more chance of any further match.
-            return false;
-          }
-          if (scorerQueue.size() == 0) {
+        if (! scorerDocQueue.topNextAndAdjustElsePop()) {
+          if (--queueSize == 0) {
             break; // nothing more to advance, check for last match.
           }
         }
-        top = (Scorer) scorerQueue.top();
-        if (top.doc() != currentDoc) {
+        if (scorerDocQueue.topDoc() != currentDoc) {
           break; // All remaining subscorers are after currentDoc.
-        } else {
-          currentScore += top.score();
-          nrMatchers++;
         }
+        currentScore += scorerDocQueue.topScore();
+        nrMatchers++;
       } while (true);
       
       if (nrMatchers >= minimumNrMatchers) {
         return true;
-      } else if (scorerQueue.size() < minimumNrMatchers) {
+      } else if (queueSize < minimumNrMatchers) {
         return false;
       }
     } while (true);
@@ -200,39 +213,49 @@ class DisjunctionSumScorer extends Scorer {
    * @return true iff there is such a match.
    */
   public boolean skipTo(int target) throws IOException {
-    if (scorerQueue == null) {
-      initScorerQueue();
+    if (scorerDocQueue == null) {
+      initScorerDocQueue();
     }
-    if (scorerQueue.size() < minimumNrMatchers) {
+    if (queueSize < minimumNrMatchers) {
       return false;
     }
     if (target <= currentDoc) {
       return true;
     }
     do {
-      Scorer top = (Scorer) scorerQueue.top();
-      if (top.doc() >= target) {
+      if (scorerDocQueue.topDoc() >= target) {
         return advanceAfterCurrent();
-      } else if (top.skipTo(target)) {
-        scorerQueue.adjustTop();
-      } else {
-        scorerQueue.pop();
-        if (scorerQueue.size() < minimumNrMatchers) {
+      } else if (! scorerDocQueue.topSkipToAndAdjustElsePop(target)) {
+        if (--queueSize < minimumNrMatchers) {
           return false;
         }
       }
     } while (true);
   }
 
- /** Gives and explanation for the score of a given document.
-  * @todo Show the resulting score. See BooleanScorer.explain() on how to do this.
-  */
+  /** @return An explanation for the score of a given document. */
   public Explanation explain(int doc) throws IOException {
     Explanation res = new Explanation();
-    res.setDescription("At least " + minimumNrMatchers + " of");
     Iterator ssi = subScorers.iterator();
+    float sumScore = 0.0f;
+    int nrMatches = 0;
     while (ssi.hasNext()) {
-      res.addDetail( ((Scorer) ssi.next()).explain(doc));
+      Explanation es = ((Scorer) ssi.next()).explain(doc);
+      if (es.getValue() > 0.0f) { // indicates match
+        sumScore += es.getValue();
+        nrMatches++;
+      }
+      res.addDetail(es);
+    }
+    if (nrMatchers >= minimumNrMatchers) {
+      res.setValue(sumScore);
+      res.setDescription("sum over at least " + minimumNrMatchers
+                         + " of " + subScorers.size() + ":");
+    } else {
+      res.setValue(0.0f);
+      res.setDescription(nrMatches + " match(es) but at least "
+                         + minimumNrMatchers + " of "
+                         + subScorers.size() + " needed");
     }
     return res;
   }

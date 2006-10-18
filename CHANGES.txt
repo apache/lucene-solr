@@ -169,6 +169,9 @@ Optimizations
      any BooleanQuery with more than one mandatory clause.
      (Abdul Chaudhry, Paul Elschot via Yonik Seeley)
 
+  9. LUCENE-365: DisjunctionSumScorer performance increase of ~30%. Speeds up
+     queries with optional clauses. (Paul Elschot via Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
 
