@@ -59,6 +59,9 @@ New Features
     In the process, an init(NamedList) method was added to QueryResponseWriter
     which works the same way as SolrRequestHandler.
     (Bertrand Delacretaz / SOLR-49 / hossman)
+28. json.wrf parameter adds a wrapper-function around the JSON response,
+    useful in AJAX with dynamic script tags for specifying a JavaScript
+    callback function. (Bertrand Delacretaz via yonik, SOLR-56)
     
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache

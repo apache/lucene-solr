@@ -41,17 +41,20 @@ class JSONWriter extends TextResponseWriter {
   private Calendar cal;
 
   private String namedListStyle;
+  private String wrapperFunction;
 
   private static final String JSON_NL_STYLE="json.nl";
   private static final String JSON_NL_MAP="map";
   private static final String JSON_NL_ARROFARR="arrarr";
   private static final String JSON_NL_ARROFMAP="arrmap";
+  private static final String JSON_WRAPPER_FUNCTION="json.wrf";
 
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
     namedListStyle = req.getParam(JSON_NL_STYLE);
     namedListStyle = namedListStyle==null ? JSON_NL_MAP : namedListStyle.intern();
+    wrapperFunction = req.getParam(JSON_WRAPPER_FUNCTION);
   }
 
   public void writeResponse() throws IOException {
@@ -65,7 +68,13 @@ class JSONWriter extends TextResponseWriter {
     if (nl.size()>1 && nl.getVal(1) instanceof DocList && nl.getName(1)==null) {
       nl.setName(1,"response");
     }
+    if(wrapperFunction!=null) {
+        writer.write(wrapperFunction + "(");
+    }
     writeNamedList(null, nl);
+    if(wrapperFunction!=null) {
+        writer.write(")");
+    }
   }
 
   protected void writeKey(String fname, boolean needsEscaping) throws IOException {
