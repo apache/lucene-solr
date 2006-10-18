@@ -299,7 +299,16 @@
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
 
-
+<!--
+    XSLT response writer (SOLR-49)
+    Changes to XSLT transforms are taken into account every xsltCacheLifetimeSeconds at most.
+   -->
+  <queryResponseWriter
+    name="xslt"
+    class="org.apache.solr.request.XSLTResponseWriter"
+   >
+     <int name="xsltCacheLifetimeSeconds">5</int>
+   </queryResponseWriter> 
     
   <!-- config for the admin interface --> 
   <admin>

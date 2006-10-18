@@ -1,4 +1,6 @@
-/**
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- 
  * Copyright 2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,33 +14,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ -->
 
-package org.apache.solr.request;
+<!-- 
 
-import java.io.Writer;
-import java.io.IOException;
 
-import org.apache.solr.util.NamedList;
+Simple Dummy transform to demonstrate XSLTResponseWriter
 
-/**
- * @author yonik
- * @version $Id$
- */
 
-public class XMLResponseWriter implements QueryResponseWriter {
-  public void init(NamedList n) {
-    /* NOOP */
-  }
+ -->
+<xsl:stylesheet version='1.0'
+    xmlns:xsl='http://www.w3.org/1999/XSL/Transform'
+>
 
+  <xsl:output media-type="text/plain"/>
   
-  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    XMLWriter.writeResponse(writer,req,rsp);
-  }
+  <xsl:variable name="dumb" select="concat('DUM','MY')"/>
+  
+  <xsl:template match='/'>
+    <xsl:value-of select="$dumb"/>
+  </xsl:template>
 
-  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return CONTENT_TYPE_XML_UTF8;
-  }
-}
-
-
+</xsl:stylesheet>

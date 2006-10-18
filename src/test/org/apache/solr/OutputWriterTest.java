@@ -22,6 +22,7 @@ import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.NamedList;
 import org.apache.solr.util.TestHarness;
 
 /** Tests the ability to configure multiple query output writers, and select those
@@ -33,7 +34,6 @@ public class OutputWriterTest extends AbstractSolrTestCase {
     
     /** The XML string that's output for testing purposes. */
     public static final String USELESS_OUTPUT = "useless output";
-    
     
     public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; }
     
@@ -54,6 +54,14 @@ public class OutputWriterTest extends AbstractSolrTestCase {
         assertEquals(USELESS_OUTPUT, out);
     }
     
+    public void testTrivialXsltWriter() throws Exception {
+        lrf.args.put("wt", "xslt");
+        lrf.args.put("tr", "dummy.xsl");
+        String out = h.query(req("foo"));
+        System.out.println(out);
+        assertTrue(out.contains("DUMMY"));
+    }
+    
     
     ////////////////////////////////////////////////////////////////////////////
     /** An output writer that doesn't do anything useful. */
@@ -62,11 +70,10 @@ public class OutputWriterTest extends AbstractSolrTestCase {
         
         public UselessOutputWriter() {}
 
-
+        public void init(NamedList n) {}
         
         public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
         throws IOException {
-            
             writer.write(USELESS_OUTPUT);
         }
 

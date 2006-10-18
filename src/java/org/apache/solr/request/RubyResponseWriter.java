@@ -3,10 +3,16 @@ package org.apache.solr.request;
 import java.io.Writer;
 import java.io.IOException;
 
+import org.apache.solr.util.NamedList;
+
 public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
 
-  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  public void init(NamedList n) {
+    /* NOOP */
+  }
+  
+ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     RubyWriter w = new RubyWriter(writer, req, rsp);
     w.writeResponse();
   }

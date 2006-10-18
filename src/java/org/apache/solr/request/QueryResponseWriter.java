@@ -19,6 +19,8 @@ package org.apache.solr.request;
 import java.io.Writer;
 import java.io.IOException;
 
+import org.apache.solr.util.NamedList;
+
 /**
  * Implementations of <code>QueryResponseWriter</code> are used to format responses to query requests.
  *
@@ -70,5 +72,12 @@ public interface QueryResponseWriter {
    * @return a Content-Type string, which may not be null.
    */
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response);
+  
+  /** <code>init</code> will be called just once, immediately after creation.
+   * <p>The args are user-level initialization parameters that
+   * may be specified when declaring a response writer in
+   * solrconfig.xml
+   */
+  public void init(NamedList args);
 }
 

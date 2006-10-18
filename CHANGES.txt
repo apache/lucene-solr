@@ -55,7 +55,11 @@ New Features
     invariant params that can not overridden in the query. (hossman, SOLR-46)
 26. Default operator for query parsing can now be specified with q.op=AND|OR
     from the client request, overriding the schema value. (ehatcher)
-
+27. New XSLTResponseWriter does server side XSLT processing of XML Response.
+    In the process, an init(NamedList) method was added to QueryResponseWriter
+    which works the same way as SolrRequestHandler.
+    (Bertrand Delacretaz / SOLR-49 / hossman)
+    
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
  2. force read of document stored fields in QuerySenderListener

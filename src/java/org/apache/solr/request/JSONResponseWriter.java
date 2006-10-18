@@ -20,6 +20,8 @@ import java.util.*;
 public class JSONResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_JSON_UTF8="text/x-json; charset=UTF-8";
 
+  public void init(NamedList n) {
+  }
 
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     JSONWriter w = new JSONWriter(writer, req, rsp);

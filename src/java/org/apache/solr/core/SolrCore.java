@@ -966,6 +966,7 @@ public final class SolrCore {
         log.info("adding queryResponseWriter "+name+"="+className);
           
         QueryResponseWriter writer = (QueryResponseWriter) Config.newInstance(className);
+        writer.init(DOMUtil.childNodesToNamedList(elm));
         responseWriters.put(name, writer);
       } catch (Exception ex) {
         SolrException.logOnce(log,null, ex);
