@@ -21,7 +21,7 @@ import java.nio.channels.FileLock;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.io.IOException;
-import java.util.Hashtable;
+import java.util.HashSet;
 import java.util.Random;
 
 /**
@@ -37,22 +37,23 @@ import java.util.Random;
  * {@link LockFactory} implementation.
  *
  * <p>The advantage of this lock factory over
- * SimpleFSLockFactory is that the locks should be
- * "correct", whereas SimpleFSLockFactory uses
- * java.io.File.createNewFile which has warnings about not
+ * {@link SimpleFSLockFactory} is that the locks should be
+ * "correct", whereas {@link SimpleFSLockFactory} uses
+ * java.io.File.createNewFile which
+ * <a target="_top" href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/File.html#createNewFile()">has warnings</a> about not
  * using it for locking.  Furthermore, if the JVM crashes,
  * the OS will free any held locks, whereas
- * SimpleFSLockFactory will keep the locks held, requiring
+ * {@link SimpleFSLockFactory} will keep the locks held, requiring
  * manual removal before re-running Lucene.</p>
  *
- * <p>Note that, unlike SimpleFSLockFactory, the existence of
+ * <p>Note that, unlike {@link SimpleFSLockFactory}, the existence of
  * leftover lock files in the filesystem on exiting the JVM
  * is fine because the OS will free the locks held against
  * these files even though the files still remain.</p>
  *
  * <p>Native locks file names have the substring "-n-", which
  * you can use to differentiate them from lock files created
- * by SimpleFSLockFactory.</p>
+ * by {@link SimpleFSLockFactory}.</p>
  *
  * @see LockFactory
  */
@@ -70,35 +71,6 @@ public class NativeFSLockFactory extends LockFactory {
                        System.getProperty("java.io.tmpdir"));
 
   private File lockDir;
-
-  /*
-   * The javadocs for FileChannel state that you should have
-   * a single instance of a FileChannel (per JVM) for all
-   * locking against a given file.  To do this, we ensure
-   * there's a single instance of NativeFSLockFactory per
-   * canonical lock directory, and then we always use a
-   * single lock instance (per lock name) if it's present.
-   */
-  private static Hashtable LOCK_FACTORIES = new Hashtable();
-
-  private Hashtable locks = new Hashtable();
-
-  protected NativeFSLockFactory(File lockDir)
-    throws IOException {
-
-    this.lockDir = lockDir;
-
-    // Ensure that lockDir exists and is a directory.
-    if (!lockDir.exists()) {
-      if (!lockDir.mkdirs())
-        throw new IOException("Cannot create directory: " +
-                              lockDir.getAbsolutePath());
-    } else if (!lockDir.isDirectory()) {
-      throw new IOException("Found regular file where directory expected: " + 
-                            lockDir.getAbsolutePath());
-    }
-    acquireTestLock();
-  }
 
   // Simple test to verify locking system is "working".  On
   // NFS, if it's misconfigured, you can hit long (35
@@ -122,61 +94,58 @@ public class NativeFSLockFactory extends LockFactory {
   }
 
   /**
-   * Returns a NativeFSLockFactory instance, storing lock
+   * Create a NativeFSLockFactory instance, storing lock
    * files into the default LOCK_DIR:
    * <code>org.apache.lucene.lockDir</code> system property,
-   * or (if that is null) then <code>java.io.tmpdir</code>.
+   * or (if that is null) then the
+   * <code>java.io.tmpdir</code> system property.
    */
-  public static NativeFSLockFactory getLockFactory() throws IOException {
-    return getLockFactory(new File(LOCK_DIR));
+  public NativeFSLockFactory() throws IOException {
+    this(new File(LOCK_DIR));
   }
 
   /**
-   * Returns a NativeFSLockFactory instance, storing lock
+   * Create a NativeFSLockFactory instance, storing lock
    * files into the specified lockDirName:
    *
    * @param lockDirName where lock files are created.
    */
-  public static NativeFSLockFactory getLockFactory(String lockDirName) throws IOException {
-    return getLockFactory(new File(lockDirName));
+  public NativeFSLockFactory(String lockDirName) throws IOException {
+    this(new File(lockDirName));
   }
 
   /**
-   * Returns a NativeFSLockFactory instance, storing lock
+   * Create a NativeFSLockFactory instance, storing lock
    * files into the specified lockDir:
    * 
    * @param lockDir where lock files are created.
    */
-  public static NativeFSLockFactory getLockFactory(File lockDir) throws IOException {
-    lockDir = new File(lockDir.getCanonicalPath());
+  public NativeFSLockFactory(File lockDir) throws IOException {
 
-    NativeFSLockFactory f;
+    this.lockDir = lockDir;
 
-    synchronized(LOCK_FACTORIES) {
-      f = (NativeFSLockFactory) LOCK_FACTORIES.get(lockDir);
-      if (f == null) {
-        f = new NativeFSLockFactory(lockDir);
-        LOCK_FACTORIES.put(lockDir, f);
-      }
+    // Ensure that lockDir exists and is a directory.
+    if (!lockDir.exists()) {
+      if (!lockDir.mkdirs())
+        throw new IOException("Cannot create directory: " +
+                              lockDir.getAbsolutePath());
+    } else if (!lockDir.isDirectory()) {
+      throw new IOException("Found regular file where directory expected: " + 
+                            lockDir.getAbsolutePath());
     }
 
-    return f;
+    acquireTestLock();
   }
 
   public synchronized Lock makeLock(String lockName) {
-    Lock l = (Lock) locks.get(lockName);
-    if (l == null) {
-      String fullName;
-      if (lockPrefix.equals("")) {
-        fullName = lockName;
-      } else {
-        fullName = lockPrefix + "-n-" + lockName;
-      }
-
-      l = new NativeFSLock(lockDir, fullName);
-      locks.put(lockName, l);
+    String fullName;
+    if (lockPrefix.equals("")) {
+      fullName = lockName;
+    } else {
+      fullName = lockPrefix + "-n-" + lockName;
     }
-    return l;
+
+    return new NativeFSLock(lockDir, fullName);
   }
 
   public void clearAllLocks() throws IOException {
@@ -209,6 +178,18 @@ class NativeFSLock extends Lock {
   private File path;
   private File lockDir;
 
+  /*
+   * The javadocs for FileChannel state that you should have
+   * a single instance of a FileChannel (per JVM) for all
+   * locking against a given file.  To ensure this, we have
+   * a single (static) HashSet that contains the file paths
+   * of all currently locked locks.  This protects against
+   * possible cases where different Directory instances in
+   * one JVM (each with their own NativeFSLockFactory
+   * instance) have set the same lock dir and lock prefix.
+   */
+  private static HashSet LOCK_HELD = new HashSet();
+
   public NativeFSLock(File lockDir, String lockFileName) {
     this.lockDir = lockDir;
     path = new File(lockDir, lockFileName);
@@ -217,7 +198,7 @@ class NativeFSLock extends Lock {
   public synchronized boolean obtain() throws IOException {
 
     if (isLocked()) {
-      // We are already locked:
+      // Our instance is already locked:
       return false;
     }
 
@@ -231,43 +212,86 @@ class NativeFSLock extends Lock {
                             lockDir.getAbsolutePath());
     }
 
-    f = new RandomAccessFile(path, "rw");
+    String canonicalPath = path.getCanonicalPath();
+
+    boolean markedHeld = false;
+
     try {
-      channel = f.getChannel();
-      try {
-        try {
-          lock = channel.tryLock();
-        } catch (IOException e) {
-          // At least on OS X, we will sometimes get an
-          // intermittant "Permission Denied" IOException,
-          // which seems to simply mean "you failed to get
-          // the lock".  But other IOExceptions could be
-          // "permanent" (eg, locking is not supported via
-          // the filesystem).  So, we record the failure
-          // reason here; the timeout obtain (usually the
-          // one calling us) will use this as "root cause"
-          // if it fails to get the lock.
-          failureReason = e;
+
+      // Make sure nobody else in-process has this lock held
+      // already, and, mark it held if not:
+
+      synchronized(LOCK_HELD) {
+        if (LOCK_HELD.contains(canonicalPath)) {
+          // Someone else in this JVM already has the lock:
+          return false;
+        } else {
+          // This "reserves" the fact that we are the one
+          // thread trying to obtain this lock, so we own
+          // the only instance of a channel against this
+          // file:
+          LOCK_HELD.add(canonicalPath);
+          markedHeld = true;
         }
-      } finally {
-        if (lock == null) {
+      }
+
+      try {
+        f = new RandomAccessFile(path, "rw");
+      } catch (IOException e) {
+        // On Windows, we can get intermittant "Access
+        // Denied" here.  So, we treat this as failure to
+        // acquire the lock, but, store the reason in case
+        // there is in fact a real error case.
+        failureReason = e;
+        f = null;
+      }
+
+      if (f != null) {
+        try {
+          channel = f.getChannel();
           try {
-            channel.close();
+            lock = channel.tryLock();
+          } catch (IOException e) {
+            // At least on OS X, we will sometimes get an
+            // intermittant "Permission Denied" IOException,
+            // which seems to simply mean "you failed to get
+            // the lock".  But other IOExceptions could be
+            // "permanent" (eg, locking is not supported via
+            // the filesystem).  So, we record the failure
+            // reason here; the timeout obtain (usually the
+            // one calling us) will use this as "root cause"
+            // if it fails to get the lock.
+            failureReason = e;
           } finally {
-            channel = null;
+            if (lock == null) {
+              try {
+                channel.close();
+              } finally {
+                channel = null;
+              }
+            }
+          }
+        } finally {
+          if (channel == null) {
+            try {
+              f.close();
+            } finally {
+              f = null;
+            }
           }
         }
       }
+
     } finally {
-      if (channel == null) {
-        try {
-          f.close();
-        } finally {
-          f = null;
+      if (markedHeld && !isLocked()) {
+        synchronized(LOCK_HELD) {
+          if (LOCK_HELD.contains(canonicalPath)) {
+            LOCK_HELD.remove(canonicalPath);
+          }
         }
       }
     }
-    return lock != null;
+    return isLocked();
   }
 
   public synchronized void release() {
@@ -285,6 +309,9 @@ class NativeFSLock extends Lock {
               f.close();
             } finally {
               f = null;
+              synchronized(LOCK_HELD) {
+                LOCK_HELD.remove(path.getCanonicalPath());
+              }
             }
           }
         }

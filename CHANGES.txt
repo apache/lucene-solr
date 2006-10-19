@@ -136,6 +136,10 @@ Bug fixes
 15. LUCENE-683: Fixed data corruption when reading lazy loaded fields.
     (Yonik Seeley)
 
+16. LUCENE-678: Fixed bug in NativeFSLockFactory which caused the same
+    lock to be shared between different directories.
+    (Michael McCandless via Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment

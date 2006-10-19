@@ -161,13 +161,26 @@ public class TestLockFactory extends TestCase {
                    SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()) ||
                    NativeFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
 
-        writer.close();
-
+        // Intentionally do not close the first writer here.
+        // The goal is to "simulate" a crashed writer and
+        // ensure the second writer, with create=true, is
+        // able to remove the lock files.  This works OK
+        // with SimpleFSLockFactory as the locking
+        // implementation.  Note, however, that this test
+        // will not work on WIN32 when we switch to
+        // NativeFSLockFactory as the default locking for
+        // FSDirectory because the second IndexWriter cannot
+        // remove those lock files since they are held open
+        // by the first writer.  This is because leaving the
+        // first IndexWriter open is not really a good way
+        // to simulate a crashed writer.
+        
         // Create a 2nd IndexWriter.  This should not fail:
         IndexWriter writer2 = null;
         try {
             writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
         } catch (IOException e) {
+            e.printStackTrace(System.out);
             fail("Should not have hit an IOException with two IndexWriters with create=true, on default SimpleFSLockFactory");
         }
 
@@ -175,6 +188,7 @@ public class TestLockFactory extends TestCase {
         if (writer2 != null) {
             writer2.close();
         }
+
         // Cleanup
         rmDir(indexDirName);
     }
@@ -274,7 +288,7 @@ public class TestLockFactory extends TestCase {
     // no unexpected exceptions are raised, but use
     // NativeFSLockFactory:
     public void testStressLocksNativeFSLockFactory() throws IOException {
-      _testStressLocks(NativeFSLockFactory.getLockFactory(), "index.TestLockFactory7");
+      _testStressLocks(new NativeFSLockFactory(), "index.TestLockFactory7");
     }
 
     public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws IOException {
@@ -308,26 +322,57 @@ public class TestLockFactory extends TestCase {
     // Verify: NativeFSLockFactory works correctly
     public void testNativeFSLockFactory() throws IOException {
 
-      // Make sure we get identical instances:
-      NativeFSLockFactory f = NativeFSLockFactory.getLockFactory();
-      NativeFSLockFactory f2 = NativeFSLockFactory.getLockFactory();
-      assertTrue("got different NativeFSLockFactory instances for same directory",
-                 f == f2);
+      NativeFSLockFactory f = new NativeFSLockFactory();
 
-      // Make sure we get identical locks:
+      NativeFSLockFactory f2 = new NativeFSLockFactory();
+
       f.setLockPrefix("test");
       Lock l = f.makeLock("commit");
       Lock l2 = f.makeLock("commit");
-      assertTrue("got different Lock instances for same lock name",
-                 l == l2);
 
       assertTrue("failed to obtain lock", l.obtain());
-      assertTrue("succeeded in obtaining lock twice", !l.obtain());
+      assertTrue("succeeded in obtaining lock twice", !l2.obtain());
       l.release();
 
-      // Make sure we can obtain it again:
+      assertTrue("failed to obtain 2nd lock after first one was freed", l2.obtain());
+      l2.release();
+
+      // Make sure we can obtain first one again:
       assertTrue("failed to obtain lock", l.obtain());
       l.release();
+    }
+
+    // Verify: NativeFSLockFactory assigns different lock
+    // prefixes to different directories:
+    public void testNativeFSLockFactoryPrefix() throws IOException {
+
+      // Make sure we get identical instances:
+      Directory dir1 = FSDirectory.getDirectory("TestLockFactory.8", true, new NativeFSLockFactory());
+      Directory dir2 = FSDirectory.getDirectory("TestLockFactory.9", true, new NativeFSLockFactory());
+
+      String prefix1 = dir1.getLockFactory().getLockPrefix();
+      String prefix2 = dir2.getLockFactory().getLockPrefix();
+
+      assertTrue("Native Lock Factories are incorrectly shared: dir1 and dir2 have same lock prefix '" + prefix1 + "'; they should be different",
+                 !prefix1.equals(prefix2));
+      rmDir("TestLockFactory.8");
+      rmDir("TestLockFactory.9");
+    }
+
+    // Verify: default LockFactory assigns different lock prefixes:
+    public void testDefaultFSLockFactoryPrefix() throws IOException {
+
+      // Make sure we get identical instances:
+      Directory dir1 = FSDirectory.getDirectory("TestLockFactory.10", true);
+      Directory dir2 = FSDirectory.getDirectory("TestLockFactory.11", true);
+
+      String prefix1 = dir1.getLockFactory().getLockPrefix();
+      String prefix2 = dir2.getLockFactory().getLockPrefix();
+
+      assertTrue("Default Lock Factories are incorrectly shared: dir1 and dir2 have same lock prefix '" + prefix1 + "'; they should be different",
+                 !prefix1.equals(prefix2));
+      rmDir("TestLockFactory.10");
+      rmDir("TestLockFactory.11");
     }
 
     private class WriterThread extends Thread { 
