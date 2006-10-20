@@ -59,7 +59,7 @@ public class TestThreadSafe extends TestCase {
            IndexReader ir;
            ***/
 
-          switch(rand.nextInt(2)) {
+          switch(rand.nextInt(1)) {
             case 0: loadDoc(ir1); break;
           }
 
