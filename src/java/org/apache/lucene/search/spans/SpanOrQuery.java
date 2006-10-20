@@ -72,13 +72,12 @@ public class SpanOrQuery extends SpanQuery {
   }
   
   public void extractTerms(Set terms) {
-	    Iterator i = clauses.iterator();
-	    while (i.hasNext()) {
-	      SpanQuery clause = (SpanQuery)i.next();
-	      clause.extractTerms(terms);
-	    }
+    Iterator i = clauses.iterator();
+    while (i.hasNext()) {
+      SpanQuery clause = (SpanQuery)i.next();
+      clause.extractTerms(terms);
+    }
   }
-  
 
   public Query rewrite(IndexReader reader) throws IOException {
     SpanOrQuery clone = null;
