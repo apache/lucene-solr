@@ -40,7 +40,14 @@ import org.apache.lucene.store.IndexInput;
  */
 final class FieldsReader {
   private final FieldInfos fieldInfos;
+
+  // The main fieldStream, used only for cloning.
+  private final IndexInput cloneableFieldsStream;
+
+  // This is a clone of cloneableFieldsStream used for reading documents.
+  // It should not be cloned outside of a synchronized context.
   private final IndexInput fieldsStream;
+
   private final IndexInput indexStream;
   private int size;
 
@@ -49,7 +56,8 @@ final class FieldsReader {
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
     fieldInfos = fn;
 
-    fieldsStream = d.openInput(segment + ".fdt");
+    cloneableFieldsStream = d.openInput(segment + ".fdt");
+    fieldsStream = (IndexInput)cloneableFieldsStream.clone();
     indexStream = d.openInput(segment + ".fdx");
     size = (int) (indexStream.length() / 8);
   }
@@ -62,6 +70,7 @@ final class FieldsReader {
    */
   final void close() throws IOException {
     fieldsStream.close();
+    cloneableFieldsStream.close();
     indexStream.close();
     IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
     if (localFieldsStream != null) {
@@ -280,6 +289,15 @@ final class FieldsReader {
       lazy = true;
     }
 
+    private IndexInput getFieldStream() {
+      IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
+      if (localFieldsStream == null) {
+        localFieldsStream = (IndexInput) cloneableFieldsStream.clone();
+        fieldsStreamTL.set(localFieldsStream);
+      }
+      return localFieldsStream;
+    }
+
     /**
      * The value of the field in Binary, or null.  If null, the Reader or
      * String value is used.  Exactly one of stringValue(), readerValue() and
@@ -288,11 +306,7 @@ final class FieldsReader {
     public byte[] binaryValue() {
       if (fieldsData == null) {
         final byte[] b = new byte[toRead];
-        IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
-        if (localFieldsStream == null) {
-          localFieldsStream = (IndexInput) fieldsStream.clone();
-          fieldsStreamTL.set(localFieldsStream);
-        }
+        IndexInput localFieldsStream = getFieldStream();
         //Throw this IO Exception since IndexREader.document does so anyway, so probably not that big of a change for people
         //since they are already handling this exception when getting the document
         try {
@@ -326,11 +340,7 @@ final class FieldsReader {
      */
     public String stringValue() {
       if (fieldsData == null) {
-        IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
-        if (localFieldsStream == null) {
-          localFieldsStream = (IndexInput) fieldsStream.clone();
-          fieldsStreamTL.set(localFieldsStream);
-        }
+        IndexInput localFieldsStream = getFieldStream();
         try {
           localFieldsStream.seek(pointer);
           //read in chars b/c we already know the length we need to read

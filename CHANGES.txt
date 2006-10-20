@@ -140,6 +140,9 @@ Bug fixes
     lock to be shared between different directories.
     (Michael McCandless via Yonik Seeley)
 
+17. LUCENE-690: Fixed thread unsafe use of IndexInput by lazy loaded fields.
+    (Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
