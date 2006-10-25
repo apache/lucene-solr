@@ -176,13 +176,13 @@ extends Query {
   public boolean equals(Object o) {
     if (o instanceof FilteredQuery) {
       FilteredQuery fq = (FilteredQuery) o;
-      return (query.equals(fq.query) && filter.equals(fq.filter));
+      return (query.equals(fq.query) && filter.equals(fq.filter) && getBoost()==fq.getBoost());
     }
     return false;
   }
 
   /** Returns a hash code value for this object. */
   public int hashCode() {
-    return query.hashCode() ^ filter.hashCode();
+    return query.hashCode() ^ filter.hashCode() + Float.floatToRawIntBits(getBoost());
   }
 }
