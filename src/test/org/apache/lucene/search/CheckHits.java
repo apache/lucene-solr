@@ -87,6 +87,8 @@ public class CheckHits {
         }
       });
     TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+
+    QueryUtils.check(query,searcher);
   }
   
   /**
@@ -109,6 +111,10 @@ public class CheckHits {
         Searcher searcher,
         int[] results)
           throws IOException {
+    if (searcher instanceof IndexSearcher) {
+      QueryUtils.check(query,(IndexSearcher)searcher);
+    }
+
     Hits hits = searcher.search(query);
 
     Set correct = new TreeSet();
@@ -122,6 +128,8 @@ public class CheckHits {
     }
 
     TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+
+    QueryUtils.check(query,searcher);
   }
 
   /** Tests that a Hits has an expected order of documents */

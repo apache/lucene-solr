@@ -76,6 +76,7 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "five"));
     Hits hits = searcher.search(query);
     assertEquals(0, hits.length());
+    QueryUtils.check(query,searcher);
   }
 
   public void testBarelyCloseEnough() throws Exception {
@@ -84,6 +85,7 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "five"));
     Hits hits = searcher.search(query);
     assertEquals(1, hits.length());
+    QueryUtils.check(query,searcher);
   }
 
   /**
@@ -95,12 +97,15 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "five"));
     Hits hits = searcher.search(query);
     assertEquals("exact match", 1, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     query = new PhraseQuery();
     query.add(new Term("field", "two"));
     query.add(new Term("field", "one"));
     hits = searcher.search(query);
     assertEquals("reverse not exact", 0, hits.length());
+    QueryUtils.check(query,searcher);
   }
 
   public void testSlop1() throws Exception {
@@ -110,6 +115,8 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "two"));
     Hits hits = searcher.search(query);
     assertEquals("in order", 1, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     // Ensures slop of 1 does not work for phrases out of order;
     // must be at least 2.
@@ -119,6 +126,7 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query);
     assertEquals("reversed, slop not 2 or more", 0, hits.length());
+    QueryUtils.check(query,searcher);
   }
 
   /**
@@ -130,6 +138,8 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "one"));
     Hits hits = searcher.search(query);
     assertEquals("just sloppy enough", 1, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     query = new PhraseQuery();
     query.setSlop(2);
@@ -137,6 +147,8 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query);
     assertEquals("not sloppy enough", 0, hits.length());
+    QueryUtils.check(query,searcher);
+
   }
 
   /**
@@ -150,6 +162,8 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "five"));
     Hits hits = searcher.search(query);
     assertEquals("two total moves", 1, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     query = new PhraseQuery();
     query.setSlop(5); // it takes six moves to match this phrase
@@ -158,10 +172,14 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "one"));
     hits = searcher.search(query);
     assertEquals("slop of 5 not close enough", 0, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     query.setSlop(6);
     hits = searcher.search(query);
     assertEquals("slop of 6 just right", 1, hits.length());
+    QueryUtils.check(query,searcher);
+
   }
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
@@ -181,6 +199,8 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field","words"));
     Hits hits = searcher.search(query);
     assertEquals(1, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     // currently StopAnalyzer does not leave "holes", so this matches.
     query = new PhraseQuery();
@@ -188,6 +208,8 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("field", "here"));
     hits = searcher.search(query);
     assertEquals(1, hits.length());
+    QueryUtils.check(query,searcher);
+
 
     searcher.close();
   }
@@ -215,6 +237,8 @@ public class TestPhraseQuery extends TestCase {
     phraseQuery.add(new Term("source", "info"));
     Hits hits = searcher.search(phraseQuery);
     assertEquals(2, hits.length());
+    QueryUtils.check(phraseQuery,searcher);
+
     
     TermQuery termQuery = new TermQuery(new Term("contents","foobar"));
     BooleanQuery booleanQuery = new BooleanQuery();
@@ -222,6 +246,8 @@ public class TestPhraseQuery extends TestCase {
     booleanQuery.add(phraseQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery);
     assertEquals(1, hits.length());
+    QueryUtils.check(termQuery,searcher);
+
     
     searcher.close();
     
@@ -252,6 +278,7 @@ public class TestPhraseQuery extends TestCase {
     assertEquals(3, hits.length());
     hits = searcher.search(phraseQuery);
     assertEquals(2, hits.length());
+
     
     booleanQuery = new BooleanQuery();
     booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
@@ -264,6 +291,8 @@ public class TestPhraseQuery extends TestCase {
     booleanQuery.add(termQuery, BooleanClause.Occur.MUST);
     hits = searcher.search(booleanQuery);
     assertEquals(2, hits.length());
+    QueryUtils.check(booleanQuery,searcher);
+
     
     searcher.close();
     directory.close();
@@ -303,6 +332,7 @@ public class TestPhraseQuery extends TestCase {
     assertEquals(1, hits.id(1));
     assertEquals(0.31, hits.score(2), 0.01);
     assertEquals(2, hits.id(2));
+    QueryUtils.check(query,searcher);        
   }
 
   public void testWrappedPhrase() throws IOException {
@@ -314,6 +344,8 @@ public class TestPhraseQuery extends TestCase {
 
     Hits hits = searcher.search(query);
     assertEquals(0, hits.length());
+    QueryUtils.check(query,searcher);
+
   }
 
 }

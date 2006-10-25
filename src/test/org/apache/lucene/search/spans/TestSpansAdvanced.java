@@ -124,6 +124,8 @@ public class TestSpansAdvanced extends TestCase {
      */
     protected static void assertHits(Searcher s, Query query, final String description, final String[] expectedIds,
             final float[] expectedScores) throws IOException {
+        QueryUtils.check(query,s);
+
         final float tolerance = 1e-5f;
 
         // Hits hits = searcher.search(query);

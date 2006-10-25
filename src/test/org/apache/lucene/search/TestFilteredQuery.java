@@ -95,6 +95,7 @@ extends TestCase {
     Hits hits = searcher.search (filteredquery);
     assertEquals (1, hits.length());
     assertEquals (1, hits.id(0));
+    QueryUtils.check(filteredquery,searcher);
 
     hits = searcher.search (filteredquery, new Sort("sorter"));
     assertEquals (1, hits.length());
@@ -103,15 +104,18 @@ extends TestCase {
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "one")), filter);
     hits = searcher.search (filteredquery);
     assertEquals (2, hits.length());
+    QueryUtils.check(filteredquery,searcher);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "x")), filter);
     hits = searcher.search (filteredquery);
     assertEquals (1, hits.length());
     assertEquals (3, hits.id(0));
+    QueryUtils.check(filteredquery,searcher);
 
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "y")), filter);
     hits = searcher.search (filteredquery);
     assertEquals (0, hits.length());
+    QueryUtils.check(filteredquery,searcher);    
   }
 
   /**
@@ -124,6 +128,7 @@ extends TestCase {
     Query filteredquery = new FilteredQuery(rq, filter);
     Hits hits = searcher.search(filteredquery);
     assertEquals(2, hits.length());
+    QueryUtils.check(filteredquery,searcher);
   }
 
   public void testBoolean() throws Exception {
@@ -136,6 +141,7 @@ extends TestCase {
     bq.add(query, BooleanClause.Occur.MUST);
     Hits hits = searcher.search(bq);
     assertEquals(0, hits.length());
+    QueryUtils.check(query,searcher);    
   }
 }
 

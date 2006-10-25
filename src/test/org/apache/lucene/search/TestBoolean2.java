@@ -62,7 +62,8 @@ public class TestBoolean2 extends TestCase {
   };
 
   public Query makeQuery(String queryText) throws ParseException {
-    return (new QueryParser(field, new WhitespaceAnalyzer())).parse(queryText);
+    Query q = (new QueryParser(field, new WhitespaceAnalyzer())).parse(queryText);
+    return q;
   }
 
   public void queriesTest(String queryText, int[] expDocNrs) throws Exception {
@@ -167,6 +168,9 @@ public class TestBoolean2 extends TestCase {
         Sort sort = Sort.INDEXORDER;
 
         BooleanQuery.setUseScorer14(false);
+
+        QueryUtils.check(q1,searcher);
+
         Hits hits1 = searcher.search(q1,sort);
         if (hits1.length()>0) hits1.id(hits1.length()-1);
 

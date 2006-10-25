@@ -143,6 +143,9 @@ Bug fixes
 17. LUCENE-690: Fixed thread unsafe use of IndexInput by lazy loaded fields.
     (Yonik Seeley)
 
+18. LUCENE-696: Fix bug when scorer for DisjunctionMaxQuery has skipTo()
+    called on it before next().  (Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment

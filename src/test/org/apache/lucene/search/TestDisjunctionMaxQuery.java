@@ -130,6 +130,7 @@ public class TestDisjunctionMaxQuery extends TestCase{
         DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
         q.add(tq("hed","albino"));
         q.add(tq("hed","elephant"));
+        QueryUtils.check(q,s);
 
         Hits h = s.search(q);
 
@@ -155,6 +156,8 @@ public class TestDisjunctionMaxQuery extends TestCase{
         DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
         q.add(tq("dek","albino"));
         q.add(tq("dek","elephant"));
+        QueryUtils.check(q,s);
+
 
         Hits h = s.search(q);
 
@@ -180,6 +183,8 @@ public class TestDisjunctionMaxQuery extends TestCase{
         q.add(tq("hed","elephant"));
         q.add(tq("dek","albino"));
         q.add(tq("dek","elephant"));
+        QueryUtils.check(q,s);
+
 
         Hits h = s.search(q);
 
@@ -203,6 +208,8 @@ public class TestDisjunctionMaxQuery extends TestCase{
         DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.01f);
         q.add(tq("dek","albino"));
         q.add(tq("dek","elephant"));
+        QueryUtils.check(q,s);
+
 
         Hits h = s.search(q);
 
@@ -232,14 +239,18 @@ public class TestDisjunctionMaxQuery extends TestCase{
             q1.add(tq("hed","albino"));
             q1.add(tq("dek","albino"));
             q.add(q1,BooleanClause.Occur.MUST);//true,false);
+            QueryUtils.check(q1,s);
+
         }
         {
             DisjunctionMaxQuery q2 = new DisjunctionMaxQuery(0.0f);
             q2.add(tq("hed","elephant"));
             q2.add(tq("dek","elephant"));
             q.add(q2, BooleanClause.Occur.MUST);//true,false);
+           QueryUtils.check(q2,s);
         }
 
+        QueryUtils.check(q,s);
 
         Hits h = s.search(q);
 
@@ -273,6 +284,7 @@ public class TestDisjunctionMaxQuery extends TestCase{
             q2.add(tq("dek","elephant"));
             q.add(q2, BooleanClause.Occur.SHOULD);//false,false);
         }
+        QueryUtils.check(q,s);
 
 
         Hits h = s.search(q);
@@ -312,6 +324,7 @@ public class TestDisjunctionMaxQuery extends TestCase{
             q2.add(tq("dek","elephant"));
             q.add(q2, BooleanClause.Occur.SHOULD);//false,false);
         }
+        QueryUtils.check(q,s);
 
 
         Hits h = s.search(q);
@@ -370,6 +383,7 @@ public class TestDisjunctionMaxQuery extends TestCase{
             q2.add(tq("dek","elephant"));
             q.add(q2, BooleanClause.Occur.SHOULD);//false,false);
         }
+        QueryUtils.check(q,s);
 
 
         Hits h = s.search(q);

@@ -48,7 +48,8 @@ public class TestBooleanOr extends TestCase {
 	private IndexSearcher searcher = null;
 
 	private int search(Query q) throws IOException {
-		return searcher.search(q).length();
+    QueryUtils.check(q,searcher);
+    return searcher.search(q).length();
 	}
 
 	public void testElements() throws IOException {

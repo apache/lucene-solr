@@ -113,6 +113,13 @@ class DisjunctionMaxScorer extends Scorer {
      * @return true iff there is a document to be generated whose number is at least target
      */
     public boolean skipTo(int target) throws IOException {
+        if (firstTime) {
+          if (!more) return false;
+          heapify();
+          firstTime = false;
+          return true;   // more would have been false if no subScorers had any docs
+        }
+
         while (subScorers.size()>0 && ((Scorer)subScorers.get(0)).doc()<target) {
             if (((Scorer)subScorers.get(0)).skipTo(target))
                 heapAdjust(0);
