@@ -185,6 +185,10 @@ Optimizations
   9. LUCENE-365: DisjunctionSumScorer performance increase of ~30%. Speeds up
      queries with optional clauses. (Paul Elschot via Yonik Seeley)
 
+ 10. LUCENE-695: Optimized BufferedIndexInput.readBytes() for medium size buffers,
+     which will speed up merging and retrieving binary and compressed fields.
+     (Nadav Har'El via Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
 
