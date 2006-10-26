@@ -181,14 +181,14 @@ public class TestIndexWriterMergePolicy extends TestCase {
     int ramSegmentCount = writer.getRAMSegmentCount();
     assertTrue(ramSegmentCount < maxBufferedDocs);
 
-    int lowerBound = 0;
+    int lowerBound = -1;
     int upperBound = maxBufferedDocs;
     int numSegments = 0;
 
     int segmentCount = writer.getSegmentCount();
     for (int i = segmentCount - 1; i >= 0; i--) {
       int docCount = writer.getDocCount(i);
-      assertTrue(docCount > lowerBound || docCount == 0);
+      assertTrue(docCount > lowerBound);
 
       if (docCount <= upperBound) {
         numSegments++;
@@ -197,8 +197,10 @@ public class TestIndexWriterMergePolicy extends TestCase {
           assertTrue(numSegments < mergeFactor);
         }
 
-        lowerBound = upperBound;
-        upperBound *= mergeFactor;
+        do {
+          lowerBound = upperBound;
+          upperBound *= mergeFactor;
+        } while (docCount > upperBound);
         numSegments = 1;
       }
     }

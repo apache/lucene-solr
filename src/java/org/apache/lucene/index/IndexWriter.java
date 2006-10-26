@@ -632,6 +632,130 @@ public class IndexWriter {
     optimize();					  // final cleanup
   }
 
+  /**
+   * Merges all segments from an array of indexes into this index.
+   * <p>
+   * This is similar to addIndexes(Directory[]). However, no optimize()
+   * is called either at the beginning or at the end. Instead, merges
+   * are carried out as necessary.
+   * <p>
+   * This requires this index not be among those to be added, and the
+   * upper bound* of those segment doc counts not exceed maxMergeDocs.
+   */
+  public synchronized void addIndexesNoOptimize(Directory[] dirs)
+      throws IOException {
+    // Adding indexes can be viewed as adding a sequence of segments S to
+    // a sequence of segments T. Segments in T follow the invariants but
+    // segments in S may not since they could come from multiple indexes.
+    // Here is the merge algorithm for addIndexesNoOptimize():
+    //
+    // 1 Flush ram segments.
+    // 2 Consider a combined sequence with segments from T followed
+    //   by segments from S (same as current addIndexes(Directory[])).
+    // 3 Assume the highest level for segments in S is h. Call
+    //   maybeMergeSegments(), but instead of starting w/ lowerBound = -1
+    //   and upperBound = maxBufferedDocs, start w/ lowerBound = -1 and
+    //   upperBound = upperBound of level h. After this, the invariants
+    //   are guaranteed except for the last < M segments whose levels <= h.
+    // 4 If the invariants hold for the last < M segments whose levels <= h,
+    //   if some of those < M segments are from S (not merged in step 3),
+    //   properly copy them over*, otherwise done.
+    //   Otherwise, simply merge those segments. If the merge results in
+    //   a segment of level <= h, done. Otherwise, it's of level h+1 and call
+    //   maybeMergeSegments() starting w/ upperBound = upperBound of level h+1.
+    //
+    // * Ideally, we want to simply copy a segment. However, directory does
+    // not support copy yet. In addition, source may use compound file or not
+    // and target may use compound file or not. So we use mergeSegments() to
+    // copy a segment, which may cause doc count to change because deleted
+    // docs are garbage collected.
+    //
+    // In current addIndexes(Directory[]), segment infos in S are added to
+    // T's "segmentInfos" upfront. Then segments in S are merged to T several
+    // at a time. Every merge is committed with T's "segmentInfos". So if
+    // a reader is opened on T while addIndexes() is going on, it could see
+    // an inconsistent index. AddIndexesNoOptimize() has a similar behaviour.
+
+    // 1 flush ram segments
+    flushRamSegments();
+
+    // 2 copy segment infos and find the highest level from dirs
+    int start = segmentInfos.size();
+    int startUpperBound = minMergeDocs;
+
+    try {
+      for (int i = 0; i < dirs.length; i++) {
+        if (directory == dirs[i]) {
+          // cannot add this index: segments may be deleted in merge before added
+          throw new IllegalArgumentException("Cannot add this index to itself");
+        }
+
+        SegmentInfos sis = new SegmentInfos(); // read infos from dir
+        sis.read(dirs[i]);
+        for (int j = 0; j < sis.size(); j++) {
+          SegmentInfo info = sis.info(j);
+          segmentInfos.addElement(info); // add each info
+
+          while (startUpperBound < info.docCount) {
+            startUpperBound *= mergeFactor; // find the highest level from dirs
+            if (startUpperBound > maxMergeDocs) {
+              // upper bound cannot exceed maxMergeDocs
+              throw new IllegalArgumentException("Upper bound cannot exceed maxMergeDocs");
+            }
+          }
+        }
+      }
+    } catch (IllegalArgumentException e) {
+      for (int i = segmentInfos.size() - 1; i >= start; i--) {
+        segmentInfos.remove(i);
+      }
+      throw e;
+    }
+
+    // 3 maybe merge segments starting from the highest level from dirs
+    maybeMergeSegments(startUpperBound);
+
+    // get the tail segments whose levels <= h
+    int segmentCount = segmentInfos.size();
+    int numTailSegments = 0;
+    while (numTailSegments < segmentCount
+        && startUpperBound >= segmentInfos.info(segmentCount - 1 - numTailSegments).docCount) {
+      numTailSegments++;
+    }
+    if (numTailSegments == 0) {
+      return;
+    }
+
+    // 4 make sure invariants hold for the tail segments whose levels <= h
+    if (checkNonDecreasingLevels(segmentCount - numTailSegments)) {
+      // identify the segments from S to be copied (not merged in 3)
+      int numSegmentsToCopy = 0;
+      while (numSegmentsToCopy < segmentCount
+          && directory != segmentInfos.info(segmentCount - 1 - numSegmentsToCopy).dir) {
+        numSegmentsToCopy++;
+      }
+      if (numSegmentsToCopy == 0) {
+        return;
+      }
+
+      // copy those segments from S
+      for (int i = segmentCount - numSegmentsToCopy; i < segmentCount; i++) {
+        mergeSegments(segmentInfos, i, i + 1);
+      }
+      if (checkNonDecreasingLevels(segmentCount - numSegmentsToCopy)) {
+        return;
+      }
+    }
+
+    // invariants do not hold, simply merge those segments
+    mergeSegments(segmentInfos, segmentCount - numTailSegments, segmentCount);
+
+    // maybe merge segments again if necessary
+    if (segmentInfos.info(segmentInfos.size() - 1).docCount > startUpperBound) {
+      maybeMergeSegments(startUpperBound * mergeFactor);
+    }
+  }
+
   /** Merges the provided indexes into this index.
    * <p>After this completes, the index is optimized. </p>
    * <p>The provided IndexReaders are not closed.</p>
@@ -735,16 +859,16 @@ public class IndexWriter {
   private final void flushRamSegments() throws IOException {
     if (ramSegmentInfos.size() > 0) {
       mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
-      maybeMergeSegments();
+      maybeMergeSegments(minMergeDocs);
     }
   }
 
   /** Incremental segment merger.  */
-  private final void maybeMergeSegments() throws IOException {
+  private final void maybeMergeSegments(int startUpperBound) throws IOException {
     long lowerBound = -1;
-    long upperBound = minMergeDocs;
+    long upperBound = startUpperBound;
 
-    while (upperBound * mergeFactor <= maxMergeDocs) {
+    while (upperBound < maxMergeDocs) {
       int minSegment = segmentInfos.size();
       int maxSegment = -1;
 
@@ -948,5 +1072,23 @@ public class IndexWriter {
       output.close();
     }
     directory.renameFile("deleteable.new", IndexFileNames.DELETABLE);
+  }
+
+  private final boolean checkNonDecreasingLevels(int start) {
+    int lowerBound = -1;
+    int upperBound = minMergeDocs;
+
+    for (int i = segmentInfos.size() - 1; i >= start; i--) {
+      int docCount = segmentInfos.info(i).docCount;
+      if (docCount <= lowerBound) {
+        return false;
+      }
+
+      while (docCount > upperBound) {
+        lowerBound = upperBound;
+        upperBound *= mergeFactor;
+      }
+    }
+    return true;
   }
 }

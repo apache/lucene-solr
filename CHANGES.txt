@@ -39,6 +39,10 @@ New features
  5. LUCENE-544: Added the ability to specify different boosts for different
     fields when using MultiFieldQueryParser (Matt Ericson via Otis Gospodnetic)
 
+ 6. LUCENE-528: New IndexWriter.addIndexesNoOptimize() that doesn't optimize the
+    index when adding new segments, only performing merges as needed.
+    (Ning Li via Yonik Seeley)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
