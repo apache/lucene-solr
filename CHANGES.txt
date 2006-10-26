@@ -85,6 +85,9 @@ API Changes
     for that Directory.
     (Michael McCandless, Jeff Patterson via Yonik Seeley)
 
+ 9. LUCENE-657: Made FuzzyQuery non-final and inner ScoreTerm protected.
+    (Steven Parkes via Otis Gospodnetic)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

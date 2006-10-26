@@ -26,7 +26,7 @@ import java.io.IOException;
 /** Implements the fuzzy search query. The similiarity measurement
  * is based on the Levenshtein (edit distance) algorithm.
  */
-public final class FuzzyQuery extends MultiTermQuery {
+public class FuzzyQuery extends MultiTermQuery {
   
   public final static float defaultMinSimilarity = 0.5f;
   public final static int defaultPrefixLength = 0;
@@ -149,7 +149,7 @@ public final class FuzzyQuery extends MultiTermQuery {
     return buffer.toString();
   }
   
-  private static class ScoreTerm{
+  protected static class ScoreTerm {
     public Term term;
     public float score;
     
@@ -159,7 +159,7 @@ public final class FuzzyQuery extends MultiTermQuery {
     }
   }
   
-  private static class ScoreTermQueue extends PriorityQueue {
+  protected static class ScoreTermQueue extends PriorityQueue {
     
     public ScoreTermQueue(int size){
       initialize(size);
