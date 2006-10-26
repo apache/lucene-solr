@@ -159,6 +159,41 @@ public class TestScorerPerf extends TestCase {
     return ret;
   }
 
+  public int doNestedConjunctions(int iter, int maxOuterClauses, int maxClauses) throws IOException {
+    int ret=0;
+
+    for (int i=0; i<iter; i++) {
+      int oClauses = r.nextInt(maxOuterClauses-1)+2;
+      BooleanQuery oq = new BooleanQuery();
+      BitSet result=null;
+
+      for (int o=0; o<oClauses; o++) {
+
+      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      BooleanQuery bq = new BooleanQuery();
+      for (int j=0; j<nClauses; j++) {
+        result = addClause(bq,result);
+      }
+
+      oq.add(bq, BooleanClause.Occur.MUST);
+      if (validate) {
+
+      }
+      } // outer
+
+
+      CountingHitCollector hc = validate ? new MatchingHitCollector(result)
+                                         : new CountingHitCollector();
+      s.search(oq, hc);
+      ret += hc.getSum();
+      if (validate) assertEquals(result.cardinality(), hc.getCount());
+      // System.out.println(hc.getCount());
+    }
+
+    return ret;
+  }
+
+  
   public int doTermConjunctions(IndexSearcher s,
                                 int termsInIndex,
                                 int maxClauses,
@@ -232,6 +267,7 @@ public class TestScorerPerf extends TestCase {
     validate=true;
     sets=randBitSets(1000,10);
     doConjunctions(10000,5);
+    doNestedConjunctions(10000,3,3);
     s.close();
   }
 
@@ -242,6 +278,17 @@ public class TestScorerPerf extends TestCase {
     sets=randBitSets(32,1000000);
     long start = System.currentTimeMillis();
     doConjunctions(500,6);
+    long end = System.currentTimeMillis();
+    s.close();
+    System.out.println("milliseconds="+(end-start));
+  }
+
+  public void testNestedConjunctionPerf() throws Exception {
+    createDummySearcher();
+    validate=false;
+    sets=randBitSets(32,1000000);
+    long start = System.currentTimeMillis();
+    doNestedConjunctions(500,3,3);
     long end = System.currentTimeMillis();
     s.close();
     System.out.println("milliseconds="+(end-start));
@@ -267,11 +314,11 @@ public class TestScorerPerf extends TestCase {
     s = new IndexSearcher(dir);
     System.out.println("Starting performance test");
     long start = System.currentTimeMillis();
-    doNestedTermConjunctions(s,25,4,6,1000);
+    doNestedTermConjunctions(s,25,5,5,1000);
     long end = System.currentTimeMillis();
     s.close();
     System.out.println("milliseconds="+(end-start));
   }
-   ***/
+  ***/
 
 }
