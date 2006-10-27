@@ -22,6 +22,10 @@ Changes in runtime behavior
     Also documented some of the ranges.
     (Otis Gospodnetic)
 
+ 4. LUCENE-489: Add support for leading wildcard characters (*, ?) to
+    QueryParser.  Default is to disallow them, as before.
+    (Steven Parkes via Otis Gospodnetic)
+
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers

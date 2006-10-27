@@ -105,6 +105,7 @@ public class QueryParser {
   private Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
+  boolean allowLeadingWildcard = false;
 
   Analyzer analyzer;
   String field;
@@ -216,6 +217,22 @@ public class QueryParser {
     return phraseSlop;
   }
 
+
+  /**
+   * Set to <code>true</code> to allow <code>*</code> and <code>?</code> as the first character 
+   * of a PrefixQuery and WildcardQuery. Note that this can produce very slow
+   * queries on big indexes. Default: false.
+   */
+  public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
+    this.allowLeadingWildcard = allowLeadingWildcard;
+  }
+
+  /**
+   * @see #setAllowLeadingWildcard
+   */
+  public boolean getAllowLeadingWildcard() {
+    return allowLeadingWildcard;
+  }
 
   /**
    * Sets the boolean operator of the QueryParser.
@@ -529,6 +546,8 @@ public class QueryParser {
    */
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
+    if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
+      throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
     if (lowercaseExpandedTerms) {
       termStr = termStr.toLowerCase();
     }
@@ -561,6 +580,8 @@ public class QueryParser {
    */
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
+    if (!allowLeadingWildcard && termStr.startsWith("*"))
+      throw new ParseException("'*' not allowed as first character in PrefixQuery");
     if (lowercaseExpandedTerms) {
       termStr = termStr.toLowerCase();
     }
@@ -663,16 +684,6 @@ PARSER_END(QueryParser)
   < <_WHITESPACE>>
 }
 
-// OG: to support prefix queries:
-// http://issues.apache.org/bugzilla/show_bug.cgi?id=12137
-// Change from:
-//
-// | <WILDTERM:  <_TERM_START_CHAR>
-//              (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
-// To:
-//
-// (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
-
 <DEFAULT> TOKEN : {
   <AND:       ("AND" | "&&") >
 | <OR:        ("OR" | "||") >
@@ -686,9 +697,8 @@ PARSER_END(QueryParser)
 | <QUOTED:     "\"" (~["\""])+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
-| <PREFIXTERM:  <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" >
-| <WILDTERM:  <_TERM_START_CHAR>
-              (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
+| <PREFIXTERM:  (<_TERM_START_CHAR> | "*") (<_TERM_CHAR>)* "*" >
+| <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
 | <RANGEIN_START: "[" > : RangeIn
 | <RANGEEX_START: "{" > : RangeEx
 }

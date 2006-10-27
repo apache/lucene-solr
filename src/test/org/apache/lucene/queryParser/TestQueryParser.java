@@ -143,16 +143,22 @@ public class TestQueryParser extends TestCase {
     }
   }
 
-  public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
+  public void assertWildcardQueryEquals(String query, boolean lowercase, String result, boolean allowLeadingWildcard)
     throws Exception {
     QueryParser qp = getParser(null);
     qp.setLowercaseExpandedTerms(lowercase);
+    qp.setAllowLeadingWildcard(allowLeadingWildcard);
     Query q = qp.parse(query);
     String s = q.toString("field");
     if (!s.equals(result)) {
       fail("WildcardQuery /" + query + "/ yielded /" + s
            + "/, expecting /" + result + "/");
     }
+  }
+
+  public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
+    throws Exception {
+    assertWildcardQueryEquals(query, lowercase, result, false);
   }
 
   public void assertWildcardQueryEquals(String query, String result) throws Exception {
@@ -330,6 +336,22 @@ public class TestQueryParser extends TestCase {
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
+    // Test suffix queries: first disallow
+    try {
+      assertWildcardQueryEquals("*Term", true, "*term");
+      fail();
+    } catch(ParseException pe) {
+      // expected exception
+    }
+    try {
+      assertWildcardQueryEquals("?Term", true, "?term");
+      fail();
+    } catch(ParseException pe) {
+      // expected exception
+    }
+    // Test suffix queries: then allow
+    assertWildcardQueryEquals("*Term", true, "*term", true);
+    assertWildcardQueryEquals("?Term", true, "?term", true);
   }
 
   public void testQPA() throws Exception {

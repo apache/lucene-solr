@@ -82,6 +82,7 @@ public class QueryParser implements QueryParserConstants {
   private Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
+  boolean allowLeadingWildcard = false;
 
   Analyzer analyzer;
   String field;
@@ -193,6 +194,22 @@ public class QueryParser implements QueryParserConstants {
     return phraseSlop;
   }
 
+
+  /**
+   * Set to <code>true</code> to allow <code>*</code> and <code>?</code> as the first character 
+   * of a PrefixQuery and WildcardQuery. Note that this can produce very slow
+   * queries on big indexes. Default: false.
+   */
+  public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
+    this.allowLeadingWildcard = allowLeadingWildcard;
+  }
+
+  /**
+   * @see #setAllowLeadingWildcard
+   */
+  public boolean getAllowLeadingWildcard() {
+    return allowLeadingWildcard;
+  }
 
   /**
    * Sets the boolean operator of the QueryParser.
@@ -506,6 +523,8 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
+    if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
+      throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
     if (lowercaseExpandedTerms) {
       termStr = termStr.toLowerCase();
     }
@@ -538,6 +557,8 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
+    if (!allowLeadingWildcard && termStr.startsWith("*"))
+      throw new ParseException("'*' not allowed as first character in PrefixQuery");
     if (lowercaseExpandedTerms) {
       termStr = termStr.toLowerCase();
     }

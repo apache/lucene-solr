@@ -288,7 +288,9 @@
       <fileset dir="src">
         <include name="java/org/apache/lucene/analysis/standard/StandardTokenizer.java"/>
         <include name="java/org/apache/lucene/queryParser/QueryParser.java"/>
+        <include name="java/org/apache/lucene/queryParser/CharStream.java"/>
         <include name="demo/org/apache/lucene/demo/html/HTMLParser.java"/>
+        <include name="demo/org/apache/lucene/demo/html/SimpleCharStream.java"/>
       </fileset>
     </delete>
   </target>
