@@ -63,7 +63,7 @@ public class SpellChecker {
   /**
    * the spell index
    */
-  Directory spellindex;
+  Directory spellIndex;
 
   /**
    * Boost value for start and end grams
@@ -81,9 +81,13 @@ public class SpellChecker {
     this.setSpellIndex(spellIndex);
   }
 
-  public void setSpellIndex(Directory spellindex) throws IOException {
-    this.spellindex = spellindex;
-    searcher = new IndexSearcher(this.spellindex);
+  public void setSpellIndex(Directory spellIndex) throws IOException {
+    this.spellIndex = spellIndex;
+    if (!IndexReader.indexExists(spellIndex)) {
+        IndexWriter writer = new IndexWriter(spellIndex, null, true);
+        writer.close();
+    }
+    searcher = new IndexSearcher(this.spellIndex);
   }
 
   /**
@@ -238,8 +242,8 @@ public class SpellChecker {
   }
 
   public void clearIndex() throws IOException {
-    IndexReader.unlock(spellindex);
-    IndexWriter writer = new IndexWriter(spellindex, null, true);
+    IndexReader.unlock(spellIndex);
+    IndexWriter writer = new IndexWriter(spellIndex, null, true);
     writer.close();
   }
 
@@ -251,7 +255,7 @@ public class SpellChecker {
    */
   public boolean exist(String word) throws IOException {
     if (reader == null) {
-      reader = IndexReader.open(spellindex);
+      reader = IndexReader.open(spellIndex);
     }
     return reader.docFreq(new Term(F_WORD, word)) > 0;
   }
@@ -262,9 +266,9 @@ public class SpellChecker {
    * @throws IOException
    */
   public void indexDictionary(Dictionary dict) throws IOException {
-    IndexReader.unlock(spellindex);
-    IndexWriter writer = new IndexWriter(spellindex, new WhitespaceAnalyzer(),
-        !IndexReader.indexExists(spellindex));
+    IndexReader.unlock(spellIndex);
+    IndexWriter writer = new IndexWriter(spellIndex, new WhitespaceAnalyzer(),
+        !IndexReader.indexExists(spellIndex));
     writer.setMergeFactor(300);
     writer.setMaxBufferedDocs(150);
 
