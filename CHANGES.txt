@@ -13,9 +13,9 @@ Changes in runtime behavior
     'a' continues to be a stopword.
     (Daniel Naber)
 
- 2. LUCENE-478: Updated the list of Unicode code point ranges for CJK (now
-    split into CJ and K) in StandardAnalyzer.
-    (John Wang and Steven Rowe via Otis Gospodnetic)
+ 2. LUCENE-478: Updated the list of Unicode code point ranges for CJK
+    (now split into CJ and K) in StandardAnalyzer.  (John Wang and
+    Steven Rowe via Otis Gospodnetic)
 
  3. Modified some CJK Unicode code point ranges in StandardTokenizer.jj,
     and added a few more of them to increase CJK character coverage.
@@ -27,21 +27,25 @@ New features
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers
     (Samphan Raruenrom via Chris Hostetter)
 
- 2. LUCENE-545: New FieldSelector API and associated changes to IndexReader and implementations.
-    New Fieldable interface for use with the lazy field loading mechanism.
-    (Grant Ingersoll and Chuck Williams via Grant Ingersoll)
+ 2. LUCENE-545: New FieldSelector API and associated changes to
+    IndexReader and implementations.  New Fieldable interface for use
+    with the lazy field loading mechanism.  (Grant Ingersoll and Chuck
+    Williams via Grant Ingersoll)
 
- 3. LUCENE-676: Move Solr's PrefixFilter to Lucene core. (Yura Smolsky, Yonik Seeley)
+ 3. LUCENE-676: Move Solr's PrefixFilter to Lucene core. (Yura
+    Smolsky, Yonik Seeley)
 
  4. LUCENE-678: Added NativeFSLockFactory, which implements locking
-    using OS native locking (via java.nio.*).  (Michael McCandless via Yonik Seeley)
+    using OS native locking (via java.nio.*).  (Michael McCandless via
+    Yonik Seeley)
 
- 5. LUCENE-544: Added the ability to specify different boosts for different
-    fields when using MultiFieldQueryParser (Matt Ericson via Otis Gospodnetic)
+ 5. LUCENE-544: Added the ability to specify different boosts for
+    different fields when using MultiFieldQueryParser (Matt Ericson
+    via Otis Gospodnetic)
 
- 6. LUCENE-528: New IndexWriter.addIndexesNoOptimize() that doesn't optimize the
-    index when adding new segments, only performing merges as needed.
-    (Ning Li via Yonik Seeley)
+ 6. LUCENE-528: New IndexWriter.addIndexesNoOptimize() that doesn't
+    optimize the index when adding new segments, only performing
+    merges as needed.  (Ning Li via Yonik Seeley)
 
 API Changes
 
@@ -155,29 +159,34 @@ Bug fixes
 
 Optimizations
 
-  1. LUCENE-586: TermDocs.skipTo() is now more efficient for multi-segment
-     indexes.  This will improve the performance of many types of queries
-     against a non-optimized index. (Andrew Hudson via Yonik Seeley)
+  1. LUCENE-586: TermDocs.skipTo() is now more efficient for
+     multi-segment indexes.  This will improve the performance of many
+     types of queries against a non-optimized index. (Andrew Hudson
+     via Yonik Seeley)
 
   2. LUCENE-623: RAMDirectory.close now nulls out its reference to all
      internal "files", allowing them to be GCed even if references to the
      RAMDirectory itself still exist. (Nadav Har'El via Chris Hostetter)
 
-  3. LUCENE-629: Compressed fields are no longer uncompressed and recompressed
-     during segment merges (e.g. during indexing or optimizing), thus improving
-     performance . (Michael Busch via Otis Gospodnetic)
+  3. LUCENE-629: Compressed fields are no longer uncompressed and
+     recompressed during segment merges (e.g. during indexing or
+     optimizing), thus improving performance . (Michael Busch via Otis
+     Gospodnetic)
 
-  4. LUCENE-388: Improve indexing performance when maxBufferedDocs is large by
-     keeping a count of buffered documents rather than counting after each
-     document addition.  (Doron Cohen, Paul Smith, Yonik Seeley)
+  4. LUCENE-388: Improve indexing performance when maxBufferedDocs is
+     large by keeping a count of buffered documents rather than
+     counting after each document addition.  (Doron Cohen, Paul Smith,
+     Yonik Seeley)
 
-  5. Modified TermScorer.explain to use TermDocs.skipTo() instead of looping through docs. (Grant Ingersoll)
+  5. Modified TermScorer.explain to use TermDocs.skipTo() instead of
+     looping through docs. (Grant Ingersoll)
 
-  6. LUCENE-672: New indexing segment merge policy flushes all buffered docs
-     to their own segment and delays a merge until mergeFactor segments of a
-     certain level have been accumulated.  This increases indexing performance
-     in the presence of deleted docs or partially full segments as well as
-     enabling future optimizations. (Ning Li, Yonik Seeley)
+  6. LUCENE-672: New indexing segment merge policy flushes all
+     buffered docs to their own segment and delays a merge until
+     mergeFactor segments of a certain level have been accumulated.
+     This increases indexing performance in the presence of deleted
+     docs or partially full segments as well as enabling future
+     optimizations. (Ning Li, Yonik Seeley)
 
   7. Lazy loaded fields unnecessarily retained an extra copy of loaded
      String data.  (Yonik Seeley)
@@ -186,21 +195,26 @@ Optimizations
      any BooleanQuery with more than one mandatory clause.
      (Abdul Chaudhry, Paul Elschot via Yonik Seeley)
 
-  9. LUCENE-365: DisjunctionSumScorer performance increase of ~30%. Speeds up
-     queries with optional clauses. (Paul Elschot via Yonik Seeley)
+  9. LUCENE-365: DisjunctionSumScorer performance increase of
+     ~30%. Speeds up queries with optional clauses. (Paul Elschot via
+     Yonik Seeley)
 
- 10. LUCENE-695: Optimized BufferedIndexInput.readBytes() for medium size buffers,
-     which will speed up merging and retrieving binary and compressed fields.
-     (Nadav Har'El via Yonik Seeley)
+ 10. LUCENE-695: Optimized BufferedIndexInput.readBytes() for medium
+     size buffers, which will speed up merging and retrieving binary
+     and compressed fields.  (Nadav Har'El via Yonik Seeley)
 
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
 
 Documentation
 
-  1. Added style sheet to xdocs named lucene.css and included in the Anakia VSL descriptor.  (Grant Ingersoll)
+  1. Added style sheet to xdocs named lucene.css and included in the
+     Anakia VSL descriptor.  (Grant Ingersoll)
 
-  2. Added scoring.xml document into xdocs.  Updated Similarity.java scoring formula.(Grant Ingersoll and Steve Rowe.  Updates from: Michael McCandless, Doron Cohen, Chris Hostetter, Doug Cutting).  Issue 664.
+  2. Added scoring.xml document into xdocs.  Updated Similarity.java
+     scoring formula.(Grant Ingersoll and Steve Rowe.  Updates from:
+     Michael McCandless, Doron Cohen, Chris Hostetter, Doug Cutting).
+     Issue 664.
 
   3. Added javadocs for FieldSelectorResult.java. (Grant Ingersoll)
 
