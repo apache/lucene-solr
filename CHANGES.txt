@@ -161,6 +161,10 @@ Bug fixes
 18. LUCENE-696: Fix bug when scorer for DisjunctionMaxQuery has skipTo()
     called on it before next().  (Yonik Seeley)
 
+19. LUCENE-569: Fixed SpanNearQuery bug, for 'inOrder' queries it would fail
+    to recognize ordered spans if they overlaped with unordered spans.
+    (Paul Elschot via Chris Hostetter)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for

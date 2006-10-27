@@ -1,7 +1,7 @@
 package org.apache.lucene.search.spans;
 
 /**
- * Copyright 2004 The Apache Software Foundation
+ * Copyright 2006 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,11 @@ import java.util.ArrayList;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
 
-class NearSpans implements Spans {
+class NearSpansUnordered implements Spans {
   private SpanNearQuery query;
 
   private List ordered = new ArrayList();         // spans in query order
   private int slop;                               // from query
-  private boolean inOrder;                        // from query
 
   private SpansCell first;                        // linked list of spans
   private SpansCell last;                         // sorted by doc only
@@ -51,15 +50,7 @@ class NearSpans implements Spans {
       SpansCell spans1 = (SpansCell)o1;
       SpansCell spans2 = (SpansCell)o2;
       if (spans1.doc() == spans2.doc()) {
-        if (spans1.start() == spans2.start()) {
-          if (spans1.end() == spans2.end()) {
-            return spans1.index > spans2.index;
-          } else {
-            return spans1.end() < spans2.end();
-          }
-        } else {
-          return spans1.start() < spans2.start();
-        }
+        return NearSpansOrdered.docSpansOrdered(spans1, spans2);
       } else {
         return spans1.doc() < spans2.doc();
       }
@@ -80,39 +71,28 @@ class NearSpans implements Spans {
     }
 
     public boolean next() throws IOException {
-      if (length != -1)                           // subtract old length
-        totalLength -= length;
-
-      boolean more = spans.next();                // move to next
-
-      if (more) {
-        length = end() - start();                 // compute new length
-        totalLength += length;                    // add new length to total
-
-        if (max == null || doc() > max.doc() ||   // maintain max
-            (doc() == max.doc() && end() > max.end()))
-          max = this;
-      }
-
-      return more;
+      return adjust(spans.next());
     }
 
     public boolean skipTo(int target) throws IOException {
-      if (length != -1)                           // subtract old length
-        totalLength -= length;
-
-      boolean more = spans.skipTo(target);        // skip
-
-      if (more) {
-        length = end() - start();                 // compute new length
-        totalLength += length;                    // add new length to total
-
-        if (max == null || doc() > max.doc() ||   // maintain max
-            (doc() == max.doc() && end() > max.end()))
-          max = this;
+      return adjust(spans.skipTo(target));
+    }
+    
+    private boolean adjust(boolean condition) {
+      if (length != -1) {
+        totalLength -= length;  // subtract old length
       }
+      if (condition) {
+        length = end() - start(); 
+        totalLength += length; // add new length
 
-      return more;
+        if (max == null || doc() > max.doc()
+            || (doc() == max.doc()) && (end() > max.end())) {
+          max = this;
+        }
+      }
+      more = condition;
+      return condition;
     }
 
     public int doc() { return spans.doc(); }
@@ -122,30 +102,32 @@ class NearSpans implements Spans {
     public String toString() { return spans.toString() + "#" + index; }
   }
 
-  public NearSpans(SpanNearQuery query, IndexReader reader)
+
+  public NearSpansUnordered(SpanNearQuery query, IndexReader reader)
     throws IOException {
     this.query = query;
     this.slop = query.getSlop();
-    this.inOrder = query.isInOrder();
 
-    SpanQuery[] clauses = query.getClauses();     // initialize spans & list
+    SpanQuery[] clauses = query.getClauses();
     queue = new CellQueue(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
-      SpansCell cell =                            // construct clause spans
+      SpansCell cell =
         new SpansCell(clauses[i].getSpans(reader), i);
-      ordered.add(cell);                          // add to ordered
+      ordered.add(cell);
     }
   }
 
   public boolean next() throws IOException {
     if (firstTime) {
       initList(true);
-      listToQueue();                              // initialize queue
+      listToQueue(); // initialize queue
       firstTime = false;
     } else if (more) {
-      more = min().next();                        // trigger further scanning
-      if (more)
-        queue.adjustTop();                        // maintain queue
+      if (min().next()) { // trigger further scanning
+        queue.adjustTop(); // maintain queue
+      } else {
+        more = false;
+      }
     }
 
     while (more) {
@@ -174,21 +156,13 @@ class NearSpans implements Spans {
         queueStale = false;
       }
 
-      if (atMatch())
+      if (atMatch()) {
         return true;
+      }
       
-      // trigger further scanning
-      if (inOrder && checkSlop()) {
-        /* There is a non ordered match within slop and an ordered match is needed. */
-        more = firstNonOrderedNextToPartialList();
-        if (more) {
-          partialListToQueue();                            
-        }
-      } else {
-        more = min().next();
-        if (more) {
-          queue.adjustTop();                      // maintain queue
-        }
+      more = min().next();
+      if (more) {
+        queue.adjustTop();                      // maintain queue
       }
     }
     return false;                                 // no more matches
@@ -206,20 +180,14 @@ class NearSpans implements Spans {
       firstTime = false;
     } else {                                      // normal case
       while (more && min().doc() < target) {      // skip as needed
-        more = min().skipTo(target);
-        if (more)
+        if (min().skipTo(target)) {
           queue.adjustTop();
+        } else {
+          more = false;
+        }
       }
     }
-    if (more) {
-
-      if (atMatch())                              // at a match?
-        return true;
-
-      return next();                              // no, scan
-    }
-
-    return false;
+    return more && (atMatch() ||  next());
   }
 
   private SpansCell min() { return (SpansCell)queue.top(); }
@@ -230,7 +198,7 @@ class NearSpans implements Spans {
 
 
   public String toString() {
-    return "spans("+query.toString()+")@"+
+    return getClass().getName() + "("+query.toString()+")@"+
       (firstTime?"START":(more?(doc()+":"+start()+"-"+end()):"END"));
   }
 
@@ -268,35 +236,8 @@ class NearSpans implements Spans {
     }
   }
   
-  private boolean firstNonOrderedNextToPartialList() throws IOException {
-    /* Creates a partial list consisting of first non ordered and earlier.
-     * Returns first non ordered .next().
-     */
-    last = first = null;
-    int orderedIndex = 0;
-    while (queue.top() != null) {
-      SpansCell cell = (SpansCell)queue.pop();
-      addToList(cell);
-      if (cell.index == orderedIndex) {
-        orderedIndex++;
-      } else {
-        return cell.next();
-        // FIXME: continue here, rename to eg. checkOrderedMatch():
-        // when checkSlop() and not ordered, repeat cell.next().
-        // when checkSlop() and ordered, add to list and repeat queue.pop()
-        // without checkSlop(): no match, rebuild the queue from the partial list.
-        // When queue is empty and checkSlop() and ordered there is a match.
-      }
-    }
-    throw new RuntimeException("Unexpected: ordered");
-  }
-
   private void listToQueue() {
     queue.clear(); // rebuild queue
-    partialListToQueue();
-  }
-
-  private void partialListToQueue() {
     for (SpansCell cell = first; cell != null; cell = cell.next) {
       queue.put(cell);                      // add to queue from list
     }
@@ -304,23 +245,6 @@ class NearSpans implements Spans {
 
   private boolean atMatch() {
     return (min().doc() == max.doc())
-          && checkSlop()
-          && (!inOrder || matchIsOrdered());
-  }
-  
-  private boolean checkSlop() {
-    int matchLength = max.end() - min().start();
-    return (matchLength - totalLength) <= slop;
-  }
-
-  private boolean matchIsOrdered() {
-    int lastStart = -1;
-    for (int i = 0; i < ordered.size(); i++) {
-      int start = ((SpansCell)ordered.get(i)).start();
-      if (!(start > lastStart))
-        return false;
-      lastStart = start;
-    }
-    return true;
+        && ((max.end() - min().start() - totalLength) <= slop);
   }
 }

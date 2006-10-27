@@ -151,6 +151,10 @@ public class TestSpanExplanations extends TestExplanations {
     SpanQuery q = snear("xx","w1","w2",0,false);
     qtest(q, new int[] {2});
   }
+  public void testSNear11() throws Exception {
+    SpanQuery q = snear("w1","w2","w3",1,true);
+    qtest(q, new int[] {0,1});
+  }
 
   
   /* some SpanNotQueries */

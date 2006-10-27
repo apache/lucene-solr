@@ -124,7 +124,9 @@ public class SpanNearQuery extends SpanQuery {
     if (clauses.size() == 1)                      // optimize 1-clause case
       return ((SpanQuery)clauses.get(0)).getSpans(reader);
 
-    return new NearSpans(this, reader);
+    return inOrder
+            ? (Spans) new NearSpansOrdered(this, reader)
+            : (Spans) new NearSpansUnordered(this, reader);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
