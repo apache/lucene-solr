@@ -52,13 +52,19 @@ public class TestScorerPerf extends TestCase {
     s = new IndexSearcher(rd);
   }
 
-  public void createRandomTerms(int nDocs, int nTerms, Directory dir) throws Exception {
+  public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
+    int[] freq = new int[nTerms];
+    for (int i=0; i<nTerms; i++) {
+      int f = (nTerms+1)-i;  // make first terms less frequent
+      freq[i] = (int)Math.ceil(Math.pow(f,power));
+    }
+
     IndexWriter iw = new IndexWriter(dir,new WhitespaceAnalyzer(), true);
     iw.setMaxBufferedDocs(123);
     for (int i=0; i<nDocs; i++) {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
-        if (r.nextInt(nTerms) <= j) {
+        if (r.nextInt(freq[j]) == 0) {
           d.add(new Field("f", Character.toString((char)j), Field.Store.NO, Field.Index.UN_TOKENIZED));
         }
       }
@@ -176,9 +182,6 @@ public class TestScorerPerf extends TestCase {
       }
 
       oq.add(bq, BooleanClause.Occur.MUST);
-      if (validate) {
-
-      }
       } // outer
 
 
@@ -211,7 +214,6 @@ public class TestScorerPerf extends TestCase {
         do {tnum = r.nextInt(termsInIndex);} while (terms.get(tnum));
         Query tq = new TermQuery(new Term("f",Character.toString((char)tnum)));
         bq.add(tq, BooleanClause.Occur.MUST);
-        break;
       }
 
       CountingHitCollector hc = new CountingHitCollector();
@@ -245,7 +247,6 @@ public class TestScorerPerf extends TestCase {
         do {tnum = r.nextInt(termsInIndex);} while (terms.get(tnum));
         Query tq = new TermQuery(new Term("f",Character.toString((char)tnum)));
         bq.add(tq, BooleanClause.Occur.MUST);
-        break;
       } // inner
 
       oq.add(bq, BooleanClause.Occur.MUST);
@@ -254,6 +255,31 @@ public class TestScorerPerf extends TestCase {
 
       CountingHitCollector hc = new CountingHitCollector();
       s.search(oq, hc);
+      ret += hc.getSum();
+    }
+
+    return ret;
+  }
+
+
+    public int doSloppyPhrase(IndexSearcher s,
+                                int termsInIndex,
+                                int maxClauses,
+                                int iter
+  ) throws IOException {
+    int ret=0;
+
+    for (int i=0; i<iter; i++) {
+      int nClauses = r.nextInt(maxClauses-1)+2; // min 2 clauses
+      PhraseQuery q = new PhraseQuery();
+      for (int j=0; j<nClauses; j++) {
+        int tnum = r.nextInt(termsInIndex);
+        q.add(new Term("f",Character.toString((char)tnum)), j);
+      }
+      q.setSlop(termsInIndex);  // this could be random too
+
+      CountingHitCollector hc = new CountingHitCollector();
+      s.search(q, hc);
       ret += hc.getSum();
     }
 
@@ -272,53 +298,82 @@ public class TestScorerPerf extends TestCase {
   }
 
   /***
+  int bigIter=6;
   public void testConjunctionPerf() throws Exception {
     createDummySearcher();
     validate=false;
     sets=randBitSets(32,1000000);
-    long start = System.currentTimeMillis();
-    doConjunctions(500,6);
-    long end = System.currentTimeMillis();
+    for (int i=0; i<bigIter; i++) {
+      long start = System.currentTimeMillis();
+      doConjunctions(500,6);
+      long end = System.currentTimeMillis();
+      System.out.println("milliseconds="+(end-start));
+    }
     s.close();
-    System.out.println("milliseconds="+(end-start));
   }
 
   public void testNestedConjunctionPerf() throws Exception {
     createDummySearcher();
     validate=false;
     sets=randBitSets(32,1000000);
-    long start = System.currentTimeMillis();
-    doNestedConjunctions(500,3,3);
-    long end = System.currentTimeMillis();
+    for (int i=0; i<bigIter; i++) {
+      long start = System.currentTimeMillis();
+      doNestedConjunctions(500,3,3);
+      long end = System.currentTimeMillis();
+      System.out.println("milliseconds="+(end-start));
+    }
     s.close();
-    System.out.println("milliseconds="+(end-start));
   }
 
   public void testConjunctionTerms() throws Exception {
+    validate=false;
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");
-    createRandomTerms(100000,25, dir);
+    createRandomTerms(100000,25,2, dir);
     s = new IndexSearcher(dir);
     System.out.println("Starting performance test");
-    long start = System.currentTimeMillis();
-    doTermConjunctions(s,25,5,10000);
-    long end = System.currentTimeMillis();
+    for (int i=0; i<bigIter; i++) {
+      long start = System.currentTimeMillis();
+      doTermConjunctions(s,25,5,10000);
+      long end = System.currentTimeMillis();
+      System.out.println("milliseconds="+(end-start));
+    }
     s.close();
-    System.out.println("milliseconds="+(end-start));
   }
 
   public void testNestedConjunctionTerms() throws Exception {
+    validate=false;    
     RAMDirectory dir = new RAMDirectory();
     System.out.println("Creating index");
-    createRandomTerms(100000,25, dir);
+    createRandomTerms(100000,25,2, dir);
     s = new IndexSearcher(dir);
     System.out.println("Starting performance test");
-    long start = System.currentTimeMillis();
-    doNestedTermConjunctions(s,25,5,5,1000);
-    long end = System.currentTimeMillis();
+    for (int i=0; i<bigIter; i++) {
+      long start = System.currentTimeMillis();
+      doNestedTermConjunctions(s,25,5,5,1000);
+      long end = System.currentTimeMillis();
+      System.out.println("milliseconds="+(end-start));
+    }
     s.close();
-    System.out.println("milliseconds="+(end-start));
   }
-  ***/
+
+
+  public void testSloppyPhrasePerf() throws Exception {
+    validate=false;    
+    RAMDirectory dir = new RAMDirectory();
+    System.out.println("Creating index");
+    createRandomTerms(100000,25,2,dir);
+    s = new IndexSearcher(dir);
+    System.out.println("Starting performance test");
+    for (int i=0; i<bigIter; i++) {
+      long start = System.currentTimeMillis();
+      doSloppyPhrase(s,25,2,1000);
+      long end = System.currentTimeMillis();
+      System.out.println("milliseconds="+(end-start));
+    }
+    s.close();
+
+  }
+   ***/
 
 }

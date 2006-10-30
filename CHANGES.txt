@@ -211,6 +211,11 @@ Optimizations
      size buffers, which will speed up merging and retrieving binary
      and compressed fields.  (Nadav Har'El via Yonik Seeley)
 
+ 11. LUCENE-687: Lazy skipping on proximity file speeds up most
+     queries involving term positions, including phrase queries.
+     (Michael Busch via Yonik Seeley)
+
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
 
