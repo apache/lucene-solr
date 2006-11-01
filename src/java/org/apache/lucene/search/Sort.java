@@ -85,12 +85,6 @@ import java.io.Serializable;
  * fields are in the index and <i>might</i> be used to sort - only by
  * the ones actually used to sort a result set.
  *
- * <p>The cache is cleared each time a new <code>IndexReader</code> is
- * passed in, or if the value returned by <code>maxDoc()</code>
- * changes for the current IndexReader.  This class is not set up to
- * be able to efficiently sort hits from more than one index
- * simultaneously.
- *
  * <p>Created: Feb 12, 2004 10:53:57 AM
  *
  * @author  Tim Jones (Nacimiento Software)
