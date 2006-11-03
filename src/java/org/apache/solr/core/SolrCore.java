@@ -864,6 +864,7 @@ public final class SolrCore {
       String attrVal = xpp.getAttributeValue(i);
       if ("boost".equals(attrName)) {
         docBoost = Float.parseFloat(attrVal);
+        builder.setBoost(docBoost);
       } else {
         log.warning("Unknown attribute doc/@" + attrName);
       }
@@ -911,8 +912,8 @@ public final class SolrCore {
                                         // need this line for isNull???
       // Don't add fields marked as null (for now at least)
       if (!isNull) {
-        if (docBoost != 1.0f) {
-          builder.addField(name,val,docBoost);
+        if (boost != 1.0f) {
+          builder.addField(name,val,boost);
         } else {
           builder.addField(name,val);
         }

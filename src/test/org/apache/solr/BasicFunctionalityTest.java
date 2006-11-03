@@ -157,6 +157,43 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   }
 
+  public void testDocBoost() throws Exception {
+    String res = h.update("<add>" + "<doc><field name=\"id\">1</field>"+
+                                          "<field name=\"text\">hello</field></doc>" + 
+                          "<doc boost=\"2.0\"><field name=\"id\">2</field>" +
+                                          "<field name=\"text\">hello</field></doc>" + 
+                          "</add>");
+
+    assertEquals("<result status=\"0\"></result><result status=\"0\"></result>", res);
+    assertU("<commit/>");
+    assertQ(req("text:hello")
+            ,"//*[@numFound='2']"
+            );
+    String resp = h.query(lrf.makeRequest("q", "text:hello", "debugQuery", "true"));
+    //System.out.println(resp);
+    // second doc ranked first
+    assertTrue( resp.indexOf("id=2") < resp.indexOf("id=1") );
+  }
+
+  public void testFieldBoost() throws Exception {
+    String res = h.update("<add>" + "<doc><field name=\"id\">1</field>"+
+                                      "<field name=\"text\">hello</field></doc>" + 
+                                    "<doc><field name=\"id\">2</field>" +
+                                      "<field boost=\"2.0\" name=\"text\">hello</field></doc>" + 
+                          "</add>");
+
+    assertEquals("<result status=\"0\"></result><result status=\"0\"></result>", res);
+    assertU("<commit/>");
+    assertQ(req("text:hello"),
+            "//*[@numFound='2']"
+            );
+    String resp = h.query(lrf.makeRequest("q", "text:hello", "debugQuery", "true"));
+    //System.out.println(resp);
+    // second doc ranked first
+    assertTrue( resp.indexOf("id=2") < resp.indexOf("id=1") );
+  }
+
+
   public void testXMLWriter() throws Exception {
 
     SolrQueryResponse rsp = new SolrQueryResponse();

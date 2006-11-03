@@ -112,6 +112,7 @@ Bug Fixes
  7. WordDelimiterFilter can throw exceptions if configured with both
     generate and catenate off.  (Mike Klaas via yonik, SOLR-34)
  8. Escape '>' in XML output (because ]]> is illegal in CharData) 
+ 9. field boosts weren't being applied and doc boosts were being applied to fields (klaas)
 
 Other Changes
  1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,
