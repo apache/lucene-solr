@@ -121,5 +121,6 @@ Other Changes
  4. Included unique key field name/value (if available) in log message of add (billa, SOLR-18)
  5. Updated to Lucene 2.0 nightly build 2006-09-07
  6. Added javascript to catch empty query in admin query forms (Tomislav Nakic-Alfirevic via billa, SOLR-48
+ 7. blackslash escape * in ssh command used in snappuller for zsh compatibility, SOLR-63
 
 2006/01/17 Solr open sourced, moves to Apache Incubator
