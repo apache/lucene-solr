@@ -60,8 +60,9 @@
 
   <section><title>Query</title>
     <ul>
-      <li>XML/HTTP and JSON/HTTP interfaces</li>
+      <li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby)</li>
       <li>Highlighted context snippets</li>
+      <li>Faceted Searching based on field values and explicit queries</li>
       <li>Sort specifications added to query language</li>
       <li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
       <li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
