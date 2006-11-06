@@ -25,9 +25,9 @@ import org.apache.lucene.gdata.server.ServiceException;
  * @author Simon Willnauer
  *
  */
-public class UpdataAccountStrategy extends AbstractAccountHandler {
+public class UpdateAccountStrategy extends AbstractAccountHandler {
 
-    private static final Log LOG = LogFactory.getLog(UpdataAccountStrategy.class);
+    private static final Log LOG = LogFactory.getLog(UpdateAccountStrategy.class);
 
     
 
