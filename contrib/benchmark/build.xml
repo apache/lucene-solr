@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<project name="benchmark" default="default">
+
+    <description>
+        Lucene Benchmarking Contributions
+    </description>
+
+    <import file="../contrib-build.xml"/>
+    <property name="working.dir" value="work"/>
+
+    <target name="check-files">
+
+        <available file="temp/news20.tar.gz" property="news20.exists"/>
+
+        <available file="${working.dir}/20_newsgroup" property="news20.expanded"/>
+
+        <available file="temp/reuters21578.tar.gz" property="reuters.exists"/>
+        <available file="${working.dir}/reuters" property="reuters.expanded"/>
+        <available file="${working.dir}/reuters-out" property="reuters.extracted"/>
+        <available file="temp/20news-18828.tar.gz" property="20news-18828.exists"/>
+        <available file="${working.dir}/20news-18828" property="20news-18828.expanded"/>
+        <available file="${working.dir}/mini_newsgroups" property="mini.expanded"/>
+        
+    </target>
+
+    <target name="get-news-20" unless="20news-18828.exists">
+        <get src="http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.tar.gz"
+             dest="temp/news20.tar.gz"/>
+
+    </target>
+    <target name="get-reuters" unless="reuters.exists">
+
+        <get src="http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
+            dest="temp/reuters21578.tar.gz"/>
+    </target>
+
+    <target name="expand-news-20"  unless="news20.expanded">
+        <gunzip src="temp/news20.tar.gz" dest="temp"/>
+        <untar src="temp/news20.tar" dest="${working.dir}"/>
+    </target>
+    <target name="expand-reuters" unless="reuters.expanded">
+        <gunzip src="temp/reuters21578.tar.gz" dest="temp"/>
+        <mkdir dir="${working.dir}/reuters"/>
+        <untar src="temp/reuters21578.tar" dest="${working.dir}/reuters"/>
+        <delete >
+            <fileset dir="${working.dir}/reuters">
+                <include name="*.txt"/>
+            </fileset>
+        </delete>
+
+    </target>
+    <target name="extract-reuters" depends="check-files" unless="reuters.extracted">
+        <mkdir dir="${working.dir}/reuters-out"/>
+        <java classname="org.apache.lucene.benchmark.utils.ExtractReuters" maxmemory="1024M" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg line="${working.dir}/reuters ${working.dir}/reuters-out"/>
+        </java>
+    </target>
+    <target name="get-20news-18828" unless="20news-18828.exists">
+        <get src="http://people.csail.mit.edu/u/j/jrennie/public_html/20Newsgroups/20news-18828.tar.gz"
+             dest="temp/20news-18828.tar.gz"/>
+
+    </target>
+    <target name="expand-20news-18828" unless="20news-18828.expanded">
+        <gunzip src="temp/20news-18828.tar.gz" dest="temp"/>
+        <untar src="temp/20news-18828.tar" dest="${working.dir}"/>
+    </target>
+    <target name="get-mini-news" unless="mini.exists">
+        <get src="http://kdd.ics.uci.edu/databases/20newsgroups/mini_newsgroups.tar.gz"
+             dest="temp/mini_newsgroups.tar.gz"/>
+    </target>
+    <target name="expand-mini-news" unless="mini.expanded">
+        <gunzip src="temp/mini_newsgroups.tar.gz" dest="temp"/>
+        <untar src="temp/mini_newsgroups.tar" dest="${working.dir}"/>
+    </target>
+
+    <target name="get-files" depends="check-files">
+        <mkdir dir="temp"/>
+        <antcall target="get-reuters"/>
+        <antcall target="expand-reuters"/>
+        <antcall target="extract-reuters"/>
+    </target>
+    <property name="digester.jar" value="commons-digester-1.7.jar"/>
+    <property name="collections.jar" value="commons-collections-3.1.jar"/>
+    <property name="logging.jar" value="commons-logging-1.0.4.jar"/>
+    <property name="bean-utils.jar" value="commons-beanutils-1.7.0.jar"/>
+    <path id="classpath">
+        <pathelement path="${lucene.jar}"/>
+        <pathelement path="${basedir}/lib/${digester.jar}"/>
+        <pathelement path="${basedir}/lib/${collections.jar}"/>
+        <pathelement path="${basedir}/lib/${logging.jar}"/>
+        <pathelement path="${basedir}/lib/${bean-utils.jar}"/>
+    </path>
+    <path id="run.classpath">
+        <path refid="classpath"/>
+        <pathelement location="${build.dir}/classes/java"/>
+        <pathelement path="${basedir}/lib/${digester.jar}"/>
+        <pathelement path="${basedir}/lib/${collections.jar}"/>
+        <pathelement path="${basedir}/lib/${logging.jar}"/>
+        <pathelement path="${basedir}/lib/${bean-utils.jar}"/>
+    </path>
+
+    <target name="run-standard" depends="compile,check-files,get-files" description="Run the standard baseline">
+        <echo>Working Directory: ${working.dir}</echo>
+        <java classname="org.apache.lucene.benchmark.Driver"  maxmemory="1024M" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg line="${working.dir} ${basedir}/conf/standard-config.xml"/>
+        </java>
+    </target>
+    <target name="run-micro-standard" depends="compile,check-files,get-files" description="Run the standard baseline">
+        <echo>Working Directory: ${working.dir}</echo>
+        <java classname="org.apache.lucene.benchmark.Driver" maxmemory="1024M" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg line="${working.dir} ${basedir}/conf/micro-standard-config.xml"/>
+        </java>
+    </target>
+
+    <target name="init" depends="common.init,check-files"/>
+</project>
