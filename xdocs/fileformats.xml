@@ -1151,7 +1151,7 @@
                     VInts:
                 </p>
                 <p>    15,
-                    22, 3
+                    8, 3
                 </p>
                 <p>DocSkip records the document number before every
                     SkipInterval<sup>th</sup> document in TermFreqs.

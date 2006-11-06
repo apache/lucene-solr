@@ -165,6 +165,8 @@ Bug fixes
     to recognize ordered spans if they overlaped with unordered spans.
     (Paul Elschot via Chris Hostetter)
 
+20. LUCENE-706: Updated fileformats.xml|html concerning the docdelta value in the frequency file. (Johan Stuyts, Doron Cohen via Grant Ingersoll)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
