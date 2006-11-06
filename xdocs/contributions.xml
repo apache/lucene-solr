@@ -17,6 +17,8 @@
             developers, so if you encounter any problems with any of
             this software, please use the author's contact information
             to get help.</p>
+            <p>If you are looking for information on contributing patches or other improvements to Lucene, see
+            <a href="http://wiki.apache.org/jakarta-lucene/HowToContribute">How To Contribute</a> on the Lucene Wiki.</p>
         </section>
 
         <section name="Lucene Tools">
