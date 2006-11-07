@@ -123,5 +123,6 @@ Other Changes
  5. Updated to Lucene 2.0 nightly build 2006-09-07
  6. Added javascript to catch empty query in admin query forms (Tomislav Nakic-Alfirevic via billa, SOLR-48
  7. blackslash escape * in ssh command used in snappuller for zsh compatibility, SOLR-63
+ 8. check solr return code in admin scripts, SOLR-62
 
 2006/01/17 Solr open sourced, moves to Apache Incubator

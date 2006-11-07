@@ -120,7 +120,7 @@ then
 fi
 
 # check status of commit request
-rc=`echo $rs|cut -f2 -d'"'`
+echo $rs | grep '<result.*status="0"' > /dev/null 2>&1
 if [[ $? != 0 ]]
 then
   logMessage commit request to Solr at port ${solr_port} failed:
