@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!-- 
+   Copyright 2004, 2005 The Apache Software Foundation
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<project name="get-dependencies">
+	<property name="repository.url.maven" value="http://www.ibiblio.org/maven"/>
+	<import file="dependency.xml"/>
+	<target name="run-dependencies">
+		<echo>Resolving dependencies for distribution / war build</echo>
+		<antcall target="common-dependencies"/>
+		<ibiblio-dependency artifact="oro" version="2.0.6" group="oro" reposurl="${repository.url.maven}"/>
+		<ibiblio-dependency artifact="javassist" version="3.0" group="javassist" reposurl="${repository.url.maven}"/>
+	
+
+	</target>
+	<target name="common-dependencies">
+			<echo>Resolving common dependencies </echo>
+			<ibiblio-dependency artifact="hivemind" version="1.1" group="hivemind" reposurl="${repository.url.maven}"/>
+			<ibiblio-dependency artifact="hivemind-lib" version="1.1" group="hivemind" reposurl="${repository.url.maven}"/>
+			<ibiblio-dependency artifact="hivemind-jmx" version="1.1" group="hivemind" reposurl="${repository.url.maven}"/>
+			<path id="common.build.path">
+      			<fileset dir="${gdata.external.lib.dir}">
+   					<include name="hivemind-1.1.jar"/>
+  					<include name="hivemind-lib-1.1.jar"/>
+ 					<include name="hivemind-jmx-1.1.jar"/>
+   			 	</fileset>
+   			</path>
+	
+	</target>	
+	<target name="build-dependencies">
+			<antcall target="common-dependencies"/>
+			<path id="build.path">
+      			<path refid="common.build.path"/>
+   			</path> 
+			<echo>Resolving dependencies for build process</echo>
+	</target>
+	<target name="test-dependencies">
+	<echo>Resolving dependencies for test cases</echo>
+		<!--	<antcall target="common-dependencies"/>-->
+			<ibiblio-dependency artifact="easymock" version="1.2_Java1.5" group="easymock" folder="easymock/1.2_Java1.5" />
+			<path id="test.build.path">
+				<fileset dir="${gdata.external.lib.dir}">
+   					<include name="easymock-1.2_Java1.5.jar"/>
+   			 	</fileset>
+   			</path> 
+	</target>
+	
+
+</project>
