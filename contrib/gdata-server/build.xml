@@ -1,90 +1,108 @@
-<?xml version="1.0"?> 
+<?xml version="1.0"?>
 
-<project name="gdata-server" default="default" > 
-    <description>  
+<project name="gdata-server" default="default">
+	<description>  
         Serverside Google Data API implementation  
-    </description> 
-    <property name="javac.source" value="1.5" /> 
-    <property name="javac.target" value="1.5" /> 
-    <property name="gdata.war.name" value="gdata-server" /> 
-    <property name="gdata.lib.dir" value="lib" /> 
-    <property name="db4o.jar" value="db4o-5.2-java5.jar" /> 
-    <!-- set property for third party jars --> 
-    <available property="db4o.jar.present" type="file" file="${gdata.lib.dir}/${db4o.jar}" value="test"/> 
-    <condition property="junit.excludes" value="**/db4o/**/*.java"> 
-        <not> 
-            <isset property="db4o.jar.present"/> 
-        </not> 
-    </condition> 
-    <path id="additional.dependencies"> 
-        <fileset dir="${gdata.lib.dir}"> 
-            <include name="easymock.jar" /> 
-            <include name="servlet-api.jar" /> 
-            <include name="commons-logging-1.1.jar" /> 
-            <include name="gdata-client-1.0.jar" /> 
-            <include name="commons-digester-1.7.jar" /> 
-            <include name="commons-beanutils.jar" /> 
-            <include name="commons-collections-3.2.jar" /> 
-            <include name="nekohtml.jar" /> 
-            <include name="xercesImpl.jar" /> 
-            <include name="${db4o.jar}" if="db4o.jar.present" /> 
-            </fileset> 
-    </path> 
-	
-	
-	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources --> 
-    <target name="compile-core" depends="init"> 
-        <echo>Use gdata - compile-core task </echo> 
-        <compile srcdir="src/java" destdir="${build.dir}/classes/java"> 
-            <classpath refid="classpath" /> 
-            <exclude name="org/apache/lucene/gdata/storage/db4o/**" unless="db4o.jar.present" /> 
-        </compile> 
+    </description>
+	<import file="gdata-build/get-dependencies.xml" />
+	<property name="javac.source" value="1.5" />
+	<property name="javac.target" value="1.5" />
+	<property name="gdata.war.name" value="gdata-server" />
+	<property name="gdata.lib.dir" value="lib" />
+	<property name="gdata.external.lib.dir" value="./ext-libs" />
+	<property name="db4o.jar" value="db4o-5.2-java5.jar" />
+	<!-- set property for third party jars -->
+	<available property="db4o.jar.present" type="file" file="${gdata.lib.dir}/${db4o.jar}" value="test" />
+	<condition property="junit.excludes" value="**/db4o/**/*.java">
+		<not>
+			<isset property="db4o.jar.present" />
+		</not>
+	</condition>
+	<path id="additional.dependencies">
+		<fileset dir="${gdata.lib.dir}">
+			<include name="servlet-api.jar" />
+			<include name="commons-logging-1.1.jar" />
+			<include name="gdata-client-1.0.jar" />
+			<include name="commons-digester-1.7.jar" />
+			<include name="commons-beanutils.jar" />
+			<include name="commons-collections-3.2.jar" />
+			<include name="nekohtml.jar" />
+			<include name="xercesImpl.jar" />
+			<include name="${db4o.jar}" if="db4o.jar.present" />
+		</fileset>
+	</path>
 
-    </target> 
- 
-    <target name="compile-test" depends="compile-core"> 
-        <echo>Use gdata - compile-test task </echo> 
-        <compile srcdir="src/test" destdir="${build.dir}/classes/test"> 
-            <classpath refid="test.classpath" /> 
-            <exclude name="org/apache/lucene/gdata/storage/db4o/**" unless="db4o.jar.present" /> 
-        </compile> 
-        <copy todir="${build.dir}/classes/test"> 
-            <fileset dir="src/test" excludes="**/*.java" /> 
-        </copy> 
-    </target> 
- 
-    <pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" /> 
-    <import file="../contrib-build.xml" /> 
- 
-    <target name="prepare-dist" depends="jar-core"> 
-        <echo>Prepare dist directory</echo> 
-        <delete dir="${dist.dir}" /> 
-        <mkdir dir="${dist.dir}" /> 
-    </target> 
- 
-    <target name="war-gdata" depends="prepare-dist"> 
-        <echo>Distributing GData War </echo> 
-        <war destfile="${dist.dir}/${gdata.war.name}.war" webxml="webroot/WEB-INF/web.xml"> 
-            <metainf dir="webroot/meta-inf" /> 
-            <fileset dir="webroot" defaultexcludes="true"> 
-                <exclude name="meta-inf/context.xml" /> 
-                <exclude name="meta-inf/" /> 
-                <exclude name="WEB-INF/web.xml" /> 
-            </fileset> 
-            <lib dir="${gdata.lib.dir}"> 
-                <include name="commons-logging-1.1.jar" /> 
-                <include name="gdata-client-1.0.jar" /> 
-                <include name="commons-digester-1.7.jar" /> 
-                <include name="commons-beanutils.jar" /> 
-                <include name="commons-collections-3.2.jar" /> 
-            	<include name="nekohtml.jar" /> 
-  	            <include name="xercesImpl.jar" /> 
-                <include name="${db4o.jar}" if="db4o.jar.present" /> 
-            
-            </lib> 
-            <lib dir="${build.dir}" includes="${final.name}.jar" /> 
-            <lib file="${lucene.jar}" /> 
-        </war> 
-    </target> 
- 
-</project> 
+
+	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources -->
+	<target name="compile-core" depends="init">
+		<echo>Use gdata - compile-core task </echo>
+		<antcall target="build-dependencies" />
+		<compile srcdir="src/java" destdir="${build.dir}/classes/java">
+			<classpath>
+				<path refid="classpath"/>
+				<path refid="build.path"/>
+			</classpath>
+			<exclude name="org/apache/lucene/gdata/storage/db4o/**" unless="db4o.jar.present" />
+		</compile>
+
+	</target>
+
+	<target name="compile-test" depends="compile-core">
+		<antcall target="test-dependencies" />
+		<echo>Use gdata - compile-test task </echo>
+		<compile srcdir="src/test" destdir="${build.dir}/classes/test">
+			<classpath>
+				<path refid="test.build.path"/>
+				<path refid="test.classpath"/>
+			</classpath>
+			<exclude name="org/apache/lucene/gdata/storage/db4o/**" unless="db4o.jar.present" />
+		</compile>
+		<copy todir="${build.dir}/classes/test">
+			<fileset dir="src/test" excludes="**/*.java" />
+		</copy>
+	</target>
+
+	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
+	<import file="../contrib-build.xml" />
+
+	<target name="prepare-dist" depends="jar-core">
+		<echo>Prepare dist directory</echo>
+		<delete dir="${dist.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+	<target name="war-gdata" depends="prepare-dist">
+		<echo>Distributing GData War </echo>
+		<antcall target="run-dependencies" />
+		<war destfile="${dist.dir}/${gdata.war.name}.war" webxml="webroot/WEB-INF/web.xml">
+			<metainf dir="webroot/meta-inf" />
+			<fileset dir="webroot" defaultexcludes="true">
+				<exclude name="meta-inf/context.xml" />
+				<exclude name="meta-inf/" />
+				<exclude name="WEB-INF/web.xml" />
+			</fileset>
+			<lib dir="${gdata.lib.dir}">
+				<include name="commons-logging-1.1.jar" />
+				<include name="gdata-client-1.0.jar" />
+				<include name="commons-digester-1.7.jar" />
+				<include name="commons-beanutils.jar" />
+				<include name="commons-collections-3.2.jar" />
+				<include name="nekohtml.jar" />
+				<include name="xercesImpl.jar" />
+				<include name="${db4o.jar}" if="db4o.jar.present" />
+
+			</lib>
+			<lib dir="${gdata.external.lib.dir}">
+				<include name="hivemind-1.1.jar" />
+				<include name="hivemind-jmx-1.1.jar" />
+				<include name="hivemind-lib-1.1.jar" />				
+				<include name="javassist-3.0.jar"/>
+				<include name="oro-2.0.6.jar"/>
+				
+			</lib>
+			<lib dir="${build.dir}" includes="${final.name}.jar" />
+			<lib file="${lucene.jar}" />
+		</war>
+	</target>
+
+</project>
