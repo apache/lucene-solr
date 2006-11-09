@@ -42,16 +42,19 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
-    <!-- autocommit pending docs if certain criteria are met -->
-    <autocommit>  <!-- NOTE: autocommit not implemented yet -->
+    <!-- autocommit pending docs if certain criteria are met 
+         NOTE: maxSecs not implemented yet 
+    <autoCommit> 
       <maxDocs>10000</maxDocs>
-      <maxSec>3600</maxSec>
-    </autocommit>
+      <maxSec>3600</maxSec>  
+    </autoCommit>
+    -->
 
     <!-- represents a lower bound on the frequency that commits may
     occur (in seconds). NOTE: not yet implemented
-    -->
+    
     <commitIntervalLowerBound>0</commitIntervalLowerBound>
+    -->
 
     <!-- The RunExecutableListener executes an external command.
          exe - the name of the executable to run

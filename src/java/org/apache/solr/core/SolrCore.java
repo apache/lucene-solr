@@ -666,7 +666,10 @@ public final class SolrCore {
         if (!committedAttr) cmd.overwriteCommitted=!cmd.allowDups;
 
         DocumentBuilder builder = new DocumentBuilder(schema);
+        SchemaField uniqueKeyField = schema.getUniqueKeyField();
         int eventType=0;
+        // accumulate responses
+        List<String> added = new ArrayList<String>(10);
         while(true) {
           // this may be our second time through the loop in the case
           // that there are multiple docs in the add... so make sure that
@@ -682,47 +685,27 @@ public final class SolrCore {
           eventType = xpp.nextTag();
           if (eventType == XmlPullParser.END_TAG || eventType == XmlPullParser.END_DOCUMENT) break;  // should match </add>
 
-          try {
-            readDoc(builder,xpp);
-            builder.endDoc();
-            cmd.doc = builder.getDoc();
-            log.finest("adding doc...");
-            updateHandler.addDoc(cmd);
-            SchemaField uniqueKeyField = schema.getUniqueKeyField();
-            StringBuilder addMsg = new StringBuilder("add ");
-            if (uniqueKeyField!=null) addMsg.append("(")
-                                .append(uniqueKeyField.getName())
-                                .append("=")
-                                .append(schema.printableUniqueKey(cmd.doc))
-                                .append(") ");
-            log.info(addMsg.toString()+status+" "+(System.currentTimeMillis()-startTime));
-            writer.write("<result status=\"" + status + "\"></result>");
-          } catch (SolrException e) {
-            log(e);
-	          log.info("add "+e.code+" "+(System.currentTimeMillis()-startTime));
-            writeResult(writer,e);
-            // we may not have finised reading the XML for this cmd,
-            // so eat any unused input up till "</add>"
-            eventType = xpp.getEventType();
-            while (true)  {
-              if ( eventType == XmlPullParser.END_DOCUMENT
-                      || (eventType == XmlPullParser.END_TAG && "add".equals(xpp.getName())))
-              {
-                break;
-              }
-              eventType = xpp.next();
-            }
-          }
-        }
-
-      /***
-      while (findNextTag(xpp,"doc") != XmlPullParser.END_DOCUMENT) {
-        readDoc(builder,xpp);
-        Document doc = builder.endDoc();
-        indexWriter.addDocument(doc);
-        docsAdded++;
-      }
-      ***/
+          readDoc(builder,xpp);
+          builder.endDoc();
+          cmd.doc = builder.getDoc();
+          log.finest("adding doc...");
+          updateHandler.addDoc(cmd);
+          String docId = null;
+          if (uniqueKeyField!=null)
+            docId = schema.printableUniqueKey(cmd.doc);
+          added.add(docId);
+          
+        } // end while
+        // write log and result
+        StringBuilder out = new StringBuilder();
+        for (String docId: added)
+          if(docId != null)
+            out.append(docId + ",");
+        String outMsg = out.toString();
+        if(outMsg.length() > 0)
+          outMsg = outMsg.substring(0, outMsg.length() - 1);
+        log.info("added id={" + outMsg  + "} in " + (System.currentTimeMillis()-startTime) + "ms");
+        writer.write("<result status=\"0\"></result>");
 
     } // end add
 
@@ -1014,8 +997,6 @@ public final class SolrCore {
   public final QueryResponseWriter getQueryResponseWriter(SolrQueryRequest request) {
     return getQueryResponseWriter(request.getParam("wt")); 
   }
-
-
 }
 
 

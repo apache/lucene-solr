@@ -150,7 +150,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
     // big freaking kludge since the response is currently not well formed.
     String res = h.update("<add><doc><field name=\"id\">1</field></doc><doc><field name=\"id\">2</field></doc></add>");
-    assertEquals("<result status=\"0\"></result><result status=\"0\"></result>", res);
+    assertEquals("<result status=\"0\"></result>", res);
     assertU("<commit/>");
     assertQ(req("id:[0 TO 99]")
             ,"//*[@numFound='2']"
@@ -165,7 +165,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                                           "<field name=\"text\">hello</field></doc>" + 
                           "</add>");
 
-    assertEquals("<result status=\"0\"></result><result status=\"0\"></result>", res);
+    assertEquals("<result status=\"0\"></result>", res);
     assertU("<commit/>");
     assertQ(req("text:hello")
             ,"//*[@numFound='2']"
@@ -183,7 +183,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                                       "<field boost=\"2.0\" name=\"text\">hello</field></doc>" + 
                           "</add>");
 
-    assertEquals("<result status=\"0\"></result><result status=\"0\"></result>", res);
+    assertEquals("<result status=\"0\"></result>", res);
     assertU("<commit/>");
     assertQ(req("text:hello"),
             "//*[@numFound='2']"
@@ -193,7 +193,6 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     // second doc ranked first
     assertTrue( resp.indexOf("id=2") < resp.indexOf("id=1") );
   }
-
 
   public void testXMLWriter() throws Exception {
 

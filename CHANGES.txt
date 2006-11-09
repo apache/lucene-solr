@@ -62,6 +62,7 @@ New Features
 28. json.wrf parameter adds a wrapper-function around the JSON response,
     useful in AJAX with dynamic script tags for specifying a JavaScript
     callback function. (Bertrand Delacretaz via yonik, SOLR-56)
+29. autoCommit can be specified every so many documents added (klaas, SOLR-65)
     
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
@@ -80,6 +81,8 @@ Changes in runtime behavior
  7. FunctionQuery.explain now uses ComplexExplanation to provide more
     accurate score explanations when composed in a BooleanQuery.
     (hossman, SOLR-25)
+ 8. Document update handling locking is much sparser, allowing performance gains
+    through multiple threads.  Large commits also might be faster (klaas, SOLR-65)
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 
@@ -113,6 +116,7 @@ Bug Fixes
     generate and catenate off.  (Mike Klaas via yonik, SOLR-34)
  8. Escape '>' in XML output (because ]]> is illegal in CharData) 
  9. field boosts weren't being applied and doc boosts were being applied to fields (klaas)
+10. Multiple-doc update generates well-formed xml (klaas, SOLR-65)
 
 Other Changes
  1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,

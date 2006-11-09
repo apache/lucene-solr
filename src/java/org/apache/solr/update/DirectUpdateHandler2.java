@@ -29,9 +29,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 
 import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.io.IOException;
@@ -41,6 +45,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrException;
 
 /**
@@ -131,30 +136,48 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong numErrors = new AtomicLong();
   AtomicLong numErrorsCumulative = new AtomicLong();
 
-
+  // tracks when auto-commit should occur
+  protected final CommitTracker tracker;
 
   // The key is the id, the value (Integer) is the number
   // of docs to save (delete all except the last "n" added)
-  protected final HashMap<String,Integer> pset;
+  protected final Map<String,Integer> pset;
 
   // commonly used constants for the count in the pset
   protected final static Integer ZERO = 0;
   protected final static Integer ONE = 1;
+
+  // iwCommit protects internal data and open/close of the IndexWriter and
+  // is a mutex. Any use of the index writer should be protected by iwAccess, 
+  // which admits multiple simultaneous acquisitions.  iwAccess is 
+  // mutually-exclusive with the iwCommit lock.
+  protected final Lock iwAccess, iwCommit;
 
   protected IndexWriter writer;
   protected SolrIndexSearcher searcher;
 
   public DirectUpdateHandler2(SolrCore core) throws IOException {
     super(core);
-    pset = new HashMap<String,Integer>(256); // 256 is just an optional head-start
+    /* A TreeMap is used to maintain the natural ordering of the document ids,
+       which makes commits more efficient
+     */
+    pset = new TreeMap<String,Integer>(); 
+
+    ReadWriteLock rwl = new ReentrantReadWriteLock();
+    iwAccess = rwl.readLock();
+    iwCommit = rwl.writeLock();
+
+    tracker = new CommitTracker();
   }
 
+  // must only be called when iwCommit lock held
   protected void openWriter() throws IOException {
     if (writer==null) {
       writer = createMainIndexWriter("DirectUpdateHandler2");
     }
   }
 
+  // must only be called when iwCommit lock held
   protected void closeWriter() throws IOException {
     try {
       numDocsPending.set(0);
@@ -182,44 +205,60 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
-  protected void doAdd(Document doc) throws IOException {
-    closeSearcher(); openWriter();
-    writer.addDocument(doc);
-  }
-
-
-
   public int addDoc(AddUpdateCommand cmd) throws IOException {
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
+
+    iwAccess.lock();
     try {
-      if (!cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
-        throw new SolrException(400,"unsupported param combo:" + cmd);
-        // this would need a reader to implement (to be able to check committed
-        // before adding.)
-        // return addNoOverwriteNoDups(cmd);
-      } else if (!cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
-        rc = addConditionally(cmd);
-        return rc;
+
+      // We can't using iwCommit to protect internal data here, since it would
+      // block other addDoc calls.  Hence, we synchronize to protect internal
+      // state.  This is safe as all other state-changing operations are
+      // protected with iwCommit (which iwAccess excludes from this block).
+      synchronized (this) {
+        if (!cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
+          throw new SolrException(400,"unsupported param combo:" + cmd);
+          // this would need a reader to implement (to be able to check committed
+          // before adding.)
+          // return addNoOverwriteNoDups(cmd);
+        } else if (!cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
+          rc = addConditionally(cmd);
       } else if (!cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
-        throw new SolrException(400,"unsupported param combo:" + cmd);
-      } else if (!cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
-        rc = overwriteBoth(cmd);
-        return rc;
-      } else if (cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
-        rc = allowDups(cmd);
-        return rc;
-      } else if (cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
-        throw new SolrException(400,"unsupported param combo:" + cmd);
-      } else if (cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
-        throw new SolrException(400,"unsupported param combo:" + cmd);
-      } else if (cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
-        rc = overwriteBoth(cmd);
-        return rc;
-      }
-      throw new SolrException(400,"unsupported param combo:" + cmd);
+          throw new SolrException(400,"unsupported param combo:" + cmd);
+        } else if (!cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
+          rc = overwriteBoth(cmd);
+        } else if (cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
+          rc = allowDups(cmd);
+        } else if (cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
+          throw new SolrException(400,"unsupported param combo:" + cmd);
+        } else if (cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
+          throw new SolrException(400,"unsupported param combo:" + cmd);
+        } else if (cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
+          rc = overwriteBoth(cmd);
+        }
+        if (rc == -1)
+          throw new SolrException(400,"unsupported param combo:" + cmd);
+        
+        if (rc == 1) {
+          // adding document -- prep writer
+          closeSearcher();
+          openWriter();
+          tracker.increment(1);          
+        } else {
+          // exit prematurely
+          return rc;
+        }
+      } // end synchronized block
+
+      // this is the only unsynchronized code in the iwAccess block, which
+      // should account for most of the time
+      assert(rc == 1);
+      writer.addDocument(cmd.doc);
+      
     } finally {
+      iwAccess.unlock();
       if (rc!=1) {
         numErrors.incrementAndGet();
         numErrorsCumulative.incrementAndGet();
@@ -227,6 +266,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         numDocsPending.incrementAndGet();
       }
     }
+
+    // might need to commit (wait for searcher if so)
+    checkCommit(true);
+    return rc;
   }
 
 
@@ -246,8 +289,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       throw new SolrException(400,"operation not supported" + cmd);
     }
 
-    synchronized(this) {
+    iwCommit.lock();
+    try {
       pset.put(idFieldType.toInternal(cmd.id), ZERO);
+    } finally { 
+      iwCommit.unlock(); 
     }
   }
 
@@ -273,11 +319,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      Query q = QueryParsing.parseQuery(cmd.query, schema);
 
      int totDeleted = 0;
-     synchronized(this) {
+     iwCommit.lock();
+     try {
        // we need to do much of the commit logic (mainly doing queued
        // deletes since deleteByQuery can throw off our counts.
        doDeletions();
-
+       
        closeWriter();
        openSearcher();
 
@@ -286,6 +333,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
        final DeleteHitCollector deleter = new DeleteHitCollector(searcher);
        searcher.search(q, null, deleter);
        totDeleted = deleter.deleted;
+     } finally {
+       iwCommit.unlock();
      }
 
      if (SolrCore.log.isLoggable(Level.FINE)) {
@@ -306,73 +355,63 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   /////////////////// helper method for each add type ///////////////
   ///////////////////////////////////////////////////////////////////
 
+  // methods return 1 if the document is to be added; 0 otherwise.
+  // methods must be called in synchronized context
 
   protected int addConditionally(AddUpdateCommand cmd) throws IOException {
     if (cmd.indexedId ==null) {
       cmd.indexedId =getIndexedId(cmd.doc);
     }
-    synchronized(this) {
-      Integer saveCount = pset.get(cmd.indexedId);
-      if (saveCount!=null && saveCount!=0) {
-        // a doc with this id already exists in the pending set
-        return 0;
-      }
-      pset.put(cmd.indexedId, ONE);
-      doAdd(cmd.doc);
-      return 1;
+    Integer saveCount = pset.get(cmd.indexedId);
+    if (saveCount!=null && saveCount!=0) {
+      // a doc with this id already exists in the pending set
+      return 0;
     }
+    pset.put(cmd.indexedId, ONE);
+    return 1;
   }
 
 
   // overwrite both pending and committed
-  protected synchronized int overwriteBoth(AddUpdateCommand cmd) throws IOException {
+  protected int overwriteBoth(AddUpdateCommand cmd) throws IOException {
     if (cmd.indexedId ==null) {
       cmd.indexedId =getIndexedId(cmd.doc);
     }
-    synchronized (this) {
-      pset.put(cmd.indexedId, ONE);
-      doAdd(cmd.doc);
-    }
+    pset.put(cmd.indexedId, ONE);
     return 1;
   }
 
 
   // add without checking
-  protected synchronized int allowDups(AddUpdateCommand cmd) throws IOException {
+  protected int allowDups(AddUpdateCommand cmd) throws IOException {
     if (cmd.indexedId ==null) {
       cmd.indexedId =getIndexedIdOptional(cmd.doc);
     }
-    synchronized(this) {
-      doAdd(cmd.doc);
+    if (cmd.indexedId != null) {
+      Integer saveCount = pset.get(cmd.indexedId);
+      
+      // if there weren't any docs marked for deletion before, then don't mark
+      // any for deletion now.
+      if (saveCount == null) return 1;
 
-      if (cmd.indexedId != null) {
-        Integer saveCount = pset.get(cmd.indexedId);
+      // If there were docs marked for deletion, then increment the number of
+      // docs to save at the end.
 
-        // if there weren't any docs marked for deletion before, then don't mark
-        // any for deletion now.
-        if (saveCount == null) return 1;
+      // the following line is optional, but it saves an allocation in the common case.
+      if (saveCount == ZERO) saveCount=ONE;
+      else saveCount++;
 
-        // If there were docs marked for deletion, then increment the number of
-        // docs to save at the end.
-
-        // the following line is optional, but it saves an allocation in the common case.
-        if (saveCount == ZERO) saveCount=ONE;
-        else saveCount++;
-
-        pset.put(cmd.indexedId, saveCount);
-      }
+      pset.put(cmd.indexedId, saveCount);
     }
     return 1;
   }
 
-  // NOT FOR USE OUTSIDE OF A "synchronized(this)" BLOCK
-  private int[] docnums;
-
   //
   // do all needed deletions.
-  // call in a synchronized context.
+  // call with iwCommit lock held
   //
   protected void doDeletions() throws IOException {
+    int[] docnums = new int[0];
 
     if (pset.size() > 0) { // optimization: only open searcher if there is something to delete...
       log.info("DirectUpdateHandler2 deleting and removing dups for " + pset.size() +" ids");
@@ -449,35 +488,38 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
 
     boolean error=true;
+    iwCommit.lock();
     try {
-      synchronized (this) {
-        log.info("start "+cmd);
-        doDeletions();
-
-        if (cmd.optimize) {
-          closeSearcher();
-          openWriter();
-          writer.optimize();
-        }
-
+      log.info("start "+cmd);
+      doDeletions();
+        
+      if (cmd.optimize) {
         closeSearcher();
-        closeWriter();
+        openWriter(); 
+        writer.optimize();
+      }
 
-        callPostCommitCallbacks();
-        if (cmd.optimize) {
-          callPostOptimizeCallbacks();
-        }
-        // open a new searcher in the sync block to avoid opening it
-        // after a deleteByQuery changed the index, or in between deletes
-        // and adds of another commit being done.
-        core.getSearcher(true,false,waitSearcher);
+      closeSearcher();
+      closeWriter();
 
-        log.info("end_commit_flush");
-      }  // end synchronized block
+      callPostCommitCallbacks();
+      if (cmd.optimize) {
+        callPostOptimizeCallbacks();
+      }
+      // open a new searcher in the sync block to avoid opening it
+      // after a deleteByQuery changed the index, or in between deletes
+      // and adds of another commit being done.
+      core.getSearcher(true,false,waitSearcher);
+
+      // reset commit tracking
+      tracker.didCommit();
+
+      log.info("end_commit_flush");
 
       error=false;
     }
     finally {
+      iwCommit.unlock();
       addCommands.set(0);
       deleteByIdCommands.set(0);
       deleteByQueryCommands.set(0);
@@ -502,14 +544,105 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
   public void close() throws IOException {
     log.info("closing " + this);
-    synchronized(this) {
+    iwCommit.lock();
+    try{
       doDeletions();
       closeSearcher();
       closeWriter();
+    } finally {
+      iwCommit.unlock();
     }
     log.info("closed " + this);
   }
 
+  /** Inform tracker that <code>docs</code> docs have been added.  Will 
+   * perform commit and/or optimize if constraints are satisfied.
+   */
+  protected void checkCommit() throws IOException {
+    checkCommit(false);
+  }
+  protected void checkCommit(boolean waitSearcher) throws IOException {
+    synchronized (tracker) {
+      if (tracker.needCommit()) {
+        CommitUpdateCommand cmd = new CommitUpdateCommand(false);
+        cmd.waitSearcher = waitSearcher;
+        log.info("autocommitting: " + cmd);
+        commit(cmd);
+      } 
+    }
+  }
+
+  /** Helper class for tracking autoCommit state.
+   *
+   * Note: This is purely an implementation detail of autoCommit and will
+   * definitely change in the future, so the interface should not be
+   * relied-upon
+   *
+   * Note: all access must be synchronized.
+   */
+  class CommitTracker {
+
+    // settings
+    private final ConstraintTester commitTester;
+
+    // state
+    private long timeOfCommit;
+    private long docsSinceCommit;    
+    private boolean needCommit;
+
+    public CommitTracker() {
+      timeOfCommit = timestamp();
+      docsSinceCommit = 0;
+      needCommit = false;
+
+      commitTester = new ConstraintTester(
+         SolrConfig.config.getInt("updateHandler/autoCommit/maxDocs", -1));
+      SolrCore.log.info("autocommit if " + commitTester);
+    }
+
+    /** Indicate that <code>count</code> docs have been added.  May set
+     * <code>needCommit()</code> and perhaps also <code>needOptimize</code>
+     */
+    public void increment(int count) {
+      docsSinceCommit += count;
+      if (docsSinceCommit > 0) {
+        needCommit = commitTester.testConstraints(docsSinceCommit);
+      }
+    }
+
+    /** @return true if commit is needed */
+    public boolean needCommit() { return needCommit; }
+    
+    /** Inform tracker that a commit has occurred */
+    public void didCommit() {
+      didCommit(docsSinceCommit);
+    }
+    public void didCommit(long docsCommitted) {
+      timeOfCommit = timestamp();
+      docsSinceCommit -= docsCommitted;
+      needCommit = false;
+
+    }    
+
+    /** @return milliseconds since epoch */
+    private long timestamp() { return System.currentTimeMillis();}
+
+    class ConstraintTester {
+      private long docsUpperBound = -1;
+      public ConstraintTester(long docsUpperBound) {
+        this.docsUpperBound = docsUpperBound;
+      }
+      private boolean checkDocsUpper(long docs) {
+        return docsUpperBound == -1 ? false : docsUpperBound <= docs;
+      }
+      public boolean testConstraints(long docs) {
+        return checkDocsUpper(docs);
+      }
+      public String toString() {
+        return docsUpperBound != -1 ? "docs >= " + docsUpperBound : "{no doc limit}" ;
+      }
+    }
+  }
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////

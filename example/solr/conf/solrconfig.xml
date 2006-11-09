@@ -38,6 +38,12 @@
   <!-- the default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
 
+    <!-- autocommit pending docs if certain criteria are met 
+    <autoCommit> 
+      <maxDocs>10000</maxDocs>
+    </autoCommit>
+    -->
+
     <!-- The RunExecutableListener executes an external command.
          exe - the name of the executable to run
          dir - dir to use as the current working directory. default="."
