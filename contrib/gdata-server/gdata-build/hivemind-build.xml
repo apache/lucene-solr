@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<!-- 
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+ 
+      http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ 
+-->
+
+<project name="gdata-server-hivemind" >
+<property name="ioc.container.jar" value="${final.name}-hivemind.jar"/>
+	<description>  
+       Compiles and Jars the hivemind dependencies for gdata-server
+    </description>
+    <target name="prepare-IoC-container">
+    	<available file="${build.dir}/${final.name}.jar" property="gdata.core.jar.present"/>
+		<fail unless="${gdata.core.jar.present}" message="Must gdata core jar first. run build.xml - 'jar-core' task"/>
+		<path id="IoC.container.build.path">
+	    	<fileset dir="${build.dir}">
+	   			<include name="${final.name}.jar"/>
+	   		</fileset>
+		</path>
+
+	</target>
+	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources -->
+	<target name="compile-IoC-container" depends="prepare-IoC-container">
+		<echo>Compile IoC Container classes</echo>
+		<compile srcdir="src/hivemind" destdir="${build.dir}/classes/hivemind">
+			<classpath>
+				<path refid="classpath"/>
+				<path refid="build.path"/>
+				<path refid="IoC.container.build.path"/>				
+			</classpath>
+		</compile>
+	</target>
+
+	<target name="jar-IoC-container" depends="compile-IoC-container">
+		<echo>Jar IoC Container classes and metadata</echo>
+		<jar
+	      destfile="${build.dir}/${ioc.container.jar}"
+	      basedir="${build.dir}/classes/hivemind">
+	      <manifest>
+	        <attribute name="Created-By" value="Apache Jakarta"/>
+	        <section name="org/apache/lucene/">
+	          <attribute name="Specifica	tion-Title" value="Lucene Search Engine"/>
+	          <attribute name="Specification-Version" value="${version}"/>
+	          <attribute name="Specification-Vendor" value="Lucene"/>
+	          <attribute name="Implementation-Title" value="org.apache.lucene"/>
+	          <attribute name="Implementation-Version" value="build ${DSTAMP}"/>
+	          <attribute name="Implementation-Vendor" value="Lucene"/>
+	        </section>
+	      </manifest>
+	    </jar>
+	</target>
+	
+	
+	
+
+
+</project>

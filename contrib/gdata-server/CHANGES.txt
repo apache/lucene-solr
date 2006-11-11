@@ -1,0 +1,15 @@
+Lucene GData-Server change log
+
+$Id:$
+
+trunk (not yet release)
+
+Build management (Ant)
+1. Changes to fetch third-party libs via maven repository
+	- Added build file folder ./gdata-build 
+	- created macroes to fetch jar files in ./gdata-build/dependencies.xml
+	- created tasks to fetch runtime, build and test relevant jar files in ./gdata-build/get-dependencies.xml
+
+2. Changed build management to create core and IoC / DI container jars to enable replacement of the container impl.
+	- created default IoC container build in ./gdata-build/hivemind-build.xml
+	
