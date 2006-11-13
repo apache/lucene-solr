@@ -103,7 +103,7 @@ public class DefaultRequestHandlerFactory extends RequestHandlerFactory {
     @Override
     public GDataRequestHandler getUpdateAccountHandler() {
         
-        return new UpdataAccountStrategy();
+        return new UpdateAccountStrategy();
     }
 
     /**
