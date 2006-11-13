@@ -13,3 +13,17 @@ Build management (Ant)
 2. Changed build management to create core and IoC / DI container jars to enable replacement of the container impl.
 	- created default IoC container build in ./gdata-build/hivemind-build.xml
 	
+3. Webarchive packageing prepared for including IoC metadata descriptors
+	- including configured IoC descriptors in war distribution
+	- improved dependency fetching (on demand)
+	- fixed some spelling errors
+	
+
+
+New Features
+
+1. Hessian Webservice support
+	- created hessian servlet as a generic http interface for provided services
+	- services can be exposed via HessianSkeletonProvider by defining a mapping key, Interface and an implementation instance.
+	
+	

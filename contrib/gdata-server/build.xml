@@ -52,9 +52,8 @@
 
 
 	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources -->
-	<target name="compile-core" depends="init">
+	<target name="compile-core" depends="init, build-dependencies">
 		<echo>Use gdata - compile-core task </echo>
-		<antcall target="build-dependencies" />
 		<compile srcdir="src/java" destdir="${build.dir}/classes/java">
 			<classpath>
 				<path refid="classpath"/>
@@ -65,8 +64,7 @@
 		<antcall target="compile-IoC-container"/>
 	</target>
 
-	<target name="compile-test" depends="compile-core">
-		<antcall target="test-dependencies" />
+	<target name="compile-test" depends="compile-core, test-dependencies">
 		<echo>Use gdata - compile-test task </echo>
 		<compile srcdir="src/test" destdir="${build.dir}/classes/test">
 			<classpath>
@@ -89,9 +87,8 @@
 		<mkdir dir="${dist.dir}" />
 	</target>
 
-	<target name="war-gdata" depends="prepare-dist">
+	<target name="war-gdata" depends="prepare-dist,run-dependencies">
 		<echo>Distributing GData War </echo>
-		<antcall target="run-dependencies" />
 		<war destfile="${dist.dir}/${gdata.war.name}.war" webxml="webroot/WEB-INF/web.xml">
 			<metainf dir="webroot/meta-inf" />
 			<fileset dir="webroot" defaultexcludes="true">
@@ -99,6 +96,7 @@
 				<exclude name="meta-inf/" />
 				<exclude name="WEB-INF/web.xml" />
 			</fileset>
+			<fileset dir="${ioc.descriptors.dir}" excludes="${ioc.descriptors.excludes}" includes="${ioc.descriptors.includes}"/>
 			<lib dir="${gdata.lib.dir}">
 				<include name="commons-logging-1.1.jar" />
 				<include name="gdata-client-1.0.jar" />
@@ -108,18 +106,10 @@
 				<include name="nekohtml.jar" />
 				<include name="xercesImpl.jar" />
 				<include name="${db4o.jar}" if="db4o.jar.present" />
-
 			</lib>
-			<lib dir="${gdata.external.lib.dir}">
-				<include name="hivemind-1.1.jar" />
-				<include name="hivemind-jmx-1.1.jar" />
-				<include name="hivemind-lib-1.1.jar" />				
-				<include name="javassist-3.0.jar"/>
-				<include name="oro-2.0.6.jar"/>
-				
-			</lib>
+			<lib refid="ioc-container-jars"/>
 			<lib dir="${build.dir}" includes="${final.name}.jar" />
-			<lib dir="${build.dir}" includes="${ioc.container.jar}" />
+			<lib dir="${build.dir}" includes="${final.name}${ioc.container.jar.prefix}" />
 			<lib file="${lucene.jar}" />
 		</war>
 	</target>

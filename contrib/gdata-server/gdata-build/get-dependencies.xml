@@ -18,38 +18,45 @@
 -->
 
 <project name="get-dependencies">
+	
 	<property name="repository.url.maven" value="http://www.ibiblio.org/maven"/>
 	<import file="dependency.xml"/>
-	<target name="run-dependencies">
+	
+	<target name="run-dependencies" unless="run.dependencies.fetched" depends="common-dependencies">
 		<echo>Resolving dependencies for distribution / war build</echo>
-		<antcall target="common-dependencies"/>
 		<ibiblio-dependency artifact="oro" version="2.0.6" group="oro" reposurl="${repository.url.maven}"/>
 		<ibiblio-dependency artifact="javassist" version="3.0" group="javassist" reposurl="${repository.url.maven}"/>
-	
-
+		<property  name="run.dependencies.fetched" value="true"/>	
 	</target>
-	<target name="common-dependencies">
+
+	<target name="common-dependencies" unless="common.dependencies.fetched">
 			<echo>Resolving common dependencies </echo>
 			<ibiblio-dependency artifact="hivemind" version="1.1" group="hivemind" reposurl="${repository.url.maven}"/>
 			<ibiblio-dependency artifact="hivemind-lib" version="1.1" group="hivemind" reposurl="${repository.url.maven}"/>
 			<ibiblio-dependency artifact="hivemind-jmx" version="1.1" group="hivemind" reposurl="${repository.url.maven}"/>
+			<ibiblio-dependency artifact="hessian" version="3.0.20" group="hessian" folder="download" reposurl="http://www.caucho.com"/>
 			<path id="common.build.path">
       			<fileset dir="${gdata.external.lib.dir}">
    					<include name="hivemind-1.1.jar"/>
   					<include name="hivemind-lib-1.1.jar"/>
  					<include name="hivemind-jmx-1.1.jar"/>
+ 					<include name="hessian-3.0.20.jar"/>
    			 	</fileset>
    			</path>
-	
+		<property  name="common.dependencies.fetched" value="true"/>	
 	</target>	
-	<target name="build-dependencies">
-			<antcall target="common-dependencies"/>
+
+	
+	<target name="build-dependencies" unless="build.dependencies.fetched" depends="common-dependencies">
+			<echo>Resolving dependencies for build process</echo>
 			<path id="build.path">
       			<path refid="common.build.path"/>
    			</path> 
-			<echo>Resolving dependencies for build process</echo>
+			<property  name="build.dependencies.fetched" value="true"/>	
 	</target>
-	<target name="test-dependencies">
+	
+	
+	<target name="test-dependencies" unless="test.dependencies.fetched">
 	<echo>Resolving dependencies for test cases</echo>
 			<ibiblio-dependency artifact="easymock" version="1.2_Java1.5" group="easymock" folder="easymock/1.2_Java1.5" />
 			<path id="test.build.path">
@@ -57,6 +64,7 @@
    					<include name="easymock-1.2_Java1.5.jar"/>
    			 	</fileset>
    			</path> 
+		<property  name="test.dependencies.fetched" value="true"/>	
 	</target>
 	
 

@@ -16,21 +16,30 @@
   limitations under the License.
  
 -->
-
 <project name="gdata-server-hivemind" >
-<property name="ioc.container.jar" value="${final.name}-hivemind.jar"/>
+<property name="ioc.container.jar.prefix" value="-hivemind.jar"/>
+<property name="ioc.descriptors.dir" value="./src/hivemind/descriptor"/>
+<property name="ioc.descriptors.excludes" value=""/>
+<property name="ioc.descriptors.includes" value="**/*.xml"/>
 	<description>  
        Compiles and Jars the hivemind dependencies for gdata-server
     </description>
     <target name="prepare-IoC-container">
     	<available file="${build.dir}/${final.name}.jar" property="gdata.core.jar.present"/>
-		<fail unless="${gdata.core.jar.present}" message="Must gdata core jar first. run build.xml - 'jar-core' task"/>
+		<fail if="${gdata.core.jar.present}" message="Must gdata core jar first. run build.xml - 'jar-core' task"/>
 		<path id="IoC.container.build.path">
 	    	<fileset dir="${build.dir}">
 	   			<include name="${final.name}.jar"/>
 	   		</fileset>
 		</path>
-
+    	<fileset id="ioc-container-jars" dir="${gdata.external.lib.dir}">
+			<include name="hivemind-1.1.jar" />
+			<include name="hivemind-jmx-1.1.jar" />
+			<include name="hivemind-lib-1.1.jar" />				
+			<include name="javassist-3.0.jar"/>
+			<include name="oro-2.0.6.jar"/>
+			<include name="hessian-3.0.20.jar"/>
+   		</fileset>
 	</target>
 	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources -->
 	<target name="compile-IoC-container" depends="prepare-IoC-container">
@@ -47,12 +56,12 @@
 	<target name="jar-IoC-container" depends="compile-IoC-container">
 		<echo>Jar IoC Container classes and metadata</echo>
 		<jar
-	      destfile="${build.dir}/${ioc.container.jar}"
+	      destfile="${build.dir}/${final.name}${ioc.container.jar.prefix}"
 	      basedir="${build.dir}/classes/hivemind">
 	      <manifest>
 	        <attribute name="Created-By" value="Apache Jakarta"/>
 	        <section name="org/apache/lucene/">
-	          <attribute name="Specifica	tion-Title" value="Lucene Search Engine"/>
+	          <attribute name="Specification-Title" value="Lucene Search Engine"/>
 	          <attribute name="Specification-Version" value="${version}"/>
 	          <attribute name="Specification-Vendor" value="Lucene"/>
 	          <attribute name="Implementation-Title" value="org.apache.lucene"/>

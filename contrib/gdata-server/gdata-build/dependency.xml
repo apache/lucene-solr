@@ -17,13 +17,7 @@
 
 <project name="dependency">
 	
-	
-	<target name="prepare">
-		<mkdir dir="${external.lib.dir}"/>
-		<ibiblio-dependency artifact="easymock" version="1.1" group="easymock" folder="easymock/1.1" use="run"/>
-	</target>
-	
-	<target name="-display-download-warning" unless="download-warning-marker-displayed">
+	<target name="display-download-warning" unless="download-warning-marker-displayed">
 		<echo>
 	**************************************************************************************************
 	*                                                                                                *
@@ -47,15 +41,15 @@
 		<attribute name="artifact" description="The name of the JAR artfiact to download." />
 		<attribute name="version" description="The version number of the artifact to download." />
 		<attribute name="group" description="The Maven group-id containing the JAR." />
-		<attribute name="use" default="compile" description="Useage of the dependency: compile, test or run. Subdirectory to place the artiface in." />
+		<attribute name="use" default="compile" description="Useage of the dependency: compile, test or run. Subdirectory to place the artifact in." />
 		<attribute name="folder" default="jars"/>
 		<attribute name="reposurl" default="http://www.ibiblio.org/maven2"/>
 
 		<sequential>
 			<mkdir dir="${gdata.external.lib.dir}" />
-			<antcall target="-display-download-warning" inheritAll="true"/>
+			<antcall target="display-download-warning" inheritAll="true"/>
 			<download-file dldest="${gdata.external.lib.dir}/@{artifact}-@{version}.jar" dlsrc="@{reposurl}/@{group}/@{folder}/@{artifact}-@{version}.jar" />			           
-			
+			<property name="download-warning-marker-displayed" value="true"/>
 		</sequential>
 				
 	</macrodef>

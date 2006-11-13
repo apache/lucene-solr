@@ -16,7 +16,15 @@
   limitations under the License.
  
 -->
-<project name="gdata-ioc-container">
-	<!-- specify your IOC container build file here -->
-	<import file="hivemind-build.xml"/>
-</project>
+
+<module id="gdata" version="1.0.0"
+	package="org.apache.lucene.gdata">
+
+	The master module for the Apache Lucene GData-Server.
+
+	<dependency module-id="hivemind" version="1.1.0" />
+	<dependency module-id="hivemind.lib" version="1.1.0" />
+	<sub-module descriptor="hivemind-descriptors/gdata.hivemind.webservice.xml" />
+	<sub-module descriptor="hivemind-descriptors/gdata.request.xml" />
+</module>
+
