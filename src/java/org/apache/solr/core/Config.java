@@ -33,6 +33,10 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.net.URLClassLoader;
+import java.net.URI;
+import java.net.URL;
+import java.net.MalformedURLException;
 
 /**
  * @author yonik
@@ -181,7 +185,7 @@ public class Config {
   private static final String[] packages = {"","analysis.","schema.","search.","update.","core.","request.","util."};
 
   public static Class findClass(String cname, String... subpackages) {
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+    ClassLoader loader = getClassLoader();
     if (subpackages.length==0) subpackages = packages;
 
     // first try cname == full name
@@ -226,6 +230,7 @@ public class Config {
 
   public static void setInstanceDir(String dir) {
     instanceDir = normalizeDir(dir);
+    classLoader = null;
     log.info("Solr home set to '" + instanceDir + "'");
   }
 
@@ -249,6 +254,42 @@ public class Config {
     return getInstanceDir() + "conf/";
   }
 
+  /** Singleton classloader loading resources specified in any configs */
+  private static ClassLoader classLoader = null;
+  
+  /**
+   * Returns the singleton classloader to be use when loading resources
+   * specified in any configs.
+   *
+   * <p>
+   * This loader will delegate to the context classloader when possible,
+   * otherwise it will attempt to resolve resources useing any jar files
+   * found in the "lib/" directory in the "Solr Home" directory.
+   * <p>
+   */
+  static ClassLoader getClassLoader() {
+    if (null == classLoader) {
+      classLoader = Thread.currentThread().getContextClassLoader();
+      
+      File f = new File(getInstanceDir() + "lib/");
+      if (f.canRead() && f.isDirectory()) {
+        File[] jarFiles = f.listFiles();
+        URL[] jars = new URL[jarFiles.length];
+        try {
+          for (int j = 0; j < jarFiles.length; j++) {
+            jars[j] = jarFiles[j].toURI().toURL();
+            log.info("Adding '" + jars[j].toString() + "' to Solr classloader");
+          }
+          classLoader = URLClassLoader.newInstance(jars, classLoader);
+        } catch (MalformedURLException e) {
+          SolrException.log(log,"Can't construct solr lib class loader", e);
+        }
+      }
+    }
+    return classLoader;
+  }
+
+
   public static InputStream openResource(String resource) {
     InputStream is=null;
 
@@ -268,7 +309,7 @@ public class Config {
         }
       }
 
-      ClassLoader loader = Thread.currentThread().getContextClassLoader();
+      ClassLoader loader = getClassLoader();
       is = loader.getResourceAsStream(resource);
     } catch (Exception e) {
       throw new RuntimeException("Error opening " + resource, e);

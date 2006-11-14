@@ -63,7 +63,9 @@ New Features
     useful in AJAX with dynamic script tags for specifying a JavaScript
     callback function. (Bertrand Delacretaz via yonik, SOLR-56)
 29. autoCommit can be specified every so many documents added (klaas, SOLR-65)
-    
+30. ${solr.home}/lib directory can now be used for specifying "plugin" jars
+    (hossman, SOLR-68)
+
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
  2. force read of document stored fields in QuerySenderListener
