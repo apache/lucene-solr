@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!--
+Configuration file for use with Driver(InputSource) constructor.  Uses Digester to load.  Set
+
+Class is the fully qualified name of the Benchmarker to load.  It must have a no argument constructor.  All attributes invoke the appropriate bean accessor on the Benchmarker -->
+<benchmark >
+    <benchmarker class="org.apache.lucene.benchmark.standard.StandardBenchmarker"/>
+    <!-- Attributes map to bean getters/setters on the specific instantiation of StandardOptions.  So, if you implement your own options, then you can
+     initialize automatically by setting the bean attributes here.
+
+     All attributes are optional:
+
+     runCount - The number of times to run the benchmark successively.  Default: 5
+     logStep - When indexing, how often to output how many documents have been processed.  Default: 1000
+     scaleUp - How many times to add the same documents. Default: 5
+     maximumDocumentsToIndex - The number of documents to index at a time (multiply by the scaleUp factor for the total number of documents indexed).  Default is Integer.MAX_VALUE
+     -->
+    <options class="org.apache.lucene.benchmark.standard.StandardOptions" runCount="1" logStep="500" scaleUp="1" maximumDocumentsToIndex="2000"/>
+</benchmark>
