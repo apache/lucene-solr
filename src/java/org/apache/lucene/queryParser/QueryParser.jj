@@ -106,6 +106,7 @@ public class QueryParser {
   private Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
+  boolean useOldRangeQuery= false;  
   boolean allowLeadingWildcard = false;
 
   Analyzer analyzer;
@@ -272,6 +273,28 @@ public class QueryParser {
   public boolean getLowercaseExpandedTerms() {
     return lowercaseExpandedTerms;
   }
+  
+  /**
+   * By default QueryParser uses new ConstantScoreRangeQuery in preference to RangeQuery
+   * for range queries. This implementation is generally preferable because it 
+   * a) Runs faster b) Does not have the scarcity of range terms unduly influence score 
+   * c) avoids any "TooManyBooleanClauses" exception.
+   * However, if your application really needs to use the old-fashioned RangeQuery and the above
+   * points are not required then set this option to <code>true</code>
+   * Default is <code>false</code>.
+   */
+  public void setUseOldRangeQuery(boolean useOldRangeQuery) {
+    this.useOldRangeQuery = useOldRangeQuery;
+  }
+
+
+  /**
+   * @see #setUseOldRangeQuery(boolean)
+   */
+  public boolean getUseOldRangeQuery() {
+    return useOldRangeQuery;
+  }
+  
 
   /**
    * Set locale used by date range parsing.
@@ -478,9 +501,16 @@ public class QueryParser {
     }
     catch (Exception e) { }
 
-    return new RangeQuery(new Term(field, part1),
+    if(useOldRangeQuery)
+    {
+	    return new RangeQuery(new Term(field, part1),
                           new Term(field, part2),
                           inclusive);
+    }
+    else
+    {
+      return new ConstantScoreRangeQuery(field,part1,part2,inclusive,inclusive);
+    }
   }
 
   /**

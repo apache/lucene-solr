@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
@@ -371,7 +372,12 @@ public class TestQueryParser extends TestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertTrue(getQuery("[ a TO z]", null) instanceof RangeQuery);
+    assertTrue(getQuery("[ a TO z]", null) instanceof ConstantScoreRangeQuery);
+
+    QueryParser qp = new QueryParser("field", new SimpleAnalyzer());
+	qp.setUseOldRangeQuery(true);
+    assertTrue(qp.parse("[ a TO z]") instanceof RangeQuery);
+    
     assertQueryEquals("[ a TO z ]", null, "[a TO z]");
     assertQueryEquals("{ a TO z}", null, "{a TO z}");
     assertQueryEquals("{ a TO z }", null, "{a TO z}");
