@@ -478,11 +478,15 @@ public class MemoryIndex {
   } 
 
   private static boolean is64BitVM() {
-    int bits = Integer.getInteger("sun.arch.data.model", 0).intValue();
-    if (bits != 0) return bits == 64;
-        
-    // fallback if sun.arch.data.model isn't available
-    return System.getProperty("java.vm.name").toLowerCase().indexOf("64") >= 0;
+    try {
+      int bits = Integer.getInteger("sun.arch.data.model", 0).intValue();
+      if (bits != 0) return bits == 64;
+            
+      // fallback if sun.arch.data.model isn't available
+      return System.getProperty("java.vm.name").toLowerCase().indexOf("64") >= 0;
+    } catch (Throwable t) {
+      return false; // better safe than sorry (applets, security managers, etc.) ...
+    }
   }
     
   private int numPositions(ArrayIntList positions) {
