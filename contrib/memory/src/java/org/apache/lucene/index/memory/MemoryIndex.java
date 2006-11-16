@@ -174,6 +174,9 @@ public class MemoryIndex {
   /** Could be made configurable; See {@link Document#setBoost(float)} */
   private static final float docBoost = 1.0f;
   
+  /** number of memory bytes a VM pointer occupies */ 
+  private static final int PTR = is64BitVM() ? 8 : 4;
+
   private static final long serialVersionUID = 2782195016849084649L;
 
   private static final boolean DEBUG = false;
@@ -442,8 +445,7 @@ public class MemoryIndex {
    */
   public int getMemorySize() {
     // for example usage in a smart cache see nux.xom.pool.Pool
-    int HEADER = 12; // object header of any java object
-    int PTR = 4; // pointer on 32 bit VMs
+    int HEADER = 2*PTR; // object header of any java object
     int ARR = HEADER + 4;
     int STR = HEADER + 3*4 + PTR + ARR; // string
     int INTARRLIST = HEADER + 4 + PTR + ARR;
@@ -475,6 +477,14 @@ public class MemoryIndex {
     return size;
   } 
 
+  private static boolean is64BitVM() {
+    int bits = Integer.getInteger("sun.arch.data.model", 0).intValue();
+    if (bits != 0) return bits == 64;
+        
+    // fallback if sun.arch.data.model isn't available
+    return System.getProperty("java.vm.name").toLowerCase().indexOf("64") >= 0;
+  }
+    
   private int numPositions(ArrayIntList positions) {
     return positions.size() / stride;
   }
