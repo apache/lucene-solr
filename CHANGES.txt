@@ -25,6 +25,10 @@ Changes in runtime behavior
  4. LUCENE-489: Add support for leading wildcard characters (*, ?) to
     QueryParser.  Default is to disallow them, as before.
     (Steven Parkes via Otis Gospodnetic)
+    
+ 5. LUCENE-703: QueryParser changed to default to use of ConstantScoreRangeQuery 
+    for range queries. Added useOldRangeQuery property to QueryParser to allow 
+    selection of old RangeQuery class if required.      
 
 New features
 
