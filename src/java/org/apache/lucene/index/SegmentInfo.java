@@ -28,10 +28,10 @@ final class SegmentInfo {
   public Directory dir;				  // where segment resides
 
   private boolean preLockless;                    // true if this is a segments file written before
-                                                  // lock-less commits (XXX)
+                                                  // lock-less commits (2.1)
 
   private long delGen;                            // current generation of del file; -1 if there
-                                                  // are no deletes; 0 if it's a pre-XXX segment
+                                                  // are no deletes; 0 if it's a pre-2.1 segment
                                                   // (and we must check filesystem); 1 or higher if
                                                   // there are deletes at generation N
    
@@ -41,7 +41,7 @@ final class SegmentInfo {
                                                   // there are no separate norms
 
   private byte isCompoundFile;                    // -1 if it is not; 1 if it is; 0 if it's
-                                                  // pre-XXX (ie, must check file system to see
+                                                  // pre-2.1 (ie, must check file system to see
                                                   // if <name>.cfs exists)         
 
   public SegmentInfo(String name, int docCount, Directory dir) {
@@ -98,7 +98,7 @@ final class SegmentInfo {
   
   void setNumField(int numField) {
     if (normGen == null) {
-      // normGen is null if we loaded a pre-XXX segment
+      // normGen is null if we loaded a pre-2.1 segment
       // file, or, if this segments file hasn't had any
       // norms set against it yet:
       normGen = new long[numField];
@@ -285,7 +285,7 @@ final class SegmentInfo {
    *
    * @param directory directory to check.  This parameter is
    * only used when the segment was written before version
-   * XXX (at which point compound file or not became stored
+   * 2.1 (at which point compound file or not became stored
    * in the segments info file).
    */
   boolean getUseCompoundFile() throws IOException {

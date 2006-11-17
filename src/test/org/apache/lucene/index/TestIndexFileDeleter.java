@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.zip.*;
 
 /*
-  Verify we can read the pre-XXX file format, do searches
+  Verify we can read the pre-2.1 file format, do searches
   against it, and add documents to it.
 */
 
