@@ -259,16 +259,23 @@ public class IndexWriter {
         throw new IOException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;                   // save it
 
-      synchronized (directory) {        // in- & inter-process sync
-        new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), commitLockTimeout) {
-            public Object doBody() throws IOException {
-              if (create)
-                segmentInfos.write(directory);
-              else
-                segmentInfos.read(directory);
-              return null;
-            }
-          }.run();
+      try {
+        synchronized (directory) {        // in- & inter-process sync
+          new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), commitLockTimeout) {
+              public Object doBody() throws IOException {
+                if (create)
+                  segmentInfos.write(directory);
+                else
+                  segmentInfos.read(directory);
+                return null;
+              }
+            }.run();
+        }
+      } catch (IOException e) {
+        // the doBody method failed
+        this.writeLock.release();
+        this.writeLock = null;
+        throw e;
       }
   }
 

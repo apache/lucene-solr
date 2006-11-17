@@ -171,6 +171,11 @@ Bug fixes
 
 20. LUCENE-706: Updated fileformats.xml|html concerning the docdelta value in the frequency file. (Johan Stuyts, Doron Cohen via Grant Ingersoll)
 
+21. LUCENE-715: Fixed private constructor in IndexWriter.java to
+    properly release the acquired write lock if there is an
+    IOException after acquiring the write lock but before finishing
+    instantiation (Matthew Bogosian via Mike McCandless)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
