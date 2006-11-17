@@ -1108,13 +1108,13 @@ public class MemoryIndex {
     private static final int HEADER = 2*PTR; 
         
     /**
-     * Modern VMs tend to trade space for time, allocating memory in chunks that
-     * are multiples of the word size (where word size is 4 or 8 bytes). For
-     * example, on a 64 bit VM, the variables of a class with one 32 bit integer
-     * and one Java char really consume 8 bytes instead of 6 bytes. 2 bytes are
-     * spent on padding. Similary, on a 64 bit VM a java.lang.Integer consumes
-     * OBJECT_HEADER + 8 bytes rather than OBJECT_HEADER + 4 bytes.
-     */ 
+	 * Modern VMs tend to trade space for time, allocating memory on word
+	 * boundaries. For example, on a 64 bit VM, the variables of a class with
+	 * one 32 bit integer and one Java char really consume 8 bytes instead of 6
+	 * bytes. 2 bytes are spent on padding. Similary, on a 64 bit VM a
+	 * java.lang.Integer consumes OBJECT_HEADER + 8 bytes rather than
+	 * OBJECT_HEADER + 4 bytes.
+	 */ 
     private static final boolean IS_WORD_ALIGNED_VM = true;
     
     
