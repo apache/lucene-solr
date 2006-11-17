@@ -128,7 +128,7 @@ public class FSDirectory extends Directory {
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path, boolean create)
       throws IOException {
-    return getDirectory(path, create, null);
+    return getDirectory(new File(path), create, null, true);
   }
 
   /** Returns the directory instance for the named location, using the
@@ -144,9 +144,15 @@ public class FSDirectory extends Directory {
    *        locking implementation.
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(String path, boolean create,
+                                         LockFactory lockFactory, boolean doRemoveOldFiles)
+      throws IOException {
+    return getDirectory(new File(path), create, lockFactory, doRemoveOldFiles);
+  }
+
+  public static FSDirectory getDirectory(String path, boolean create,
                                          LockFactory lockFactory)
       throws IOException {
-    return getDirectory(new File(path), create, lockFactory);
+    return getDirectory(new File(path), create, lockFactory, true);
   }
 
   /** Returns the directory instance for the named location.
@@ -158,9 +164,9 @@ public class FSDirectory extends Directory {
    * @param file the path to the directory.
    * @param create if true, create, or erase any existing contents.
    * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file, boolean create)
+  public static FSDirectory getDirectory(File file, boolean create, boolean doRemoveOldFiles)
     throws IOException {
-    return getDirectory(file, create, null);
+    return getDirectory(file, create, null, doRemoveOldFiles);
   }
 
   /** Returns the directory instance for the named location, using the
@@ -176,7 +182,7 @@ public class FSDirectory extends Directory {
    *        locking implementation.
    * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file, boolean create,
-                                         LockFactory lockFactory)
+                                         LockFactory lockFactory, boolean doRemoveOldFiles)
     throws IOException {
     file = new File(file.getCanonicalPath());
     FSDirectory dir;
@@ -188,7 +194,7 @@ public class FSDirectory extends Directory {
         } catch (Exception e) {
           throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
         }
-        dir.init(file, create, lockFactory);
+        dir.init(file, create, lockFactory, doRemoveOldFiles);
         DIRECTORIES.put(file, dir);
       } else {
 
@@ -199,7 +205,7 @@ public class FSDirectory extends Directory {
         }
 
         if (create) {
-          dir.create();
+          dir.create(doRemoveOldFiles);
         }
       }
     }
@@ -209,23 +215,35 @@ public class FSDirectory extends Directory {
     return dir;
   }
 
+  public static FSDirectory getDirectory(File file, boolean create,
+                                         LockFactory lockFactory)
+    throws IOException
+  {
+    return getDirectory(file, create, lockFactory, true);
+  }
+
+  public static FSDirectory getDirectory(File file, boolean create)
+    throws IOException {
+    return getDirectory(file, create, true);
+  }
+
   private File directory = null;
   private int refCount;
 
   protected FSDirectory() {};                     // permit subclassing
 
-  private void init(File path, boolean create) throws IOException {
+  private void init(File path, boolean create, boolean doRemoveOldFiles) throws IOException {
     directory = path;
 
     if (create) {
-      create();
+      create(doRemoveOldFiles);
     }
 
     if (!directory.isDirectory())
       throw new IOException(path + " not a directory");
   }
 
-  private void init(File path, boolean create, LockFactory lockFactory) throws IOException {
+  private void init(File path, boolean create, LockFactory lockFactory, boolean doRemoveOldFiles) throws IOException {
 
     // Set up lockFactory with cascaded defaults: if an instance was passed in,
     // use that; else if locks are disabled, use NoLockFactory; else if the
@@ -280,10 +298,10 @@ public class FSDirectory extends Directory {
 
     setLockFactory(lockFactory);
 
-    init(path, create);
+    init(path, create, doRemoveOldFiles);
   }
 
-  private synchronized void create() throws IOException {
+  private synchronized void create(boolean doRemoveOldFiles) throws IOException {
     if (!directory.exists())
       if (!directory.mkdirs())
         throw new IOException("Cannot create directory: " + directory);
@@ -291,13 +309,15 @@ public class FSDirectory extends Directory {
     if (!directory.isDirectory())
       throw new IOException(directory + " not a directory");
 
-    String[] files = directory.list(new IndexFileNameFilter());            // clear old files
-    if (files == null)
-      throw new IOException("Cannot read directory " + directory.getAbsolutePath());
-    for (int i = 0; i < files.length; i++) {
-      File file = new File(directory, files[i]);
-      if (!file.delete())
-        throw new IOException("Cannot delete " + file);
+    if (doRemoveOldFiles) {
+      String[] files = directory.list(IndexFileNameFilter.getFilter());            // clear old files
+      if (files == null)
+        throw new IOException("Cannot read directory " + directory.getAbsolutePath());
+      for (int i = 0; i < files.length; i++) {
+        File file = new File(directory, files[i]);
+        if (!file.delete())
+          throw new IOException("Cannot delete " + file);
+      }
     }
 
     lockFactory.clearAllLocks();
@@ -305,7 +325,7 @@ public class FSDirectory extends Directory {
 
   /** Returns an array of strings, one for each Lucene index file in the directory. */
   public String[] list() {
-    return directory.list(new IndexFileNameFilter());
+    return directory.list(IndexFileNameFilter.getFilter());
   }
 
   /** Returns true iff a file with the given name exists. */

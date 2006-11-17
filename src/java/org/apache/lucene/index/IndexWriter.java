@@ -67,16 +67,7 @@ public class IndexWriter {
 
   private long writeLockTimeout = WRITE_LOCK_TIMEOUT;
 
-  /**
-   * Default value for the commit lock timeout (10,000).
-   * @see #setDefaultCommitLockTimeout
-   */
-  public static long COMMIT_LOCK_TIMEOUT = 10000;
-
-  private long commitLockTimeout = COMMIT_LOCK_TIMEOUT;
-
   public static final String WRITE_LOCK_NAME = "write.lock";
-  public static final String COMMIT_LOCK_NAME = "commit.lock";
 
   /**
    * Default value is 10. Change using {@link #setMergeFactor(int)}.
@@ -111,6 +102,7 @@ public class IndexWriter {
   private SegmentInfos segmentInfos = new SegmentInfos(); // the segments
   private SegmentInfos ramSegmentInfos = new SegmentInfos(); // the segments in ramDirectory
   private final Directory ramDirectory = new RAMDirectory(); // for temp segs
+  private IndexFileDeleter deleter;
 
   private Lock writeLock;
 
@@ -260,19 +252,30 @@ public class IndexWriter {
       this.writeLock = writeLock;                   // save it
 
       try {
-        synchronized (directory) {        // in- & inter-process sync
-          new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME), commitLockTimeout) {
-              public Object doBody() throws IOException {
-                if (create)
-                  segmentInfos.write(directory);
-                else
-                  segmentInfos.read(directory);
-                return null;
-              }
-            }.run();
+        if (create) {
+          // Try to read first.  This is to allow create
+          // against an index that's currently open for
+          // searching.  In this case we write the next
+          // segments_N file with no segments:
+          try {
+            segmentInfos.read(directory);
+            segmentInfos.clear();
+          } catch (IOException e) {
+            // Likely this means it's a fresh directory
+          }
+          segmentInfos.write(directory);
+        } else {
+          segmentInfos.read(directory);
         }
+
+        // Create a deleter to keep track of which files can
+        // be deleted:
+        deleter = new IndexFileDeleter(segmentInfos, directory);
+        deleter.setInfoStream(infoStream);
+        deleter.findDeletableFiles();
+        deleter.deleteFiles();
+
       } catch (IOException e) {
-        // the doBody method failed
         this.writeLock.release();
         this.writeLock = null;
         throw e;
@@ -378,35 +381,6 @@ public class IndexWriter {
    */
   public PrintStream getInfoStream() {
     return infoStream;
-  }
-
-  /**
-   * Sets the maximum time to wait for a commit lock (in milliseconds) for this instance of IndexWriter.  @see
-   * @see #setDefaultCommitLockTimeout to change the default value for all instances of IndexWriter.
-   */
-  public void setCommitLockTimeout(long commitLockTimeout) {
-    this.commitLockTimeout = commitLockTimeout;
-  }
-
-  /**
-   * @see #setCommitLockTimeout
-   */
-  public long getCommitLockTimeout() {
-    return commitLockTimeout;
-  }
-
-  /**
-   * Sets the default (for any instance of IndexWriter) maximum time to wait for a commit lock (in milliseconds)
-   */
-  public static void setDefaultCommitLockTimeout(long commitLockTimeout) {
-    IndexWriter.COMMIT_LOCK_TIMEOUT = commitLockTimeout;
-  }
-
-  /**
-   * @see #setDefaultCommitLockTimeout
-   */
-  public static long getDefaultCommitLockTimeout() {
-    return IndexWriter.COMMIT_LOCK_TIMEOUT;
   }
 
   /**
@@ -517,7 +491,7 @@ public class IndexWriter {
     String segmentName = newRAMSegmentName();
     dw.addDocument(segmentName, doc);
     synchronized (this) {
-      ramSegmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory));
+      ramSegmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory, false));
       maybeFlushRamSegments();
     }
   }
@@ -790,36 +764,26 @@ public class IndexWriter {
     int docCount = merger.merge();                // merge 'em
 
     segmentInfos.setSize(0);                      // pop old infos & add new
-    segmentInfos.addElement(new SegmentInfo(mergedName, docCount, directory));
+    SegmentInfo info = new SegmentInfo(mergedName, docCount, directory, false);
+    segmentInfos.addElement(info);
 
     if(sReader != null)
         sReader.close();
 
-    synchronized (directory) {			  // in- & inter-process sync
-      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
-	  public Object doBody() throws IOException {
-	    segmentInfos.write(directory);	  // commit changes
-	    return null;
-	  }
-	}.run();
-    }
+    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+    segmentInfos.write(directory);         // commit changes
 
-    deleteSegments(segmentsToDelete);  // delete now-unused segments
+    deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
+    deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
 
     if (useCompoundFile) {
-      final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
-      synchronized (directory) { // in- & inter-process sync
-        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
-          public Object doBody() throws IOException {
-            // make compound file visible for SegmentReaders
-            directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
-            return null;
-          }
-        }.run();
-      }
+      Vector filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
+      segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+      info.setUseCompoundFile(true);
+      segmentInfos.write(directory);     // commit again so readers know we've switched this segment to a compound file
 
-      // delete now unused files of segment
-      deleteFiles(filesToDelete);
+      deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
+      deleter.deleteFiles(filesToDelete); // delete now unused files of segment 
     }
   }
 
@@ -937,10 +901,11 @@ public class IndexWriter {
    */
   private final int mergeSegments(SegmentInfos sourceSegments, int minSegment, int end)
     throws IOException {
+
     final String mergedName = newSegmentName();
     if (infoStream != null) infoStream.print("merging segments");
     SegmentMerger merger = new SegmentMerger(this, mergedName);
-
+    
     final Vector segmentsToDelete = new Vector();
     for (int i = minSegment; i < end; i++) {
       SegmentInfo si = sourceSegments.info(i);
@@ -960,7 +925,7 @@ public class IndexWriter {
     }
 
     SegmentInfo newSegment = new SegmentInfo(mergedName, mergedDocCount,
-        directory);
+                                             directory, false);
     if (sourceSegments == ramSegmentInfos) {
       sourceSegments.removeAllElements();
       segmentInfos.addElement(newSegment);
@@ -973,113 +938,24 @@ public class IndexWriter {
     // close readers before we attempt to delete now-obsolete segments
     merger.closeReaders();
 
-    synchronized (directory) {                 // in- & inter-process sync
-      new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
-          public Object doBody() throws IOException {
-            segmentInfos.write(directory);     // commit before deleting
-            return null;
-          }
-        }.run();
-    }
-    
-    deleteSegments(segmentsToDelete);  // delete now-unused segments
+    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+    segmentInfos.write(directory);     // commit before deleting
+
+    deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
+    deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
 
     if (useCompoundFile) {
-      final Vector filesToDelete = merger.createCompoundFile(mergedName + ".tmp");
-      synchronized (directory) { // in- & inter-process sync
-        new Lock.With(directory.makeLock(COMMIT_LOCK_NAME), commitLockTimeout) {
-          public Object doBody() throws IOException {
-            // make compound file visible for SegmentReaders
-            directory.renameFile(mergedName + ".tmp", mergedName + ".cfs");
-            return null;
-          }
-        }.run();
-      }
+      Vector filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
 
-      // delete now unused files of segment 
-      deleteFiles(filesToDelete);   
+      segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+      newSegment.setUseCompoundFile(true);
+      segmentInfos.write(directory);     // commit again so readers know we've switched this segment to a compound file
+
+      deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
+      deleter.deleteFiles(filesToDelete);  // delete now-unused segments
     }
 
     return mergedDocCount;
-  }
-
-  /*
-   * Some operating systems (e.g. Windows) don't permit a file to be deleted
-   * while it is opened for read (e.g. by another process or thread). So we
-   * assume that when a delete fails it is because the file is open in another
-   * process, and queue the file for subsequent deletion.
-   */
-
-  private final void deleteSegments(Vector segments) throws IOException {
-    Vector deletable = new Vector();
-
-    deleteFiles(readDeleteableFiles(), deletable); // try to delete deleteable
-
-    for (int i = 0; i < segments.size(); i++) {
-      SegmentReader reader = (SegmentReader)segments.elementAt(i);
-      if (reader.directory() == this.directory)
-        deleteFiles(reader.files(), deletable);	  // try to delete our files
-      else
-        deleteFiles(reader.files(), reader.directory()); // delete other files
-    }
-
-    writeDeleteableFiles(deletable);		  // note files we can't delete
-  }
-  
-  private final void deleteFiles(Vector files) throws IOException {
-    Vector deletable = new Vector();
-    deleteFiles(readDeleteableFiles(), deletable); // try to delete deleteable
-    deleteFiles(files, deletable);     // try to delete our files
-    writeDeleteableFiles(deletable);        // note files we can't delete
-  }
-
-  private final void deleteFiles(Vector files, Directory directory)
-       throws IOException {
-    for (int i = 0; i < files.size(); i++)
-      directory.deleteFile((String)files.elementAt(i));
-  }
-
-  private final void deleteFiles(Vector files, Vector deletable)
-       throws IOException {
-    for (int i = 0; i < files.size(); i++) {
-      String file = (String)files.elementAt(i);
-      try {
-        directory.deleteFile(file);		  // try to delete each file
-      } catch (IOException e) {			  // if delete fails
-        if (directory.fileExists(file)) {
-          if (infoStream != null)
-            infoStream.println(e.toString() + "; Will re-try later.");
-          deletable.addElement(file);		  // add to deletable
-        }
-      }
-    }
-  }
-
-  private final Vector readDeleteableFiles() throws IOException {
-    Vector result = new Vector();
-    if (!directory.fileExists(IndexFileNames.DELETABLE))
-      return result;
-
-    IndexInput input = directory.openInput(IndexFileNames.DELETABLE);
-    try {
-      for (int i = input.readInt(); i > 0; i--)	  // read file names
-        result.addElement(input.readString());
-    } finally {
-      input.close();
-    }
-    return result;
-  }
-
-  private final void writeDeleteableFiles(Vector files) throws IOException {
-    IndexOutput output = directory.createOutput("deleteable.new");
-    try {
-      output.writeInt(files.size());
-      for (int i = 0; i < files.size(); i++)
-        output.writeString((String)files.elementAt(i));
-    } finally {
-      output.close();
-    }
-    directory.renameFile("deleteable.new", IndexFileNames.DELETABLE);
   }
 
   private final boolean checkNonDecreasingLevels(int start) {

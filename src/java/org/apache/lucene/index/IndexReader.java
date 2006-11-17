@@ -113,6 +113,7 @@ public abstract class IndexReader {
   private Directory directory;
   private boolean directoryOwner;
   private boolean closeDirectory;
+  protected IndexFileDeleter deleter;
 
   private SegmentInfos segmentInfos;
   private Lock writeLock;
@@ -138,24 +139,40 @@ public abstract class IndexReader {
   }
 
   private static IndexReader open(final Directory directory, final boolean closeDirectory) throws IOException {
-    synchronized (directory) {			  // in- & inter-process sync
-      return (IndexReader)new Lock.With(
-          directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
-          IndexWriter.COMMIT_LOCK_TIMEOUT) {
-          public Object doBody() throws IOException {
-            SegmentInfos infos = new SegmentInfos();
-            infos.read(directory);
-            if (infos.size() == 1) {		  // index is optimized
-              return SegmentReader.get(infos, infos.info(0), closeDirectory);
-            }
-            IndexReader[] readers = new IndexReader[infos.size()];
-            for (int i = 0; i < infos.size(); i++)
-              readers[i] = SegmentReader.get(infos.info(i));
-            return new MultiReader(directory, infos, closeDirectory, readers);
 
+    return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
+
+      public Object doBody(String segmentFileName) throws IOException {
+
+        SegmentInfos infos = new SegmentInfos();
+        infos.read(directory, segmentFileName);
+
+        if (infos.size() == 1) {		  // index is optimized
+          return SegmentReader.get(infos, infos.info(0), closeDirectory);
+        } else {
+
+          // To reduce the chance of hitting FileNotFound
+          // (and having to retry), we open segments in
+          // reverse because IndexWriter merges & deletes
+          // the newest segments first.
+
+          IndexReader[] readers = new IndexReader[infos.size()];
+          for (int i = infos.size()-1; i >= 0; i--) {
+            try {
+              readers[i] = SegmentReader.get(infos.info(i));
+            } catch (IOException e) {
+              // Close all readers we had opened:
+              for(i++;i<infos.size();i++) {
+                readers[i].close();
+              }
+              throw e;
+            }
           }
-        }.run();
-    }
+
+          return new MultiReader(directory, infos, closeDirectory, readers);
+        }
+      }
+    }.run();
   }
 
   /** Returns the directory this index resides in. */
@@ -175,8 +192,12 @@ public abstract class IndexReader {
    * Do not use this to check whether the reader is still up-to-date, use
    * {@link #isCurrent()} instead. 
    */
-  public static long lastModified(File directory) throws IOException {
-    return FSDirectory.fileModified(directory, IndexFileNames.SEGMENTS);
+  public static long lastModified(File fileDirectory) throws IOException {
+    return ((Long) new SegmentInfos.FindSegmentsFile(fileDirectory) {
+        public Object doBody(String segmentFileName) {
+          return new Long(FSDirectory.fileModified(fileDirectory, segmentFileName));
+        }
+      }.run()).longValue();
   }
 
   /**
@@ -184,8 +205,12 @@ public abstract class IndexReader {
    * Do not use this to check whether the reader is still up-to-date, use
    * {@link #isCurrent()} instead. 
    */
-  public static long lastModified(Directory directory) throws IOException {
-    return directory.fileModified(IndexFileNames.SEGMENTS);
+  public static long lastModified(final Directory directory2) throws IOException {
+    return ((Long) new SegmentInfos.FindSegmentsFile(directory2) {
+        public Object doBody(String segmentFileName) throws IOException {
+          return new Long(directory2.fileModified(segmentFileName));
+        }
+      }.run()).longValue();
   }
 
   /**
@@ -227,21 +252,7 @@ public abstract class IndexReader {
    * @throws IOException if segments file cannot be read.
    */
   public static long getCurrentVersion(Directory directory) throws IOException {
-    synchronized (directory) {                 // in- & inter-process sync
-      Lock commitLock=directory.makeLock(IndexWriter.COMMIT_LOCK_NAME);
-
-      boolean locked=false;
-
-      try {
-         locked=commitLock.obtain(IndexWriter.COMMIT_LOCK_TIMEOUT);
-
-         return SegmentInfos.readCurrentVersion(directory);
-      } finally {
-        if (locked) {
-          commitLock.release();
-        }
-      }
-    }
+    return SegmentInfos.readCurrentVersion(directory);
   }
 
   /**
@@ -259,21 +270,7 @@ public abstract class IndexReader {
    * @throws IOException
    */
   public boolean isCurrent() throws IOException {
-    synchronized (directory) {                 // in- & inter-process sync
-      Lock commitLock=directory.makeLock(IndexWriter.COMMIT_LOCK_NAME);
-
-      boolean locked=false;
-
-      try {
-         locked=commitLock.obtain(IndexWriter.COMMIT_LOCK_TIMEOUT);
-
-         return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
-      } finally {
-        if (locked) {
-          commitLock.release();
-        }
-      }
-    }
+    return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
   }
 
   /**
@@ -319,7 +316,7 @@ public abstract class IndexReader {
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
   public static boolean indexExists(String directory) {
-    return (new File(directory, IndexFileNames.SEGMENTS)).exists();
+    return indexExists(new File(directory));
   }
 
   /**
@@ -328,8 +325,9 @@ public abstract class IndexReader {
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
    */
+
   public static boolean indexExists(File directory) {
-    return (new File(directory, IndexFileNames.SEGMENTS)).exists();
+    return SegmentInfos.getCurrentSegmentGeneration(directory.list()) != -1;
   }
 
   /**
@@ -340,7 +338,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean indexExists(Directory directory) throws IOException {
-    return directory.fileExists(IndexFileNames.SEGMENTS);
+    return SegmentInfos.getCurrentSegmentGeneration(directory) != -1;
   }
 
   /** Returns the number of documents in this index. */
@@ -592,17 +590,22 @@ public abstract class IndexReader {
    */
   protected final synchronized void commit() throws IOException{
     if(hasChanges){
+      if (deleter == null) {
+        // In the MultiReader case, we share this deleter
+        // across all SegmentReaders:
+        setDeleter(new IndexFileDeleter(segmentInfos, directory));
+        deleter.deleteFiles();
+      }
       if(directoryOwner){
-        synchronized (directory) {      // in- & inter-process sync
-           new Lock.With(directory.makeLock(IndexWriter.COMMIT_LOCK_NAME),
-                   IndexWriter.COMMIT_LOCK_TIMEOUT) {
-             public Object doBody() throws IOException {
-               doCommit();
-               segmentInfos.write(directory);
-               return null;
-             }
-           }.run();
-         }
+        deleter.clearPendingFiles();
+        doCommit();
+        String oldInfoFileName = segmentInfos.getCurrentSegmentFileName();
+        segmentInfos.write(directory);
+        // Attempt to delete all files we just obsoleted:
+
+        deleter.deleteFile(oldInfoFileName);
+        deleter.commitPendingFiles();
+        deleter.deleteFiles();
         if (writeLock != null) {
           writeLock.release();  // release write lock
           writeLock = null;
@@ -612,6 +615,13 @@ public abstract class IndexReader {
         doCommit();
     }
     hasChanges = false;
+  }
+
+  protected void setDeleter(IndexFileDeleter deleter) {
+    this.deleter = deleter;
+  }
+  protected IndexFileDeleter getDeleter() {
+    return deleter;
   }
 
   /** Implements commit. */
@@ -658,8 +668,7 @@ public abstract class IndexReader {
    */
   public static boolean isLocked(Directory directory) throws IOException {
     return
-            directory.makeLock(IndexWriter.WRITE_LOCK_NAME).isLocked() ||
-            directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).isLocked();
+      directory.makeLock(IndexWriter.WRITE_LOCK_NAME).isLocked();
   }
 
   /**
@@ -684,7 +693,6 @@ public abstract class IndexReader {
    */
   public static void unlock(Directory directory) throws IOException {
     directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
-    directory.makeLock(IndexWriter.COMMIT_LOCK_NAME).release();
   }
 
   /**

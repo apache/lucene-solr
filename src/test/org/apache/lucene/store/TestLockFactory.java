@@ -58,9 +58,9 @@ public class TestLockFactory extends TestCase {
 
         // Both write lock and commit lock should have been created:
         assertEquals("# of unique locks created (after instantiating IndexWriter)",
-                     2, lf.locksCreated.size());
-        assertTrue("# calls to makeLock <= 2 (after instantiating IndexWriter)",
-                   lf.makeLockCount > 2);
+                     1, lf.locksCreated.size());
+        assertTrue("# calls to makeLock is 0 (after instantiating IndexWriter)",
+                   lf.makeLockCount >= 1);
         
         for(Enumeration e = lf.locksCreated.keys(); e.hasMoreElements();) {
             String lockName = (String) e.nextElement();
@@ -90,6 +90,7 @@ public class TestLockFactory extends TestCase {
         try {
             writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
         } catch (Exception e) {
+            e.printStackTrace(System.out);
             fail("Should not have hit an IOException with no locking");
         }
 
@@ -234,6 +235,7 @@ public class TestLockFactory extends TestCase {
         try {
             writer2 = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), false);
         } catch (IOException e) {
+            e.printStackTrace(System.out);
             fail("Should not have hit an IOException with locking disabled");
         }
 
@@ -266,6 +268,7 @@ public class TestLockFactory extends TestCase {
         try {
             fs2 = FSDirectory.getDirectory(indexDirName, true, lf);
         } catch (IOException e) {
+            e.printStackTrace(System.out);
             fail("Should not have hit an IOException because LockFactory instances are the same");
         }
 
@@ -294,7 +297,6 @@ public class TestLockFactory extends TestCase {
 
     public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws IOException {
         FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, true, lockFactory);
-        // fs1.setLockFactory(NoLockFactory.getNoLockFactory());
 
         // First create a 1 doc index:
         IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true);
@@ -405,6 +407,7 @@ public class TestLockFactory extends TestCase {
                     hitException = true;
                     System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + e.toString());
                     e.printStackTrace(System.out);
+                    break;
                 }
                 if (writer != null) {
                     try {
@@ -413,6 +416,7 @@ public class TestLockFactory extends TestCase {
                         hitException = true;
                         System.out.println("Stress Test Index Writer: addDoc hit unexpected exception: " + e.toString());
                         e.printStackTrace(System.out);
+                        break;
                     }
                     try {
                         writer.close();
@@ -420,6 +424,7 @@ public class TestLockFactory extends TestCase {
                         hitException = true;
                         System.out.println("Stress Test Index Writer: close hit unexpected exception: " + e.toString());
                         e.printStackTrace(System.out);
+                        break;
                     }
                     writer = null;
                 }
@@ -446,6 +451,7 @@ public class TestLockFactory extends TestCase {
                     hitException = true;
                     System.out.println("Stress Test Index Searcher: create hit unexpected exception: " + e.toString());
                     e.printStackTrace(System.out);
+                    break;
                 }
                 if (searcher != null) {
                     Hits hits = null;
@@ -455,6 +461,7 @@ public class TestLockFactory extends TestCase {
                         hitException = true;
                         System.out.println("Stress Test Index Searcher: search hit unexpected exception: " + e.toString());
                         e.printStackTrace(System.out);
+                        break;
                     }
                     // System.out.println(hits.length() + " total results");
                     try {
@@ -463,6 +470,7 @@ public class TestLockFactory extends TestCase {
                         hitException = true;
                         System.out.println("Stress Test Index Searcher: close hit unexpected exception: " + e.toString());
                         e.printStackTrace(System.out);
+                        break;
                     }
                     searcher = null;
                 }

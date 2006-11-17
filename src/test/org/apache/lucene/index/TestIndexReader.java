@@ -32,6 +32,7 @@ import org.apache.lucene.document.Field;
 
 import java.util.Collection;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.File;
 
 public class TestIndexReader extends TestCase
@@ -222,6 +223,11 @@ public class TestIndexReader extends TestCase
         assertEquals("deleted count", 100, deleted);
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
+
+        // open a 2nd reader to make sure first reader can
+        // commit its changes (.del) while second reader
+        // is open:
+        IndexReader reader2 = IndexReader.open(dir);
         reader.close();
 
         // CREATE A NEW READER and re-test
@@ -231,9 +237,72 @@ public class TestIndexReader extends TestCase
         reader.close();
     }
 
+    // Make sure you can set norms & commit even if a reader
+    // is open against the index:
+    public void testWritingNorms() throws IOException
+    {
+        String tempDir = System.getProperty("tempDir");
+        if (tempDir == null)
+            throw new IOException("tempDir undefined, cannot run test");
+
+        File indexDir = new File(tempDir, "lucenetestnormwriter");
+        Directory dir = FSDirectory.getDirectory(indexDir, true);
+        IndexWriter writer = null;
+        IndexReader reader = null;
+        Term searchTerm = new Term("content", "aaa");
+
+        //  add 1 documents with term : aaa
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        addDoc(writer, searchTerm.text());
+        writer.close();
+
+        //  now open reader & set norm for doc 0
+        reader = IndexReader.open(dir);
+        reader.setNorm(0, "content", (float) 2.0);
+
+        // we should be holding the write lock now:
+        assertTrue("locked", IndexReader.isLocked(dir));
+
+        reader.commit();
+
+        // we should not be holding the write lock now:
+        assertTrue("not locked", !IndexReader.isLocked(dir));
+
+        // open a 2nd reader:
+        IndexReader reader2 = IndexReader.open(dir);
+
+        // set norm again for doc 0
+        reader.setNorm(0, "content", (float) 3.0);
+        assertTrue("locked", IndexReader.isLocked(dir));
+
+        reader.close();
+
+        // we should not be holding the write lock now:
+        assertTrue("not locked", !IndexReader.isLocked(dir));
+
+        reader2.close();
+        dir.close();
+
+        rmDir(indexDir);
+    }
+
 
     public void testDeleteReaderWriterConflictUnoptimized() throws IOException{
       deleteReaderWriterConflict(false);
+    }
+
+    public void testOpenEmptyDirectory() throws IOException{
+      String dirName = "test.empty";
+      File fileDirName = new File(dirName);
+      if (!fileDirName.exists()) {
+        fileDirName.mkdir();
+      }
+      try {
+        IndexReader reader = IndexReader.open(fileDirName);
+        fail("opening IndexReader on empty directory failed to produce FileNotFoundException");
+      } catch (FileNotFoundException e) {
+        // GOOD
+      }
     }
     
     public void testDeleteReaderWriterConflictOptimized() throws IOException{
@@ -368,12 +437,36 @@ public class TestIndexReader extends TestCase
       assertFalse(IndexReader.isLocked(dir));		// reader only, no lock
       long version = IndexReader.lastModified(dir);
       reader.close();
-      // modify index and check version has been incremented:
+      // modify index and check version has been
+      // incremented:
       writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
       writer.close();
       reader = IndexReader.open(dir);
-      assertTrue(version < IndexReader.getCurrentVersion(dir));
+      assertTrue("old lastModified is " + version + "; new lastModified is " + IndexReader.lastModified(dir), version <= IndexReader.lastModified(dir));
+      reader.close();
+    }
+
+    public void testVersion() throws IOException {
+      assertFalse(IndexReader.indexExists("there_is_no_such_index"));
+      Directory dir = new RAMDirectory();
+      assertFalse(IndexReader.indexExists(dir));
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      assertTrue(IndexReader.isLocked(dir));		// writer open, so dir is locked
+      writer.close();
+      assertTrue(IndexReader.indexExists(dir));
+      IndexReader reader = IndexReader.open(dir);
+      assertFalse(IndexReader.isLocked(dir));		// reader only, no lock
+      long version = IndexReader.getCurrentVersion(dir);
+      reader.close();
+      // modify index and check version has been
+      // incremented:
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      writer.close();
+      reader = IndexReader.open(dir);
+      assertTrue("old version is " + version + "; new version is " + IndexReader.getCurrentVersion(dir), version < IndexReader.getCurrentVersion(dir));
       reader.close();
     }
 
@@ -405,6 +498,40 @@ public class TestIndexReader extends TestCase
       IndexReader reader = IndexReader.open(dir);
       reader.deleteDocument(0);
       reader.deleteDocument(1);
+      reader.undeleteAll();
+      reader.close();
+      reader = IndexReader.open(dir);
+      assertEquals(2, reader.numDocs());	// nothing has really been deleted thanks to undeleteAll()
+      reader.close();
+    }
+
+    public void testUndeleteAllAfterClose() throws IOException {
+      Directory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      addDocumentWithFields(writer);
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+      reader.deleteDocument(0);
+      reader.deleteDocument(1);
+      reader.close();
+      reader = IndexReader.open(dir);
+      reader.undeleteAll();
+      assertEquals(2, reader.numDocs());	// nothing has really been deleted thanks to undeleteAll()
+      reader.close();
+    }
+
+    public void testUndeleteAllAfterCloseThenReopen() throws IOException {
+      Directory dir = new RAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDocumentWithFields(writer);
+      addDocumentWithFields(writer);
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+      reader.deleteDocument(0);
+      reader.deleteDocument(1);
+      reader.close();
+      reader = IndexReader.open(dir);
       reader.undeleteAll();
       reader.close();
       reader = IndexReader.open(dir);
@@ -561,5 +688,12 @@ public class TestIndexReader extends TestCase
         Document doc = new Document();
         doc.add(new Field("content", value, Field.Store.NO, Field.Index.TOKENIZED));
         writer.addDocument(doc);
+    }
+    private void rmDir(File dir) {
+        File[] files = dir.listFiles();
+        for (int i = 0; i < files.length; i++) {
+            files[i].delete();
+        }
+        dir.delete();
     }
 }

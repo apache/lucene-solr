@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Hashtable;
@@ -105,7 +106,7 @@ public final class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Returns an array of strings, one for each file in the directory. */
-  public final String[] list() {
+  public synchronized final String[] list() {
     String[] result = new String[files.size()];
     int i = 0;
     Enumeration names = files.keys();
@@ -129,7 +130,7 @@ public final class RAMDirectory extends Directory implements Serializable {
   /** Set the modified time of an existing file to now. */
   public void touchFile(String name) {
 //     final boolean MONITOR = false;
-    
+
     RAMFile file = (RAMFile)files.get(name);
     long ts2, ts1 = System.currentTimeMillis();
     do {
@@ -175,8 +176,11 @@ public final class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Returns a stream reading an existing file. */
-  public final IndexInput openInput(String name) {
+  public final IndexInput openInput(String name) throws IOException {
     RAMFile file = (RAMFile)files.get(name);
+    if (file == null) {
+      throw new FileNotFoundException(name);
+    }
     return new RAMInputStream(file);
   }
 

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.HashSet;
 
 /**
  * Filename filter that accept filenames and extensions only created by Lucene.
@@ -28,18 +29,64 @@ import java.io.FilenameFilter;
  */
 public class IndexFileNameFilter implements FilenameFilter {
 
+  static IndexFileNameFilter singleton = new IndexFileNameFilter();
+  private HashSet extensions;
+
+  public IndexFileNameFilter() {
+    extensions = new HashSet();
+    for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
+      extensions.add(IndexFileNames.INDEX_EXTENSIONS[i]);
+    }
+  }
+
   /* (non-Javadoc)
    * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
    */
   public boolean accept(File dir, String name) {
-    for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
-      if (name.endsWith("."+IndexFileNames.INDEX_EXTENSIONS[i]))
+    int i = name.lastIndexOf('.');
+    if (i != -1) {
+      String extension = name.substring(1+i);
+      if (extensions.contains(extension)) {
         return true;
+      } else if (extension.startsWith("f") &&
+                 extension.matches("f\\d+")) {
+        return true;
+      } else if (extension.startsWith("s") &&
+                 extension.matches("s\\d+")) {
+        return true;
+      }
+    } else {
+      if (name.equals(IndexFileNames.DELETABLE)) return true;
+      else if (name.startsWith(IndexFileNames.SEGMENTS)) return true;
     }
-    if (name.equals(IndexFileNames.DELETABLE)) return true;
-    else if (name.equals(IndexFileNames.SEGMENTS)) return true;
-    else if (name.matches(".+\\.f\\d+")) return true;
     return false;
   }
 
+  /**
+   * Returns true if this is a file that would be contained
+   * in a CFS file.  This function should only be called on
+   * files that pass the above "accept" (ie, are already
+   * known to be a Lucene index file).
+   */
+  public boolean isCFSFile(String name) {
+    int i = name.lastIndexOf('.');
+    if (i != -1) {
+      String extension = name.substring(1+i);
+      if (extensions.contains(extension) &&
+           !extension.equals("del") &&
+           !extension.equals("gen") &&
+          !extension.equals("cfs")) {
+        return true;
+      }
+      if (extension.startsWith("f") &&
+          extension.matches("f\\d+")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static IndexFileNameFilter getFilter() {
+    return singleton;
+  }
 }

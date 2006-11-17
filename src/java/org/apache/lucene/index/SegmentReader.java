@@ -33,6 +33,7 @@ import java.util.*;
  */
 class SegmentReader extends IndexReader {
   private String segment;
+  private SegmentInfo si;
 
   FieldInfos fieldInfos;
   private FieldsReader fieldsReader;
@@ -64,22 +65,24 @@ class SegmentReader extends IndexReader {
     private boolean dirty;
     private int number;
 
-    private void reWrite() throws IOException {
+    private void reWrite(SegmentInfo si) throws IOException {
       // NOTE: norms are re-written in regular directory, not cfs
-      IndexOutput out = directory().createOutput(segment + ".tmp");
+
+      String oldFileName = si.getNormFileName(this.number);
+      if (oldFileName != null) {
+        // Mark this file for deletion.  Note that we don't
+        // actually try to delete it until the new segments files is
+        // successfully written:
+        deleter.addPendingFile(oldFileName);
+      }
+
+      si.advanceNormGen(this.number);
+      IndexOutput out = directory().createOutput(si.getNormFileName(this.number));
       try {
         out.writeBytes(bytes, maxDoc());
       } finally {
         out.close();
       }
-      String fileName;
-      if(cfsReader == null)
-          fileName = segment + ".f" + number;
-      else{
-          // use a different file name if we have compound format
-          fileName = segment + ".s" + number;
-      }
-      directory().renameFile(segment + ".tmp", fileName);
       this.dirty = false;
     }
   }
@@ -131,57 +134,94 @@ class SegmentReader extends IndexReader {
     return instance;
   }
 
-   private void initialize(SegmentInfo si) throws IOException {
+  private void initialize(SegmentInfo si) throws IOException {
     segment = si.name;
+    this.si = si;
 
-    // Use compound file directory for some files, if it exists
-    Directory cfsDir = directory();
-    if (directory().fileExists(segment + ".cfs")) {
-      cfsReader = new CompoundFileReader(directory(), segment + ".cfs");
-      cfsDir = cfsReader;
-    }
+    boolean success = false;
 
-    // No compound file exists - use the multi-file format
-    fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
-    fieldsReader = new FieldsReader(cfsDir, segment, fieldInfos);
+    try {
+      // Use compound file directory for some files, if it exists
+      Directory cfsDir = directory();
+      if (si.getUseCompoundFile()) {
+        cfsReader = new CompoundFileReader(directory(), segment + ".cfs");
+        cfsDir = cfsReader;
+      }
 
-    tis = new TermInfosReader(cfsDir, segment, fieldInfos);
+      // No compound file exists - use the multi-file format
+      fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
+      fieldsReader = new FieldsReader(cfsDir, segment, fieldInfos);
 
-    // NOTE: the bitvector is stored using the regular directory, not cfs
-    if (hasDeletions(si))
-      deletedDocs = new BitVector(directory(), segment + ".del");
+      tis = new TermInfosReader(cfsDir, segment, fieldInfos);
+      
+      // NOTE: the bitvector is stored using the regular directory, not cfs
+      if (hasDeletions(si)) {
+        deletedDocs = new BitVector(directory(), si.getDelFileName());
+      }
 
-    // make sure that all index files have been read or are kept open
-    // so that if an index update removes them we'll still have them
-    freqStream = cfsDir.openInput(segment + ".frq");
-    proxStream = cfsDir.openInput(segment + ".prx");
-    openNorms(cfsDir);
+      // make sure that all index files have been read or are kept open
+      // so that if an index update removes them we'll still have them
+      freqStream = cfsDir.openInput(segment + ".frq");
+      proxStream = cfsDir.openInput(segment + ".prx");
+      openNorms(cfsDir);
 
-    if (fieldInfos.hasVectors()) { // open term vector files only as needed
-      termVectorsReaderOrig = new TermVectorsReader(cfsDir, segment, fieldInfos);
+      if (fieldInfos.hasVectors()) { // open term vector files only as needed
+        termVectorsReaderOrig = new TermVectorsReader(cfsDir, segment, fieldInfos);
+      }
+      success = true;
+    } finally {
+
+      // With lock-less commits, it's entirely possible (and
+      // fine) to hit a FileNotFound exception above.  In
+      // this case, we want to explicitly close any subset
+      // of things that were opened so that we don't have to
+      // wait for a GC to do so.
+      if (!success) {
+        doClose();
+      }
     }
   }
 
-   protected void finalize() {
+  protected void finalize() {
      // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
      termVectorsLocal.set(null);
      super.finalize();
-   }
+  }
 
   protected void doCommit() throws IOException {
     if (deletedDocsDirty) {               // re-write deleted
-      deletedDocs.write(directory(), segment + ".tmp");
-      directory().renameFile(segment + ".tmp", segment + ".del");
+      String oldDelFileName = si.getDelFileName();
+      if (oldDelFileName != null) {
+        // Mark this file for deletion.  Note that we don't
+        // actually try to delete it until the new segments files is
+        // successfully written:
+        deleter.addPendingFile(oldDelFileName);
+      }
+
+      si.advanceDelGen();
+
+      // We can write directly to the actual name (vs to a
+      // .tmp & renaming it) because the file is not live
+      // until segments file is written:
+      deletedDocs.write(directory(), si.getDelFileName());
     }
-    if(undeleteAll && directory().fileExists(segment + ".del")){
-      directory().deleteFile(segment + ".del");
+    if (undeleteAll && si.hasDeletions()) {
+      String oldDelFileName = si.getDelFileName();
+      if (oldDelFileName != null) {
+        // Mark this file for deletion.  Note that we don't
+        // actually try to delete it until the new segments files is
+        // successfully written:
+        deleter.addPendingFile(oldDelFileName);
+      }
+      si.clearDelGen();
     }
     if (normsDirty) {               // re-write norms
+      si.setNumField(fieldInfos.size());
       Enumeration values = norms.elements();
       while (values.hasMoreElements()) {
         Norm norm = (Norm) values.nextElement();
         if (norm.dirty) {
-          norm.reWrite();
+          norm.reWrite(si);
         }
       }
     }
@@ -191,8 +231,12 @@ class SegmentReader extends IndexReader {
   }
 
   protected void doClose() throws IOException {
-    fieldsReader.close();
-    tis.close();
+    if (fieldsReader != null) {
+      fieldsReader.close();
+    }
+    if (tis != null) {
+      tis.close();
+    }
 
     if (freqStream != null)
       freqStream.close();
@@ -209,27 +253,19 @@ class SegmentReader extends IndexReader {
   }
 
   static boolean hasDeletions(SegmentInfo si) throws IOException {
-    return si.dir.fileExists(si.name + ".del");
+    return si.hasDeletions();
   }
 
   public boolean hasDeletions() {
     return deletedDocs != null;
   }
 
-
   static boolean usesCompoundFile(SegmentInfo si) throws IOException {
-    return si.dir.fileExists(si.name + ".cfs");
+    return si.getUseCompoundFile();
   }
 
   static boolean hasSeparateNorms(SegmentInfo si) throws IOException {
-    String[] result = si.dir.list();
-    String pattern = si.name + ".s";
-    int patternLength = pattern.length();
-    for(int i = 0; i < result.length; i++){
-      if(result[i].startsWith(pattern) && Character.isDigit(result[i].charAt(patternLength)))
-        return true;
-    }
-    return false;
+    return si.hasSeparateNorms();
   }
 
   protected void doDelete(int docNum) {
@@ -249,23 +285,27 @@ class SegmentReader extends IndexReader {
   Vector files() throws IOException {
     Vector files = new Vector(16);
 
-    for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
-      String name = segment + "." + IndexFileNames.INDEX_EXTENSIONS[i];
-      if (directory().fileExists(name))
+    if (si.getUseCompoundFile()) {
+      String name = segment + ".cfs";
+      if (directory().fileExists(name)) {
         files.addElement(name);
+      }
+    } else {
+      for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
+        String name = segment + "." + IndexFileNames.INDEX_EXTENSIONS[i];
+        if (directory().fileExists(name))
+          files.addElement(name);
+      }
+    }
+
+    if (si.hasDeletions()) {
+      files.addElement(si.getDelFileName());
     }
 
     for (int i = 0; i < fieldInfos.size(); i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed  && !fi.omitNorms){
-        String name;
-        if(cfsReader == null)
-            name = segment + ".f" + i;
-        else
-            name = segment + ".s" + i;
-        if (directory().fileExists(name))
+      String name = si.getNormFileName(i);
+      if (name != null && directory().fileExists(name))
             files.addElement(name);
-      }
     }
     return files;
   }
@@ -380,7 +420,6 @@ class SegmentReader extends IndexReader {
   protected synchronized byte[] getNorms(String field) throws IOException {
     Norm norm = (Norm) norms.get(field);
     if (norm == null) return null;  // not indexed, or norms not stored
-
     if (norm.bytes == null) {                     // value not yet read
       byte[] bytes = new byte[maxDoc()];
       norms(field, bytes, 0);
@@ -436,12 +475,10 @@ class SegmentReader extends IndexReader {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
-        // look first if there are separate norms in compound format
-        String fileName = segment + ".s" + fi.number;
         Directory d = directory();
-        if(!d.fileExists(fileName)){
-            fileName = segment + ".f" + fi.number;
-            d = cfsDir;
+        String fileName = si.getNormFileName(fi.number);
+        if (!si.hasSeparateNorms(fi.number)) {
+          d = cfsDir;
         }
         norms.put(fi.name, new Norm(d.openInput(fileName), fi.number));
       }

@@ -80,6 +80,21 @@ public class TestMultiReader extends TestCase {
     assertEquals( 1, reader.numDocs() );
     reader.undeleteAll();
     assertEquals( 2, reader.numDocs() );
+
+    // Ensure undeleteAll survives commit/close/reopen:
+    reader.commit();
+    reader.close();
+    sis.read(dir);
+    reader = new MultiReader(dir, sis, false, readers);
+    assertEquals( 2, reader.numDocs() );
+
+    reader.deleteDocument(0);
+    assertEquals( 1, reader.numDocs() );
+    reader.commit();
+    reader.close();
+    sis.read(dir);
+    reader = new MultiReader(dir, sis, false, readers);
+    assertEquals( 1, reader.numDocs() );
   }
         
   

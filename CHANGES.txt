@@ -104,6 +104,15 @@ API Changes
  9. LUCENE-657: Made FuzzyQuery non-final and inner ScoreTerm protected.
     (Steven Parkes via Otis Gospodnetic)
 
+10. LUCENE-701: Lockless commits: a commit lock is no longer required
+    when a writer commits and a reader opens the index.  This includes
+    a change to the index file format (see docs/fileformats.html for
+    details).  It also removes all APIs associated with the commit
+    lock & its timeout.  Readers are now truly read-only and do not
+    block one another on startup.  This is the first step to getting
+    Lucene to work correctly over NFS (second step is
+    LUCENE-710). (Mike McCandless)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

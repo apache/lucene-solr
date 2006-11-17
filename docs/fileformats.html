@@ -118,7 +118,7 @@ limitations under the License.
         <blockquote>
                                     <p>
                 This document defines the index file formats used
-                in Lucene version 2.0.  If you are using a different
+                in Lucene version 2.1.  If you are using a different
 		version of Lucene, please consult the copy of
 		<code>docs/fileformats.html</code> that was distributed
 		with the version you are using.
@@ -143,6 +143,17 @@ limitations under the License.
                 Compatibility notes are provided in this document,
                 describing how file formats have changed from prior versions.
             </p>
+                                                <p>
+	        In version 2.1, the file format was changed to allow
+	        lock-less commits (ie, no more commit lock).  The
+	        change is fully backwards compatible: you can open a
+	        pre-2.1 index for searching or adding/deleting of
+	        docs.  When the new segments file is saved
+	        (committed), it will be written in the new file format
+	        (meaning no specific "upgrade" process is needed).
+	        But note that once a commit has occurred, pre-2.1
+	        Lucene will not be able to read the index.
+	    </p>
                             </blockquote>
         </p>
       </td></tr>
@@ -403,6 +414,17 @@ limitations under the License.
                 Typically, all segments
                 in an index are stored in a single directory, although this is not
                 required.
+            </p>
+                                                <p>
+	        As of version 2.1 (lock-less commits), file names are
+	        never re-used (there is one exception, "segments.gen",
+	        see below).  That is, when any file is saved to the
+	        Directory it is given a never before used filename.
+	        This is achieved using a simple generations approach.
+	        For example, the first segments file is segments_1,
+	        then segments_2, etc.  The generation is a sequential
+	        long integer represented in alpha-numeric (base 36)
+	        form.
             </p>
                             </blockquote>
         </p>
@@ -1080,25 +1102,53 @@ limitations under the License.
         <blockquote>
                                     <p>
                     The active segments in the index are stored in the
-                    segment info file.  An index only has
-                    a single file in this format, and it is named "segments".
-                    This lists each segment by name, and also contains the size of each
-                    segment.
+                    segment info file, <tt>segments_N</tt>.  There may
+                    be one or more <tt>segments_N</tt> files in the
+                    index; however, the one with the largest
+                    generation is the active one (when older
+                    segments_N files are present it's because they
+                    temporarily cannot be deleted, or, a writer is in
+                    the process of committing). This file lists each
+                    segment by name, has details about the separate
+                    norms and deletion files, and also contains the
+                    size of each segment.
                 </p>
                                                 <p>
+		    As of 2.1, there is also a file
+		    <tt>segments.gen</tt>.  This file contains the
+		    current generation (the <tt>_N</tt> in
+		    <tt>segments_N</tt>) of the index.  This is
+		    used only as a fallback in case the current
+		    generation cannot be accurately determined by
+		    directory listing alone (as is the case for some
+		    NFS clients with time-based directory cache
+		    expiraation).  This file simply contains an Int32
+		    version header (SegmentInfos.FORMAT_LOCKLESS =
+		    -2), followed by the generation recorded as Int64,
+		    written twice.
+		</p>
+                                                <p>
+		<b>Pre-2.1:</b>
                     Segments    --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
                 </p>
                                                 <p>
-                    Format, NameCounter, SegCount, SegSize    --&gt; UInt32
+		<b>2.1 and above:</b>
+                    Segments    --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, NumField, NormGen<sup>NumField</sup> &gt;<sup>SegCount</sup>, IsCompoundFile
                 </p>
                                                 <p>
-                    Version --&gt; UInt64
+                    Format, NameCounter, SegCount, SegSize, NumField    --&gt; Int32
+                </p>
+                                                <p>
+                    Version, DelGen, NormGen --&gt; Int64
                 </p>
                                                 <p>
                     SegName    --&gt; String
                 </p>
                                                 <p>
-                    Format is -1 in Lucene 1.4.
+                    IsCompoundFile    --&gt; Int8
+                </p>
+                                                <p>
+                    Format is -1 as of Lucene 1.4 and -2 as of Lucene 2.1.
                 </p>
                                                 <p>
                     Version counts how often the index has been
@@ -1114,6 +1164,35 @@ limitations under the License.
                                                 <p>
                     SegSize is the number of documents contained in the segment index.
                 </p>
+                                                <p>
+                    DelGen is the generation count of the separate
+                    deletes file.  If this is -1, there are no
+                    separate deletes.  If it is 0, this is a pre-2.1
+                    segment and you must check filesystem for the
+                    existence of _X.del.  Anything above zero means
+                    there are separate deletes (_X_N.del).
+                </p>
+                                                <p>
+                    NumField is the size of the array for NormGen, or
+                    -1 if there are no NormGens stored.
+                </p>
+                                                <p>
+                    NormGen records the generation of the separate
+                    norms files.  If NumField is -1, there are no
+                    normGens stored and they are all assumed to be 0
+                    when the segment file was written pre-2.1 and all
+                    assumed to be -1 when the segments file is 2.1 or
+                    above.  The generation then has the same meaning
+                    as delGen (above).
+                </p>
+                                                <p>
+                    IsCompoundFile records whether the segment is
+                    written as a compound file or not.  If this is -1,
+                    the segment is not a compound file.  If it is 1,
+                    the segment is a compound file.  Else it is 0,
+                    which means we check filesystem to see if _X.cfs
+                    exists.
+                </p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
@@ -1121,42 +1200,31 @@ limitations under the License.
                                                     <table border="0" cellspacing="0" cellpadding="2" width="100%">
       <tr><td bgcolor="#828DA6">
         <font color="#ffffff" face="arial,helvetica,sanserif">
-          <a name="Lock Files"><strong>Lock Files</strong></a>
+          <a name="Lock File"><strong>Lock File</strong></a>
         </font>
       </td></tr>
       <tr><td>
         <blockquote>
                                     <p>
-                    Several files are used to indicate that another
-                    process is using an index.  Note that these files are not
+                    A write lock is used to indicate that another
+                    process is writing to the index.  Note that this file is not
                     stored in the index directory itself, but rather in the
                     system's temporary directory, as indicated in the Java
                     system property "java.io.tmpdir".
                 </p>
-                                                <ul>
-                    <li>
-                        <p>
-                            When a file named "commit.lock"
-                            is present, a process is currently re-writing the "segments"
-                            file and deleting outdated segment index files, or a process is
-                            reading the "segments"
-                            file and opening the files of the segments it names.  This lock file
-                            prevents files from being deleted by another process after a process
-                            has read the "segments"
-                            file but before it has managed to open all of the files of the
-                            segments named therein.
-                        </p>
-                    </li>
-
-                    <li>
-                        <p>
-                            When a file named "write.lock"
-                            is present, a process is currently adding documents to an index, or
-                            removing files from that index.  This lock file prevents several
-                            processes from attempting to modify an index at the same time.
-                        </p>
-                    </li>
-                </ul>
+                                                <p>
+                    The write lock is named "XXXX-write.lock" where
+                    XXXX is typically a unique prefix computed by the
+                    directory path to the index.  When this file is
+                    present, a process is currently adding documents
+                    to an index, or removing files from that index.
+                    This lock file prevents several processes from
+                    attempting to modify an index at the same time.
+                </p>
+                                                <p>
+                    Note that prior to version 2.1, Lucene also used a
+                    commit lock.  This was removed in 2.1.
+		</p>
                             </blockquote>
       </td></tr>
       <tr><td><br/></td></tr>
@@ -1170,20 +1238,11 @@ limitations under the License.
       <tr><td>
         <blockquote>
                                     <p>
-                    A file named "deletable"
-                    contains the names of files that are no longer used by the index, but
-                    which could not be deleted.  This is only used on Win32, where a
-                    file may not be deleted while it is still open. On other platforms
-                    the file contains only null bytes.
-                </p>
-                                                <p>
-                    Deletable    --&gt; DeletableCount,
-                    &lt;DelableName&gt;<sup>DeletableCount</sup>
-                </p>
-                                                <p>DeletableCount    --&gt; UInt32
-                </p>
-                                                <p>DeletableName    --&gt;
-                    String
+                    Prior to Lucene 2.1 there was a file "deletable"
+                    that contained details about files that need to be
+                    deleted.  As of 2.1, a writer dynamically computes
+                    the files that are deletable, instead, so no file
+                    is written.
                 </p>
                             </blockquote>
       </td></tr>
