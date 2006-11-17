@@ -1103,10 +1103,11 @@ public class MemoryIndex {
     
     /**
      * Object header of any heap allocated Java object. 
-     * 1 word: ptr to class, 1 word: info for monitor, gc, hash, etc.
+     * ptr to class, info for monitor, gc, hash, etc.
      */
-    private static final int HEADER = 2*PTR; 
-        
+	private static final int OBJECT_HEADER = 2*4; // typically even on 64 bit VMs
+//  private static final int OBJECT_HEADER = 2*PTR; 
+
     /**
 	 * Modern VMs tend to trade space for time, allocating memory on word
 	 * boundaries. For example, on a 64 bit VM, the variables of a class with
@@ -1132,7 +1133,7 @@ public class MemoryIndex {
     }
     
     public static int sizeOfObject(int n) {
-        return sizeOf(HEADER + n);        
+        return sizeOf(OBJECT_HEADER + n);        
     }
     
     public static int sizeOfObjectArray(int len) {
