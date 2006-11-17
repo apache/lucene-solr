@@ -174,9 +174,6 @@ public class MemoryIndex {
   /** Could be made configurable; See {@link Document#setBoost(float)} */
   private static final float docBoost = 1.0f;
   
-  /** number of memory bytes a VM pointer occupies */ 
-  private static final int PTR = is64BitVM() ? 8 : 4;
-
   private static final long serialVersionUID = 2782195016849084649L;
 
   private static final boolean DEBUG = false;
@@ -290,7 +287,7 @@ public class MemoryIndex {
    *            the token stream to retrieve tokens from
    */
   public void addField(String fieldName, TokenStream stream) {
-	addField(fieldName, stream, 1.0f);
+    addField(fieldName, stream, 1.0f);
   }
 
   /**
@@ -445,50 +442,35 @@ public class MemoryIndex {
    */
   public int getMemorySize() {
     // for example usage in a smart cache see nux.xom.pool.Pool
-    int HEADER = 2*PTR; // object header of any java object
-    int ARR = HEADER + 4;
-    int STR = HEADER + 3*4 + PTR + ARR; // string
-    int INTARRLIST = HEADER + 4 + PTR + ARR;
-    int HASHMAP = HEADER + 4*PTR + 4*4 + ARR;
     
+    int PTR = VM.PTR;
+    int INT = VM.INT;
     int size = 0;
-    size += HEADER + 2*PTR + 4; // memory index
-    if (sortedFields != null) size += ARR + PTR * sortedFields.length;
+    size += VM.sizeOfObject(2*PTR + INT); // memory index
+    if (sortedFields != null) size += VM.sizeOfObjectArray(sortedFields.length);
     
-    size += HASHMAP + fields.size() * (PTR + HEADER + 3*PTR + 4); // Map.entries
+    size += VM.sizeOfHashMap(fields.size());
     Iterator iter = fields.entrySet().iterator();
     while (iter.hasNext()) { // for each Field Info
       Map.Entry entry = (Map.Entry) iter.next();      
       Info info = (Info) entry.getValue();
-      size += HEADER + 4 + 4 + PTR + PTR + PTR; // Info instance vars
-      if (info.sortedTerms != null) size += ARR + PTR * info.sortedTerms.length;
+      size += VM.sizeOfObject(2*INT + 3*PTR); // Info instance vars
+      if (info.sortedTerms != null) size += VM.sizeOfObjectArray(info.sortedTerms.length);
       
       int len = info.terms.size();
-      size += HASHMAP + len * (PTR + HEADER + 3*PTR + 4); // Map.entries
+      size += VM.sizeOfHashMap(len);
       Iterator iter2 = info.terms.entrySet().iterator();
       while (--len >= 0) { // for each term
         Map.Entry e = (Map.Entry) iter2.next();
-        size += STR - ARR; // assumes substring() memory overlay
+        size += VM.sizeOfObject(PTR + 3*INT); // assumes substring() memory overlay
 //        size += STR + 2 * ((String) e.getKey()).length();
         ArrayIntList positions = (ArrayIntList) e.getValue();
-        size += INTARRLIST + 4*positions.size();
+        size += VM.sizeOfArrayIntList(positions.size());
       }
     }
     return size;
   } 
 
-  private static boolean is64BitVM() {
-    try {
-      int bits = Integer.getInteger("sun.arch.data.model", 0).intValue();
-      if (bits != 0) return bits == 64;
-            
-      // fallback if sun.arch.data.model isn't available
-      return System.getProperty("java.vm.name").toLowerCase().indexOf("64") >= 0;
-    } catch (Throwable t) {
-      return false; // better safe than sorry (applets, security managers, etc.) ...
-    }
-  }
-    
   private int numPositions(ArrayIntList positions) {
     return positions.size() / stride;
   }
@@ -1016,7 +998,7 @@ public class MemoryIndex {
         int numTokens = info != null ? info.numTokens : 0;
         float n = sim.lengthNorm(fieldName, numTokens);
         float boost = info != null ? info.getBoost() : 1.0f; 
-        n = n * boost; // see DocumentWriter.writeNorms(String segment)				
+        n = n * boost; // see DocumentWriter.writeNorms(String segment)                
         byte norm = Similarity.encodeNorm(n);
         norms = new byte[] {norm};
         
@@ -1099,6 +1081,102 @@ public class MemoryIndex {
       
       return Collections.unmodifiableSet(fields.keySet());
     }
+  }
+
+  
+  ///////////////////////////////////////////////////////////////////////////////
+  // Nested classes:
+  ///////////////////////////////////////////////////////////////////////////////
+  private static final class VM {
+        
+    public static final int PTR = is64BitVM() ? 8 : 4;    
+
+    // bytes occupied by primitive data types
+    public static final int BOOLEAN = 1;
+    public static final int BYTE = 1;
+    public static final int CHAR = 2;
+    public static final int SHORT = 2;
+    public static final int INT = 4;
+    public static final int LONG = 8;
+    public static final int FLOAT = 4;
+    public static final int DOUBLE = 8;
+    
+    /**
+     * Object header of any heap allocated Java object. 
+     * 1 word: ptr to class, 1 word: info for monitor, gc, hash, etc.
+     */
+    private static final int HEADER = 2*PTR; 
+        
+    /**
+     * Modern VMs tend to trade space for time, allocating memory in chunks that
+     * are multiples of the word size (where word size is 4 or 8 bytes). For
+     * example, on a 64 bit VM, the variables of a class with one 32 bit integer
+     * and one Java char really consume 8 bytes instead of 6 bytes. 2 bytes are
+     * spent on padding. Similary, on a 64 bit VM a java.lang.Integer consumes
+     * OBJECT_HEADER + 8 bytes rather than OBJECT_HEADER + 4 bytes.
+     */ 
+    private static final boolean IS_WORD_ALIGNED_VM = true;
+    
+    
+    private VM() {} // not instantiable
+
+    //  assumes n > 0
+    //  64 bit VM:
+    //    0     --> 0*PTR
+    //    1..8  --> 1*PTR
+    //    9..16 --> 2*PTR
+    private static int sizeOf(int n) {
+        return IS_WORD_ALIGNED_VM ?
+                ((n-1)/PTR + 1) * PTR :
+                n;
+    }
+    
+    public static int sizeOfObject(int n) {
+        return sizeOf(HEADER + n);        
+    }
+    
+    public static int sizeOfObjectArray(int len) {
+        return sizeOfObject(INT + PTR*len);        
+    }
+    
+    public static int sizeOfCharArray(int len) {
+        return sizeOfObject(INT + CHAR*len);        
+    }
+    
+    public static int sizeOfIntArray(int len) {
+        return sizeOfObject(INT + INT*len);        
+    }
+    
+    public static int sizeOfString(int len) {
+        return sizeOfObject(3*INT + PTR) + sizeOfCharArray(len);
+    }
+    
+    public static int sizeOfHashMap(int len) {
+        return sizeOfObject(4*PTR + 4*INT) + sizeOfObjectArray(len) 
+            + len*sizeOfObject(3*PTR + INT); // entries
+    }
+    
+    // note: does not include referenced objects
+    public static int sizeOfArrayList(int len) {
+        return sizeOfObject(PTR + 2*INT) + sizeOfObjectArray(len); 
+    }
+    
+    public static int sizeOfArrayIntList(int len) {
+        return sizeOfObject(PTR + INT) + sizeOfIntArray(len);
+    }
+    
+    private static boolean is64BitVM() {
+        try {
+            int bits = Integer.getInteger("sun.arch.data.model", 0).intValue();
+            if (bits != 0) return bits == 64;
+
+            // fallback if sun.arch.data.model isn't available
+            return System.getProperty("java.vm.name").toLowerCase().indexOf("64") >= 0;
+        } catch (Throwable t) {
+            return false; // better safe than sorry (applets, security managers, etc.) ...
+        }
+    }
+        
   }
 
 }
