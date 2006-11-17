@@ -206,8 +206,7 @@ final class DocumentWriter {
       if (ti.positions.length == freq) {	  // positions array is full
         int[] newPositions = new int[freq * 2];	  // double size
         int[] positions = ti.positions;
-        for (int i = 0; i < freq; i++)		  // copy old positions to new
-          newPositions[i] = positions[i];
+        System.arraycopy(positions, 0, newPositions, 0, freq);
         ti.positions = newPositions;
       }
       ti.positions[freq] = position;		  // add new position
@@ -216,10 +215,7 @@ final class DocumentWriter {
         if (ti.offsets.length == freq){
           TermVectorOffsetInfo [] newOffsets = new TermVectorOffsetInfo[freq*2];
           TermVectorOffsetInfo [] offsets = ti.offsets;
-          for (int i = 0; i < freq; i++)
-          {
-            newOffsets[i] = offsets[i];
-          }
+          System.arraycopy(offsets, 0, newOffsets, 0, freq);
           ti.offsets = newOffsets;
         }
         ti.offsets[freq] = offset;

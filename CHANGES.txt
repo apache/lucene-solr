@@ -221,6 +221,9 @@ Optimizations
      queries involving term positions, including phrase queries.
      (Michael Busch via Yonik Seeley)
 
+ 12. LUCENE-714: Replaced 2 cases of manual for-loop array copying
+     with calls to System.arraycopy instead, in DocumentWriter.java.
+     (Nicolas Lalevee via Mike McCandless)
 
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
