@@ -55,6 +55,9 @@ New features
     optimize the index when adding new segments, only performing
     merges as needed.  (Ning Li via Yonik Seeley)
 
+ 7. LUCENE-573: QueryParser now allows backslash escaping in
+    quoted terms and phrases. (Michael Busch via Yonik Seeley)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow

@@ -645,18 +645,42 @@ public class QueryParser {
    * Returns a String where the escape char has been
    * removed, or kept only once if there was a double escape.
    */
-  private String discardEscapeChar(String input) {
-    char[] caSource = input.toCharArray();
-    char[] caDest = new char[caSource.length];
-    int j = 0;
-    for (int i = 0; i < caSource.length; i++) {
-      if ((caSource[i] != '\\') || (i > 0 && caSource[i-1] == '\\')) {
-        caDest[j++]=caSource[i];
+  private String discardEscapeChar(String input) throws ParseException {
+    // Create char array to hold unescaped char sequence
+    char[] output = new char[input.length()];
+      
+    // The length of the output can be less than the input
+    // due to discarded escape chars. This variable holds
+    // the actual length of the output
+    int length = 0;
+      
+    // We remember whether the last processed character was 
+    // an escape character
+    boolean lastCharWasEscapeChar = false;
+      
+    for (int i = 0; i < input.length(); i++) {
+      char curChar = input.charAt(i);
+      if (lastCharWasEscapeChar) {
+        // this character was escaped
+        output[length] = curChar;    
+        length++;
+        lastCharWasEscapeChar = false;
+      } else {
+        if (curChar == '\\') {
+          lastCharWasEscapeChar = true;
+        } else {
+          output[length] = curChar;
+          length++;
+        }
       }
     }
-    return new String(caDest, 0, j);
+      
+    if (lastCharWasEscapeChar) {
+      throw new ParseException("Term can not end with escape character.");
+    }
+      
+    return new String(output, 0, length);
   }
-
   /**
    * Returns a String where those characters that QueryParser
    * expects to be escaped are escaped by a preceding <code>\</code>.
@@ -725,7 +749,7 @@ PARSER_END(QueryParser)
 | <RPAREN:    ")" >
 | <COLON:     ":" >
 | <CARAT:     "^" > : Boost
-| <QUOTED:     "\"" (~["\""])+ "\"">
+| <QUOTED:     "\"" (~["\""] | "\\\"")+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <PREFIXTERM:  (<_TERM_START_CHAR> | "*") (<_TERM_CHAR>)* "*" >
@@ -741,14 +765,14 @@ PARSER_END(QueryParser)
 <RangeIn> TOKEN : {
 <RANGEIN_TO: "TO">
 | <RANGEIN_END: "]"> : DEFAULT
-| <RANGEIN_QUOTED: "\"" (~["\""])+ "\"">
+| <RANGEIN_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
 | <RANGEIN_GOOP: (~[ " ", "]" ])+ >
 }
 
 <RangeEx> TOKEN : {
 <RANGEEX_TO: "TO">
 | <RANGEEX_END: "}"> : DEFAULT
-| <RANGEEX_QUOTED: "\"" (~["\""])+ "\"">
+| <RANGEEX_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
 | <RANGEEX_GOOP: (~[ " ", "}" ])+ >
 }
 
@@ -880,15 +904,11 @@ Query Term(String field) : {
         {
           if (goop1.kind == RANGEIN_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          } else {
-            goop1.image = discardEscapeChar(goop1.image);
           }
           if (goop2.kind == RANGEIN_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-      } else {
-        goop2.image = discardEscapeChar(goop2.image);
-      }
-          q = getRangeQuery(field, goop1.image, goop2.image, true);
+          }
+          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), true);
         }
      | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
          [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> )
@@ -897,16 +917,12 @@ Query Term(String field) : {
         {
           if (goop1.kind == RANGEEX_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          } else {
-            goop1.image = discardEscapeChar(goop1.image);
           }
           if (goop2.kind == RANGEEX_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-      } else {
-        goop2.image = discardEscapeChar(goop2.image);
-      }
+          }
 
-          q = getRangeQuery(field, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), false);
         }
      | term=<QUOTED>
        [ fuzzySlop=<FUZZY_SLOP> ]
@@ -920,7 +936,7 @@ Query Term(String field) : {
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
+         q = getFieldQuery(field, discardEscapeChar(term.image.substring(1, term.image.length()-1)), s);
        }
   )
   {

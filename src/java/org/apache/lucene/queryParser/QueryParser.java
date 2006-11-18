@@ -620,19 +620,44 @@ public class QueryParser implements QueryParserConstants {
   /**
    * Returns a String where the escape char has been
    * removed, or kept only once if there was a double escape.
+   * 
    */
-  private String discardEscapeChar(String input) {
-    char[] caSource = input.toCharArray();
-    char[] caDest = new char[caSource.length];
-    int j = 0;
-    for (int i = 0; i < caSource.length; i++) {
-      if ((caSource[i] != '\\') || (i > 0 && caSource[i-1] == '\\')) {
-        caDest[j++]=caSource[i];
+  private String discardEscapeChar(String input) throws ParseException {
+    // Create char array to hold unescaped char sequence
+    char[] output = new char[input.length()];
+
+    // The length of the output can be less than the input
+    // due to discarded escape chars. This variable holds
+    // the actual length of the output
+    int length = 0;
+
+    // We remember whether the last processed character was 
+    // an escape character
+    boolean lastCharWasEscapeChar = false;
+
+    for (int i = 0; i < input.length(); i++) {
+      char curChar = input.charAt(i);
+      if (lastCharWasEscapeChar) {
+        // this character was escaped
+        output[length] = curChar;
+        length++;
+        lastCharWasEscapeChar = false;
+      } else {
+        if (curChar == '\\') {
+          lastCharWasEscapeChar = true;
+        } else {
+          output[length] = curChar;
+          length++;
+        }
       }
     }
-    return new String(caDest, 0, j);
-  }
 
+    if (lastCharWasEscapeChar) {
+      throw new ParseException("Term can not end with escape character.");
+    }
+
+    return new String(output, 0, length);
+  }
   /**
    * Returns a String where those characters that QueryParser
    * expects to be escaped are escaped by a preceding <code>\</code>.
@@ -950,15 +975,11 @@ public class QueryParser implements QueryParserConstants {
       }
           if (goop1.kind == RANGEIN_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          } else {
-            goop1.image = discardEscapeChar(goop1.image);
           }
           if (goop2.kind == RANGEIN_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-      } else {
-        goop2.image = discardEscapeChar(goop2.image);
-      }
-          q = getRangeQuery(field, goop1.image, goop2.image, true);
+          }
+          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), true);
       break;
     case RANGEEX_START:
       jj_consume_token(RANGEEX_START);
@@ -1006,16 +1027,12 @@ public class QueryParser implements QueryParserConstants {
       }
           if (goop1.kind == RANGEEX_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          } else {
-            goop1.image = discardEscapeChar(goop1.image);
           }
           if (goop2.kind == RANGEEX_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-      } else {
-        goop2.image = discardEscapeChar(goop2.image);
-      }
+          }
 
-          q = getRangeQuery(field, goop1.image, goop2.image, false);
+          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), false);
       break;
     case QUOTED:
       term = jj_consume_token(QUOTED);
@@ -1044,7 +1061,7 @@ public class QueryParser implements QueryParserConstants {
            }
            catch (Exception ignored) { }
          }
-         q = getFieldQuery(field, term.image.substring(1, term.image.length()-1), s);
+         q = getFieldQuery(field, discardEscapeChar(term.image.substring(1, term.image.length()-1)), s);
       break;
     default:
       jj_la1[21] = jj_gen;
@@ -1290,6 +1307,7 @@ public class QueryParser implements QueryParserConstants {
   final private void jj_rescan_token() {
     jj_rescan = true;
     for (int i = 0; i < 1; i++) {
+    try {
       JJCalls p = jj_2_rtns[i];
       do {
         if (p.gen > jj_gen) {
@@ -1300,6 +1318,7 @@ public class QueryParser implements QueryParserConstants {
         }
         p = p.next;
       } while (p != null);
+      } catch(LookaheadSuccess ls) { }
     }
     jj_rescan = false;
   }

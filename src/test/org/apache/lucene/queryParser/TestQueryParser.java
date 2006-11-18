@@ -475,6 +475,17 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
     assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");
     assertQueryEquals("[ a\\\\ TO a\\* ]", null, "[a\\ TO a*]");
+
+    assertQueryEquals("[\"c\\:\\\\temp\\\\\\~foo0.txt\" TO \"c\\:\\\\temp\\\\\\~foo9.txt\"]", a, 
+                      "[c:\\temp\\~foo0.txt TO c:\\temp\\~foo9.txt]");
+    
+    assertQueryEquals("a\\\\\\+b", a, "a\\+b");
+    
+    assertQueryEquals("a \\\"b c\\\" d", a, "a \"b c\" d");
+    assertQueryEquals("\"a \\\"b c\\\" d\"", a, "\"a \"b c\" d\"");
+    assertQueryEquals("\"a \\+b c d\"", a, "\"a +b c d\"");
+    
+    assertQueryEquals("c\\:\\\\temp\\\\\\~foo.txt", a, "c:\\temp\\~foo.txt");
   }
 
   public void testQueryStringEscaping() throws Exception {
