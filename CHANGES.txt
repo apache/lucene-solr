@@ -58,6 +58,10 @@ New features
  7. LUCENE-573: QueryParser now allows backslash escaping in
     quoted terms and phrases. (Michael Busch via Yonik Seeley)
 
+ 7. LUCENE-716: QueryParser now allows specification of unicode
+    characters in terms via a unicode escape of the form \uXXXX
+    (Michael Busch via Yonik Seeley)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow

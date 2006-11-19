@@ -486,6 +486,28 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("\"a \\+b c d\"", a, "\"a +b c d\"");
     
     assertQueryEquals("c\\:\\\\temp\\\\\\~foo.txt", a, "c:\\temp\\~foo.txt");
+    
+
+    try {
+        assertQueryEquals("XY\\", a, "XYZ");
+        fail("ParseException expected, not thrown");
+    } catch (ParseException expected) {}
+    
+    // test unicode escaping
+    assertQueryEquals("a\\u0062c", a, "abc");
+    assertQueryEquals("XY\\u005a", a, "XYZ");
+    assertQueryEquals("XY\\u005A", a, "XYZ");
+    assertQueryEquals("\"a \\\\\\u0028\\u0062\\\" c\"", a, "\"a \\(b\" c\"");
+    
+    try {
+        assertQueryEquals("XY\\u005G", a, "XYZ");
+        fail("ParseException expected, not thrown");
+    } catch (ParseException expected) {}
+
+    try {
+        assertQueryEquals("XY\\u005", a, "XYZ");
+        fail("ParseException expected, not thrown");
+    } catch (ParseException expected) {}
   }
 
   public void testQueryStringEscaping() throws Exception {
