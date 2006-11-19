@@ -74,11 +74,15 @@ public class TestBackwardsCompatibility extends TestCase
   }
 
   public void testCreateCFS() throws IOException {
-    createIndex("testindex.cfs", true);
+    String dirName = "testindex.cfs";
+    createIndex(dirName, true);
+    rmDir(dirName);
   }
 
   public void testCreateNoCFS() throws IOException {
-    createIndex("testindex.nocfs", false);
+    String dirName = "testindex.nocfs";
+    createIndex(dirName, true);
+    rmDir(dirName);
   }
 
   public void testSearchOldIndexCFS() throws IOException {

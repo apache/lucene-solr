@@ -303,6 +303,7 @@ public class TestIndexReader extends TestCase
       } catch (FileNotFoundException e) {
         // GOOD
       }
+      rmDir(fileDirName);
     }
     
     public void testDeleteReaderWriterConflictOptimized() throws IOException{
