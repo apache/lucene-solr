@@ -77,9 +77,10 @@ location on your file system.
 After JavaCC is installed, create a build.properties file
 (as in step 2), and add the line
 
-  javacc.home=/javacc/bin
+  javacc.home=/javacc
 
-where this points to the bin directory of your javacc installation.
+where this points to the root directory of your javacc installation
+(the directory that contains bin/lib/javacc.jar).
 
 Step 4) Run ant
 
