@@ -193,7 +193,10 @@ Bug fixes
     IOException after acquiring the write lock but before finishing
     instantiation. (Matthew Bogosian via Mike McCandless)
 
-22. LUCENE-651: Fixed a race condition in initialization of FieldCache.
+22. LUCENE-651: Multiple different threads requesting the same
+    FieldCache entry (often for Sorting by a field) at the same
+    time caused multiple generations of that entry, which was
+    detrimental to performance and memory use.
     (Oliver Hutchison via Otis Gospodnetic)
 
 Optimizations
