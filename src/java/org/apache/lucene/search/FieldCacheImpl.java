@@ -40,8 +40,52 @@ import java.util.HashMap;
  */
 class FieldCacheImpl
 implements FieldCache {
+	
+  /** Expert: Internal cache. */
+  abstract static class Cache {
+    private final Map readerCache = new WeakHashMap();
+    
+    protected abstract Object createValue(IndexReader reader, Object key)
+        throws IOException;
 
-  /** Expert: Every key in the internal cache is of this type. */
+    public Object get(IndexReader reader, Object key) throws IOException {
+      Map innerCache;
+      Object value;
+      synchronized (readerCache) {
+        innerCache = (Map) readerCache.get(reader);
+        if (innerCache == null) {
+          innerCache = new HashMap();
+          readerCache.put(reader, innerCache);
+          value = null;
+        } else {
+          value = innerCache.get(key);
+        }
+        if (value == null) {
+          value = new CreationPlaceholder();
+          innerCache.put(reader, value);
+        }
+      }
+      if (value instanceof CreationPlaceholder) {
+        synchronized (value) {
+          CreationPlaceholder progress = (CreationPlaceholder) value;
+          if (progress.value == null) {
+            progress.value = createValue(reader, key);
+            synchronized (readerCache) {
+              innerCache.put(key, progress.value);
+            }
+          }
+          return progress.value;
+        }
+      }
+      return value;
+    }
+  }
+
+  static final class CreationPlaceholder {
+    Object value;
+  }
+
+  /** Expert: Every composite-key in the internal cache is of this type. */
   static class Entry {
     final String field;        // which Fieldable
     final int type;            // which SortField type
@@ -99,66 +143,24 @@ implements FieldCache {
       }
     };
 
-  /** The internal cache. Maps Entry to array of interpreted term values. **/
-  final Map cache = new WeakHashMap();
-
-  /** See if an object is in the cache. */
-  Object lookup (IndexReader reader, String field, int type, Locale locale) {
-    Entry entry = new Entry (field, type, locale);
-    synchronized (this) {
-      HashMap readerCache = (HashMap)cache.get(reader);
-      if (readerCache == null) return null;
-      return readerCache.get (entry);
-    }
-  }
-
-  /** See if a custom object is in the cache. */
-  Object lookup (IndexReader reader, String field, Object comparer) {
-    Entry entry = new Entry (field, comparer);
-    synchronized (this) {
-      HashMap readerCache = (HashMap)cache.get(reader);
-      if (readerCache == null) return null;
-      return readerCache.get (entry);
-    }
-  }
-
-  /** Put an object into the cache. */
-  Object store (IndexReader reader, String field, int type, Locale locale, Object value) {
-    Entry entry = new Entry (field, type, locale);
-    synchronized (this) {
-      HashMap readerCache = (HashMap)cache.get(reader);
-      if (readerCache == null) {
-        readerCache = new HashMap();
-        cache.put(reader,readerCache);
-      }
-      return readerCache.put (entry, value);
-    }
-  }
-
-  /** Put a custom object into the cache. */
-  Object store (IndexReader reader, String field, Object comparer, Object value) {
-    Entry entry = new Entry (field, comparer);
-    synchronized (this) {
-      HashMap readerCache = (HashMap)cache.get(reader);
-      if (readerCache == null) {
-        readerCache = new HashMap();
-        cache.put(reader, readerCache);
-      }
-      return readerCache.put (entry, value);
-    }
-  }
-
   // inherit javadocs
   public int[] getInts (IndexReader reader, String field) throws IOException {
     return getInts(reader, field, INT_PARSER);
   }
 
   // inherit javadocs
-  public int[] getInts (IndexReader reader, String field, IntParser parser)
-  throws IOException {
-    field = field.intern();
-    Object ret = lookup (reader, field, parser);
-    if (ret == null) {
+  public int[] getInts(IndexReader reader, String field, IntParser parser)
+      throws IOException {
+    return (int[]) intsCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache intsCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      IntParser parser = (IntParser) entry.custom;
       final int[] retArray = new int[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field, ""));
@@ -176,11 +178,9 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      store (reader, field, parser, retArray);
       return retArray;
     }
-    return (int[]) ret;
-  }
+  };
 
   // inherit javadocs
   public float[] getFloats (IndexReader reader, String field)
@@ -189,11 +189,18 @@ implements FieldCache {
   }
 
   // inherit javadocs
-  public float[] getFloats (IndexReader reader, String field,
-                            FloatParser parser) throws IOException {
-    field = field.intern();
-    Object ret = lookup (reader, field, parser);
-    if (ret == null) {
+  public float[] getFloats(IndexReader reader, String field, FloatParser parser)
+      throws IOException {
+    return (float[]) floatsCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache floatsCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      FloatParser parser = (FloatParser) entry.custom;
       final float[] retArray = new float[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field, ""));
@@ -211,18 +218,21 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      store (reader, field, parser, retArray);
       return retArray;
     }
-    return (float[]) ret;
-  }
+  };
 
   // inherit javadocs
-  public String[] getStrings (IndexReader reader, String field)
-  throws IOException {
-    field = field.intern();
-    Object ret = lookup (reader, field, SortField.STRING, null);
-    if (ret == null) {
+  public String[] getStrings(IndexReader reader, String field)
+      throws IOException {
+    return (String[]) stringsCache.get(reader, field);
+  }
+
+  Cache stringsCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object fieldKey)
+        throws IOException {
+      String field = ((String) fieldKey).intern();
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field, ""));
@@ -240,18 +250,21 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      store (reader, field, SortField.STRING, null, retArray);
       return retArray;
     }
-    return (String[]) ret;
-  }
+  };
 
   // inherit javadocs
-  public StringIndex getStringIndex (IndexReader reader, String field)
-  throws IOException {
-    field = field.intern();
-    Object ret = lookup (reader, field, STRING_INDEX, null);
-    if (ret == null) {
+  public StringIndex getStringIndex(IndexReader reader, String field)
+      throws IOException {
+    return (StringIndex) stringsIndexCache.get(reader, field);
+  }
+
+  Cache stringsIndexCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object fieldKey)
+        throws IOException {
+      String field = ((String) fieldKey).intern();
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
       TermDocs termDocs = reader.termDocs();
@@ -301,11 +314,9 @@ implements FieldCache {
       }
 
       StringIndex value = new StringIndex (retArray, mterms);
-      store (reader, field, STRING_INDEX, null, value);
       return value;
     }
-    return (StringIndex) ret;
-  }
+  };
 
   /** The pattern used to detect integer values in a field */
   /** removed for java 1.3 compatibility
@@ -318,18 +329,23 @@ implements FieldCache {
    * protected static final Object pFloats = Pattern.compile ("[0-9+\\-\\.eEfFdD]+");
    */
 
-  // inherit javadocs
-  public Object getAuto (IndexReader reader, String field)
-  throws IOException {
-    field = field.intern();
-    Object ret = lookup (reader, field, SortField.AUTO, null);
-    if (ret == null) {
+	// inherit javadocs
+  public Object getAuto(IndexReader reader, String field) throws IOException {
+    return autoCache.get(reader, field);
+  }
+
+  Cache autoCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object fieldKey)
+        throws IOException {
+      String field = ((String)fieldKey).intern();
       TermEnum enumerator = reader.terms (new Term (field, ""));
       try {
         Term term = enumerator.term();
         if (term == null) {
           throw new RuntimeException ("no terms in field " + field + " - cannot determine sort type");
         }
+        Object ret = null;
         if (term.field() == field) {
           String termtext = term.text().trim();
 
@@ -354,27 +370,30 @@ implements FieldCache {
             } catch (NumberFormatException nfe2) {
               ret = getStringIndex (reader, field);
             }
-          }
-          if (ret != null) {
-            store (reader, field, SortField.AUTO, null, ret);
-          }
+          }          
         } else {
           throw new RuntimeException ("field \"" + field + "\" does not appear to be indexed");
         }
+        return ret;
       } finally {
         enumerator.close();
       }
-
     }
-    return ret;
-  }
+  };
 
   // inherit javadocs
-  public Comparable[] getCustom (IndexReader reader, String field, SortComparator comparator)
-  throws IOException {
-    field = field.intern();
-    Object ret = lookup (reader, field, comparator);
-    if (ret == null) {
+  public Comparable[] getCustom(IndexReader reader, String field,
+      SortComparator comparator) throws IOException {
+    return (Comparable[]) customCache.get(reader, new Entry(field, comparator));
+  }
+
+  Cache customCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      SortComparator comparator = (SortComparator) entry.custom;
       final Comparable[] retArray = new Comparable[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field, ""));
@@ -392,11 +411,9 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
-      store (reader, field, comparator, retArray);
       return retArray;
     }
-    return (Comparable[]) ret;
-  }
-
+  };
+  
 }
 

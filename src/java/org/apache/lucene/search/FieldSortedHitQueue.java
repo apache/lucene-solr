@@ -21,9 +21,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
-import java.util.WeakHashMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Locale;
 import java.text.Collator;
 
@@ -147,44 +144,29 @@ extends PriorityQueue {
   SortField[] getFields() {
     return fields;
   }
-
-  /** Internal cache of comparators. Similar to FieldCache, only
-   *  caches comparators instead of term values. */
-  static final Map Comparators = new WeakHashMap();
-
-  /** Returns a comparator if it is in the cache. */
-  static ScoreDocComparator lookup (IndexReader reader, String field, int type, Locale locale, Object factory) {
-    FieldCacheImpl.Entry entry = (factory != null)
-      ? new FieldCacheImpl.Entry (field, factory)
-      : new FieldCacheImpl.Entry (field, type, locale);
-    synchronized (Comparators) {
-      HashMap readerCache = (HashMap)Comparators.get(reader);
-      if (readerCache == null) return null;
-      return (ScoreDocComparator) readerCache.get (entry);
-    }
-  }
-
-  /** Stores a comparator into the cache. */
-  static Object store (IndexReader reader, String field, int type, Locale locale, Object factory, Object value) {
-    FieldCacheImpl.Entry entry = (factory != null)
-      ? new FieldCacheImpl.Entry (field, factory)
-      : new FieldCacheImpl.Entry (field, type, locale);
-    synchronized (Comparators) {
-      HashMap readerCache = (HashMap)Comparators.get(reader);
-      if (readerCache == null) {
-        readerCache = new HashMap();
-        Comparators.put(reader,readerCache);
-      }
-      return readerCache.put (entry, value);
-    }
-  }
-
-  static ScoreDocComparator getCachedComparator (IndexReader reader, String fieldname, int type, Locale locale, SortComparatorSource factory)
+  
+  static ScoreDocComparator getCachedComparator (IndexReader reader, String field, int type, Locale locale, SortComparatorSource factory)
   throws IOException {
     if (type == SortField.DOC) return ScoreDocComparator.INDEXORDER;
     if (type == SortField.SCORE) return ScoreDocComparator.RELEVANCE;
-    ScoreDocComparator comparator = lookup (reader, fieldname, type, locale, factory);
-    if (comparator == null) {
+    FieldCacheImpl.Entry entry = (factory != null)
+      ? new FieldCacheImpl.Entry (field, factory)
+      : new FieldCacheImpl.Entry (field, type, locale);
+    return (ScoreDocComparator)Comparators.get(reader, entry);
+  }
+
+  /** Internal cache of comparators. Similar to FieldCache, only
+   *  caches comparators instead of term values. */
+  static final FieldCacheImpl.Cache Comparators = new FieldCacheImpl.Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      FieldCacheImpl.Entry entry = (FieldCacheImpl.Entry) entryKey;
+      String fieldname = entry.field;
+      int type = entry.type;
+      Locale locale = entry.locale;
+      SortComparatorSource factory = (SortComparatorSource) entry.custom;
+      ScoreDocComparator comparator;
       switch (type) {
         case SortField.AUTO:
           comparator = comparatorAuto (reader, fieldname);
@@ -205,10 +187,9 @@ extends PriorityQueue {
         default:
           throw new RuntimeException ("unknown field type: "+type);
       }
-      store (reader, fieldname, type, locale, factory, comparator);
+      return comparator;
     }
-    return comparator;
-  }
+  };
 
   /**
    * Returns a comparator for sorting hits according to a field containing integers.
