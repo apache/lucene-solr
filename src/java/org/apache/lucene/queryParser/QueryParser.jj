@@ -675,7 +675,7 @@ public class QueryParser {
         codePoint += hexToInt(curChar) * codePointMultiplier;
         codePointMultiplier >>>= 4;
         if (codePointMultiplier == 0) {
-          length += Character.toChars(codePoint, output, length);
+          output[length++] = (char)codePoint;
           codePoint = 0;
         }
       } else if (lastCharWasEscapeChar) {

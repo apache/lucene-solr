@@ -969,10 +969,12 @@ protected CharStream input_stream;
 private final int[] jjrounds = new int[37];
 private final int[] jjstateSet = new int[74];
 protected char curChar;
-public QueryParserTokenManager(CharStream stream){
+public QueryParserTokenManager(CharStream stream)
+{
    input_stream = stream;
 }
-public QueryParserTokenManager(CharStream stream, int lexState){
+public QueryParserTokenManager(CharStream stream, int lexState)
+{
    this(stream);
    SwitchTo(lexState);
 }

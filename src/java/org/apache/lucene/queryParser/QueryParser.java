@@ -651,7 +651,7 @@ public class QueryParser implements QueryParserConstants {
         codePoint += hexToInt(curChar) * codePointMultiplier;
         codePointMultiplier >>>= 4;
         if (codePointMultiplier == 0) {
-          length += Character.toChars(codePoint, output, length);
+          output[length++] = (char)codePoint;
           codePoint = 0;
         }
       } else if (lastCharWasEscapeChar) {
@@ -1347,7 +1347,6 @@ public class QueryParser implements QueryParserConstants {
   final private void jj_rescan_token() {
     jj_rescan = true;
     for (int i = 0; i < 1; i++) {
-    try {
       JJCalls p = jj_2_rtns[i];
       do {
         if (p.gen > jj_gen) {
@@ -1358,7 +1357,6 @@ public class QueryParser implements QueryParserConstants {
         }
         p = p.next;
       } while (p != null);
-      } catch(LookaheadSuccess ls) { }
     }
     jj_rescan = false;
   }
