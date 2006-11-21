@@ -25,9 +25,16 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
-
+import org.apache.solr.util.DateMathParser;
+  
 import java.util.Map;
 import java.io.IOException;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
+import java.text.DateFormat;
+import java.text.ParseException;
 
 // TODO: make a FlexibleDateField that can accept dates in multiple
 // formats, better for human entered dates.
@@ -62,12 +69,22 @@ import java.io.IOException;
  * acronym UTC was chosen as a compromise."
  * </blockquote>
  *
+ * <p>
+ * This FieldType also supports incoming "Date Math" strings for computing
+ * values by adding/rounding internals of time relative "NOW",
+ * ie: "NOW+1YEAR", "NOW/DAY", etc.. -- see {@link DateMathParser}
+ * for more examples.
+ * </p>
+ *
  * @author yonik
  * @version $Id$
  * @see <a href="http://www.w3.org/TR/xmlschema-2/#dateTime">XML schema part 2</a>
+ *
  */
 public class DateField extends FieldType {
 
+  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+  
   // The XML (external) date format will sort correctly, except if
   // fractions of seconds are present (because '.' is lower than 'Z').
   // The easiest fix is to simply remove the 'Z' for the internal
@@ -80,8 +97,20 @@ public class DateField extends FieldType {
     int len=val.length();
     if (val.charAt(len-1)=='Z') {
       return val.substring(0,len-1);
+    } else if (val.startsWith("NOW")) {
+      /* :TODO: let Locale/TimeZone come from init args for rounding only */
+      DateMathParser p = new DateMathParser(UTC, Locale.US);
+      try {
+        return toInternal(p.parseMath(val.substring(3)));
+      } catch (ParseException e) {
+        throw new SolrException(400,"Invalid Date Math String:'" +val+'\'',e);
+      }
     }
-    throw new SolrException(1,"Invalid Date String:'" +val+'\'');
+    throw new SolrException(400,"Invalid Date String:'" +val+'\'');
+  }
+  
+  public String toInternal(Date val) {
+    return getThreadLocalDateFormat().format(val);
   }
 
   public String indexedToReadable(String indexedForm) {
@@ -107,4 +136,32 @@ public class DateField extends FieldType {
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeDate(name, toExternal(f));
   }
+
+  /**
+   * Returns a formatter that can be use by the current thread if needed to
+   * convert Date objects to the Internal representation.
+   */
+  protected DateFormat getThreadLocalDateFormat() {
+  
+    return fmtThreadLocal.get();
+  }
+
+  private static ThreadLocalDateFormat fmtThreadLocal
+    = new ThreadLocalDateFormat();
+  
+  private static class ThreadLocalDateFormat extends ThreadLocal<DateFormat> {
+    DateFormat proto;
+    public ThreadLocalDateFormat() {
+      super();
+      SimpleDateFormat tmp =
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.US);
+      tmp.setTimeZone(UTC);
+      proto = tmp;
+    }
+    
+    protected DateFormat initialValue() {
+      return (DateFormat) proto.clone();
+    }
+  }
+  
 }

@@ -250,6 +250,10 @@
     <lst name="defaults">
      <str name="qf">text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0</str>
      <str name="mm">2&lt;-1 5&lt;-2 6&lt;90%</str>
+     <!-- This is an example of using Date Math to specify a constantly
+          moving date range in a config...
+       -->
+     <str name="bq">incubationdate_dt:[* TO NOW/DAY-1MONTH]^2.2</str>
     </lst>
     <!-- In addition to defaults, "appends" params can be specified
          to identify values which should be appended to the list of

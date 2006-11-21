@@ -83,11 +83,25 @@
 
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
-         is a more restricted form of the canonical representation of dateTime
+         Is a more restricted form of the canonical representation of dateTime
          http://www.w3.org/TR/xmlschema-2/#dateTime    
          The trailing "Z" designates UTC time and is mandatory.
          Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
-         All other components are mandatory. -->
+         All other components are mandatory.
+
+         Expressions can also be used to denote calculations which should be
+         performed relative "NOW" to determine the value, ie...
+
+               NOW/HOUR
+                  ... Round to the start of the current hour
+               NOW-1DAY
+                  ... Exactly 1 day prior to now
+               NOW/DAY+6MONTHS+3DAYS
+                  ... 6 months and 3 days in the future from the start of
+                      the current day
+                      
+         Consult the DateField javadocs for more information.
+      -->
     <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
 
     <!-- solr.TextField allows the specification of custom text analyzers

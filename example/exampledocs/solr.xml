@@ -32,6 +32,7 @@
   <field name="price">0</field>
   <field name="popularity">10</field>
   <field name="inStock">true</field>
+  <field name="incubationdate_dt">2006-01-17T00:00:00.000Z</field>
 </doc>
 </add>
 

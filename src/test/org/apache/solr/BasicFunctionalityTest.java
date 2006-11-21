@@ -26,7 +26,6 @@ import org.apache.solr.util.*;
 import org.apache.solr.schema.*;
 import org.w3c.dom.Document;
 
-
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.IOException;
@@ -568,7 +567,42 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertTrue(luf.isStored());
     
   }
-            
+
+  /** @see org.apache.solr.util.DateMathParserTest */
+  public void testDateMath() {
+
+    // testing everything from query level is hard because
+    // time marches on ... and there is no easy way to reach into the
+    // bowels of DateField and muck with the definition of "now"
+    //    ...
+    // BUT: we can test that crazy combinations of "NOW" all work correctly,
+    // assuming the test doesn't take too long to run...
+    
+    assertU(adoc("id", "1",  "bday", "1976-07-04T12:08:56.235Z"));
+    assertU(adoc("id", "2",  "bday", "NOW"));
+    assertU(adoc("id", "3",  "bday", "NOW/HOUR"));
+    assertU(adoc("id", "4",  "bday", "NOW-30MINUTES"));
+    assertU(adoc("id", "5",  "bday", "NOW+30MINUTES"));
+    assertU(adoc("id", "6",  "bday", "NOW+2YEARS"));
+    assertU(commit());
+ 
+    assertQ("check count for before now",
+            req("q", "bday:[* TO NOW]"), "*[count(//doc)=4]");
+
+    assertQ("check count for after now",
+            req("q", "bday:[NOW TO *]"), "*[count(//doc)=2]");
+
+    assertQ("check count for old stuff",
+            req("q", "bday:[* TO NOW-2YEARS]"), "*[count(//doc)=1]");
+
+    assertQ("check count for future stuff",
+            req("q", "bday:[NOW+1MONTH TO *]"), "*[count(//doc)=1]");
+
+    assertQ("check count for near stuff",
+            req("q", "bday:[NOW-1MONTH TO NOW+2HOURS]"), "*[count(//doc)=4]");
+    
+  }
+  
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
