@@ -125,6 +125,12 @@ API Changes
     Lucene to work correctly over NFS (second step is
     LUCENE-710). (Mike McCandless)
 
+11. LUCENE-722: DEFAULT_MIN_DOC_FREQ was misspelled DEFALT_MIN_DOC_FREQ
+    in Similarity's MoreLikeThis class. The misspelling has been
+    replaced by the correct spelling.
+    (Andi Vajda via Daniel Naber)
+
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

@@ -175,7 +175,7 @@ public final class MoreLikeThis {
 	 * @see #getMinDocFreq
 	 * @see #setMinDocFreq	 
      */
-    public static final int DEFALT_MIN_DOC_FREQ = 5;
+    public static final int DEFAULT_MIN_DOC_FREQ = 5;
 
     /**
      * Boost terms in query based on score.
@@ -240,7 +240,7 @@ public final class MoreLikeThis {
     /**
      * Ignore words which do not occur in at least this many docs.
      */
-    private int minDocFreq = DEFALT_MIN_DOC_FREQ;
+    private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
 
     /**
      * Should we apply a boost to the Query based on the scores?
@@ -333,7 +333,7 @@ public final class MoreLikeThis {
 
     /**
      * Returns the frequency at which words will be ignored which do not occur in at least this
-     * many docs. The default frequency is {@link #DEFALT_MIN_DOC_FREQ}.
+     * many docs. The default frequency is {@link #DEFAULT_MIN_DOC_FREQ}.
      *
      * @return the frequency at which words will be ignored which do not occur in at least this
      * many docs.
