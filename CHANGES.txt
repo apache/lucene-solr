@@ -30,6 +30,11 @@ Changes in runtime behavior
     for range queries. Added useOldRangeQuery property to QueryParser to allow 
     selection of old RangeQuery class if required.      
 
+ 6. LUCENE-543: WildcardQuery now performs a TermQuery if the provided term
+    does not contain a wildcard character (? or *), when previously a
+    StringIndexOutOfBoundsException was thrown.
+    (Michael Busch via Erik Hatcher)
+
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers
@@ -58,7 +63,7 @@ New features
  7. LUCENE-573: QueryParser now allows backslash escaping in
     quoted terms and phrases. (Michael Busch via Yonik Seeley)
 
- 7. LUCENE-716: QueryParser now allows specification of unicode
+ 8. LUCENE-716: QueryParser now allows specification of unicode
     characters in terms via a unicode escape of the form \uXXXX
     (Michael Busch via Yonik Seeley)
 

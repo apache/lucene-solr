@@ -54,6 +54,21 @@ public class TestWildcard
     assertFalse(wq1.equals(fq));
     assertFalse(fq.equals(wq1));
   }
+  
+  /**
+   * Tests if a WildcardQuery that has no wildcard in the term is rewritten to a single
+   * TermQuery.
+   */
+  public void testTermWithoutWildcard() throws IOException {
+      RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+      IndexSearcher searcher = new IndexSearcher(indexStore);
+
+      Query wq = new WildcardQuery(new Term("field", "nowildcard"));
+      assertMatches(searcher, wq, 1);
+
+      wq = searcher.rewrite(wq);
+      assertTrue(wq instanceof TermQuery);
+  }
 
   /**
    * Tests Wildcard queries with an asterisk.

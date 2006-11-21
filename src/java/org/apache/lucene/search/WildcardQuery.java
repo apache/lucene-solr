@@ -31,8 +31,11 @@ import java.io.IOException;
  * @see WildcardTermEnum
  */
 public class WildcardQuery extends MultiTermQuery {
+  private boolean termContainsWildcard;
+    
   public WildcardQuery(Term term) {
     super(term);
+    this.termContainsWildcard = (term.text().indexOf('*') != -1) || (term.text().indexOf('?') != -1);
   }
 
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
@@ -44,5 +47,13 @@ public class WildcardQuery extends MultiTermQuery {
       return super.equals(o);
 
     return false;
+  }
+  
+  public Query rewrite(IndexReader reader) throws IOException {
+      if (this.termContainsWildcard) {
+          return super.rewrite(reader);
+      }
+      
+      return new TermQuery(getTerm());
   }
 }
