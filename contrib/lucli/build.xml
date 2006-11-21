@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="lucli" default="default">
+<project name="lucli" default="jar">
 
   <description>
     Lucene Command Line Interface
