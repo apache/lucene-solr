@@ -435,7 +435,8 @@ public class MemoryIndex {
        * Wishing IndexReader would be an interface...
        * 
        * Actually with the new tight createSearcher() API auto-closing is now
-       * made impossible, hence searcher.close() would be harmless...
+       * made impossible, hence searcher.close() would be harmless and also 
+       * would not degrade performance...
        */
     }   
   }
