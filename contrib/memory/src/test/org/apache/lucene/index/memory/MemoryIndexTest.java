@@ -28,7 +28,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -59,8 +59,8 @@ Can also be used as a simple benchmark.
 <p>
 Example usage:
 <pre>
-cd lucene-cvs
-java org.apache.lucene.index.memory.MemoryIndexTest 1 1 memram @testqueries.txt *.txt *.html *.xml xdocs/*.xml src/test/org/apache/lucene/queryParser/*.java 
+cd lucene-svn
+java -server -cp ~/unix/java/share/misc/junit/junit.jar:build/classes:build/lucene-core-2.1-dev.jar:build/contrib/memory/classes/test:build/contrib/memory/classes/java org.apache.lucene.index.memory.MemoryIndexTest 1 1 memram @contrib/memory/src/test/org/apache/lucene/index/memory/testqueries.txt *.txt *.html *.xml xdocs/*.xml src/test/org/apache/lucene/queryParser/*.java contrib/memory/src/java/org/apache/lucene/index/memory/*.java
 </pre>
 where testqueries.txt is a file with one query per line, such as:
 <pre>
@@ -296,10 +296,18 @@ public class MemoryIndexTest extends TestCase {
             try {
               Query query = parseQuery(queries[q]);
               
+              boolean measureIndexing = false; // toggle this to measure query performance
+              MemoryIndex memind = null;
+              if (useMemIndex && !measureIndexing) memind = createMemoryIndex(doc);
+              RAMDirectory ramind = null;
+              if (useRAMIndex && !measureIndexing) ramind = createRAMIndex(doc);
+              
               for (int run=0; run < runs; run++) {
                 float score1 = 0.0f; float score2 = 0.0f;
-                if (useMemIndex) score1 = query(createMemoryIndex(doc), query); 
-                if (useRAMIndex) score2 = query(createRAMIndex(doc), query);
+                if (useMemIndex && measureIndexing) memind = createMemoryIndex(doc);
+                if (useMemIndex) score1 = query(memind, query); 
+                if (useRAMIndex && measureIndexing) ramind = createRAMIndex(doc);
+                if (useRAMIndex) score2 = query(ramind, query);
                 if (useMemIndex && useRAMIndex) {
                   System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
                   if (score1 != score2 || score1 < 0.0f || score2 < 0.0f || score1 > 1.0f || score2 > 1.0f) {
@@ -307,6 +315,7 @@ public class MemoryIndexTest extends TestCase {
                   }
                 }
               }
+
             } catch (Throwable t) {
               if (t instanceof OutOfMemoryError) t.printStackTrace();
               System.out.println("Fatal error at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
@@ -357,9 +366,9 @@ public class MemoryIndexTest extends TestCase {
   
   private MemoryIndex createMemoryIndex(Document doc) {
     MemoryIndex index = new MemoryIndex();
-    Enumeration iter = doc.fields();
-    while (iter.hasMoreElements()) {
-      Field field = (Field) iter.nextElement();
+    Iterator iter = doc.getFields().iterator();
+    while (iter.hasNext()) {
+      Field field = (Field) iter.next();
       index.addField(field.name(), field.stringValue(), analyzer);
     }
     return index;
