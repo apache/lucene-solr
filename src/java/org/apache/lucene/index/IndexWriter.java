@@ -99,9 +99,9 @@ public class IndexWriter {
 
   private Similarity similarity = Similarity.getDefault(); // how to normalize
 
-  private SegmentInfos segmentInfos = new SegmentInfos(); // the segments
-  private SegmentInfos ramSegmentInfos = new SegmentInfos(); // the segments in ramDirectory
-  private final Directory ramDirectory = new RAMDirectory(); // for temp segs
+  private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  private SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
+  private final RAMDirectory ramDirectory = new RAMDirectory(); // for temp segs
   private IndexFileDeleter deleter;
 
   private Lock writeLock;
@@ -827,14 +827,28 @@ public class IndexWriter {
     }
   }
 
-  /** Merges all RAM-resident segments, then may merge segments. */
-  private final void flushRamSegments() throws IOException {
+  /** Expert:  Flushes all RAM-resident segments (buffered documents), then may merge segments. */
+  public final synchronized void flushRamSegments() throws IOException {
     if (ramSegmentInfos.size() > 0) {
       mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
       maybeMergeSegments(minMergeDocs);
     }
   }
 
+  /** Expert:  Return the total size of all index files currently cached in memory.
+   * Useful for size management with flushRamDocs()
+   */
+  public final long ramSizeInBytes() {
+    return ramDirectory.sizeInBytes();
+  }
+
+  /** Expert:  Return the number of documents whose segments are currently cached in memory.
+   * Useful when calling flushRamSegments()
+   */
+  public final synchronized int numRamDocs() {
+    return ramSegmentInfos.size();
+  }
+  
   /** Incremental segment merger.  */
   private final void maybeMergeSegments(int startUpperBound) throws IOException {
     long lowerBound = -1;

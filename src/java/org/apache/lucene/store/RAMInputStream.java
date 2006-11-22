@@ -41,7 +41,7 @@ class RAMInputStream extends BufferedIndexInput implements Cloneable {
       int bufferOffset = (int)(start%BUFFER_SIZE);
       int bytesInBuffer = BUFFER_SIZE - bufferOffset;
       int bytesToCopy = bytesInBuffer >= remainder ? remainder : bytesInBuffer;
-      byte[] buffer = (byte[])file.buffers.elementAt(bufferNumber);
+      byte[] buffer = (byte[])file.buffers.get(bufferNumber);
       System.arraycopy(buffer, bufferOffset, dest, destOffset, bytesToCopy);
       destOffset += bytesToCopy;
       start += bytesToCopy;

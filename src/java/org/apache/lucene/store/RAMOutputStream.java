@@ -50,7 +50,7 @@ public class RAMOutputStream extends BufferedIndexOutput {
       if (nextPos > end) {                        // at the last buffer
         length = (int)(end - pos);
       }
-      out.writeBytes((byte[])file.buffers.elementAt(buffer++), length);
+      out.writeBytes((byte[])file.buffers.get(buffer++), length);
       pos = nextPos;
     }
   }
@@ -63,7 +63,7 @@ public class RAMOutputStream extends BufferedIndexOutput {
       throw new RuntimeException(e.toString());
     }
 
-    file.length = 0;
+    file.setLength(0);
   }
 
   public void flushBuffer(byte[] src, int len) {
@@ -76,12 +76,10 @@ public class RAMOutputStream extends BufferedIndexOutput {
       int remainInSrcBuffer = len - bufferPos;
       int bytesToCopy = bytesInBuffer >= remainInSrcBuffer ? remainInSrcBuffer : bytesInBuffer;
 
-      if (bufferNumber == file.buffers.size()) {
-        buffer = new byte[BUFFER_SIZE];
-        file.buffers.addElement(buffer);
-      } else {
-        buffer = (byte[]) file.buffers.elementAt(bufferNumber);
-      }
+      if (bufferNumber == file.buffers.size())
+        buffer = file.addBuffer(BUFFER_SIZE);
+      else
+        buffer = (byte[]) file.buffers.get(bufferNumber);
 
       System.arraycopy(src, bufferPos, buffer, bufferOffset, bytesToCopy);
       bufferPos += bytesToCopy;
@@ -89,9 +87,9 @@ public class RAMOutputStream extends BufferedIndexOutput {
     }
 
     if (pointer > file.length)
-      file.length = pointer;
+      file.setLength(pointer);
 
-    file.lastModified = System.currentTimeMillis();
+    file.setLastModified(System.currentTimeMillis());
   }
 
   public void close() throws IOException {

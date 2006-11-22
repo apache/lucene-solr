@@ -67,6 +67,12 @@ New features
     characters in terms via a unicode escape of the form \uXXXX
     (Michael Busch via Yonik Seeley)
 
+ 9. LUCENE-709: Added RAMDirectory.sizeInBytes(), IndexWriter.ramSizeInBytes()
+    and IndexWriter.flushRamSegments(), allowing applications to
+    control the amount of memory used to buffer documents.
+    (Chuck Williams via Yonik Seeley)
+
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow

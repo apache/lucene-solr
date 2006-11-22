@@ -64,7 +64,6 @@ public class TestRAMDirectory extends TestCase {
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.docCount());
-    writer.optimize();
     writer.close();
   }
   
@@ -73,8 +72,11 @@ public class TestRAMDirectory extends TestCase {
     Directory dir = FSDirectory.getDirectory(indexDir, false);
     RAMDirectory ramDir = new RAMDirectory(dir);
     
-    // close the underlaying directory and delete the index
+    // close the underlaying directory
     dir.close();
+    
+    // Check size
+    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     // open reader to test document count
     IndexReader reader = IndexReader.open(ramDir);
@@ -98,6 +100,9 @@ public class TestRAMDirectory extends TestCase {
     
     RAMDirectory ramDir = new RAMDirectory(indexDir);
     
+    // Check size
+    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
+    
     // open reader to test document count
     IndexReader reader = IndexReader.open(ramDir);
     assertEquals(docsToAdd, reader.numDocs());
@@ -120,6 +125,9 @@ public class TestRAMDirectory extends TestCase {
     
     RAMDirectory ramDir = new RAMDirectory(indexDir.getCanonicalPath());
     
+    // Check size
+    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
+    
     // open reader to test document count
     IndexReader reader = IndexReader.open(ramDir);
     assertEquals(docsToAdd, reader.numDocs());
@@ -136,6 +144,48 @@ public class TestRAMDirectory extends TestCase {
     // cleanup
     reader.close();
     searcher.close();
+  }
+  
+  private final int numThreads = 50;
+  private final int docsPerThread = 40;
+  
+  public void testRAMDirectorySize() throws IOException, InterruptedException {
+      
+    final RAMDirectory ramDir = new RAMDirectory(indexDir.getCanonicalPath());
+    final IndexWriter writer  = new IndexWriter(ramDir, new WhitespaceAnalyzer(), false);
+    writer.optimize();
+    
+    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
+    
+    Thread[] threads = new Thread[numThreads];
+    for (int i=0; i<numThreads; i++) {
+      final int num = i;
+      threads[i] = new Thread(){
+        public void run() {
+          for (int j=1; j<docsPerThread; j++) {
+            Document doc = new Document();
+            doc.add(new Field("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES, Field.Index.UN_TOKENIZED));
+            try {
+              writer.addDocument(doc);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            synchronized (ramDir) {
+              assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
+            }
+          }
+        }
+      };
+    }
+    for (int i=0; i<numThreads; i++)
+      threads[i].start();
+    for (int i=0; i<numThreads; i++)
+      threads[i].join();
+
+    writer.optimize();
+    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
+    
+    writer.close();
   }
 
   public void tearDown() {
