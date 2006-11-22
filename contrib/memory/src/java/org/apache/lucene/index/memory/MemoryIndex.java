@@ -61,7 +61,10 @@ import java.util.Map;
  * data archives (historic search), this class targets fulltext search of huge 
  * numbers of queries over comparatively small transient realtime data (prospective 
  * search). 
- * For example as in <code>float score = search(String text, Query query)</code>.
+ * For example as in 
+ * <pre>
+ * float score = search(String text, Query query)
+ * </pre>
  * <p>
  * Each instance can hold at most one Lucene "document", with a document containing
  * zero or more "fields", each field having a name and a fulltext value. The
