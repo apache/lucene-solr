@@ -15,20 +15,22 @@
  */
 package org.apache.lucene.search.similar;
 
-import java.io.*;
-import java.util.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.standard.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.util.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 
 /**
  * Simple similarity measures.
- *
  *
  * @see MoreLikeThis
  */
@@ -42,14 +44,13 @@ public final class SimilarityQueries
 	}
 	
 	/**
-     * Simple similarity query generators.
+	 * Simple similarity query generators.
 	 * Takes every unique word and forms a boolean query where all words are optional.
 	 * After you get this you'll use to to query your {@link IndexSearcher} for similar docs.
 	 * The only caveat is the first hit returned <b>should be</b> your source document - you'll
 	 * need to then ignore that.
 	 *
 	 * <p>
-	 *
 	 * So, if you have a code fragment like this:
 	 * <br>
 	 * <code>
@@ -57,8 +58,6 @@ public final class SimilarityQueries
 	 * </code>
 	 *
 	 * <p>
-	 *
-	 
 	 * The query returned, in string form, will be <code>'(i use lucene to search fast searchers are good')</code>.
 	 *
 	 * <p>
@@ -71,10 +70,6 @@ public final class SimilarityQueries
 	 * throws
 	 * {@link org.apache.lucene.search.BooleanQuery.TooManyClauses BooleanQuery.TooManyClauses}, the
 	 * query as it is will be returned.
-	 *
-	 * 
-	 * 
-	 *
 	 *
 	 * @param body the body of the document you want to find similar documents to
 	 * @param a the analyzer to use to parse the body
