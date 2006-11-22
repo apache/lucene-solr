@@ -154,6 +154,10 @@ import java.util.Map;
  * Indexing a field with N tokens takes O(N) in the best case, and O(N logN) in the worst 
  * case. Memory consumption is probably larger than for <code>RAMDirectory</code>.
  * <p>
+ * Example throughput of many simple term queries over a single MemoryIndex: 
+ * ~500000 queries/sec on a MacBook Pro, jdk 1.5.0_06, server VM. 
+ * As always, your mileage may vary.
+ * <p>
  * If you're curious about
  * the whereabouts of bottlenecks, run java 1.5 with the non-perturbing '-server
  * -agentlib:hprof=cpu=samples,depth=10' flags, then study the trace log and
