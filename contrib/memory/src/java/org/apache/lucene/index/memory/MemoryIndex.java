@@ -435,15 +435,13 @@ public class MemoryIndex {
   
   /**
    * Returns a reasonable approximation of the main memory [bytes] consumed by
-   * this instance. Useful for smart memory sensititve caches/pools. Assumes
-   * fieldNames are interned, whereas tokenized terms are memory-overlaid. For
-   * simplicity, assumes no VM word boundary alignment of instance vars.
+   * this instance. Useful for smart memory sensititive caches/pools. Assumes
+   * fieldNames are interned, whereas tokenized terms are memory-overlaid.
    * 
    * @return the main memory consumption
    */
   public int getMemorySize() {
-    // for example usage in a smart cache see nux.xom.pool.Pool
-    
+    // for example usage in a smart cache see nux.xom.pool.Pool    
     int PTR = VM.PTR;
     int INT = VM.INT;
     int size = 0;
@@ -654,10 +652,11 @@ public class MemoryIndex {
     
     public int[] toArray(int stride) {
       int[] arr = new int[size() / stride];
-      if (stride == 1)
+      if (stride == 1) {
         System.arraycopy(elements, 0, arr, 0, size); // fast path
-      else 
+      } else { 
         for (int i=0, j=0; j < size; i++, j += stride) arr[i] = elements[j];
+      }
       return arr;
     }
     
@@ -748,8 +747,7 @@ public class MemoryIndex {
         j = -j -1; 
         i = 0;
         if (j < sortedFields.length) getInfo(j).sortTerms();
-      }
-      else { // found
+      } else { // found
         Info info = getInfo(j);
         info.sortTerms();
         i = Arrays.binarySearch(info.sortedTerms, term.text(), termComparator);
@@ -1003,6 +1001,7 @@ public class MemoryIndex {
         byte norm = Similarity.encodeNorm(n);
         norms = new byte[] {norm};
         
+        // cache it for future reuse
         cachedNorms = norms;
         cachedFieldName = fieldName;
         cachedSimilarity = sim;
@@ -1155,7 +1154,7 @@ public class MemoryIndex {
     
     public static int sizeOfHashMap(int len) {
         return sizeOfObject(4*PTR + 4*INT) + sizeOfObjectArray(len) 
-            + len*sizeOfObject(3*PTR + INT); // entries
+            + len * sizeOfObject(3*PTR + INT); // entries
     }
     
     // note: does not include referenced objects
