@@ -210,7 +210,7 @@ public class AnalyzerUtil {
    * This can help improve performance in the presence of expensive Analyzer / TokenFilter chains.
    * <p>
    * Caveats: 
-   * 1) Caching only works if the methods equals() and hashCode() methods are properly 
+   * 1) Caching only works if the methods equals() and hashCode() are properly 
    * implemented on the Reader passed to <code>tokenStream(String fieldName, Reader reader)</code>.
    * 2) Caching the tokens of large Lucene documents can lead to out of memory exceptions. 
    * 3) The Token instances delivered by the underlying child analyzer must be immutable.
