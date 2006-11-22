@@ -29,12 +29,7 @@ import java.util.zip.*;
 
 public class TestIndexFileDeleter extends TestCase
 {
-  // disable until hardcoded file names are fixes:
-  public void testDummy() {
-    assertTrue(true);
-  }
-
-  public void _testDeleteLeftoverFiles() throws IOException {
+  public void testDeleteLeftoverFiles() throws IOException {
 
     Directory dir = new RAMDirectory();
 
@@ -64,25 +59,45 @@ public class TestIndexFileDeleter extends TestCase
     }
     */
 
+    // The numbering of fields can vary depending on which
+    // JRE is in use.  On some JREs we see content bound to
+    // field 0; on others, field 1.  So, here we have to
+    // figure out which field number corresponds to
+    // "content", and then set our expected file names below
+    // accordingly:
+    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
+    FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
+    int contentFieldIndex = -1;
+    for(int i=0;i<fieldInfos.size();i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      if (fi.name.equals("content")) {
+        contentFieldIndex = i;
+        break;
+      }
+    }
+    assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
+
+    String normSuffix = "s" + contentFieldIndex;
+
     // Create a bogus separate norms file for a
     // segment/field that actually has a separate norms file
     // already:
-    copyFile(dir, "_2_1.s0", "_2_2.s0");
+    copyFile(dir, "_2_1." + normSuffix, "_2_2." + normSuffix);
 
     // Create a bogus separate norms file for a
     // segment/field that actually has a separate norms file
     // already, using the "not compound file" extension:
-    copyFile(dir, "_2_1.s0", "_2_2.f0");
+    copyFile(dir, "_2_1." + normSuffix, "_2_2.f" + contentFieldIndex);
 
     // Create a bogus separate norms file for a
     // segment/field that does not have a separate norms
     // file already:
-    copyFile(dir, "_2_1.s0", "_1_1.s0");
+    copyFile(dir, "_2_1." + normSuffix, "_1_1." + normSuffix);
 
     // Create a bogus separate norms file for a
     // segment/field that does not have a separate norms
     // file already using the "not compound file" extension:
-    copyFile(dir, "_2_1.s0", "_1_1.f0");
+    copyFile(dir, "_2_1." + normSuffix, "_1_1.f" + contentFieldIndex);
 
     // Create a bogus separate del file for a
     // segment that already has a separate del file: 

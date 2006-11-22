@@ -274,7 +274,7 @@ public class TestBackwardsCompatibility extends TestCase
   /* Verifies that the expected file names were produced */
 
   // disable until hardcoded file names are fixes:
-  public void _testExactFileNames() throws IOException {
+  public void testExactFileNames() throws IOException {
 
     String outputDir = "lucene.backwardscompat0.index";
     Directory dir = FSDirectory.getDirectory(outputDir, true);
@@ -295,12 +295,30 @@ public class TestBackwardsCompatibility extends TestCase
     reader.setNorm(21, "content", (float) 1.5);
     reader.close();
 
+    // The numbering of fields can vary depending on which
+    // JRE is in use.  On some JREs we see content bound to
+    // field 0; on others, field 1.  So, here we have to
+    // figure out which field number corresponds to
+    // "content", and then set our expected file names below
+    // accordingly:
+    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
+    FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
+    int contentFieldIndex = -1;
+    for(int i=0;i<fieldInfos.size();i++) {
+      FieldInfo fi = fieldInfos.fieldInfo(i);
+      if (fi.name.equals("content")) {
+        contentFieldIndex = i;
+        break;
+      }
+    }
+    assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
+
     // Now verify file names:
     String[] expected = {"_0.cfs",
                          "_0_1.del",
                          "_1.cfs",
                          "_2.cfs",
-                         "_2_1.s0",
+                         "_2_1.s" + contentFieldIndex,
                          "_3.cfs",
                          "segments_a",
                          "segments.gen"};
