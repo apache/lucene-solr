@@ -75,6 +75,7 @@ public class TestIndexFileDeleter extends TestCase
         break;
       }
     }
+    cfsReader.close();
     assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
 
     String normSuffix = "s" + contentFieldIndex;
@@ -132,6 +133,7 @@ public class TestIndexFileDeleter extends TestCase
     writer.close();
 
     String[] files2 = dir.list();
+    dir.close();
 
     Arrays.sort(files);
     Arrays.sort(files2);

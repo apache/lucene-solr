@@ -311,6 +311,7 @@ public class TestBackwardsCompatibility extends TestCase
         break;
       }
     }
+    cfsReader.close();
     assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
 
     // Now verify file names:
@@ -329,6 +330,7 @@ public class TestBackwardsCompatibility extends TestCase
     if (!Arrays.equals(expected, actual)) {
       fail("incorrect filenames in index: expected:\n    " + asString(expected) + "\n  actual:\n    " + asString(actual));
     }
+    dir.close();
 
     rmDir(outputDir);
   }
