@@ -100,7 +100,8 @@ import java.util.Map;
  * MemoryIndex index = new MemoryIndex();
  * index.addField("content", "Readings about Salmons and other select Alaska fishing Manuals", analyzer);
  * index.addField("author", "Tales of James", analyzer);
- * float score = index.search(QueryParser.parse("+author:james +salmon~ +fish* manual~", "content", analyzer));
+ * QueryParser parser = new QueryParser("content", analyzer);
+ * float score = index.search(parser.parse("+author:james +salmon~ +fish* manual~"));
  * if (score &gt; 0.0f) {
  *     System.out.println("it's a match");
  * } else {
