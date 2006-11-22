@@ -774,7 +774,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
         public void collect(int doc, float score) {
           if (filt!=null && !filt.exists(doc)) return;
           if (numHits[0]++ < lastDocRequested || score >= minScore) {
-            // if docs are always delivered in order, we could use "score>minScore"
+            // TODO: if docs are always delivered in order, we could use "score>minScore"
+            // instead of "score>=minScore" and avoid tiebreaking scores
+            // in the priority queue.
             // but might BooleanScorer14 might still be used and deliver docs out-of-order?
             hq.insert(new ScoreDoc(doc, score));
             minScore = ((ScoreDoc)hq.top()).score;
