@@ -28,7 +28,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -366,9 +366,9 @@ public class MemoryIndexTest extends TestCase {
   
   private MemoryIndex createMemoryIndex(Document doc) {
     MemoryIndex index = new MemoryIndex();
-    Iterator iter = doc.getFields().iterator();
-    while (iter.hasNext()) {
-      Field field = (Field) iter.next();
+    Enumeration iter = doc.fields();
+    while (iter.hasMoreElements()) {
+      Field field = (Field) iter.nextElement();
       index.addField(field.name(), field.stringValue(), analyzer);
     }
     return index;
