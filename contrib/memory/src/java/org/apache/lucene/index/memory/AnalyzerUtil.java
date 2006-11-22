@@ -229,11 +229,11 @@ public class AnalyzerUtil {
       private final HashMap cache = new HashMap();
 
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        Pair pair = new Pair(fieldName, reader);
-        final ArrayList tokens = (ArrayList) cache.get(pair);
+        Pair key = new Pair(fieldName, reader);
+        final ArrayList tokens = (ArrayList) cache.get(key);
         if (tokens == null) { // not yet cached
           final ArrayList tokens2 = new ArrayList();
-          cache.put(pair, tokens2);
+          cache.put(key, tokens2);
           return new TokenFilter(child.tokenStream(fieldName, reader)) {
 
             public Token next() throws IOException {
