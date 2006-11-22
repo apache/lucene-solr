@@ -210,8 +210,6 @@ public class AnalyzerUtil {
    * This can help improve performance in the presence of expensive Analyzer / TokenFilter chains.
    * <p>
    * Caveats: 
-   * 1) Caching only works if the methods equals() and hashCode() are properly 
-   * implemented on the Reader passed to <code>tokenStream(String fieldName, Reader reader)</code>.
    * 2) Caching the tokens of large Lucene documents can lead to out of memory exceptions. 
    * 3) The Token instances delivered by the underlying child analyzer must be immutable.
    * 
@@ -229,11 +227,10 @@ public class AnalyzerUtil {
       private final HashMap cache = new HashMap();
 
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        Pair key = new Pair(fieldName, reader);
-        final ArrayList tokens = (ArrayList) cache.get(key);
+        final ArrayList tokens = (ArrayList) cache.get(fieldName);
         if (tokens == null) { // not yet cached
           final ArrayList tokens2 = new ArrayList();
-          cache.put(key, tokens2);
+          cache.put(fieldName, tokens2);
           return new TokenFilter(child.tokenStream(fieldName, reader)) {
 
             public Token next() throws IOException {
@@ -439,109 +436,4 @@ public class AnalyzerUtil {
     }   
   }
   
-  
-  ///////////////////////////////////////////////////////////////////////////////
-  // Nested classes:
-  ///////////////////////////////////////////////////////////////////////////////
-  /**
-   * A convenience class holding two elements, namely <code>first</code> and <code>second</code>,
-   * either or both of which may be <code>null</code>.
-   */
-  private static final class Pair implements java.io.Serializable {
-    
-    protected Object first;
-    protected Object second;
-
-    private Pair() {}
-
-    /** Constructs a pair with the given two elements, either or both of which may be <code>null</code>.
-     * 
-     * @param first the first element of the pair.
-     * @param second the second element of the pair.
-     */
-    public Pair(Object first, Object second) {
-      this.first = first;
-      this.second = second;
-    }
-
-    /** Returns the first element of the pair.
-     * 
-     *  @return The first element of the pair.
-     */
-    public Object first() {
-      return this.first;
-    }
-
-    /** Returns the second element of the pair.
-     * 
-     *  @return The second element of the pair.
-     */
-    public Object second() {
-      return this.second;
-    }
-
-    public String toString() {
-      return "Pair (first=" + String.valueOf(first) + ", second=" + String.valueOf(second) + ")";
-    }
-
-    public int hashCode() {
-      return hashCode(this.first, this.second);
-    }
-
-    public boolean equals(Object other) {
-      if (!(other instanceof Pair)) return false;
-      return equals(this.first, ((Pair) other).first, this.second, ((Pair) other).second);
-    }
-
-    /** Compares two 'pairs' <code>x</code> and <code>y</code> for equality.
-     * 
-     * In other words determines <code>xA.equals(yA)</code> and <code>xB.equals(yB)</code>, 
-     * taking care of <code>null</code> values.
-     * This is a static method that avoids the inefficiency of temporary {@link Pair} objects.
-     * 
-     * @return <code>true</code> if the pair <code>x</code> and the pair <code>y</code> are equal; <code>false</code> otherwise.
-     */
-    public static boolean equals(Object xA, Object yA, Object xB, Object yB) {
-      // compare A
-      if (xA != yA) {
-        if (xA == null && yA != null)
-          return false;
-        if (xA != null && yA == null)
-          return false;
-        if (!xA.equals(yA))
-          return false;
-      }
-
-      // compare B
-      if (xB != yB) {
-        if (xB == null && yB != null)
-          return false;
-        if (xB != null && yB == null)
-          return false;
-        if (!xB.equals(yB))
-          return false;
-      }
-
-      return true;
-    }
-
-    /** Returns the hashcode of the two elements of a 'pair'.
-     * 
-     * This is a static method that avoids the inefficiency of temporary {@link Pair} objects.
-     * 
-     * @return the hash code.
-     */
-    public static int hashCode(Object x, Object y) {
-      if (x == null && y == null)
-        return 0;
-      else if (x == null)
-        return y.hashCode();
-      else if (y == null)
-        return x.hashCode();
-      else
-        return x.hashCode() ^ y.hashCode();
-    }
-
-  }
-
 }
