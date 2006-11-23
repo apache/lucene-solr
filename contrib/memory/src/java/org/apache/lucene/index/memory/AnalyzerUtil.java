@@ -207,7 +207,9 @@ public class AnalyzerUtil {
    * token stream, and delivers those cached tokens on subsequent matching calls to 
    * <code>tokenStream(String fieldName, Reader reader)</code>.
    * <p>
-   * This can help improve performance in the presence of expensive Analyzer / TokenFilter chains.
+   * If Analyzer / TokenFilter chains are expensive in terms of I/O or CPU, such caching can 
+   * help improve performance if the same document is added to multiple Lucene indexes, 
+   * because the text analysis phase need not be performed more than once.
    * <p>
    * Caveats: 
    * 2) Caching the tokens of large Lucene documents can lead to out of memory exceptions. 
