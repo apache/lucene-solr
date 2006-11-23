@@ -212,8 +212,8 @@ public class AnalyzerUtil {
    * because the text analysis phase need not be performed more than once.
    * <p>
    * Caveats: 
-   * 2) Caching the tokens of large Lucene documents can lead to out of memory exceptions. 
-   * 3) The Token instances delivered by the underlying child analyzer must be immutable.
+   * 1) Caching the tokens of large Lucene documents can lead to out of memory exceptions. 
+   * 2) The Token instances delivered by the underlying child analyzer must be immutable.
    * 
    * @param child
    *            the underlying child analyzer
