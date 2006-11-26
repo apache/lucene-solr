@@ -29,6 +29,7 @@ Changes in runtime behavior
  5. LUCENE-703: QueryParser changed to default to use of ConstantScoreRangeQuery 
     for range queries. Added useOldRangeQuery property to QueryParser to allow 
     selection of old RangeQuery class if required.      
+    (Mark Hardood)
 
  6. LUCENE-543: WildcardQuery now performs a TermQuery if the provided term
     does not contain a wildcard character (? or *), when previously a
