@@ -33,6 +33,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 final class DocumentWriter {
   private Analyzer analyzer;
@@ -128,9 +129,9 @@ final class DocumentWriter {
   // Tokenizes the fields of a document into Postings.
   private final void invertDocument(Document doc)
           throws IOException {
-    Enumeration fields = doc.fields();
-    while (fields.hasMoreElements()) {
-      Fieldable field = (Fieldable) fields.nextElement();
+    Iterator fieldIterator = doc.getFields().iterator();
+    while (fieldIterator.hasNext()) {
+      Fieldable field = (Fieldable) fieldIterator.next();
       String fieldName = field.name();
       int fieldNumber = fieldInfos.fieldNumber(fieldName);
 

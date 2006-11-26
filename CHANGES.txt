@@ -35,6 +35,10 @@ Changes in runtime behavior
     StringIndexOutOfBoundsException was thrown.
     (Michael Busch via Erik Hatcher)
 
+ 7. LUCENE-726: Removed the use of deprecated doc.fields() method and
+    Enumeration.
+    (Michael Busch via Otis Gospodnetic)
+
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers

@@ -155,9 +155,9 @@ public class ParallelReader extends IndexReader {
           }
       }
       if (include) {
-        Enumeration fields = reader.document(n, fieldSelector).fields();
-        while (fields.hasMoreElements()) {
-          result.add((Fieldable)fields.nextElement());
+        Iterator fieldIterator = reader.document(n, fieldSelector).getFields().iterator();
+        while (fieldIterator.hasNext()) {
+          result.add((Fieldable)fieldIterator.next());
         }
       }
     }

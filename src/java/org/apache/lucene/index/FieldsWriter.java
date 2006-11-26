@@ -18,11 +18,10 @@ package org.apache.lucene.index;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.zip.Deflater;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
@@ -54,17 +53,17 @@ final class FieldsWriter
         indexStream.writeLong(fieldsStream.getFilePointer());
 
         int storedCount = 0;
-        Enumeration fields = doc.fields();
-        while (fields.hasMoreElements()) {
-            Fieldable field = (Fieldable) fields.nextElement();
+        Iterator fieldIterator = doc.getFields().iterator();
+        while (fieldIterator.hasNext()) {
+            Fieldable field = (Fieldable) fieldIterator.next();
             if (field.isStored())
                 storedCount++;
         }
         fieldsStream.writeVInt(storedCount);
 
-        fields = doc.fields();
-        while (fields.hasMoreElements()) {
-            Fieldable field = (Fieldable) fields.nextElement();
+        fieldIterator = doc.getFields().iterator();
+        while (fieldIterator.hasNext()) {
+            Fieldable field = (Fieldable) fieldIterator.next();
             // if the field as an instanceof FieldsReader.FieldForMerge, we're in merge mode
             // and field.binaryValue() already returns the compressed value for a field
             // with isCompressed()==true, so we disable compression in that case
