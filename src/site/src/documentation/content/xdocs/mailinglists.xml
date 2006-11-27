@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Mailing Lists
+		</title>
+	</header>
+    <body>
+       <section id="Java User List"><title>Java User List</title>
+            <p>
+              This list is for users of Java Lucene to ask questions, share knowledge,
+              and discuss issues.
+            </p>
+            <ul>
+              <li><a href="mailto:java-user-subscribe@lucene.apache.org">Subscribe</a></li>
+              <li><a href="mailto:java-user-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+              <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-java-user/">Archive</a>
+              (<a href="http://mail-archives.apache.org/mod_mbox/jakarta-lucene-user/">old archive</a>)</li>
+              <li><a href="http://www.gossamer-threads.com/lists/lucene/java-user/">Alternative
+                archive with search feature</a></li>
+            </ul>
+        </section>
+
+        <section id="Java Developer List"><title>Java Developer List</title>
+            <p>
+              This is the list where participating developers of the Java Lucene project meet
+              and discuss issues, code changes/additions, etc. Do not send mail to this list
+              with usage questions or configuration questions and problems.
+            </p>
+          <p>
+          	Discussion list:
+            <ul>
+            <li><a href="mailto:java-dev-subscribe@lucene.apache.org">Subscribe</a></li>
+            <li><a href="mailto:java-dev-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+            <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-java-dev/">Archive</a>
+            (<a href="http://mail-archives.apache.org/mod_mbox/jakarta-lucene-dev/">old archive</a>)</li>
+            <li><a href="http://www.gossamer-threads.com/lists/lucene/java-dev/">Alternative
+              archive with search feature</a></li>
+            </ul><br/>
+            Commit notifications:
+            <ul>
+            <li><a href="mailto:java-commits-subscribe@lucene.apache.org">Subscribe</a></li>
+            <li><a href="mailto:java-commits-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+            <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-java-commits/">Archive</a></li>
+            </ul>
+          </p>
+        </section>
+
+        <section id="Lucene4c Developer List"><title>Lucene4c Developer List</title>
+            <p>
+              This is the list where participating developers of the lucene4c
+              project meet and discuss issues related to development of
+              lucene4c.  Do not send mail to this list with usage or
+              configuration questions and problems.
+            </p>
+          <p>
+          	Discussion list:
+            <ul>
+            <li><a href="mailto:c-dev-subscribe@lucene.apache.org">Subscribe</a></li>
+            <li><a href="mailto:c-dev-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+            <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-c-dev/">Archive</a></li>
+            <li><a href="http://www.gossamer-threads.com/lists/lucene/c-dev/">Alternative
+              archive with search feature</a></li>
+            </ul><br/>
+            Commit notifications:
+            <ul>
+            <li><a href="mailto:c-commits-subscribe@lucene.apache.org">Subscribe</a></li>
+            <li><a href="mailto:c-commits-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+            <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-c-commits/">Archive</a></li>
+            </ul>
+          </p>
+        </section>
+
+        <section id="Ruby Developer List"><title>Ruby Developer List</title>
+            <p>
+              Discussion list for developers of Ruby/SWIG Lucene.
+            </p>
+          <ul>
+            <li><a href="mailto:ruby-dev-subscribe@lucene.apache.org">Subscribe</a></li>
+            <li><a href="mailto:ruby-dev-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+            <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-ruby-dev/">Archive</a></li>
+            <li><a href="http://www.gossamer-threads.com/lists/lucene/ruby-dev/">Alternative
+              archive with search feature</a></li>
+          </ul>
+        </section>
+
+        <section id="General Lucene List"><title>General Lucene List</title>
+            <p>
+              General discussion concerning all Lucene subprojects.
+            </p>
+            <ul>
+              <li><a href="mailto:general-subscribe@lucene.apache.org">Subscribe</a></li>
+              <li><a href="mailto:general-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
+              <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-general/">Archive</a></li>
+              <li><a href="http://www.gossamer-threads.com/lists/lucene/general/">Alternative
+                archive with search feature</a></li>
+            </ul>
+        </section>
+
+    </body>
+</document>

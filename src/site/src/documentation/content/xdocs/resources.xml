@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Resources
+		</title>
+	</header>
+    <properties>
+        <author email="cutting@apache.org">Doug Cutting</author>
+        <title>Resources - Apache Lucene</title>
+    </properties>
+    <body>
+
+        <section id="Page moved"><title>Page moved</title>
+        
+	        <a href="http://wiki.apache.org/jakarta-lucene/Resources">This page is now part of the Wiki</a>
+        
+        </section>
+
+    </body>
+</document>

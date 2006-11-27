@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+
+<document>
+	<header>
+        <title>
+	Apache Lucene - Building and Installing the Basic Demo
+		</title>
+	</header>
+<properties>
+<author email="acoliver@apache.org">Andrew C. Oliver</author>
+</properties>
+<body>
+
+<section id="About this Document"><title>About this Document</title>
+<p>
+This document is intended as a "getting started" guide to installing and running the Lucene
+web application demo.  This guide assumes that you have read the information in the previous two
+examples.  We'll use Tomcat as our reference web container.  These demos should work with nearly any
+container, but you may have to adapt them appropriately.
+</p>
+</section>
+
+
+<section id="About the Demos"><title>About the Demos</title>
+<p>
+The Lucene Web Application demo is a template web application intended for deployment on Tomcat or a
+similar web container.  It's NOT designed as a "best practices" implementation by ANY means.  It's
+more of a "hello world" type Lucene Web App.  The purpose of this application is to demonstrate
+Lucene.  With that being said, it should be relatively simple to create a small searchable website
+in Tomcat or a similar application server.
+</p>
+</section>
+
+<section id="Indexing Files"><title>Indexing Files</title>
+<p> Once you've gotten this far you're probably itching to go.  Let's start by creating the index
+you'll need for the web examples.  Since you've already set your CLASSPATH in the previous examples,
+all you need to do is type:
+
+<pre>
+    java org.apache.lucene.demo.IndexHTML -create -index {index-dir} ..
+</pre>
+
+You'll need to do this from a (any) subdirectory of your <code>{tomcat}/webapps</code> directory
+(make sure you didn't leave off the <code>..</code> or you'll get a null pointer exception).
+<code>{index-dir}</code> should be a directory that Tomcat has permission to read and write, but is
+outside of a web accessible context.  By default the webapp is configured to look in
+<code>/opt/lucene/index</code> for this index.
+</p>
+</section>
+
+<section id="Deploying the Demos"><title>Deploying the Demos</title>
+<p>Located in your distribution directory you should see a war file called
+<code>luceneweb.war</code>.  If you're working with a Subversion checkout, this will be under the
+<code>build</code> subdirectory.  Copy this to your <code>{tomcat-home}/webapps</code> directory.
+You may need to restart Tomcat.  </p> </section>
+
+<section id="Configuration"><title>Configuration</title>
+<p> From your Tomcat directory look in the <code>webapps/luceneweb</code> subdirectory.  If it's not
+present, try browsing to <code>http://localhost:8080/luceneweb</code> (which causes Tomcat to deploy
+the webapp), then look again.  Edit a file called <code>configuration.jsp</code>.  Ensure that the
+<code>indexLocation</code> is equal to the location you used for your index.  You may also customize
+the <code>appTitle</code> and <code>appFooter</code> strings as you see fit.  Once you have finished
+altering the configuration you may need to restart Tomcat.  You may also wish to update the war file
+by typing <code>jar -uf luceneweb.war configuration.jsp</code> from the <code>luceneweb</code>
+subdirectory.  (The -u option is not available in all versions of jar.  In this case recreate the
+war file).
+</p>
+</section>
+
+<section id="Running the Demos"><title>Running the Demos</title>
+<p>Now you're ready to roll.  In your browser set the url to
+<code>http://localhost:8080/luceneweb</code> enter <code>test</code> and the number of items per
+page and press search.</p>
+<p>You should now be looking either at a number of results (provided you didn't erase the Tomcat
+examples) or nothing.  If you get an error regarding opening the index, then you probably set the
+path in <code>configuration.jsp</code> incorrectly or Tomcat doesn't have permissions to the index
+(or you skipped the step of creating it).  Try other search terms.  Depending on the number of items
+per page you set and results returned, there may be a link at the bottom that says <b>More
+Results>></b>; clicking it takes you to subsequent pages.  </p> </section>
+
+<section id="About the code..."><title>About the code...</title>
+<p>
+If you want to know more about how this web app works or how to customize it then <a
+href="demo4.html">read on&gt;&gt;&gt;</a>.
+</p>
+</section>
+
+</body>
+</document>
+

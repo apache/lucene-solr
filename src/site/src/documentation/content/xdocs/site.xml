@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2002-2004 The Apache Software Foundation or its licensors,
+  as applicable.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+Forrest site.xml
+
+This file contains an outline of the site's information content.  It is used to:
+- Generate the website menus (though these can be overridden - see docs)
+- Provide semantic, location-independent aliases for internal 'site:' URIs, eg
+<link href="site:changes"> links to changes.html (or ../changes.html if in
+  subdir).
+- Provide aliases for external URLs in the external-refs section.  Eg, <link
+  href="ext:cocoon"> links to http://cocoon.apache.org/ 
+
+See http://forrest.apache.org/docs/linking.html for more info
+-->
+
+<site label="Lucene" href="" xmlns="http://apache.org/forrest/linkmap/1.0" tab="">
+   <!-- Note: No matter what you configure here, Forrest will always try to load
+       index.html when you request http://yourHost/.
+       'How can I use a start-up-page other than index.html?' in the FAQs has more 
+       information tells you how to change that. 
+   -->
+  <about label="About">
+      <overview label="Overview" href="index.html" description="Welcome to Java Lucene"/>
+      <features label="Features" href="features.html"/>
+      <powered-by label="Powered by Lucene" href="ext:powered-by"/>
+      <who-we-are label="Who We Are" href="whoweare.html"/>
+  </about>
+    <!-- keep in submenu items alpha order -->
+  <docs label="Documentation">
+
+      <apidocs label="API Docs" href="api/"/>
+      <benchmarks label="Benchmarks" href="benchmarks.html"/>
+      <contributions label="Contributions" href="contributions.html"/>
+      <faq         label="FAQ"              href="ext:faq" />
+      <file-formats label="File Formats" href="fileformats.html"/>
+      <tutorial label="Getting Started" href="gettingstarted.html"/>
+      <lucene-sandbox label="Lucene Sandbox" href="lucene-sandbox/index.html"/>
+      <query-syntax label="Query Syntax" href="queryparsersyntax.html"/>
+      <scoring label="Scoring" href="scoring.html"/>
+      <wiki        label="Wiki"             href="ext:wiki" />
+  </docs>
+
+  <resources label="Resources">
+      <issues label="Issue Tracking" href="ext:issues"/>
+      <contact label="Mailing Lists" href="mailinglists.html"/>
+      <release label="Downloads" href="releases.html"/>
+      <svn   label="Version Control"  href="ext:source" />
+  </resources>
+  <versions label="Site Versions">
+      <official label="Official" href="./"/>
+<!-- Needs to be filled in -->
+<!--      <nightly label="Nightly" href=""/> -->
+
+  </versions>
+  <projects label="Related Projects">
+      <lucene label="Lucene (Top-Level)" href="ext:topLevel"/>
+      <lucene label="Hadoop" href="ext:hadoop"/>
+      <lucene label="Lucy" href="ext:lucy"/>
+	  <lucene label="Lucene.NET" href="ext:lucene-net"/>
+      <lucene     label="Nutch" href="ext:nutch" />
+      <lucene label="SOLR" href="ext:solr"/>
+  </projects>
+  
+  <!--
+  The href must be wholesite.html/pdf  You can change the labels and node names
+  <all label="All">
+    <whole_site_html label="Whole Site HTML" href="wholesite.html"/>
+    <whole_site_pdf label="Whole Site PDF" href="wholesite.pdf"/>
+  </all>
+  -->
+
+  <external-refs>
+    <forrest href="http://forrest.apache.org/">
+      <linking href="docs/linking.html"/>
+      <validation href="docs/validation.html"/>
+      <webapp href="docs/your-project.html#webapp"/>
+      <dtd-docs href="docs/dtd-docs.html"/>
+    </forrest>
+    <cocoon href="http://cocoon.apache.org/"/>
+    <xml.apache.org href="http://xml.apache.org/"/>
+    <issues href="http://issues.apache.org/jira/browse/LUCENE"/>
+	<topLevel href="http://lucene.apache.org"/>
+    <solr    href="http://incubator.apache.org/solr/" />
+    <nutch     href="http://lucene.apache.org/nutch/" />
+    <lucy href="http://lucene.apache.org/lucy/"/>
+    <lucene-net href="http://incubator.apache.org/projects/lucene.net.html"/>
+    <hadoop href="http://lucene.apache.org/hadoop/"/>
+    <wiki      href="http://wiki.apache.org/jakarta-lucene" />
+    <faq       href="http://wiki.apache.org/jakarta-lucene/LuceneFAQ" />
+    <releases href="http://www.apache.org/dyn/closer.cgi/lucene/java/" />
+    <source href="http://svn.apache.org/viewcvs.cgi/lucene/java/"/>
+    <powered-by href="http://wiki.apache.org/jakarta-lucene/PoweredBy"/>
+  </external-refs>
+
+</site>

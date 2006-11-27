@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - System Properties
+		</title>
+	</header>
+    <properties>
+        <author email="otis @ apache dot org">Otis Gospodneti&#263;</author>
+    </properties>
+    <body>
+
+        <section id="About this Document"><title>About this Document</title>
+            <p>
+                Lucene has a number of properties that can be tuned. They can be adjusted either
+                programmatically, using the Lucene API, or their default values can be set via 
+                system properties described in this document. Starting
+                with Lucene 1.9, the system properties (except org.apache.lucene.lockDir) are not supported 
+                anymore and the API (i.e. the get/set methods) should be used directly.
+            </p>
+        </section>
+
+        <section id="System Properties"><title>System Properties</title>
+            <p>
+                <table width="100%" border="0" cellpadding="4" cellspacing="0">
+                    <tr valign="top">
+                        <td width="25%"><b>Lucene Property</b></td>
+                        <td width="25%"><b>System Property</b></td>
+                        <td width="25%"><b>Default Value</b></td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/IndexWriter.html#mergeFactor">mergeFactor</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.mergeFactor
+                        </td>
+                        <td width="25%">
+                            10
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/IndexWriter.html#minMergeDocs">minMergeDocs</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.minMergeDocs
+                        </td>
+                        <td width="25%">
+                            10
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/IndexWriter.html#maxMergeDocs">maxMergeDocs</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.maxMergeDocs
+                        </td>
+                        <td width="25%">
+                            Integer.MAX_VALUE
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/IndexWriter.html#maxFieldLength">maxFieldLength</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.maxFieldLength
+                        </td>
+                        <td width="25%">
+                            10000
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/IndexWriter.html#COMMIT_LOCK_TIMEOUT">COMMIT_LOCK_TIMEOUT</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.commitLockTimeout
+                        </td>
+                        <td width="25%">
+                            10000 ms
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/IndexWriter.html#WRITE_LOCK_TIMEOUT">WRITE_LOCK_TIMEOUT</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.writeLockTimeout
+                        </td>
+                        <td width="25%">
+                            1000 ms
+                        </td>
+                    </tr>
+
+
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/search/BooleanQuery.html#maxClauseCount">maxClauseCount</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.maxClauseCount
+                        </td>
+                        <td width="25%">
+                            1024
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/store/FSDirectory.html#lockDir">lockDir</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.lockDir
+                        </td>
+                        <td width="25%">
+                            the value of <code>java.io.tmpdir</code> system property
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/store/FSDirectory.html#FSDirectory.class">FSDirectory.class</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.FSDirectory.class
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.store.FSDirectory
+                        </td>
+                    </tr>
+                    <tr valign="TOP">
+                        <td width="25%">
+                            <a href="api/org/apache/lucene/index/SegmentReader.html#SegmentReader.class">SegmentReader.class</a>
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.index.SegmentReader.class
+                        </td>
+                        <td width="25%">
+                            org.apache.lucene.index.SegmentReader
+                        </td>
+                    </tr>
+                </table>
+            </p>
+        </section>
+
+    </body>
+</document>

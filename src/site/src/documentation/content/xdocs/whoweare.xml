@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Who We Are
+		</title>
+	</header>
+<properties>
+<author email="husted@apache.org">Ted Husted</author>
+<author email="cutting@apache.org">Doug Cutting</author>
+</properties>
+<body>
+
+<section id="Who We Are"><title>Who We Are</title>
+<p>Lucene is maintained by a team of volunteer developers.</p>
+</section>
+
+<section id="Committers"><title>Committers</title>
+<ul>
+<li><b><a href="http://www.nutch.org/blog/cutting.html">Doug Cutting</a></b> (cutting@...)
+
+<p>Lucene was originally written in Doug's spare time during late 1997
+and early 1998.  Doug had previously written search engines at Xerox's
+Palo Alto Research Center (PARC), Apple, and Excite@Home, and authored
+several information retrieval <a
+href="http://lucene.sourceforge.net/publications.html">papers and
+patents</a>.</p>
+
+</li>
+<li><b><a href="http://www.jroller.com/page/otis">Otis Gospodnetic</a></b> (otis@...)</li>
+<li><b>Brian Goetz</b> (briangoetz@...)</li>
+<li><b>Scott Ganyo</b> (scottganyo@...)</li>
+<li><b>Eugene Gluzberg</b> (drag0n@...)</li>
+<li><b>Matt Tucker</b> (mtucker@...)</li>
+<li><b>Cory Hubert</b> (clhubert@...)</li>
+<li><b>Dave Kor</b> (davekor@...)</li>
+<li><b>Jon Stevens</b> (jon at latchkey.com)</li>
+<li><b>Tal Dayan</b> (zapta@...)</li>
+<li><b>Andrew C. Oliver</b> (acoliver@...)</li>
+<li><b>Peter Carlson</b> (carlson@...)</li>
+<li><b>Erik Hatcher</b> (ehatcher@...)</li>
+<li><b>Dmitry Serebrennikov</b> (dmitrys@...)</li>
+<li><b>Christoph Goller</b> (goller@...)</li>
+<li><b>Tim Jones</b> (tjones@...)</li>
+<li><b>Daniel Naber</b> (dnaber@...)</li>
+<li><b>Bernhard Messer</b> (bmesser@...)</li>
+<li><b>Yonik Seeley</b> (yonik@...)</li>
+<li><b>Grant Ingersoll</b> (gsingers@...) </li>
+<li><b>Mike McCandless</b> (mikemccand@...) </li>
+</ul>
+
+<p>Note that the email addresses above end with @apache.org.</p>
+
+</section>
+
+<section id="Other Contributors"><title>Other Contributors</title>
+<ul>
+<li>Josh Bloch</li>
+<li>Ted Husted</li>
+</ul>
+</section>
+
+</body>
+</document>

@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Lucene Sandbox
+		</title>
+	</header>
+    <properties>
+        <author>Otis Gospodentic</author>
+    </properties>
+    <body>
+
+        <section id="Lucene Sandbox"><title>Lucene Sandbox</title>
+            <p>
+                Lucene project also contains a workspace, Lucene Sandbox, that is open to all Lucene committers, as well
+                as a few other developers.  The purpose of the Sandbox is to host various third party contributions,
+                and to serve as a place to try out new ideas and prepare them for inclusion into the core Lucene
+                distribution.<br/>
+                Users are free to experiment with the components developed in the Sandbox, but Sandbox components will
+                not necessarily be maintained, particularly in their current state.
+            </p>
+
+            <p>
+                You can access the Lucene Sandbox repository at
+                <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/">http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/</a>.
+            </p>
+
+            <section id="Snowball Stemmers for Lucene"><title>Snowball Stemmers for Lucene</title>
+                <p>
+                    This project provides pre-compiled versions of the Snowball stemmers
+                    for Lucene.
+                </p>
+
+                <p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/snowball">The
+                        repository for the Snowball contribution.</a>
+                </p>
+
+                <p>
+                    <a href="http://snowball.tartarus.org/">Background information on Snowball</a>,
+                    which is a language for stemmers developed by Martin Porter.
+                </p>
+            </section>
+
+            <section id="Analyzers, Tokenizers, Filters"><title>Analyzers, Tokenizers, Filters</title>
+                <p>
+                  Contributed Analyzers, Tokenizers, and Filters for various languages.
+                </p>
+
+                <p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/analyzers/">The
+                        repository for the Analyzers contribution.</a>
+                </p>
+            </section>
+
+            <section id="Ant"><title>Ant</title>
+                <p>
+                    The Ant project is a useful Ant task that creates a Lucene index out of an Ant fileset.  It also
+                    contains an example HTML parser that uses JTidy.
+                </p>
+                <p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/ant/">The
+                        repository for the Ant contribution.</a>
+                </p>
+            </section>
+
+            <section id="WordNet/Synonyms"><title>WordNet/Synonyms</title>
+                <p>
+                    The Lucene WordNet code consists of a single class which parses a prolog file
+                    from the WordNet site that contains a list of English words and synonyms.
+                    The class builds a Lucene index from the synonyms file.  Your querying code could
+                    hit this index to build up a set of synonyms for the terms in the
+                    search query.
+                </p>
+                <p>
+                    More information on the <a href="http://www.tropo.com/techno/java/lucene/wordnet.html">Lucene WordNet package</a>.
+                    <a href="http://wordnet.princeton.edu/">WordNet</a> is an online database of English language words that contains
+                    synonyms, definitions, and various relationships between synonym sets.
+                </p>
+                <p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/wordnet/">The
+                        repository for the WordNet module.</a>
+                </p>
+            </section>
+
+            <section id="Lucli - Lucene Command-line Interface"><title>Lucli - Lucene Command-line Interface</title>
+                <p>
+                  The Lucli application allows index manipulation from the
+                    command-line.
+                </p>
+
+                <p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/lucli/">The
+                        repository for the Lucli contribution.</a>
+                </p>
+            </section>
+
+            <section id="Term Highlighter"><title>Term Highlighter</title>
+                <p>
+                  A small set of classes for highlighting matching terms in
+                    search results.
+                </p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/highlighter/">The
+                        repository for the Highlighter contribution.</a>
+            </section>
+
+            <section id="Javascript Query Constructor"><title>Javascript Query Constructor</title>
+                <p>
+                    Javascript library to support client-side query-building. Provides support for a user interface similar to
+                    <a href="http://www.google.com.sg/advanced_search">Google's Advanced Search</a>.
+                </p>
+                <p>
+
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/javascript/queryConstructor/">The
+                        repository for the Javascript Query Constructor files.</a>
+                </p>
+            </section>
+
+            <section id="Javascript Query Validator"><title>Javascript Query Validator</title>
+                <p>
+                    Javascript library to support client-side query validation. Lucene doesn't like malformed queries and tends to
+                    throw ParseException, which are often difficult to interpret and pass on to the user. This library hopes to
+                    alleviate that problem.
+                </p>
+                <p>
+
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/javascript/queryValidator/">The
+                        repository for the Javascript Query Validator files.</a>
+                </p>
+            </section>
+
+            <section id="High Frequency Terms"><title>High Frequency Terms</title>
+                <p>
+                    The miscellaneous package is for classes that don't fit anywhere else. The only class in it right now determines
+                    what terms occur the most inside a Lucene index.  This could be useful for analyzing which terms may need to go
+                    into a custom stop word list for better search results.
+                </p>
+                <p>
+
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/miscellaneous/">The
+                        repository for miscellaneous classes.</a>
+                </p>
+            </section>
+
+        </section>
+
+    </body>
+</document>
