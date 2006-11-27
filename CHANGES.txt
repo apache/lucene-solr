@@ -290,6 +290,8 @@ Documentation
 
   3. Added javadocs for FieldSelectorResult.java. (Grant Ingersoll)
 
+  4. Moved xdocs directory to src/site/src/documentation/content/xdocs per Issue 707.  Site now builds using Forrest, just like the other Lucene siblings.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite for info on updating the website. (Grant Ingersoll with help from Steve Rowe, Chris Hostetter, Doug Cutting, Otis Gospodnetic, Yonik Seeley)
+
 Release 2.0.0 2006-05-26
 
 API Changes
