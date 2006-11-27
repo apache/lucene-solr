@@ -118,7 +118,7 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="docs" description="Build the website">
-    <ant dir="site" inheritAll="false"/>
+      <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite</echo>
   </target>
 
   <target name="javadocs" description="Generate javadoc">
