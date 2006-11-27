@@ -1,0 +1,366 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta content="Apache Forrest" name="Generator">
+<meta name="Forrest-version" content="0.7">
+<meta name="Forrest-skin-name" content="pelt">
+<title>
+	Apache Lucene - Basic Demo Sources Walkthrough
+		</title>
+<link type="text/css" href="skin/basic.css" rel="stylesheet">
+<link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
+<link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
+<link type="text/css" href="skin/profile.css" rel="stylesheet">
+<script src="skin/getBlank.js" language="javascript" type="text/javascript"></script><script src="skin/getMenu.js" language="javascript" type="text/javascript"></script><script src="skin/fontsize.js" language="javascript" type="text/javascript"></script>
+<link rel="shortcut icon" href="images/favicon.ico">
+</head>
+<body onload="init()">
+<script type="text/javascript">ndeSetTextSize();</script>
+<div id="top">
+<div class="breadtrail">
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://lucene.apache.org/">Lucene</a> &gt; <a href="http://lucene.apache.org/java/">Java</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
+</div>
+<div class="header">
+<div class="grouplogo">
+<a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="http://lucene.apache.org/java/docs/images/asf-logo.gif" title="Apache Lucene"></a>
+</div>
+<div class="projectlogo">
+<a href="http://lucene.apache.org/java/"><img class="logoImage" alt="Lucene" src="http://lucene.apache.org/images/lucene_green_300.gif" title="Apache Lucene is a high-performance, full-featured text search engine library written entirely in
+      Java. It is a technology suitable for nearly any application that requires full-text search, especially cross-platform."></a>
+</div>
+<div class="searchbox">
+<form action="http://www.google.com/search" method="get" class="roundtopsmall">
+<input value="lucene.apache.org" name="sitesearch" type="hidden"><input onFocus="getBlank (this, 'Search the site with google');" size="25" name="q" id="query" type="text" value="Search the site with google">&nbsp; 
+                    <input attr="value" name="Search" value="Search" type="submit">
+</form>
+</div>
+<ul id="tabs">
+<li class="current">
+<a class="base-selected" href="index.html">Main</a>
+</li>
+<li>
+<a class="base-not-selected" href="http://wiki.apache.org/jakarta-lucene">Wiki</a>
+</li>
+</ul>
+</div>
+</div>
+<div id="main">
+<div id="publishedStrip">
+<div id="level2tabs"></div>
+<script type="text/javascript"><!--
+document.write("<text>Last Published:</text> " + document.lastModified);
+//  --></script>
+</div>
+<div class="breadtrail">
+             
+             &nbsp;
+           </div>
+<div id="menu">
+<div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">About</div>
+<div id="menu_1.1" class="menuitemgroup">
+<div class="menuitem">
+<a href="index.html" title="Welcome to Java Lucene">Overview</a>
+</div>
+<div class="menuitem">
+<a href="features.html">Features</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/jakarta-lucene/PoweredBy">Powered by Lucene</a>
+</div>
+<div class="menuitem">
+<a href="whoweare.html">Who We Are</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.2', 'skin/')" id="menu_1.2Title" class="menutitle">Documentation</div>
+<div id="menu_1.2" class="menuitemgroup">
+<div class="menuitem">
+<a href="api/">API Docs</a>
+</div>
+<div class="menuitem">
+<a href="benchmarks.html">Benchmarks</a>
+</div>
+<div class="menuitem">
+<a href="contributions.html">Contributions</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/jakarta-lucene/LuceneFAQ">FAQ</a>
+</div>
+<div class="menuitem">
+<a href="fileformats.html">File Formats</a>
+</div>
+<div class="menuitem">
+<a href="gettingstarted.html">Getting Started</a>
+</div>
+<div class="menuitem">
+<a href="lucene-sandbox/index.html">Lucene Sandbox</a>
+</div>
+<div class="menuitem">
+<a href="queryparsersyntax.html">Query Syntax</a>
+</div>
+<div class="menuitem">
+<a href="scoring.html">Scoring</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/jakarta-lucene">Wiki</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Resources</div>
+<div id="menu_1.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://issues.apache.org/jira/browse/LUCENE">Issue Tracking</a>
+</div>
+<div class="menuitem">
+<a href="mailinglists.html">Mailing Lists</a>
+</div>
+<div class="menuitem">
+<a href="releases.html">Downloads</a>
+</div>
+<div class="menuitem">
+<a href="http://svn.apache.org/viewcvs.cgi/lucene/java/">Version Control</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Site Versions</div>
+<div id="menu_1.4" class="menuitemgroup">
+<div class="menuitem">
+<a href="./">Official</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Related Projects</div>
+<div id="menu_1.5" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://lucene.apache.org">Lucene (Top-Level)</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/hadoop/">Hadoop</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/lucy/">Lucy</a>
+</div>
+<div class="menuitem">
+<a href="http://incubator.apache.org/projects/lucene.net.html">Lucene.NET</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/nutch/">Nutch</a>
+</div>
+<div class="menuitem">
+<a href="http://incubator.apache.org/solr/">SOLR</a>
+</div>
+</div>
+<div id="credit"></div>
+<div id="roundbottom">
+<img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<div id="credit2"></div>
+</div>
+<div id="content">
+<div title="Portable Document Format" class="pdflink">
+<a class="dida" href="demo4.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
+        PDF</a>
+</div>
+<h1>
+	Apache Lucene - Basic Demo Sources Walkthrough
+		</h1>
+<div id="minitoc-area">
+<ul class="minitoc">
+<li>
+<a href="#About the Code">About the Code</a>
+</li>
+<li>
+<a href="#Location of the source (developers/deployers)">Location of the source (developers/deployers)</a>
+</li>
+<li>
+<a href="#index.jsp (developers/deployers)">index.jsp (developers/deployers)</a>
+</li>
+<li>
+<a href="#header.jsp (developers/deployers)">header.jsp (developers/deployers)</a>
+</li>
+<li>
+<a href="#results.jsp (developers)">results.jsp (developers)</a>
+</li>
+<li>
+<a href="#More sources (developers)">More sources (developers)</a>
+</li>
+<li>
+<a href="#Where to go from here? (everyone!)">Where to go from here? (everyone!)</a>
+</li>
+<li>
+<a href="#When to contact the Author">When to contact the Author</a>
+</li>
+</ul>
+</div>
+
+
+<a name="N10013"></a><a name="About the Code"></a>
+<h2 class="boxed">About the Code</h2>
+<div class="section">
+<p>
+In this section we walk through the sources behind the basic Lucene Web Application demo: where to
+find them, their parts and their function.  This section is intended for Java developers wishing to
+understand how to use Lucene in their applications or for those involved in deploying web
+applications based on Lucene.
+</p>
+</div>
+
+
+
+<a name="N1001C"></a><a name="Location of the source (developers/deployers)"></a>
+<h2 class="boxed">Location of the source (developers/deployers)</h2>
+<div class="section">
+<p>
+Relative to the directory created when you extracted Lucene or retrieved it from Subversion, you
+should see a directory called <span class="codefrag">src</span> which in turn contains a directory called
+<span class="codefrag">jsp</span>.  This is the root for all of the Lucene web demo.
+</p>
+<p>
+Within this directory you should see <span class="codefrag">index.jsp</span>.  Bring this up in vi or your editor of
+choice.
+</p>
+</div>
+
+
+<a name="N10031"></a><a name="index.jsp (developers/deployers)"></a>
+<h2 class="boxed">index.jsp (developers/deployers)</h2>
+<div class="section">
+<p>
+This jsp page is pretty boring by itself.  All it does is include a header, display a form and
+include a footer.  If you look at the form, it has two fields: <span class="codefrag">query</span> (where you enter
+your search criteria) and <span class="codefrag">maxresults</span> where you specify the number of results per page.
+By the structure of this JSP it should be easy to customize it without even editing this particular
+file.  You could simply change the header and footer.  Let's look at the <span class="codefrag">header.jsp</span>
+(located in the same directory) next.
+</p>
+</div>
+
+
+<a name="N10043"></a><a name="header.jsp (developers/deployers)"></a>
+<h2 class="boxed">header.jsp (developers/deployers)</h2>
+<div class="section">
+<p>
+The header is also very simple by itself.  The only thing it does is include the
+<span class="codefrag">configuration.jsp</span> (which you looked at in the last section of this guide) and set the
+title and a brief header.  This would be a good place to put your own custom HTML to "pretty" things
+up a bit.  We won't cover the footer because all it does is display the footer and close your tags.
+Let's look at the <span class="codefrag">results.jsp</span>, the meat of this application, next.
+</p>
+</div>
+
+
+<a name="N10052"></a><a name="results.jsp (developers)"></a>
+<h2 class="boxed">results.jsp (developers)</h2>
+<div class="section">
+<p>
+Most of the functionality lies in <span class="codefrag">results.jsp</span>.  Much of it is for paging the search
+results, which we'll not cover here as it's commented well enough.  The first thing in this page is
+the actual imports for the Lucene classes and Lucene demo classes.  These classes are loaded from
+the jars included in the <span class="codefrag">WEB-INF/lib</span> directory in the <span class="codefrag">luceneweb.war</span> file.
+</p>
+<p>
+You'll notice that this file includes the same header and footer as <span class="codefrag">index.jsp</span>.  From
+there it constructs an <span class="codefrag">IndexSearcher</span> with the
+<span class="codefrag">indexLocation</span> that was specified in <span class="codefrag">configuration.jsp</span>.  If there is an
+error of any kind in opening the index, it is displayed to the user and the boolean flag
+<span class="codefrag">error</span> is set to tell the rest of the sections of the jsp not to continue.
+</p>
+<p>
+From there, this jsp attempts to get the search criteria, the start index (used for paging) and the
+maximum number of results per page.  If the maximum results per page is not set or not valid then it
+and the start index are set to default values.  If only the start index is invalid it is set to a
+default value.  If the criteria isn't provided then a servlet error is thrown (it is assumed that
+this is the result of url tampering or some form of browser malfunction).
+</p>
+<p>
+The jsp moves on to construct a <span class="codefrag">StandardAnalyzer</span> to
+analyze the search text.  This matches the analyzer used during indexing (<span class="codefrag">IndexHTML</span>), which is generally
+recommended.  This is passed to the <span class="codefrag">QueryParser</span> along with the
+criteria to construct a <span class="codefrag">Query</span>
+object.  You'll also notice the string literal <span class="codefrag">"contents"</span> included.  This specifies
+that the search should cover the <span class="codefrag">contents</span> field and not the <span class="codefrag">title</span>,
+<span class="codefrag">url</span> or some other field in the indexed documents.  If there is any error in
+constructing a <span class="codefrag">Query</span> object an
+error is displayed to the user.
+</p>
+<p>
+In the next section of the jsp the <span class="codefrag">IndexSearcher</span> is asked to search
+given the query object.  The results are returned in a collection called <span class="codefrag">hits</span>.  If the
+length property of the <span class="codefrag">hits</span> collection is 0 (meaning there were no results) then an
+error is displayed to the user and the error flag is set.
+</p>
+<p>
+Finally the jsp iterates through the <span class="codefrag">hits</span> collection, taking the current page into
+account, and displays properties of the <span class="codefrag">Document</span> objects we talked about in
+the first walkthrough.  These objects contain "known" fields specific to their indexer (in this case
+<span class="codefrag">IndexHTML</span> constructs a document
+with "url", "title" and "contents").
+</p>
+<p>
+Please note that in a real deployment of Lucene, it's best to instantiate <span class="codefrag">IndexSearcher</span> and <span class="codefrag">QueryParser</span> once, and then
+share them across search requests, instead of re-instantiating per search request.
+</p>
+</div>
+
+
+<a name="N100CE"></a><a name="More sources (developers)"></a>
+<h2 class="boxed">More sources (developers)</h2>
+<div class="section">
+<p>
+There are additional sources used by the web app that were not specifically covered by either
+walkthrough.  For example the HTML parser, the <span class="codefrag">IndexHTML</span> class and <span class="codefrag">HTMLDocument</span> class.  These are very
+similar to the classes covered in the first example, with properties specific to parsing and
+indexing HTML.  This is beyond our scope; however, by now you should feel like you're "getting
+started" with Lucene.
+</p>
+</div>
+
+
+<a name="N100E1"></a><a name="Where to go from here? (everyone!)"></a>
+<h2 class="boxed">Where to go from here? (everyone!)</h2>
+<div class="section">
+<p>
+There are a number of things this demo doesn't do or doesn't do quite right.  For instance, you may
+have noticed that documents in the root context are unreachable (unless you reconfigure Tomcat to
+support that context or redirect to it), anywhere where the directory doesn't quite match the
+context mapping, you'll have a broken link in your results.  If you want to index non-local files or
+have some other needs this isn't supported, plus there may be security issues with running the
+indexing application from your webapps directory.  There are a number of things left for you the
+developer to do.
+</p>
+<p>
+In time some of these things may be added to Lucene as features (if you've got a good idea we'd love
+to hear it!), but for now: this is where you begin and the search engine/indexer ends.  Lastly, one
+would assume you'd want to follow the above advice and customize the application to look a little
+more fancy than black on white with "Lucene Template" at the top.  We'll see you on the Lucene
+Users' or Developers' <a href="mailinglists.html">mailing lists</a>!
+</p>
+</div>
+
+
+<a name="N100F1"></a><a name="When to contact the Author"></a>
+<h2 class="boxed">When to contact the Author</h2>
+<div class="section">
+<p>
+Please resist the urge to contact the authors of this document (without bribes of fame and fortune
+attached).  First contact the <a href="mailinglists.html">mailing lists</a>, taking care to <a href="http://www.catb.org/~esr/faqs/smart-questions.html">Ask Questions The Smart Way</a>.
+Certainly you'll get the most help that way as well.  That being said, feedback, and modifications
+to this document and samples are ever so greatly appreciated.  They are just best sent to the lists
+or <a href="http://wiki.apache.org/jakarta-lucene/HowToContribute">posted as patches</a>, so that
+everyone can share in them.  Thanks for understanding!
+</p>
+</div>
+
+
+</div>
+<div class="clearboth">&nbsp;</div>
+</div>
+<div id="footer">
+<div class="lastmodified">
+<script type="text/javascript"><!--
+document.write("<text>Last Published:</text> " + document.lastModified);
+//  --></script>
+</div>
+<div class="copyright">
+        Copyright &copy;
+         2006 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
+</div>
+</div>
+</body>
+</html>

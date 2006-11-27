@@ -1,0 +1,632 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta content="Apache Forrest" name="Generator">
+<meta name="Forrest-version" content="0.7">
+<meta name="Forrest-skin-name" content="pelt">
+<title>
+	Apache Lucene - Contributions
+		</title>
+<link type="text/css" href="skin/basic.css" rel="stylesheet">
+<link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
+<link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
+<link type="text/css" href="skin/profile.css" rel="stylesheet">
+<script src="skin/getBlank.js" language="javascript" type="text/javascript"></script><script src="skin/getMenu.js" language="javascript" type="text/javascript"></script><script src="skin/fontsize.js" language="javascript" type="text/javascript"></script>
+<link rel="shortcut icon" href="images/favicon.ico">
+</head>
+<body onload="init()">
+<script type="text/javascript">ndeSetTextSize();</script>
+<div id="top">
+<div class="breadtrail">
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://lucene.apache.org/">Lucene</a> &gt; <a href="http://lucene.apache.org/java/">Java</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
+</div>
+<div class="header">
+<div class="grouplogo">
+<a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="http://lucene.apache.org/java/docs/images/asf-logo.gif" title="Apache Lucene"></a>
+</div>
+<div class="projectlogo">
+<a href="http://lucene.apache.org/java/"><img class="logoImage" alt="Lucene" src="http://lucene.apache.org/images/lucene_green_300.gif" title="Apache Lucene is a high-performance, full-featured text search engine library written entirely in
+      Java. It is a technology suitable for nearly any application that requires full-text search, especially cross-platform."></a>
+</div>
+<div class="searchbox">
+<form action="http://www.google.com/search" method="get" class="roundtopsmall">
+<input value="lucene.apache.org" name="sitesearch" type="hidden"><input onFocus="getBlank (this, 'Search the site with google');" size="25" name="q" id="query" type="text" value="Search the site with google">&nbsp; 
+                    <input attr="value" name="Search" value="Search" type="submit">
+</form>
+</div>
+<ul id="tabs">
+<li class="current">
+<a class="base-selected" href="index.html">Main</a>
+</li>
+<li>
+<a class="base-not-selected" href="http://wiki.apache.org/jakarta-lucene">Wiki</a>
+</li>
+</ul>
+</div>
+</div>
+<div id="main">
+<div id="publishedStrip">
+<div id="level2tabs"></div>
+<script type="text/javascript"><!--
+document.write("<text>Last Published:</text> " + document.lastModified);
+//  --></script>
+</div>
+<div class="breadtrail">
+             
+             &nbsp;
+           </div>
+<div id="menu">
+<div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">About</div>
+<div id="menu_1.1" class="menuitemgroup">
+<div class="menuitem">
+<a href="index.html" title="Welcome to Java Lucene">Overview</a>
+</div>
+<div class="menuitem">
+<a href="features.html">Features</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/jakarta-lucene/PoweredBy">Powered by Lucene</a>
+</div>
+<div class="menuitem">
+<a href="whoweare.html">Who We Are</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_selected_1.2', 'skin/')" id="menu_selected_1.2Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
+<div id="menu_selected_1.2" class="selectedmenuitemgroup" style="display: block;">
+<div class="menuitem">
+<a href="api/">API Docs</a>
+</div>
+<div class="menuitem">
+<a href="benchmarks.html">Benchmarks</a>
+</div>
+<div class="menupage">
+<div class="menupagetitle">Contributions</div>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/jakarta-lucene/LuceneFAQ">FAQ</a>
+</div>
+<div class="menuitem">
+<a href="fileformats.html">File Formats</a>
+</div>
+<div class="menuitem">
+<a href="gettingstarted.html">Getting Started</a>
+</div>
+<div class="menuitem">
+<a href="lucene-sandbox/index.html">Lucene Sandbox</a>
+</div>
+<div class="menuitem">
+<a href="queryparsersyntax.html">Query Syntax</a>
+</div>
+<div class="menuitem">
+<a href="scoring.html">Scoring</a>
+</div>
+<div class="menuitem">
+<a href="http://wiki.apache.org/jakarta-lucene">Wiki</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Resources</div>
+<div id="menu_1.3" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://issues.apache.org/jira/browse/LUCENE">Issue Tracking</a>
+</div>
+<div class="menuitem">
+<a href="mailinglists.html">Mailing Lists</a>
+</div>
+<div class="menuitem">
+<a href="releases.html">Downloads</a>
+</div>
+<div class="menuitem">
+<a href="http://svn.apache.org/viewcvs.cgi/lucene/java/">Version Control</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Site Versions</div>
+<div id="menu_1.4" class="menuitemgroup">
+<div class="menuitem">
+<a href="./">Official</a>
+</div>
+</div>
+<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Related Projects</div>
+<div id="menu_1.5" class="menuitemgroup">
+<div class="menuitem">
+<a href="http://lucene.apache.org">Lucene (Top-Level)</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/hadoop/">Hadoop</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/lucy/">Lucy</a>
+</div>
+<div class="menuitem">
+<a href="http://incubator.apache.org/projects/lucene.net.html">Lucene.NET</a>
+</div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/nutch/">Nutch</a>
+</div>
+<div class="menuitem">
+<a href="http://incubator.apache.org/solr/">SOLR</a>
+</div>
+</div>
+<div id="credit"></div>
+<div id="roundbottom">
+<img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<div id="credit2"></div>
+</div>
+<div id="content">
+<div title="Portable Document Format" class="pdflink">
+<a class="dida" href="contributions.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
+        PDF</a>
+</div>
+<h1>
+	Apache Lucene - Contributions
+		</h1>
+<div id="minitoc-area">
+<ul class="minitoc">
+<li>
+<a href="#Overview">Overview</a>
+</li>
+<li>
+<a href="#Lucene Tools">Lucene Tools</a>
+<ul class="minitoc">
+<li>
+<a href="#Luke">Luke</a>
+</li>
+<li>
+<a href="#LIMO (Lucene Index Monitor)">LIMO (Lucene Index Monitor)</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#Lucene Document Converters">Lucene Document Converters</a>
+<ul class="minitoc">
+<li>
+<a href="#XML Document #1">XML Document #1</a>
+</li>
+<li>
+<a href="#XML Document #2">XML Document #2</a>
+</li>
+<li>
+<a href="#PDF Box">PDF Box</a>
+</li>
+<li>
+<a href="#XPDF - PDF Document Conversion">XPDF - PDF Document Conversion</a>
+</li>
+<li>
+<a href="#PDFTextStream -- PDF text and metadata extraction">PDFTextStream -- PDF text and metadata extraction</a>
+</li>
+<li>
+<a href="#PJ Classic & PJ Professional - PDF Document Conversion">PJ Classic &amp; PJ Professional - PDF Document Conversion</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#Miscellaneous">Miscellaneous</a>
+<ul class="minitoc">
+<li>
+<a href="#Arabic Analyzer for Java">Arabic Analyzer for Java</a>
+</li>
+<li>
+<a href="#Phonetix">Phonetix</a>
+</li>
+<li>
+<a href="#ejIndex - JBoss MBean for Lucene">ejIndex - JBoss MBean for Lucene</a>
+</li>
+<li>
+<a href="#JavaCC">JavaCC</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        
+<a name="N10013"></a><a name="Overview"></a>
+<h2 class="boxed">Overview</h2>
+<div class="section">
+<p>This page lists external Lucene resources. If you have
+            written something that should be included, please post all
+            relevant information to one of the mailing lists.  Nothing
+            listed here is directly supported by the Lucene
+            developers, so if you encounter any problems with any of
+            this software, please use the author's contact information
+            to get help.</p>
+<p>If you are looking for information on contributing patches or other improvements to Lucene, see
+            <a href="http://wiki.apache.org/jakarta-lucene/HowToContribute">How To Contribute</a> on the Lucene Wiki.</p>
+</div>
+
+        
+<a name="N10024"></a><a name="Lucene Tools"></a>
+<h2 class="boxed">Lucene Tools</h2>
+<div class="section">
+<p>
+                Software that works with Lucene indices.
+            </p>
+<a name="N1002D"></a><a name="Luke"></a>
+<h3 class="boxed">Luke</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.getopt.org/luke/">
+                                http://www.getopt.org/luke/
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Andrzej Bialecki
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N1004E"></a><a name="LIMO (Lucene Index Monitor)"></a>
+<h3 class="boxed">LIMO (Lucene Index Monitor)</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://limo.sf.net/">
+                                http://limo.sf.net/
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Julien Nioche
+                        </td>
+                    
+</tr>
+                
+</table>
+</div>
+
+        
+<a name="N10071"></a><a name="Lucene Document Converters"></a>
+<h2 class="boxed">Lucene Document Converters</h2>
+<div class="section">
+<p>
+                Lucene requires information you want to index to be
+                converted into a Document class.  Here are
+                contributions for various solutions that convert different
+                content types to Lucene's Document classes.
+            </p>
+<a name="N1007A"></a><a name="XML Document #1"></a>
+<h3 class="boxed">XML Document #1</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://marc.theaimsgroup.com/?l=lucene-dev&m=100723333506246&w=2">
+                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Philip Ogren - ogren@mayo.edu
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N1009C"></a><a name="XML Document #2"></a>
+<h3 class="boxed">XML Document #2</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">
+                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Peter Carlson - carlson@bookandhammer.com
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N100BE"></a><a name="PDF Box"></a>
+<h3 class="boxed">PDF Box</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.pdfbox.org/">
+                                http://www.pdfbox.org/
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Ben Litchfield - ben@csh.rit.edu
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N100E0"></a><a name="XPDF - PDF Document Conversion"></a>
+<h3 class="boxed">XPDF - PDF Document Conversion</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.foolabs.com/xpdf">
+                                http://www.foolabs.com/xpdf
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N10102"></a><a name="PDFTextStream -- PDF text and metadata extraction"></a>
+<h3 class="boxed">PDFTextStream -- PDF text and metadata extraction</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://snowtide.com">
+                                http://snowtide.com
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N10124"></a><a name="PJ Classic & PJ Professional - PDF Document Conversion"></a>
+<h3 class="boxed">PJ Classic &amp; PJ Professional - PDF Document Conversion</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href=" http://www.etymon.com/">
+                                http://www.etymon.com/
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    
+</tr>
+                
+</table>
+</div>
+
+        
+<a name="N10147"></a><a name="Miscellaneous"></a>
+<h2 class="boxed">Miscellaneous</h2>
+<div class="section">
+<p>
+            
+</p>
+<a name="N10150"></a><a name="Arabic Analyzer for Java"></a>
+<h3 class="boxed">Arabic Analyzer for Java</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://savannah.nongnu.org/projects/aramorph">
+                                http://savannah.nongnu.org/projects/aramorph
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Pierrick Brihaye
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N10172"></a><a name="Phonetix"></a>
+<h3 class="boxed">Phonetix</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html">
+                                http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            tangentum technologies
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N10194"></a><a name="ejIndex - JBoss MBean for Lucene"></a>
+<h3 class="boxed">ejIndex - JBoss MBean for Lucene</h3>
+<p>
+                
+</p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://ejindex.sourceforge.net/">
+                                http://ejindex.sourceforge.net/
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Andy Scholz
+                        </td>
+                    
+</tr>
+                
+</table>
+<a name="N101B9"></a><a name="JavaCC"></a>
+<h3 class="boxed">JavaCC</h3>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                    
+<tr>
+                        
+<th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="https://javacc.dev.java.net/">
+                                https://javacc.dev.java.net/
+                            </a>
+                        </td>
+                    
+</tr>
+                    
+<tr>
+                        
+<th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Sun Microsystems (java.net)
+                        </td>
+                    
+</tr>
+                
+</table>
+</div>
+    
+</div>
+<div class="clearboth">&nbsp;</div>
+</div>
+<div id="footer">
+<div class="lastmodified">
+<script type="text/javascript"><!--
+document.write("<text>Last Published:</text> " + document.lastModified);
+//  --></script>
+</div>
+<div class="copyright">
+        Copyright &copy;
+         2006 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
+</div>
+</div>
+</body>
+</html>
