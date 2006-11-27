@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 
 import org.apache.solr.request.*;
 

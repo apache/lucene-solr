@@ -22,7 +22,6 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.util.NumberUtils;
@@ -51,7 +50,7 @@ public class SortableFloatField extends FieldType {
     return NumberUtils.float2sortableStr(val);
   }
 
-  public String toExternal(Field f) {
+  public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -59,7 +58,7 @@ public class SortableFloatField extends FieldType {
     return NumberUtils.SortableStr2floatStr(indexedForm);
   }
 
-  public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     String sval = f.stringValue();
     xmlWriter.writeFloat(name, NumberUtils.SortableStr2float(sval));
   }

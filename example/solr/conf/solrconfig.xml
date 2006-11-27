@@ -132,6 +132,10 @@
       initialSize="512"
       autowarmCount="0"/>
 
+    <!-- If true, stored fields that are not requested will be loaded lazily.
+    -->
+    <enableLazyFieldLoading>false</enableLazyFieldLoading>
+
     <!-- Example of a generic cache.  These caches may be accessed by name
          through SolrIndexSearcher.getCache(),cacheLookup(), and cacheInsert().
          The purpose is to enable easy caching of user/application level data.

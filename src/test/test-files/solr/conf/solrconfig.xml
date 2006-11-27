@@ -106,7 +106,12 @@
       initialSize="512"
       autowarmCount="0"/>
 
+    <!-- If true, stored fields that are not requested will be loaded lazily.
+    -->
+    <enableLazyFieldLoading>true</enableLazyFieldLoading>
+
     <!--
+
     <cache name="myUserCache"
       class="solr.search.LRUCache"
       size="4096"

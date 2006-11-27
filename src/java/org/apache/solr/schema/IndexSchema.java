@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.solr.core.SolrException;
@@ -170,8 +171,8 @@ public final class IndexSchema {
    * @return null if this schema has no unique key field
    * @see #printableUniqueKey
    */
-  public Field getUniqueKeyField(org.apache.lucene.document.Document doc) {
-    return doc.getField(uniqueKeyFieldName);  // this should return null if name is null
+  public Fieldable getUniqueKeyField(org.apache.lucene.document.Document doc) {
+    return doc.getFieldable(uniqueKeyFieldName);  // this should return null if name is null
   }
 
   /**
@@ -180,7 +181,7 @@ public final class IndexSchema {
    * @return null if this schema has no unique key field
    */
   public String printableUniqueKey(org.apache.lucene.document.Document doc) {
-     Field f = doc.getField(uniqueKeyFieldName);
+     Fieldable f = doc.getFieldable(uniqueKeyFieldName);
      return f==null ? null : uniqueKeyFieldType.toExternal(f);
   }
 

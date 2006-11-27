@@ -347,6 +347,9 @@ public class DisMaxRequestHandler
                                        flags);
       }
       rsp.add("search-results",results.docList);
+      // pre-fetch returned documents
+      U.optimizePreFetchDocs(results.docList, query, req, rsp);
+
       
       if (null != facetInfo) rsp.add("facet_counts", facetInfo);
 

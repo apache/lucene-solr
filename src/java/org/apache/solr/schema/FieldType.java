@@ -225,7 +225,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public String toExternal(Fieldable f) {
     // currently used in writing XML of the search result (but perhaps
-    // a more efficient toXML(Field f, Writer w) should be used
+    // a more efficient toXML(Fieldable f, Writer w) should be used
     // in the future.
     return f.stringValue();
   }
@@ -357,7 +357,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Renders the specified field as XML
    */
-  public abstract void write(XMLWriter xmlWriter, String name, Field f) throws IOException;
+  public abstract void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException;
 
   /**
    * calls back to TextResponseWriter to write the field value

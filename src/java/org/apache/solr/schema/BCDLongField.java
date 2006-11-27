@@ -18,7 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.request.XMLWriter;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 
 import java.io.IOException;
 /**
@@ -26,7 +26,7 @@ import java.io.IOException;
  * @version $Id$
  */
 public class BCDLongField extends BCDIntField {
-  public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeLong(name,toExternal(f));
   }
 }

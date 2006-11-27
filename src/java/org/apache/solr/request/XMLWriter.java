@@ -30,7 +30,7 @@ import java.io.Writer;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Document;
 /**
  * @author yonik
@@ -215,7 +215,7 @@ final public class XMLWriter {
 
   private static final Comparator fieldnameComparator = new Comparator() {
     public int compare(Object o, Object o1) {
-      Field f1 = (Field)o; Field f2 = (Field)o1;
+      Fieldable f1 = (Fieldable)o; Fieldable f2 = (Fieldable)o1;
       int cmp = f1.name().compareTo(f2.name());
       return cmp;
       // note - the sort is stable, so this should not have affected the ordering
@@ -238,13 +238,12 @@ final public class XMLWriter {
     // an array.  The fastest way to detect multiple fields
     // with the same name is to sort them first.
 
-    Enumeration ee = doc.fields();
 
     // using global tlst here, so we shouldn't call any other
     // function that uses it until we are done.
     tlst.clear();
-    while (ee.hasMoreElements()) {
-      Field ff = (Field) ee.nextElement();
+    for (Object obj : doc.getFields()) {
+      Fieldable ff = (Fieldable)obj;
       // skip this field if it is not a field to be returned.
       if (returnFields!=null && !returnFields.contains(ff.name())) {
         continue;
@@ -256,12 +255,12 @@ final public class XMLWriter {
     int sz = tlst.size();
     int fidx1 = 0, fidx2 = 0;
     while (fidx1 < sz) {
-      Field f1 = (Field)tlst.get(fidx1);
+      Fieldable f1 = (Fieldable)tlst.get(fidx1);
       String fname = f1.name();
 
       // find the end of fields with this name
       fidx2 = fidx1+1;
-      while (fidx2 < sz && fname.equals(((Field)tlst.get(fidx2)).name()) ) {
+      while (fidx2 < sz && fname.equals(((Fieldable)tlst.get(fidx2)).name()) ) {
         fidx2++;
       }
 
@@ -297,7 +296,7 @@ final public class XMLWriter {
             indent();
             cnt=0;
           }
-          sf.write(this, null, (Field)tlst.get(i));
+          sf.write(this, null, (Fieldable)tlst.get(i));
         }
         decLevel();
         // if (doIndent) indent();
@@ -343,7 +342,7 @@ final public class XMLWriter {
     DocIterator iterator = ids.iterator();
     for (int i=0; i<sz; i++) {
       int id = iterator.nextDoc();
-      Document doc = searcher.doc(id);
+      Document doc = searcher.doc(id, fields);
       writeDoc(null, doc, fields, (includeScore ? iterator.score() : 0.0f), includeScore);
     }
     decLevel();

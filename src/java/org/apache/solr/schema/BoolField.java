@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
@@ -86,7 +85,7 @@ public class BoolField extends FieldType {
     return (ch=='1' || ch=='t' || ch=='T') ? "T" : "F";
   }
 
-  public String toExternal(Field f) {
+  public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -95,7 +94,7 @@ public class BoolField extends FieldType {
     return ch=='T' ? "true" : "false";
   }
 
-  public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeBool(name, f.stringValue().charAt(0) =='T');
   }
 

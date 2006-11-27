@@ -17,9 +17,10 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.*;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
@@ -567,6 +568,48 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertTrue(luf.isStored());
     
   }
+
+  public void testNotLazyField() throws IOException {
+    for(int i = 0; i < 10; i++) {
+      assertU(adoc("id", new Integer(i).toString(), 
+                   "title", "keyword",
+                   "test_hlt", mkstr(20000)));
+    }
+    assertU(commit());
+    SolrCore core = h.getCore();
+   
+    SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title,test_hlt");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    core.execute(req, rsp);
+
+    DocList dl = (DocList) rsp.getValues().get(null);
+    org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
+    // ensure field is not lazy
+    assertTrue( d.getFieldable("test_hlt") instanceof Field );
+    assertTrue( d.getFieldable("title") instanceof Field );
+  }
+
+  public void testLazyField() throws IOException {
+    for(int i = 0; i < 10; i++) {
+      assertU(adoc("id", new Integer(i).toString(), 
+                   "title", "keyword",
+                   "test_hlt", mkstr(20000)));
+    }
+    assertU(commit());
+    SolrCore core = h.getCore();
+    
+    SolrQueryRequest req = req("q", "title:keyword", "fl", "id,title");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    core.execute(req, rsp);
+
+    DocList dl = (DocList) rsp.getValues().get(null);
+    DocIterator di = dl.iterator();    
+    org.apache.lucene.document.Document d = req.getSearcher().doc(di.nextDoc());
+    // ensure field is lazy
+    assertTrue( !( d.getFieldable("test_hlt") instanceof Field ) );
+    assertTrue( d.getFieldable("title") instanceof Field );
+  } 
+            
 
   /** @see org.apache.solr.util.DateMathParserTest */
   public void testDateMath() {

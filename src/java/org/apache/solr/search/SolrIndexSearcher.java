@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.document.Document;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
@@ -29,6 +29,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrInfoRegistry;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.OpenBitSet;
 
@@ -299,21 +300,89 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     return searcher.docFreq(term);
   }
 
+  /* ********************** Document retrieval *************************/
+   
+  /* Future optimizations (yonik)
+   *
+   * If no cache is present:
+   *   - use NO_LOAD instead of LAZY_LOAD
+   *   - use LOAD_AND_BREAK if a single field is begin retrieved
+   */
+
+  /**
+   * FieldSelector which loads the specified fields, and load all other
+   * field lazily.
+   */
+  class SetNonLazyFieldSelector implements FieldSelector {
+    private Set<String> fieldsToLoad;
+    SetNonLazyFieldSelector(Set<String> toLoad) {
+      fieldsToLoad = toLoad;
+    }
+    public FieldSelectorResult accept(String fieldName) { 
+      if(fieldsToLoad.contains(fieldName))
+        return FieldSelectorResult.LOAD; 
+      else
+        return FieldSelectorResult.LAZY_LOAD;
+    }
+  }
+
+  /* solrconfig lazyfields setting */
+  public static final boolean enableLazyFieldLoading = SolrConfig.config.getBool("query/enableLazyFieldLoading", false);
+
+  /**
+   * Retrieve the {@link Document} instance corresponding to the document id.
+   */
   public Document doc(int i) throws IOException {
+    return doc(i, null);
+  }
+  /**
+   * Retrieve the {@link Document} instance corresponding to the document id.
+   *
+   * Note: The document will have all fields accessable, but if a field
+   * filter is provided, only the provided fields will be loaded (the 
+   * remainder will be available lazily).
+   */
+  public Document doc(int i, Set<String> fields) throws IOException {
+    
     Document d;
     if (documentCache != null) {
       d = (Document)documentCache.get(i);
       if (d!=null) return d;
     }
 
-    d = searcher.doc(i);
+    if(!enableLazyFieldLoading || fields == null) {
+      d = searcher.getIndexReader().document(i);
+    } else {
+      d = searcher.getIndexReader().document(i, 
+             new SetNonLazyFieldSelector(fields));
+    }
 
     if (documentCache != null) {
-      documentCache.put(i,d);
+      documentCache.put(i, d);
     }
 
     return d;
   }
+
+  /**
+   * Takes a list of docs (the doc ids actually), and reads them into an array 
+   * of Documents.
+   */
+  public void readDocs(Document[] docs, DocList ids) throws IOException {
+    readDocs(docs, ids, null);
+  }
+  /**
+   * Takes a list of docs (the doc ids actually) and a set of fields to load,
+   * and reads them into an array of Documents.
+   */
+  public void readDocs(Document[] docs, DocList ids, Set<String> fields) throws IOException {
+    DocIterator iter = ids.iterator();
+    for (int i=0; i<docs.length; i++) {
+      docs[i] = doc(iter.nextDoc(), fields);
+    }
+  }
+
+  /* ********************** end document retrieval *************************/
 
   public int maxDoc() throws IOException {
     return searcher.maxDoc();
@@ -1234,17 +1303,6 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
      Document[] docs = new Document[ids.size()];
      readDocs(docs,ids);
      return docs;
-  }
-
-  /**
-   * Takes a list of docs (the doc ids actually), and reads them into an array 
-   * of Documents.
-   */
-  public void readDocs(Document[] docs, DocList ids) throws IOException {
-    DocIterator iter = ids.iterator();
-    for (int i=0; i<docs.length; i++) {
-      docs[i] = doc(iter.nextDoc());
-    }
   }
 
 

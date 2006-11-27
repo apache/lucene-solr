@@ -20,12 +20,15 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.request.*;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.schema.SchemaField;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -215,13 +218,24 @@ public class HighlightingUtils
       SolrIndexSearcher searcher = req.getSearcher();
       NamedList fragments = new NamedList();
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
+      Document[] readDocs = new Document[docs.size()];
+      {
+        // pre-fetch documents using the Searcher's doc cache
+        Set<String> fset = new HashSet<String>();
+        for(String f : fieldNames) { fset.add(f); }
+        // fetch unique key if one exists.
+        SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
+        if(null != keyField)
+          fset.add(keyField.getName());  
+        searcher.readDocs(readDocs, docs, fset);
+      }
 
+      // Highlight each document
       DocIterator iterator = docs.iterator();
       for (int i = 0; i < docs.size(); i++)
       {
          int docId = iterator.nextDoc();
-         // use the Searcher's doc cache
-         Document doc = searcher.doc(docId);
+         Document doc = readDocs[i];
          NamedList docSummaries = new NamedList();
          for (String fieldName : fieldNames)
          {

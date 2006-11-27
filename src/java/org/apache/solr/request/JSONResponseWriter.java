@@ -382,7 +382,7 @@ class JSONWriter extends TextResponseWriter {
     DocIterator iterator = ids.iterator();
     for (int i=0; i<sz; i++) {
       int id = iterator.nextDoc();
-      Document doc = searcher.doc(id);
+      Document doc = searcher.doc(id, fields);
 
       if (first) {
         first=false;

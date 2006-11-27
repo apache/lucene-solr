@@ -93,7 +93,7 @@ public final class SchemaField extends FieldProperties {
             + "}";
   }
 
-  public void write(XMLWriter writer, String name, Field val) throws IOException {
+  public void write(XMLWriter writer, String name, Fieldable val) throws IOException {
     // name is passed in because it may be null if name should not be used.
     type.write(writer,name,val);
   }

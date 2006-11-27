@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.util.BCDUtils;
 import org.apache.solr.request.XMLWriter;
@@ -47,7 +46,7 @@ public class BCDIntField extends FieldType {
     return BCDUtils.base10toBase10kSortableInt(val);
   }
 
-  public String toExternal(Field f) {
+  public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -55,7 +54,7 @@ public class BCDIntField extends FieldType {
     return BCDUtils.base10kSortableIntToBase10(indexedForm);
   }
 
-  public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeInt(name,toExternal(f));
   }
 

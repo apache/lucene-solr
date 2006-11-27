@@ -18,7 +18,6 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
@@ -38,7 +37,7 @@ public class StrField extends CompressableField {
     return getStringSort(field,reverse);
   }
 
-  public void write(XMLWriter xmlWriter, String name, Field f) throws IOException {
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeStr(name, f.stringValue());
   }
 

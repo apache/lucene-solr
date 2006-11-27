@@ -35,6 +35,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.DefaultSolrParams;
 import org.apache.solr.request.AppendedSolrParams;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 
 import java.io.IOException;
@@ -203,6 +204,57 @@ public class SolrPluginUtils {
       }
     }
     return flags;
+  }
+
+  /**
+   * Pre-fetch documents into the index searcher's document cache.
+   *
+   * This is an entirely optional step which you might want to perform for
+   * the following reasons:
+   *
+   * <ul>
+   *     <li>Locates the document-retrieval costs in one spot, which helps
+   *     detailed performance measurement</li>
+   *   
+   *     <li>Determines a priori what fields will be needed to be fetched by
+   *     various subtasks, like response writing and highlighting.  This
+   *     minimizes the chance that many needed fields will be loaded lazily.
+   *     (it is more efficient to load all the field we require normally).</li>
+   * </ul>
+   *
+   * If lazy field loading is disabled, this method does nothing.
+   */
+  public static void optimizePreFetchDocs(DocList docs,
+                                          Query query,
+                                          SolrQueryRequest req,
+                                          SolrQueryResponse res) throws IOException {
+    SolrIndexSearcher searcher = req.getSearcher();
+    if(!searcher.enableLazyFieldLoading) {
+      // nothing to do
+      return;
+    }
+
+    Set<String> fieldFilter = null;
+    Set<String> returnFields = res.getReturnFields();
+    if(returnFields != null) {
+      // copy return fields list
+      fieldFilter = new HashSet<String>(returnFields);
+      // add highlight fields
+      if(HighlightingUtils.isHighlightingEnabled(req)) {
+        for(String field: HighlightingUtils.getHighlightFields(query, req, null)) 
+          fieldFilter.add(field);        
+      }
+      // fetch unique key if one exists.
+      SchemaField keyField = req.getSearcher().getSchema().getUniqueKeyField();
+      if(null != keyField)
+          fieldFilter.add(keyField.getName());  
+    }
+
+    // get documents
+    DocIterator iter = docs.iterator();
+    for (int i=0; i<docs.size(); i++) {
+      searcher.doc(iter.nextDoc(), fieldFilter);
+    }
   }
 
   /**
@@ -794,6 +846,7 @@ public class SolrPluginUtils {
     }
             
   }
+
 }
 
 /** 

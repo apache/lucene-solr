@@ -135,6 +135,9 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
                                        p.getInt(START,0), p.getInt(ROWS,10),
                                        flags);
       }
+
+      // pre-fetch returned documents
+      U.optimizePreFetchDocs(results.docList, query, req, rsp);
       
       rsp.add(null,results.docList);
 
@@ -154,7 +157,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
           rsp.add("debug", dbg);
         }
       } catch (Exception e) {
-        SolrException.logOnce(SolrCore.log, "Exception durring debug", e);
+        SolrException.logOnce(SolrCore.log, "Exception during debug", e);
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
 
