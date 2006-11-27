@@ -216,7 +216,7 @@ public class AnalyzerUtil {
    * <ul>
    * <li>Caching the tokens of large Lucene documents can lead to out of memory exceptions.</li> 
    * <li>The Token instances delivered by the underlying child analyzer must be immutable.</li>
-   * <li>A caching analyzer instance must not be used for more than one document
+   * <li>The same caching analyzer instance must not be used for more than one document
    * because the cache is not keyed on the Reader parameter.</li>
    * </ul>
    * 
