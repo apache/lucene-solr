@@ -237,8 +237,7 @@ public class AnalyzerUtil {
         final ArrayList tokens = (ArrayList) cache.get(fieldName);
         if (tokens == null) { // not yet cached
           final ArrayList tokens2 = new ArrayList();
-          cache.put(fieldName, tokens2);
-          return new TokenFilter(child.tokenStream(fieldName, reader)) {
+          TokenStream stream = new TokenFilter(child.tokenStream(fieldName, reader)) {
 
             public Token next() throws IOException {
               Token token = input.next(); // from filter super class
@@ -246,6 +245,8 @@ public class AnalyzerUtil {
               return token;
             }
           };
+          cache.put(fieldName, tokens2);
+          return stream;
         } else { // already cached
           return new TokenStream() {
 
