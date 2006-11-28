@@ -30,17 +30,8 @@ import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
-import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RangeQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -674,6 +665,72 @@ public class TestQueryParser extends TestCase {
     assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
     assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
     is.close();
+  }
+
+  public void testStarParsing() throws Exception {
+    final int[] type = new int[1];
+    QueryParser qp = new QueryParser("field", new WhitespaceAnalyzer()) {
+      protected Query getWildcardQuery(String field, String termStr) throws ParseException {
+        // override error checking of superclass
+        type[0]=1;
+        return new TermQuery(new Term(field,termStr));
+      }
+      protected Query getPrefixQuery(String field, String termStr) throws ParseException {
+        // override error checking of superclass
+        type[0]=2;        
+        return new TermQuery(new Term(field,termStr));
+      }
+
+      protected Query getFieldQuery(String field, String queryText) throws ParseException {
+        type[0]=3;
+        return super.getFieldQuery(field, queryText);
+      }
+    };
+
+    TermQuery tq;
+
+    tq = (TermQuery)qp.parse("foo:zoo*");
+    assertEquals("zoo",tq.getTerm().text());
+    assertEquals(2,type[0]);
+
+    tq = (TermQuery)qp.parse("foo:zoo*^2");
+    assertEquals("zoo",tq.getTerm().text());
+    assertEquals(2,type[0]);
+    assertEquals(tq.getBoost(),2,0);
+
+    tq = (TermQuery)qp.parse("foo:*");
+    assertEquals("*",tq.getTerm().text());
+    assertEquals(1,type[0]);  // could be a valid prefix query in the future too
+
+    tq = (TermQuery)qp.parse("foo:*^2");
+    assertEquals("*",tq.getTerm().text());
+    assertEquals(1,type[0]);
+    assertEquals(tq.getBoost(),2,0);    
+
+    tq = (TermQuery)qp.parse("*:foo");
+    assertEquals("*",tq.getTerm().field());
+    assertEquals("foo",tq.getTerm().text());
+    assertEquals(3,type[0]);
+
+    tq = (TermQuery)qp.parse("*:*");
+    assertEquals("*",tq.getTerm().field());
+    assertEquals("*",tq.getTerm().text());
+    assertEquals(1,type[0]);  // could be handled as a prefix query in the future
+
+     tq = (TermQuery)qp.parse("(*:*)");
+    assertEquals("*",tq.getTerm().field());
+    assertEquals("*",tq.getTerm().text());
+    assertEquals(1,type[0]);
+
+  }
+
+  public void testMatchAllDocs() throws Exception {
+    QueryParser qp = new QueryParser("field", new WhitespaceAnalyzer());
+    assertEquals(new MatchAllDocsQuery(), qp.parse("*:*"));
+    assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)"));
+    BooleanQuery bq = (BooleanQuery)qp.parse("+*:* -*:*");
+    assertTrue(bq.getClauses()[0].getQuery() instanceof MatchAllDocsQuery);
+    assertTrue(bq.getClauses()[1].getQuery() instanceof MatchAllDocsQuery);
   }
   
   private void assertHits(int expected, String query, IndexSearcher is) throws ParseException, IOException {

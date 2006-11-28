@@ -77,6 +77,8 @@ New features
     control the amount of memory used to buffer documents.
     (Chuck Williams via Yonik Seeley)
 
+10. LUCENE-723: QueryParser now parses *:* as MatchAllDocsQuery
+    (Yonik Seeley)
 
 API Changes
 

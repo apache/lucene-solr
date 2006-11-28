@@ -577,6 +577,9 @@ public class QueryParser {
    */
   protected Query getWildcardQuery(String field, String termStr) throws ParseException
   {
+    if ("*".equals(field)) {
+      if ("*".equals(termStr)) return new MatchAllDocsQuery();
+    }
     if (!allowLeadingWildcard && (termStr.startsWith("*") || termStr.startsWith("?")))
       throw new ParseException("'*' or '?' not allowed as first character in WildcardQuery");
     if (lowercaseExpandedTerms) {
@@ -789,6 +792,7 @@ PARSER_END(QueryParser)
 | <LPAREN:    "(" >
 | <RPAREN:    ")" >
 | <COLON:     ":" >
+| <STAR:      "*" >
 | <CARAT:     "^" > : Boost
 | <QUOTED:     "\"" (~["\""] | "\\\"")+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
@@ -876,9 +880,10 @@ Query Clause(String field) : {
 {
   [
     LOOKAHEAD(2)
-    fieldToken=<TERM> <COLON> {
-      field=discardEscapeChar(fieldToken.image);
-    }
+    (
+    fieldToken=<TERM> <COLON> {field=discardEscapeChar(fieldToken.image);}
+    | <STAR> <COLON> {field="*";}
+    )
   ]
 
   (
@@ -911,6 +916,7 @@ Query Term(String field) : {
   (
      (
        term=<TERM>
+       | term=<STAR> { wildcard=true; }
        | term=<PREFIXTERM> { prefix=true; }
        | term=<WILDTERM> { wildcard=true; }
        | term=<NUMBER>

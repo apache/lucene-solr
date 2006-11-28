@@ -17,23 +17,24 @@ public interface QueryParserConstants {
   int LPAREN = 12;
   int RPAREN = 13;
   int COLON = 14;
-  int CARAT = 15;
-  int QUOTED = 16;
-  int TERM = 17;
-  int FUZZY_SLOP = 18;
-  int PREFIXTERM = 19;
-  int WILDTERM = 20;
-  int RANGEIN_START = 21;
-  int RANGEEX_START = 22;
-  int NUMBER = 23;
-  int RANGEIN_TO = 24;
-  int RANGEIN_END = 25;
-  int RANGEIN_QUOTED = 26;
-  int RANGEIN_GOOP = 27;
-  int RANGEEX_TO = 28;
-  int RANGEEX_END = 29;
-  int RANGEEX_QUOTED = 30;
-  int RANGEEX_GOOP = 31;
+  int STAR = 15;
+  int CARAT = 16;
+  int QUOTED = 17;
+  int TERM = 18;
+  int FUZZY_SLOP = 19;
+  int PREFIXTERM = 20;
+  int WILDTERM = 21;
+  int RANGEIN_START = 22;
+  int RANGEEX_START = 23;
+  int NUMBER = 24;
+  int RANGEIN_TO = 25;
+  int RANGEIN_END = 26;
+  int RANGEIN_QUOTED = 27;
+  int RANGEIN_GOOP = 28;
+  int RANGEEX_TO = 29;
+  int RANGEEX_END = 30;
+  int RANGEEX_QUOTED = 31;
+  int RANGEEX_GOOP = 32;
 
   int Boost = 0;
   int RangeEx = 1;
@@ -56,6 +57,7 @@ public interface QueryParserConstants {
     "\"(\"",
     "\")\"",
     "\":\"",
+    "\"*\"",
     "\"^\"",
     "<QUOTED>",
     "<TERM>",
