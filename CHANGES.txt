@@ -223,6 +223,9 @@ Bug fixes
     detrimental to performance and memory use.
     (Oliver Hutchison via Otis Gospodnetic)
 
+23. LUCENE-717: Fixed build.xml not to fail when there is no lib dir.
+    (Doron Cohen via Otis Gospodnetic)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
