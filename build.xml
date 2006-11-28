@@ -41,6 +41,9 @@
   <!-- Example directory -->
   <property name="example" value="example" />
 
+  <property name="fullname" value="apache-${ant.project.name}"/>
+  <property name="fullnamever" value="apache-${ant.project.name}-${version}"/>
+
   <!-- Javadoc properties -->
   <property name="year" value="2006" />
   <property name="build.docs" value="${dest}/docs"/>
@@ -65,7 +68,8 @@
           description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
     <echo message="Use 'ant compile' to compile the source code." />
-    <echo message="Use 'ant dist' to build the project distribution files." />
+    <echo message="Use 'ant dist' to build the project WAR and JAR files." />
+    <echo message="Use 'ant package' to build a .zip and .tgz for distribution." />
     <echo message="Use 'ant example' to install solr.war in ./example" />
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant test' to run unit tests." />
@@ -141,7 +145,7 @@
       bottom="Copyright &amp;copy; ${year} The Apache Software Foundation"
       >
         <packageset dir="${src}/java"/>
-	<packageset dir="${src}/webapp/src"/>
+        <packageset dir="${src}/webapp/src"/>
         <link href="${javadoc.link.java}"/>
         <link href="${javadoc.link.junit}"/>
         <link href="${javadoc.link.lucene}"/>
@@ -188,7 +192,7 @@
   <target name="test"
           description="Runs the unit tests."
           depends="compileTests, junit" />
-	   
+   
   <target name="legacyTest"
           depends="compileTests" >
     <!-- DEPRECATED: no description so it doesn't show up in project help -->
@@ -259,7 +263,7 @@
           description="Creates the demo WAR file."
           depends="compile">
     <mkdir dir="${dist}" />
-    <war destfile="${dist}/${ant.project.name}-${version}.war"
+    <war destfile="${dist}/${fullnamever}.war"
          webxml="${src}/webapp/WEB-INF/web.xml">
          <classes dir="${dest}" includes="org/apache/**" />
       <lib dir="${lib}">
@@ -270,11 +274,11 @@
     </war>
   </target>
 
-  <!-- Creates the source distribution. -->
+  <!-- Creates the source jar. -->
   <target name="dist-src"
           description="Creates the source distribution." >
     <mkdir dir="${dist}" />
-    <zip destfile="${dist}/${ant.project.name}-${version}-src.zip"
+    <zip destfile="${dist}/${fullnamever}-src.zip"
          basedir="${src}" />
   </target>
 
@@ -283,15 +287,15 @@
           description="Creates the binary distribution."
           depends="compile">
     <mkdir dir="${dist}" />
-    <jar destfile="${dist}/${ant.project.name}-${version}.jar"
+    <jar destfile="${dist}/${fullnamever}.jar"
          basedir="${dest}"
          includes="org/apache/**" />  
   </target>
 
 
   <target name="example" 
-	  depends="dist-war">
-    <copy file="${dist}/${ant.project.name}-${version}.war"
+          depends="dist-war">
+    <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <copy todir="${example}/solr/bin">
       <fileset dir="${src}/scripts">
@@ -302,10 +306,10 @@
   </target>
 
   <target name="dist-example" 
-	  depends="example">
-    <zip destfile="${dist}/${ant.project.name}-${version}-example.zip">
+          depends="example">
+    <zip destfile="${dist}/${fullnamever}-example.zip">
       <zipfileset dir="${example}"
-        prefix="${ant.project.name}-${example}"
+        prefix="${fullnamever}-${example}"
         excludes="data/ logs/*"
       />
     </zip>
@@ -314,22 +318,36 @@
 
   <!-- make a distribution -->
   <target name="package"
-	  depends="dist, example, javadoc">
-    <zip destfile="${dist}/${ant.project.name}-${version}.zip">
+         depends="dist, example, javadoc">
+
+    <zip destfile="${dist}/${fullnamever}.zip">
       <zipfileset dir="."
-        prefix="${ant.project.name}-${version}"
-	includes="*.txt *.xml lib/** src/** example/**"
-	excludes="**/data/ **/logs/ **/classes/" />
+        prefix="${fullnamever}"
+        includes="*.txt *.xml lib/** src/** example/**"
+        excludes="**/data/ **/logs/ **/classes/" />
       <zipfileset dir="."
-        prefix="${ant.project.name}-${version}"
-	includes="dist/*.jar dist/*.war" />
+        prefix="${fullnamever}"
+        includes="dist/*.jar dist/*.war" />
       <zipfileset dir="${dest}/docs/api/"
-        prefix="${ant.project.name}-${version}/docs/api/" />
+        prefix="${fullnamever}/docs/api/" />
     </zip>
+
+    <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip">
+      <tarfileset dir="."
+        prefix="${fullnamever}"
+        includes="*.txt *.xml lib/** src/** example/**"
+        excludes="**/data/ **/logs/ **/classes/" />
+      <tarfileset dir="."
+        prefix="${fullnamever}"
+        includes="dist/*.jar dist/*.war" />
+      <tarfileset dir="${dest}/docs/api/"
+        prefix="${fullnamever}/docs/api/" />
+    </tar>
+
   </target>
 
   <target name="nightly"
-	  depends="test, package">
+          depends="test, package">
   </target>
 
 </project>
