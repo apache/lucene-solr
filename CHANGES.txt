@@ -259,7 +259,14 @@ Optimizations
      mergeFactor segments of a certain level have been accumulated.
      This increases indexing performance in the presence of deleted
      docs or partially full segments as well as enabling future
-     optimizations. (Ning Li, Yonik Seeley)
+     optimizations.
+
+     NOTE: this also fixes an "under-merging" bug whereby it is
+     possible to get far too many segments in your index (which will
+     drastically slow down search, risks exhausting file descriptor
+     limit, etc.).  This can happen when the number of buffered docs
+     at close, plus the number of docs in the last non-ram segment is
+     greater than mergeFactor. (Ning Li, Yonik Seeley)
 
   7. Lazy loaded fields unnecessarily retained an extra copy of loaded
      String data.  (Yonik Seeley)
