@@ -283,6 +283,7 @@ Optimizations
 
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
+  2. Added TestWindowsMMap.java (Benson Margulies via Mike McCandless)
 
 Documentation
 
