@@ -275,6 +275,10 @@ Optimizations
      with calls to System.arraycopy instead, in DocumentWriter.java.
      (Nicolas Lalevee via Mike McCandless)
 
+ 13. LUCENE-729: Non-recursive skipTo and next implementation of
+     TermDocs for a MultiReader.  The old implementation could
+     recurse up to the number of segments in the index. (Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
 

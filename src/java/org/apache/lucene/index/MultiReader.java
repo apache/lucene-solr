@@ -352,14 +352,17 @@ class MultiTermDocs implements TermDocs {
   }
 
   public boolean next() throws IOException {
-    if (current != null && current.next()) {
-      return true;
-    } else if (pointer < readers.length) {
-      base = starts[pointer];
-      current = termDocs(pointer++);
-      return next();
-    } else
-      return false;
+    for(;;) {
+      if (current!=null && current.next()) {
+        return true;
+      }
+      else if (pointer < readers.length) {
+        base = starts[pointer];
+        current = termDocs(pointer++);
+      } else {
+        return false;
+      }
+    }
   }
 
   /** Optimized implementation. */
@@ -385,16 +388,17 @@ class MultiTermDocs implements TermDocs {
     }
   }
 
- /* A Possible future optimization could skip entire segments */
+ /* A Possible future optimization could skip entire segments */ 
   public boolean skipTo(int target) throws IOException {
-    if (current != null && current.skipTo(target-base)) {
-      return true;
-    } else if (pointer < readers.length) {
-      base = starts[pointer];
-      current = termDocs(pointer++);
-      return skipTo(target);
-    } else
-      return false;
+    for(;;) {
+      if (current != null && current.skipTo(target-base)) {
+        return true;
+      } else if (pointer < readers.length) {
+        base = starts[pointer];
+        current = termDocs(pointer++);
+      } else
+        return false;
+    }
   }
 
   private TermDocs termDocs(int i) throws IOException {
