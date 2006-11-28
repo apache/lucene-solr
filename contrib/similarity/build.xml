@@ -3,7 +3,7 @@
 <project name="similarity" default="default">
 
   <description>
-    Similarity - MoreLikeThis
+    Custom Similarities
   </description>
 
   <import file="../contrib-build.xml"/>
