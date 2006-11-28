@@ -17,34 +17,42 @@
 
 package org.apache.solr.util;
 
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.*;
-
-import org.xml.sax.SAXException;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathFactory;
 import javax.xml.xpath.XPathConstants;
-import java.io.*;
-import java.util.*;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
- * This class provides a simple harness that may be usefull when
- * writing testcasses.
+ * This class provides a simple harness that may be useful when
+ * writing testcases.
  *
  * <p>
  * This class lives in the main source tree (and not in the test source
- * tree) so that it will be included with even the most minimal solr
- * distribution -- to encourage plugin writers to creat unit tests for their
- * plugins.
+ * tree), so that it will be included with even the most minimal solr
+ * distribution, in order to encourage plugin writers to create unit 
+ * tests for their plugins.
  *
  * @author hossman
  * @version $Id:$
