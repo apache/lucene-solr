@@ -1,12 +1,14 @@
 Welcome to the Apache Solr project!
 -----------------------------------
 
-This file is not intended to be a comprehensive source of documentation.  
+Apache Solr is a search server based on the Apache Lucene search
+library.  Solr is currently under incubation.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr incubation web site at
 http://incubator.apache.org/projects/solr.html.
 
+See the "example" directory for an example Solr setup. 
 
 
 Instructions for Building Apache Solr
