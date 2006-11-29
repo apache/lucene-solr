@@ -1142,7 +1142,7 @@ public class MemoryIndex {
     private static int sizeOf(int n) {
         return IS_WORD_ALIGNED_VM ?
 //              ((n-1)/PTR + 1) * PTR :               // slow version
-				(((n-1) >> LOG_PTR) + 1) << LOG_PTR : // fast version
+                (((n-1) >> LOG_PTR) + 1) << LOG_PTR : // fast version
                 n;
     }
     
