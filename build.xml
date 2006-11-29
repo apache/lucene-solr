@@ -23,6 +23,15 @@
 
   <property name="Name" value="Solr" />
 
+  <tstamp>
+    <format property="year" pattern="yyyy"/>
+    <format property="DSTAMP" pattern="yyyy-MM-dd"/>
+    <format property="TSTAMP" pattern="HH:mm:ss"/>
+  </tstamp>
+
+  <!-- Java Version we are compatible with -->
+  <property name="java.compat.version" value="1.5" />
+
   <!-- Solr version -->
   <property name="version" value="1.0" />
 
@@ -45,7 +54,7 @@
   <property name="fullnamever" value="apache-${ant.project.name}-${version}"/>
 
   <!-- Javadoc properties -->
-  <property name="year" value="2006" />
+  <property name="javadoc.years" value="2006 - ${year}" />
   <property name="build.docs" value="${dest}/docs"/>
   <property name="build.javadoc" value="${build.docs}/api"/>
   <property name="javadoc.access" value="protected"/>
@@ -62,7 +71,6 @@
   <property name="junit.reports" location="${dest}/test-results/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
 
-  
   <!-- Default target: usage.  Prints out instructions. -->
   <target name="usage"
           description="Prints out instructions">
@@ -101,8 +109,8 @@
     <mkdir dir="${dest}" />
 
     <javac destdir="${dest}"
-           target="1.5"
-           source="1.5"
+           target="${java.compat.version}"
+           source="${java.compat.version}"
            debug="on"
            encoding="utf8"
            classpathref="compile.classpath">
@@ -142,7 +150,7 @@
       access="${javadoc.access}"
       windowtitle="${Name} ${version} API"
       doctitle="${Name} ${version} API"
-      bottom="Copyright &amp;copy; ${year} The Apache Software Foundation"
+      bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
       >
         <packageset dir="${src}/java"/>
         <packageset dir="${src}/webapp/src"/>
@@ -178,8 +186,8 @@
     <mkdir dir="${dest}/tests" />
     <javac 
        destdir="${dest}/tests"
-       target="1.5"
-       source="1.5"
+       target="${java.compat.version}"
+       source="${java.compat.version}"
        debug="on"
        encoding="utf8"
        classpathref="test.compile.classpath">
@@ -258,19 +266,62 @@
           description="Creates the Solr distribution files."
           depends="dist-src, dist-war, dist-jar" />
 
+  <!-- Creates a Manifest file for Jars and WARs -->
+  <target name="make-manifest" >
+     <!-- no description, don't advertise -->
+     <mkdir dir="${dest}/META-INF/" />
+     <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
+        <!--
+        http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
+ 
+        Manifest-Version must be "digit+{.digit+}*"
+        ...so what do we want to do instead?
+        <attribute name="Manifest-Version" value="${version}"/>
+        -->
+        <!-- don't included a 'Created-by' attribute, it's purpose is 
+             to identify the version of java used to build the jar,
+             which ant will do by default - but ant will happily
+             override with a bogus string if you tell it to
+          -->
+        <section name="org/apache/solr/">
+          <attribute name="Extension-Name" 
+                     value="org.apache.solr"/>
+          <attribute name="Specification-Title" 
+                     value="Apache Solr Search Server"/>
+          <!-- spec version can be any string -->
+          <attribute name="Specification-Version" 
+                     value="${version}"/>
+          <attribute name="Specification-Vendor" 
+                     value="The Apache Software Foundation"/>
+          <attribute name="Implementation-Title" 
+                     value="org.apache.solr"/>
+          <!-- impl version can be any string -->
+          <attribute name="Implementation-Version" 
+                     value="${version} - ${DSTAMP} ${TSTAMP}"/>
+          <attribute name="Implementation-Vendor" 
+                     value="The Apache Software Foundation"/>
+          <attribute name="X-Compile-Source-JDK" 
+                     value="${java.compat.version}"/>
+          <attribute name="X-Compile-Target-JDK" 
+                     value="${java.compat.version}"/>
+        </section>
+     </manifest>
+  </target>
+
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
           description="Creates the demo WAR file."
-          depends="compile">
+          depends="compile, make-manifest">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
-         webxml="${src}/webapp/WEB-INF/web.xml">
-         <classes dir="${dest}" includes="org/apache/**" />
-      <lib dir="${lib}">
-        <exclude name="servlet-api*.jar" />
-      </lib>
-
-      <fileset dir="${src}/webapp/resources" />
+         webxml="${src}/webapp/WEB-INF/web.xml"
+         filesetmanifest="skip"
+         manifest="${dest}/META-INF/MANIFEST.MF">
+       <classes dir="${dest}" includes="org/apache/**" />
+       <lib dir="${lib}">
+         <exclude name="servlet-api*.jar" />
+       </lib>
+       <fileset dir="${src}/webapp/resources" />
     </war>
   </target>
 
@@ -285,11 +336,14 @@
   <!-- Creates the solr jar. -->
   <target name="dist-jar"
           description="Creates the binary distribution."
-          depends="compile">
+          depends="compile, make-manifest">
     <mkdir dir="${dist}" />
     <jar destfile="${dist}/${fullnamever}.jar"
          basedir="${dest}"
-         includes="org/apache/**" />  
+         includes="org/apache/**"
+         filesetmanifest="skip"
+         manifest="${dest}/META-INF/MANIFEST.MF"
+    />
   </target>
 
 
