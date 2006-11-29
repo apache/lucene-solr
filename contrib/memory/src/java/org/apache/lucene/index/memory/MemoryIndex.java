@@ -1112,12 +1112,14 @@ public class MemoryIndex {
     public static final int FLOAT = 4;
     public static final int DOUBLE = 8;
     
+    private static final int LOG_PTR = (int) Math.round(log2(PTR));
+    
     /**
      * Object header of any heap allocated Java object. 
      * ptr to class, info for monitor, gc, hash, etc.
      */
-	private static final int OBJECT_HEADER = 2*4; // typically even on 64 bit VMs
-//  private static final int OBJECT_HEADER = 2*PTR; 
+//	private static final int OBJECT_HEADER = 2*4; // even on 64 bit VMs?
+    private static final int OBJECT_HEADER = 2*PTR; 
 
     /**
 	 * Modern VMs tend to trade space for time, allocating memory on word
@@ -1139,7 +1141,8 @@ public class MemoryIndex {
     //    9..16 --> 2*PTR
     private static int sizeOf(int n) {
         return IS_WORD_ALIGNED_VM ?
-                ((n-1)/PTR + 1) * PTR :
+//              ((n-1)/PTR + 1) * PTR :               // slow version
+				(((n-1) >> LOG_PTR) + 1) << LOG_PTR : // fast version
                 n;
     }
     
@@ -1187,6 +1190,11 @@ public class MemoryIndex {
         } catch (Throwable t) {
             return false; // better safe than sorry (applets, security managers, etc.) ...
         }
+    }
+    
+    /** logarithm to the base 2. Example: log2(4) == 2, log2(8) == 3 */
+    private static double log2(double value) {
+      return Math.log(value) / Math.log(2);
     }
         
   }
