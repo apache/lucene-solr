@@ -1,5 +1,2 @@
-#use a protected word file to avoid stemming two
-#unrelated words to the same base word.
-#to test, we will use words that would normally obviously be stemmed.
 cats
 ridding
