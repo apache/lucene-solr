@@ -6,8 +6,8 @@
 <meta name="Forrest-version" content="0.7">
 <meta name="Forrest-skin-name" content="pelt">
 <title>
-Apache Lucene - Index File Formats
-		</title>
+            Apache Lucene - Index File Formats
+        </title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -158,8 +158,8 @@ document.write("<text>Last Published:</text> " + document.lastModified);
         PDF</a>
 </div>
 <h1>
-Apache Lucene - Index File Formats
-		</h1>
+            Apache Lucene - Index File Formats
+        </h1>
 <div id="minitoc-area">
 <ul class="minitoc">
 <li>
@@ -218,7 +218,7 @@ Apache Lucene - Index File Formats
 <a href="#Segments File">Segments File</a>
 </li>
 <li>
-<a href="#Lock Files">Lock Files</a>
+<a href="#Lock File">Lock File</a>
 </li>
 <li>
 <a href="#Deletable File">Deletable File</a>
@@ -265,16 +265,17 @@ Apache Lucene - Index File Formats
 <div class="section">
 <p>
                 This document defines the index file formats used
-                in Lucene version 2.0.  If you are using a different
-		version of Lucene, please consult the copy of
-		<span class="codefrag">docs/fileformats.html</span> that was distributed
-		with the version you are using.
+                in Lucene version 2.1. If you are using a different
+                version of Lucene, please consult the copy of
+                <span class="codefrag">docs/fileformats.html</span>
+                that was distributed
+                with the version you are using.
             </p>
 <p>
                 Apache Lucene is written in Java, but several
                 efforts are underway to write
                 <a href="http://wiki.apache.org/jakarta-lucene/LuceneImplementations">versions
-                of Lucene in other programming
+                    of Lucene in other programming
                 languages</a>.  If these versions are to remain compatible with Apache
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
@@ -290,10 +291,21 @@ Apache Lucene - Index File Formats
                 Compatibility notes are provided in this document,
                 describing how file formats have changed from prior versions.
             </p>
+<p>
+                In version 2.1, the file format was changed to allow
+                lock-less commits (ie, no more commit lock). The
+                change is fully backwards compatible: you can open a
+                pre-2.1 index for searching or adding/deleting of
+                docs. When the new segments file is saved
+                (committed), it will be written in the new file format
+                (meaning no specific "upgrade" process is needed).
+                But note that once a commit has occurred, pre-2.1
+                Lucene will not be able to read the index.
+            </p>
 </div>
 
         
-<a name="N10030"></a><a name="Definitions"></a>
+<a name="N10032"></a><a name="Definitions"></a>
 <h2 class="boxed">Definitions</h2>
 <div class="section">
 <p>
@@ -334,7 +346,7 @@ Apache Lucene - Index File Formats
                 strings, the first naming the field, and the second naming text
                 within the field.
             </p>
-<a name="N10051"></a><a name="Inverted Indexing"></a>
+<a name="N10052"></a><a name="Inverted Indexing"></a>
 <h3 class="boxed">Inverted Indexing</h3>
 <p>
                     The index stores statistics about terms in order
@@ -361,18 +373,20 @@ Apache Lucene - Index File Formats
 <a name="N1007B"></a><a name="Segments"></a>
 <h3 class="boxed">Segments</h3>
 <p>
-                    Lucene indexes may be composed of multiple sub-indexes, or<i>
-                        segments</i>. Each segment is a fully independent index, which could be searched
+                    Lucene indexes may be composed of multiple sub-indexes, or
+                    <i>segments</i>. Each segment is a fully independent index, which could be searched
                     separately. Indexes evolve by:
                 </p>
 <ol>
                     
 <li>
+                        
 <p>Creating new segments for newly added documents.</p>
                     
 </li>
                     
 <li>
+                        
 <p>Merging existing segments.</p>
                     
 </li>
@@ -382,7 +396,7 @@ Apache Lucene - Index File Formats
                     Searches may involve multiple segments and/or multiple indexes, each
                     index potentially composed of a set of segments.
                 </p>
-<a name="N10098"></a><a name="Document Numbers"></a>
+<a name="N10099"></a><a name="Document Numbers"></a>
 <h3 class="boxed">Document Numbers</h3>
 <p>
                     Internally, Lucene refers to documents by an integer <i>document
@@ -396,7 +410,7 @@ Apache Lucene - Index File Formats
 </p>
 <p>
                     Note that a document's number may change, so caution should be taken
-                    when storing these numbers outside of Lucene.  In particular, numbers may
+                    when storing these numbers outside of Lucene. In particular, numbers may
                     change in the following situations:
                 </p>
 <ul>
@@ -426,9 +440,9 @@ Apache Lucene - Index File Formats
                         
 <p>
                             When documents are deleted, gaps are created
-                            in the numbering.  These are eventually removed as the index evolves
-                            through merging.  Deleted documents are dropped when segments are
-                            merged.  A freshly-merged segment thus has no gaps in its numbering.
+                            in the numbering. These are eventually removed as the index evolves
+                            through merging. Deleted documents are dropped when segments are
+                            merged. A freshly-merged segment thus has no gaps in its numbering.
                         </p>
                     
 </li>
@@ -446,7 +460,8 @@ Apache Lucene - Index File Formats
 <ul>
                 
 <li>
-<p>Field names.  This
+                    
+<p>Field names. This
                         contains the set of field names used in the index.
 
                     </p>
@@ -454,21 +469,23 @@ Apache Lucene - Index File Formats
 </li>
                 
 <li>
+                    
 <p>Stored Field
-                        values.  This contains, for each document, a list of attribute-value
-                        pairs, where the attributes are field names.  These are used to
+                        values. This contains, for each document, a list of attribute-value
+                        pairs, where the attributes are field names. These are used to
                         store auxiliary information about the document, such as its title,
                         url, or an identifier to access a
                         database. The set of stored fields are what is returned for each hit
-                        when searching.  This is keyed by document number.
+                        when searching. This is keyed by document number.
                     </p>
                 
 </li>
                 
 <li>
+                    
 <p>Term dictionary.
                         A dictionary containing all of the terms used in all of the indexed
-                        fields of all of the documents.  The dictionary also contains the
+                        fields of all of the documents. The dictionary also contains the
                         number of documents which contain the term, and pointers to the
                         term's frequency and proximity data.
                     </p>
@@ -477,8 +494,9 @@ Apache Lucene - Index File Formats
 
                 
 <li>
+                    
 <p>Term Frequency
-                        data.  For each term in the dictionary, the numbers of all the
+                        data. For each term in the dictionary, the numbers of all the
                         documents that contain that term, and the frequency of the term in
                         that document.
                     </p>
@@ -487,8 +505,9 @@ Apache Lucene - Index File Formats
 
                 
 <li>
+                    
 <p>Term Proximity
-                        data.  For each term in the dictionary, the positions that the term
+                        data. For each term in the dictionary, the positions that the term
                         occurs in each document.
                     </p>
                 
@@ -496,23 +515,27 @@ Apache Lucene - Index File Formats
 
                 
 <li>
+                    
 <p>Normalization
-                        factors.  For each field in each document, a value is stored that is
+                        factors. For each field in each document, a value is stored that is
                         multiplied into the score for hits on that field.
                     </p>
                 
 </li>
                 
 <li>
-<p>Term Vectors.  For each field in each document, the term vector
-                       (sometimes called document vector) may be stored.  A term vector consists
-                       of term text and term frequency.  To add Term Vectors to your index see the
-                    <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/document/Field.html">Field</a> constructors
+                    
+<p>Term Vectors. For each field in each document, the term vector
+                        (sometimes called document vector) may be stored. A term vector consists
+                        of term text and term frequency. To add Term Vectors to your index see the
+                        <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/document/Field.html">Field</a>
+                        constructors
                     </p>
                 
-</li>              
+</li>
                 
 <li>
+                    
 <p>Deleted documents.
                         An optional file indicating which documents are deleted.
                     </p>
@@ -525,12 +548,12 @@ Apache Lucene - Index File Formats
 </div>
 
         
-<a name="N100FC"></a><a name="File Naming"></a>
+<a name="N10103"></a><a name="File Naming"></a>
 <h2 class="boxed">File Naming</h2>
 <div class="section">
 <p>
                 All files belonging to a segment have the same name with varying
-                extensions.  The extensions correspond to the different file formats
+                extensions. The extensions correspond to the different file formats
                 described below. When using the Compound File format (default in 1.4 and greater) these files are
                 collapsed into a single .cfs file (see below for details)
             </p>
@@ -539,21 +562,32 @@ Apache Lucene - Index File Formats
                 in an index are stored in a single directory, although this is not
                 required.
             </p>
+<p>
+                As of version 2.1 (lock-less commits), file names are
+                never re-used (there is one exception, "segments.gen",
+                see below). That is, when any file is saved to the
+                Directory it is given a never before used filename.
+                This is achieved using a simple generations approach.
+                For example, the first segments file is segments_1,
+                then segments_2, etc. The generation is a sequential
+                long integer represented in alpha-numeric (base 36)
+                form.
+            </p>
 </div>
 
         
-<a name="N10109"></a><a name="Primitive Types"></a>
+<a name="N10112"></a><a name="Primitive Types"></a>
 <h2 class="boxed">Primitive Types</h2>
 <div class="section">
-<a name="N1010F"></a><a name="Byte"></a>
+<a name="N10117"></a><a name="Byte"></a>
 <h3 class="boxed">Byte</h3>
 <p>
                     The most primitive type
-                    is an eight-bit byte.  Files are accessed as sequences of bytes.  All
+                    is an eight-bit byte. Files are accessed as sequences of bytes. All
                     other data types are defined as sequences
                     of bytes, so file formats are byte-order independent.
                 </p>
-<a name="N10119"></a><a name="UInt32"></a>
+<a name="N10120"></a><a name="UInt32"></a>
 <h3 class="boxed">UInt32</h3>
 <p>
                     32-bit unsigned integers are written as four
@@ -563,7 +597,7 @@ Apache Lucene - Index File Formats
                     UInt32    --&gt; &lt;Byte&gt;<sup>4</sup>
                 
 </p>
-<a name="N10129"></a><a name="Uint64"></a>
+<a name="N1012F"></a><a name="Uint64"></a>
 <h3 class="boxed">Uint64</h3>
 <p>
                     64-bit unsigned integers are written as eight
@@ -572,18 +606,20 @@ Apache Lucene - Index File Formats
 <p>UInt64    --&gt; &lt;Byte&gt;<sup>8</sup>
                 
 </p>
-<a name="N10139"></a><a name="VInt"></a>
+<a name="N1013E"></a><a name="VInt"></a>
 <h3 class="boxed">VInt</h3>
 <p>
                     A variable-length format for positive integers is
                     defined where the high-order bit of each byte indicates whether more
-                    bytes remain to be read.  The low-order seven bits are appended as
+                    bytes remain to be read. The low-order seven bits are appended as
                     increasingly more significant bits in the resulting integer value.
                     Thus values from zero to 127 may be stored in a single byte, values
                     from 128 to 16,383 may be stored in two bytes, and so on.
                 </p>
 <p>
+                    
 <b>VInt Encoding Example</b>
+                
 </p>
 <table class="ForrestTable" cellspacing="0" cellpadding="4" border="0">
                     
@@ -600,6 +636,7 @@ Apache Lucene - Index File Formats
 <td width="25%">
                             
 <p align="RIGHT">
+                                
 <b>Value</b>
                             
 </p>
@@ -608,6 +645,7 @@ Apache Lucene - Index File Formats
                         <td width="25%">
                             
 <p align="RIGHT">
+                                
 <b>First byte</b>
                             
 </p>
@@ -616,6 +654,7 @@ Apache Lucene - Index File Formats
                         <td width="25%">
                             
 <p align="RIGHT">
+                                
 <b>Second byte</b>
                             
 </p>
@@ -624,6 +663,7 @@ Apache Lucene - Index File Formats
                         <td width="25%">
                             
 <p align="RIGHT">
+                                
 <b>Third byte</b>
                             
 </p>
@@ -650,6 +690,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -659,6 +700,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -686,6 +728,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -695,6 +738,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -722,6 +766,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -731,6 +776,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -751,6 +797,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" valign="BOTTOM" width="25%">
                             
 <p align="RIGHT" style="margin-left: 0.11cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -760,6 +807,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" valign="BOTTOM" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -769,6 +817,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" valign="BOTTOM" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -796,6 +845,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -805,6 +855,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -839,6 +890,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -873,6 +925,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -907,6 +960,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -927,6 +981,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" valign="BOTTOM" width="25%">
                             
 <p align="RIGHT" style="margin-left: 0.11cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -936,6 +991,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" valign="BOTTOM" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.07cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -945,6 +1001,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" valign="BOTTOM" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -979,6 +1036,7 @@ Apache Lucene - Index File Formats
                         <td sdnum="1033;0;00000000" width="25%">
                             
 <p align="RIGHT" style="margin-left: -0.47cm; margin-right:                                0.01cm">
+                                
 <br>
 
                             
@@ -1098,15 +1156,16 @@ Apache Lucene - Index File Formats
                     This provides compression while still being
                     efficient to decode.
                 </p>
-<a name="N10407"></a><a name="Chars"></a>
+<a name="N10423"></a><a name="Chars"></a>
 <h3 class="boxed">Chars</h3>
 <p>
                     Lucene writes unicode
                     character sequences using Java's
                     <a href="http://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">"modified
-                    UTF-8 encoding"</a>.
+                        UTF-8 encoding"</a>
+                    .
                 </p>
-<a name="N10415"></a><a name="String"></a>
+<a name="N10430"></a><a name="String"></a>
 <h3 class="boxed">String</h3>
 <p>
                     Lucene writes strings as a VInt representing the length, followed by
@@ -1118,36 +1177,79 @@ Apache Lucene - Index File Formats
 </div>
 
         
-<a name="N10423"></a><a name="Per-Index Files"></a>
+<a name="N1043D"></a><a name="Per-Index Files"></a>
 <h2 class="boxed">Per-Index Files</h2>
 <div class="section">
 <p>
                 The files in this section exist one-per-index.
             </p>
-<a name="N1042C"></a><a name="Segments File"></a>
+<a name="N10445"></a><a name="Segments File"></a>
 <h3 class="boxed">Segments File</h3>
 <p>
                     The active segments in the index are stored in the
-                    segment info file.  An index only has
-                    a single file in this format, and it is named "segments".
-                    This lists each segment by name, and also contains the size of each
-                    segment.
+                    segment info file,
+                    <tt>segments_N</tt>
+                    . There may
+                    be one or more
+                    <tt>segments_N</tt>
+                    files in the
+                    index; however, the one with the largest
+                    generation is the active one (when older
+                    segments_N files are present it's because they
+                    temporarily cannot be deleted, or, a writer is in
+                    the process of committing). This file lists each
+                    segment by name, has details about the separate
+                    norms and deletion files, and also contains the
+                    size of each segment.
                 </p>
 <p>
-                    Segments    --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize&gt;<sup>SegCount</sup>
+                    As of 2.1, there is also a file
+                    <tt>segments.gen</tt>
+                    . This file contains the
+                    current generation (the
+                    <tt>_N</tt>
+                    in
+                    <tt>segments_N</tt>
+                    ) of the index. This is
+                    used only as a fallback in case the current
+                    generation cannot be accurately determined by
+                    directory listing alone (as is the case for some
+                    NFS clients with time-based directory cache
+                    expiraation). This file simply contains an Int32
+                    version header (SegmentInfos.FORMAT_LOCKLESS =
+                    -2), followed by the generation recorded as Int64,
+                    written twice.
+                </p>
+<p>
+                    
+<b>Pre-2.1:</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize&gt;
+                    <sup>SegCount</sup>
                 
 </p>
 <p>
-                    Format, NameCounter, SegCount, SegSize    --&gt; UInt32
+                    
+<b>2.1 and above:</b>
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, NumField, NormGen
+                    <sup>NumField</sup>
+                    &gt;
+                    <sup>SegCount</sup>
+                    , IsCompoundFile
                 </p>
 <p>
-                    Version --&gt; UInt64
+                    Format, NameCounter, SegCount, SegSize, NumField --&gt; Int32
                 </p>
 <p>
-                    SegName    --&gt; String
+                    Version, DelGen, NormGen --&gt; Int64
                 </p>
 <p>
-                    Format is -1 in Lucene 1.4.
+                    SegName --&gt; String
+                </p>
+<p>
+                    IsCompoundFile --&gt; Int8
+                </p>
+<p>
+                    Format is -1 as of Lucene 1.4 and -2 as of Lucene 2.1.
                 </p>
 <p>
                     Version counts how often the index has been
@@ -1163,71 +1265,76 @@ Apache Lucene - Index File Formats
 <p>
                     SegSize is the number of documents contained in the segment index.
                 </p>
-<a name="N10454"></a><a name="Lock Files"></a>
-<h3 class="boxed">Lock Files</h3>
 <p>
-                    Several files are used to indicate that another
-                    process is using an index.  Note that these files are not
+                    DelGen is the generation count of the separate
+                    deletes file. If this is -1, there are no
+                    separate deletes. If it is 0, this is a pre-2.1
+                    segment and you must check filesystem for the
+                    existence of _X.del. Anything above zero means
+                    there are separate deletes (_X_N.del).
+                </p>
+<p>
+                    NumField is the size of the array for NormGen, or
+                    -1 if there are no NormGens stored.
+                </p>
+<p>
+                    NormGen records the generation of the separate
+                    norms files. If NumField is -1, there are no
+                    normGens stored and they are all assumed to be 0
+                    when the segment file was written pre-2.1 and all
+                    assumed to be -1 when the segments file is 2.1 or
+                    above. The generation then has the same meaning
+                    as delGen (above).
+                </p>
+<p>
+                    IsCompoundFile records whether the segment is
+                    written as a compound file or not. If this is -1,
+                    the segment is not a compound file. If it is 1,
+                    the segment is a compound file. Else it is 0,
+                    which means we check filesystem to see if _X.cfs
+                    exists.
+                </p>
+<a name="N1049C"></a><a name="Lock File"></a>
+<h3 class="boxed">Lock File</h3>
+<p>
+                    A write lock is used to indicate that another
+                    process is writing to the index. Note that this file is not
                     stored in the index directory itself, but rather in the
                     system's temporary directory, as indicated in the Java
                     system property "java.io.tmpdir".
                 </p>
-<ul>
-                    
-<li>
-                        
 <p>
-                            When a file named "commit.lock"
-                            is present, a process is currently re-writing the "segments"
-                            file and deleting outdated segment index files, or a process is
-                            reading the "segments"
-                            file and opening the files of the segments it names.  This lock file
-                            prevents files from being deleted by another process after a process
-                            has read the "segments"
-                            file but before it has managed to open all of the files of the
-                            segments named therein.
-                        </p>
-                    
-</li>
-
-                    
-<li>
-                        
+                    The write lock is named "XXXX-write.lock" where
+                    XXXX is typically a unique prefix computed by the
+                    directory path to the index. When this file is
+                    present, a process is currently adding documents
+                    to an index, or removing files from that index.
+                    This lock file prevents several processes from
+                    attempting to modify an index at the same time.
+                </p>
 <p>
-                            When a file named "write.lock"
-                            is present, a process is currently adding documents to an index, or
-                            removing files from that index.  This lock file prevents several
-                            processes from attempting to modify an index at the same time.
-                        </p>
-                    
-</li>
-                
-</ul>
-<a name="N1046D"></a><a name="Deletable File"></a>
+                    Note that prior to version 2.1, Lucene also used a
+                    commit lock. This was removed in 2.1.
+                </p>
+<a name="N104AB"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
-                    A file named "deletable"
-                    contains the names of files that are no longer used by the index, but
-                    which could not be deleted.  This is only used on Win32, where a
-                    file may not be deleted while it is still open. On other platforms
-                    the file contains only null bytes.
+                    Prior to Lucene 2.1 there was a file "deletable"
+                    that contained details about files that need to be
+                    deleted. As of 2.1, a writer dynamically computes
+                    the files that are deletable, instead, so no file
+                    is written.
                 </p>
-<p>
-                    Deletable    --&gt; DeletableCount,
-                    &lt;DelableName&gt;<sup>DeletableCount</sup>
-                
-</p>
-<p>DeletableCount    --&gt; UInt32
-                </p>
-<p>DeletableName    --&gt;
-                    String
-                </p>
-<a name="N10483"></a><a name="Compound Files"></a>
+<a name="N104B4"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
-            	is simply a container for all files described in the next section.</p>
-<p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;<sup>FileCount</sup>,
-            		FileData<sup>FileCount</sup>
+                    is simply a container for all files described in the next section.</p>
+<p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;
+                    <sup>FileCount</sup>
+                    ,
+                    FileData
+                    <sup>FileCount</sup>
+                
 </p>
 <p>FileCount --&gt; VInt</p>
 <p>DataOffset --&gt; Long</p>
@@ -1237,19 +1344,23 @@ Apache Lucene - Index File Formats
 </div>
 
         
-<a name="N104A5"></a><a name="Per-Segment Files"></a>
+<a name="N104D6"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N104AE"></a><a name="Fields"></a>
+<a name="N104DE"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
+                    
 <br>
+                    
 <b>Field Info</b>
+                    
 <br>
+                
 </p>
 <p>
                     Field names are
@@ -1257,57 +1368,64 @@ Apache Lucene - Index File Formats
                 </p>
 <p>
                     FieldInfos
-                    (.fnm)    --&gt; FieldsCount, &lt;FieldName,
-                    FieldBits&gt;<sup>FieldsCount</sup>
+                    (.fnm) --&gt; FieldsCount, &lt;FieldName,
+                    FieldBits&gt;
+                    <sup>FieldsCount</sup>
                 
 </p>
 <p>
-                    FieldsCount    --&gt; VInt
+                    FieldsCount --&gt; VInt
                 </p>
 <p>
-                    FieldName    --&gt; String
+                    FieldName --&gt; String
                 </p>
 <p>
-                    FieldBits    --&gt; Byte
+                    FieldBits --&gt; Byte
                 </p>
 <p>
-	          
-<ul>
                     
+<ul>
+                        
 <li>
-                    The low-order bit is one for
-		    indexed fields, and zero for non-indexed fields.
-                    </li>
-		    
+                            The low-order bit is one for
+                            indexed fields, and zero for non-indexed fields.
+                        </li>
+                        
 <li>
-		    The second lowest-order
-                    bit is one for fields that have term vectors stored, and zero for fields
-                    without term vectors.  
-	            </li>
+                            The second lowest-order
+                            bit is one for fields that have term vectors stored, and zero for fields
+                            without term vectors.
+                        </li>
                         
 <p>
+                            
 <b>Lucene &gt;= 1.9:</b>
+                        
 </p>
-		    
-<li> If the third lowest-order bit is set (0x04), term positions are stored with the term vectors. </li>
-		    
-<li> If the fourth lowest-order bit is set (0x08), term offsets are stored with the term vectors. </li>
-		    
-<li> If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field. </li>
-		  
+                        
+<li>If the third lowest-order bit is set (0x04), term positions are stored with the term vectors.</li>
+                        
+<li>If the fourth lowest-order bit is set (0x08), term offsets are stored with the term vectors.</li>
+                        
+<li>If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field.</li>
+                    
 </ul>
                 
 </p>
 <p>
-                    Fields are numbered by their order in this file.  Thus field zero is
+                    Fields are numbered by their order in this file. Thus field zero is
                     the
-                    first field in the file, field one the next, and so on.  Note that,
+                    first field in the file, field one the next, and so on. Note that,
                     like document numbers, field numbers are segment relative.
                 </p>
 <p>
+                    
 <br>
+                    
 <b>Stored Fields</b>
+                    
 <br>
+                
 </p>
 <p>
                     Stored fields are represented by two files:
@@ -1329,8 +1447,9 @@ Apache Lucene - Index File Formats
                         
 <p>
                             FieldIndex
-                            (.fdx)    --&gt;
-                            &lt;FieldValuesPosition&gt;<sup>SegSize</sup>
+                            (.fdx) --&gt;
+                            &lt;FieldValuesPosition&gt;
+                            <sup>SegSize</sup>
                         
 </p>
                         
@@ -1340,9 +1459,15 @@ Apache Lucene - Index File Formats
                         
 <p>This
                             is used to find the location within the field data file of the
-                            fields of a particular document.  Because it contains fixed-length
-                            data, this file may be easily randomly accessed.  The position of
-                            document<i> n</i>'s<i> </i>field data is the Uint64 at <i>n*8</i> in
+                            fields of a particular document. Because it contains fixed-length
+                            data, this file may be easily randomly accessed. The position of
+                            document
+                            <i>n</i>
+                            's
+                            <i></i>
+                            field data is the Uint64 at
+                            <i>n*8</i>
+                            in
                             this file.
                         </p>
                     
@@ -1363,73 +1488,79 @@ Apache Lucene - Index File Formats
 
                         
 <p>
-                            FieldData (.fdt)    --&gt;
-                            &lt;DocFieldData&gt;<sup>SegSize</sup>
+                            FieldData (.fdt) --&gt;
+                            &lt;DocFieldData&gt;
+                            <sup>SegSize</sup>
                         
 </p>
                         
-<p>DocFieldData    --&gt;
-                            FieldCount, &lt;FieldNum, Bits, Value&gt;<sup>FieldCount</sup>
+<p>DocFieldData --&gt;
+                            FieldCount, &lt;FieldNum, Bits, Value&gt;
+                            <sup>FieldCount</sup>
                         
 </p>
                         
-<p>FieldCount  --&gt;
+<p>FieldCount --&gt;
                             VInt
                         </p>
                         
-<p>FieldNum    --&gt;
+<p>FieldNum --&gt;
                             VInt
                         </p>
-                        
+
                         
 <p>
+                            
 <b>Lucene &lt;= 1.4:</b>
+                        
 </p>
                         
-<p>Bits        --&gt;
+<p>Bits --&gt;
                             Byte
                         </p>
                         
-<p>Value        --&gt;
+<p>Value --&gt;
                             String
                         </p>
                         
-<p>Only the low-order bit of Bits is used.  It is one for
+<p>Only the low-order bit of Bits is used. It is one for
                             tokenized fields, and zero for non-tokenized fields.
                         </p>
                         
 <p>
+                            
 <b>Lucene &gt;= 1.9:</b>
+                        
 </p>
                         
-<p>Bits        --&gt;
+<p>Bits --&gt;
                             Byte
                         </p>
                         
 <p>
-                        
+                            
 <ul>
-                        	
+                                
 <li>low order bit is one for tokenized fields</li>
-                        	
+                                
 <li>second bit is one for fields containing binary data</li>
-                        	
+                                
 <li>third bit is one for fields with compression option enabled
-                        		(if compression is enabled, the algorithm used is ZLIB)</li>
-                        
+                                    (if compression is enabled, the algorithm used is ZLIB)</li>
+                            
 </ul>
                         
 </p>
                         
-<p>Value        --&gt;
+<p>Value --&gt;
                             String | BinaryValue (depending on Bits)
                         </p>
                         
-<p>BinaryValue        --&gt;
+<p>BinaryValue --&gt;
                             ValueSize, &lt;Byte&gt;^ValueSize
                         </p>
                         
-<p>ValueSize        --&gt;
+<p>ValueSize --&gt;
                             VInt
                         </p>
 
@@ -1437,7 +1568,7 @@ Apache Lucene - Index File Formats
 </li>
                 
 </ol>
-<a name="N1055A"></a><a name="Term Dictionary"></a>
+<a name="N10596"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -1456,45 +1587,48 @@ Apache Lucene - Index File Formats
                             TIVersion, TermCount, IndexInterval, SkipInterval, TermInfos
                         </p>
                         
-<p>TIVersion    --&gt;
+<p>TIVersion --&gt;
                             UInt32
                         </p>
                         
-<p>TermCount    --&gt;
+<p>TermCount --&gt;
                             UInt64
                         </p>
                         
-<p>IndexInterval    --&gt;
+<p>IndexInterval --&gt;
                             UInt32
                         </p>
                         
-<p>SkipInterval   --&gt;
+<p>SkipInterval --&gt;
                             UInt32
                         </p>
                         
-<p>TermInfos    --&gt;
-                            &lt;TermInfo&gt;<sup>TermCount</sup>
+<p>TermInfos --&gt;
+                            &lt;TermInfo&gt;
+                            <sup>TermCount</sup>
                         
 </p>
                         
-<p>TermInfo    --&gt;
+<p>TermInfo --&gt;
                             &lt;Term, DocFreq, FreqDelta, ProxDelta, SkipDelta&gt;
                         </p>
                         
-<p>Term        --&gt;
+<p>Term --&gt;
                             &lt;PrefixLength, Suffix, FieldNum&gt;
                         </p>
                         
-<p>Suffix        --&gt;
+<p>Suffix --&gt;
                             String
                         </p>
                         
 <p>PrefixLength,
-                            DocFreq, FreqDelta, ProxDelta, SkipDelta<br>        --&gt; VInt
+                            DocFreq, FreqDelta, ProxDelta, SkipDelta
+                            <br>
+                            --&gt; VInt
                         </p>
                         
 <p>This
-                            file is sorted by Term.  Terms are ordered first lexicographically
+                            file is sorted by Term. Terms are ordered first lexicographically
                             by the term's field name, and within that lexicographically by the
                             term's text.
                         </p>
@@ -1504,9 +1638,9 @@ Apache Lucene - Index File Formats
                         </p>
                         
 <p>Term
-                            text prefixes are shared.  The PrefixLength is the number of initial
+                            text prefixes are shared. The PrefixLength is the number of initial
                             characters from the previous term which must be pre-pended to a
-                            term's suffix in order to form the term's text.  Thus, if the
+                            term's suffix in order to form the term's text. Thus, if the
                             previous term's text was "bone" and the term is "boy",
                             the PrefixLength is two and the suffix is "y".
                         </p>
@@ -1521,20 +1655,20 @@ Apache Lucene - Index File Formats
                         
 <p>FreqDelta
                             determines the position of this term's TermFreqs within the .frq
-                            file.  In particular, it is the difference between the position of
+                            file. In particular, it is the difference between the position of
                             this term's data in that file and the position of the previous
                             term's data (or zero, for the first term in the file).
                         </p>
                         
 <p>ProxDelta
                             determines the position of this term's TermPositions within the .prx
-                            file.  In particular, it is the difference between the position of
+                            file. In particular, it is the difference between the position of
                             this term's data in that file and the position of the previous
                             term's data (or zero, for the first term in the file.
                         </p>
                         
 <p>SkipDelta determines the position of this
-                            term's SkipData within the .frq file.  In
+                            term's SkipData within the .frq file. In
                             particular, it is the number of bytes
                             after TermFreqs that the SkipData starts.
                             In other words, it is the length of the
@@ -1551,8 +1685,10 @@ Apache Lucene - Index File Formats
 
                         
 <p>
-                            This contains every IndexInterval<sup>th</sup> entry from the .tis
-                            file, along with its location in the "tis" file.  This is
+                            This contains every IndexInterval
+                            <sup>th</sup>
+                            entry from the .tis
+                            file, along with its location in the "tis" file. This is
                             designed to be read entirely into memory and used to provide random
                             access to the "tis" file.
                         </p>
@@ -1566,36 +1702,37 @@ Apache Lucene - Index File Formats
                         
 <p>
                             TermInfoIndex (.tii)--&gt;
-                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, TermIndices 
+                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, TermIndices
                         </p>
                         
 <p>TIVersion --&gt;
-                        	UInt32
+                            UInt32
                         </p>
                         
-<p>IndexTermCount    --&gt;
+<p>IndexTermCount --&gt;
                             UInt64
                         </p>
                         
 <p>IndexInterval --&gt;
-                        	UInt32
+                            UInt32
                         </p>
                         
 <p>SkipInterval --&gt;
-                        	UInt32
+                            UInt32
                         </p>
                         
-<p>TermIndices    --&gt;
-                            &lt;TermInfo, IndexDelta&gt;<sup>IndexTermCount</sup>
+<p>TermIndices --&gt;
+                            &lt;TermInfo, IndexDelta&gt;
+                            <sup>IndexTermCount</sup>
                         
 </p>
                         
-<p>IndexDelta    --&gt;
+<p>IndexDelta --&gt;
                             VLong
                         </p>
                         
 <p>IndexDelta
-                            determines the position of this term's TermInfo within the .tis file.  In
+                            determines the position of this term's TermInfo within the .tis file. In
                             particular, it is the difference between the position of this term's
                             entry in that file and the position of the previous term's entry.
                         </p>
@@ -1608,32 +1745,35 @@ Apache Lucene - Index File Formats
 </li>
                 
 </ol>
-<a name="N105D5"></a><a name="Frequencies"></a>
+<a name="N10610"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
                     which contain each term, along with the frequency of the term in that
                     document.
                 </p>
-<p>FreqFile (.frq)    --&gt;
-                    &lt;TermFreqs, SkipData&gt;<sup>TermCount</sup>
+<p>FreqFile (.frq) --&gt;
+                    &lt;TermFreqs, SkipData&gt;
+                    <sup>TermCount</sup>
                 
 </p>
-<p>TermFreqs    --&gt;
-                    &lt;TermFreq&gt;<sup>DocFreq</sup>
+<p>TermFreqs --&gt;
+                    &lt;TermFreq&gt;
+                    <sup>DocFreq</sup>
                 
 </p>
-<p>TermFreq        --&gt;
+<p>TermFreq --&gt;
                     DocDelta, Freq?
                 </p>
-<p>SkipData        --&gt;
-                    &lt;SkipDatum&gt;<sup>DocFreq/SkipInterval</sup>
+<p>SkipData --&gt;
+                    &lt;SkipDatum&gt;
+                    <sup>DocFreq/SkipInterval</sup>
                 
 </p>
-<p>SkipDatum    --&gt;
+<p>SkipDatum --&gt;
                     DocSkip,FreqSkip,ProxSkip
                 </p>
-<p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip    --&gt;
+<p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip --&gt;
                     VInt
                 </p>
 <p>TermFreqs
@@ -1643,62 +1783,80 @@ Apache Lucene - Index File Formats
                     entries are ordered by increasing document number.
                 </p>
 <p>DocDelta
-                    determines both the document number and the frequency.  In
+                    determines both the document number and the frequency. In
                     particular, DocDelta/2 is the difference between this document number
                     and the previous document number (or zero when this is the first
-                    document in a TermFreqs).  When DocDelta is odd, the frequency is
-                    one.  When DocDelta is even, the frequency is read as another VInt.
+                    document in a TermFreqs). When DocDelta is odd, the frequency is
+                    one. When DocDelta is even, the frequency is read as another VInt.
                 </p>
 <p>For
                     example, the TermFreqs for a term which occurs once in document seven
                     and three times in document eleven would be the following sequence of
                     VInts:
                 </p>
-<p>    15,
+<p>15,
                     8, 3
                 </p>
 <p>DocSkip records the document number before every
-                    SkipInterval<sup>th</sup> document in TermFreqs.
+                    SkipInterval
+                    <sup>th</sup>
+                    document in TermFreqs.
                     Document numbers are represented as differences
-                    from the previous value in the sequence.  FreqSkip
+                    from the previous value in the sequence. FreqSkip
                     and ProxSkip record the position of every
-                    SkipInterval<sup>th</sup> entry in FreqFile and
-                    ProxFile, respectively.  File positions are
+                    SkipInterval
+                    <sup>th</sup>
+                    entry in FreqFile and
+                    ProxFile, respectively. File positions are
                     relative to the start of TermFreqs and Positions,
                     to the previous SkipDatum in the sequence.
                 </p>
 <p>For example, if DocFreq=35 and SkipInterval=16,
                     then there are two SkipData entries, containing
-                    the 15<sup>th</sup> and 31<sup>st</sup> document
-                    numbers in TermFreqs.  The first FreqSkip names
+                    the 15
+                    <sup>th</sup>
+                    and 31
+                    <sup>st</sup>
+                    document
+                    numbers in TermFreqs. The first FreqSkip names
                     the number of bytes after the beginning of
-                    TermFreqs that the 16<sup>th</sup> SkipDatum
+                    TermFreqs that the 16
+                    <sup>th</sup>
+                    SkipDatum
                     starts, and the second the number of bytes after
-                    that that the 32<sup>nd</sup> starts.  The first
+                    that that the 32
+                    <sup>nd</sup>
+                    starts. The first
                     ProxSkip names the number of bytes after the
-                    beginning of Positions that the 16<sup>th</sup>
+                    beginning of Positions that the 16
+                    <sup>th</sup>
                     SkipDatum starts, and the second the number of
-                    bytes after that that the 32<sup>nd</sup> starts.
+                    bytes after that that the 32
+                    <sup>nd</sup>
+                    starts.
                 </p>
-<a name="N10627"></a><a name="Positions"></a>
+<a name="N10661"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
                     each term occurs at within documents.
                 </p>
-<p>ProxFile (.prx)    --&gt;
-                    &lt;TermPositions&gt;<sup>TermCount</sup>
+<p>ProxFile (.prx) --&gt;
+                    &lt;TermPositions&gt;
+                    <sup>TermCount</sup>
                 
 </p>
-<p>TermPositions    --&gt;
-                    &lt;Positions&gt;<sup>DocFreq</sup>
+<p>TermPositions --&gt;
+                    &lt;Positions&gt;
+                    <sup>DocFreq</sup>
                 
 </p>
-<p>Positions        --&gt;
-                    &lt;PositionDelta&gt;<sup>Freq</sup>
+<p>Positions --&gt;
+                    &lt;PositionDelta&gt;
+                    <sup>Freq</sup>
                 
 </p>
-<p>PositionDelta    --&gt;
+<p>PositionDelta --&gt;
                     VInt
                 </p>
 <p>TermPositions
@@ -1719,22 +1877,23 @@ Apache Lucene - Index File Formats
                     fifth and ninth term in a subsequent document, would be the following
                     sequence of VInts:
                 </p>
-<p>    4,
+<p>4,
                     5, 4
                 </p>
-<a name="N10655"></a><a name="Normalization Factors"></a>
+<a name="N1068E"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>There's a norm file for each indexed field with a byte for
-                   each document.  The .f[0-9]* file contains,
+                    each document. The .f[0-9]* file contains,
                     for each document, a byte that encodes a value that is multiplied
                     into the score for hits on that field:
                 </p>
 <p>Norms
-                    (.f[0-9]*)    --&gt; &lt;Byte&gt;<sup>SegSize</sup>
+                    (.f[0-9]*) --&gt; &lt;Byte&gt;
+                    <sup>SegSize</sup>
                 
 </p>
 <p>Each
-                    byte encodes a floating point value.  Bits 0-2 contain the 3-bit
+                    byte encodes a floating point value. Bits 0-2 contain the 3-bit
                     mantissa, and bits 3-8 contain the 5-bit exponent.
                 </p>
 <p>These
@@ -1743,6 +1902,7 @@ Apache Lucene - Index File Formats
 <ol>
                     
 <li>
+                        
 <p>If
                             the byte is zero, use a zero float.
                         </p>
@@ -1750,6 +1910,7 @@ Apache Lucene - Index File Formats
 </li>
                     
 <li>
+                        
 <p>Otherwise,
                             set the sign bit of the float to zero;
                         </p>
@@ -1757,6 +1918,7 @@ Apache Lucene - Index File Formats
 </li>
                     
 <li>
+                        
 <p>add
                             48 to the exponent and use this as the float's exponent;
                         </p>
@@ -1764,6 +1926,7 @@ Apache Lucene - Index File Formats
 </li>
                     
 <li>
+                        
 <p>map
                             the mantissa to the high-order 3 bits of the float's mantissa; and
 
@@ -1772,6 +1935,7 @@ Apache Lucene - Index File Formats
 </li>
                     
 <li>
+                        
 <p>set
                             the low-order 21 bits of the float's mantissa to zero.
                         </p>
@@ -1779,116 +1943,128 @@ Apache Lucene - Index File Formats
 </li>
                 
 </ol>
-<a name="N10687"></a><a name="Term Vectors"></a>
+<a name="N106C4"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <ol>
-                
+                    
 <li>
-                  
+                        
 <p>The Document Index or .tvx file.</p>
-                  
-<p>This contains, for each document, a pointer to the document data in the Document 
-                    (.tvd) file.
-                  </p>
-                  
-<p>DocumentIndex (.tvx) --&gt; TVXVersion&lt;DocumentPosition&gt;<sup>NumDocs</sup>
+                        
+<p>This contains, for each document, a pointer to the document data in the Document
+                            (.tvd) file.
+                        </p>
+                        
+<p>DocumentIndex (.tvx) --&gt; TVXVersion&lt;DocumentPosition&gt;
+                            <sup>NumDocs</sup>
+                        
 </p>
-                  
+                        
 <p>TVXVersion --&gt; Int</p>
-                  
-<p>DocumentPosition   --&gt; UInt64</p>
-                  
+                        
+<p>DocumentPosition --&gt; UInt64</p>
+                        
 <p>This is used to find the position of the Document in the .tvd file.</p>
-                
+                    
 </li>
-                
+                    
 <li>
-                  
+                        
 <p>The Document or .tvd file.</p>
-                  
+                        
 <p>This contains, for each document, the number of fields, a list of the fields with
-                  term vector info and finally a list of pointers to the field information in the .tvf 
-                  (Term Vector Fields) file.</p>
-                  
+                            term vector info and finally a list of pointers to the field information in the .tvf
+                            (Term Vector Fields) file.</p>
+                        
 <p>
-                    Document (.tvd) --&gt; TVDVersion&lt;NumFields, FieldNums, FieldPositions,&gt;<sup>NumDocs</sup>
-                  
+                            Document (.tvd) --&gt; TVDVersion&lt;NumFields, FieldNums, FieldPositions,&gt;
+                            <sup>NumDocs</sup>
+                        
 </p>
-                  
+                        
 <p>TVDVersion --&gt; Int</p>
-                  
+                        
 <p>NumFields --&gt; VInt</p>
-                  
-<p>FieldNums --&gt; &lt;FieldNumDelta&gt;<sup>NumFields</sup>
+                        
+<p>FieldNums --&gt; &lt;FieldNumDelta&gt;
+                            <sup>NumFields</sup>
+                        
 </p>
-                  
+                        
 <p>FieldNumDelta --&gt; VInt</p>
-                  
-<p>FieldPositions --&gt; &lt;FieldPosition&gt;<sup>NumFields</sup>
+                        
+<p>FieldPositions --&gt; &lt;FieldPosition&gt;
+                            <sup>NumFields</sup>
+                        
 </p>
-                  
+                        
 <p>FieldPosition --&gt; VLong</p>
-                  
+                        
 <p>The .tvd file is used to map out the fields that have term vectors stored and
-                  where the field information is in the .tvf file.</p>
-                
+                            where the field information is in the .tvf file.</p>
+                    
 </li>
-                
+                    
 <li>
-                  
+                        
 <p>The Field or .tvf file.</p>
-                  
+                        
 <p>This file contains, for each field that has a term vector stored, a list of
-                  the terms and their frequencies.</p>
-                  
-<p>Field (.tvf) --&gt; TVFVersion&lt;NumTerms, NumDistinct, TermFreqs&gt;<sup>NumFields</sup>
+                            the terms and their frequencies.</p>
+                        
+<p>Field (.tvf) --&gt; TVFVersion&lt;NumTerms, NumDistinct, TermFreqs&gt;
+                            <sup>NumFields</sup>
+                        
 </p>
-                  
+                        
 <p>TVFVersion --&gt; Int</p>
-                  
+                        
 <p>NumTerms --&gt; VInt</p>
-                  
+                        
 <p>NumDistinct --&gt; VInt -- Future Use</p>
-                  
-<p>TermFreqs --&gt; &lt;TermText, TermFreq&gt;<sup>NumTerms</sup>
+                        
+<p>TermFreqs --&gt; &lt;TermText, TermFreq&gt;
+                            <sup>NumTerms</sup>
+                        
 </p>
-                  
+                        
 <p>TermText --&gt; &lt;PrefixLength, Suffix&gt;</p>
-                  
+                        
 <p>PrefixLength --&gt; VInt</p>
-                  
+                        
 <p>Suffix --&gt; String</p>
-                  
+                        
 <p>TermFreq --&gt; VInt</p>
-                  
+                        
 <p>Term
-                      text prefixes are shared.  The PrefixLength is the number of initial
-                      characters from the previous term which must be pre-pended to a
-                      term's suffix in order to form the term's text.  Thus, if the
-                      previous term's text was "bone" and the term is "boy",
-                      the PrefixLength is two and the suffix is "y".
-                  </p>
-                
+                            text prefixes are shared. The PrefixLength is the number of initial
+                            characters from the previous term which must be pre-pended to a
+                            term's suffix in order to form the term's text. Thus, if the
+                            previous term's text was "bone" and the term is "boy",
+                            the PrefixLength is two and the suffix is "y".
+                        </p>
+                    
 </li>
-              
+                
 </ol>
-<a name="N106FB"></a><a name="Deleted Documents"></a>
+<a name="N1073C"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions:
                 </p>
 <p>Deletions
-                    (.del)    --&gt; ByteCount,BitCount,Bits
+                    (.del) --&gt; ByteCount,BitCount,Bits
                 </p>
-<p>ByteSize,BitCount    --&gt;
+<p>ByteSize,BitCount --&gt;
                     Uint32
                 </p>
-<p>Bits        --&gt;
-                    &lt;Byte&gt;<sup>ByteCount</sup>
+<p>Bits --&gt;
+                    &lt;Byte&gt;
+                    <sup>ByteCount</sup>
                 
 </p>
 <p>ByteCount
-                    indicates the number of bytes in Bits.  It is typically
+                    indicates the number of bytes in Bits. It is typically
                     (SegSize/8)+1.
                 </p>
 <p>
@@ -1896,23 +2072,23 @@ Apache Lucene - Index File Formats
                     indicates the number of bits that are currently set in Bits.
                 </p>
 <p>Bits
-                    contains one bit for each document indexed.  When the bit
+                    contains one bit for each document indexed. When the bit
                     corresponding to a document number is set, that document is marked as
-                    deleted.  Bit ordering is from least to most significant.  Thus, if
+                    deleted. Bit ordering is from least to most significant. Thus, if
                     Bits contains two bytes, 0x00 and 0x02, then document 9 is marked as
                     deleted.
                 </p>
 </div>
 
         
-<a name="N1071B"></a><a name="Limitations"></a>
+<a name="N1075B"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There
                 are a few places where these file formats limit the maximum number of
                 terms and documents to a 32-bit quantity, or to approximately 4
-                billion.  This is not today a problem, but, in the long term,
-                probably will be.  These should therefore be replaced with either
+                billion. This is not today a problem, but, in the long term,
+                probably will be. These should therefore be replaced with either
                 UInt64 values, or better yet, with VInt values which have no limit.
             </p>
 </div>
