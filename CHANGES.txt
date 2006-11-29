@@ -152,5 +152,7 @@ Other Changes
  7. blackslash escape * in ssh command used in snappuller for zsh compatibility, SOLR-63
  8. check solr return code in admin scripts, SOLR-62
  9. Updated to Lucene 2.0 nightly build 2006-11-15, SVN revision 475069
+10. Removed src/apps containing the legacy "SolrTest" app (hossman, SOLR-3)
 
+ 
 2006/01/17 Solr open sourced, moves to Apache Incubator

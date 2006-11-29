@@ -192,7 +192,6 @@
        encoding="utf8"
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
-      <src path="${src}/apps/SolrTest/src" />
     </javac>
   </target>
 
@@ -200,28 +199,11 @@
   <target name="test"
           description="Runs the unit tests."
           depends="compileTests, junit" />
-   
-  <target name="legacyTest"
-          depends="compileTests" >
-    <!-- DEPRECATED: no description so it doesn't show up in project help -->
-    <java classname="SolrTest" fork="true" dir="src/apps/SolrTest" failonerror="true">
-     <arg line="-test newtest.txt -qargs qt=test"/>
-     <classpath>
-       <path refid="test.run.classpath" />
-     </classpath>
-    </java>
-
-  </target>
   
   <target name="junit" depends="compileTests">
     <!-- no description so it doesn't show up in -projecthelp -->  
     <mkdir dir="${junit.output.dir}"/>
 
-    <!-- :TODO: either SolrCore needs a way to specify the
-         solrconfig.xml, or all test are going to need to use the same
-         conf file, either way we need a specific run directory for
-         the tests.
-      -->    
     <junit printsummary="withOutAndErr"
            haltonfailure="no"
            errorProperty="tests.failed"
