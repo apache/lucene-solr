@@ -168,7 +168,7 @@ public class DbDirectory extends Directory {
         try {
             try {
                 DatabaseEntry key = new DatabaseEntry(new byte[0]);
-                DatabaseEntry data = new DatabaseEntry(null);
+                DatabaseEntry data = new DatabaseEntry((byte[]) null);
 
                 data.setPartial(true);
 

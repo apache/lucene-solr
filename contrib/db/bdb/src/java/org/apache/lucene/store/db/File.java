@@ -65,7 +65,7 @@ public class File extends Object {
             else
             {
                 DatabaseEntry key = new DatabaseEntry(new byte[24]);
-                DatabaseEntry data = new DatabaseEntry(null);
+                DatabaseEntry data = new DatabaseEntry((byte[]) null);
                 Db blocks = directory.blocks;
                 DbTxn txn = directory.txn;
                 int flags = directory.flags;
@@ -201,7 +201,7 @@ public class File extends Object {
                 int ulen = bytes.length + 8;
                 byte[] cursorBytes = new byte[ulen];
                 DatabaseEntry cursorKey = new DatabaseEntry(cursorBytes);
-                DatabaseEntry cursorData = new DatabaseEntry(null);
+                DatabaseEntry cursorData = new DatabaseEntry((byte[]) null);
                 Db files = directory.files;
                 Db blocks = directory.blocks;
                 DbTxn txn = directory.txn;
