@@ -504,11 +504,17 @@ class FSIndexInput extends BufferedIndexInput {
   }
 
   private Descriptor file = null;
+  
+  // remember if the file is open, so that we don't try to close it
+  // more than once
+  private boolean isOpen;       
+  
   boolean isClone;
   private long length;
 
   public FSIndexInput(File path) throws IOException {
     file = new Descriptor(path, "r");
+    isOpen = true;
     length = file.length();
   }
 
@@ -533,8 +539,12 @@ class FSIndexInput extends BufferedIndexInput {
   }
 
   public void close() throws IOException {
-    if (!isClone)
+    // only close the file if this is not a clone and the
+    // file has not been closed yet
+    if (!isClone && isOpen) {
       file.close();
+      isOpen = false;
+    }
   }
 
   protected void seekInternal(long position) {
@@ -566,8 +576,13 @@ class FSIndexInput extends BufferedIndexInput {
 class FSIndexOutput extends BufferedIndexOutput {
   RandomAccessFile file = null;
 
+  // remember if the file is open, so that we don't try to close it
+  // more than once
+  private boolean isOpen;
+
   public FSIndexOutput(File path) throws IOException {
     file = new RandomAccessFile(path, "rw");
+    isOpen = true;
   }
 
   /** output methods: */
@@ -575,8 +590,12 @@ class FSIndexOutput extends BufferedIndexOutput {
     file.write(b, 0, size);
   }
   public void close() throws IOException {
-    super.close();
-    file.close();
+    // only close the file if it has not been closed yet
+    if (isOpen) {
+      super.close();
+      file.close();
+      isOpen = false;
+    }
   }
 
   /** Random-access methods */
@@ -589,7 +608,7 @@ class FSIndexOutput extends BufferedIndexOutput {
   }
 
   protected void finalize() throws IOException {
-    file.close();          // close the file
+    close();          // close the file
   }
 
 }
