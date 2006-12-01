@@ -246,7 +246,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-src, dist-war, dist-jar" />
+          depends="dist-war, dist-jar" />
 
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest" >
@@ -304,6 +304,7 @@
          <exclude name="servlet-api*.jar" />
        </lib>
        <fileset dir="${src}/webapp/resources" />
+       <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
     </war>
   </target>
 
@@ -324,8 +325,9 @@
          basedir="${dest}"
          includes="org/apache/**"
          filesetmanifest="skip"
-         manifest="${dest}/META-INF/MANIFEST.MF"
-    />
+         manifest="${dest}/META-INF/MANIFEST.MF">
+	 <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
+    </jar>
   </target>
 
 
@@ -359,7 +361,7 @@
     <zip destfile="${dist}/${fullnamever}.zip">
       <zipfileset dir="."
         prefix="${fullnamever}"
-        includes="*.txt *.xml lib/** src/** example/**"
+        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/**"
         excludes="**/data/ **/logs/ **/classes/" />
       <zipfileset dir="."
         prefix="${fullnamever}"
@@ -371,7 +373,7 @@
     <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip">
       <tarfileset dir="."
         prefix="${fullnamever}"
-        includes="*.txt *.xml lib/** src/** example/**"
+        includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/**"
         excludes="**/data/ **/logs/ **/classes/" />
       <tarfileset dir="."
         prefix="${fullnamever}"
