@@ -19,7 +19,9 @@
                  org.apache.solr.schema.IndexSchema,
                  java.io.File"%>
 <%@ page import="java.net.InetAddress"%>
+<%@ page import="java.io.StringWriter"%>
 <%@ page import="org.apache.solr.core.Config"%>
+<%@ page import="org.apache.solr.util.XML"%>
 
 <%
   SolrCore core = SolrCore.getSolrCore();
@@ -40,7 +42,10 @@
   InetAddress addr = InetAddress.getLocalHost();
   String hostname = addr.getCanonicalHostName();
 
-  String defaultSearch = SolrConfig.config.get("admin/defaultQuery/text()",null);
+  StringWriter tmp = new StringWriter();
+  XML.escapeCharData(SolrConfig.config.get("admin/defaultQuery/text()", null),
+                     tmp);
+  String defaultSearch = tmp.toString();
   String cwd=System.getProperty("user.dir");
   String solrHome= Config.getInstanceDir();
 %>
