@@ -18,24 +18,22 @@
 <%@include file="header.jsp" %>
 
 <br clear="all">
-<h2>/select mode</h2>
+<form name="queryForm" method="GET" action="../select">
 
-<form name=queryForm method="GET" action="../select">
+<!-- these are good defaults to have if people bookmark the resulting
+     URLs, but they should not show up in the form since they are very
+     output type specific.
+  -->
+<input name="indent" type="hidden" value="on">
+<input name="version" type="hidden" value="2.1">
+
 <table>
 <tr>
   <td>
 	<strong>Solr/Lucene Statement</strong>
   </td>
   <td>
-	<textarea rows="5" cols="60" name="q"></textarea>
-  </td>
-</tr>
-<tr>
-  <td>
-	<strong>Protocol Version</strong>
-  </td>
-  <td>
-	<input name="version" type="text" value="2.1">
+	<textarea rows="5" cols="60" name="q"><%= defaultSearch %></textarea>
   </td>
 </tr>
 <tr>
@@ -59,7 +57,7 @@
 	<strong>Fields to Return</strong>
   </td>
   <td>
-	<input name="fl" type="text" value="">
+	<input name="fl" type="text" value="*,score">
   </td>
 </tr>
 <tr>
@@ -72,18 +70,10 @@
 </tr>
 <tr>
   <td>
-	<strong>Style Sheet</strong>
+	<strong>Output Type</strong>
   </td>
   <td>
-	<input name="stylesheet" type="text" value="">
-  </td>
-</tr>
-<tr>
-  <td>
-	<strong>Indent XML</strong>
-  </td>
-  <td>
-	<input name="indent" type="checkbox" checked="true">
+	<input name="wt" type="text" value="standard">
   </td>
 </tr>
 <tr>
@@ -92,7 +82,7 @@
   </td>
   <td>
 	<input name="debugQuery" type="checkbox" >
-  <em><font size="-1">  Note: do "view source" in your browser to see explain() correctly indented</font></em>
+  <em><font size="-1">  Note: you may need to "view source" in your browser to see explain() correctly indented.</font></em>
   </td>
 </tr>
 <tr>
@@ -101,7 +91,7 @@
   </td>
   <td>
 	<input name="explainOther" type="text" >
-  <em><font size="-1">  apply original query scoring to matches of this query</font></em>
+  <em><font size="-1">  Apply original query scoring to matches of this query to see how they compare.</font></em>
   </td>
 </tr>
 <tr>
@@ -129,7 +119,12 @@
 </tr>
 </table>
 </form>
-
+<br clear="all">
+<em>
+This form demonstrates the most common query options available for the
+built in Query Types.  Please consult the Solr Wiki for additional
+Query Parameters.
+</em>
 
 </body>
 </html>

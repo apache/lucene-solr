@@ -69,18 +69,6 @@
   </td>
 </tr>
 
-<!-- TODO: make it possible to add links to the admin page via solrconfig.xml
-<tr>
-  <td>
-	<strong>Hardware:</strong><br>
-  </td>
-  <td>
-	[<a href="http://playground.cnet.com/db/machines-match.php3?searchterm=<%= hostname %>&searchfield=hostorserial">Status</a>]
-	[<a href="http://playground.cnet.com/db/machines-match.php3?searchterm=<%= hostname %>/t&searchfield=hostorserial">Traffic</a>]
-	[<a href="http://monitor.cnet.com/orca_mon/?mgroup=prob&hours=48&hostname=<%= hostname %>">Problems</a>]
-  </td>
-</tr>
--->
 <jsp:include page="get-file.jsp?file=admin-extra.html&optional=y" flush="true"/>
 
 </table><P>
@@ -92,18 +80,16 @@
 	<h3>Make a Query</h3>
   </td>
   <td>
-
-  <td>
-	[<a href="form.jsp">Full Interface</a>]
+[<a href="form.jsp">Full Interface</a>]
   </td>
+  
 </tr>
 <tr>
   <td>
-  StyleSheet:<br>Query:
+  Query String:
   </td>
   <td colspan=2>
 	<form name=queryForm method="GET" action="../select/">
-        <input class="std" name="stylesheet" type="text" value=""><br>
         <textarea class="std" rows="4" cols="40" name="q"><%= defaultSearch %></textarea>
         <input name="version" type="hidden" value="2.1">
 	<input name="start" type="hidden" value="0">
