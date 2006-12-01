@@ -200,7 +200,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
---------------------------------------------------------------------------
+==========================================================================
 The following license applies only to the xpp3 jar included with Solr
 --------------------------------------------------------------------------
 Indiana University Extreme! Lab Software License
@@ -249,4 +249,12 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+==========================================================================
+Portions of Jetty 5.1 are bundled in the Solr example server.
+The following licenses are part of the Jetty 5.1 distribution, which
+as a whole is licensed under The Apache License version 2.0. 
+ - example/etc/LICENSE.javax.servlet.txt
+ - example/etc/LICENSE.javax.xml.html
+ - example/etc/LICENSE.jsse.txt
 
