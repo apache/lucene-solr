@@ -58,13 +58,18 @@ See http://forrest.apache.org/docs/linking.html for more info
   </docs>
 
   <resources label="Resources">
+      <developers label="Developers" href="developer-resources.html"/>
       <issues label="Issue Tracking" href="ext:issues"/>
       <contact label="Mailing Lists" href="mailinglists.html"/>
-      <release label="Downloads" href="releases.html"/>
+      <release label="Releases" href="releases.html"/>      
       <svn   label="Version Control"  href="ext:source" />
   </resources>
   <versions label="Site Versions">
-      <official label="Official" href="./"/>
+      <official label="Main" href="./"/>
+      <rel1_4_3 label="1.4.3" href="ext:rel1_4_3"/>
+      <rel1_9_0 label="1.9.0" href="ext:rel1_9_0"/>
+      <rel1_9_1 label="1.9.1" href="ext:rel1_9_1"/>
+      <rel2_0_0 label="2.0.0" href="ext:rel2_0_0"/>
 <!-- Needs to be filled in -->
 <!--      <nightly label="Nightly" href=""/> -->
 
@@ -93,6 +98,11 @@ See http://forrest.apache.org/docs/linking.html for more info
       <webapp href="docs/your-project.html#webapp"/>
       <dtd-docs href="docs/dtd-docs.html"/>
     </forrest>
+    <rel1_4_3 href="http://lucene.apache.org/java/1_4_3/"/>
+    <rel1_9_0 href="http://lucene.apache.org/java/1_9_0/"/>
+    <rel1_9_1 href="http://lucene.apache.org/java/1_9_1/"/>
+    <rel2_0_0 href="http://lucene.apache.org/java/2_0_0/"/>
+
     <cocoon href="http://cocoon.apache.org/"/>
     <xml.apache.org href="http://xml.apache.org/"/>
     <issues href="http://issues.apache.org/jira/browse/LUCENE"/>

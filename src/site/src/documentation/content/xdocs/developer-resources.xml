@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<document>
+<header><title>Apache Lucene - Developer Resources</title></header>
+<properties>
+<author email="gsingers@apache.org">Grant Ingersoll</author>
+</properties>
+<body>
+<section id="Making a Contribution"><title>Making a Contribution</title>
+    <p>Lucene Java is always looking for contributions, especially in the areas of documentation.  See the <a
+    href="http://wiki.apache.org/jakarta-lucene">Wiki</a> for details on contributing. </p>
+</section>
+    <!-- <section id="Code Coverage"><title>Code Coverage</title>
+       <p>Code Coverage reports are available <a
+       href="">here</a></p>
+   </section> -->
+<section id="Downloads"><title>Downloads</title>
+<p>Information on Lucene Java Downloads.</p>
+    <section id="Nightly">
+        <title>Nightly Build Download</title>
+        <p>Nightly builds are based on the trunk version of the code checked into
+            <a href="https://svn.apache.org/repos/asf/lucene/java/trunk">SVN</a>
+        </p>
+        <a href="http://people.apache.org/dist/lucene/java/nightly/">Download</a>
+    </section>
+    <section id="source">
+        <title>Source Code</title>
+        <p>Subversion
+            The sourcefiles are now stored using Subversion (see http://subversion.tigris.org/ and http://svnbook.red-bean.com/)
+        </p>
+        <p>
+            <code>svn checkout http://svn.apache.org/repos/asf/lucene/java/trunk lucene/java/trunk</code>
+        </p>
+
+    </section>
+
+</section>
+
+
+</body>
+</document>
