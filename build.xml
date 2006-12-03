@@ -33,7 +33,7 @@
   <property name="java.compat.version" value="1.5" />
 
   <!-- Solr version -->
-  <property name="version" value="1.0" />
+  <property name="version" value="1.1-dev" />
 
   <!-- 3rd party libraries for compilation -->
   <property name="lib" value="lib" />
