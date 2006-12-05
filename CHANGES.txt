@@ -163,5 +163,7 @@ Other Changes
 10. Removed src/apps containing the legacy "SolrTest" app (hossman, SOLR-3)
 11. Simplified index.jsp and form.jsp, primarily by removing/hiding XML
     specific params, and adding an option to pick the output type. (hossman)
+12. Added new numeric build property "specversion" to allow clean
+    MANIFEST.MF files (hossman)
 
 2006/01/17 Solr open sourced, moves to Apache Incubator

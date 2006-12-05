@@ -27,14 +27,37 @@
     <format property="year" pattern="yyyy"/>
     <format property="DSTAMP" pattern="yyyy-MM-dd"/>
     <format property="TSTAMP" pattern="HH:mm:ss"/>
+    <!-- datetime format that is safe to treat as part of a dotted version -->
+    <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
   <!-- Java Version we are compatible with -->
   <property name="java.compat.version" value="1.5" />
 
-  <!-- Solr version -->
-  <property name="version" value="1.1-dev" />
+  <!-- Solr Implimentation Version -->
+  <!--
+       This can be any string value that does not include spaces
+       This will be used when creating build artifact file names.
 
+       By default, this should be set to "X.Y.N-dev" where X.Y.N is
+       "1 greater" then the last version released (on this branch).
+    -->
+  <property name="version" value="1.1-dev" />
+  
+  <!-- Solr Specification Version -->
+  <!--
+       This will be used in the Manifest file, and therefore must
+       match the pattern "digit+{.digit+}*"
+       
+       By default, this should be set to "X.Y.M.${dateversion}"
+       where X.Y.M is the last version released (on this branch).
+    -->
+  <property name="specversion" value="1.0.${dateversion}" />
+
+  <!-- Incubation Artifact Disclaimer Suffix -->
+  <!-- Once graduated from incubation, find/remove all refs to this prop -->
+  <property name="incubation-suffix" value="-incubating" />
+  
   <!-- 3rd party libraries for compilation -->
   <property name="lib" value="lib" />
 
@@ -51,7 +74,7 @@
   <property name="example" value="example" />
 
   <property name="fullname" value="apache-${ant.project.name}"/>
-  <property name="fullnamever" value="apache-${ant.project.name}-${version}"/>
+  <property name="fullnamever" value="apache-${ant.project.name}-${version}${incubation-suffix}"/>
 
   <!-- Javadoc properties -->
   <property name="javadoc.years" value="2006 - ${year}" />
@@ -148,8 +171,8 @@
       use="true"
       encoding="utf8"
       access="${javadoc.access}"
-      windowtitle="${Name} ${version} API"
-      doctitle="${Name} ${version} API"
+      windowtitle="${Name} ${version}${incubation-suffix} API"
+      doctitle="${Name} ${version}${incubation-suffix} API (${specversion})"
       bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
       >
         <packageset dir="${src}/java"/>
@@ -255,38 +278,44 @@
      <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
- 
-        Manifest-Version must be "digit+{.digit+}*"
-        ...so what do we want to do instead?
-        <attribute name="Manifest-Version" value="${version}"/>
+        http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
+        http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Package.html
+        http://java.sun.com/j2se/1.5.0/docs/api/java/util/jar/package-summary.html
+        http://java.sun.com/developer/Books/javaprogramming/JAR/basics/manifest.html
         -->
-        <!-- don't included a 'Created-by' attribute, it's purpose is 
+        <!-- Don't set 'Manifest-Version' it identifies the version of the
+             manifest file format, and should allways be 1.0 (the default)
+
+             Don't set 'Created-by' attribute, it's purpose is 
              to identify the version of java used to build the jar,
-             which ant will do by default - but ant will happily
-             override with a bogus string if you tell it to
-          -->
-        <section name="org/apache/solr/">
-          <attribute name="Extension-Name" 
-                     value="org.apache.solr"/>
-          <attribute name="Specification-Title" 
-                     value="Apache Solr Search Server"/>
-          <!-- spec version can be any string -->
-          <attribute name="Specification-Version" 
-                     value="${version}"/>
-          <attribute name="Specification-Vendor" 
-                     value="The Apache Software Foundation"/>
-          <attribute name="Implementation-Title" 
-                     value="org.apache.solr"/>
-          <!-- impl version can be any string -->
-          <attribute name="Implementation-Version" 
-                     value="${version} - ${DSTAMP} ${TSTAMP}"/>
-          <attribute name="Implementation-Vendor" 
-                     value="The Apache Software Foundation"/>
-          <attribute name="X-Compile-Source-JDK" 
-                     value="${java.compat.version}"/>
-          <attribute name="X-Compile-Target-JDK" 
-                     value="${java.compat.version}"/>
-        </section>
+             which ant will do by default.
+
+             Ant will happily override these with bogus strings if you
+             tell it to, so don't.
+
+             NOTE: we don't use section info because all of our manifest data
+             applies to the entire jar/war ... no package specific info.
+        -->
+        <attribute name="Extension-Name" 
+                   value="org.apache.solr"/>
+        <attribute name="Specification-Title" 
+                   value="Apache Solr Search Server"/>
+        <!-- spec version must match "digit+{.digit+}*" -->
+        <attribute name="Specification-Version" 
+                   value="${specversion}"/>
+        <attribute name="Specification-Vendor" 
+                   value="The Apache Software Foundation"/>
+        <attribute name="Implementation-Title" 
+                   value="org.apache.solr"/>
+        <!-- impl version can be any string -->
+        <attribute name="Implementation-Version" 
+                   value="${version}${incubation-suffix} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+        <attribute name="Implementation-Vendor" 
+                   value="The Apache Software Foundation"/>
+        <attribute name="X-Compile-Source-JDK" 
+                   value="${java.compat.version}"/>
+        <attribute name="X-Compile-Target-JDK" 
+                   value="${java.compat.version}"/>
      </manifest>
   </target>
 
