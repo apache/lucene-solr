@@ -54,6 +54,11 @@
   <!-- the default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
 
+    <!-- A prefix of "solr." for class names is an alias that
+         causes solr to search appropriate packages, including
+         org.apache.solr.(search|update|request|core|analysis)
+     -->
+
     <!-- autocommit pending docs if certain criteria are met 
     <autoCommit> 
       <maxDocs>10000</maxDocs>
@@ -203,6 +208,12 @@
     </listener>
     -->
 
+    <!-- If a search request comes in and there is no current registered searcher,
+         then immediately register the still warming searcher and use it.  If
+         "false" then all requests will block until the first searcher is done
+         warming. -->
+    <useColdSearcher>false</useColdSearcher>
+
   </query>
 
 
@@ -222,9 +233,9 @@
     -->
   </requestHandler>
 
-  <!-- DisMaxRequestHandler is an example of a request handler that
-       supports optional parameters which are passed to
-       its init() method.
+  <!-- DisMaxRequestHandler allows easy searching across multiple fields
+       for simple user-entered phrases. 
+       see http://wiki.apache.org/solr/DisMaxRequestHandler
    -->
   <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
     <lst name="defaults">
@@ -247,6 +258,7 @@
      <int name="ps">100</int>
     </lst>
   </requestHandler>
+
   <!-- Note how you can register the same handler multiple times with
        different names (and different init parameters)
     -->
@@ -329,16 +341,13 @@
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
 
-<!--
-    XSLT response writer (SOLR-49)
-    Changes to XSLT transforms are taken into account every xsltCacheLifetimeSeconds at most.
+  <!-- XSLT response writer transforms the XML output by any xslt file found
+       in Solr's conf/xslt directory.  Changes to xslt files are checked for
+       every xsltCacheLifetimeSeconds.  
    -->
-  <queryResponseWriter
-    name="xslt"
-    class="org.apache.solr.request.XSLTResponseWriter"
-   >
-     <int name="xsltCacheLifetimeSeconds">5</int>
-   </queryResponseWriter> 
+  <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter">
+    <int name="xsltCacheLifetimeSeconds">5</int>
+  </queryResponseWriter> 
     
   <!-- config for the admin interface --> 
   <admin>
