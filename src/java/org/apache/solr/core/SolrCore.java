@@ -374,12 +374,16 @@ public final class SolrCore {
 
     try {
 
+      boolean alreadyRegistered = false;
       synchronized (searcherLock) {
         if (_searcher == null) {
-          // if there isn't a current searcher then register this one
-          // before warming is complete instead of waiting.
-          registerSearcher(newSearchHolder);
-          decrementOnDeckCount[0]=false;
+          // if there isn't a current searcher then we may
+          // want to register this one before warming is complete instead of waiting.
+          if (SolrConfig.config.getBool("query/useColdSearcher",false)) {
+            registerSearcher(newSearchHolder);
+            decrementOnDeckCount[0]=false;
+            alreadyRegistered=true;
+          }
         } else {
           // get a reference to the current searcher for purposes of autowarming.
           currSearcherHolder=_searcher;
@@ -457,15 +461,14 @@ public final class SolrCore {
       // WARNING: this code assumes a single threaded executor (that all tasks
       // queued will finish first).
       final RefCounted<SolrIndexSearcher> currSearcherHolderF = currSearcherHolder;
-      Future finalFuture=null;
-      if (currSearcherHolder != null) {
-        finalFuture = searcherExecutor.submit(
+      if (!alreadyRegistered) {
+        future = searcherExecutor.submit(
                 new Callable() {
                   public Object call() throws Exception {
                     try {
                       // signal that we no longer need to decrement
                       // the count *before* registering the searcher since
-                      // registertSearcher will decrement even if it errors.
+                      // registerSearcher will decrement even if it errors.
                       decrementOnDeckCount[0]=false;
                       registerSearcher(newSearchHolder);
                     } catch (Throwable e) {
@@ -473,7 +476,7 @@ public final class SolrCore {
                     } finally {
                       // we are all done with the old searcher we used
                       // for warming...
-                      currSearcherHolderF.decref();
+                      if (currSearcherHolderF!=null) currSearcherHolderF.decref();
                     }
                     return null;
                   }
@@ -482,7 +485,7 @@ public final class SolrCore {
       }
 
       if (waitSearcher != null) {
-        waitSearcher[0] = finalFuture;
+        waitSearcher[0] = future;
       }
 
       // Return the searcher as the warming tasks run in parallel

@@ -92,6 +92,10 @@ New Features
 31. Support for "Date Math" relative "NOW" when specifying values of a
     DateField in a query -- or when adding a document.
     (hossman, SOLR-71)
+32. useColdSearcher control in solrconfig.xml prevents the first searcher
+    from being used before it's done warming.  This can help prevent
+    thrashing on startup when multiple requests hit a cold searcher.
+    The default is "false", preventing use before warm. (yonik, SOLR-77)
     
 Changes in runtime behavior
  1. classes reorganized into different packages, package names changed to Apache
