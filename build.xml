@@ -98,11 +98,12 @@
   <target name="usage"
           description="Prints out instructions">
     <echo message="Welcome to the Solr project!" />
+    <echo message="Use 'ant example' to create a runnable example configuration." />
+    <echo message="And for developers:"/>
+    <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
     <echo message="Use 'ant package' to build a .zip and .tgz for distribution." />
-    <echo message="Use 'ant example' to install solr.war in ./example" />
-    <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -370,6 +371,7 @@
       </fileset>
     </copy>
     <chmod dir="${example}/solr/bin" perm="755" includes="**"/>
+    <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
 
   <target name="dist-example" 
