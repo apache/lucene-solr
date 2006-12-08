@@ -67,6 +67,26 @@
         [<a href="#other">Other</a>]
       </td>
     </tr>
+    <tr><td></td>
+      <td>Solr Specification Version: 
+          <xsl:value-of select="solr-spec-version" />
+      </td>
+    </tr>
+    <tr><td></td>
+      <td>Solr Implementation Version: 
+          <xsl:value-of select="solr-impl-version" />
+      </td>
+    </tr>
+    <tr><td></td>
+      <td>Lucene Specification Version: 
+          <xsl:value-of select="lucene-spec-version" />
+      </td>
+    </tr>
+    <tr><td></td>
+      <td>Lucene Implementation Version: 
+          <xsl:value-of select="lucene-impl-version" />
+      </td>
+    </tr>
     <tr>
       <td>
       </td>
@@ -85,13 +105,7 @@
   <xsl:apply-templates/>
   </xsl:template>
 
-  <xsl:template match="solr/schema" />
-
-  <xsl:template match="solr/host" />
-
-  <xsl:template match="solr/now" />
-
-  <xsl:template match="solr/start" />
+  <xsl:template match="solr/*" priority="-1" />
 
   <xsl:template match="solr/solr-info">
   <xsl:apply-templates/>

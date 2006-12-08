@@ -29,6 +29,10 @@
   <host><%= hostname %></host>
   <now><%= new Date().toString() %></now>
   <start><%= new Date(core.getStartTime()) %></start>
+  <solr-spec-version><%= solrSpecVersion %></solr-spec-version>
+  <solr-impl-version><%= solrImplVersion %></solr-impl-version>
+  <lucene-spec-version><%= luceneSpecVersion %></lucene-spec-version>
+  <lucene-impl-version><%= luceneImplVersion %></lucene-impl-version>
   <solr-info>
 <%
 for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {

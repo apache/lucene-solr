@@ -323,15 +323,17 @@
   <!-- Creates the Solr WAR file. -->
   <target name="dist-war"
           description="Creates the demo WAR file."
-          depends="compile, make-manifest">
+          depends="compile, make-manifest, dist-jar">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
          webxml="${src}/webapp/WEB-INF/web.xml"
          filesetmanifest="skip"
          manifest="${dest}/META-INF/MANIFEST.MF">
-       <classes dir="${dest}" includes="org/apache/**" />
        <lib dir="${lib}">
          <exclude name="servlet-api*.jar" />
+       </lib>
+       <lib dir="${dist}">
+         <include name="${fullnamever}.jar" />
        </lib>
        <fileset dir="${src}/webapp/resources" />
        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>

@@ -22,6 +22,7 @@
 <%@ page import="java.io.StringWriter"%>
 <%@ page import="org.apache.solr.core.Config"%>
 <%@ page import="org.apache.solr.util.XML"%>
+<%@ page import="org.apache.lucene.LucenePackage"%>
 
 <%
   SolrCore core = SolrCore.getSolrCore();
@@ -42,10 +43,45 @@
   InetAddress addr = InetAddress.getLocalHost();
   String hostname = addr.getCanonicalHostName();
 
-  StringWriter tmp = new StringWriter();
+  StringWriter tmp;
+
+  tmp = new StringWriter();
   XML.escapeCharData(SolrConfig.config.get("admin/defaultQuery/text()", null),
                      tmp);
   String defaultSearch = tmp.toString();
+
+  Package p;
+
+  p = SolrCore.class.getPackage();
+
+  tmp = new StringWriter();
+  String solrImplVersion = p.getImplementationVersion();
+  if (null != solrImplVersion) {
+    XML.escapeCharData(solrImplVersion, tmp);
+    solrImplVersion = tmp.toString();
+  }
+  tmp = new StringWriter();
+  String solrSpecVersion = p.getSpecificationVersion() ;
+  if (null != solrSpecVersion) {
+    XML.escapeCharData(solrSpecVersion, tmp);
+    solrSpecVersion = tmp.toString();
+  }
+
+  p = LucenePackage.class.getPackage();
+
+  tmp = new StringWriter();
+  String luceneImplVersion = p.getImplementationVersion();
+  if (null != luceneImplVersion) {
+    XML.escapeCharData(luceneImplVersion, tmp);
+    luceneImplVersion = tmp.toString();
+  }
+  tmp = new StringWriter();
+  String luceneSpecVersion = p.getSpecificationVersion() ;
+  if (null != luceneSpecVersion) {
+    XML.escapeCharData(luceneSpecVersion, tmp);
+    luceneSpecVersion = tmp.toString();
+  }
+
   String cwd=System.getProperty("user.dir");
   String solrHome= Config.getInstanceDir();
 %>
