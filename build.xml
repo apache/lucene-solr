@@ -364,6 +364,7 @@
 
 
   <target name="example" 
+          description="Creates a runnable example configuration."
           depends="dist-war">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
