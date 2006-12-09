@@ -319,6 +319,12 @@ Documentation
 
   4. Moved xdocs directory to src/site/src/documentation/content/xdocs per Issue 707.  Site now builds using Forrest, just like the other Lucene siblings.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite for info on updating the website. (Grant Ingersoll with help from Steve Rowe, Chris Hostetter, Doug Cutting, Otis Gospodnetic, Yonik Seeley)
 
+  5. Added in Developer and System Requriements sections under Resources (Grant Ingersoll)
+
+Build
+
+  1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)
+
 Release 2.0.0 2006-05-26
 
 API Changes

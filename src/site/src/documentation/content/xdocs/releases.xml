@@ -11,7 +11,8 @@
     <section id="Official"><title>Official Release</title>
         <p>Official releases are usually created when the <a href="whoweare.html">developers</a> feel there are
             sufficient changes, improvements and bug fixes to warrant a release.
-            Due to the voluntary nature of Lucene, no releases are scheduled in advance.</p>
+            Due to the voluntary nature of Lucene, no releases are scheduled in advance. System Requirements are detailed
+            <a href="systemrequirements.html">here</a>.</p>
 			<p>Both binary and source releases are available for 
         <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download from the Apache Mirrors</a></p>
     </section>

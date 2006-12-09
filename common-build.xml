@@ -45,6 +45,22 @@
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.excludes" value=""/>
 
+  
+  <property name="clover.db.dir" location="${build.dir}/test/clover/db"/>
+  <property name="clover.report.dir" location="${build.dir}/test/clover/reports"/>
+
+    <available
+            property="clover.present"
+            classname="com.cenqua.clover.tasks.CloverReportTask"
+            />
+   <condition property="clover.enabled">
+       <and>
+           <isset property="run.clover"/>
+           <isset property="clover.present"/>
+       </and>
+   </condition>
+
+
   <available
     property="javacc.present"
     classname="org.javacc.parser.Main"
@@ -112,7 +128,7 @@
   </target>
 
 
-  <target name="compile-core" depends="init"
+  <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
     <compile
       srcdir="src/java"
@@ -188,6 +204,48 @@
     </junit>
 
     <fail if="tests.failed">Tests failed!</fail>
+  </target>
+
+    <!--
+     If you want clover test code coverage, run this before the tests.  You need clover.jar and the license in your ANT classspath and you need to specify -Drun.clover=true on the command line.
+
+     See http://issues.apache.org/jira/browse/LUCENE-721
+     -->
+  <target name="clover" depends="clover.setup, clover.info" description="Instrument the Unit tests using Clover.  Requires a Clover license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
+
+  <target name="clover.setup" if="clover.enabled">
+    <taskdef resource="clovertasks"/>
+    <mkdir dir="${clover.db.dir}"/>
+    <clover-setup initString="${clover.db.dir}/lucene_coverage.db">
+      <fileset dir="src/java"/>
+    </clover-setup>
+  </target>
+
+  <target name="clover.info" unless="clover.present">
+  	<echo>
+      Clover not found. Code coverage reports disabled.
+  	</echo>
+  </target>
+
+  <target name="clover.check">
+	<fail unless="clover.present">
+	  ##################################################################
+      Clover not found.
+      Please make sure clover.jar is in ANT_HOME/lib, or made available
+      to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+  	</fail>
+  </target>
+    <!--
+     Run after Junit tests.
+     -->
+  <target name="generate-clover-reports" depends="clover.check, clover">
+    <mkdir dir="${clover.report.dir}"/>
+    <clover-report>
+       <current outfile="${clover.report.dir}" title="${final.name}">
+          <format type="html"/>
+       </current>
+    </clover-report>
   </target>
 
   <target name="generate-test-reports" description="Generates test reports">

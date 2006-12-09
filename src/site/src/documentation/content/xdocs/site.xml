@@ -36,6 +36,10 @@ See http://forrest.apache.org/docs/linking.html for more info
        'How can I use a start-up-page other than index.html?' in the FAQs has more 
        information tells you how to change that. 
    -->
+    <!--
+     With the exception of the About section, please try to keep items in alphabetical order by "label"
+
+     -->
   <about label="About">
       <overview label="Overview" href="index.html" description="Welcome to Java Lucene"/>
       <features label="Features" href="features.html"/>
@@ -61,7 +65,8 @@ See http://forrest.apache.org/docs/linking.html for more info
       <developers label="Developers" href="developer-resources.html"/>
       <issues label="Issue Tracking" href="ext:issues"/>
       <contact label="Mailing Lists" href="mailinglists.html"/>
-      <release label="Releases" href="releases.html"/>      
+      <release label="Releases" href="releases.html"/>
+      <system label="System Requirements" href="systemrequirements.html"/>
       <svn   label="Version Control"  href="ext:source" />
   </resources>
   <versions label="Site Versions">
