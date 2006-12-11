@@ -160,8 +160,9 @@
          If the requested sort does not include score, then the filterCache
          will be checked for a filter matching the query. If found, the filter
          will be used as the source of document ids, and then the sort will be
-         applied to that.  -->
+         applied to that.
     <useFilterForSortedQuery>true</useFilterForSortedQuery>
+   -->
 
    <!-- An optimization for use with the queryResultCache.  When a search
          is requested, a superset of the requested number of document ids
