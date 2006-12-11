@@ -407,6 +407,7 @@ final class SegmentMerger {
   }
 
   private void mergeNorms() throws IOException {
+    byte[] normBuffer = null;
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
@@ -415,11 +416,21 @@ final class SegmentMerger {
           for (int j = 0; j < readers.size(); j++) {
             IndexReader reader = (IndexReader) readers.elementAt(j);
             int maxDoc = reader.maxDoc();
-            byte[] input = new byte[maxDoc];
-            reader.norms(fi.name, input, 0);
-            for (int k = 0; k < maxDoc; k++) {
-              if (!reader.isDeleted(k)) {
-                output.writeByte(input[k]);
+            if (normBuffer == null || normBuffer.length < maxDoc) {
+              // the buffer is too small for the current segment
+              normBuffer = new byte[maxDoc];
+            }
+            reader.norms(fi.name, normBuffer, 0);
+            if (!reader.hasDeletions()) {
+              //optimized case for segments without deleted docs
+              output.writeBytes(normBuffer, maxDoc);
+            } else {
+              // this segment has deleted docs, so we have to
+              // check for every doc if it is deleted or not
+              for (int k = 0; k < maxDoc; k++) {
+                if (!reader.isDeleted(k)) {
+                  output.writeByte(normBuffer[k]);
+                }
               }
             }
           }

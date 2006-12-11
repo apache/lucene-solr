@@ -305,6 +305,11 @@ Optimizations
      TermDocs for a MultiReader.  The old implementation could
      recurse up to the number of segments in the index. (Yonik Seeley)
 
+ 14. LUCENE-739: Improve segment merging performance by reusing
+     the norm array across different fields and doing bulk writes
+     of norms of segments with no deleted docs.
+    (Michael Busch via Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
   2. Added TestWindowsMMap.java (Benson Margulies via Mike McCandless)
