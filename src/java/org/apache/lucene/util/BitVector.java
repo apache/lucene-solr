@@ -29,6 +29,7 @@ import org.apache.lucene.store.IndexOutput;
   <li>a count() method, which efficiently computes the number of one bits;</li>
   <li>optimized read from and write to disk;</li>
   <li>inlinable get() method;</li>
+  <li>store and load, as bit set or d-gaps, depending on sparseness;</li> 
   </ul>
 
   @author Doug Cutting
@@ -111,12 +112,56 @@ public final class BitVector {
   public final void write(Directory d, String name) throws IOException {
     IndexOutput output = d.createOutput(name);
     try {
-      output.writeInt(size());			  // write size
-      output.writeInt(count());			  // write count
-      output.writeBytes(bits, bits.length);	  // write bits
+      if (isSparse()) { 
+        writeDgaps(output); // sparse bit-set more efficiently saved as d-gaps.
+      } else {
+        writeBits(output);
+      }
     } finally {
       output.close();
     }
+  }
+     
+  /** Write as a bit set */
+  private void writeBits(IndexOutput output) throws IOException {
+    output.writeInt(size());        // write size
+    output.writeInt(count());       // write count
+    output.writeBytes(bits, bits.length);
+  }
+  
+  /** Write as a d-gaps list */
+  private void writeDgaps(IndexOutput output) throws IOException {
+    output.writeInt(-1);            // mark using d-gaps                         
+    output.writeInt(size());        // write size
+    output.writeInt(count());       // write count
+    int last=0;
+    int n = count();
+    int m = bits.length;
+    for (int i=0; i<m && n>0; i++) {
+      if (bits[i]!=0) {
+        output.writeVInt(i-last);
+        output.writeByte(bits[i]);
+        last = i;
+        n -= BYTE_COUNTS[bits[i] & 0xFF];
+      }
+    }
+  }
+
+  /** Indicates if the bit vector is sparse and should be saved as a d-gaps list, or desnse, and should be saved as a bit set. */
+  private boolean isSparse() {
+    // note: order of comparisons below set to favor smaller values (no binary range search.)
+    // note: adding 4 because we start with ((int) -1) to indicate d-gaps format.
+    // note: we write the d-gap for the byte number, and the byte (bits[i]) itself, therefore
+    //       multiplying count by (8+8) or (8+16) or (8+24) etc.:
+    //       - first 8 for writing bits[i] (1 byte vs. 1 bit), and 
+    //       - second part for writing the byte-number d-gap as vint. 
+    // note: factor is for read/write of byte-arrays being faster than vints.  
+    int factor = 10;  
+    if (bits.length < (1<< 7)) return factor * (4 + (8+ 8)*count()) < size();
+    if (bits.length < (1<<14)) return factor * (4 + (8+16)*count()) < size();
+    if (bits.length < (1<<21)) return factor * (4 + (8+24)*count()) < size();
+    if (bits.length < (1<<28)) return factor * (4 + (8+32)*count()) < size();
+    return                            factor * (4 + (8+40)*count()) < size();
   }
 
   /** Constructs a bit vector from the file <code>name</code> in Directory
@@ -125,13 +170,36 @@ public final class BitVector {
   public BitVector(Directory d, String name) throws IOException {
     IndexInput input = d.openInput(name);
     try {
-      size = input.readInt();			  // read size
-      count = input.readInt();			  // read count
-      bits = new byte[(size >> 3) + 1];		  // allocate bits
-      input.readBytes(bits, 0, bits.length);	  // read bits
+      size = input.readInt();       // read size
+      if (size == -1) {
+        readDgaps(input);
+      } else {
+        readBits(input);
+      }
     } finally {
       input.close();
     }
   }
 
+  /** Read as a bit set */
+  private void readBits(IndexInput input) throws IOException {
+    count = input.readInt();        // read count
+    bits = new byte[(size >> 3) + 1];     // allocate bits
+    input.readBytes(bits, 0, bits.length);
+  }
+
+  /** read as a d-gaps list */ 
+  private void readDgaps(IndexInput input) throws IOException {
+    size = input.readInt();       // (re)read size
+    count = input.readInt();        // read count
+    bits = new byte[(size >> 3) + 1];     // allocate bits
+    int last=0;
+    int n = count();
+    while (n>0) {
+      last += input.readVInt();
+      bits[last] = input.readByte();
+      n -= BYTE_COUNTS[bits[last] & 0xFF];
+    }          
+  }
+  
 }

@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import junit.framework.TestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -158,6 +160,47 @@ public class TestBitVector extends TestCase
         }
     }
 
+    /**
+     * Test r/w when size/count cause switching between bit-set and d-gaps file formats.  
+     * @throws Exception
+     */
+    public void testDgaps() throws IOException {
+      doTestDgaps(1,0,1);
+      doTestDgaps(10,0,1);
+      doTestDgaps(100,0,1);
+      doTestDgaps(1000,4,7);
+      doTestDgaps(10000,40,43);
+      doTestDgaps(100000,415,418);
+      doTestDgaps(1000000,3123,3126);
+    }
+    
+    private void doTestDgaps(int size, int count1, int count2) throws IOException {
+      Directory d = new  RAMDirectory();
+      BitVector bv = new BitVector(size);
+      for (int i=0; i<count1; i++) {
+        bv.set(i);
+        assertEquals(i+1,bv.count());
+      }
+      bv.write(d, "TESTBV");
+      // gradually increase number of set bits
+      for (int i=count1; i<count2; i++) {
+        BitVector bv2 = new BitVector(d, "TESTBV");
+        assertTrue(doCompare(bv,bv2));
+        bv = bv2;
+        bv.set(i);
+        assertEquals(i+1,bv.count());
+        bv.write(d, "TESTBV");
+      }
+      // now start decreasing number of set bits
+      for (int i=count2-1; i>=count1; i--) {
+        BitVector bv2 = new BitVector(d, "TESTBV");
+        assertTrue(doCompare(bv,bv2));
+        bv = bv2;
+        bv.clear(i);
+        assertEquals(i,bv.count());
+        bv.write(d, "TESTBV");
+      }
+    }
     /**
      * Compare two BitVectors.
      * This should really be an equals method on the BitVector itself.

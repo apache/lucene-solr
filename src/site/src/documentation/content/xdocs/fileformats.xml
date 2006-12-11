@@ -926,7 +926,8 @@
             <section id="Compound Files"><title>Compound Files</title>
 
                 <p>Starting with Lucene 1.4 the compound file format became default. This
-                    is simply a container for all files described in the next section.</p>
+                    is simply a container for all files described in the next section
+					(except for the .del file).</p>
 
                 <p>Compound (.cfs) --&gt; FileCount, &lt;DataOffset, FileName&gt;
                     <sup>FileCount</sup>
@@ -1511,20 +1512,48 @@
             <section id="Deleted Documents"><title>Deleted Documents</title>
 
                 <p>The .del file is
-                    optional, and only exists when a segment contains deletions:
+                    optional, and only exists when a segment contains deletions.
                 </p>
 
-                <p>Deletions
+                <p>Although per-segment, this file is maintained exterior to compound segment files.
+                </p>
+				
+                <p>
+                <b>Pre-2.1:</b>
+                Deletions
                     (.del) --&gt; ByteCount,BitCount,Bits
                 </p>
 
-                <p>ByteSize,BitCount --&gt;
+                <p>
+				<b>2.1 and above:</b>
+                Deletions
+                    (.del) --&gt; [Format],ByteCount,BitCount, Bits | DGaps (depending on Format)
+                </p>
+
+                <p>Format,ByteSize,BitCount --&gt;
                     Uint32
                 </p>
 
                 <p>Bits --&gt;
                     &lt;Byte&gt;
                     <sup>ByteCount</sup>
+                </p>
+
+				<p>DGaps --&gt;
+                    &lt;DGap,NonzeroByte&gt;
+                    <sup>NonzeroBytesCount</sup>
+                </p>
+
+                <p>DGap --&gt;
+                    VInt
+                </p>
+
+                <p>NonzeroByte --&gt;
+                    Byte
+                </p>
+				
+                <p>Format
+                    is Optional. -1 indicates DGaps. Non-negative value indicates Bits, and that Format is excluded.
                 </p>
 
                 <p>ByteCount
@@ -1543,6 +1572,20 @@
                     deleted. Bit ordering is from least to most significant. Thus, if
                     Bits contains two bytes, 0x00 and 0x02, then document 9 is marked as
                     deleted.
+                </p>
+
+				<p>DGaps
+                    represents sparse bit-vectors more efficiently than Bits.
+                    It is made of DGaps on indexes of nonzero bytes in Bits,
+                    and the nonzero bytes themselves. The number of nonzero bytes
+                    in Bits (NonzeroBytesCount) is not stored.
+                </p>
+                <p>For example,
+                    if there are 8000 bits and only bits 10,12,32 are set,
+                    DGaps would be used:
+                </p>
+                <p>
+                    (VInt) 1 , (byte) 20 , (VInt) 3 , (Byte) 1
                 </p>
             </section>
         </section>

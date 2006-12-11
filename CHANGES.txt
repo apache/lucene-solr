@@ -143,6 +143,10 @@ API Changes
     replaced by the correct spelling.
     (Andi Vajda via Daniel Naber)
 
+12. LUCENE-738: Reduce the size of the file that keeps track of which
+    documents are deleted when the number of deleted documents is
+    small.  This changes the index file format and cannot be
+    read by previous versions of Lucene.  (Doron Cohen via Yonik Seeley)
 
 Bug fixes
 
