@@ -238,7 +238,7 @@ Bug fixes
     FSIndexInput/Output during finalize().  Besides sending an
     IOException up to the GC, this may also be the cause intermittent
     "The handle is invalid" IOExceptions on Windows when trying to
-    close readers or writers.
+    close readers or writers. (Michael Busch via Mike McCandless).
 
 Optimizations
 
