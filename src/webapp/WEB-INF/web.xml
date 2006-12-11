@@ -66,5 +66,11 @@
     <servlet-name>ping</servlet-name>
     <url-pattern>/admin/ping</url-pattern>
   </servlet-mapping>
+  
+  <mime-mapping>
+    <extension>.xsl</extension>
+    <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->
+    <mime-type>application/xslt+xml</mime-type>
+  </mime-mapping>
 
 </web-app>

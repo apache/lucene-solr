@@ -170,5 +170,7 @@ Other Changes
 12. Added new numeric build property "specversion" to allow clean
     MANIFEST.MF files (hossman)
 13. Added Solr/Lucene versions to "Info" page (hossman)
+14. Explicitly set mime-type of .xsl files in web.xml to
+    application/xslt+xml (hossman)
 
 2006/01/17 Solr open sourced, moves to Apache Incubator
