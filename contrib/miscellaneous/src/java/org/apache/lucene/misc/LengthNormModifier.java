@@ -69,8 +69,7 @@ public class LengthNormModifier {
     LengthNormModifier lnm = new LengthNormModifier(d, s);
     
     for (int i = 2; i < args.length; i++) {
-      System.out.print("Updating field: " + args[i] + " " +
-          (new Date()).toString() + " ... ");
+      System.out.print("Updating field: " + args[i] + " " + (new Date()).toString() + " ... ");
       lnm.reSetNorms(args[i]);
       System.out.println(new Date().toString());
     }
@@ -83,7 +82,7 @@ public class LengthNormModifier {
   private Similarity sim;
   
   /**
-   * Constructor for code that wishes to use this class progromaticaly
+   * Constructor for code that wishes to use this class progaomatically.
    *
    * @param d The Directory to modify
    * @param s The Similarity to use in <code>reSetNorms</code>
@@ -94,7 +93,7 @@ public class LengthNormModifier {
   }
   
   /**
-   * Re-Set the norms for the specified field.
+   * Resets the norms for the specified field.
    *
    * <p>
    * Opens a new IndexReader on the Directory given to this instance,
@@ -102,7 +101,7 @@ public class LengthNormModifier {
    * and closes the IndexReader.
    * </p>
    *
-   * @param field the field whose norms
+   * @param field the field whose norms should be reset
    */
   public void reSetNorms(String field) throws IOException {
     String fieldName = field.intern();
@@ -127,7 +126,6 @@ public class LengthNormModifier {
               }
             }
           } while (termEnum.next());
-          
         } finally {
           if (null != termDocs) termDocs.close();
         }
@@ -142,12 +140,10 @@ public class LengthNormModifier {
       reader = IndexReader.open(dir); 
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
-          byte norm = sim.encodeNorm
-          (sim.lengthNorm(fieldName, termCounts[d]));
+          byte norm = sim.encodeNorm(sim.lengthNorm(fieldName, termCounts[d]));
           reader.setNorm(d, fieldName, norm);
         }
       }
-      
     } finally {
       if (null != reader) reader.close();
     }
