@@ -190,4 +190,70 @@ public class TestSpans extends TestCase {
     assertFalse("third range", spans.next());
   }
 
+
+  private Spans orSpans(String[] terms) throws Exception {
+    SpanQuery[] sqa = new SpanQuery[terms.length];
+    for (int i = 0; i < terms.length; i++) {
+      sqa[i] = makeSpanTermQuery(terms[i]);
+    }
+    return (new SpanOrQuery(sqa)).getSpans(searcher.getIndexReader());
+  }
+
+  private void tstNextSpans(Spans spans, int doc, int start, int end)
+  throws Exception {
+    assertTrue("next", spans.next());
+    assertEquals("doc", doc, spans.doc());
+    assertEquals("start", start, spans.start());
+    assertEquals("end", end, spans.end());
+  }
+
+  public void testSpanOrEmpty() throws Exception {
+    Spans spans = orSpans(new String[0]);
+    assertFalse("empty next", spans.next());
+  }
+
+  public void testSpanOrSingle() throws Exception {
+    Spans spans = orSpans(new String[] {"w5"});
+    tstNextSpans(spans, 0, 4, 5);
+    assertFalse("final next", spans.next());
+  }
+  
+  public void testSpanOrDouble() throws Exception {
+    Spans spans = orSpans(new String[] {"w5", "yy"});
+    tstNextSpans(spans, 0, 4, 5);
+    tstNextSpans(spans, 2, 3, 4);
+    tstNextSpans(spans, 3, 4, 5);
+    tstNextSpans(spans, 7, 3, 4);
+    assertFalse("final next", spans.next());
+  }
+
+  public void testSpanOrDoubleSkip() throws Exception {
+    Spans spans = orSpans(new String[] {"w5", "yy"});
+    assertTrue("initial skipTo", spans.skipTo(3));
+    assertEquals("doc", 3, spans.doc());
+    assertEquals("start", 4, spans.start());
+    assertEquals("end", 5, spans.end());
+    tstNextSpans(spans, 7, 3, 4);
+    assertFalse("final next", spans.next());
+  }
+
+  public void testSpanOrUnused() throws Exception {
+    Spans spans = orSpans(new String[] {"w5", "unusedTerm", "yy"});
+    tstNextSpans(spans, 0, 4, 5);
+    tstNextSpans(spans, 2, 3, 4);
+    tstNextSpans(spans, 3, 4, 5);
+    tstNextSpans(spans, 7, 3, 4);
+    assertFalse("final next", spans.next());
+  }
+
+  public void testSpanOrTripleSameDoc() throws Exception {
+    Spans spans = orSpans(new String[] {"t1", "t2", "t3"});
+    tstNextSpans(spans, 11, 0, 1);
+    tstNextSpans(spans, 11, 1, 2);
+    tstNextSpans(spans, 11, 2, 3);
+    tstNextSpans(spans, 11, 3, 4);
+    tstNextSpans(spans, 11, 4, 5);
+    tstNextSpans(spans, 11, 5, 6);
+    assertFalse("final next", spans.next());
+  }
 }
