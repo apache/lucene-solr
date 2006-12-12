@@ -273,7 +273,7 @@ public final class SolrCore {
    *
    * <p>
    * If <tt>forceNew==true</tt> then
-   *  A new searcher will be opened and registered irregardless if there is already
+   *  A new searcher will be opened and registered regardless of whether there is already
    *    a registered searcher or other searchers in the process of being created.
    * <p>
    * If <tt>forceNew==false</tt> then:<ul>
@@ -313,7 +313,7 @@ public final class SolrCore {
         }
       }
 
-      // check to see if we can wait for someone elses searcher to be set
+      // check to see if we can wait for someone else's searcher to be set
       if (onDeckSearchers>0 && !forceNew && _searcher==null) {
         try {
           searcherLock.wait();
