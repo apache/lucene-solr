@@ -386,6 +386,7 @@
         <packageset dir="contrib/surround/src/java"/>
         <packageset dir="contrib/swing/src/java"/>
         <packageset dir="contrib/wordnet/src/java"/>
+          <packageset dir="contrib/benchmark/src/java"/>
         
         <packageset refid="gdata-server" />
 
@@ -395,7 +396,7 @@
 
         <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
         <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
-
+          <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
         <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
         <group title="contrib: GData Server (Java1.5)" packages="org.apache.lucene.gdata.*"/>
         <group title="contrib: Lucli" packages="lucli*"/>
@@ -404,7 +405,8 @@
         <group title="contrib: MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
         <group title="contrib: RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
         <group title="contrib: Snowball" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
-	<group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
+
+    <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
 	<group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
         <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
         <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
