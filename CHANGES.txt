@@ -118,6 +118,8 @@ Changes in runtime behavior
     through multiple threads.  Large commits also might be faster (klaas, SOLR-65)
  9. Lazy field loading can be enabled via a solrconfig directive.  This will be faster when
     not all stored fields are needed from a document (klaas, SOLR-52)   
+10. Made admin JSPs return XML and transform them with new XSL stylesheets
+    (Otis Gospodnetic, SOLR-58)
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 

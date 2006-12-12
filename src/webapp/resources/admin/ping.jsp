@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
+<%@ page contentType="text/xml; charset=utf-8" pageEncoding="UTF-8" language="java" %>
 <%--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -17,10 +17,16 @@
 --%>
 <%@ page import="org.apache.solr.core.SolrConfig,
                  org.apache.solr.core.SolrCore,
+                 org.apache.solr.util.XML,
                  org.apache.solr.core.SolrException"%>
 <%@ page import="org.apache.solr.request.LocalSolrQueryRequest"%>
 <%@ page import="org.apache.solr.request.SolrQueryResponse"%>
 <%@ page import="java.util.StringTokenizer"%>
+
+<?xml-stylesheet type="text/xsl" href="ping.xsl"?>
+
+<solr>
+  <ping>
 <%
   SolrCore core = SolrCore.getSolrCore();
 
@@ -40,12 +46,31 @@
   SolrQueryResponse resp = new SolrQueryResponse();
   try {
     core.execute(req,resp);
-    if (resp.getException() != null) {
-      response.sendError(500, SolrException.toStr(resp.getException()));
+    if (resp.getException() == null) {
+// No need for explicit status in the body, when the standard HTTP
+// response codes already transmit success/failure message
+//      out.println("<status>200</status>");
+    }
+    else if (resp.getException() != null) {
+// No need for explicit status in the body, when the standard HTTP
+// response codes already transmit success/failure message
+//      out.println("<status>500</status>");
+      out.println("<error>");
+      XML.escapeCharData(SolrException.toStr(resp.getException()), out);
+      out.println("</error>");
+      response.sendError(500);
     }
   } catch (Throwable t) {
-      response.sendError(500, SolrException.toStr(t));
+// No need for explicit status in the body, when the standard HTTP
+// response codes already transmit success/failure message
+//      out.println("<status>500</status>");
+      out.println("<error>");
+      XML.escapeCharData(SolrException.toStr(t), out);
+      out.println("</error>");
+      response.sendError(500);
   } finally {
       req.close();
   }
 %>
+  </ping>
+</solr>

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=utf-8" pageEncoding="UTF-8"%>
+<%@ page contentType="text/xml; charset=utf-8" pageEncoding="UTF-8" language="java" %>
 <%--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -18,101 +18,87 @@
 <%@ page import="java.lang.management.ManagementFactory,
                  java.lang.management.ThreadMXBean,
                  java.lang.management.ThreadInfo,
-                 java.io.IOException"%>
-<%@include file="header.jsp" %>
+                 java.io.IOException,
+                 org.apache.solr.util.XML"%>
+
+<?xml-stylesheet type="text/xsl" href="threaddump.xsl"?>
+
 <%!
   static ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
 %>
-<br clear="all">
-<h2>Thread Dump</h2>
-<table>
-<tr>
-<td>
-<%
-  out.print(System.getProperty("java.vm.name") +
-            " " + System.getProperty("java.vm.version") + "<br>");
-%>
-</td>
-</tr>
-<tr>
-<td>
+<solr>
+  <system>
+  <jvm>
+    <version><%=System.getProperty("java.vm.version")%></version>
+    <name><%=System.getProperty("java.vm.name")%></name>
+  </jvm>
+  <threadCount>
+    <current><%=tmbean.getThreadCount()%></current>
+    <peak><%=tmbean.getPeakThreadCount()%></peak>
+    <daemon><%=tmbean.getDaemonThreadCount()%></daemon>
+  </threadCount>
 <%
   long[] tids;
   ThreadInfo[] tinfos;
-
-  out.print("Thread Count: current=" + tmbean.getThreadCount() +
-            " deamon=" + tmbean.getDaemonThreadCount() +
-            " peak=" + tmbean.getPeakThreadCount());
-%>
-</td>
-</tr>
-<tr>
-<td>
-<%
   tids = tmbean.findMonitorDeadlockedThreads();
-  if (tids == null) {
-      out.print("No deadlock found.");
-  }
-  else {
-      out.print("Deadlock found :-");
+  if (tids != null) {
+      out.println("  <deadlocks>");
       tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
       for (ThreadInfo ti : tinfos) {
           printThreadInfo(ti, out);
       }
+      out.println("  </deadlocks>");
   }
 %>
-</td>
-</tr>
-<tr>
-<td>
 <%
-  out.print("Full Thread Dump:<br>");
   tids = tmbean.getAllThreadIds();
   tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
+  out.println("  <threadDump>");
   for (ThreadInfo ti : tinfos) {
      printThreadInfo(ti, out);
   }
+  out.println("  </threadDump>");
 %>
-</td>
-</tr>
-</table>
-<br><br>
-    <a href=".">Return to Admin Page</a>
-</body>
-</html>
+  </system>
+</solr>
 
 <%!
-  static String INDENT = "&nbsp&nbsp&nbsp&nbsp ";
-
   static void printThreadInfo(ThreadInfo ti, JspWriter out) throws IOException {
       long tid = ti.getThreadId();
-      StringBuilder sb = new StringBuilder("\"" + ti.getThreadName() + "\"" +
-                                           " Id=" + tid +
-                                           " in " + ti.getThreadState());
+      out.println("    <thread>");
+      out.println("      <id>" + tid + "</id>");
+      out.print("      <name>");
+      XML.escapeCharData(ti.getThreadName(), out);
+      out.println("</name>");
+      out.println("      <state>" + ti.getThreadState() + "</state>");
       if (ti.getLockName() != null) {
-          sb.append(" on lock=" + ti.getLockName());
+          out.println("      <lock>" + ti.getLockName() + "</lock>");
       }
       if (ti.isSuspended()) {
-          sb.append(" (suspended)");
+          out.println("      <suspended/>");
       }
       if (ti.isInNative()) {
-          sb.append(" (running in native)");
+          out.println("      <inNative/>");
       }
       if (tmbean.isThreadCpuTimeSupported()) {
-          sb.append(" total cpu time="
-                    +formatNanos(tmbean.getThreadCpuTime(tid)));
-          sb.append(" user time="
-                    +formatNanos(tmbean.getThreadUserTime(tid)));
+          out.println("      <cpuTime>" + formatNanos(tmbean.getThreadCpuTime(tid)) + "</cpuTime>");
+          out.println("      <userTime>" + formatNanos(tmbean.getThreadUserTime(tid)) + "</userTime>");
       }
-      out.print(sb.toString()+"<br>");
+
       if (ti.getLockOwnerName() != null) {
-          out.print(INDENT + " owned by " + ti.getLockOwnerName() +
-                    " Id=" + ti.getLockOwnerId()+"<br>");
+          out.println("      <owner>");
+          out.println("        <name>" + ti.getLockOwnerName() + "</name>");
+          out.println("        <id>" + ti.getLockOwnerId() + "</id>");
+          out.println("      </owner>");
       }
+      out.println("      <stackTrace>");
       for (StackTraceElement ste : ti.getStackTrace()) {
-          out.print(INDENT + "at " + ste.toString()+"<br>");
+          out.print("        <line>");
+          XML.escapeCharData("at " + ste.toString(), out);
+          out.println("        </line>");
       }
-      out.print("<br>");
+      out.println("      </stackTrace>");
+      out.println("    </thread>");
   }
 
   static String formatNanos(long ns) {
