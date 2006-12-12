@@ -361,6 +361,7 @@
           author="true"
           version="true"
           use="true"
+          source="${ant.java.version}"
           link="${javadoc.link}"
           windowtitle="${Name} ${version} API"
           doctitle="${Name} ${version} API"
