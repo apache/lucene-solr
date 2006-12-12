@@ -313,6 +313,7 @@ Optimizations
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
   2. Added TestWindowsMMap.java (Benson Margulies via Mike McCandless)
+  3. LUCENE-744 Append the user.name property onto the temporary directory that is created so it doesn't interfere with other users. (Grant Ingersoll)
 
 Documentation
 

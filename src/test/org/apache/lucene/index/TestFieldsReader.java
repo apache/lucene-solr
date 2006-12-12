@@ -164,7 +164,8 @@ public class TestFieldsReader extends TestCase {
    */
   public void testLazyPerformance() throws Exception {
     String tmpIODir = System.getProperty("java.io.tmpdir");
-    String path = tmpIODir + File.separator + "lazyDir";
+    String userName = System.getProperty("user.name");
+    String path = tmpIODir + File.separator + "lazyDir" + userName;
     File file = new File(path);
     FSDirectory tmpDir = FSDirectory.getDirectory(file, true);
     assertTrue(tmpDir != null);
