@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<editmodel:ClassDiagramEditModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:editmodel="editmodel.xmi" xmlns:options="options.xmi" name="core-aid" description="" id="org.apache.lucene.gdata.gom.core" metadata="uml2-1.0" initialized="true" zoom="1.5" scrolledX="1601" scrolledY="503" tag="1000" key="3230303631303036204764617461556D6C2F73696D6F6E">
+  <children xsi:type="editmodel:ClassEditModel" name="GDataParseException" location="50,1339" size="240,151" id="org.apache.lucene.gdata.gom.core/GDataParseException" runTimeClassModel="GDataParseException(Ljava.lang.String;),GDataParseException(),GDataParseException(Ljava.lang.String;Ljava.lang.Throwable;),GDataParseException(Ljava.lang.Throwable;)">
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <children xsi:type="editmodel:CompartmentEditModel" size="217,72">
+      <children xsi:type="editmodel:MethodEditModel" name="GDataParseException" id="org.apache.lucene.gdata.gom.core/GDataParseException#GDataParseException()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="GDataParseException" id="org.apache.lucene.gdata.gom.core/GDataParseException#GDataParseException(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="GDataParseException" id="org.apache.lucene.gdata.gom.core/GDataParseException#GDataParseException(Ljava.lang.Throwable;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="GDataParseException" id="org.apache.lucene.gdata.gom.core/GDataParseException#GDataParseException(Ljava.lang.String;Ljava.lang.Throwable;)"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:ClassEditModel" targetConnections="//@children.6/@sourceConnections.0" name="GOMFeedImpl" location="220,250" size="233,889" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl" runTimeClassModel="getId(),contributors,getTitle(),getLogo(),namespaces,getIcon(),setIcon(Lorg.apache.lucene.gdata.gom.GOMIcon;),id,logo,links,getNamespaces(),setTitle(Lorg.apache.lucene.gdata.gom.GOMTitle;),getLinks(),rights,entries,setSubtitle(Lorg.apache.lucene.gdata.gom.GOMSubtitle;),getChildren(),setLogo(Lorg.apache.lucene.gdata.gom.GOMLogo;),GOMFeedImpl(),getGenerator(),addCategory(Lorg.apache.lucene.gdata.gom.GOMCategory;),processEndElement(),processAttribute(Ljavax.xml.namespace.QName;Ljava.lang.String;),getContributor(),addAuthor(Lorg.apache.lucene.gdata.gom.GOMAuthor;),addEntry(Lorg.apache.lucene.gdata.gom.GOMEntry;),title,getRights(),categories,setId(Lorg.apache.lucene.gdata.gom.GOMId;),updated,setGenerator(Lorg.apache.lucene.gdata.gom.GOMGenerator;),addChild(Lorg.apache.lucene.gdata.gom.GOMElement;),getChildParser(Ljavax.xml.namespace.QName;),getAuthors(),icon,writeRssOutput(Ljavax.xml.stream.XMLStreamWriter;),setRights(Lorg.apache.lucene.gdata.gom.GOMRights;),writeAtomOutput(Ljavax.xml.stream.XMLStreamWriter;),addContributor(Lorg.apache.lucene.gdata.gom.GOMContributor;),addNamespace(Lorg.apache.lucene.gdata.gom.core.GOMNamespace;),processElementValue(Ljava.lang.String;),authors,getLocalName(),getUpdated(),getSubtitle(),setUpdated(Lorg.apache.lucene.gdata.gom.GOMTime;),generator,getEntries(),subtitle,getCategories()">
+    <children xsi:type="editmodel:CompartmentEditModel" size="109,144">
+      <children xsi:type="editmodel:AttributeEditModel" name="generator" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#generator"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="icon" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#icon"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="id" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#id"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="logo" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#logo"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="rights" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#rights"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="subtitle" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#subtitle"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="title" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#title"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="updated" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#updated"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel" size="210,666">
+      <children xsi:type="editmodel:MethodEditModel" name="GOMFeedImpl" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#GOMFeedImpl()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="addAuthor" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#addAuthor(Lorg.apache.lucene.gdata.gom.GOMAuthor;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="addCategory" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#addCategory(Lorg.apache.lucene.gdata.gom.GOMCategory;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="addChild" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#addChild(Lorg.apache.lucene.gdata.gom.GOMElement;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="addContributor" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#addContributor(Lorg.apache.lucene.gdata.gom.GOMContributor;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="addEntry" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#addEntry(Lorg.apache.lucene.gdata.gom.GOMEntry;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="addNamespace" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#addNamespace(Lorg.apache.lucene.gdata.gom.core.GOMNamespace;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getAuthors" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getAuthors()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getCategories" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getCategories()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getChildParser" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getChildParser(Ljavax.xml.namespace.QName;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getChildren" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getChildren()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getContributor" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getContributor()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getEntries" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getEntries()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getGenerator" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getGenerator()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getIcon" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getIcon()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getId" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getId()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getLinks" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getLinks()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getLocalName" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getLocalName()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getLogo" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getLogo()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getNamespaces" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getNamespaces()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getRights" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getRights()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getSubtitle" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getSubtitle()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getTitle" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getTitle()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getUpdated" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#getUpdated()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="processAttribute" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#processAttribute(Ljavax.xml.namespace.QName;Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="processElementValue" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#processElementValue(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="processEndElement" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#processEndElement()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setGenerator" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setGenerator(Lorg.apache.lucene.gdata.gom.GOMGenerator;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setIcon" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setIcon(Lorg.apache.lucene.gdata.gom.GOMIcon;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setId" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setId(Lorg.apache.lucene.gdata.gom.GOMId;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setLogo" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setLogo(Lorg.apache.lucene.gdata.gom.GOMLogo;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setRights" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setRights(Lorg.apache.lucene.gdata.gom.GOMRights;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setSubtitle" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setSubtitle(Lorg.apache.lucene.gdata.gom.GOMSubtitle;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setTitle" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setTitle(Lorg.apache.lucene.gdata.gom.GOMTitle;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setUpdated" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#setUpdated(Lorg.apache.lucene.gdata.gom.GOMTime;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="writeAtomOutput" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#writeAtomOutput(Ljavax.xml.stream.XMLStreamWriter;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="writeRssOutput" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl#writeRssOutput(Ljavax.xml.stream.XMLStreamWriter;)"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl->org.apache.lucene.gdata.gom.core/AtomParser" source="//@children.1" target="//@children.3" targetEnd="//@children.1/@sourceConnections.0/@children.2" label="//@children.1/@sourceConnections.0/@children.0" sourceEnd="//@children.1/@sourceConnections.0/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«import»" size="29,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="233,34" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,234"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl->org.apache.lucene.gdata.gom.core/GOMNamespace" source="//@children.1" target="//@children.6" targetEnd="//@children.1/@sourceConnections.1/@children.2" label="//@children.1/@sourceConnections.1/@children.0" sourceEnd="//@children.1/@sourceConnections.1/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«import»" size="29,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="233,592" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,102"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl->org.apache.lucene.gdata.gom.core/GOMAttributeImpl" source="//@children.1" target="//@children.7" targetEnd="//@children.1/@sourceConnections.2/@children.2" label="//@children.1/@sourceConnections.2/@children.0" sourceEnd="//@children.1/@sourceConnections.2/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,12" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="173,193"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/GOMFeedImpl->org.apache.lucene.gdata.gom.core/GOMAttributeImpl" source="//@children.1" target="//@children.7" targetEnd="//@children.1/@sourceConnections.3/@children.2" label="//@children.1/@sourceConnections.3/@children.0" sourceEnd="//@children.1/@sourceConnections.3/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«import»" size="29,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="233,10" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="10,205"/>
+    </sourceConnections>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" packageIndication="2" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:ClassEditModel" targetConnections="//@children.5/@sourceConnections.2 //@children.5/@sourceConnections.4" name="GOMFactory" location="1873,241" size="147,133" id="org.apache.lucene.gdata.gom.core/GOMFactory" runTimeClassModel="createInstance(),createFeed(),GOMFactory()">
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <children xsi:type="editmodel:CompartmentEditModel" size="124,54">
+      <children xsi:type="editmodel:MethodEditModel" name="GOMFactory" id="org.apache.lucene.gdata.gom.core/GOMFactory#GOMFactory()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="createInstance" id="org.apache.lucene.gdata.gom.core/GOMFactory#createInstance()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="createFeed" id="org.apache.lucene.gdata.gom.core/GOMFactory#createFeed()"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:InterfaceEditModel" targetConnections="//@children.5/@sourceConnections.0 //@children.1/@sourceConnections.0" name="AtomParser" location="1051,50" size="233,269" id="org.apache.lucene.gdata.gom.core/AtomParser" runTimeClassModel="uNEXPECTED_ATTRIBUTE,uNEXPECTED_ELEMENENT_VALUE,uNEXPECTED_ELEMENENT_CHILD,getChildParser(Ljavax.xml.namespace.QName;),uNEXPECTED_ELEMENENT,processEndElement(),mISSING_ELEMEMENT_CHILD,processElementValue(Ljava.lang.String;),processAttribute(Ljavax.xml.namespace.QName;Ljava.lang.String;),mISSING_ELEMEMENT_ATTRIBUTE">
+    <children xsi:type="editmodel:CompartmentEditModel" size="179,108">
+      <children xsi:type="editmodel:AttributeEditModel" name="uNEXPECTED_ELEMENENT" id="org.apache.lucene.gdata.gom.core/AtomParser#uNEXPECTED_ELEMENENT"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="uNEXPECTED_ELEMENENT_CHILD" id="org.apache.lucene.gdata.gom.core/AtomParser#uNEXPECTED_ELEMENENT_CHILD"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="uNEXPECTED_ATTRIBUTE" id="org.apache.lucene.gdata.gom.core/AtomParser#uNEXPECTED_ATTRIBUTE"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="uNEXPECTED_ELEMENENT_VALUE" id="org.apache.lucene.gdata.gom.core/AtomParser#uNEXPECTED_ELEMENENT_VALUE"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="mISSING_ELEMEMENT_ATTRIBUTE" id="org.apache.lucene.gdata.gom.core/AtomParser#mISSING_ELEMEMENT_ATTRIBUTE"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="mISSING_ELEMEMENT_CHILD" id="org.apache.lucene.gdata.gom.core/AtomParser#mISSING_ELEMEMENT_CHILD"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel" size="210,72">
+      <children xsi:type="editmodel:MethodEditModel" name="processElementValue" id="org.apache.lucene.gdata.gom.core/AtomParser#processElementValue(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="processAttribute" id="org.apache.lucene.gdata.gom.core/AtomParser#processAttribute(Ljavax.xml.namespace.QName;Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="processEndElement" id="org.apache.lucene.gdata.gom.core/AtomParser#processEndElement()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getChildParser" id="org.apache.lucene.gdata.gom.core/AtomParser#getChildParser(Ljavax.xml.namespace.QName;)"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <sourceConnections xsi:type="editmodel:AssociationEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/AtomParser@parserStack+org.apache.lucene.gdata.gom.core/GOMBuilder@" source="//@children.3" target="//@children.5" targetEnd="//@children.3/@sourceConnections.0/@children.2" label="//@children.3/@sourceConnections.0/@children.0" sourceEnd="//@children.3/@sourceConnections.0/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" name="parserStack" location="233,259" id="org.apache.lucene.gdata.gom.core/AtomParser@parserStack+org.apache.lucene.gdata.gom.core/GOMBuilder@|org.apache.lucene.gdata.gom.core/AtomParser#parserStack" attachSource="true" multiplicityLabel="//@children.3/@sourceConnections.0/@children.1/@children.1" roleLabel="//@children.3/@sourceConnections.0/@children.1/@children.0" navigable="true">
+        <children xsi:type="editmodel:LabelEditModel" name=" - parserStack" location="1291,291" size="47,10" fontInfo="Arial-8-0" anchorKind="FirstPart"/>
+        <children xsi:type="editmodel:LabelEditModel" name="*" location="1291,315" size="3,10" fontInfo="Arial-8-0" anchorKind="FirstPart"/>
+      </children>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="10,0" id="org.apache.lucene.gdata.gom.core/AtomParser@parserStack+org.apache.lucene.gdata.gom.core/GOMBuilder@|org.apache.lucene.gdata.gom.core/GOMBuilder#" roleLabel="//@children.3/@sourceConnections.0/@children.2/@children.0">
+        <children xsi:type="editmodel:LabelEditModel" location="1391,481" size="0,10" fontInfo="Arial-8-0" anchorKind="LastPart"/>
+      </children>
+    </sourceConnections>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:ClassEditModel" targetConnections="//@children.5/@sourceConnections.3 //@children.5/@sourceConnections.6 //@children.5/@sourceConnections.8" name="GOMDocumentImpl" location="1623,994" size="227,295" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl" runTimeClassModel="setCharacterEncoding(Ljava.lang.String;),charEncoding,GOMDocumentImpl(),setVersion(Ljava.lang.String;),getCharacterEncoding(),writeRssOutput(Ljavax.xml.stream.XMLStreamWriter;),root,getRootElement(),getVersion(),writeAtomOutput(Ljavax.xml.stream.XMLStreamWriter;),setRootElement,version">
+    <children xsi:type="editmodel:CompartmentEditModel" size="91,54">
+      <children xsi:type="editmodel:AttributeEditModel" name="root" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#root"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="version" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#version"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="charEncoding" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#charEncoding"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel" size="204,162">
+      <children xsi:type="editmodel:MethodEditModel" name="GOMDocumentImpl" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#GOMDocumentImpl()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getRootElement" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#getRootElement()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setVersion" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#setVersion(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getVersion" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#getVersion()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getCharacterEncoding" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#getCharacterEncoding()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setCharacterEncoding" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#setCharacterEncoding(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="writeAtomOutput" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#writeAtomOutput(Ljavax.xml.stream.XMLStreamWriter;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setRootElement" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#setRootElement"/>
+      <children xsi:type="editmodel:MethodEditModel" name="writeRssOutput" id="org.apache.lucene.gdata.gom.core/GOMDocumentImpl#writeRssOutput(Ljavax.xml.stream.XMLStreamWriter;)"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:ClassEditModel" targetConnections="//@children.3/@sourceConnections.0" name="GOMBuilder" location="1388,498" size="259,295" id="org.apache.lucene.gdata.gom.core/GOMBuilder" runTimeClassModel="parserStack,next(),processAttributes(Lorg.apache.lucene.gdata.gom.core.AtomParser;),buildGOMEntry(),lastLocalName,streamReader,parse(Ljavax.xml.stream.XMLStreamReader;),buildGOMFeed(),GOMBuilder(Ljavax.xml.stream.XMLStreamReader;),startFeedDocument(Lorg.apache.lucene.gdata.gom.GOMDocument;),factory">
+    <children xsi:type="editmodel:CompartmentEditModel" size="136,54">
+      <children xsi:type="editmodel:AttributeEditModel" name="streamReader" id="org.apache.lucene.gdata.gom.core/GOMBuilder#streamReader"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="factory" id="org.apache.lucene.gdata.gom.core/GOMBuilder#factory"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="lastLocalName" id="org.apache.lucene.gdata.gom.core/GOMBuilder#lastLocalName"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="parserStack" id="org.apache.lucene.gdata.gom.core/AtomParser@parserStack+org.apache.lucene.gdata.gom.core/GOMBuilder@|org.apache.lucene.gdata.gom.core/AtomParser#parserStack"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel" size="236,126">
+      <children xsi:type="editmodel:MethodEditModel" name="GOMBuilder" id="org.apache.lucene.gdata.gom.core/GOMBuilder#GOMBuilder(Ljavax.xml.stream.XMLStreamReader;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="buildGOMFeed" id="org.apache.lucene.gdata.gom.core/GOMBuilder#buildGOMFeed()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="parse" id="org.apache.lucene.gdata.gom.core/GOMBuilder#parse(Ljavax.xml.stream.XMLStreamReader;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="processAttributes" id="org.apache.lucene.gdata.gom.core/GOMBuilder#processAttributes(Lorg.apache.lucene.gdata.gom.core.AtomParser;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="buildGOMEntry" id="org.apache.lucene.gdata.gom.core/GOMBuilder#buildGOMEntry()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="startFeedDocument" id="org.apache.lucene.gdata.gom.core/GOMBuilder#startFeedDocument(Lorg.apache.lucene.gdata.gom.GOMDocument;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="next" id="org.apache.lucene.gdata.gom.core/GOMBuilder#next()"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/AtomParser" source="//@children.5" target="//@children.3" targetEnd="//@children.5/@sourceConnections.0/@children.2" label="//@children.5/@sourceConnections.0/@children.0" sourceEnd="//@children.5/@sourceConnections.0/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«import»" size="29,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,20" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="213,269"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMNamespace" source="//@children.5" target="//@children.6" targetEnd="//@children.5/@sourceConnections.1/@children.2" label="//@children.5/@sourceConnections.1/@children.0" sourceEnd="//@children.5/@sourceConnections.1/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,236" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="135,58"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMFactory" source="//@children.5" target="//@children.2" targetEnd="//@children.5/@sourceConnections.2/@children.2" label="//@children.5/@sourceConnections.2/@children.0" sourceEnd="//@children.5/@sourceConnections.2/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«access»" size="32,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="249,0" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,123"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMDocumentImpl" source="//@children.5" target="//@children.4" targetEnd="//@children.5/@sourceConnections.3/@children.2" label="//@children.5/@sourceConnections.3/@children.0" sourceEnd="//@children.5/@sourceConnections.3/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="256,295" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="21,0"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMFactory" source="//@children.5" target="//@children.2" targetEnd="//@children.5/@sourceConnections.4/@children.2" label="//@children.5/@sourceConnections.4/@children.0" sourceEnd="//@children.5/@sourceConnections.4/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«import»" size="29,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="258,0" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="10,143"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMNamespace" source="//@children.5" target="//@children.6" targetEnd="//@children.5/@sourceConnections.5/@children.2" label="//@children.5/@sourceConnections.5/@children.0" sourceEnd="//@children.5/@sourceConnections.5/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" name="«import»" size="29,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,216" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="135,78"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMDocumentImpl" source="//@children.5" target="//@children.4" targetEnd="//@children.5/@sourceConnections.6/@children.2" label="//@children.5/@sourceConnections.6/@children.0" sourceEnd="//@children.5/@sourceConnections.6/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="236,295" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="1,0"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMNamespace" source="//@children.5" target="//@children.6" targetEnd="//@children.5/@sourceConnections.7/@children.2" label="//@children.5/@sourceConnections.7/@children.0" sourceEnd="//@children.5/@sourceConnections.7/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,268" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="135,26"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" autoLocated="true" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMDocumentImpl" source="//@children.5" target="//@children.4" targetEnd="//@children.5/@sourceConnections.8/@children.2" label="//@children.5/@sourceConnections.8/@children.0" sourceEnd="//@children.5/@sourceConnections.8/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="246,295" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="11,0"/>
+    </sourceConnections>
+    <sourceConnections xsi:type="editmodel:DependencyEditModel" id="org.apache.lucene.gdata.gom.core/GOMBuilder->org.apache.lucene.gdata.gom.core/GOMNamespace" source="//@children.5" target="//@children.6" targetEnd="//@children.5/@sourceConnections.9/@children.2" label="//@children.5/@sourceConnections.9/@children.0" sourceEnd="//@children.5/@sourceConnections.9/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="0,246" attachSource="true"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="135,48"/>
+    </sourceConnections>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:ClassEditModel" targetConnections="//@children.5/@sourceConnections.1 //@children.5/@sourceConnections.5 //@children.1/@sourceConnections.1 //@children.5/@sourceConnections.7 //@children.5/@sourceConnections.9" name="GOMNamespace" location="590,740" size="135,205" id="org.apache.lucene.gdata.gom.core/GOMNamespace" runTimeClassModel="setUri(Ljava.lang.String;),GOMNamespace(),getUri(),getPrefix(),uri,prefix,setPrefix(Ljava.lang.String;)">
+    <children xsi:type="editmodel:CompartmentEditModel" size="62,36">
+      <children xsi:type="editmodel:AttributeEditModel" name="prefix" id="org.apache.lucene.gdata.gom.core/GOMNamespace#prefix"/>
+      <children xsi:type="editmodel:AttributeEditModel" name="uri" id="org.apache.lucene.gdata.gom.core/GOMNamespace#uri"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel" size="112,90">
+      <children xsi:type="editmodel:MethodEditModel" name="GOMNamespace" id="org.apache.lucene.gdata.gom.core/GOMNamespace#GOMNamespace()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getPrefix" id="org.apache.lucene.gdata.gom.core/GOMNamespace#getPrefix()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setPrefix" id="org.apache.lucene.gdata.gom.core/GOMNamespace#setPrefix(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getUri" id="org.apache.lucene.gdata.gom.core/GOMNamespace#getUri()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setUri" id="org.apache.lucene.gdata.gom.core/GOMNamespace#setUri(Ljava.lang.String;)"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <sourceConnections xsi:type="editmodel:AssociationEditModel" id="org.apache.lucene.gdata.gom.core/GOMNamespace@namespaces+org.apache.lucene.gdata.gom.core/GOMFeedImpl@" source="//@children.6" target="//@children.1" targetEnd="//@children.6/@sourceConnections.0/@children.2" label="//@children.6/@sourceConnections.0/@children.0" sourceEnd="//@children.6/@sourceConnections.0/@children.1" connectionRouterKind="Manhattan">
+      <children xsi:type="editmodel:WireLabelEditModel" size="0,10" fontInfo="Arial-8-0" anchorKind="MiddlePart"/>
+      <children xsi:type="editmodel:AssociationEndEditModel" name="namespaces" location="0,112" id="org.apache.lucene.gdata.gom.core/GOMNamespace@namespaces+org.apache.lucene.gdata.gom.core/GOMFeedImpl@|org.apache.lucene.gdata.gom.core/GOMNamespace#namespaces" attachSource="true" multiplicityLabel="//@children.6/@sourceConnections.0/@children.1/@children.1" roleLabel="//@children.6/@sourceConnections.0/@children.1/@children.0" navigable="true">
+        <children xsi:type="editmodel:LabelEditModel" name=" - namespaces" location="534,859" size="49,10" fontInfo="Arial-8-0" anchorKind="FirstPart"/>
+        <children xsi:type="editmodel:LabelEditModel" name="*" location="580,835" size="3,10" fontInfo="Arial-8-0" anchorKind="FirstPart"/>
+      </children>
+      <children xsi:type="editmodel:AssociationEndEditModel" location="233,532" id="org.apache.lucene.gdata.gom.core/GOMNamespace@namespaces+org.apache.lucene.gdata.gom.core/GOMFeedImpl@|org.apache.lucene.gdata.gom.core/GOMFeedImpl#"/>
+    </sourceConnections>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <children xsi:type="editmodel:ClassEditModel" targetConnections="//@children.1/@sourceConnections.2 //@children.1/@sourceConnections.3" name="GOMAttributeImpl" location="640,-20" size="173,205" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl" runTimeClassModel="GOMAttributeImpl(),setLocalName(Ljava.lang.String;),setTextValue(Ljava.lang.String;),setQName(Ljavax.xml.namespace.QName;),getQname(),getTextValue(),getLocalName()">
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <children xsi:type="editmodel:CompartmentEditModel" size="150,126">
+      <children xsi:type="editmodel:MethodEditModel" name="GOMAttributeImpl" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#GOMAttributeImpl()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getQname" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#getQname()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setQName" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#setQName(Ljavax.xml.namespace.QName;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setLocalName" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#setLocalName(Ljava.lang.String;)"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getLocalName" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#getLocalName()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="getTextValue" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#getTextValue()"/>
+      <children xsi:type="editmodel:MethodEditModel" name="setTextValue" id="org.apache.lucene.gdata.gom.core/GOMAttributeImpl#setTextValue(Ljava.lang.String;)"/>
+    </children>
+    <children xsi:type="editmodel:CompartmentEditModel"/>
+    <classifierPreferences xsi:type="editmodel:UMLClassDiagramClassifierPreference" showStereotype="true" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterals="true"/>
+  </children>
+  <diagramOptions xsi:type="options:ClassDiagramOptions" properties="wireOptions=0"/>
+  <boardSetting snapToGeometry="true" gridEnabled="true" gridSpacing="10,10" gridOrigin="0,0" rulerUnit="pixel">
+    <leftRuler/>
+    <topRuler/>
+  </boardSetting>
+  <classDiagramPreferences xsi:type="editmodel:UMLClassDiagramPreference" showMethodsParameterTypes="true" showMethodsReturnType="true" showMethodsParameterNames="true" showMethodsParameterKinds="true" attributeSorter="Natural" methodSorter="Natural" showClassStereotype="true" showPackageStereotype="true" innerClassSorter="Natural" showPrivateAttributes="true" showProtectedAttributes="true" showPublicAttributes="true" showPackageAttributes="true" showStaticAttributes="true" showProtectedMethods="true" showPublicMethods="true" showPackageMethods="true" showPrivateMethods="true" showStaticMethods="true" showProtectedInnerClasses="true" showPublicInnerClasses="true" showPackageInnerClasses="true" showPrivateInnerClasses="true" showStaticInnerClasses="true" packageIndication="2" showInterfaceStereotype="true" showAssociationMember="true" showMethods="true" showAttributes="true" showLiterlas="true"/>
+</editmodel:ClassDiagramEditModel>
