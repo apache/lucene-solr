@@ -50,8 +50,10 @@ public class GDataIndexWriter extends IndexWriter {
             setMaxFieldLength(config.getMaxFieldLength());
         if (config.getWriteLockTimeout() != IndexSchema.NOT_SET_VALUE)
             setWriteLockTimeout(config.getWriteLockTimeout());
-        if (config.getCommitLockTimeout() != IndexSchema.NOT_SET_VALUE)
-            setCommitLockTimeout(config.getCommitLockTimeout());
+        //no commit lock anymore
+        //TODO fix this
+//        if (config.getCommitLockTimeout() != IndexSchema.NOT_SET_VALUE)
+//            setCommitLockTimeout(config.getCommitLockTimeout());
     }
 
     /**

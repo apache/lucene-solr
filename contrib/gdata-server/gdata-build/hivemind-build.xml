@@ -17,7 +17,7 @@
  
 -->
 <project name="gdata-server-hivemind" >
-<property name="ioc.container.jar.prefix" value="-hivemind.jar"/>
+<property name="ioc.container.jar.suffix" value="-hivemind.jar"/>
 <property name="ioc.descriptors.dir" value="./src/hivemind/descriptor"/>
 <property name="ioc.descriptors.excludes" value=""/>
 <property name="ioc.descriptors.includes" value="**/*.xml"/>
@@ -32,6 +32,9 @@
 	   			<include name="${final.name}.jar"/>
 	   		</fileset>
 		</path>
+    	<path id="IoC.container.test.path">
+    		<pathelement location="${build.dir}/classes/hivemind/java"/>
+    	</path>
     	<fileset id="ioc-container-jars" dir="${gdata.external.lib.dir}">
 			<include name="hivemind-1.1.jar" />
 			<include name="hivemind-jmx-1.1.jar" />
@@ -44,7 +47,7 @@
 	<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources -->
 	<target name="compile-IoC-container" depends="prepare-IoC-container">
 		<echo>Compile IoC Container classes</echo>
-		<compile srcdir="src/hivemind" destdir="${build.dir}/classes/hivemind">
+		<compile srcdir="src/hivemind/java" destdir="${build.dir}/classes/hivemind/java">
 			<classpath>
 				<path refid="classpath"/>
 				<path refid="build.path"/>
@@ -52,19 +55,34 @@
 			</classpath>
 		</compile>
 	</target>
+	
+	<target name="compile-IoC-container-test" depends="compile-IoC-container">
+		<echo>Compile IoC Container test classes </echo>
+		<compile srcdir="src/hivemind/test" destdir="${build.dir}/classes/test">
+			<classpath>
+				<path refid="test.build.path"/>
+				<path refid="test.classpath"/>
+				<path refid="IoC.container.test.path"/>
+			</classpath>
+		</compile>
+		<copy todir="${build.dir}/classes/test">
+			<fileset dir="src/hivemind/test" excludes="**/*.java" />
+		</copy>
+	</target>
+	
 
 	<target name="jar-IoC-container" depends="compile-IoC-container">
 		<echo>Jar IoC Container classes and metadata</echo>
 		<jar
-	      destfile="${build.dir}/${final.name}${ioc.container.jar.prefix}"
-	      basedir="${build.dir}/classes/hivemind">
+	      destfile="${build.dir}/${final.name}${ioc.container.jar.suffix}"
+	      basedir="${build.dir}/classes/hivemind/java">
 	      <manifest>
 	        <attribute name="Created-By" value="Apache Jakarta"/>
 	        <section name="org/apache/lucene/">
-	          <attribute name="Specification-Title" value="Lucene Search Engine"/>
+	          <attribute name="Specification-Title" value="Lucene GData IoC Container"/>
 	          <attribute name="Specification-Version" value="${version}"/>
-	          <attribute name="Specification-Vendor" value="Lucene"/>
-	          <attribute name="Implementation-Title" value="org.apache.lucene"/>
+	          <attribute name="Specification-Vendor" value="Lucene GData Server"/>
+	          <attribute name="Implementation-Title" value="org.apache.lucene.gdata"/>
 	          <attribute name="Implementation-Version" value="build ${DSTAMP}"/>
 	          <attribute name="Implementation-Vendor" value="Lucene"/>
 	        </section>
