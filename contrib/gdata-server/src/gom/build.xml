@@ -16,7 +16,19 @@
   limitations under the License.
  
 -->
-<project name="gdata-ioc-container">
-	<!-- specify your IOC container build file here -->
-	<import file="hivemind-build.xml"/>
+<project name="gdata-gom" default="default">
+
+  <description>
+	Lucene gdata server GData Object Model build file
+  </description>
+	<path id="additional.dependencies">
+			<fileset dir="../../${gdata.external.lib.dir}">
+				<include name="stax-1.1.2-dev.jar" />
+				<include name="stax-api-1.0.1.jar" />
+			</fileset>
+		</path>
+	<property name="build.dir" location="../../../build/contrib/gdata-server/gom" />
+	<property name="dist.dir" location="../../../dist/contrib/gdata-server/gom" />
+	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
+  <import file="../../../contrib-build.xml" />
 </project>

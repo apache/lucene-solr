@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!-- 
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+ 
+      http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ 
+-->
+<project name="gdata-core" default="default">
+
+	<description>
+		Lucene gdata server core build file
+	</description>
+	
+	<path id="additional.dependencies">
+			<fileset dir="../../${gdata.lib.dir}">
+				<include name="servlet-api.jar" />
+				<include name="commons-logging-1.1.jar" />
+				<include name="gdata-client-1.0.jar" />
+				<include name="commons-digester-1.7.jar" />
+				<include name="commons-beanutils.jar" />
+				<include name="commons-collections-3.2.jar" />
+				<include name="nekohtml.jar" />
+				<include name="xercesImpl.jar" />
+			</fileset>
+			<fileset dir="../../${gdata.external.lib.dir}">
+				<include name="easymock-1.2_Java1.5.jar" />
+				<include name="${db4o.jar}" if="db4o.jar.present" />
+			</fileset>
+		</path>
+	<property name="build.dir" location="../../../build/contrib/gdata-server/core" />
+	<property name="dist.dir" location="../../../dist/contrib/gdata-server/core" />
+
+	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
+	<import file="../../../contrib-build.xml" />
+
+
+
+	<target name="war-gdata" depends="jar-core">
+		<echo>Distributing GData War </echo>
+		<war destfile="${build.dir}/${gdata.war.name}.war" webxml="../../webroot/WEB-INF/web.xml">
+			<metainf dir="../../webroot/meta-inf" />
+			<fileset dir="../../webroot" defaultexcludes="true">
+				<exclude name="meta-inf/context.xml" />
+				<exclude name="meta-inf/" />
+				<exclude name="WEB-INF/web.xml" />
+			</fileset>
+			<fileset dir="../../${ioc.descriptors.dir}" excludes="${ioc.descriptors.excludes}" includes="${ioc.descriptors.includes}" />
+			<lib dir="../../${gdata.lib.dir}">
+				<include name="commons-logging-1.1.jar" />
+				<include name="gdata-client-1.0.jar" />
+				<include name="commons-digester-1.7.jar" />
+				<include name="commons-beanutils.jar" />
+				<include name="commons-collections-3.2.jar" />
+				<include name="nekohtml.jar" />
+				<include name="xercesImpl.jar" />
+				<include name="${db4o.jar}" if="db4o.jar.present" />
+			</lib>
+			<lib refid="hivemind.jars" />
+			<lib refid="gom.jars" />
+			<lib dir="${build.dir}" includes="${jar.name.core}.jar" />
+			<lib dir="${build.dir}/../gom" includes="${jar.name.gom}.jar" />
+			<lib dir="${build.dir}/../hivemind" includes="${jar.name.hivemind}.jar" />
+			<lib file="${lucene.jar}" />
+		</war>
+	</target>
+
+</project>
