@@ -53,21 +53,21 @@
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
-         currently supported on types that are sorted internally as a strings.
-       - If sortMissingLast="true" then a sort on this field will cause documents
-       without the field to come after documents with the field,
-       regardless of the requested sort order (asc or desc).
-       - If sortMissingFirst="true" then a sort on this field will cause documents
-       without the field to come before documents with the field,
-       regardless of the requested sort order.
+         currently supported on types that are sorted internally as strings.
+       - If sortMissingLast="true", then a sort on this field will cause documents
+         without the field to come after documents with the field,
+         regardless of the requested sort order (asc or desc).
+       - If sortMissingFirst="true", then a sort on this field will cause documents
+         without the field to come before documents with the field,
+         regardless of the requested sort order.
        - If sortMissingLast="false" and sortMissingFirst="false" (the default),
-       then default lucene sorting will be used which places docs without the field
-       first in an ascending sort and last in a descending sort.
+         then default lucene sorting will be used which places docs without the
+         field first in an ascending sort and last in a descending sort.
     -->    
 
-         
+
     <!-- numeric field types that store and index the text
-         value verbatim (and hence don't support range queries since the
+         value verbatim (and hence don't support range queries, since the
          lexicographic ordering isn't equal to the numeric ordering) -->
     <fieldtype name="integer" class="solr.IntField"/>
     <fieldtype name="long" class="solr.LongField"/>
@@ -76,9 +76,9 @@
 
 
     <!-- Numeric field types that manipulate the value into
-         a string value that isn't human readable in it's internal form,
-         but with a lexicographic ordering the same as the numeric ordering
-         so that range queries correctly work. -->
+         a string value that isn't human-readable in its internal form,
+         but with a lexicographic ordering the same as the numeric ordering,
+         so that range queries work correctly. -->
     <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
     <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
     <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
@@ -86,14 +86,14 @@
 
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
-         Is a more restricted form of the canonical representation of dateTime
+         is a more restricted form of the canonical representation of dateTime
          http://www.w3.org/TR/xmlschema-2/#dateTime    
          The trailing "Z" designates UTC time and is mandatory.
          Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
          All other components are mandatory.
 
-         Expressions can also be used to denote calculations which should be
-         performed relative "NOW" to determine the value, ie...
+         Expressions can also be used to denote calculations that should be
+         performed relative to "NOW" to determine the value, ie...
 
                NOW/HOUR
                   ... Round to the start of the current hour
@@ -134,9 +134,9 @@
     </fieldtype>
 
     <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
-        words on case-change, alpha numeric boundaries, and non-alphanumeric chars
+        words on case-change, alpha numeric boundaries, and non-alphanumeric chars,
         so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
-        Synonyms and stopwords are customized by external files, and stemming is enabled
+        Synonyms and stopwords are customized by external files, and stemming is enabled.
         Duplicate tokens at the same position (which may result from Stemmed Synonyms or
         WordDelim parts) are removed.
         -->
@@ -164,7 +164,7 @@
     </fieldtype>
 
 
-    <!-- Less flexible matching, but less false matches.  Probably not ideal for product names
+    <!-- Less flexible matching, but less false matches.  Probably not ideal for product names,
          but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
     <fieldtype name="textTight" class="solr.TextField" positionIncrementGap="100" >
       <analyzer>
@@ -245,8 +245,8 @@
  <solrQueryParser defaultOperator="OR"/>
 
   <!-- copyField commands copy one field to another at the time a document
-        is added to the index.  It's used either to index the same field different
-        ways, or to add multiple fields to the same field for easier/faster searching.  -->
+        is added to the index.  It's used either to index the same field differently,
+        or to add multiple fields to the same field for easier/faster searching.  -->
    <copyField source="id" dest="sku"/>
 
    <copyField source="cat" dest="text"/>
@@ -257,10 +257,9 @@
 
    <copyField source="manu" dest="manu_exact"/>
 
- <!-- Similarity is the scoring routine for each document vs a query.
+ <!-- Similarity is the scoring routine for each document vs. a query.
       A custom similarity may be specified here, but the default is fine
       for most applications.  -->
  <!-- <similarity class="org.apache.lucene.search.DefaultSimilarity"/> -->
 
 </schema>
-
