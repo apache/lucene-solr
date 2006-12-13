@@ -68,7 +68,8 @@ public class TestGdataIndexWriter extends TestCase {
         
         writer = new GDataIndexWriter(new RAMDirectory(),true,this.schemaPerFielAnalyzer);
         assertTrue(writer.getAnalyzer().getClass() == PerFieldAnalyzerWrapper.class);
-        assertEquals(VALUE_GT_DEFAULT_LONG,writer.getCommitLockTimeout());
+        //TODO fix this - index writer has no commitlocktimeout setter anymore (lockless commits)
+//        assertEquals(VALUE_GT_DEFAULT_LONG,writer.getCommitLockTimeout());
         assertEquals(VALUE_GT_DEFAULT_LONG,writer.getWriteLockTimeout());
         assertEquals(VALUE_GT_DEFAULT_INT,writer.getMaxBufferedDocs());
         assertEquals(VALUE_GT_DEFAULT_INT,writer.getMaxMergeDocs());

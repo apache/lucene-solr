@@ -25,7 +25,7 @@
     	<available file="${build.dir}/${final.name}.jar" property="gdata.core.jar.present"/>
 		<fail if="${gdata.core.jar.present}" message="Must gdata core jar first. run build.xml - 'jar-core' task"/>
 		<path id="gom.build.path">
-	    	<fileset id="gom-jars" dir="${gdata.lib.dir}">
+	    	<fileset id="gom-jars" dir="${gdata.external.lib.dir}">
 	   			<include name="stax-1.1.2-dev.jar"/>
 	   			<include name="stax-api-1.0.1.jar"/>
 	   		</fileset>
