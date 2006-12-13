@@ -38,8 +38,8 @@
 				<include name="${db4o.jar}" if="db4o.jar.present" />
 			</fileset>
 		</path>
-	<property name="build.dir" location="../../../build/contrib/gdata-server/core" />
-	<property name="dist.dir" location="../../../dist/contrib/gdata-server/core" />
+	<property name="build.dir" location="../../../../build/contrib/gdata-server/core" />
+	<property name="dist.dir" location="../../../../dist/contrib/gdata-server/core" />
 
 	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
 	<import file="../../../contrib-build.xml" />

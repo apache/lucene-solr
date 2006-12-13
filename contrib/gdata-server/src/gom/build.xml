@@ -27,8 +27,8 @@
 				<include name="stax-api-1.0.1.jar" />
 			</fileset>
 		</path>
-	<property name="build.dir" location="../../../build/contrib/gdata-server/gom" />
-	<property name="dist.dir" location="../../../dist/contrib/gdata-server/gom" />
+	<property name="build.dir" location="../../../../build/contrib/gdata-server/gom" />
+	<property name="dist.dir" location="../../../../dist/contrib/gdata-server/gom" />
 	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
   <import file="../../../contrib-build.xml" />
 </project>

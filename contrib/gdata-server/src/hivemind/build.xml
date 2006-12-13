@@ -36,7 +36,7 @@
 		</path>
 	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
 	
-	<property name="build.dir" location="../../../build/contrib/gdata-server/hivemind" />
-	<property name="dist.dir" location="../../../dist/contrib/gdata-server/hivemind" />
+	<property name="build.dir" location="../../../../build/contrib/gdata-server/hivemind" />
+	<property name="dist.dir" location="../../../../dist/contrib/gdata-server/hivemind" />
 	<import file="../../../contrib-build.xml" />
 </project>
