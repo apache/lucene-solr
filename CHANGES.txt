@@ -41,11 +41,12 @@ faceted browsing, and JSON/Python/Ruby response formats.
 Upgrading from previous Solr versions
 -------------------------------------
 Older Apache Solr installations can be upgraded by replacing
-the relevant war file with the new version.  No changes to
-the index format or configuration files are needed.
+the relevant war file with the new version.  No changes to configuration
+files are needed and the index format has not changed.
 
-The default version of the Solr XML response syntax has been changed to 2.2
-This will affect any clients not explicitly specifying the response version.
+The default version of the Solr XML response syntax has been changed to 2.2.
+Behavior can be preserved for those clients not explicitly specifying a 
+version by adding a default to the request handler in solrconfig.xml
 
 By default, Solr will no longer use a searcher that has not fully warmed,
 and requests will block in the meantime.  To change back to the previous
