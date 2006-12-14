@@ -17,7 +17,7 @@
  
 -->
 
-<project name="gdata-server" default="compile-core">
+<project name="gdata-server" default="default">
 	<description>  
         Serverside Google Data API implementation  
     </description>
@@ -110,6 +110,12 @@
 	<target name="war-gdata" depends="clean,jar-core">
 		<ant dir="src/core" target="war-gdata" inheritRefs="true" />
 	</target>
+	
+	 <target name="default" description="default" depends="download">
+		<ant dir="src/core" target="default" inheritRefs="true" />
+		<ant dir="src/hivemind" target="default" inheritRefs="true" />
+		<ant dir="src/gom" target="default" inheritRefs="true" />	 	
+	 </target>
 
 
 </project>
