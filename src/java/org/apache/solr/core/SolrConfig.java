@@ -17,10 +17,15 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.NamedList;
+
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import java.util.StringTokenizer;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -76,5 +81,25 @@ public class SolrConfig {
     } catch (Exception ee) {
       throw new RuntimeException("Error in " + DEFAULT_CONF_FILE, ee);
     }
+  }
+
+  /**
+   * Returns a Request object based on the admin/pingQuery section
+   * of the Solr config file.
+   */
+  public static SolrQueryRequest getPingQueryRequest(SolrCore core) {
+
+    // TODO: check for nested tags and parse as a named list instead
+    String urlSnippet = config.get("admin/pingQuery", "").trim();
+    
+    StringTokenizer qtokens = new StringTokenizer(urlSnippet,"&");
+    String tok;
+    NamedList params = new NamedList();
+    while (qtokens.hasMoreTokens()) {
+      tok = qtokens.nextToken();
+      String[] split = tok.split("=", 2);
+      params.add(split[0], split[1]);
+    }
+    return new LocalSolrQueryRequest(core, params);
   }
 }

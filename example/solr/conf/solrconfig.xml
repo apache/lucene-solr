@@ -354,8 +354,12 @@
   <admin>
     <defaultQuery>solr</defaultQuery>
     <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
-    <pingQuery>q=id:0&amp;start=0&amp;rows=0</pingQuery>
-
+    <!-- pingQuery should be "URLish" ...
+         &amp; separated key=val pairs ... but there shouldn't be any
+         URL escaping of the values -->
+    <pingQuery>
+     qt=dismax&amp;q=solr&amp;start=3&amp;fq=id:[* TO *]&amp;fq=cat:[* TO *]
+    </pingQuery>
     <!-- configure a healthcheck file for servers behind a loadbalancer
     <healthcheck type="file">server-enabled</healthcheck>
     -->

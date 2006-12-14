@@ -154,6 +154,7 @@ Bug Fixes
  8. Escape '>' in XML output (because ]]> is illegal in CharData) 
  9. field boosts weren't being applied and doc boosts were being applied to fields (klaas)
 10. Multiple-doc update generates well-formed xml (klaas, SOLR-65)
+11. Better parsing of pingQuery from solrconfig.xml (hossman, SOLR-70)
 
 Other Changes
  1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,

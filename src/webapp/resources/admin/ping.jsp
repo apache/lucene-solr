@@ -21,7 +21,8 @@
                  org.apache.solr.core.SolrException"%>
 <%@ page import="org.apache.solr.request.LocalSolrQueryRequest"%>
 <%@ page import="org.apache.solr.request.SolrQueryResponse"%>
-<%@ page import="java.util.StringTokenizer"%>
+<%@ page import="org.apache.solr.request.ServletSolrParams"%>
+<%@ page import="org.apache.solr.request.SolrQueryRequest"%>
 
 <?xml-stylesheet type="text/xsl" href="ping.xsl"?>
 
@@ -30,19 +31,14 @@
 <%
   SolrCore core = SolrCore.getSolrCore();
 
-  String queryArgs = (request.getQueryString() == null) ?
-      SolrConfig.config.get("admin/pingQuery","") : request.getQueryString();
-  StringTokenizer qtokens = new StringTokenizer(queryArgs,"&");
-  String tok;
-  String query = null;
-  while (qtokens.hasMoreTokens()) {
-    tok = qtokens.nextToken();
-    String[] split = tok.split("=");
-    if (split[0].startsWith("q")) {
-      query = split[1];
-    }
+  SolrQueryRequest req = null;
+
+  if (null == request.getQueryString()) {
+    req = SolrConfig.getPingQueryRequest(core);
+  } else {
+    req = new LocalSolrQueryRequest(core, new ServletSolrParams(request));
   }
-  LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, query,null,0,1,LocalSolrQueryRequest.emptyArgs);
+
   SolrQueryResponse resp = new SolrQueryResponse();
   try {
     core.execute(req,resp);
