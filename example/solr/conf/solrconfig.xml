@@ -225,13 +225,15 @@
      is not specified in the request.
   -->
   <requestHandler name="standard" class="solr.StandardRequestHandler">
-    <!-- default values for query parameters may optionally be defined here
+    <!-- default values for query parameters -->
      <lst name="defaults">
+       <str name="echoParams">explicit</str>
+       <!-- 
        <int name="rows">10</int>
        <str name="fl">*</str>
        <str name="version">2.1</str>
-     <lst>
-    -->
+        -->
+     </lst>
   </requestHandler>
 
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
@@ -240,6 +242,7 @@
    -->
   <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
     <lst name="defaults">
+     <str name="echoParams">explicit</str>
      <float name="tie">0.01</float>
      <str name="qf">
         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
@@ -265,6 +268,7 @@
     -->
   <requestHandler name="partitioned" class="solr.DisMaxRequestHandler" >
     <lst name="defaults">
+     <str name="echoParams">explicit</str>
      <str name="qf">text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0</str>
      <str name="mm">2&lt;-1 5&lt;-2 6&lt;90%</str>
      <!-- This is an example of using Date Math to specify a constantly
