@@ -53,3 +53,8 @@ Instructions for Building Apache Solr
 
 4. Navigate to that folder and issue an "ant" command to see the available options
    for building, testing, and packaging solr.
+   
+   NOTE: 
+   To see solr in action you may want to use the command "ant example". 
+   This builds and packages solar into the example/webapps, then
+   follow example/README.txt.
