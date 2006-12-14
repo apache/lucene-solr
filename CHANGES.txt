@@ -1,20 +1,12 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+                 Apache Solr Version 1.1.0-dev-incubating
+                            Release Notes
 
-========================= Solr Change Log ==============================
-$Id$
+Introduction
+------------
+Apache Solr is an open source enterprise search server based on the Lucene Java
+search library, with XML/HTTP and JSON APIs, hit highlighting, faceted search,
+caching, replication, and a web administration interface. It runs in a Java
+servlet container such as Tomcat.
 
 Apache Solr is an effort undergoing incubation at The Apache Software
 Foundation (ASF), sponsored by Apache Lucene. Incubation is required of all
@@ -24,6 +16,48 @@ a manner consistent with other successful ASF projects. While incubation status
 is not necessarily a reflection of the completeness or stability of the code,
 it does indicate that the project has yet to be fully endorsed by the ASF.
 
+See http://incubator.apache.org/solr for more information.
+
+
+Getting Started
+---------------
+You need a Java 1.5 VM or later installed.
+In this release, there is an example Solr server including a bundled 
+servlet container in the directory named "example".
+See the tutorial at http://incubator.apache.org/solr/tutorial.html
+
+
+$Id$
+
+================== Release 1.1.0-dev-incubating, YYYYMMDD ==================
+
+Status
+------
+This is the first release since Solr joined the Incubator, and brings many
+new features and performance optimizations including highlighting,
+faceted browsing, and JSON/Python/Ruby response formats.
+
+
+Upgrading from previous Solr versions
+-------------------------------------
+Older Apache Solr installations can be upgraded by replacing
+the relevant war file with the new version.  No changes to
+the index format or configuration files are needed.
+
+The default version of the Solr XML response syntax has been changed to 2.2
+This will affect any clients not explicitly specifying the response version.
+
+By default, Solr will no longer use a searcher that has not fully warmed,
+and requests will block in the meantime.  To change back to the previous
+behavior of using a cold searcher in the event there is no other
+warm searcher, see the useColdSearcher config item in solrconfig.xml
+
+The XML response format when adding multiple documents to the collection
+in a single <add> command has changed to return a single <result>.
+
+
+Detailed Change List
+--------------------
 
 New Features
  1. added support for setting Lucene's positionIncrementGap
