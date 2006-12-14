@@ -40,6 +40,38 @@
 		</path>
 	<property name="build.dir" location="../../../../build/contrib/gdata-server/core" />
 	<property name="dist.dir" location="../../../../dist/contrib/gdata-server/core" />
+	
+	
+	
+		<!-- redefine compile-core and compile-test to exclude 3rd party dependend sources -->
+		<target name="compile-core" depends="init">
+			<echo>Use gdata - compile-core task </echo>
+			<compile srcdir="src/java" destdir="${build.dir}/classes/java">
+				<classpath>
+					<path refid="classpath"/>
+					<path refid="build.path"/>
+				</classpath>
+				<exclude name="org/apache/lucene/gdata/storage/db4o/**" unless="db4o.jar.present" />
+			</compile>
+		</target>
+
+		<target name="compile-test" depends="compile-core">
+			<echo>Use gdata - compile-test task </echo>
+			<compile srcdir="src/test" destdir="${build.dir}/classes/test">
+				<classpath>
+					<path refid="test.build.path"/>
+					<path refid="test.classpath"/>
+				</classpath>
+				<exclude name="org/apache/lucene/gdata/storage/db4o/**" unless="db4o.jar.present" />
+			</compile>
+			<copy todir="${build.dir}/classes/test">
+				<fileset dir="src/test" excludes="**/*.java" />
+			</copy>
+		</target>
+	
+	
+	
+	
 
 	<pathconvert property="project.classpath" targetos="unix" refid="additional.dependencies" />
 	<import file="../../../contrib-build.xml" />
