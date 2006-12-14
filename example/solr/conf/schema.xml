@@ -47,10 +47,10 @@
        limits compression (if enabled in the derived fields) to values which
        exceed a certain size (in characters).
     -->
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- boolean type: "true" or "false" -->
-    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
          currently supported on types that are sorted internally as strings.
@@ -69,20 +69,20 @@
     <!-- numeric field types that store and index the text
          value verbatim (and hence don't support range queries, since the
          lexicographic ordering isn't equal to the numeric ordering) -->
-    <fieldtype name="integer" class="solr.IntField"/>
-    <fieldtype name="long" class="solr.LongField"/>
-    <fieldtype name="float" class="solr.FloatField"/>
-    <fieldtype name="double" class="solr.DoubleField"/>
+    <fieldtype name="integer" class="solr.IntField" omitNorms="true"/>
+    <fieldtype name="long" class="solr.LongField" omitNorms="true"/>
+    <fieldtype name="float" class="solr.FloatField" omitNorms="true"/>
+    <fieldtype name="double" class="solr.DoubleField" omitNorms="true"/>
 
 
     <!-- Numeric field types that manipulate the value into
          a string value that isn't human-readable in its internal form,
          but with a lexicographic ordering the same as the numeric ordering,
          so that range queries work correctly. -->
-    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
-    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
-    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
-    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true"/>
+    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
+    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
+    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
+    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
 
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
@@ -105,7 +105,7 @@
                       
          Consult the DateField javadocs for more information.
       -->
-    <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
+    <fieldtype name="date" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- solr.TextField allows the specification of custom text analyzers
          specified as a tokenizer and a list of token filters. Different
@@ -183,24 +183,25 @@
 
  <fields>
    <!-- Valid attributes for fields:
-       name: mandatory - the name for the field
-       type: mandatory - the name of a previously defined type from the <types> section
-       indexed: true if this field should be indexed (searchable)
-       stored: true if this field should be retrievable
-       compressed: [false] if this field should be stored using gzip compression
-                   (this will only apply if the field type is compressable; among
-                    the standard field types, only TextField and StrField are)
-       multiValued: true if this field may contain multiple values per document
-       omitNorms: (expert) set to true to omit the norms associated with this field
-                  (this disables length normalization and index-time boosting for the field)
-       
+     name: mandatory - the name for the field
+     type: mandatory - the name of a previously defined type from the <types> section
+     indexed: true if this field should be indexed (searchable or sortable)
+     stored: true if this field should be retrievable
+     compressed: [false] if this field should be stored using gzip compression
+       (this will only apply if the field type is compressable; among
+       the standard field types, only TextField and StrField are)
+     multiValued: true if this field may contain multiple values per document
+     omitNorms: (expert) set to true to omit the norms associated with
+       this field (this disables length normalization and index-time
+       boosting for the field, and saves some memory).  Only full-text
+       fields or fields that need an index-time boost need norms.
    -->
 
    <field name="id" type="string" indexed="true" stored="true"/>
-   <field name="sku" type="textTight" indexed="true" stored="true"/>
+   <field name="sku" type="textTight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text" indexed="true" stored="true"/>
-   <field name="manu" type="text" indexed="true" stored="true"/>
-   <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true"/>
+   <field name="manu" type="text" indexed="true" stored="true" omitNorms="true"/>
+   <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true" omitNorms="true"/>
    <field name="features" type="text" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text" indexed="true" stored="true"/>
 
