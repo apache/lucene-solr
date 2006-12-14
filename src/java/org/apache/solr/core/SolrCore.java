@@ -27,6 +27,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.*;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.NamedList;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.XML;
@@ -587,14 +588,34 @@ public final class SolrCore {
       log.warning("Unknown Request Handler '" + req.getQueryType() +"' :" + req);
       throw new SolrException(400,"Unknown Request Handler '" + req.getQueryType() + "'", true);
     }
+    
+    // setup response header and handle request
+    final NamedList responseHeader = new NamedList();
+    rsp.add("responseHeader", responseHeader);
     handler.handleRequest(req,rsp);
+    setResponseHeaderValues(responseHeader,req,rsp);
+
     log.info(req.getParamString()+ " 0 "+
 	     (int)(rsp.getEndTime() - req.getStartTime()));
   }
-
-
-
-
+  
+  protected void setResponseHeaderValues(NamedList responseHeader,SolrQueryRequest req, SolrQueryResponse rsp) {
+    // TODO should check that responseHeader has not been replaced by handler
+    
+    final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
+    responseHeader.add("status",rsp.getException()==null ? 0 : 500);
+    responseHeader.add("QTime",qtime);
+    
+    // Values for echoParams... false/true/all or false/explicit/all ???
+    final String EP_PARAM = "echoParams";
+    final String EXPLICIT = "explicit";
+    final String epValue = req.getParams().get(EP_PARAM); 
+    if (EXPLICIT.equals(epValue)) {
+        responseHeader.add("params", req.getOriginalParams().toNamedList());
+    } else if(epValue!=null) {
+      throw new SolrException(400,"Invalid value '" + epValue + "' for " + EP_PARAM + " parameter, use '" + EXPLICIT + "'");
+    }
+  }
 
   XmlPullParserFactory factory;
   {

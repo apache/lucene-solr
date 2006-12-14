@@ -91,7 +91,7 @@
   <td colspan=2>
 	<form name=queryForm method="GET" action="../select/">
         <textarea class="std" rows="4" cols="40" name="q"><%= defaultSearch %></textarea>
-        <input name="version" type="hidden" value="2.1">
+        <input name="version" type="hidden" value="2.2">
 	<input name="start" type="hidden" value="0">
 	<input name="rows" type="hidden" value="10">
 	<input name="indent" type="hidden" value="on">

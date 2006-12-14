@@ -99,7 +99,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
                         getSolrConfigFile(),
                         getSchemaFile());
     lrf = h.getRequestFactory
-      ("standard",0,20,"version","2.0");
+      ("standard",0,20,"version","2.2");
 
   }
     

@@ -75,16 +75,9 @@ class JSONWriter extends TextResponseWriter {
   }
 
   public void writeResponse() throws IOException {
-    int qtime=(int)(rsp.getEndTime() - req.getStartTime());
     NamedList nl = new NamedList();
-    HashMap header = new HashMap(1);
-    header.put("qtime",qtime);
-    nl.add("header", header);
     nl.addAll(rsp.getValues());
     // give the main response a name it it doesn't have one
-    if (nl.size()>1 && nl.getVal(1) instanceof DocList && nl.getName(1)==null) {
-      nl.setName(1,"response");
-    }
     if(wrapperFunction!=null) {
         writer.write(wrapperFunction + "(");
     }

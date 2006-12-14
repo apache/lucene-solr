@@ -17,6 +17,10 @@
 
 package org.apache.solr.request;
 
+import java.util.Iterator;
+
+import org.apache.solr.util.IteratorChain;
+
 /**
  * @author yonik
  * @version $Id$
@@ -38,6 +42,13 @@ public class DefaultSolrParams extends SolrParams {
   public String[] getParams(String param) {
     String[] vals = params.getParams(param);
     return vals!=null ? vals : defaults.getParams(param);
+  }
+  
+  public Iterator<String> getParameterNamesIterator() {
+    final IteratorChain<String> c = new IteratorChain<String>();
+    c.addIterator(defaults.getParameterNamesIterator());
+    c.addIterator(params.getParameterNamesIterator());
+    return c;
   }
 
   public String toString() {

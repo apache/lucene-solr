@@ -53,7 +53,7 @@ public class SampleTest extends AbstractSolrTestCase {
    * Demonstration of some of the simple ways to use the base class
    */
   public void testSimple() {
-
+    lrf.args.put("version","2.0");
     assertU("Simple assertion that adding a document works",
             adoc("id",  "4055",
                  "subject", "Hoss the Hoss man Hostetter"));
@@ -76,7 +76,7 @@ public class SampleTest extends AbstractSolrTestCase {
    * Demonstration of some of the more complex ways to use the base class
    */
   public void testAdvanced() throws Exception {
-        
+    lrf.args.put("version","2.0");        
     assertU("less common case, a complex addition with options",
             add(doc("id", "4059",
                     "subject", "Who Me?"),

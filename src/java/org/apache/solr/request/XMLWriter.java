@@ -37,6 +37,9 @@ import org.apache.lucene.document.Document;
  * @version $Id$
  */
 final public class XMLWriter {
+
+  public static float CURRENT_VERSION=2.2f;
+
   //
   // static thread safe part
   //
@@ -56,9 +59,6 @@ final public class XMLWriter {
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
 
-    // get total time up until now
-    int qtime=(int)(rsp.getEndTime() - req.getStartTime());
-
     String ver = req.getParam("version");
 
     writer.write(XML_START1);
@@ -77,13 +77,6 @@ final public class XMLWriter {
     else
       writer.write(XML_START2_NOSCHEMA);
 
-    writer.write("<responseHeader><status>");
-    writer.write('0');  // it's 0 (success) if we got this far...
-    writer.write("</status><QTime>");
-    writer.write(Integer.toString((int)qtime));
-    writer.write("</QTime></responseHeader>\n");
-
-    //
     // create an instance for each request to handle
     // non-thread safe stuff (indentation levels, etc)
     // and to encapsulate writer, schema, and searcher so
@@ -101,9 +94,34 @@ final public class XMLWriter {
       }
     }
 
+    // dump response values
     NamedList lst = rsp.getValues();
     int sz = lst.size();
-    for (int i=0; i<sz; i++) {
+    int start=0;
+
+    // special case the response header if the version is 2.1 or less    
+    if (xw.version<=2100 && sz>0) {
+      Object header = lst.getVal(0);
+      if (header instanceof NamedList && "responseHeader".equals(lst.getName(0))) {
+        writer.write("<responseHeader>");
+        xw.incLevel();
+        NamedList nl = (NamedList)header;
+        for (int i=0; i<nl.size(); i++) {
+          String name = nl.getName(i);
+          Object val = nl.getVal(i);
+          if ("status".equals(name) || "QTime".equals(name)) {
+            xw.writePrim(name,null,val.toString(),false);
+          } else {
+            xw.writeVal(name,val);
+          }
+        }
+        xw.decLevel();
+        writer.write("</responseHeader>");
+        start=1;
+      }
+    }
+
+    for (int i=start; i<sz; i++) {
       xw.writeVal(lst.getName(i),lst.getVal(i));
     }
 
@@ -132,7 +150,7 @@ final public class XMLWriter {
   // maybe constructed types should always indent first?
   private final int indentThreshold=0;
 
-  private final int version;
+  final int version;
 
 
   // temporary working objects...
@@ -145,7 +163,7 @@ final public class XMLWriter {
     this.writer = writer;
     this.schema = schema;
     this.searcher = searcher;
-    float ver = version==null? 2.1f : Float.parseFloat(version);
+    float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
     this.version = (int)(ver*1000);
   }
 

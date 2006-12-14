@@ -154,6 +154,9 @@ Changes in runtime behavior
     not all stored fields are needed from a document (klaas, SOLR-52)   
 10. Made admin JSPs return XML and transform them with new XSL stylesheets
     (Otis Gospodnetic, SOLR-58)
+11. Request parameters are copied to a new <lst name="responseHeader"> element, which 
+    replaces the old <responseHeader>. Adding a version=2.1 parameter to the request produces 
+    the old format, for backwards compatibility (bdelacretaz and yonik, SOLR-59).
 
 Optimizations 
  1. getDocListAndSet can now generate both a DocList and a DocSet from a 

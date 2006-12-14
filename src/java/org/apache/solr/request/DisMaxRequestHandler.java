@@ -346,7 +346,7 @@ public class DisMaxRequestHandler
                                        req.getStart(), req.getLimit(),
                                        flags);
       }
-      rsp.add("search-results",results.docList);
+      rsp.add("response",results.docList);
       // pre-fetch returned documents
       U.optimizePreFetchDocs(results.docList, query, req, rsp);
 

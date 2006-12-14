@@ -25,7 +25,7 @@
      output type specific.
   -->
 <input name="indent" type="hidden" value="on">
-<input name="version" type="hidden" value="2.1">
+<input name="version" type="hidden" value="2.2">
 
 <table>
 <tr>

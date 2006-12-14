@@ -30,6 +30,7 @@ import org.apache.solr.util.TestHarness;
  * at query time.
  *
  * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a>
+ * @author the Solr project
  */
 public class OutputWriterTest extends AbstractSolrTestCase {
     
@@ -41,12 +42,28 @@ public class OutputWriterTest extends AbstractSolrTestCase {
     public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
     
     
-    public void testOriginalSolrWriter() {
+    /** responseHeader has changed in SOLR-59, check old and new variants */
+    public void testSOLR59responseHeaderVersions() {
+        // default version is 2.2, with "new" responseHeader
+        lrf.args.remove("version");
         lrf.args.put("wt", "standard");
-        assertQ(req("foo"), "//response/responseHeader/status");
-        
+        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
         lrf.args.remove("wt");
-        assertQ(req("foo"), "//response/responseHeader/status");
+        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
+        
+        // version=2.1 reverts to old responseHeader
+        lrf.args.put("version", "2.1");
+        lrf.args.put("wt", "standard");
+        assertQ(req("foo"), "/response/responseHeader/status[.='0']");
+        lrf.args.remove("wt");
+        assertQ(req("foo"), "/response/responseHeader/QTime");
+
+        // and explicit 2.2 works as default  
+        lrf.args.put("version", "2.2");
+        lrf.args.put("wt", "standard");
+        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
+        lrf.args.remove("wt");
+        assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
     }
     
     public void testUselessWriter() throws Exception {

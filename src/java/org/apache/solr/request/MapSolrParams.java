@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.util.StrUtils;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.io.IOException;
 
@@ -40,6 +41,10 @@ public class MapSolrParams extends SolrParams {
   public String[] getParams(String name) {
     String val = map.get(name);
     return val==null ? null : new String[]{val};
+  }
+  
+  public Iterator<String> getParameterNamesIterator() {
+    return map.keySet().iterator();
   }
 
   public Map<String,String> getMap() { return map; }

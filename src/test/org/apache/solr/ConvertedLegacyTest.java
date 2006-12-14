@@ -38,7 +38,8 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     // these may be reused by things that need a special query
     SolrQueryRequest req = null;
     Map<String,String> args = new HashMap<String,String>();
-      
+    lrf.args.put("version","2.0");
+
     // compact the index, keep things from getting out of hand
 
     assertU("<optimize/>");

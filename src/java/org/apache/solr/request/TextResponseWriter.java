@@ -36,6 +36,7 @@ import java.util.Set;
  * @version $Id$
  */
 public abstract class TextResponseWriter {
+  
   protected final Writer writer;
   protected final IndexSchema schema;
   protected final SolrIndexSearcher searcher;

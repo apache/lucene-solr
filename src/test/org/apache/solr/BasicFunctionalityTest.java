@@ -58,7 +58,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }
 
   public void testSomeStuff() throws Exception {
-
+    lrf.args.put("version","2.0");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
             ,"//result[@numFound='0']"
@@ -582,7 +582,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(req, rsp);
 
-    DocList dl = (DocList) rsp.getValues().get(null);
+    DocList dl = (DocList) rsp.getValues().get("response");
     org.apache.lucene.document.Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field is not lazy
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
@@ -602,7 +602,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(req, rsp);
 
-    DocList dl = (DocList) rsp.getValues().get(null);
+    DocList dl = (DocList) rsp.getValues().get("response");
     DocIterator di = dl.iterator();    
     org.apache.lucene.document.Document d = req.getSearcher().doc(di.nextDoc());
     // ensure field is lazy

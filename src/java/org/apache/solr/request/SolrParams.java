@@ -21,7 +21,10 @@ import org.apache.solr.util.NamedList;
 import org.apache.solr.util.StrUtils;
 
 import javax.servlet.ServletRequest;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.io.IOException;
@@ -105,6 +108,8 @@ public abstract class SolrParams {
   /** returns an array of the String values of a param, or null if none */
   public abstract String[] getParams(String param);
 
+  /** returns an Iterator over the parameter names */
+  public abstract Iterator<String> getParameterNamesIterator();
 
   /** returns the value of the param, or def if not set */
   public String get(String param, String def) {
@@ -217,6 +222,23 @@ public abstract class SolrParams {
       if (prev!=null) return new MultiMapSolrParams(toMultiMap(params));
     }
     return new MapSolrParams(map);
+  }
+  
+  /** Convert this to a NamedList */
+  public NamedList toNamedList() {
+    final NamedList result = new NamedList();
+    
+    for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
+      final String name = it.next();
+      final String [] values = getParams(name);
+      if(values.length==1) {
+        result.add(name,values[0]);
+      } else {
+        // currently no reason not to use the same array
+        result.add(name,values);
+      }
+    }
+    return result;
   }
 }
 

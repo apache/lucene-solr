@@ -139,7 +139,7 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
       // pre-fetch returned documents
       U.optimizePreFetchDocs(results.docList, query, req, rsp);
       
-      rsp.add(null,results.docList);
+      rsp.add("response",results.docList);
 
       if (null != facetInfo) rsp.add("facet_counts", facetInfo);
 
