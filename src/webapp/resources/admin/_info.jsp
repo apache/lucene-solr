@@ -43,45 +43,54 @@
   InetAddress addr = InetAddress.getLocalHost();
   String hostname = addr.getCanonicalHostName();
 
-  StringWriter tmp;
-
-  tmp = new StringWriter();
-  XML.escapeCharData(SolrConfig.config.get("admin/defaultQuery/text()", null),
-                     tmp);
-  String defaultSearch = tmp.toString();
-
-  Package p;
-
-  p = SolrCore.class.getPackage();
-
-  tmp = new StringWriter();
-  String solrImplVersion = p.getImplementationVersion();
-  if (null != solrImplVersion) {
-    XML.escapeCharData(solrImplVersion, tmp);
-    solrImplVersion = tmp.toString();
-  }
-  tmp = new StringWriter();
-  String solrSpecVersion = p.getSpecificationVersion() ;
-  if (null != solrSpecVersion) {
-    XML.escapeCharData(solrSpecVersion, tmp);
-    solrSpecVersion = tmp.toString();
+  String defaultSearch = "";
+  { 
+    StringWriter tmp = new StringWriter();
+    XML.escapeCharData
+      (SolrConfig.config.get("admin/defaultQuery/text()", null), tmp);
+    defaultSearch = tmp.toString();
   }
 
-  p = LucenePackage.class.getPackage();
+  String solrImplVersion = "";
+  String solrSpecVersion = "";
+  String luceneImplVersion = "";
+  String luceneSpecVersion = "";
 
-  tmp = new StringWriter();
-  String luceneImplVersion = p.getImplementationVersion();
-  if (null != luceneImplVersion) {
-    XML.escapeCharData(luceneImplVersion, tmp);
-    luceneImplVersion = tmp.toString();
-  }
-  tmp = new StringWriter();
-  String luceneSpecVersion = p.getSpecificationVersion() ;
-  if (null != luceneSpecVersion) {
-    XML.escapeCharData(luceneSpecVersion, tmp);
-    luceneSpecVersion = tmp.toString();
-  }
+  { 
+    Package p;
+    StringWriter tmp;
 
+    p = SolrCore.class.getPackage();
+
+    tmp = new StringWriter();
+    solrImplVersion = p.getImplementationVersion();
+    if (null != solrImplVersion) {
+      XML.escapeCharData(solrImplVersion, tmp);
+      solrImplVersion = tmp.toString();
+    }
+    tmp = new StringWriter();
+    solrSpecVersion = p.getSpecificationVersion() ;
+    if (null != solrSpecVersion) {
+      XML.escapeCharData(solrSpecVersion, tmp);
+      solrSpecVersion = tmp.toString();
+    }
+  
+    p = LucenePackage.class.getPackage();
+
+    tmp = new StringWriter();
+    luceneImplVersion = p.getImplementationVersion();
+    if (null != luceneImplVersion) {
+      XML.escapeCharData(luceneImplVersion, tmp);
+      luceneImplVersion = tmp.toString();
+    }
+    tmp = new StringWriter();
+    luceneSpecVersion = p.getSpecificationVersion() ;
+    if (null != luceneSpecVersion) {
+      XML.escapeCharData(luceneSpecVersion, tmp);
+      luceneSpecVersion = tmp.toString();
+    }
+  }
+  
   String cwd=System.getProperty("user.dir");
   String solrHome= Config.getInstanceDir();
 %>
