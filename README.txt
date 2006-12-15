@@ -32,11 +32,46 @@ For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr incubation web site at
 http://incubator.apache.org/projects/solr.html.
 
-See the "example" directory for an example Solr setup. 
 
 
-Instructions for Building Apache Solr
--------------------------------------
+Getting Started
+---------------
+
+See the "example" directory for an example Solr setup.  A tutorial
+using the example setup can be found in "docs/tutorial.html" 
+
+
+
+Files Included In Apache Solr Distributions
+-------------------------------------------
+
+dist/apache-solr-XX-incubating.war
+  The Apache Solr Application.  Deploy this WAR file to any servlet
+  container to run Apache Solr
+
+dist/apache-solr-XX-incubating.jar
+  The Apache Solr Libraries.  This JAR file is needed to compile
+  Apache Solr Plugins (see http://wiki.apache.org/solr/SolrPlugins for
+  more information).
+
+example/
+  A Self contained example Solr instance, complete with sample
+  configuration, documents to index, and the Jetty Servlet container.
+  Please see example/README.txt for information about runnig this example
+
+docs/index.html
+  The contents of the Apache Solr website.
+  
+docs/api/index.html
+  The Apache Solr Javadoc API documentation.
+
+src/
+  The Apache Solr source code.
+
+
+
+Instructions for Building Apache Solr from Source
+-------------------------------------------------
 
 1. Download the J2SE 5.0 JDK (Java Development Kit) or later from http://java.sun.com.
    You will need the JDK installed, and the %JAVA_HOME%\bin directory included
@@ -48,8 +83,10 @@ Instructions for Building Apache Solr
    command path.  To test this, issue a "ant -version" command from your
    shell and verify that Ant is available.
 
-3. Download the Apache Solr source distribution, linked from the above incubator
-   web site.  Expand the distribution to a folder of your choice, e.g. c:\solr.
+3. Download the Apache Solr distribution, linked from the above incubator
+   web site.  Expand the distribution to a folder of your choice, e.g. c:\solr.   Alternately, you can obtain a copy of the latest Apache Solr source code
+   directly from the Subversion repository:
+   http://incubator.apache.org/solr/version_control.html
 
 4. Navigate to that folder and issue an "ant" command to see the available options
    for building, testing, and packaging solr.
