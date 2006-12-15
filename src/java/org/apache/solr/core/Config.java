@@ -22,6 +22,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
+import org.apache.solr.util.DOMUtil;
 
 import javax.xml.parsers.*;
 import javax.xml.xpath.XPath;
@@ -122,10 +123,8 @@ public class Config {
     Node nd = getNode(path,errIfMissing);
     if (nd==null) return null;
 
-    // should do the right thing for both attributes and elements.
-    // Oops, when running in Resin, I get an unsupported operation
-    // exception... need to use Sun default (apache)
-    String txt = nd.getTextContent();
+    String txt = DOMUtil.getText(nd);
+    
     log.fine(name + ' '+path+'='+txt);
     return txt;
 

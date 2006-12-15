@@ -217,5 +217,8 @@ Other Changes
 13. Added Solr/Lucene versions to "Info" page (hossman)
 14. Explicitly set mime-type of .xsl files in web.xml to
     application/xslt+xml (hossman)
+15. Config parsing should now work useing DOM Level 2 parsers -- Solr
+    previously relied on getTextContent which is a DOM Level 3 addition
+    (Alexander Saar via hossman, SOLR-78)
 
 2006/01/17 Solr open sourced, moves to Apache Incubator

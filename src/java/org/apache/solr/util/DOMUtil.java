@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -129,17 +130,17 @@ public class DOMUtil {
     Object val=null;
 
     if ("str".equals(type)) {
-      val = nd.getTextContent();
+      val = getText(nd);
     } else if ("int".equals(type)) {
-      val = Integer.valueOf(nd.getTextContent());
+      val = Integer.valueOf(getText(nd));
     } else if ("long".equals(type)) {
-      val = Long.valueOf(nd.getTextContent());
+      val = Long.valueOf(getText(nd));
     } else if ("float".equals(type)) {
-      val = Float.valueOf(nd.getTextContent());
+      val = Float.valueOf(getText(nd));
     } else if ("double".equals(type)) {
-      val = Double.valueOf(nd.getTextContent());
+      val = Double.valueOf(getText(nd));
     } else if ("bool".equals(type)) {
-      val = Boolean.valueOf(nd.getTextContent());
+      val = Boolean.valueOf(getText(nd));
     } else if ("lst".equals(type)) {
       val = childNodesToNamedList(nd);
     } else if ("arr".equals(type)) {
@@ -150,4 +151,72 @@ public class DOMUtil {
     if (arr != null) arr.add(val);
   }
 
+  /**
+   * Drop in replacement for Node.getTextContent().
+   *
+   * <p>
+   * This method is provided to support the same functionality as
+   * Node.getTextContent() but in a way that is DOM Level 2 compatible.
+   * </p>
+   *
+   * @see <a href="http://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-textContent">DOM Object Model Core</a>
+   */
+  public static String getText(Node nd) {
+
+    short type = nd.getNodeType();
+    
+    // for most node types, we can defer to the recursive helper method,
+    // but when asked for the text of these types, we must return null
+    // (Not the empty string)
+    switch (type) {
+      
+    case Node.DOCUMENT_NODE: /* fall through */
+    case Node.DOCUMENT_TYPE_NODE: /* fall through */
+    case Node.NOTATION_NODE: /* fall through */
+      return null;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    getText(nd, sb);
+    return sb.toString();
+  }
+
+  /** @see #getText(Node) */
+  private static void getText(Node nd, StringBuilder buf) {
+    
+    short type = nd.getNodeType();
+
+    switch (type) {
+      
+    case Node.ELEMENT_NODE: /* fall through */
+    case Node.ATTRIBUTE_NODE: /* fall through */
+    case Node.ENTITY_NODE: /* fall through */
+    case Node.ENTITY_REFERENCE_NODE: /* fall through */
+    case Node.DOCUMENT_FRAGMENT_NODE: 
+      NodeList childs = nd.getChildNodes();
+      for (int i = 0; i < childs.getLength(); i++) {
+        Node child = childs.item(i);
+        short childType = child.getNodeType();
+        if (childType != Node.COMMENT_NODE &&
+            childType != Node.PROCESSING_INSTRUCTION_NODE) {
+          getText(child, buf);
+        }
+      }
+      break;
+      
+    case Node.TEXT_NODE: /* fall through */
+    case Node.CDATA_SECTION_NODE: /* fall through */
+    case Node.COMMENT_NODE: /* fall through */
+    case Node.PROCESSING_INSTRUCTION_NODE: /* fall through */
+      buf.append(nd.getNodeValue());
+      break;
+
+    case Node.DOCUMENT_NODE: /* fall through */
+    case Node.DOCUMENT_TYPE_NODE: /* fall through */
+    case Node.NOTATION_NODE: /* fall through */
+    default:
+      /* :NOOP: */
+
+    }
+  }
 }
