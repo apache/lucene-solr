@@ -55,7 +55,7 @@ dist/apache-solr-XX-incubating.jar
   more information).
 
 example/
-  A Self contained example Solr instance, complete with sample
+  A self-contained example Solr instance, complete with a sample
   configuration, documents to index, and the Jetty Servlet container.
   Please see example/README.txt for information about running this example
 
@@ -84,14 +84,15 @@ Instructions for Building Apache Solr from Source
    shell and verify that Ant is available.
 
 3. Download the Apache Solr distribution, linked from the above incubator
-   web site.  Expand the distribution to a folder of your choice, e.g. c:\solr.   Alternately, you can obtain a copy of the latest Apache Solr source code
+   web site.  Expand the distribution to a folder of your choice, e.g. c:\solr.   
+   Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the Subversion repository:
-   http://incubator.apache.org/solr/version_control.html
+
+     http://incubator.apache.org/solr/version_control.html
 
 4. Navigate to that folder and issue an "ant" command to see the available options
    for building, testing, and packaging Solr.
    
    NOTE: 
-   To see Solr in action you may want to use the command "ant example". 
-   This builds and packages solar into the example/webapps, then
-   follow example/README.txt.
+   To see Solr in action you may want to use the "ant example" command to build
+   and package Solr into the example/webapps directory. See also example/README.txt.
