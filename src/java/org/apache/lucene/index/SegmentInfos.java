@@ -17,15 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Vector;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.File;
-import java.io.FileNotFoundException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.Constants;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Vector;
 
 public final class SegmentInfos extends Vector {
   
@@ -486,7 +486,7 @@ public final class SegmentInfos extends Vector {
         }
 
         // Method 3 (fallback if Methods 2 & 3 are not
-        // reliabel): since both directory cache and file
+        // reliable): since both directory cache and file
         // contents cache seem to be stale, just advance the
         // generation.
         if (2 == method || (1 == method && lastGen == gen && retry)) {
