@@ -15,6 +15,14 @@
    </section> -->
 <section id="Downloads"><title>Downloads</title>
     <p>System Requirements are detailed <a href="systemrequirements.html">here</a>.</p>
+    <section id="Clover"><title>Clover Test Coverage Reports</title>
+        <p>
+            <a href="http://www.cenqua.com/clover/">Clover</a>
+            test coverage results are available
+            <a href="clover/index.html">here</a>
+            for the nightly build.
+        </p>
+    </section>
     <section id="Nightly">
         <title>Nightly Build Download</title>
         <p>Nightly builds are based on the trunk version of the code checked into
