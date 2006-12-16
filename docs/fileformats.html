@@ -2029,9 +2029,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <p>The Field or .tvf file.</p>
                         
 <p>This file contains, for each field that has a term vector stored, a list of
-                            the terms and their frequencies.</p>
+                            the terms, their frequencies and, optionally, position and offest information.</p>
                         
-<p>Field (.tvf) --&gt; TVFVersion&lt;NumTerms, NumDistinct, TermFreqs&gt;
+<p>Field (.tvf) --&gt; TVFVersion&lt;NumTerms, Position/Offset, TermFreqs&gt;
                             <sup>NumFields</sup>
                         
 </p>
@@ -2040,9 +2040,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         
 <p>NumTerms --&gt; VInt</p>
                         
-<p>NumDistinct --&gt; VInt -- Future Use</p>
+<p>Position/Offset --&gt; Byte</p>
                         
-<p>TermFreqs --&gt; &lt;TermText, TermFreq&gt;
+<p>TermFreqs --&gt; &lt;TermText, TermFreq, Positions?, Offsets?&gt;
                             <sup>NumTerms</sup>
                         
 </p>
@@ -2055,18 +2055,40 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         
 <p>TermFreq --&gt; VInt</p>
                         
-<p>Term
-                            text prefixes are shared. The PrefixLength is the number of initial
-                            characters from the previous term which must be pre-pended to a
-                            term's suffix in order to form the term's text. Thus, if the
-                            previous term's text was "bone" and the term is "boy",
-                            the PrefixLength is two and the suffix is "y".
-                        </p>
+<p>Positions --&gt; &lt;VInt&gt;<sup>TermFreq</sup>
+</p>
+                        
+<p>Offsets --&gt; &lt;VInt, VInt&gt;<sup>TermFreq</sup>
+</p>
+                        
+<br>
+                        
+<p>Notes:</p>
+                        
+<ul>
+                            
+<li>Position/Offset byte stores whether this term vector has position or offset information stored.</li>
+                            
+<li>Term
+                                text prefixes are shared. The PrefixLength is the number of initial
+                                characters from the previous term which must be pre-pended to a
+                                term's suffix in order to form the term's text. Thus, if the
+                                previous term's text was "bone" and the term is "boy",
+                                the PrefixLength is two and the suffix is "y".
+                            </li>
+                            
+<li>Positions are stored as delta encoded VInts. This means we only store the difference of the current position from the last position</li>
+                            
+<li>Offsets are stored as delta encoded VInts. The first VInt is the startOffset, the second is the endOffset.</li>
+                        
+</ul>
+
+
                     
 </li>
                 
 </ol>
-<a name="N1073C"></a><a name="Deleted Documents"></a>
+<a name="N10757"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2138,7 +2160,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N1077F"></a><a name="Limitations"></a>
+<a name="N1079A"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There

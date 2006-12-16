@@ -331,6 +331,10 @@ Documentation
 
   5. Added in Developer and System Requriements sections under Resources (Grant Ingersoll)
 
+  6. LUCENE-713 Updated the Term Vector section of File Formats to include documentation on how Offset and Position info are stored in the TVF file. (Grant Ingersoll, Samir Abdou)
+
+  7. Added in link to Clover Test Code Coverage Reports under the Develop section in Resources (Grant Ingersoll) 
+
 Build
 
   1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)
