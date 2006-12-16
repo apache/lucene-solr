@@ -46,7 +46,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <faq         label="FAQ"              href="ext:faq" />
     <wiki        label="Wiki"             href="ext:wiki" />
     <tutorial    label="Tutorial"         href="tutorial.html" />
-    <apidocs     label="API Docs"         href="api/" />    
+    <apidocs     label="API Docs"         href="api/index.html" />    
   </docs>
 
   <resources label="Resources">
