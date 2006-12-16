@@ -1,4 +1,4 @@
-                 Apache Solr Version 1.1.0-dev-incubating
+                      Apache Solr Version 1.1.0
                             Release Notes
 
 Introduction
@@ -29,7 +29,7 @@ See the tutorial at http://incubator.apache.org/solr/tutorial.html
 
 $Id$
 
-================== Release 1.1.0-dev-incubating, YYYYMMDD ==================
+================== Release 1.1.0 20061221 ==================
 
 Status
 ------
