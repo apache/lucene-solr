@@ -38,6 +38,14 @@
       <title>News</title>
 
       <section>
+      <title>21 December 2006: Release 1.1.0 available</title>
+      <p>
+        This is the first release since Solr joined the Incubator, and brings
+        many new features and performance optimizations including highlighting,
+        faceted browsing, and JSON/Python/Ruby response formats.
+      </p>
+      </section>
+      <section>
       <title>15 August 2006: Solr at ApacheCon US</title>
       <p>Chris Hostetter will be presenting
         <strong><a href="http://www.us.apachecon.com/html/sessions.html#FR26">"Faceted Searching With Apache Solr"</a></strong>  
