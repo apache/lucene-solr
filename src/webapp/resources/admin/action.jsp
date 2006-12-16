@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 --%>
-
+<%@ page import="org.apache.solr.util.XML"%>
 <%@ page import="org.apache.solr.core.SolrCore,
                  org.apache.solr.schema.IndexSchema,
                  java.io.File,
@@ -98,7 +98,7 @@
       <H3>Action:</H3>
     </td>
     <td>
-      <%= action %><br>
+      <% XML.escapeCharData(action, out); %><br>
     </td>
   </tr>
   <tr>
@@ -106,7 +106,7 @@
       <H4>Result:</H4>
     </td>
     <td>
-      <%= enableActionStatus %><br>
+      <% XML.escapeCharData(enableActionStatus, out); %><br>
     </td>
   </tr>
 </table>

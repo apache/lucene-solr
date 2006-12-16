@@ -197,6 +197,8 @@ Bug Fixes
 11. Better parsing of pingQuery from solrconfig.xml (hossman, SOLR-70)
 12. Fixed bug with "Distribution" page introduced when Versions were
     added to "Info" page (hossman)
+13. Fixed HTML escaping issues with user input to analysis.jsp and action.jsp
+    (hossman, SOLR-74)
 
 Other Changes
  1. Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224,

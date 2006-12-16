@@ -62,7 +62,7 @@
 	<strong>Field name</strong>
   </td>
   <td>
-	<input class="std" name="name" type="text" value="<%= name %>">
+	<input class="std" name="name" type="text" value="<% XML.escapeCharData(name, out); %>">
   </td>
 </tr>
 <tr>
@@ -78,7 +78,7 @@
      <%= highlight ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea class="std" rows="3" cols="70" name="val"><%= val %></textarea>
+	<textarea class="std" rows="3" cols="70" name="val"><% XML.escapeCharData(val,out); %></textarea>
   </td>
 </tr>
 <tr>
@@ -90,7 +90,7 @@
      <%= qverbose ? "checked=\"true\"" : "" %> >
   </td>
   <td>
-	<textarea class="std" rows="1" cols="70" name="qval"><%= qval %></textarea>
+	<textarea class="std" rows="1" cols="70" name="qval"><% XML.escapeCharData(qval,out); %></textarea>
   </td>
 </tr>
 <tr>
