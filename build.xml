@@ -435,7 +435,12 @@
 
     <zip destfile="${dist}/${fullnamever}.zip">
       <zipfileset dir="${dest}/${fullnamever}" 
-        prefix="${fullnamever}" />
+        prefix="${fullnamever}" 
+        excludes="**/*.sh **/bin/ src/scripts/" />
+      <zipfileset dir="${dest}/${fullnamever}" 
+        prefix="${fullnamever}" 
+        includes="**/*.sh **/bin/ src/scripts/"
+        filemode="755" />
     </zip>
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
