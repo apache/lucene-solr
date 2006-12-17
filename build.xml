@@ -412,7 +412,11 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/**"
-        excludes="**/data/ **/logs/ **/classes/" />
+        excludes="**/data/ **/logs/ **/classes/ **/*.sh **/bin/ src/scripts/" />
+      <tarfileset dir="."
+        mode="755"
+        prefix="${fullnamever}"
+        includes="**/*.sh **/bin/ src/scripts/" />
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="dist/*.jar dist/*.war" />
@@ -431,7 +435,12 @@
 
     <zip destfile="${dist}/${fullnamever}.zip">
       <zipfileset dir="${dest}/${fullnamever}" 
-        prefix="${fullnamever}" />
+        prefix="${fullnamever}" 
+        excludes="**/*.sh **/bin/ src/scripts/" />
+      <zipfileset dir="${dest}/${fullnamever}" 
+        prefix="${fullnamever}" 
+        includes="**/*.sh **/bin/ src/scripts/"
+        filemode="755" />
     </zip>
     <solr-checksum file="${dist}/${fullnamever}.zip"/>
 
