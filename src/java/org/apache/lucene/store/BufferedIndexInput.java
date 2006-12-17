@@ -39,7 +39,7 @@ public abstract class BufferedIndexInput extends IndexInput {
     if(len <= (bufferLength-bufferPosition)){
       // the buffer contains enough data to satistfy this request
       if(len>0) // to allow b to be null if len is 0...
-    	  System.arraycopy(buffer, bufferPosition, b, offset, len);
+        System.arraycopy(buffer, bufferPosition, b, offset, len);
       bufferPosition+=len;
     } else {
       // the buffer does not have enough data. First serve all we've got.
@@ -68,11 +68,11 @@ public abstract class BufferedIndexInput extends IndexInput {
         // performance reason not to read it all at once. Note that unlike
         // the previous code of this function, there is no need to do a seek
         // here, because there's no need to reread what we had in the buffer.
-    	long after = bufferStart+bufferPosition+len;
-    	if(after > length())
-            throw new IOException("read past EOF");  		
+        long after = bufferStart+bufferPosition+len;
+        if(after > length())
+          throw new IOException("read past EOF");
         readInternal(b, offset, len);
-    	bufferStart = after; 
+        bufferStart = after;
         bufferPosition = 0;
         bufferLength = 0;                    // trigger refill() on read
       }
@@ -103,7 +103,7 @@ public abstract class BufferedIndexInput extends IndexInput {
    * @param length the number of bytes to read
    */
   protected abstract void readInternal(byte[] b, int offset, int length)
-       throws IOException;
+          throws IOException;
 
   public long getFilePointer() { return bufferStart + bufferPosition; }
 
