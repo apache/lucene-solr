@@ -310,6 +310,10 @@ Optimizations
      of norms of segments with no deleted docs.
     (Michael Busch via Yonik Seeley)
 
+ 15. LUCENE-745: Add BooleanQuery.clauses(), allowing direct access
+     to the List of clauses and replaced the internal synchronized Vector
+     with an unsynchronized List. (Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
   2. Added TestWindowsMMap.java (Benson Margulies via Mike McCandless)

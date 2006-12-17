@@ -22,9 +22,7 @@ import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 /** A Query that matches documents matching boolean combinations of other
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
@@ -75,7 +73,7 @@ public class BooleanQuery extends Query {
     BooleanQuery.maxClauseCount = maxClauseCount;
   }
 
-  private Vector clauses = new Vector();
+  private ArrayList clauses = new ArrayList();
   private boolean disableCoord;
 
   /** Constructs an empty boolean query. */
@@ -166,13 +164,16 @@ public class BooleanQuery extends Query {
     if (clauses.size() >= maxClauseCount)
       throw new TooManyClauses();
 
-    clauses.addElement(clause);
+    clauses.add(clause);
   }
 
   /** Returns the set of clauses in this query. */
   public BooleanClause[] getClauses() {
-    return (BooleanClause[])clauses.toArray(new BooleanClause[0]);
+    return (BooleanClause[])clauses.toArray(new BooleanClause[clauses.size()]);
   }
+
+  /** Returns the list of clauses in this query. */
+  public List clauses() { return clauses; }
 
   private class BooleanWeight implements Weight {
     protected Similarity similarity;
@@ -182,7 +183,7 @@ public class BooleanQuery extends Query {
       throws IOException {
       this.similarity = getSimilarity(searcher);
       for (int i = 0 ; i < clauses.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         weights.add(c.getQuery().createWeight(searcher));
       }
     }
@@ -193,7 +194,7 @@ public class BooleanQuery extends Query {
     public float sumOfSquaredWeights() throws IOException {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         Weight w = (Weight)weights.elementAt(i);
         // call sumOfSquaredWeights for all clauses in case of side effects
         float s = w.sumOfSquaredWeights();         // sum sub weights
@@ -211,7 +212,7 @@ public class BooleanQuery extends Query {
     public void normalize(float norm) {
       norm *= getBoost();                         // incorporate boost
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         Weight w = (Weight)weights.elementAt(i);
         // normalize all clauses, (even if prohibited in case of side affects)
         w.normalize(norm);
@@ -229,7 +230,7 @@ public class BooleanQuery extends Query {
       boolean allRequired = true;
       boolean noneBoolean = true;
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         if (!c.isRequired())
           allRequired = false;
         if (c.getQuery() instanceof BooleanQuery)
@@ -253,7 +254,7 @@ public class BooleanQuery extends Query {
       BooleanScorer result = new BooleanScorer(similarity);
 
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         Weight w = (Weight)weights.elementAt(i);
         Scorer subScorer = w.scorer(reader);
         if (subScorer != null)
@@ -277,7 +278,7 @@ public class BooleanQuery extends Query {
       boolean fail = false;
       int shouldMatchCount = 0;
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         Weight w = (Weight)weights.elementAt(i);
         Explanation e = w.explain(reader, doc);
         if (!c.isProhibited()) maxCoord++;
@@ -349,7 +350,7 @@ public class BooleanQuery extends Query {
                                                  minNrShouldMatch);
 
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.elementAt(i);
+        BooleanClause c = (BooleanClause)clauses.get(i);
         Weight w = (Weight)weights.elementAt(i);
         Scorer subScorer = w.scorer(reader);
         if (subScorer != null)
@@ -386,7 +387,7 @@ public class BooleanQuery extends Query {
 
   public Query rewrite(IndexReader reader) throws IOException {
     if (clauses.size() == 1) {                    // optimize 1-clause queries
-      BooleanClause c = (BooleanClause)clauses.elementAt(0);
+      BooleanClause c = (BooleanClause)clauses.get(0);
       if (!c.isProhibited()) {			  // just return clause
 
         Query query = c.getQuery().rewrite(reader);    // rewrite first
@@ -403,13 +404,12 @@ public class BooleanQuery extends Query {
 
     BooleanQuery clone = null;                    // recursively rewrite
     for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.elementAt(i);
+      BooleanClause c = (BooleanClause)clauses.get(i);
       Query query = c.getQuery().rewrite(reader);
       if (query != c.getQuery()) {                     // clause rewrote: must clone
         if (clone == null)
           clone = (BooleanQuery)this.clone();
-        clone.clauses.setElementAt
-          (new BooleanClause(query, c.getOccur()), i);
+        clone.clauses.set(i, new BooleanClause(query, c.getOccur()));
       }
     }
     if (clone != null) {
@@ -428,7 +428,7 @@ public class BooleanQuery extends Query {
 
   public Object clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();
-    clone.clauses = (Vector)this.clauses.clone();
+    clone.clauses = (ArrayList)this.clauses.clone();
     return clone;
   }
 
@@ -441,7 +441,7 @@ public class BooleanQuery extends Query {
     }
 
     for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.elementAt(i);
+      BooleanClause c = (BooleanClause)clauses.get(i);
       if (c.isProhibited())
         buffer.append("-");
       else if (c.isRequired())
