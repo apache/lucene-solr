@@ -25,10 +25,10 @@ Changes in runtime behavior
  4. LUCENE-489: Add support for leading wildcard characters (*, ?) to
     QueryParser.  Default is to disallow them, as before.
     (Steven Parkes via Otis Gospodnetic)
-    
- 5. LUCENE-703: QueryParser changed to default to use of ConstantScoreRangeQuery 
-    for range queries. Added useOldRangeQuery property to QueryParser to allow 
-    selection of old RangeQuery class if required.      
+
+ 5. LUCENE-703: QueryParser changed to default to use of ConstantScoreRangeQuery
+    for range queries. Added useOldRangeQuery property to QueryParser to allow
+    selection of old RangeQuery class if required.
     (Mark Harwood)
 
  6. LUCENE-543: WildcardQuery now performs a TermQuery if the provided term
@@ -337,11 +337,13 @@ Documentation
 
   6. LUCENE-713 Updated the Term Vector section of File Formats to include documentation on how Offset and Position info are stored in the TVF file. (Grant Ingersoll, Samir Abdou)
 
-  7. Added in link to Clover Test Code Coverage Reports under the Develop section in Resources (Grant Ingersoll) 
+  7. Added in link to Clover Test Code Coverage Reports under the Develop section in Resources (Grant Ingersoll)
 
 Build
 
   1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)
+
+  2. Added a sysproperty in common-build.xml per Lucene 752 to map java.io.tmpdir to ${build.dir}/test just like the tempDir sysproperty.
 
 Release 2.0.0 2006-05-26
 

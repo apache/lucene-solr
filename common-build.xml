@@ -188,6 +188,7 @@
       <!-- TODO: create propertyset for test properties, so each project can have its own set -->
       <sysproperty key="dataDir" file="src/test"/>
       <sysproperty key="tempDir" file="${build.dir}/test"/>
+      <sysproperty key="java.io.tmpdir" file="${build.dir}/test"/>
 
       <!-- contrib/ant IndexTaskTest needs these two system properties -->
       <sysproperty key="docs.dir" file="src/test"/>
