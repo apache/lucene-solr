@@ -412,7 +412,11 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/**"
-        excludes="**/data/ **/logs/ **/classes/" />
+        excludes="**/data/ **/logs/ **/classes/ **/*.sh **/bin/ src/scripts/" />
+      <tarfileset dir="."
+        mode="755"
+        prefix="${fullnamever}"
+        includes="**/*.sh **/bin/ src/scripts/" />
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="dist/*.jar dist/*.war" />
