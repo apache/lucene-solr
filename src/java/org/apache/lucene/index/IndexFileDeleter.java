@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 
 /**
  * A utility class (used by both IndexReader and
@@ -35,7 +37,7 @@ import java.util.HashMap;
  */
 public class IndexFileDeleter {
   private Vector deletable;
-  private Vector pending;
+  private HashSet pending;
   private Directory directory;
   private SegmentInfos segmentInfos;
   private PrintStream infoStream;
@@ -44,6 +46,12 @@ public class IndexFileDeleter {
     throws IOException {
     this.segmentInfos = segmentInfos;
     this.directory = directory;
+  }
+  void setSegmentInfos(SegmentInfos segmentInfos) {
+    this.segmentInfos = segmentInfos;
+  }
+  SegmentInfos getSegmentInfos() {
+    return segmentInfos;
   }
 
   void setInfoStream(PrintStream infoStream) {
@@ -134,6 +142,10 @@ public class IndexFileDeleter {
                 // This is an orphan'd separate norms file:
                 doDelete = true;
               }
+            } else if ("cfs".equals(extension) && !info.getUseCompoundFile()) {
+              // This is a partially written
+              // _segmentName.cfs:
+              doDelete = true;
             }
           }
         }
@@ -165,6 +177,30 @@ public class IndexFileDeleter {
         deleteFiles(reader.files()); // try to delete our files
       else
         deleteFiles(reader.files(), reader.directory()); // delete other files
+    }
+  }
+
+  /**
+   * Delete these segments, as long as they are not listed
+   * in protectedSegments.  If they are, then, instead, add
+   * them to the pending set.
+  */
+     
+  public final void deleteSegments(Vector segments, HashSet protectedSegments) throws IOException {
+
+    deleteFiles();                                // try to delete files that we couldn't before
+
+    for (int i = 0; i < segments.size(); i++) {
+      SegmentReader reader = (SegmentReader)segments.elementAt(i);
+      if (reader.directory() == this.directory) {
+        if (protectedSegments.contains(reader.getSegmentName())) {
+          addPendingFiles(reader.files()); // record these for deletion on commit
+        } else {
+          deleteFiles(reader.files()); // try to delete our files
+        }
+      }  else {
+        deleteFiles(reader.files(), reader.directory()); // delete other files
+      }
     }
   }
   
@@ -199,22 +235,51 @@ public class IndexFileDeleter {
     pending = null;
   }
 
-  final void addPendingFile(String fileName) {
-    if (pending == null) {
-      pending = new Vector();
+  /*
+    Record that the files for these segments should be
+    deleted, once the pending deletes are committed.
+   */
+  final void addPendingSegments(Vector segments) throws IOException {
+    for (int i = 0; i < segments.size(); i++) {
+      SegmentReader reader = (SegmentReader)segments.elementAt(i);
+      if (reader.directory() == this.directory) {
+        addPendingFiles(reader.files());
+      }
     }
-    pending.addElement(fileName);
   }
 
-  final void commitPendingFiles() {
+  /*
+    Record list of files for deletion, but do not delete
+    them until commitPendingFiles is called.
+  */
+  final void addPendingFiles(Vector files) {
+    for(int i=0;i<files.size();i++) {
+      addPendingFile((String) files.elementAt(i));
+    }
+  }
+
+  /*
+    Record a file for deletion, but do not delete it until
+    commitPendingFiles is called.
+  */
+  final void addPendingFile(String fileName) {
+    if (pending == null) {
+      pending = new HashSet();
+    }
+    pending.add(fileName);
+  }
+
+  final void commitPendingFiles() throws IOException {
     if (pending != null) {
       if (deletable == null) {
-        deletable = pending;
-        pending = null;
-      } else {
-        deletable.addAll(pending);
-        pending = null;
+        deletable = new Vector();
       }
+      Iterator it = pending.iterator();
+      while(it.hasNext()) {
+        deletable.addElement(it.next());
+      }
+      pending = null;
+      deleteFiles();
     }
   }
 

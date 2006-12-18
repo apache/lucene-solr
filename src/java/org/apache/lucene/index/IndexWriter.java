@@ -31,7 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
-
+import java.util.HashSet;
 
 /**
   An IndexWriter creates and maintains an index.
@@ -98,6 +98,11 @@ public class IndexWriter {
   private Analyzer analyzer;    // how to analyze text
 
   private Similarity similarity = Similarity.getDefault(); // how to normalize
+
+  private boolean inTransaction = false; // true iff we are in a transaction
+  private boolean commitPending; // true if segmentInfos has changes not yet committed
+  private HashSet protectedSegments; // segment names that should not be deleted until commit
+  private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
 
   private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
   private SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
@@ -473,6 +478,12 @@ public class IndexWriter {
    * Adds a document to this index.  If the document contains more than
    * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
+   *
+   * Note that if an Exception is hit (eg disk full) then
+   * the index will be consistent, but this document will
+   * not have been added.  Furthermore, it's possible the
+   * index will have one segment in non-compound format even
+   * when using compound files.
    */
   public void addDocument(Document doc) throws IOException {
     addDocument(doc, analyzer);
@@ -483,6 +494,9 @@ public class IndexWriter {
    * value of {@link #getAnalyzer()}.  If the document contains more than
    * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
+   *
+   * See @link #addDocument(Document) for details on index
+   * state after an IOException.
    */
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
     DocumentWriter dw =
@@ -563,8 +577,22 @@ public class IndexWriter {
    */
   private PrintStream infoStream = null;
 
-  /** Merges all segments together into a single segment, optimizing an index
-      for search. */
+  /** Merges all segments together into a single segment,
+   * optimizing an index for search..
+   * 
+   * <p>Note that this requires temporary free space in the
+   * Directory up to the size of the starting index (exact
+   * usage could be less but will depend on many
+   * factors).</p>
+
+   * <p>If an Exception is hit during optimize() (eg, due to
+   * disk full), the index will not be corrupted.  However
+   * it's possible that one of the segments in the index
+   * will be in non-CFS format even when using compound file
+   * format.  This will occur when the Exception is hit
+   * during conversion of the segment into compound
+   * format.</p>
+  */
   public synchronized void optimize() throws IOException {
     flushRamSegments();
     while (segmentInfos.size() > 1 ||
@@ -579,6 +607,85 @@ public class IndexWriter {
     }
   }
 
+  /*
+   * Begin a transaction.  During a transaction, any segment
+   * merges that happen (or ram segments flushed) will not
+   * write a new segments file and will not remove any files
+   * that were present at the start of the transaction.  You
+   * must make a matched (try/finall) call to
+   * commitTransaction() or rollbackTransaction() to finish
+   * the transaction.
+   */
+  private void startTransaction() throws IOException {
+    if (inTransaction) {
+      throw new IOException("transaction is already in process");
+    }
+    rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
+    protectedSegments = new HashSet();
+    for(int i=0;i<segmentInfos.size();i++) {
+      SegmentInfo si = (SegmentInfo) segmentInfos.elementAt(i);
+      protectedSegments.add(si.name);
+    }
+    inTransaction = true;
+  }
+
+  /*
+   * Rolls back the transaction and restores state to where
+   * we were at the start.
+   */
+  private void rollbackTransaction() throws IOException {
+
+    // Keep the same segmentInfos instance but replace all
+    // of its SegmentInfo instances.  This is so the next
+    // attempt to commit using this instance of IndexWriter
+    // will always write to a new generation ("write once").
+    segmentInfos.clear();
+    segmentInfos.addAll(rollbackSegmentInfos);
+
+    // Ask deleter to locate unreferenced files & remove
+    // them:
+    deleter.clearPendingFiles();
+    deleter.findDeletableFiles();
+    deleter.deleteFiles();
+
+    clearTransaction();
+  }
+
+  /*
+   * Commits the transaction.  This will write the new
+   * segments file and remove and pending deletions we have
+   * accumulated during the transaction
+   */
+  private void commitTransaction() throws IOException {
+    if (commitPending) {
+      boolean success = false;
+      try {
+        // If we hit eg disk full during this write we have
+        // to rollback.:
+        segmentInfos.write(directory);         // commit changes
+        success = true;
+      } finally {
+        if (!success) {
+          rollbackTransaction();
+        }
+      }
+      deleter.commitPendingFiles();
+      commitPending = false;
+    }
+
+    clearTransaction();
+  }
+
+  /* Should only be called by rollbackTransaction &
+   * commitTransaction */
+  private void clearTransaction() {
+    protectedSegments = null;
+    rollbackSegmentInfos = null;
+    inTransaction = false;
+  }
+
+
+
   /** Merges all segments from an array of indexes into this index.
    *
    * <p>This may be used to parallelize batch indexing.  A large document
@@ -587,27 +694,68 @@ public class IndexWriter {
    * complete index can then be created by merging sub-collection indexes
    * with this method.
    *
-   * <p>After this completes, the index is optimized. */
+   * <p>After this completes, the index is optimized.
+   *
+   * <p>This method is transactional in how Exceptions are
+   * handled: it does not commit a new segments_N file until
+   * all indexes are added.  This means if an Exception
+   * occurs (eg disk full), then either no indexes will have
+   * been added or they all will have been.</p>
+   *
+   * <p>If an Exception is hit, it's still possible that all
+   * indexes were successfully added.  This happens when the
+   * Exception is hit when trying to build a CFS file.  In
+   * this case, one segment in the index will be in non-CFS
+   * format, even when using compound file format.</p>
+   *
+   * <p>Also note that on an Exception, the index may still
+   * have been partially or fully optimized even though none
+   * of the input indexes were added. </p>
+   *
+   * <p>Note that this requires temporary free space in the
+   * Directory up to 2X the sum of all input indexes
+   * (including the starting index).  Exact usage could be
+   * less but will depend on many factors.</p>
+   *
+   * <p>See <a target="_top"
+   * href="http://issues.apache.org/jira/browse/LUCENE-702">LUCENE-702</a>
+   * for details.</p>
+   */
   public synchronized void addIndexes(Directory[] dirs)
-      throws IOException {
+    throws IOException {
+
     optimize();					  // start with zero or 1 seg
 
     int start = segmentInfos.size();
 
-    for (int i = 0; i < dirs.length; i++) {
-      SegmentInfos sis = new SegmentInfos();	  // read infos from dir
-      sis.read(dirs[i]);
-      for (int j = 0; j < sis.size(); j++) {
-        segmentInfos.addElement(sis.info(j));	  // add each info
-      }
-    }
+    boolean success = false;
 
-    // merge newly added segments in log(n) passes
-    while (segmentInfos.size() > start+mergeFactor) {
-      for (int base = start; base < segmentInfos.size(); base++) {
-        int end = Math.min(segmentInfos.size(), base+mergeFactor);
-        if (end-base > 1)
-          mergeSegments(segmentInfos, base, end);
+    startTransaction();
+
+    try {
+      for (int i = 0; i < dirs.length; i++) {
+        SegmentInfos sis = new SegmentInfos();	  // read infos from dir
+        sis.read(dirs[i]);
+        for (int j = 0; j < sis.size(); j++) {
+          segmentInfos.addElement(sis.info(j));	  // add each info
+        }
+      }
+
+      // merge newly added segments in log(n) passes
+      while (segmentInfos.size() > start+mergeFactor) {
+        for (int base = start; base < segmentInfos.size(); base++) {
+          int end = Math.min(segmentInfos.size(), base+mergeFactor);
+          if (end-base > 1) {
+            mergeSegments(segmentInfos, base, end);
+          }
+        }
+      }
+      success = true;
+    } finally {
+      if (success) {
+        commitTransaction();
+      } else {
+        rollbackTransaction();
       }
     }
 
@@ -623,6 +771,11 @@ public class IndexWriter {
    * <p>
    * This requires this index not be among those to be added, and the
    * upper bound* of those segment doc counts not exceed maxMergeDocs.
+   *
+   * <p>See {@link #addIndexes(Directory[])} for
+   * details on transactional semantics, temporary free
+   * space required in the Directory, and non-CFS segments
+   * on an Exception.</p>
    */
   public synchronized void addIndexesNoOptimize(Directory[] dirs)
       throws IOException {
@@ -651,96 +804,114 @@ public class IndexWriter {
     // and target may use compound file or not. So we use mergeSegments() to
     // copy a segment, which may cause doc count to change because deleted
     // docs are garbage collected.
-    //
-    // In current addIndexes(Directory[]), segment infos in S are added to
-    // T's "segmentInfos" upfront. Then segments in S are merged to T several
-    // at a time. Every merge is committed with T's "segmentInfos". So if
-    // a reader is opened on T while addIndexes() is going on, it could see
-    // an inconsistent index. AddIndexesNoOptimize() has a similar behaviour.
 
     // 1 flush ram segments
+
     flushRamSegments();
 
     // 2 copy segment infos and find the highest level from dirs
     int start = segmentInfos.size();
     int startUpperBound = minMergeDocs;
 
+    boolean success = false;
+
+    startTransaction();
+
     try {
-      for (int i = 0; i < dirs.length; i++) {
-        if (directory == dirs[i]) {
-          // cannot add this index: segments may be deleted in merge before added
-          throw new IllegalArgumentException("Cannot add this index to itself");
-        }
 
-        SegmentInfos sis = new SegmentInfos(); // read infos from dir
-        sis.read(dirs[i]);
-        for (int j = 0; j < sis.size(); j++) {
-          SegmentInfo info = sis.info(j);
-          segmentInfos.addElement(info); // add each info
+      try {
+        for (int i = 0; i < dirs.length; i++) {
+          if (directory == dirs[i]) {
+            // cannot add this index: segments may be deleted in merge before added
+            throw new IllegalArgumentException("Cannot add this index to itself");
+          }
 
-          while (startUpperBound < info.docCount) {
-            startUpperBound *= mergeFactor; // find the highest level from dirs
-            if (startUpperBound > maxMergeDocs) {
-              // upper bound cannot exceed maxMergeDocs
-              throw new IllegalArgumentException("Upper bound cannot exceed maxMergeDocs");
+          SegmentInfos sis = new SegmentInfos(); // read infos from dir
+          sis.read(dirs[i]);
+          for (int j = 0; j < sis.size(); j++) {
+            SegmentInfo info = sis.info(j);
+            segmentInfos.addElement(info); // add each info
+
+            while (startUpperBound < info.docCount) {
+              startUpperBound *= mergeFactor; // find the highest level from dirs
+              if (startUpperBound > maxMergeDocs) {
+                // upper bound cannot exceed maxMergeDocs
+                throw new IllegalArgumentException("Upper bound cannot exceed maxMergeDocs");
+              }
             }
           }
         }
+      } catch (IllegalArgumentException e) {
+        for (int i = segmentInfos.size() - 1; i >= start; i--) {
+          segmentInfos.remove(i);
+        }
+        throw e;
       }
-    } catch (IllegalArgumentException e) {
-      for (int i = segmentInfos.size() - 1; i >= start; i--) {
-        segmentInfos.remove(i);
+
+      // 3 maybe merge segments starting from the highest level from dirs
+      maybeMergeSegments(startUpperBound);
+
+      // get the tail segments whose levels <= h
+      int segmentCount = segmentInfos.size();
+      int numTailSegments = 0;
+      while (numTailSegments < segmentCount
+             && startUpperBound >= segmentInfos.info(segmentCount - 1 - numTailSegments).docCount) {
+        numTailSegments++;
       }
-      throw e;
-    }
-
-    // 3 maybe merge segments starting from the highest level from dirs
-    maybeMergeSegments(startUpperBound);
-
-    // get the tail segments whose levels <= h
-    int segmentCount = segmentInfos.size();
-    int numTailSegments = 0;
-    while (numTailSegments < segmentCount
-        && startUpperBound >= segmentInfos.info(segmentCount - 1 - numTailSegments).docCount) {
-      numTailSegments++;
-    }
-    if (numTailSegments == 0) {
-      return;
-    }
-
-    // 4 make sure invariants hold for the tail segments whose levels <= h
-    if (checkNonDecreasingLevels(segmentCount - numTailSegments)) {
-      // identify the segments from S to be copied (not merged in 3)
-      int numSegmentsToCopy = 0;
-      while (numSegmentsToCopy < segmentCount
-          && directory != segmentInfos.info(segmentCount - 1 - numSegmentsToCopy).dir) {
-        numSegmentsToCopy++;
-      }
-      if (numSegmentsToCopy == 0) {
+      if (numTailSegments == 0) {
+        success = true;
         return;
       }
 
-      // copy those segments from S
-      for (int i = segmentCount - numSegmentsToCopy; i < segmentCount; i++) {
-        mergeSegments(segmentInfos, i, i + 1);
-      }
-      if (checkNonDecreasingLevels(segmentCount - numSegmentsToCopy)) {
-        return;
-      }
-    }
+      // 4 make sure invariants hold for the tail segments whose levels <= h
+      if (checkNonDecreasingLevels(segmentCount - numTailSegments)) {
+        // identify the segments from S to be copied (not merged in 3)
+        int numSegmentsToCopy = 0;
+        while (numSegmentsToCopy < segmentCount
+               && directory != segmentInfos.info(segmentCount - 1 - numSegmentsToCopy).dir) {
+          numSegmentsToCopy++;
+        }
+        if (numSegmentsToCopy == 0) {
+          success = true;
+          return;
+        }
 
-    // invariants do not hold, simply merge those segments
-    mergeSegments(segmentInfos, segmentCount - numTailSegments, segmentCount);
+        // copy those segments from S
+        for (int i = segmentCount - numSegmentsToCopy; i < segmentCount; i++) {
+          mergeSegments(segmentInfos, i, i + 1);
+        }
+        if (checkNonDecreasingLevels(segmentCount - numSegmentsToCopy)) {
+          success = true;
+          return;
+        }
+      }
 
-    // maybe merge segments again if necessary
-    if (segmentInfos.info(segmentInfos.size() - 1).docCount > startUpperBound) {
-      maybeMergeSegments(startUpperBound * mergeFactor);
+      // invariants do not hold, simply merge those segments
+      mergeSegments(segmentInfos, segmentCount - numTailSegments, segmentCount);
+
+      // maybe merge segments again if necessary
+      if (segmentInfos.info(segmentInfos.size() - 1).docCount > startUpperBound) {
+        maybeMergeSegments(startUpperBound * mergeFactor);
+      }
+
+      success = true;
+    } finally {
+      if (success) {
+        commitTransaction();
+      } else {
+        rollbackTransaction();
+      }
     }
   }
 
   /** Merges the provided indexes into this index.
    * <p>After this completes, the index is optimized. </p>
    * <p>The provided IndexReaders are not closed.</p>
+
+   * <p>See {@link #addIndexes(Directory[])} for
+   * details on transactional semantics, temporary free
+   * space required in the Directory, and non-CFS segments
+   * on an Exception.</p>
    */
   public synchronized void addIndexes(IndexReader[] readers)
     throws IOException {
@@ -761,26 +932,61 @@ public class IndexWriter {
     for (int i = 0; i < readers.length; i++)      // add new indexes
       merger.add(readers[i]);
 
-    int docCount = merger.merge();                // merge 'em
-
-    segmentInfos.setSize(0);                      // pop old infos & add new
-    SegmentInfo info = new SegmentInfo(mergedName, docCount, directory, false);
-    segmentInfos.addElement(info);
-
-    if(sReader != null)
-        sReader.close();
+    SegmentInfo info;
 
     String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
-    segmentInfos.write(directory);         // commit changes
+
+    boolean success = false;
+
+    startTransaction();
+
+    try {
+      int docCount = merger.merge();                // merge 'em
+
+      segmentInfos.setSize(0);                      // pop old infos & add new
+      info = new SegmentInfo(mergedName, docCount, directory, false);
+      segmentInfos.addElement(info);
+      commitPending = true;
+
+      if(sReader != null)
+        sReader.close();
+
+      success = true;
+
+    } finally {
+      if (!success) {
+        rollbackTransaction();
+      } else {
+        commitTransaction();
+      }
+    }
 
     deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
     deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
 
     if (useCompoundFile) {
-      Vector filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
+      success = false;
+
       segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
-      info.setUseCompoundFile(true);
-      segmentInfos.write(directory);     // commit again so readers know we've switched this segment to a compound file
+      Vector filesToDelete;
+
+      startTransaction();
+
+      try {
+
+        filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
+
+        info.setUseCompoundFile(true);
+        commitPending = true;
+        success = true;
+
+      } finally {
+        if (!success) {
+          rollbackTransaction();
+        } else {
+          commitTransaction();
+        }
+      }
 
       deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
       deleter.deleteFiles(filesToDelete); // delete now unused files of segment 
@@ -884,6 +1090,7 @@ public class IndexWriter {
         // mergeFactor and/or maxBufferedDocs change(s)
         while (numSegments >= mergeFactor) {
           // merge the leftmost* mergeFactor segments
+
           int docCount = mergeSegments(segmentInfos, minSegment, minSegment + mergeFactor);
           numSegments -= mergeFactor;
 
@@ -921,51 +1128,154 @@ public class IndexWriter {
     SegmentMerger merger = new SegmentMerger(this, mergedName);
     
     final Vector segmentsToDelete = new Vector();
-    for (int i = minSegment; i < end; i++) {
-      SegmentInfo si = sourceSegments.info(i);
-      if (infoStream != null)
-        infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-      IndexReader reader = SegmentReader.get(si);
-      merger.add(reader);
-      if ((reader.directory() == this.directory) || // if we own the directory
-          (reader.directory() == this.ramDirectory))
-        segmentsToDelete.addElement(reader);   // queue segment for deletion
-    }
-
-    int mergedDocCount = merger.merge();
-
-    if (infoStream != null) {
-      infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
-    }
-
-    SegmentInfo newSegment = new SegmentInfo(mergedName, mergedDocCount,
-                                             directory, false);
-    if (sourceSegments == ramSegmentInfos) {
-      sourceSegments.removeAllElements();
-      segmentInfos.addElement(newSegment);
-    } else {
-      for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
-        sourceSegments.remove(i);
-      segmentInfos.set(minSegment, newSegment);
-    }
-
-    // close readers before we attempt to delete now-obsolete segments
-    merger.closeReaders();
 
     String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
-    segmentInfos.write(directory);     // commit before deleting
+    String nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
 
-    deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
-    deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
+    SegmentInfo newSegment = null;
+
+    int mergedDocCount;
+
+    // This is try/finally to make sure merger's readers are closed:
+    try {
+
+      for (int i = minSegment; i < end; i++) {
+        SegmentInfo si = sourceSegments.info(i);
+        if (infoStream != null)
+          infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
+        IndexReader reader = SegmentReader.get(si);
+        merger.add(reader);
+        if ((reader.directory() == this.directory) || // if we own the directory
+            (reader.directory() == this.ramDirectory))
+          segmentsToDelete.addElement(reader);   // queue segment for deletion
+      }
+
+      SegmentInfos rollback = null;
+      boolean success = false;
+
+      // This is try/finally to rollback our internal state
+      // if we hit exception when doing the merge:
+      try {
+
+        mergedDocCount = merger.merge();
+
+        if (infoStream != null) {
+          infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
+        }
+
+        newSegment = new SegmentInfo(mergedName, mergedDocCount,
+                                     directory, false);
+
+
+        if (sourceSegments == ramSegmentInfos) {
+          segmentInfos.addElement(newSegment);
+        } else {
+
+          if (!inTransaction) {
+            // Now save the SegmentInfo instances that
+            // we are replacing:
+            rollback = (SegmentInfos) segmentInfos.clone();
+          }
+
+          for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
+            sourceSegments.remove(i);
+
+          segmentInfos.set(minSegment, newSegment);
+        }
+
+        if (!inTransaction) {
+          segmentInfos.write(directory);     // commit before deleting
+        } else {
+          commitPending = true;
+        }
+
+        success = true;
+
+      } finally {
+
+        if (success) {
+          // The non-ram-segments case is already committed
+          // (above), so all the remains for ram segments case
+          // is to clear the ram segments:
+          if (sourceSegments == ramSegmentInfos) {
+            ramSegmentInfos.removeAllElements();
+          }
+        } else if (!inTransaction) {  
+
+          // Must rollback so our state matches index:
+
+          if (sourceSegments == ramSegmentInfos) {
+            // Simple case: newSegment may or may not have
+            // been added to the end of our segment infos,
+            // so just check & remove if so:
+            if (newSegment != null && 
+                segmentInfos.size() > 0 && 
+                segmentInfos.info(segmentInfos.size()-1) == newSegment) {
+              segmentInfos.remove(segmentInfos.size()-1);
+            }
+          } else if (rollback != null) {
+            // Rollback the individual SegmentInfo
+            // instances, but keep original SegmentInfos
+            // instance (so we don't try to write again the
+            // same segments_N file -- write once):
+            segmentInfos.clear();
+            segmentInfos.addAll(rollback);
+          }
+
+          // Delete any partially created files:
+          deleter.deleteFile(nextSegmentsFileName);
+          deleter.findDeletableFiles();
+          deleter.deleteFiles();
+        }
+      }
+    } finally {
+      // close readers before we attempt to delete now-obsolete segments
+      merger.closeReaders();
+    }
+
+    if (!inTransaction) {
+      deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
+      deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
+    } else {
+      deleter.addPendingFile(segmentsInfosFileName);    // delete old segments_N file
+      deleter.deleteSegments(segmentsToDelete, protectedSegments);     // delete now-unused segments
+    }
 
     if (useCompoundFile) {
-      Vector filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
 
-      segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
-      newSegment.setUseCompoundFile(true);
-      segmentInfos.write(directory);     // commit again so readers know we've switched this segment to a compound file
+      segmentsInfosFileName = nextSegmentsFileName;
+      nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
 
-      deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
+      Vector filesToDelete;
+
+      boolean success = false;
+
+      try {
+
+        filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
+        newSegment.setUseCompoundFile(true);
+        if (!inTransaction) {
+          segmentInfos.write(directory);     // commit again so readers know we've switched this segment to a compound file
+        }
+        success = true;
+
+      } finally {
+        if (!success && !inTransaction) {  
+          // Must rollback:
+          newSegment.setUseCompoundFile(false);
+          deleter.deleteFile(mergedName + ".cfs");
+          deleter.deleteFile(nextSegmentsFileName);
+        }
+      }
+
+      if (!inTransaction) {
+        deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
+      }
+
+      // We can delete these segments whether or not we are
+      // in a transaction because we had just written them
+      // above so they can't need protection by the
+      // transaction:
       deleter.deleteFiles(filesToDelete);  // delete now-unused segments
     }
 

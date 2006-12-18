@@ -33,6 +33,8 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 
+import org.apache.lucene.store.MockRAMDirectory;
+
 /**
  * JUnit testcase to test RAMDirectory. RAMDirectory itself is used in many testcases,
  * but not one of them uses an different constructor other than the default constructor.
@@ -70,7 +72,7 @@ public class TestRAMDirectory extends TestCase {
   public void testRAMDirectory () throws IOException {
     
     Directory dir = FSDirectory.getDirectory(indexDir, false);
-    RAMDirectory ramDir = new RAMDirectory(dir);
+    MockRAMDirectory ramDir = new MockRAMDirectory(dir);
     
     // close the underlaying directory
     dir.close();
@@ -98,7 +100,7 @@ public class TestRAMDirectory extends TestCase {
 
   public void testRAMDirectoryFile () throws IOException {
     
-    RAMDirectory ramDir = new RAMDirectory(indexDir);
+    MockRAMDirectory ramDir = new MockRAMDirectory(indexDir);
     
     // Check size
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
@@ -123,7 +125,7 @@ public class TestRAMDirectory extends TestCase {
   
   public void testRAMDirectoryString () throws IOException {
     
-    RAMDirectory ramDir = new RAMDirectory(indexDir.getCanonicalPath());
+    MockRAMDirectory ramDir = new MockRAMDirectory(indexDir.getCanonicalPath());
     
     // Check size
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
@@ -151,7 +153,7 @@ public class TestRAMDirectory extends TestCase {
   
   public void testRAMDirectorySize() throws IOException, InterruptedException {
       
-    final RAMDirectory ramDir = new RAMDirectory(indexDir.getCanonicalPath());
+    final MockRAMDirectory ramDir = new MockRAMDirectory(indexDir.getCanonicalPath());
     final IndexWriter writer  = new IndexWriter(ramDir, new WhitespaceAnalyzer(), false);
     writer.optimize();
     

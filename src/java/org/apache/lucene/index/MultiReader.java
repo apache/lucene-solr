@@ -230,6 +230,20 @@ public class MultiReader extends IndexReader {
       subReaders[i].commit();
   }
 
+  void startCommit() {
+    super.startCommit();
+    for (int i = 0; i < subReaders.length; i++) {
+      subReaders[i].startCommit();
+    }
+  }
+
+  void rollbackCommit() {
+    super.rollbackCommit();
+    for (int i = 0; i < subReaders.length; i++) {
+      subReaders[i].rollbackCommit();
+    }
+  }
+
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].close();

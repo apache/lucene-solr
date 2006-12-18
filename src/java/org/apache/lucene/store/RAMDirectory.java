@@ -34,13 +34,13 @@ import java.util.Set;
  *
  * @version $Id$
  */
-public final class RAMDirectory extends Directory implements Serializable {
+public class RAMDirectory extends Directory implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  private HashMap fileMap = new HashMap();
+  HashMap fileMap = new HashMap();
   private Set fileNames = fileMap.keySet();
-  private Collection files = fileMap.values();
+  Collection files = fileMap.values();
   long sizeInBytes = 0;
   
   // *****
@@ -178,20 +178,13 @@ public final class RAMDirectory extends Directory implements Serializable {
     return file.getLength();
   }
   
-  /** Return total size in bytes of all files in this directory */
+  /** Return total size in bytes of all files in this
+   * directory.  This is currently quantized to
+   * BufferedIndexOutput.BUFFER_SIZE. */
   public synchronized final long sizeInBytes() {
     return sizeInBytes;
   }
   
-  /** Provided for testing purposes.  Use sizeInBytes() instead. */
-  public synchronized final long getRecomputedSizeInBytes() {
-    long size = 0;
-    Iterator it = files.iterator();
-    while (it.hasNext())
-      size += ((RAMFile) it.next()).getSizeInBytes();
-    return size;
-  }
-
   /** Removes an existing file in the directory.
    * @throws IOException if the file does not exist
    */
@@ -222,7 +215,7 @@ public final class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
-  public final IndexOutput createOutput(String name) {
+  public IndexOutput createOutput(String name) {
     RAMFile file = new RAMFile(this);
     synchronized (this) {
       RAMFile existing = (RAMFile)fileMap.get(name);

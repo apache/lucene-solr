@@ -34,7 +34,12 @@ public class TestIndexFileDeleter extends TestCase
     Directory dir = new RAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-    for(int i=0;i<35;i++) {
+    int i;
+    for(i=0;i<35;i++) {
+      addDoc(writer, i);
+    }
+    writer.setUseCompoundFile(false);
+    for(;i<45;i++) {
       addDoc(writer, i);
     }
     writer.close();
@@ -68,7 +73,7 @@ public class TestIndexFileDeleter extends TestCase
     CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
     FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
     int contentFieldIndex = -1;
-    for(int i=0;i<fieldInfos.size();i++) {
+    for(i=0;i<fieldInfos.size();i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.name.equals("content")) {
         contentFieldIndex = i;
@@ -124,6 +129,9 @@ public class TestIndexFileDeleter extends TestCase
     // Create some old segments file:
     copyFile(dir, "segments_a", "segments");
     copyFile(dir, "segments_a", "segments_2");
+
+    // Create a bogus cfs file shadowing a non-cfs segment:
+    copyFile(dir, "_2.cfs", "_3.cfs");
 
     String[] filesPre = dir.list();
 

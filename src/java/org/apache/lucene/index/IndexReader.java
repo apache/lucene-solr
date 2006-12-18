@@ -120,6 +120,10 @@ public abstract class IndexReader {
   private boolean stale;
   private boolean hasChanges;
 
+  /** Used by commit() to record pre-commit state in case
+   * rollback is necessary */
+  private boolean rollbackHasChanges;
+  private SegmentInfos rollbackSegmentInfos;
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
    path. */
@@ -584,7 +588,43 @@ public abstract class IndexReader {
   protected abstract void doUndeleteAll() throws IOException;
 
   /**
-   * Commit changes resulting from delete, undeleteAll, or setNorm operations
+   * Should internally checkpoint state that will change
+   * during commit so that we can rollback if necessary.
+   */
+  void startCommit() {
+    if (directoryOwner) {
+      rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
+    }
+    rollbackHasChanges = hasChanges;
+  }
+
+  /**
+   * Rolls back state to just before the commit (this is
+   * called by commit() if there is some exception while
+   * committing).
+   */
+  void rollbackCommit() {
+    if (directoryOwner) {
+      for(int i=0;i<segmentInfos.size();i++) {
+        // Rollback each segmentInfo.  Because the
+        // SegmentReader holds a reference to the
+        // SegmentInfo we can't [easily] just replace
+        // segmentInfos, so we reset it in place instead:
+        segmentInfos.info(i).reset(rollbackSegmentInfos.info(i));
+      }
+      rollbackSegmentInfos = null;
+    }
+
+    hasChanges = rollbackHasChanges;
+  }
+
+  /**
+   * Commit changes resulting from delete, undeleteAll, or
+   * setNorm operations
+   *
+   * If an exception is hit, then either no changes or all
+   * changes will have been committed to the index
+   * (transactional semantics).
    * 
    * @throws IOException
    */
@@ -597,15 +637,53 @@ public abstract class IndexReader {
         deleter.deleteFiles();
       }
       if(directoryOwner){
-        deleter.clearPendingFiles();
-        doCommit();
-        String oldInfoFileName = segmentInfos.getCurrentSegmentFileName();
-        segmentInfos.write(directory);
-        // Attempt to delete all files we just obsoleted:
 
+        // Should not be necessary: no prior commit should
+        // have left pending files, so just defensive:
+        deleter.clearPendingFiles();
+
+        String oldInfoFileName = segmentInfos.getCurrentSegmentFileName();
+        String nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
+
+        // Checkpoint the state we are about to change, in
+        // case we have to roll back:
+        startCommit();
+
+        boolean success = false;
+        try {
+          doCommit();
+          segmentInfos.write(directory);
+          success = true;
+        } finally {
+
+          if (!success) {
+
+            // Rollback changes that were made to
+            // SegmentInfos but failed to get [fully]
+            // committed.  This way this reader instance
+            // remains consistent (matched to what's
+            // actually in the index):
+            rollbackCommit();
+
+            // Erase any pending files that we were going to delete:
+            deleter.clearPendingFiles();
+
+            // Remove possibly partially written next
+            // segments file:
+            deleter.deleteFile(nextSegmentsFileName);
+
+            // Recompute deletable files & remove them (so
+            // partially written .del files, etc, are
+            // removed):
+            deleter.findDeletableFiles();
+            deleter.deleteFiles();
+          }
+        }
+
+        // Attempt to delete all files we just obsoleted:
         deleter.deleteFile(oldInfoFileName);
         deleter.commitPendingFiles();
-        deleter.deleteFiles();
+
         if (writeLock != null) {
           writeLock.release();  // release write lock
           writeLock = null;

@@ -240,6 +240,15 @@ Bug fixes
     "The handle is invalid" IOExceptions on Windows when trying to
     close readers or writers. (Michael Busch via Mike McCandless).
 
+26. LUCENE-702: Fix IndexWriter.addIndexes(*) to not corrupt the index
+    on any exceptions (eg disk full).  The semantics of these methods
+    is now transactional: either all indices are merged or none are.
+    Also fixed IndexWriter.mergeSegments (called outside of
+    addIndexes(*) by addDocument, optimize, flushRamSegments) and
+    IndexReader.commit() (called by close) to clean up and keep the
+    instance state consistent to what's actually in the index (Mike
+    McCandless).
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for

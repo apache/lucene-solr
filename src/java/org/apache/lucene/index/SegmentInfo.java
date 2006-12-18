@@ -62,6 +62,23 @@ final class SegmentInfo {
     preLockless = false;
   }
 
+  /**
+   * Copy everything from src SegmentInfo into our instance.
+   */
+  void reset(SegmentInfo src) {
+    name = src.name;
+    docCount = src.docCount;
+    dir = src.dir;
+    preLockless = src.preLockless;
+    delGen = src.delGen;
+    if (src.normGen == null) {
+      normGen = null;
+    } else {
+      normGen = new long[src.normGen.length];
+      System.arraycopy(src.normGen, 0, normGen, 0, src.normGen.length);
+    }
+    isCompoundFile = src.isCompoundFile;
+  }
 
   /**
    * Construct a new SegmentInfo instance by reading a
@@ -149,6 +166,17 @@ final class SegmentInfo {
 
   void clearDelGen() {
     delGen = -1;
+  }
+
+  public Object clone () {
+    SegmentInfo si = new SegmentInfo(name, docCount, dir);
+    si.isCompoundFile = isCompoundFile;
+    si.delGen = delGen;
+    si.preLockless = preLockless;
+    if (normGen != null) {
+      si.normGen = (long[]) normGen.clone();
+    }
+    return si;
   }
 
   String getDelFileName() {

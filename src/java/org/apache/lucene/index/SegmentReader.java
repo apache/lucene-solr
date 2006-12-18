@@ -47,6 +47,10 @@ class SegmentReader extends IndexReader {
   private boolean normsDirty = false;
   private boolean undeleteAll = false;
 
+  private boolean rollbackDeletedDocsDirty = false;
+  private boolean rollbackNormsDirty = false;
+  private boolean rollbackUndeleteAll = false;
+
   IndexInput freqStream;
   IndexInput proxStream;
 
@@ -64,6 +68,7 @@ class SegmentReader extends IndexReader {
     private byte[] bytes;
     private boolean dirty;
     private int number;
+    private boolean rollbackDirty;
 
     private void reWrite(SegmentInfo si) throws IOException {
       // NOTE: norms are re-written in regular directory, not cfs
@@ -544,5 +549,40 @@ class SegmentReader extends IndexReader {
       return null;
     
     return termVectorsReader.get(docNumber);
+  }
+
+  /**
+   * Return the name of the segment this reader is reading.
+   */
+  String getSegmentName() {
+    return segment;
+  }
+
+  void setSegmentInfo(SegmentInfo info) {
+    si = info;
+  }
+
+  void startCommit() {
+    super.startCommit();
+    rollbackDeletedDocsDirty = deletedDocsDirty;
+    rollbackNormsDirty = normsDirty;
+    rollbackUndeleteAll = undeleteAll;
+    Enumeration values = norms.elements();
+    while (values.hasMoreElements()) {
+      Norm norm = (Norm) values.nextElement();
+      norm.rollbackDirty = norm.dirty;
+    }
+  }
+
+  void rollbackCommit() {
+    super.rollbackCommit();
+    deletedDocsDirty = rollbackDeletedDocsDirty;
+    normsDirty = rollbackNormsDirty;
+    undeleteAll = rollbackUndeleteAll;
+    Enumeration values = norms.elements();
+    while (values.hasMoreElements()) {
+      Norm norm = (Norm) values.nextElement();
+      norm.dirty = norm.rollbackDirty;
+    }
   }
 }

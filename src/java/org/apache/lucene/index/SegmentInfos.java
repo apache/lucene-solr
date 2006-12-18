@@ -50,7 +50,11 @@ public final class SegmentInfos extends Vector {
    * starting with the current time in milliseconds forces to create unique version numbers.
    */
   private long version = System.currentTimeMillis();
-  private long generation = 0;             // generation of the "segments_N" file we read
+
+  private long generation = 0;     // generation of the "segments_N" for the next commit
+  private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
+                                   // or wrote; this is normally the same as generation except if
+                                   // there was an IOException that had interrupted a commit
 
   /**
    * If non-null, information about loading segments_N files
@@ -132,12 +136,28 @@ public final class SegmentInfos extends Vector {
   }
 
   /**
-   * Get the segment_N filename in use by this segment infos.
+   * Get the segments_N filename in use by this segment infos.
    */
   public String getCurrentSegmentFileName() {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 generation);
+                                                 lastGeneration);
+  }
+
+  /**
+   * Get the next segments_N filename that will be written.
+   */
+  public String getNextSegmentFileName() {
+    long nextGeneration;
+
+    if (generation == -1) {
+      nextGeneration = 1;
+    } else {
+      nextGeneration = generation+1;
+    }
+    return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
+                                                 "",
+                                                 nextGeneration);
   }
 
   /**
@@ -158,6 +178,7 @@ public final class SegmentInfos extends Vector {
       generation = Long.parseLong(segmentFileName.substring(1+IndexFileNames.SEGMENTS.length()),
                                   Character.MAX_RADIX);
     }
+    lastGeneration = generation;
 
     try {
       int format = input.readInt();
@@ -199,7 +220,7 @@ public final class SegmentInfos extends Vector {
    */
   public final void read(Directory directory) throws IOException {
 
-    generation = -1;
+    generation = lastGeneration = -1;
 
     new FindSegmentsFile(directory) {
 
@@ -212,6 +233,8 @@ public final class SegmentInfos extends Vector {
 
   public final void write(Directory directory) throws IOException {
 
+    String segmentFileName = getNextSegmentFileName();
+
     // Always advance the generation on write:
     if (generation == -1) {
       generation = 1;
@@ -219,7 +242,6 @@ public final class SegmentInfos extends Vector {
       generation++;
     }
 
-    String segmentFileName = getCurrentSegmentFileName();
     IndexOutput output = directory.createOutput(segmentFileName);
 
     try {
@@ -229,8 +251,7 @@ public final class SegmentInfos extends Vector {
       output.writeInt(counter); // write counter
       output.writeInt(size()); // write infos
       for (int i = 0; i < size(); i++) {
-        SegmentInfo si = info(i);
-        si.write(output);
+        info(i).write(output);
       }         
     }
     finally {
@@ -247,6 +268,21 @@ public final class SegmentInfos extends Vector {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
     }
+    
+    lastGeneration = generation;
+  }
+
+  /**
+   * Returns a copy of this instance, also copying each
+   * SegmentInfo.
+   */
+  
+  public Object clone() {
+    SegmentInfos sis = (SegmentInfos) super.clone();
+    for(int i=0;i<sis.size();i++) {
+      sis.setElementAt(((SegmentInfo) sis.elementAt(i)).clone(), i);
+    }
+    return sis;
   }
 
   /**
@@ -496,7 +532,7 @@ public final class SegmentInfos extends Vector {
           if (genLookaheadCount < defaultGenLookaheadCount) {
             gen++;
             genLookaheadCount++;
-            message("look ahead incremenent gen to " + gen);
+            message("look ahead increment gen to " + gen);
           }
         }
 

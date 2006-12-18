@@ -66,7 +66,7 @@ public class RAMOutputStream extends BufferedIndexOutput {
     file.setLength(0);
   }
 
-  public void flushBuffer(byte[] src, int len) {
+  public void flushBuffer(byte[] src, int len) throws IOException {
     byte[] buffer;
     int bufferPos = 0;
     while (bufferPos != len) {

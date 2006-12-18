@@ -30,10 +30,17 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TermQuery;
+
 import java.util.Collection;
+import java.util.Arrays;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.File;
+
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestIndexReader extends TestCase
 {
@@ -547,7 +554,213 @@ public class TestIndexReader extends TestCase
     public void testDeleteReaderReaderConflictOptimized() throws IOException{
       deleteReaderReaderConflict(true);
     }
+
+    /**
+     * Make sure if reader tries to commit but hits disk
+     * full that reader remains consistent and usable.
+     */
+    public void testDiskFull() throws IOException {
+
+      boolean debug = false;
+      Term searchTerm = new Term("content", "aaa");
+      int START_COUNT = 157;
+      int END_COUNT = 144;
+      
+      // First build up a starting index:
+      RAMDirectory startDir = new RAMDirectory();
+      IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(), true);
+      for(int i=0;i<157;i++) {
+        Document d = new Document();
+        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.UN_TOKENIZED));
+        d.add(new Field("content", "aaa " + i, Field.Store.NO, Field.Index.TOKENIZED));
+        writer.addDocument(d);
+      }
+      writer.close();
+
+      long diskUsage = startDir.sizeInBytes();
+      long diskFree = diskUsage+100;      
+
+      IOException err = null;
+
+      boolean done = false;
+
+      // Iterate w/ ever increasing free disk space:
+      while(!done) {
+        MockRAMDirectory dir = new MockRAMDirectory(startDir);
+        IndexReader reader = IndexReader.open(dir);
+
+        // For each disk size, first try to commit against
+        // dir that will hit random IOExceptions & disk
+        // full; after, give it infinite disk space & turn
+        // off random IOExceptions & retry w/ same reader:
+        boolean success = false;
+
+        for(int x=0;x<2;x++) {
+
+          double rate = 0.05;
+          double diskRatio = ((double) diskFree)/diskUsage;
+          long thisDiskFree;
+          String testName;
+
+          if (0 == x) {
+            thisDiskFree = diskFree;
+            if (diskRatio >= 2.0) {
+              rate /= 2;
+            }
+            if (diskRatio >= 4.0) {
+              rate /= 2;
+            }
+            if (diskRatio >= 6.0) {
+              rate = 0.0;
+            }
+            if (debug) {
+              System.out.println("\ncycle: " + diskFree + " bytes");
+            }
+            testName = "disk full during reader.close() @ " + thisDiskFree + " bytes";
+          } else {
+            thisDiskFree = 0;
+            rate = 0.0;
+            if (debug) {
+              System.out.println("\ncycle: same writer: unlimited disk space");
+            }
+            testName = "reader re-use after disk full";
+          }
+
+          dir.setMaxSizeInBytes(thisDiskFree);
+          dir.setRandomIOExceptionRate(rate, diskFree);
+
+          try {
+            if (0 == x) {
+              int docId = 12;
+              for(int i=0;i<13;i++) {
+                reader.deleteDocument(docId);
+                reader.setNorm(docId, "contents", (float) 2.0);
+                docId += 12;
+              }
+            }
+            reader.close();
+            success = true;
+            if (0 == x) {
+              done = true;
+            }
+          } catch (IOException e) {
+            if (debug) {
+              System.out.println("  hit IOException: " + e);
+            }
+            err = e;
+            if (1 == x) {
+              e.printStackTrace();
+              fail(testName + " hit IOException after disk space was freed up");
+            }
+          }
+
+          // Whether we succeeded or failed, check that all
+          // un-referenced files were in fact deleted (ie,
+          // we did not create garbage).  Just create a
+          // new IndexFileDeleter, have it delete
+          // unreferenced files, then verify that in fact
+          // no files were deleted:
+          String[] startFiles = dir.list();
+          SegmentInfos infos = new SegmentInfos();
+          infos.read(dir);
+          IndexFileDeleter d = new IndexFileDeleter(infos, dir);
+          d.findDeletableFiles();
+          d.deleteFiles();
+          String[] endFiles = dir.list();
+
+          Arrays.sort(startFiles);
+          Arrays.sort(endFiles);
+
+          //for(int i=0;i<startFiles.length;i++) {
+          //  System.out.println("  startFiles: " + i + ": " + startFiles[i]);
+          //}
+
+          if (!Arrays.equals(startFiles, endFiles)) {
+            String successStr;
+            if (success) {
+              successStr = "success";
+            } else {
+              successStr = "IOException";
+              err.printStackTrace();
+            }
+            fail("reader.close() failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes): before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
+          }
+
+          // Finally, verify index is not corrupt, and, if
+          // we succeeded, we see all docs changed, and if
+          // we failed, we see either all docs or no docs
+          // changed (transactional semantics):
+          IndexReader newReader = null;
+          try {
+            newReader = IndexReader.open(dir);
+          } catch (IOException e) {
+            e.printStackTrace();
+            fail(testName + ":exception when creating IndexReader after disk full during close: " + e);
+          }
+          /*
+          int result = newReader.docFreq(searchTerm);
+          if (success) {
+            if (result != END_COUNT) {
+              fail(testName + ": method did not throw exception but docFreq('aaa') is " + result + " instead of expected " + END_COUNT);
+            }
+          } else {
+            // On hitting exception we still may have added
+            // all docs:
+            if (result != START_COUNT && result != END_COUNT) {
+              err.printStackTrace();
+              fail(testName + ": method did throw exception but docFreq('aaa') is " + result + " instead of expected " + START_COUNT + " or " + END_COUNT);
+            }
+          }
+          */
+
+          IndexSearcher searcher = new IndexSearcher(newReader);
+          Hits hits = null;
+          try {
+            hits = searcher.search(new TermQuery(searchTerm));
+          } catch (IOException e) {
+            e.printStackTrace();
+            fail(testName + ": exception when searching: " + e);
+          }
+          int result2 = hits.length();
+          if (success) {
+            if (result2 != END_COUNT) {
+              fail(testName + ": method did not throw exception but hits.length for search on term 'aaa' is " + result2 + " instead of expected " + END_COUNT);
+            }
+          } else {
+            // On hitting exception we still may have added
+            // all docs:
+            if (result2 != START_COUNT && result2 != END_COUNT) {
+              err.printStackTrace();
+              fail(testName + ": method did throw exception but hits.length for search on term 'aaa' is " + result2 + " instead of expected " + START_COUNT);
+            }
+          }
+
+          searcher.close();
+          newReader.close();
+
+          if (result2 == END_COUNT) {
+            break;
+          }
+        }
+
+        dir.close();
+
+        // Try again with 10 more bytes of free space:
+        diskFree += 10;
+      }
+    }
     
+    private String arrayToString(String[] l) {
+      String s = "";
+      for(int i=0;i<l.length;i++) {
+        if (i > 0) {
+          s += "\n    ";
+        }
+        s += l[i];
+      }
+      return s;
+    }
+
     private void deleteReaderReaderConflict(boolean optimize) throws IOException
     {
         Directory dir = getDirectory(true);
@@ -697,4 +910,6 @@ public class TestIndexReader extends TestCase
         }
         dir.delete();
     }
+
+    
 }
