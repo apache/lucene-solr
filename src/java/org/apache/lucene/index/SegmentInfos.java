@@ -260,10 +260,13 @@ public final class SegmentInfos extends Vector {
 
     try {
       output = directory.createOutput(IndexFileNames.SEGMENTS_GEN);
-      output.writeInt(FORMAT_LOCKLESS);
-      output.writeLong(generation);
-      output.writeLong(generation);
-      output.close();
+      try {
+        output.writeInt(FORMAT_LOCKLESS);
+        output.writeLong(generation);
+        output.writeLong(generation);
+      } finally {
+        output.close();
+      }
     } catch (IOException e) {
       // It's OK if we fail to write this file since it's
       // used only as one of the retry fallbacks.
