@@ -84,11 +84,9 @@ public class SolrServlet extends HttpServlet {
   }
 
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    SolrServletRequest solrReq =null;
-    SolrQueryResponse solrRsp =null;
+    SolrServletRequest solrReq = new SolrServletRequest(core, request);;
+    SolrQueryResponse solrRsp = new SolrQueryResponse();
     try {
-      solrRsp = new SolrQueryResponse();
-      solrReq = new SolrServletRequest(core, request);
       core.execute(solrReq, solrRsp);
       if (solrRsp.getException() == null) {
         QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
