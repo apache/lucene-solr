@@ -93,11 +93,11 @@ public class StrUtils {
         ch = s.charAt(pos++);
         if (decode) {
           switch(ch) {
-            case 'n' : ch='\n';
-            case 't' : ch='\t';
-            case 'r' : ch='\r';
-            case 'b' : ch='\b';
-            case 'f' : ch='\f';
+            case 'n' : ch='\n'; break;
+            case 't' : ch='\t'; break;
+            case 'r' : ch='\r'; break;
+            case 'b' : ch='\b'; break;
+            case 'f' : ch='\f'; break;
           }
         }
       }
@@ -134,11 +134,11 @@ public class StrUtils {
         ch = s.charAt(pos++);
         if (decode) {
           switch(ch) {
-            case 'n' : ch='\n';
-            case 't' : ch='\t';
-            case 'r' : ch='\r';
-            case 'b' : ch='\b';
-            case 'f' : ch='\f';
+            case 'n' : ch='\n'; break;
+            case 't' : ch='\t'; break;
+            case 'r' : ch='\r'; break;
+            case 'b' : ch='\b'; break;
+            case 'f' : ch='\f'; break;
           }
         }
       }
