@@ -187,10 +187,13 @@ class SegmentReader extends IndexReader {
     }
   }
 
-  protected void finalize() {
-     // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
-     termVectorsLocal.set(null);
-     super.finalize();
+  protected void finalize() throws Throwable {
+    try {
+      // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
+      termVectorsLocal.set(null);
+    } finally {
+      super.finalize();
+    }
   }
 
   protected void doCommit() throws IOException {

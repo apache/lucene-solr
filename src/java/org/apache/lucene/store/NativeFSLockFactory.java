@@ -333,9 +333,13 @@ class NativeFSLock extends Lock {
     return "NativeFSLock@" + path;
   }
 
-  public void finalize() {
-    if (isLocked()) {
-      release();
+  public void finalize() throws Throwable {
+    try {
+      if (isLocked()) {
+        release();
+      }
+    } finally {
+      super.finalize();
     }
   }
 }

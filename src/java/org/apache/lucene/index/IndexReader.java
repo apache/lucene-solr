@@ -721,10 +721,14 @@ public abstract class IndexReader {
   protected abstract void doClose() throws IOException;
 
   /** Release the write lock, if needed. */
-  protected void finalize() {
-    if (writeLock != null) {
-      writeLock.release();                        // release write lock
-      writeLock = null;
+  protected void finalize() throws Throwable {
+    try {
+      if (writeLock != null) {
+        writeLock.release();                        // release write lock
+        writeLock = null;
+      }
+    } finally {
+      super.finalize();
     }
   }
 

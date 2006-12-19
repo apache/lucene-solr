@@ -342,8 +342,12 @@ public class SpellChecker {
   }
 
   protected void finalize() throws Throwable {
-    if (reader != null) {
-      reader.close();
+    try {
+      if (reader != null) {
+        reader.close();
+      }
+    } finally {
+      super.finalize();
     }
   }
 }

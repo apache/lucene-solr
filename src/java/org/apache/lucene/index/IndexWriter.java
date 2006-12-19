@@ -202,7 +202,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, boolean create)
        throws IOException {
-    this(FSDirectory.getDirectory(path, create), a, create, true);
+    init(path, a, create);
   }
 
   /**
@@ -222,7 +222,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, boolean create)
        throws IOException {
-    this(FSDirectory.getDirectory(path, create), a, create, true);
+    init(path, a, create);
   }
 
   /**
@@ -242,49 +242,125 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create)
        throws IOException {
-    this(d, a, create, false);
+    init(d, a, create, false);
+  }
+
+  /**
+   * Constructs an IndexWriter for the index in
+   * <code>path</code>, creating it first if it does not
+   * already exist, otherwise appending to the existing
+   * index.  Text will be analyzed with <code>a</code>.
+   *
+   * @param path the path to the index directory
+   * @param a the analyzer to use
+   * @throws IOException if the directory cannot be
+   *  created or read/written to
+   */
+  public IndexWriter(String path, Analyzer a) 
+    throws IOException {
+    if (IndexReader.indexExists(path)) {
+      init(path, a, false);
+    } else {
+      init(path, a, true);
+    }
+  }
+
+  /**
+   * Constructs an IndexWriter for the index in
+   * <code>path</code>, creating it first if it does not
+   * already exist, otherwise appending to the existing
+   * index.  Text will be analyzed with
+   * <code>a</code>.
+   *
+   * @param path the path to the index directory
+   * @param a the analyzer to use
+   * @throws IOException if the directory cannot be
+   *  created or read/written to
+   */
+  public IndexWriter(File path, Analyzer a) 
+    throws IOException {
+    if (IndexReader.indexExists(path)) {
+      init(path, a, false);
+    } else {
+      init(path, a, true);
+    }
+  }
+
+  /**
+   * Constructs an IndexWriter for the index in
+   * <code>d</code>, creating it first if it does not
+   * already exist, otherwise appending to the existing
+   * index.  Text will be analyzed with <code>a</code>.
+   *
+   * @param d the index directory
+   * @param a the analyzer to use
+   * @throws IOException if the directory cannot be
+   *  created or read/written to
+   */
+  public IndexWriter(Directory d, Analyzer a) 
+    throws IOException {
+    if (IndexReader.indexExists(d)) {
+      init(d, a, false, false);
+    } else {
+      init(d, a, true, false);
+    }
   }
 
   private IndexWriter(Directory d, Analyzer a, final boolean create, boolean closeDir)
     throws IOException {
-      this.closeDir = closeDir;
-      directory = d;
-      analyzer = a;
+    init(d, a, create, closeDir);
+  }
 
-      Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-      if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
-        throw new IOException("Index locked for write: " + writeLock);
-      this.writeLock = writeLock;                   // save it
+  private void init(String path, Analyzer a, final boolean create)
+    throws IOException {
+    init(FSDirectory.getDirectory(path, create, null, false), a, create, true);
+  }
 
-      try {
-        if (create) {
-          // Try to read first.  This is to allow create
-          // against an index that's currently open for
-          // searching.  In this case we write the next
-          // segments_N file with no segments:
-          try {
-            segmentInfos.read(directory);
-            segmentInfos.clear();
-          } catch (IOException e) {
-            // Likely this means it's a fresh directory
-          }
-          segmentInfos.write(directory);
-        } else {
+  private void init(File path, Analyzer a, final boolean create)
+    throws IOException {
+    init(FSDirectory.getDirectory(path, create, null, false), a, create, true);
+  }
+
+  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir)
+    throws IOException {
+    this.closeDir = closeDir;
+    directory = d;
+    analyzer = a;
+
+    Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
+    if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
+      throw new IOException("Index locked for write: " + writeLock);
+    this.writeLock = writeLock;                   // save it
+
+    try {
+      if (create) {
+        // Try to read first.  This is to allow create
+        // against an index that's currently open for
+        // searching.  In this case we write the next
+        // segments_N file with no segments:
+        try {
           segmentInfos.read(directory);
+          segmentInfos.clear();
+        } catch (IOException e) {
+          // Likely this means it's a fresh directory
         }
-
-        // Create a deleter to keep track of which files can
-        // be deleted:
-        deleter = new IndexFileDeleter(segmentInfos, directory);
-        deleter.setInfoStream(infoStream);
-        deleter.findDeletableFiles();
-        deleter.deleteFiles();
-
-      } catch (IOException e) {
-        this.writeLock.release();
-        this.writeLock = null;
-        throw e;
+        segmentInfos.write(directory);
+      } else {
+        segmentInfos.read(directory);
       }
+
+      // Create a deleter to keep track of which files can
+      // be deleted:
+      deleter = new IndexFileDeleter(segmentInfos, directory);
+      deleter.setInfoStream(infoStream);
+      deleter.findDeletableFiles();
+      deleter.deleteFiles();
+
+    } catch (IOException e) {
+      this.writeLock.release();
+      this.writeLock = null;
+      throw e;
+    }
   }
 
   /** Determines the largest number of documents ever merged by addDocument().
@@ -418,7 +494,38 @@ public class IndexWriter {
     return IndexWriter.WRITE_LOCK_TIMEOUT;
   }
 
-  /** Flushes all changes to an index and closes all associated files. */
+  /**
+   * Flushes all changes to an index and closes all
+   * associated files.
+   *
+   * <p> If an Exception is hit during close, eg due to disk
+   * full or some other reason, then both the on-disk index
+   * and the internal state of the IndexWriter instance will
+   * be consistent.  However, the close will not be complete
+   * even though part of it (flushing buffered documents)
+   * may have succeeded, so the write lock will still be
+   * held.</p>
+   * 
+   * <p> If you can correct the underlying cause (eg free up
+   * some disk space) then you can call close() again.
+   * Failing that, if you want to force the write lock to be
+   * released (dangerous, because you may then lose buffered
+   * docs in the IndexWriter instance) then you can do
+   * something like this:</p>
+   *
+   * <pre>
+   * try {
+   *   writer.close();
+   * } finally {
+   *   if (IndexReader.isLocked(directory)) {
+   *     IndexReader.unlock(directory);
+   *   }
+   * }
+   * </pre>
+   *
+   * after which, you must be certain not to use the writer
+   * instance anymore.</p>
+   */
   public synchronized void close() throws IOException {
     flushRamSegments();
     ramDirectory.close();
@@ -431,10 +538,14 @@ public class IndexWriter {
   }
 
   /** Release the write lock, if needed. */
-  protected void finalize() throws IOException {
-    if (writeLock != null) {
-      writeLock.release();                        // release write lock
-      writeLock = null;
+  protected void finalize() throws Throwable {
+    try {
+      if (writeLock != null) {
+        writeLock.release();                        // release write lock
+        writeLock = null;
+      }
+    } finally {
+      super.finalize();
     }
   }
 
@@ -479,11 +590,12 @@ public class IndexWriter {
    * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
    *
-   * Note that if an Exception is hit (eg disk full) then
-   * the index will be consistent, but this document will
-   * not have been added.  Furthermore, it's possible the
-   * index will have one segment in non-compound format even
-   * when using compound files.
+   * <p> Note that if an Exception is hit (eg disk full)
+   * then the index will be consistent, but this document
+   * may not have been added.  Furthermore, it's possible
+   * the index will have one segment in non-compound format
+   * even when using compound files (when a merge has
+   * partially succeeded).</p>
    */
   public void addDocument(Document doc) throws IOException {
     addDocument(doc, analyzer);
@@ -495,8 +607,8 @@ public class IndexWriter {
    * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
    *
-   * See @link #addDocument(Document) for details on index
-   * state after an IOException.
+   * <p>See {@link #addDocument(Document)} for details on
+   * index and IndexWriter state after an Exception.</p>
    */
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
     DocumentWriter dw =

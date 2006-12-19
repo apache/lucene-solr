@@ -55,9 +55,13 @@ final class TermInfosReader {
 			  fieldInfos, true);
   }
 
-  protected void finalize() {
-    // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
-    enumerators.set(null);
+  protected void finalize() throws Throwable {
+    try {
+      // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
+      enumerators.set(null);
+    } finally {
+      super.finalize();
+    }
   }
 
   public int getSkipInterval() {

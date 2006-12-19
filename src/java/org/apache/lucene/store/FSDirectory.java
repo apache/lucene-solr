@@ -554,8 +554,12 @@ class FSIndexInput extends BufferedIndexInput {
     return length;
   }
 
-  protected void finalize() throws IOException {
-    close();            // close the file
+  protected void finalize() throws Throwable {
+    try {
+      close();            // close the file
+    } finally {
+      super.finalize();
+    }
   }
 
   public Object clone() {
@@ -607,8 +611,12 @@ class FSIndexOutput extends BufferedIndexOutput {
     return file.length();
   }
 
-  protected void finalize() throws IOException {
-    close();          // close the file
+  protected void finalize() throws Throwable {
+    try {
+      close();          // close the file
+    } finally {
+      super.finalize();
+    }
   }
 
 }

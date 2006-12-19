@@ -238,7 +238,7 @@ Bug fixes
     FSIndexInput/Output during finalize().  Besides sending an
     IOException up to the GC, this may also be the cause intermittent
     "The handle is invalid" IOExceptions on Windows when trying to
-    close readers or writers. (Michael Busch via Mike McCandless).
+    close readers or writers. (Michael Busch via Mike McCandless)
 
 26. LUCENE-702: Fix IndexWriter.addIndexes(*) to not corrupt the index
     on any exceptions (eg disk full).  The semantics of these methods
@@ -248,6 +248,10 @@ Bug fixes
     IndexReader.commit() (called by close) to clean up and keep the
     instance state consistent to what's actually in the index (Mike
     McCandless).
+
+27. LUCENE-129: Change finalizers to do "try {...} finally
+    {super.finalize();}" to make sure we don't miss finalizers in
+    classes above us. (Esmond Pitt via Mike McCandless)
 
 Optimizations
 
@@ -348,6 +352,9 @@ Documentation
 
   7. Added in link to Clover Test Code Coverage Reports under the Develop section in Resources (Grant Ingersoll)
 
+  8. LUCENE-748: Added details for semantics of IndexWriter.close on
+     hitting an Exception.  (Jed Wesley-Smith via Mike McCandless)
+
 Build
 
   1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)
@@ -369,6 +376,12 @@ API Changes
  3. Creating a Field with both an empty name and an empty value
     now throws an IllegalArgumentException
     (Daniel Naber)
+
+ 4. LUCENE-301: Added new IndexWriter({String,File,Directory},
+    Analyzer) constructors that do not take a boolean "create"
+    argument.  These new constructors will create a new index if
+    necessary, else append to the existing one.  (Dan Armbrust via
+    Mike McCandless)
 
 New features
 

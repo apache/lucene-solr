@@ -39,7 +39,7 @@ public class TestIndexWriter extends TestCase
         IndexWriter.setDefaultWriteLockTimeout(2000);
         assertEquals(2000, IndexWriter.getDefaultWriteLockTimeout());
 
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer());
 
         IndexWriter.setDefaultWriteLockTimeout(1000);
 
@@ -58,7 +58,7 @@ public class TestIndexWriter extends TestCase
         reader.close();
 
         // test doc count before segments are merged/index is optimized
-        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer());
         assertEquals(100, writer.docCount());
         writer.close();
 
@@ -68,7 +68,7 @@ public class TestIndexWriter extends TestCase
         reader.close();
 
         // optimize the index and check that the new doc count is correct
-        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer());
         writer.optimize();
         assertEquals(60, writer.docCount());
         writer.close();
@@ -445,29 +445,102 @@ public class TestIndexWriter extends TestCase
         if (tempDir == null)
             throw new IOException("java.io.tmpdir undefined, cannot run test");
         File indexDir = new File(tempDir, "lucenetestindexwriter");
-        Directory dir = FSDirectory.getDirectory(indexDir, true);
 
-        // add one document & close writer
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-        addDoc(writer);
-        writer.close();
+        try {
+          Directory dir = FSDirectory.getDirectory(indexDir, true);
 
-        // now open reader:
-        IndexReader reader = IndexReader.open(dir);
-        assertEquals("should be one document", reader.numDocs(), 1);
+          // add one document & close writer
+          IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+          addDoc(writer);
+          writer.close();
 
-        // now open index for create:
-        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-        assertEquals("should be zero documents", writer.docCount(), 0);
-        addDoc(writer);
-        writer.close();
+          // now open reader:
+          IndexReader reader = IndexReader.open(dir);
+          assertEquals("should be one document", reader.numDocs(), 1);
 
-        assertEquals("should be one document", reader.numDocs(), 1);
-        IndexReader reader2 = IndexReader.open(dir);
-        assertEquals("should be one document", reader2.numDocs(), 1);
-        reader.close();
-        reader2.close();
-        rmDir(indexDir);
+          // now open index for create:
+          writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+          assertEquals("should be zero documents", writer.docCount(), 0);
+          addDoc(writer);
+          writer.close();
+
+          assertEquals("should be one document", reader.numDocs(), 1);
+          IndexReader reader2 = IndexReader.open(dir);
+          assertEquals("should be one document", reader2.numDocs(), 1);
+          reader.close();
+          reader2.close();
+        } finally {
+          rmDir(indexDir);
+        }
+    }
+
+
+    // Same test as above, but use IndexWriter constructor
+    // that takes File:
+    public void testCreateWithReader2() throws IOException {
+        String tempDir = System.getProperty("java.io.tmpdir");
+        if (tempDir == null)
+            throw new IOException("java.io.tmpdir undefined, cannot run test");
+        File indexDir = new File(tempDir, "lucenetestindexwriter");
+        try {
+          // add one document & close writer
+          IndexWriter writer = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true);
+          addDoc(writer);
+          writer.close();
+
+          // now open reader:
+          IndexReader reader = IndexReader.open(indexDir);
+          assertEquals("should be one document", reader.numDocs(), 1);
+
+          // now open index for create:
+          writer = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true);
+          assertEquals("should be zero documents", writer.docCount(), 0);
+          addDoc(writer);
+          writer.close();
+
+          assertEquals("should be one document", reader.numDocs(), 1);
+          IndexReader reader2 = IndexReader.open(indexDir);
+          assertEquals("should be one document", reader2.numDocs(), 1);
+          reader.close();
+          reader2.close();
+        } finally {
+          rmDir(indexDir);
+        }
+    }
+
+    // Same test as above, but use IndexWriter constructor
+    // that takes String:
+    public void testCreateWithReader3() throws IOException {
+        String tempDir = System.getProperty("tempDir");
+        if (tempDir == null)
+            throw new IOException("java.io.tmpdir undefined, cannot run test");
+
+        String dirName = tempDir + "/lucenetestindexwriter";
+        try {
+
+          // add one document & close writer
+          IndexWriter writer = new IndexWriter(dirName, new WhitespaceAnalyzer(), true);
+          addDoc(writer);
+          writer.close();
+
+          // now open reader:
+          IndexReader reader = IndexReader.open(dirName);
+          assertEquals("should be one document", reader.numDocs(), 1);
+
+          // now open index for create:
+          writer = new IndexWriter(dirName, new WhitespaceAnalyzer(), true);
+          assertEquals("should be zero documents", writer.docCount(), 0);
+          addDoc(writer);
+          writer.close();
+
+          assertEquals("should be one document", reader.numDocs(), 1);
+          IndexReader reader2 = IndexReader.open(dirName);
+          assertEquals("should be one document", reader2.numDocs(), 1);
+          reader.close();
+          reader2.close();
+        } finally {
+          rmDir(new File(dirName));
+        }
     }
 
     // Simulate a writer that crashed while writing segments
@@ -619,8 +692,10 @@ public class TestIndexWriter extends TestCase
 
     private void rmDir(File dir) {
         File[] files = dir.listFiles();
-        for (int i = 0; i < files.length; i++) {
+        if (files != null) {
+          for (int i = 0; i < files.length; i++) {
             files[i].delete();
+          }
         }
         dir.delete();
     }
