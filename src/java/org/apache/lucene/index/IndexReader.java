@@ -634,7 +634,6 @@ public abstract class IndexReader {
         // In the MultiReader case, we share this deleter
         // across all SegmentReaders:
         setDeleter(new IndexFileDeleter(segmentInfos, directory));
-        deleter.deleteFiles();
       }
       if(directoryOwner){
 
