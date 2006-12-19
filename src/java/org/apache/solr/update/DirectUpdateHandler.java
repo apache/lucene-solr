@@ -249,7 +249,7 @@ public class DirectUpdateHandler extends UpdateHandler {
       core.getSearcher(true,false,waitSearcher);
     }
 
-    if (waitSearcher[0] != null) {
+    if (waitSearcher!=null && waitSearcher[0] != null) {
       try {
         waitSearcher[0].get();
       } catch (InterruptedException e) {
