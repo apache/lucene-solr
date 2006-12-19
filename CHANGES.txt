@@ -327,6 +327,10 @@ Optimizations
      to the List of clauses and replaced the internal synchronized Vector
      with an unsynchronized List. (Yonik Seeley)
 
+ 16. LUCENE-750: Remove finalizers from FSIndexOutput and move the
+     FSIndexInput finalizer to the actual file so all clones don't
+     register a new finalizer. (Yonik Seeley)
+
 Test Cases
   1. Added TestTermScorer.java (Grant Ingersoll)
   2. Added TestWindowsMMap.java (Benson Margulies via Mike McCandless)

@@ -496,26 +496,40 @@ public class FSDirectory extends Directory {
 
 class FSIndexInput extends BufferedIndexInput {
 
-  private class Descriptor extends RandomAccessFile {
-    public long position;
+  private static class Descriptor extends RandomAccessFile {
+    // remember if the file is open, so that we don't try to close it
+    // more than once
+    private boolean isOpen;
+    long position;
+    final long length;
+    
     public Descriptor(File file, String mode) throws IOException {
       super(file, mode);
+      isOpen=true;
+      length=length();
+    }
+
+    public void close() throws IOException {
+      if (isOpen) {
+        isOpen=false;
+        super.close();
+      }
+    }
+
+    protected void finalize() throws Throwable {
+      try {
+        close();
+      } finally {
+        super.finalize();
+      }
     }
   }
 
-  private Descriptor file = null;
-  
-  // remember if the file is open, so that we don't try to close it
-  // more than once
-  private boolean isOpen;       
-  
+  private final Descriptor file;
   boolean isClone;
-  private long length;
 
   public FSIndexInput(File path) throws IOException {
     file = new Descriptor(path, "r");
-    isOpen = true;
-    length = file.length();
   }
 
   /** IndexInput methods */
@@ -539,27 +553,15 @@ class FSIndexInput extends BufferedIndexInput {
   }
 
   public void close() throws IOException {
-    // only close the file if this is not a clone and the
-    // file has not been closed yet
-    if (!isClone && isOpen) {
-      file.close();
-      isOpen = false;
-    }
+    // only close the file if this is not a clone
+    if (!isClone) file.close();
   }
 
   protected void seekInternal(long position) {
   }
 
   public long length() {
-    return length;
-  }
-
-  protected void finalize() throws Throwable {
-    try {
-      close();            // close the file
-    } finally {
-      super.finalize();
-    }
+    return file.length;
   }
 
   public Object clone() {
@@ -609,14 +611,6 @@ class FSIndexOutput extends BufferedIndexOutput {
   }
   public long length() throws IOException {
     return file.length();
-  }
-
-  protected void finalize() throws Throwable {
-    try {
-      close();          // close the file
-    } finally {
-      super.finalize();
-    }
   }
 
 }
