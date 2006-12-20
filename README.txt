@@ -47,7 +47,7 @@ Files Included In Apache Solr Distributions
 
 dist/apache-solr-XX-incubating.war
   The Apache Solr Application.  Deploy this WAR file to any servlet
-  container to run Apache Solr
+  container to run Apache Solr.
 
 dist/apache-solr-XX-incubating.jar
   The Apache Solr Libraries.  This JAR file is needed to compile
@@ -57,7 +57,8 @@ dist/apache-solr-XX-incubating.jar
 example/
   A self-contained example Solr instance, complete with a sample
   configuration, documents to index, and the Jetty Servlet container.
-  Please see example/README.txt for information about running this example
+  Please see example/README.txt for information about running this
+  example.
 
 docs/index.html
   The contents of the Apache Solr website.
@@ -94,5 +95,5 @@ Instructions for Building Apache Solr from Source
    for building, testing, and packaging Solr.
    
    NOTE: 
-   To see Solr in action you may want to use the "ant example" command to build
+   To see Solr in action, you may want to use the "ant example" command to build
    and package Solr into the example/webapps directory. See also example/README.txt.
