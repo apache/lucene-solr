@@ -233,6 +233,7 @@ Bug fixes
 24. LUCENE-728: Removed duplicate/old MoreLikeThis and SimilarityQueries
     classes from contrib/similarity, as their new home is under
     contrib/queries.
+    (Otis Gospodnetic)
 
 25. LUCENE-669: Do not double-close the RandomAccessFile in
     FSIndexInput/Output during finalize().  Besides sending an
