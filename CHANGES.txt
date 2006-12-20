@@ -253,6 +253,11 @@ Bug fixes
     {super.finalize();}" to make sure we don't miss finalizers in
     classes above us. (Esmond Pitt via Mike McCandless)
 
+28. LUCENE-754: Fix a problem introduced by LUCENE-651, causing
+    IndexReaders to hang around forever, in addition to not
+    fixing the original FieldCache performance problem.
+    (Chris Hostetter, Yonik Seeley)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for

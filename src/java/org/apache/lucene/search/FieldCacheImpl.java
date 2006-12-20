@@ -62,7 +62,7 @@ implements FieldCache {
         }
         if (value == null) {
           value = new CreationPlaceholder();
-          innerCache.put(reader, value);
+          innerCache.put(key, value);
         }
       }
       if (value instanceof CreationPlaceholder) {
