@@ -187,15 +187,6 @@ class SegmentReader extends IndexReader {
     }
   }
 
-  protected void finalize() throws Throwable {
-    try {
-      // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
-      termVectorsLocal.set(null);
-    } finally {
-      super.finalize();
-    }
-  }
-
   protected void doCommit() throws IOException {
     if (deletedDocsDirty) {               // re-write deleted
       String oldDelFileName = si.getDelFileName();

@@ -40,6 +40,12 @@ Changes in runtime behavior
     Enumeration.
     (Michael Busch via Otis Gospodnetic)
 
+ 8. LUCENE-436: Removed finalize() in TermInfosReader and SegmentReader,
+    and added a call to enumerators.remove() in TermInfosReader.close().
+    The finalize() overrides were added to help with a pre-1.4.2 JVM bug
+    that has since been fixed, plus we no longer support pre-1.4.2 JVMs.
+    (Otis Gospodnetic)
+
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers

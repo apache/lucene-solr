@@ -55,15 +55,6 @@ final class TermInfosReader {
 			  fieldInfos, true);
   }
 
-  protected void finalize() throws Throwable {
-    try {
-      // patch for pre-1.4.2 JVMs, whose ThreadLocals leak
-      enumerators.set(null);
-    } finally {
-      super.finalize();
-    }
-  }
-
   public int getSkipInterval() {
     return origEnum.skipInterval;
   }
@@ -73,6 +64,7 @@ final class TermInfosReader {
       origEnum.close();
     if (indexEnum != null)
       indexEnum.close();
+    enumerators.remove();
   }
 
   /** Returns the number of term/value pairs in the set. */
