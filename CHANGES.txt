@@ -86,6 +86,11 @@ New features
 10. LUCENE-723: QueryParser now parses *:* as MatchAllDocsQuery
     (Yonik Seeley)
 
+11. LUCENE-741: Command-line utility for modifying or removing norms
+    on fields in an existing index.  This is mostly based on LUCENE-496
+    and lives in contrib/miscellaneous.
+    (Chris Hostetter, Otis Gospodnetic)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
