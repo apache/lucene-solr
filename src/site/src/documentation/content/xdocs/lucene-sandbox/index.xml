@@ -141,6 +141,26 @@
                         repository for miscellaneous classes.</a>
                 </p>
             </section>
+            <section id="GData-Server"><title>GData-Server</title>
+                <p>
+                     Apache - Lucene based serverside implementation of <a href="http://code.google.com/apis/gdata/">Google's GData</a> protocol. GData-Server provides an extendable
+                     full featured gdata feed server to add, remove, update ATOM 1.0 and RSS 2.0 feeds.
+                     Feeds are searchable via a defined HTTP GET parameter based query language like the Lucnene query syntax.
+                    </p>
+                <p>
+
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/gdata-server/"
+                       title="Source repositiory">The
+                         repository for GData-server files and sources.</a>
+                    <br/>
+                    <br/>
+
+                    <a href="http://wiki.apache.org/jakarta-lucene/GdataServer"
+                       title="GData-Server wiki">GData - Server wiki</a>
+
+                </p>
+
+            </section>
 
         </section>
 
