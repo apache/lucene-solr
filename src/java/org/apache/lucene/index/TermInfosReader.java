@@ -64,7 +64,7 @@ final class TermInfosReader {
       origEnum.close();
     if (indexEnum != null)
       indexEnum.close();
-    enumerators.remove();
+    enumerators.set(null);
   }
 
   /** Returns the number of term/value pairs in the set. */
