@@ -37,7 +37,7 @@
 
   <patternset id="src.dist.patterns"
               includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,"
-              excludes="contrib/*/lib/"
+              excludes="contrib/*/lib/,src/site/build/"
   />
   <patternset id="binary.build.dist.patterns"
               includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar"
@@ -209,7 +209,9 @@
   <!-- S O U R C E  D I S T R I B U T I O N                               -->
   <!-- ================================================================== -->
     <target name="init-dist" >
+
         <!-- Package is not called first if packaging src standalone, so the dist.dir may not exist -->
+        <mkdir dir="${build.dir}"/>
         <mkdir dir="${dist.dir}"/>
     </target>
   <!-- ================================================================== -->
