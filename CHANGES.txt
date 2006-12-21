@@ -382,6 +382,8 @@ Build
 
   2. Added a sysproperty in common-build.xml per Lucene 752 to map java.io.tmpdir to ${build.dir}/test just like the tempDir sysproperty.
 
+  3. LUCENE-757 Added new target named init-dist that does setup for distribution of both binary and source distributions.  Called by package and package-*-src
+
 Release 2.0.0 2006-05-26
 
 API Changes

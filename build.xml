@@ -140,8 +140,8 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib">
-    <mkdir dir="${dist.dir}"/>
+  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib, init-dist">
+
   </target>
 
   <target name="nightly" depends="test, package-tgz">
@@ -208,13 +208,16 @@
   <!-- ================================================================== -->
   <!-- S O U R C E  D I S T R I B U T I O N                               -->
   <!-- ================================================================== -->
-
+    <target name="init-dist" >
+        <!-- Package is not called first if packaging src standalone, so the dist.dir may not exist -->
+        <mkdir dir="${dist.dir}"/>
+    </target>
   <!-- ================================================================== -->
   <!-- Packages the sources with zip                                      -->
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package-zip-src" depends="init"
+  <target name="package-zip-src" depends="init, init-dist"
     description="--> Generates the Lucene sources as .zip">
     <zip destfile="${dist.dir}/lucene-${version}-src.zip">
       <zipfileset prefix="lucene-${version}" dir=".">
@@ -228,7 +231,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package-tgz-src" depends="init"
+  <target name="package-tgz-src" depends="init, init-dist"
     description="--> Generates the Lucene distribution as .tar.gz">
 
     <delete file="${build.dir}/lucene-${version}-src.tar"/>
