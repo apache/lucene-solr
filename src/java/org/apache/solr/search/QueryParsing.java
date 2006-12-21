@@ -407,8 +407,8 @@ public class QueryParsing {
    * <p>
    * The benefit of using this method instead of calling 
    * <code>Query.toString</code> directly is that it knows about the data
-   *  types of each field, so any field which is encoded in a particularly 
-   * complex way is still readable.  The downside is thta it only knows 
+   * types of each field, so any field which is encoded in a particularly 
+   * complex way is still readable. The downside is that it only knows 
    * about built in Query types, and will not be able to format custom 
    * Query classes.
    * </p>
