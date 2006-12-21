@@ -38,11 +38,11 @@
       <title>News</title>
 
       <section>
-      <title>21 December 2006: Release 1.1.0 available</title>
+      <title>22 December 2006: Release 1.1.0 available</title>
       <p>
         This is the first release since Solr joined the Incubator, and brings
         many new features and performance optimizations including highlighting,
-        faceted browsing, and JSON/Python/Ruby response formats.
+        faceted search, and JSON/Python/Ruby response formats.
       </p>
       </section>
       <section>
