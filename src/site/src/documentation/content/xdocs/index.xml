@@ -28,7 +28,15 @@
 
         <section id="Lucene News">
             <title>Lucene News</title>
-	    <section><title>26 November 2006</title>
+            <section>
+                <title>22 December 2006</title>
+                <p>The Lucene Java main site is now based on the nightly build of the documentation contained in Subversion.
+                    The <a href="api/">API documentation</a> is also
+                    based on the nightly build of the source.  Previous released versions of this site (including API references) are available
+                    under the "Site Versions" menu item on the left.
+                </p>
+            </section>
+        <section><title>26 November 2006</title>
 	    <p>New <a href="http://forrest.apache.org">Forrest</a> based site released.  The Lucene Java website now has a consistent look and feel with its <a href="http://lucene.apache.org">Lucene</a> siblings.
 	    </p>
 	    </section>
