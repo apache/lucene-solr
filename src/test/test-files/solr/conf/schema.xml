@@ -19,6 +19,10 @@
 <!-- The Solr schema file. This file should be named "schema.xml" and
      should be located where the classloader for the Solr webapp can find it.
 
+     This schema is used for testing, and as such has everything and the 
+     kitchen sink thrown in. See example/solr/conf/schema.xml for a 
+     more concise example.
+
      $Id: schema.xml 382610 2006-03-03 01:43:03Z yonik $
      $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
      $Name:  $

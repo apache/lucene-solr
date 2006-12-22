@@ -16,10 +16,14 @@
  limitations under the License.
 -->
 
-<!-- This is the Solr schema file. This file should be named "schema.xml" and
+<!--  
+ This is the Solr schema file. This file should be named "schema.xml" and
  should be in the conf directory under the solr home
  (i.e. ./solr/conf/schema.xml by default) 
  or located where the classloader for the Solr webapp can find it.
+
+ This example schema is the recommended starting point for users.
+ It should be kept correct and concise, usable out-of-the-box.
 
  For more information, on how to customize this file, please see
  http://wiki.apache.org/solr/SchemaXml
