@@ -91,6 +91,10 @@ New features
     and lives in contrib/miscellaneous.
     (Chris Hostetter, Otis Gospodnetic)
 
+12. LUCENE-759: Added NGramTokenizer and EdgeNGramTokenizer classes and
+    their passing unit tests.
+    (Otis Gospodnetic)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
