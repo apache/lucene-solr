@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Tokenizes the input into n-grams of given size(s).
+ * Tokenizes the input into n-grams of the given size(s).
  * @author Otis Gospodnetic
  */
 public class NGramTokenizer extends Tokenizer {

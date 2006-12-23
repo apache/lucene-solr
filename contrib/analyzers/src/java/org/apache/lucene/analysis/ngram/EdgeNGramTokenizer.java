@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Tokenizes the input into n-grams of given size(s).
+ * Tokenizes the input into n-grams of the given size.
  * @author Otis Gospodnetic
  */
 public class EdgeNGramTokenizer extends Tokenizer {
@@ -34,8 +34,11 @@ public class EdgeNGramTokenizer extends Tokenizer {
 //    FRONT (),
 //    BACK ();
 //  }
+  /** Specifies which side of the input the n-gram should be generated from */
   public static class Side {
+    /** Get the n-gram from the front of the input */
     public static Side FRONT = new Side("front");
+    /** Get the n-gram from the end of the input */
     public static Side BACK = new Side("back");
     private Side(String label) {}
   }
@@ -46,10 +49,10 @@ public class EdgeNGramTokenizer extends Tokenizer {
   private boolean started = false;
 
   /**
-   * Creates EdgeNGramTokenizer with given min and max n-grams.
+   * Creates EdgeNGramTokenizer that can generate an n-gram of the given size.
    * @param input Reader holding the input to be tokenized
    * @param side the {@link Side} from which to chop off an n-gram 
-   * @param gramSize the n-gram size to generate
+   * @param gramSize the size of the n-gram to generate
    */
   public EdgeNGramTokenizer(Reader input, Side side, int gramSize) {
     super(input);
