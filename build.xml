@@ -160,7 +160,11 @@
 
   <!-- Compile the project. -->
   <target name="compile"
-          description="Compile the source code.">
+          description="Compile the source code."
+          depends="checkJunitPresence">
+    <fail unless="junitPresent"
+          message="Couldn't find JUnit on runtime classpath." />
+
     <mkdir dir="${dest}" />
 
     <javac destdir="${dest}"
@@ -234,10 +238,20 @@
     <pathelement location="${dest}/tests"/>
   </path>
 
+  <!-- Check that JUnit is present. -->
+  <target name="checkJunitPresence"
+          description="Check that JUnit is present.">
+    <available property="junitPresent"
+               classname="junit.framework.TestCase" />
+  </target>
+
   <!-- Compile unit tests. -->
   <target name="compileTests"
           description="Compile unit tests."
-          depends="compile">
+          depends="compile,checkJunitPresence">
+    <fail unless="junitPresent"
+          message="Couldn't find JUnit on the runtime classpath." />
+
     <mkdir dir="${dest}/tests" />
     <javac 
        destdir="${dest}/tests"
