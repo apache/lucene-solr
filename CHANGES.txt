@@ -46,6 +46,9 @@ Optimizations
 Bug Fixes
  1. SOLR-87: Parsing of synonym files did not correctly handle escaped
     whitespace such as \r\n\t\b\f. (yonik)
+ 2. SOLR-92: DOMUtils.getText (used when parsing config files) did not 
+    work properly with many DOM implementations when dealing with 
+    "Attributes". (Ryan McKinley via hossman)
   
 Other Changes
  1.

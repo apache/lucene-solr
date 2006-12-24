@@ -189,7 +189,6 @@ public class DOMUtil {
     switch (type) {
       
     case Node.ELEMENT_NODE: /* fall through */
-    case Node.ATTRIBUTE_NODE: /* fall through */
     case Node.ENTITY_NODE: /* fall through */
     case Node.ENTITY_REFERENCE_NODE: /* fall through */
     case Node.DOCUMENT_FRAGMENT_NODE: 
@@ -204,6 +203,20 @@ public class DOMUtil {
       }
       break;
       
+    case Node.ATTRIBUTE_NODE: /* fall through */
+      /* Putting Attribute nodes in this section does not exactly 
+         match the definition of how textContent should behave 
+         according to the DOM Level-3 Core documentation - which 
+         specifies that the Attr's children should have their 
+         textContent concated (Attr's can have a single child which 
+         is either Text node or an EntityRefrence).  In practice,
+         DOM implementations do not seem to use child nodes of 
+         Attributes, storing the "text" directly as the nodeValue.
+         Fortunately, the DOM Spec indicates that when Attr.nodeValue 
+         is read, it should return the nodeValue from the child Node, 
+         so this approach should work both for strict implementations, 
+         and implementations actually encountered.
+      */
     case Node.TEXT_NODE: /* fall through */
     case Node.CDATA_SECTION_NODE: /* fall through */
     case Node.COMMENT_NODE: /* fall through */
