@@ -283,7 +283,7 @@ public class Lucli {
 	}
 
 	private int getCommandId(String name, int params) {
-		name.toLowerCase(); //treat uppercase and lower case commands the same
+		name = name.toLowerCase(); //treat uppercase and lower case commands the same
 		Command command = (Command) commandMap.get(name);
 		if (command == null) {
 			return(UNKOWN);
