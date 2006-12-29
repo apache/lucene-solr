@@ -15,6 +15,12 @@
             <a href="systemrequirements.html">here</a>.</p>
 			<p>Both binary and source releases are available for 
         <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download from the Apache Mirrors</a></p>
+        <p>The lucene-VERSION.zip (where VERSION is the version number of the release, i.e. 2.0.0) file contains the
+            lucene-core jar file, html documentation, a demo application (see <a href="gettingstarted.html">Getting Started</a>)
+            and various jar files containing contributed code.
+            <br/>
+             If all you need is the core jar file you can download that separately.
+        </p>
     </section>
 </section>
 

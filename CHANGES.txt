@@ -380,6 +380,8 @@ Documentation
   8. LUCENE-748: Added details for semantics of IndexWriter.close on
      hitting an Exception.  (Jed Wesley-Smith via Mike McCandless)
 
+  9. Added some text about what is contained in releases.  (Eric Haszlakiewicz via Grant Ingersoll)
+
 Build
 
   1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)
