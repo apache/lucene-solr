@@ -58,6 +58,12 @@ public class RAMDirectory extends Directory implements Serializable {
    * a disk-based index into memory.
    * <P>
    * This should be used only with indices that can fit into memory.
+   * <P>
+   * Note that the resulting <code>RAMDirectory</code> instance is fully
+   * independent from the original <code>Directory</code> (it is a
+   * complete copy).  Any subsequent changes to the
+   * original <code>Directory</code> will not be visible in the
+   * <code>RAMDirectory</code> instance.
    *
    * @param dir a <code>Directory</code> value
    * @exception IOException if an error occurs
@@ -97,6 +103,8 @@ public class RAMDirectory extends Directory implements Serializable {
    * Creates a new <code>RAMDirectory</code> instance from the {@link FSDirectory}.
    *
    * @param dir a <code>File</code> specifying the index directory
+   *
+   * @see #RAMDirectory(Directory)
    */
   public RAMDirectory(File dir) throws IOException {
     this(FSDirectory.getDirectory(dir, false), true);
@@ -106,6 +114,8 @@ public class RAMDirectory extends Directory implements Serializable {
    * Creates a new <code>RAMDirectory</code> instance from the {@link FSDirectory}.
    *
    * @param dir a <code>String</code> specifying the full index directory path
+   *
+   * @see #RAMDirectory(Directory)
    */
   public RAMDirectory(String dir) throws IOException {
     this(FSDirectory.getDirectory(dir, false), true);
