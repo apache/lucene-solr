@@ -1,26 +1,37 @@
 == Welcome to Solr Flare
 
-  http://wiki.apache.org/solr/Flare
+Flare promises to expose the power of Solr as a Ruby  DSL (domain specific language). Integral to Flare will be a general purpose Rails-based presentation framework including faceted browsing, auto-suggest, folksonomy tagging/annotating, and much more.
+
+  Visit the Solr Flare wiki for more information: http://wiki.apache.org/solr/Flare
 
 == Getting started
 
-For now a simple console example:
+Launch Solr:
 
-  $ script/console
-  >> doc = {:id => "529", :text => "Solr Flare in Action"}
-  => {:title=>"Solr Flare in Action", :id=>"529"}
-  >> request = Solr::AddDocumentRequest.new(doc)
-  => #<Solr::AddDocumentRequest:0x267d12c @url_path="/solr/update", @response_format=:xml, @body="<add><doc><field name='title'>Solr Flare in Action</field><field name='id'>529</field></doc></add>">
-  >> connection = Solr::Connection.new("http://localhost:8983")
-  >> connection.send(request)
-  => #<Solr::XmlResponse:0x2654c2c @raw_response="<result status=\"0\"></result>">
-  >> request = Solr::UpdateRequest.new("<commit/>")  # TODO: yes, this will be mapped as a simpler command!
-  => #<Solr::UpdateRequest:0x264455c @url_path="/solr/update", @response_format=:xml, @body="<commit/>">
-  >> connection.send(request)
-  => #<Solr::XmlResponse:0x263daf4 @raw_response="<result status=\"0\"></result>">
-  >> request = Solr::StandardRequest.new  
-  => #<Solr::StandardRequest:0x26370dc @url_path="/solr/select", @response_format=:ruby>
-  >> request.query = "solr flare"
-  => "solr flare"
-  >> connection.send(request)
-  => #<Solr::RubyResponse:0x262c1b4 @data={"docs"=>[{"id"=>"529"}], "start"=>0, "numFound"=>1}, @raw_response="{'responseHeader'=>{'status'=>0,'QTime'=>95,'params'=>{'q'=>'solr flare','wt'=>'ruby'}},'response'=>{'numFound'=>1,'start'=>0,'docs'=>[{'id'=>'529'}]}}", @header={"status"=>0, "QTime"=>95, "params"=>{"q"=>"solr flare", "wt"=>"ruby"}}>
+  cd solr
+  java -jar start.jar
+  
+In a separate shell, launch script/console.
+
+Set up a connection to Solr:
+
+  connection = Solr::Connection.new("http://localhost:8983")
+
+To add a document:
+
+  doc = {:id => "529", :text => "Solr Flare in Action"}
+  request = Solr::AddDocumentRequest.new(doc)
+  connection.send(request)
+
+Commit changes:
+
+  request = Solr::UpdateRequest.new("<commit/>")  # TODO: yes, this will be mapped as a simpler command!
+  connection.send(request)
+
+Search:
+
+  request = Solr::StandardRequest.new  
+  request.query = "solr flare"
+  connection.send(request)
+
+
