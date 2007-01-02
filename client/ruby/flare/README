@@ -12,8 +12,6 @@ For now a simple console example:
   >> request = Solr::AddDocumentRequest.new(doc)
   => #<Solr::AddDocumentRequest:0x267d12c @url_path="/solr/update", @response_format=:xml, @body="<add><doc><field name='title'>Solr Flare in Action</field><field name='id'>529</field></doc></add>">
   >> connection = Solr::Connection.new("http://localhost:8983")
-  >> request = Solr::AddDocumentRequest.new(doc)
-  => #<Solr::AddDocumentRequest:0x265f104 @url_path="/solr/update", @response_format=:xml, @body="<add><doc><field name='text'>Solr Flare in Action</field><field name='id'>529</field></doc></add>">
   >> connection.send(request)
   => #<Solr::XmlResponse:0x2654c2c @raw_response="<result status=\"0\"></result>">
   >> request = Solr::UpdateRequest.new("<commit/>")  # TODO: yes, this will be mapped as a simpler command!
