@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Shell script to take a snapshot of a Solr Lucene collection.
+
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
+
+unset data_dir user verbose debug
+. ${solr_root}/bin/scripts-util
+
+# set up variables
+prog=${0##*/}
+log=${solr_root}/logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog [-d dir] [-u username] [-v]
+       -d          specify directory holding index data
+       -u          specify user to sudo to before running script
+       -v          increase verbosity
+       -V          output debugging info
+"
+
+# parse args
+while getopts d:u:vV OPTION
+do
+    case $OPTION in
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
+    v)
+        verbose="v"
+        ;;
+    V)
+        debug="V"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+
+[[ -n $debug ]] && set -x
+
+fixUser "$@"
+
+# use default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
+
+start=`date +"%s"`
+
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+snap_name=snapshot.`date +"%Y%m%d%H%M%S"`
+name=${data_dir}/${snap_name}
+temp=${data_dir}/temp-${snap_name}
+
+if [[ -d ${name} ]]
+then
+    logMessage snapshot directory ${name} already exists
+    logExit aborted 1
+fi
+
+if [[ -d ${temp} ]]
+then
+    logMessage snapshoting of ${name} in progress
+    logExit aborted 1
+fi
+
+# clean up after INT/TERM
+trap 'echo cleaning up, please wait ...;/bin/rm -rf ${name} ${temp};logExit aborted 13' INT TERM
+
+logMessage taking snapshot ${name}
+
+# take a snapshot using hard links into temporary location
+# then move it into place atomically
+cp -lr ${data_dir}/index ${temp}
+mv ${temp} ${name}
+
+logExit ended 0
+

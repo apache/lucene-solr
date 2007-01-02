@@ -1,0 +1,252 @@
+<?xml version="1.0"?> 
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!-- =============================================================== -->
+<Configure class="org.mortbay.jetty.Server">
+
+  <!-- =============================================================== -->
+  <!-- Configure Logging                                               -->
+  <!-- =============================================================== -->
+
+  
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Configure Jetty Logging.                                        -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Uncomment if using jetty logging.
+  <Call class="org.mortbay.log.LogFactory" name="getFactory">
+    <Call name="getInstance">
+      <Arg/>
+      <Call name="reset"/>
+      <Call name="add">
+        <Arg>
+          <New class="org.mortbay.log.OutputStreamLogSink">
+            <Set name="filename"><SystemProperty name="jetty.home" default="."/>/logs/yyyy_mm_dd.jetty.log</Set>
+            <Set name="retainDays">90</Set>
+            <Set name="append">true</Set>
+            <Set name="logLabels">true</Set>
+            <Set name="logStackSize">true</Set>
+            <Set name="logStackTrace">false</Set>
+            <Set name="logOneLine">false</Set>
+            <Set name="suppressStack">false</Set>
+            <Set name="logTimeZone">GMT</Set>
+          </New>
+        </Arg>
+      </Call>
+    </Call>
+  </Call>
+  -->
+  
+  <!-- =============================================================== -->
+  <!-- Configure the Request Listeners                                 -->
+  <!-- =============================================================== -->
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add and configure a HTTP listener to port 8983                       -->
+  <!-- The default port can be changed using: java -Djetty.port=80     -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Call name="addListener">
+    <Arg>
+      <New class="org.mortbay.http.SocketListener">
+        <Set name="Port"><SystemProperty name="jetty.port" default="8983"/></Set>
+	<Set name="PoolName">P1</Set>
+        <Set name="MinThreads">20</Set>
+        <Set name="MaxThreads">200</Set>
+        <Set name="lowResources">50</Set>
+        <Set name="MaxIdleTimeMs">30000</Set>
+        <Set name="LowResourcePersistTimeMs">2000</Set>
+        <Set name="acceptQueueSize">0</Set>
+        <Set name="ConfidentialPort">8443</Set>
+        <Set name="IntegralPort">8443</Set>
+      </New>
+    </Arg>
+  </Call>
+
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add a HTTPS SSL listener on port 8443                           -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- UNCOMMENT TO ACTIVATE 
+  <Call name="addListener">
+    <Arg>
+      <New class="org.mortbay.http.SslListener">
+        <Set name="Port">8443</Set>
+	<Set name="PoolName">P1</Set>
+        <Set name="MaxIdleTimeMs">30000</Set>
+        <Set name="lowResources">30</Set>
+        <Set name="LowResourcePersistTimeMs">2000</Set>
+        <Set name="Keystore"><SystemProperty name="jetty.home" default="."/>/etc/demokeystore</Set>
+	<Set name="Password">OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4</Set>
+	<Set name="KeyPassword">OBF:1u2u1wml1z7s1z7a1wnl1u2g</Set>
+
+        <Set name="HttpHandler">
+          <New class="org.mortbay.http.handler.MsieSslHandler">
+	    <Set name="UserAgentSubString">MSIE 5</Set>
+	  </New>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add a AJP13 listener on port 8009                               -->
+  <!-- This protocol can be used with mod_jk in apache, IIS etc.       -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!--
+  <Call name="addListener">
+    <Arg>
+      <New class="org.mortbay.http.ajp.AJP13Listener">
+        <Set name="Port">8009</Set>
+        <Set name="MinThreads">5</Set>
+        <Set name="MaxThreads">20</Set>
+        <Set name="MaxIdleTimeMs">0</Set>
+        <Set name="confidentialPort">443</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
+
+
+  <!-- =============================================================== -->
+  <!-- Set the default web application configuration mechanisms:       -->
+  <!--   XMLConfiguration       - handles WEB-INF/web.xml              -->
+  <!--   JettyWebConfiguration  - handles WEB-INF/jetty-web.xml        -->
+  <!--   jsr77.Configuration    - Adds jsr77 statistics to servlets    -->
+  <!--                                                                 -->
+  <!-- Order of these classes is significant. The defaults set here    -->
+  <!-- can be overridden by calling setConfigurationClassNames() on    -->
+  <!-- the webapp context.                                             -->
+  <!-- The TagLibconfiguration scans any tld files found for           -->
+  <!-- additional j2ee listener classes - needed for JSF               -->
+  <!-- The jsr77 configuration requires additional jars on the         -->
+  <!-- on the classpath and it needs jmx enabled.                      -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Set name="WebApplicationConfigurationClassNames">
+    <Array type="java.lang.String">
+      <Item>org.mortbay.jetty.servlet.XMLConfiguration</Item>
+      <Item>org.mortbay.jetty.servlet.JettyWebConfiguration</Item>
+
+      <!--
+      <Item>org.mortbay.jetty.servlet.TagLibConfiguration</Item>
+      <Item>org.mortbay.jetty.servlet.jsr77.Configuration</Item>
+      -->
+    </Array>
+  </Set>
+
+
+  <!-- =============================================================== -->
+  <!-- Configure the Contexts                                          -->
+  <!-- =============================================================== -->
+
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add a all web application within the webapps directory.         -->
+  <!-- + No virtual host specified                                     -->
+  <!-- + Look in the webapps directory relative to jetty.home or .     -->
+  <!-- + Use the webdefault.xml resource for the defaults descriptor   -->
+  <!-- + Upack the war file                                            -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Set name="rootWebApp">root</Set>
+  
+  <Call name="addWebApplications">
+    <Arg></Arg>
+    <Arg><SystemProperty name="jetty.home" default="."/>/webapps/</Arg>
+    <Arg><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Arg>
+    <Arg type="boolean">true</Arg><!--extract WARs-->
+    <Arg type="boolean">false</Arg><!-- java 2 compliant class loader -->
+  </Call>
+
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add and configure a specific web application                    -->
+  <!-- + Set Unpack WAR files                                          -->
+  <!-- + Set Default Descriptor.  Resource, file or URL                -->
+  <!-- + Set java 2 complaint classloading                             -->
+  <!-- + Set Virtual Hosts. A Null host or empty array means all hosts -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- UNCOMMENT TO ACTIVATE
+  <Call name="addWebApplication">
+    <Arg>/context</Arg>
+    <Arg>./webapps/root</Arg>
+
+    <Set name="extractWAR">false</Set> 
+    <Set name="defaultsDescriptor">org/mortbay/jetty/servlet/webdefault.xml</Set>
+    <Set name="classLoaderJava2Compliant">true</Set> 
+
+    <Set name="virtualHosts">
+      <Array type="java.lang.String">
+        <Item></Item>
+        <Item>127.0.0.1</Item>
+        <Item>localhost</Item>
+        <Item>www.acme.com</Item>
+      </Array>
+    </Set>
+  </Call>
+  -->
+
+  <!-- =============================================================== -->
+  <!-- Configure the Request Log                                       -->
+  <!-- =============================================================== -->
+  <!-- Uncomment for request logging.
+  <Set name="RequestLog">
+    <New class="org.mortbay.http.NCSARequestLog">
+      <Arg><SystemProperty name="jetty.home" default="."/>/logs/yyyy_mm_dd.request.log</Arg>
+      <Set name="retainDays">90</Set>
+      <Set name="append">true</Set>
+      <Set name="extended">false</Set>
+      <Set name="LogTimeZone">GMT</Set>
+    </New>
+  </Set>
+  -->
+
+  <!-- =============================================================== -->
+  <!-- Configure the Other Server Options                              -->
+  <!-- =============================================================== -->
+  <Set name="requestsPerGC">2000</Set>
+  <Set name="statsOn">false</Set>
+  <Set class="org.mortbay.util.FileResource" name="checkAliases" type="boolean">true</Set>
+
+  <!-- System classes cannot be overriden by a HttpContext or webapp 
+  <Set name="systemClasses">
+    <Array type="java.lang.String">
+      <Item>java.</Item>
+      <Item>javax.servlet.</Item>
+      <Item>javax.xml.</Item>
+      <Item>org.mortbay.</Item>
+      <Item>org.xml.</Item>
+      <Item>org.w3c.</Item>
+      <Item>org.apache.commons.logging.</Item>
+    </Array>
+  </Set>
+  -->
+
+  <!-- Server classes are hidden from a HttpContext or webapp
+  <Set name="serverClasses">
+    <Array type="java.lang.String">
+      <Item>-org.mortbay.http.PathMap</Item>
+      <Item>org.mortbay.http.</Item>
+      <Item>-org.mortbay.jetty.servlet.Default</Item>
+      <Item>-org.mortbay.jetty.servlet.Invoker</Item>
+      <Item>-org.mortbay.jetty.servlet.JSR154Filter</Item>
+      <Item>org.mortbay.jetty.</Item>
+      <Item>org.mortbay.start.</Item>
+      <Item>org.mortbay.stop.</Item>
+    </Array>
+  </Set>
+  -->
+
+</Configure>
+
+
+
+
+
+
+
+
+

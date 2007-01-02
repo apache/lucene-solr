@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Shell script to enable rsyncd
+
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
+
+unset user verbose debug
+. ${solr_root}/bin/scripts-util
+
+# set up variables
+log=${solr_root}/logs/rsyncd.log
+
+# define usage string
+USAGE="\
+usage: $prog [-u username] [-v]
+       -u          specify user to sudo to before running script
+       -v          increase verbosity
+       -V          output debugging info
+"
+
+# parse args
+while getopts u:vV OPTION
+do
+    case $OPTION in
+    u)
+        user="$OPTARG"
+        ;;
+    v)
+        verbose="v"
+        ;;
+    V)
+        debug="V"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+
+[[ -n $debug ]] && set -x
+
+fixUser "$@"
+
+start=`date +"%s"`
+
+logMessage enabled by $oldwhoami
+logMessage command: $0 $@
+name=${solr_root}/logs/rsyncd-enabled
+
+if [[ -f ${name} ]]
+then
+    logMessage rsyncd already currently enabled
+    logExit exited 1
+else
+    touch ${name}
+fi
+
+logExit ended 0
