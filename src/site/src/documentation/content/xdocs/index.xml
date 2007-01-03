@@ -29,6 +29,14 @@
         <section id="Lucene News">
             <title>Lucene News</title>
             <section>
+                <title>3 January 2007 - Nightly Source builds available</title>
+
+                <p>Nightly source builds of the current development version of Lucene
+                    are now available at
+                    <a href="http://people.apache.org/builds/lucene/java/nightly/">http://people.apache.org/builds/lucene/java/nightly/</a>.  Files are named lucene-DATE-src.tar.gz where DATE is the date of the build.
+                </p>
+            </section>
+            <section>
                 <title>22 December 2006</title>
                 <p>The Lucene Java main site is now based on the nightly build of the documentation contained in Subversion.
                     The <a href="api/">API documentation</a> is also
@@ -115,7 +123,8 @@
                         http://cvs.apache.org/dist/lucene/java/nightly/</a>
                     .
                 </p>
-
+             </section>
+            <section>
                 <title>28 October 2005 - Lucene at ApacheCon</title>
                 <p>
                     <a href="http://www.apachecon.com">
