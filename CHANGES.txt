@@ -385,6 +385,10 @@ Documentation
   10. LUCENE-758: Fix javadoc to clarify that RAMDirectory(Directory)
       makes a full copy of the starting Directory.  (Mike McCandless)
 
+  11. LUCENE-764: Fix javadocs to detail temporary space requirements
+      for IndexWriter's optimize(), addIndexes(*) and addDocument(...)
+      methods.  (Mike McCandless)
+
 Build
 
   1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)

@@ -405,7 +405,7 @@ public class IndexWriter {
   }
 
   /** Determines the minimal number of documents required before the buffered
-   * in-memory documents are merging and a new Segment is created.
+   * in-memory documents are merged and a new Segment is created.
    * Since Documents are merged in a {@link org.apache.lucene.store.RAMDirectory},
    * large value gives faster indexing.  At the same time, mergeFactor limits
    * the number of files open in a FSDirectory.
@@ -590,12 +590,33 @@ public class IndexWriter {
    * {@link #setMaxFieldLength(int)} terms for a given field, the remainder are
    * discarded.
    *
-   * <p> Note that if an Exception is hit (eg disk full)
+   * <p> Note that if an Exception is hit (for example disk full)
    * then the index will be consistent, but this document
    * may not have been added.  Furthermore, it's possible
    * the index will have one segment in non-compound format
    * even when using compound files (when a merge has
    * partially succeeded).</p>
+   *
+   * <p> This method periodically flushes pending documents
+   * to the Directory (every {@link #setMaxBufferedDocs}),
+   * and also periodically merges segments in the index
+   * (every {@link #setMergeFactor} flushes).  When this
+   * occurs, the method will take more time to run (possibly
+   * a long time if the index is large), and will require
+   * free temporary space in the Directory to do the
+   * merging.</p>
+   *
+   * <p>The amount of free space required when a merge is
+   * triggered is up to 1X the size of all segments being
+   * merged, when no readers/searchers are open against the
+   * index, and up to 2X the size of all segments being
+   * merged when readers/searchers are open against the
+   * index (see {@link #optimize()} for details).  Most
+   * merges are small (merging the smallest segments
+   * together), but whenever a full merge occurs (all
+   * segments in the index, which is the worst case for
+   * temporary space usage) then the maximum free disk space
+   * required is the same as {@link #optimize}.</p>
    */
   public void addDocument(Document doc) throws IOException {
     addDocument(doc, analyzer);
@@ -608,7 +629,8 @@ public class IndexWriter {
    * discarded.
    *
    * <p>See {@link #addDocument(Document)} for details on
-   * index and IndexWriter state after an Exception.</p>
+   * index and IndexWriter state after an Exception, and
+   * flushing/merging temporary free space requirements.</p>
    */
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
     DocumentWriter dw =
@@ -690,20 +712,60 @@ public class IndexWriter {
   private PrintStream infoStream = null;
 
   /** Merges all segments together into a single segment,
-   * optimizing an index for search..
+   * optimizing an index for search.
    * 
-   * <p>Note that this requires temporary free space in the
-   * Directory up to the size of the starting index (exact
-   * usage could be less but will depend on many
-   * factors).</p>
-
-   * <p>If an Exception is hit during optimize() (eg, due to
-   * disk full), the index will not be corrupted.  However
-   * it's possible that one of the segments in the index
-   * will be in non-CFS format even when using compound file
-   * format.  This will occur when the Exception is hit
-   * during conversion of the segment into compound
-   * format.</p>
+   * <p>Note that this requires substantial temporary free
+   * space in the Directory (see <a target="_top"
+   * href="http://issues.apache.org/jira/browse/LUCENE-764">LUCENE-764</a>
+   * for details):</p>
+   *
+   * <ul>
+   * <li>
+   * 
+   * <p>If no readers/searchers are open against the index,
+   * then free space required is up to 1X the total size of
+   * the starting index.  For example, if the starting
+   * index is 10 GB, then you must have up to 10 GB of free
+   * space before calling optimize.</p>
+   *
+   * <li>
+   * 
+   * <p>If readers/searchers are using the index, then free
+   * space required is up to 2X the size of the starting
+   * index.  This is because in addition to the 1X used by
+   * optimize, the original 1X of the starting index is
+   * still consuming space in the Directory as the readers
+   * are holding the segments files open.  Even on Unix,
+   * where it will appear as if the files are gone ("ls"
+   * won't list them), they still consume storage due to
+   * "delete on last close" semantics.</p>
+   * 
+   * <p>Furthermore, if some but not all readers re-open
+   * while the optimize is underway, this will cause > 2X
+   * temporary space to be consumed as those new readers
+   * will then hold open the partially optimized segments at
+   * that time.  It is best not to re-open readers while
+   * optimize is running.</p>
+   *
+   * </ul>
+   *
+   * <p>The actual temporary usage could be much less than
+   * these figures (it depends on many factors).</p>
+   *
+   * <p>Once the optimize completes, the total size of the
+   * index will be less than the size of the starting index.
+   * It could be quite a bit smaller (if there were many
+   * pending deletes) or just slightly smaller.</p>
+   *
+   * <p>If an Exception is hit during optimize(), for example
+   * due to disk full, the index will not be corrupt and no
+   * documents will have been lost.  However, it may have
+   * been partially optimized (some segments were merged but
+   * not all), and it's possible that one of the segments in
+   * the index will be in non-compound format even when
+   * using compound file format.  This will occur when the
+   * Exception is hit during conversion of the segment into
+   * compound format.</p>
   */
   public synchronized void optimize() throws IOException {
     flushRamSegments();
@@ -811,8 +873,8 @@ public class IndexWriter {
    * <p>This method is transactional in how Exceptions are
    * handled: it does not commit a new segments_N file until
    * all indexes are added.  This means if an Exception
-   * occurs (eg disk full), then either no indexes will have
-   * been added or they all will have been.</p>
+   * occurs (for example disk full), then either no indexes
+   * will have been added or they all will have been.</p>
    *
    * <p>If an Exception is hit, it's still possible that all
    * indexes were successfully added.  This happens when the
@@ -826,8 +888,17 @@ public class IndexWriter {
    *
    * <p>Note that this requires temporary free space in the
    * Directory up to 2X the sum of all input indexes
-   * (including the starting index).  Exact usage could be
-   * less but will depend on many factors.</p>
+   * (including the starting index).  If readers/searchers
+   * are open against the starting index, then temporary
+   * free space required will be higher by the size of the
+   * starting index (see {@link #optimize()} for details).
+   * </p>
+   *
+   * <p>Once this completes, the final size of the index
+   * will be less than the sum of all input index sizes
+   * (including the starting index).  It could be quite a
+   * bit smaller (if there were many pending deletes) or
+   * just slightly smaller.</p>
    *
    * <p>See <a target="_top"
    * href="http://issues.apache.org/jira/browse/LUCENE-702">LUCENE-702</a>
