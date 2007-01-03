@@ -11,7 +11,6 @@
 # limitations under the License.
 
 require 'net/http'
-include REXML
 
 module Solr
   class Connection
