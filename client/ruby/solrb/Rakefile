@@ -6,7 +6,7 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 require 'rake/gempackagetask'
-require 'test/solr_server.rb'
+require 'test/test_helper.rb'
 
 task :default => [:test]
 
@@ -39,7 +39,7 @@ end
 # Rake::TestTask with a call to start/stop a solr server
 
 task :test do
-  start_solr
+  start_solr_server
 end
 
 Rake::TestTask.new('test') do |t|
@@ -49,5 +49,5 @@ Rake::TestTask.new('test') do |t|
 end
 
 task :test do
-  stop_solr
+  stop_solr_server
 end
