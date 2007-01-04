@@ -167,8 +167,8 @@ public class TestRunData {
     Iterator it = labels.iterator();
     while (it.hasNext()) {
       String label = (String) it.next();
-      sb.append(id + "-" + label + " " + getTotals(label).toString(false) + " ");
-      sb.append(getMemUsage(label).toScaledString(1024 * 1024, "MB") + "\n");
+        sb.append(id).append("-").append(label).append(" ").append(getTotals(label).toString(false)).append(" ");
+        sb.append(getMemUsage(label).toScaledString(1024 * 1024, "MB")).append("\n");
     }
     return sb.toString();
   }
