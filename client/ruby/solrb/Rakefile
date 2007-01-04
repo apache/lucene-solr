@@ -6,15 +6,9 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 require 'rake/gempackagetask'
+require 'test/solr_server.rb'
 
 task :default => [:test]
-
-Rake::TestTask.new('test') do |t|
-  t.libs << 'lib'
-  t.pattern = 'test/*_test.rb'
-  t.verbose = true
-  t.ruby_opts = ['-r solr', '-r test/unit']
-end
 
 spec = Gem::Specification.new do |s|
   s.name = 'solr'
@@ -28,9 +22,6 @@ spec = Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.autorequire = 'solr'
   s.has_rdoc = true
-  
-#  s.test_file = 'test/ts_solr.rb'
-#  s.bindir = 'bin'
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -42,4 +33,21 @@ Rake::RDocTask.new('doc') do |rd|
   rd.rdoc_files.include("lib/**/*.rb")
   rd.main = 'Solr::Connection'
   rd.rdoc_dir = 'doc'
+end
+
+# append to the test task so that we can wrap 
+# Rake::TestTask with a call to start/stop a solr server
+
+task :test do
+  start_solr
+end
+
+Rake::TestTask.new('test') do |t|
+  t.pattern = 'test/*_test.rb'
+  t.verbose = true
+  t.ruby_opts = ['-r solr', '-r test/unit']
+end
+
+task :test do
+  stop_solr
 end
