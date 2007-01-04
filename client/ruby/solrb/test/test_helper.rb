@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'test/unit'
-
 def start_solr_server
   Dir.chdir(File.dirname(__FILE__) + '/../solr') do 
     puts "starting solr server"

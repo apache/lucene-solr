@@ -45,7 +45,7 @@ end
 Rake::TestTask.new('test') do |t|
   t.pattern = 'test/*_test.rb'
   t.verbose = true
-  t.ruby_opts = ['-r solr', '-r test/unit']
+  t.ruby_opts = ['-r solr', '-r test/unit', '-Itest']
 end
 
 task :test do
