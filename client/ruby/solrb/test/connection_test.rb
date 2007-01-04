@@ -13,7 +13,22 @@
 require 'test/unit'
 require 'solr'
 
-class ConnectionTest < Test::Unit::TestCase
+module Solr
+  class Connection
+    def post(request)
+      "foo"
+    end
+  end
+  
+  class MockSolrBaseTest < Test::Unit::TestCase
+    def test_mock
+      connection = Connection.new("http://localhost:9999")
+      assert_equal "foo", connection.post(UpdateRequest.new("bogus"))
+    end
+  end
+end
+
+class ConnectionTest < Solr::MockSolrBaseTest
   def test_connection_initialize
     request = Solr::UpdateRequest.new("<commit/>")
     connection = Solr::Connection.new("http://localhost:8983")

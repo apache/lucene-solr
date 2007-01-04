@@ -21,13 +21,19 @@ module Solr
     end
 
     def send(request)
+      data = post(request)
+      return request.response_format == :ruby ? RubyResponse.new(data) : XmlResponse.new(data)
+    end
+    
+    def post(request)
       post = Net::HTTP::Post.new(request.url_path)
       post.body = request.to_http_body
       post.content_type = 'application/x-www-form-urlencoded; charset=utf-8'
       response = Net::HTTP.start(@url.host, @url.port) do |http|
         http.request(post)
       end
-      return request.response_format == :ruby ? RubyResponse.new(response.body) : XmlResponse.new(response.body)
+      
+      return response.body
     end
   end
 end
