@@ -268,19 +268,16 @@ public class DisMaxRequestHandler
       BooleanQuery query = new BooleanQuery(true);
 
       String minShouldMatch = params.get(DMP.MM, "100%");
-            
       Query dis = up.parse(userQuery);
+      Query parsedUserQuery = dis;
 
       if (dis instanceof BooleanQuery) {
         BooleanQuery t = new BooleanQuery();
         U.flattenBooleanQuery(t, (BooleanQuery)dis);
-
-        U.setMinShouldMatch(t, minShouldMatch);
-                
-        query.add(t, Occur.MUST);
-      } else {
-        query.add(dis, Occur.MUST);
-      }
+        U.setMinShouldMatch(t, minShouldMatch);                
+        parsedUserQuery = t;
+      } 
+      query.add(parsedUserQuery, Occur.MUST);
 
       /* * * Add on Phrases for the Query * * */
             
@@ -381,12 +378,9 @@ public class DisMaxRequestHandler
 
       /* * * Highlighting/Summarizing  * * */
       if(HighlightingUtils.isHighlightingEnabled(req)) {
-
-        BooleanQuery highlightQuery = new BooleanQuery();
-        U.flattenBooleanQuery(highlightQuery, query);
         String[] highFields = queryFields.keySet().toArray(new String[0]);
         NamedList sumData =
-          HighlightingUtils.doHighlighting(results.docList, highlightQuery, 
+          HighlightingUtils.doHighlighting(results.docList, parsedUserQuery, 
                                            req, highFields);
         if(sumData != null)
           rsp.add("highlighting", sumData);
