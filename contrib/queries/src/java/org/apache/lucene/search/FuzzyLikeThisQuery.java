@@ -211,7 +211,7 @@ public class FuzzyLikeThisQuery extends Query
         }
         //TODO possible alternative step 3 - organize above booleans into a new layer of field-based
         // booleans with a minimum-should-match of NumFields-1?
-        
+        bq.setBoost(getBoost());
         this.rewrittenQuery=bq;
         return bq;
     }
