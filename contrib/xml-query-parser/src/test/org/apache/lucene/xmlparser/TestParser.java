@@ -155,6 +155,11 @@ public class TestParser extends TestCase {
 			Query q=parse("NestedBooleanQuery.xml");
 			dumpResults("Nested Boolean query", q, 5);
 	}
+	public void testCachedFilterXML() throws ParserException, IOException
+	{
+			Query q=parse("CachedFilter.xml");
+			dumpResults("Cached filter", q, 5);
+	}
 	
 
 

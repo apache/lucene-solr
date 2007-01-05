@@ -99,8 +99,12 @@ public class DOMUtils
 			{
 				return null;
 			}
-			Element parent=(Element) n;
-			return getAttributeWithInheritance(parent,attributeName);
+			if(n instanceof Element)
+			{
+				Element parent=(Element) n;
+				return getAttributeWithInheritance(parent,attributeName);
+			}
+			return null; //we reached the top level of the document without finding attribute
 		}
 		return result;		
 	}
@@ -250,7 +254,7 @@ public class DOMUtils
 		}
 
 		return doc;
-	}
+	}	
 }
 
 

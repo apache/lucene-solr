@@ -27,5 +27,8 @@ public class FilterBuilderFactory implements FilterBuilder {
 	{
 		builders.put(nodeName,builder);
 	}
-	
+	public FilterBuilder getFilterBuilder(String nodeName)
+	{
+		return (FilterBuilder) builders.get(nodeName);		
+	}	
 }

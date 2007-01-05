@@ -1,0 +1,123 @@
+/*
+ * Created on 25-Jan-2006
+ */
+package org.apache.lucene.xmlparser.builders;
+
+import java.util.Map.Entry;
+
+import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryFilter;
+import org.apache.lucene.xmlparser.DOMUtils;
+import org.apache.lucene.xmlparser.FilterBuilder;
+import org.apache.lucene.xmlparser.FilterBuilderFactory;
+import org.apache.lucene.xmlparser.ParserException;
+import org.apache.lucene.xmlparser.QueryBuilder;
+import org.apache.lucene.xmlparser.QueryBuilderFactory;
+import org.w3c.dom.Element;
+
+/**
+ * Filters are cached in an LRU Cache keyed on the contained query or filter object. Using this will 
+ * speed up overall performance for repeated uses of the same expensive query/filter. The sorts of 
+ * queries/filters likely to benefit from caching need not necessarily be complex - e.g. simple 
+ * TermQuerys with a large DF (document frequency) can be expensive	on large indexes. 
+ * A good example of this might be a term query on a field with only 2 possible	values - 
+ * "true" or "false". In a large index, querying or filtering on this field requires reading 
+ * millions	of document ids from disk which can more usefully be cached as a filter bitset.
+ * 
+ * For Queries/Filters to be cached and reused the object must implement hashcode and
+ * equals methods correctly so that duplicate queries/filters can be detected in the cache.
+ * 
+ * The CoreParser.maxNumCachedFilters property can be used to control the size of the LRU 
+ * Cache established during the construction of CoreParser instances.
+ * 
+ * @author maharwood
+ */
+public class CachedFilterBuilder implements FilterBuilder {
+
+	private QueryBuilderFactory queryFactory;
+	private FilterBuilderFactory filterFactory;
+	
+    private  LRUCache filterCache = null;
+
+	private int cacheSize;
+
+	public CachedFilterBuilder(QueryBuilderFactory queryFactory, 
+			FilterBuilderFactory filterFactory,int cacheSize)
+	{
+		this.queryFactory=queryFactory;
+		this.filterFactory=filterFactory;
+		this.cacheSize=cacheSize;
+	}
+
+	public Filter getFilter(Element e) throws ParserException
+	{
+
+		Element childElement = DOMUtils.getFirstChildOrFail(e);
+
+		if (filterCache == null)
+		{
+			filterCache = new LRUCache(cacheSize);
+		}
+
+		// Test to see if child Element is a query or filter that needs to be
+		// cached
+		QueryBuilder qb = queryFactory.getQueryBuilder(childElement
+				.getNodeName());
+		Object cacheKey = null;
+		Query q = null;
+		Filter f = null;
+		if (qb != null)
+		{
+			q = qb.getQuery(childElement);
+			cacheKey = q;
+		} else
+		{
+			f = filterFactory.getFilter(childElement);
+			cacheKey = f;
+		}
+		Filter cachedFilter = null;
+		synchronized (filterCache)
+		{ // check cache
+			cachedFilter = (Filter) filterCache.get(cacheKey);
+			if (cachedFilter != null)
+			{
+				return cachedFilter; // cache hit
+			}
+		}
+		
+		//cache miss
+		if (qb != null)
+		{
+			cachedFilter = new QueryFilter(q);
+		} else
+		{
+			cachedFilter = new CachingWrapperFilter(f);
+		}
+
+		synchronized (filterCache)
+		{ // update cache
+			filterCache.put(cacheKey, cachedFilter);
+		}
+		return cachedFilter;
+	}
+	
+	static class LRUCache extends java.util.LinkedHashMap
+	{
+	    public LRUCache(int maxsize)
+	    {
+	        super(maxsize * 4 / 3 + 1, 0.75f, true);
+	        this.maxsize = maxsize;
+	    }
+
+	    protected int maxsize;
+
+	    protected boolean removeEldestEntry(Entry eldest)
+	    {
+	        return size() > maxsize;
+	    }
+
+	}
+
+}

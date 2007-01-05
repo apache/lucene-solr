@@ -27,5 +27,9 @@ public class QueryBuilderFactory implements QueryBuilder {
 	{
 		builders.put(nodeName,builder);
 	}
-
+	public QueryBuilder getQueryBuilder(String nodeName)
+	{
+		return (QueryBuilder) builders.get(nodeName);		
+	}
+	
 }
