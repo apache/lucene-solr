@@ -340,6 +340,46 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }
 
 
+  public void testDefaultFieldValues() {
+    
+    assertU(adoc("id",  "4055",
+                 "subject", "Hoss the Hoss man Hostetter"));
+    assertU(adoc("id",  "4056",
+                 "intDefault", "4",
+                 "subject", "Some Other Guy"));
+    assertU(adoc("id",  "4057",
+                 "multiDefault", "a",
+                 "multiDefault", "b",
+                 "subject", "The Dude"));
+    assertU(commit());
+
+    assertQ("everthing should have recent timestamp",
+            req("timestamp:[NOW-10MINUTES TO NOW]")
+            ,"*[count(//doc)=3]"
+            ,"//date[@name='timestamp']"
+            );
+    
+    assertQ("2 docs should have the default for multiDefault",
+            req("multiDefault:muLti-Default")
+            ,"*[count(//doc)=2]"
+            ,"//arr[@name='multiDefault']"
+            );
+    assertQ("1 doc should have it's explicit multiDefault",
+            req("multiDefault:a")
+            ,"*[count(//doc)=1]"
+            );
+
+    assertQ("2 docs should have the default for intDefault",
+            req("intDefault:42")
+            ,"*[count(//doc)=2]"
+            );
+    assertQ("1 doc should have it's explicit intDefault",
+            req("intDefault:[3 TO 5]")
+            ,"*[count(//doc)=1]"
+            );
+    
+  }
+
   public void testConfigDefaults() {
     assertU(adoc("id", "42",
                  "name", "Zapp Brannigan"));

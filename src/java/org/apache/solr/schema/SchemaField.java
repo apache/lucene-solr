@@ -36,20 +36,21 @@ public final class SchemaField extends FieldProperties {
   final String name;
   final FieldType type;
   final int properties;
+  final String defaultValue;
 
 
   /** Create a new SchemaField with the given name and type,
    *  using all the default properties from the type.
    */
   public SchemaField(String name, FieldType type) {
-    this(name, type, type.properties);
+    this(name, type, type.properties, null);
   }
 
   /** Create a new SchemaField from an existing one by using all
    * of the properties of the prototype except the field name.
    */
   public SchemaField(SchemaField prototype, String name) {
-    this(name, prototype.type, prototype.properties);
+    this(name, prototype.type, prototype.properties, prototype.defaultValue );
   }
 
  /** Create a new SchemaField with the given name and type,
@@ -58,10 +59,11 @@ public final class SchemaField extends FieldProperties {
    * constructor should derive the properties from type.getProperties()
    *  using all the default properties from the type.
    */
-  public SchemaField(String name, FieldType type, int properties) {
+  public SchemaField(String name, FieldType type, int properties, String defaultValue ) {
     this.name = name;
     this.type = type;
     this.properties = properties;
+    this.defaultValue = defaultValue;
   }
 
   public String getName() { return name; }
@@ -89,8 +91,9 @@ public final class SchemaField extends FieldProperties {
 
   public String toString() {
     return name + "{type="+type.getTypeName()
-            + ",properties=" + propertiesToString(properties)
-            + "}";
+      + ((defaultValue==null)?"":(",default="+defaultValue))
+      + ",properties=" + propertiesToString(properties)
+      + "}";
   }
 
   public void write(XMLWriter writer, String name, Fieldable val) throws IOException {
@@ -157,7 +160,15 @@ public final class SchemaField extends FieldProperties {
     p &= ~falseProps;
     p |= trueProps;
 
-    return new SchemaField(name, ft, p);
+    String defaultValue = null;
+    if( props.containsKey( "default" ) ) {
+    	defaultValue = (String)props.get( "default" );
+    }
+    return new SchemaField(name, ft, p, defaultValue );
+  }
+
+  public String getDefaultValue() {
+    return defaultValue;
   }
 }
 

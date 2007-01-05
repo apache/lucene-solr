@@ -88,6 +88,7 @@ public final class IndexSchema {
 
   private final HashMap<String, SchemaField> fields = new HashMap<String,SchemaField>();
   private final HashMap<String, FieldType> fieldTypes = new HashMap<String,FieldType>();
+  private final List<SchemaField> fieldsWithDefaultValue = new ArrayList<SchemaField>();
 
   /**
    * Provides direct access to the Map containing all explicit
@@ -109,6 +110,10 @@ public final class IndexSchema {
    */
   public Map<String,FieldType> getFieldTypes() { return fieldTypes; }
 
+  /**
+   * Provides direct access to the List containing all fields with a default value
+   */
+  public List<SchemaField> getFieldsWithDefaultValue() { return fieldsWithDefaultValue; }
 
   private Similarity similarity;
 
@@ -335,6 +340,10 @@ public final class IndexSchema {
         if (node.getNodeName().equals("field")) {
           fields.put(f.getName(),f);
           log.fine("field defined: " + f);
+          if( f.getDefaultValue() != null ) {
+            log.fine(name+" contains default value: " + f.getDefaultValue());
+        	  fieldsWithDefaultValue.add( f );
+          }
         } else if (node.getNodeName().equals("dynamicField")) {
           dFields.add(new DynamicField(f));
           log.fine("dynamic field defined: " + f);

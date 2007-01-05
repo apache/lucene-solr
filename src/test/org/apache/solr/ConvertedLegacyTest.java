@@ -1118,7 +1118,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
             ,"//float[@name='score'] "
-            ,"*[count(//doc/*)=10]"
+            ,"*[count(//doc/*)=13]"
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
@@ -1129,7 +1129,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
             ,"//float[@name='score'] "
-            ,"*[count(//doc/*)=10]"
+            ,"*[count(//doc/*)=13]"
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
@@ -1139,7 +1139,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     assertQ(req
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
-            ,"*[count(//doc/*)>=9]"
+            ,"*[count(//doc/*)>=12]"
             );
 
     // test maxScore

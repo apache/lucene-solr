@@ -35,7 +35,8 @@ Detailed Change List
 --------------------
 
 New Features
- 1.
+ 1. SOLR-82: Default field values can be specified in the schema.xml.
+    (Ryan McKinley via hossman)
 
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
@@ -54,7 +55,7 @@ Bug Fixes
 Other Changes
  1.
 
-================== Release 1.1.0, YYYYMMDD ==================
+================== Release 1.1.0, 20061222 ==================
 
 Status
 ------

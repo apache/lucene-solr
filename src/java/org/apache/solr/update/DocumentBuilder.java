@@ -105,6 +105,14 @@ public class DocumentBuilder {
 
   // specific to this type of document builder
   public Document getDoc() {
+	  
+    // Check for default fields in our schema...
+    for( SchemaField field : schema.getFieldsWithDefaultValue() ) {
+      if( doc.getField( field.getName() ) == null ) {
+        doc.add( field.createField( field.getDefaultValue(), 1.0f ) );
+      }
+    }
+	  
     Document ret = doc; doc=null;
     return ret;
   }

@@ -35,7 +35,7 @@
     <field name="features">tag with escaped chars: &lt;nicetag/&gt;</field>
     <field name="features">escaped ampersand: Bonnie &amp; Clyde</field>
     <field name="price">0</field>
-    <field name="popularity">10</field>
+    <!-- no popularity, get the default from schema.xml -->
     <field name="inStock">true</field>
   </doc>
 </add>
