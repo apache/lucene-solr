@@ -96,6 +96,8 @@
   <property name="junit.output.dir" location="${dest}/test-results"/>
   <property name="junit.reports" location="${dest}/test-results/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
+  <available property="junitPresent"
+             classname="junit.framework.TestCase" />
 
   <!-- Macro for building checksum files
        This is only needed until the "format" option is supported
@@ -162,8 +164,6 @@
   <target name="compile"
           description="Compile the source code."
           depends="checkJunitPresence">
-    <fail unless="junitPresent"
-          message="Couldn't find JUnit on runtime classpath." />
 
     <mkdir dir="${dest}" />
 
@@ -239,18 +239,21 @@
   </path>
 
   <!-- Check that JUnit is present. -->
-  <target name="checkJunitPresence"
-          description="Check that JUnit is present.">
-    <available property="junitPresent"
-               classname="junit.framework.TestCase" />
+  <target name="checkJunitPresence">
+    <!-- no description so it doesn't show up in -projecthelp -->  
+    <fail unless="junitPresent"> 
+      ##################################################################
+      JUnit not found.
+      Please make sure junit.jar is in ANT_HOME/lib, or made available
+      to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+    </fail>
   </target>
 
   <!-- Compile unit tests. -->
   <target name="compileTests"
           description="Compile unit tests."
           depends="compile,checkJunitPresence">
-    <fail unless="junitPresent"
-          message="Couldn't find JUnit on the runtime classpath." />
 
     <mkdir dir="${dest}/tests" />
     <javac 
