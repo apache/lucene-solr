@@ -83,7 +83,7 @@ See http://forrest.apache.org/docs/linking.html for more info
       <lucene label="Lucene (Top-Level)" href="ext:topLevel"/>
       <lucene label="Hadoop" href="ext:hadoop"/>
       <lucene label="Lucy" href="ext:lucy"/>
-	  <lucene label="Lucene.NET" href="ext:lucene-net"/>
+	  <lucene label="Lucene.Net" href="ext:lucene-net"/>
       <lucene     label="Nutch" href="ext:nutch" />
       <lucene label="SOLR" href="ext:solr"/>
   </projects>
