@@ -639,7 +639,7 @@ public class IndexWriter {
     String segmentName = newRAMSegmentName();
     dw.addDocument(segmentName, doc);
     synchronized (this) {
-      ramSegmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory, false));
+      ramSegmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory, false, false));
       maybeFlushRamSegments();
     }
   }
@@ -772,10 +772,10 @@ public class IndexWriter {
     while (segmentInfos.size() > 1 ||
            (segmentInfos.size() == 1 &&
             (SegmentReader.hasDeletions(segmentInfos.info(0)) ||
+             SegmentReader.hasSeparateNorms(segmentInfos.info(0)) ||
              segmentInfos.info(0).dir != directory ||
              (useCompoundFile &&
-              (!SegmentReader.usesCompoundFile(segmentInfos.info(0)) ||
-                SegmentReader.hasSeparateNorms(segmentInfos.info(0))))))) {
+              (!SegmentReader.usesCompoundFile(segmentInfos.info(0))))))) {
       int minSegment = segmentInfos.size() - mergeFactor;
       mergeSegments(segmentInfos, minSegment < 0 ? 0 : minSegment, segmentInfos.size());
     }
@@ -1127,7 +1127,7 @@ public class IndexWriter {
       int docCount = merger.merge();                // merge 'em
 
       segmentInfos.setSize(0);                      // pop old infos & add new
-      info = new SegmentInfo(mergedName, docCount, directory, false);
+      info = new SegmentInfo(mergedName, docCount, directory, false, true);
       segmentInfos.addElement(info);
       commitPending = true;
 
@@ -1347,7 +1347,7 @@ public class IndexWriter {
         }
 
         newSegment = new SegmentInfo(mergedName, mergedDocCount,
-                                     directory, false);
+                                     directory, false, true);
 
 
         if (sourceSegments == ramSegmentInfos) {

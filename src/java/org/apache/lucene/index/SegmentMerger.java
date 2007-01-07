@@ -40,6 +40,10 @@ import org.apache.lucene.store.RAMOutputStream;
  * @see #add
  */
 final class SegmentMerger {
+  
+  /** norms header placeholder */
+  static final byte[] NORMS_HEADER = new byte[]{'N','R','M',-1}; 
+  
   private Directory directory;
   private String segment;
   private int termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
@@ -116,7 +120,7 @@ final class SegmentMerger {
             new CompoundFileWriter(directory, fileName);
 
     Vector files =
-      new Vector(IndexFileNames.COMPOUND_EXTENSIONS.length + fieldInfos.size());    
+      new Vector(IndexFileNames.COMPOUND_EXTENSIONS.length + 1);    
     
     // Basic files
     for (int i = 0; i < IndexFileNames.COMPOUND_EXTENSIONS.length; i++) {
@@ -127,7 +131,8 @@ final class SegmentMerger {
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
-        files.add(segment + ".f" + i);
+        files.add(segment + "." + IndexFileNames.NORMS_EXTENSION);
+        break;
       }
     }
 
@@ -408,11 +413,15 @@ final class SegmentMerger {
 
   private void mergeNorms() throws IOException {
     byte[] normBuffer = null;
-    for (int i = 0; i < fieldInfos.size(); i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.isIndexed && !fi.omitNorms) {
-        IndexOutput output = directory.createOutput(segment + ".f" + i);
-        try {
+    IndexOutput output = null;
+    try {
+      for (int i = 0; i < fieldInfos.size(); i++) {
+        FieldInfo fi = fieldInfos.fieldInfo(i);
+        if (fi.isIndexed && !fi.omitNorms) {
+          if (output == null) { 
+            output = directory.createOutput(segment + "." + IndexFileNames.NORMS_EXTENSION);
+            output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
+          }
           for (int j = 0; j < readers.size(); j++) {
             IndexReader reader = (IndexReader) readers.elementAt(j);
             int maxDoc = reader.maxDoc();
@@ -434,9 +443,11 @@ final class SegmentMerger {
               }
             }
           }
-        } finally {
-          output.close();
         }
+      }
+    } finally {
+      if (output != null) { 
+        output.close();
       }
     }
   }

@@ -35,6 +35,9 @@ final class IndexFileNames {
    * pre-lockless indices) */
   static final String DELETABLE = "deletable";
    
+  /** Extension of norms file */
+  static final String NORMS_EXTENSION = "nrm";
+  
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with two exceptions, namely the
@@ -45,7 +48,8 @@ final class IndexFileNames {
    */
   static final String INDEX_EXTENSIONS[] = new String[] {
       "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
-      "tvx", "tvd", "tvf", "tvp", "gen"};
+      "tvx", "tvd", "tvf", "tvp", "gen", "nrm" 
+  };
   
   /** File extensions of old-style index files */
   static final String COMPOUND_EXTENSIONS[] = new String[] {

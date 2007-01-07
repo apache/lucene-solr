@@ -1397,7 +1397,9 @@
                 </p>
             </section>
             <section id="Normalization Factors"><title>Normalization Factors</title>
-                <p>There's a norm file for each indexed field with a byte for
+				<p>
+                    <b>Pre-2.1:</b>
+                    There's a norm file for each indexed field with a byte for
                     each document. The .f[0-9]* file contains,
                     for each document, a byte that encodes a value that is multiplied
                     into the score for hits on that field:
@@ -1405,6 +1407,27 @@
                 <p>Norms
                     (.f[0-9]*) --&gt; &lt;Byte&gt;
                     <sup>SegSize</sup>
+                </p>
+				<p>
+                    <b>2.1 and above:</b>
+                    There's a single .nrm file containing all norms:
+                </p>
+                <p>AllNorms
+                    (.nrm) --&gt; NormsHeader,&lt;Norms&gt;
+                    <sup>NumFieldsWithNorms</sup>
+                </p>
+                <p>Norms
+                    --&gt; &lt;Byte&gt;
+                    <sup>SegSize</sup>
+                </p>
+                <p>NormsHeader
+                    --&gt; 'N','R','M',Version
+                </p>
+                <p>Version
+                    --&gt; Byte
+                </p>
+                <p>NormsHeader 
+					has 4 bytes, last of which is the format version for this file, currently -1.
                 </p>
                 <p>Each
                     byte encodes a floating point value. Bits 0-2 contain the 3-bit
@@ -1441,6 +1464,18 @@
                         </p>
                     </li>
                 </ol>
+                <p>A separate norm file is created when the norm values of an existing segment are modified. 
+					When field <em>N</em> is modified, a separate norm file <em>.sN</em> 
+					is created, to maintain the norm values for that field.
+                </p>
+				<p>
+                    <b>Pre-2.1:</b>
+                    Separate norm files are created only for compound segments.
+                </p>
+				<p>
+                    <b>2.1 and above:</b>
+                    Separate norm files are created (when adequate) for both compound and non compound segments.
+                </p>
 
             </section>
             <section id="Term Vectors"><title>Term Vectors</title>

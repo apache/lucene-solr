@@ -163,6 +163,13 @@ API Changes
     small.  This changes the index file format and cannot be
     read by previous versions of Lucene.  (Doron Cohen via Yonik Seeley)
 
+13. LUCENE-756: Maintain all norms in a single .nrm file to reduce the
+    number of open files and file descriptors for the non-compound index
+    format.  This changes the index file format, but maintains the
+    ability to read and update older indicies. The first segment merge
+    on an older format index will create a single .nrm file for the new
+    segment.  (Doron Cohen via Yonik Seeley)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

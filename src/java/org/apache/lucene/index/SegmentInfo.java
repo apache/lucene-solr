@@ -42,8 +42,13 @@ final class SegmentInfo {
 
   private byte isCompoundFile;                    // -1 if it is not; 1 if it is; 0 if it's
                                                   // pre-2.1 (ie, must check file system to see
-                                                  // if <name>.cfs exists)         
+                                                  // if <name>.cfs and <name>.nrm exist)         
 
+  private byte withNrm;                           // 1 if this segment maintains norms in a single file; 
+                                                  // -1 if not; 0 if check file is required to tell.
+                                                  // would be -1 for segments populated by DocumentWriter.
+                                                  // would be 1 for (newly created) merge resulted segments (both compound and non compound).
+  
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -51,14 +56,13 @@ final class SegmentInfo {
     delGen = -1;
     isCompoundFile = 0;
     preLockless = true;
+    withNrm = 0;
   }
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile) {
+
+  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean withNrm) { 
     this(name, docCount, dir);
-    if (isCompoundFile) {
-      this.isCompoundFile = 1;
-    } else {
-      this.isCompoundFile = -1;
-    }
+    this.isCompoundFile = (byte) (isCompoundFile ? 1 : -1);
+    this.withNrm = (byte) (withNrm ? 1 : -1);
     preLockless = false;
   }
 
@@ -78,6 +82,7 @@ final class SegmentInfo {
       System.arraycopy(src.normGen, 0, normGen, 0, src.normGen.length);
     }
     isCompoundFile = src.isCompoundFile;
+    withNrm = src.withNrm;
   }
 
   /**
@@ -111,19 +116,20 @@ final class SegmentInfo {
       isCompoundFile = 0;
       preLockless = true;
     }
+    withNrm = 0;
   }
   
-  void setNumField(int numField) {
+  void setNumFields(int numFields) {
     if (normGen == null) {
       // normGen is null if we loaded a pre-2.1 segment
       // file, or, if this segments file hasn't had any
       // norms set against it yet:
-      normGen = new long[numField];
+      normGen = new long[numFields];
 
       if (!preLockless) {
         // This is a FORMAT_LOCKLESS segment, which means
         // there are no norms:
-        for(int i=0;i<numField;i++) {
+        for(int i=0;i<numFields;i++) {
           normGen[i] = -1;
         }
       }
@@ -173,6 +179,7 @@ final class SegmentInfo {
     si.isCompoundFile = isCompoundFile;
     si.delGen = delGen;
     si.preLockless = preLockless;
+    si.withNrm = withNrm;
     if (normGen != null) {
       si.normGen = (long[]) normGen.clone();
     }
@@ -245,7 +252,7 @@ final class SegmentInfo {
       // pre-LOCKLESS and must be checked in directory:
       for(int i=0;i<normGen.length;i++) {
         if (normGen[i] == 0) {
-          if (dir.fileExists(getNormFileName(i))) {
+          if (hasSeparateNorms(i)) {
             return true;
           }
         }
@@ -285,12 +292,21 @@ final class SegmentInfo {
     }
     
     if (hasSeparateNorms(number)) {
+      // case 1: separate norm
       prefix = ".s";
       return IndexFileNames.fileNameFromGeneration(name, prefix + number, gen);
-    } else {
-      prefix = ".f";
-      return IndexFileNames.fileNameFromGeneration(name, prefix + number, 0);
     }
+    
+
+    if (withNrm()) {
+      // case 2: lockless (or nrm file exists) - single file for all norms 
+      prefix = "." + IndexFileNames.NORMS_EXTENSION;
+      return IndexFileNames.fileNameFromGeneration(name, prefix, 0);
+    }
+      
+    // case 3: norm file for each field
+    prefix = ".f";
+    return IndexFileNames.fileNameFromGeneration(name, prefix + number, 0);
   }
 
   /**
@@ -310,11 +326,6 @@ final class SegmentInfo {
   /**
    * Returns true if this segment is stored as a compound
    * file; else, false.
-   *
-   * @param directory directory to check.  This parameter is
-   * only used when the segment was written before version
-   * 2.1 (at which point compound file or not became stored
-   * in the segments info file).
    */
   boolean getUseCompoundFile() throws IOException {
     if (isCompoundFile == -1) {
@@ -323,6 +334,32 @@ final class SegmentInfo {
       return true;
     } else {
       return dir.fileExists(name + ".cfs");
+    }
+  }
+  
+  /**
+   * Returns true iff this segment stores filed norms in a single .nrm file.
+   */
+  private boolean withNrm () throws IOException {
+    if (withNrm == -1) {
+      return false;
+    } 
+    if (withNrm == 1) {
+      return true;
+    }
+    Directory d = dir;
+    try {
+      if (getUseCompoundFile()) {
+        d = new CompoundFileReader(dir, name + ".cfs");
+      }
+      boolean res = d.fileExists(name + "." + IndexFileNames.NORMS_EXTENSION);
+      withNrm = (byte) (res ? 1 : -1); // avoid more file tests like this 
+      return res;
+    } finally {
+      if (d!=dir && d!=null) {
+        d.close();
+      }
+      
     }
   }
 

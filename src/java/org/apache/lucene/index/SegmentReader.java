@@ -58,23 +58,25 @@ class SegmentReader extends IndexReader {
   CompoundFileReader cfsReader = null;
 
   private class Norm {
-    public Norm(IndexInput in, int number)
+    public Norm(IndexInput in, int number, long normSeek)
     {
       this.in = in;
       this.number = number;
+      this.normSeek = normSeek;
     }
 
     private IndexInput in;
     private byte[] bytes;
     private boolean dirty;
     private int number;
+    private long normSeek;
     private boolean rollbackDirty;
 
     private void reWrite(SegmentInfo si) throws IOException {
       // NOTE: norms are re-written in regular directory, not cfs
 
       String oldFileName = si.getNormFileName(this.number);
-      if (oldFileName != null) {
+      if (oldFileName != null && !oldFileName.endsWith("." + IndexFileNames.NORMS_EXTENSION)) {
         // Mark this file for deletion.  Note that we don't
         // actually try to delete it until the new segments files is
         // successfully written:
@@ -215,7 +217,7 @@ class SegmentReader extends IndexReader {
       si.clearDelGen();
     }
     if (normsDirty) {               // re-write norms
-      si.setNumField(fieldInfos.size());
+      si.setNumFields(fieldInfos.size());
       Enumeration values = norms.elements();
       while (values.hasMoreElements()) {
         Norm norm = (Norm) values.nextElement();
@@ -301,10 +303,16 @@ class SegmentReader extends IndexReader {
       files.addElement(si.getDelFileName());
     }
 
+    boolean addedNrm = false;
     for (int i = 0; i < fieldInfos.size(); i++) {
       String name = si.getNormFileName(i);
-      if (name != null && directory().fileExists(name))
+      if (name != null && directory().fileExists(name)) {
+        if (name.endsWith("." + IndexFileNames.NORMS_EXTENSION)) {
+          if (addedNrm) continue; // add .nrm just once
+          addedNrm = true;
+        }
             files.addElement(name);
+      }
     }
     return files;
   }
@@ -462,7 +470,7 @@ class SegmentReader extends IndexReader {
 
     IndexInput normStream = (IndexInput) norm.in.clone();
     try {                                         // read from disk
-      normStream.seek(0);
+      normStream.seek(norm.normSeek);
       normStream.readBytes(bytes, offset, maxDoc());
     } finally {
       normStream.close();
@@ -471,6 +479,8 @@ class SegmentReader extends IndexReader {
 
 
   private void openNorms(Directory cfsDir) throws IOException {
+    long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
+    int maxDoc = maxDoc();
     for (int i = 0; i < fieldInfos.size(); i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
@@ -479,7 +489,9 @@ class SegmentReader extends IndexReader {
         if (!si.hasSeparateNorms(fi.number)) {
           d = cfsDir;
         }
-        norms.put(fi.name, new Norm(d.openInput(fileName), fi.number));
+        long normSeek = (fileName.endsWith("." + IndexFileNames.NORMS_EXTENSION) ? nextNormSeek : 0);
+        norms.put(fi.name, new Norm(d.openInput(fileName), fi.number, normSeek));
+        nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
   }
