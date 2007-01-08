@@ -102,14 +102,12 @@ task :test do
   raise "test failures" if got_error
 end
 
-# TODO: fix this so it works, it is not happy with connection_test.rb for some reason
-#       borrowed from here: http://clarkware.com/cgi/blosxom/2007/01/05#RcovRakeTask
 namespace :test do
   desc 'Measures test coverage'
+  # borrowed from here: http://clarkware.com/cgi/blosxom/2007/01/05#RcovRakeTask
   task :coverage do
     rm_f "coverage"
-    rm_f "coverage.data"
-    system("rcov --text-summary -Ilib test/unit/*_test.rb")
+    system("rcov --text-summary -Ilib:test/unit test/unit/*_test.rb")
     system("open coverage/index.html") if PLATFORM['darwin']
   end
 
