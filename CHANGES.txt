@@ -170,6 +170,11 @@ API Changes
     on an older format index will create a single .nrm file for the new
     segment.  (Doron Cohen via Yonik Seeley)
 
+14. LUCENE-732: DateTools support has been added to QueryParser, with
+    setters for both the default Resolution, and per-field Resolution.
+    For backwards compatibility, DateField is still used if no Resolutions
+    are specified. (Michael Busch via Chris Hostetter)
+    
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

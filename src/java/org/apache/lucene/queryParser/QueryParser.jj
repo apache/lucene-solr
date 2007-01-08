@@ -69,14 +69,31 @@ import org.apache.lucene.util.Parameter;
  * documentation</a>.
  * </p>
  *
- * <p>In {@link RangeQuery}s, QueryParser tries to detect date values, e.g. <tt>date:[6/1/2005 TO 6/4/2005]</tt>
- * produces a range query that searches for "date" fields between 2005-06-01 and 2005-06-04. Note
- * that the format of the accpeted input depends on {@link #setLocale(Locale) the locale}. This
- * feature also assumes that your index uses the {@link DateField} class to store dates.
- * If you use a different format (e.g. {@link DateTools}) and you still want QueryParser
- * to turn local dates in range queries into valid queries you need to create your own
+ * <p>
+ * In {@link RangeQuery}s, QueryParser tries to detect date values, e.g.
+ * <tt>date:[6/1/2005 TO 6/4/2005]</tt> produces a range query that searches
+ * for "date" fields between 2005-06-01 and 2005-06-04. Note that the format
+ * of the accepted input depends on {@link #setLocale(Locale) the locale}.
+ * By default a date is converted into a search term using the deprecated
+ * {@link DateField} for compatibility reasons.
+ * To use the new {@link DateTools} to convert dates, a
+ * {@link DateTools.Resolution} has to be set.
+ * </p>
+ * <p>
+ * The date resolution that shall be used for RangeQueries can be set
+ * using {@link #setDateResolution(DateTools.Resolution)}
+ * or {@link #setDateResolution(String, DateTools.Resolution)}. The former
+ * sets the default date resolution for all fields, whereas the latter can
+ * be used to set field specific date resolutions. Field specific date
+ * resolutions take, if set, precedence over the default date resolution.
+ * </p>
+ * <p>
+ * If you use neither {@link DateField} nor {@link DateTools} in your
+ * index, you can create your own
  * query parser that inherits QueryParser and overwrites
- * {@link #getRangeQuery(String, String, String, boolean)}.</p>
+ * {@link #getRangeQuery(String, String, String, boolean)} to
+ * use a different method for date conversion.
+ * </p>
  *
  * <p>Note that QueryParser is <em>not</em> thread-safe.</p>
  *
@@ -84,7 +101,6 @@ import org.apache.lucene.util.Parameter;
  * @author Peter Halacsy
  * @author Tatu Saloranta
  */
-
 public class QueryParser {
 
   private static final int CONJ_NONE   = 0;
@@ -115,6 +131,11 @@ public class QueryParser {
   float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
+
+  // the default date resolution
+  DateTools.Resolution dateResolution = null;
+  // maps field names to date resolutions
+  Map fieldToDateResolution = null;
 
   /** The default operator for parsing queries. 
    * Use {@link QueryParser#setDefaultOperator} to change it.
@@ -310,6 +331,61 @@ public class QueryParser {
     return locale;
   }
 
+  /**
+   * Sets the default date resolution used by RangeQueries for fields for which no
+   * specific date resolutions has been set. Field specific resolutions can be set
+   * with {@link #setDateResolution(String, DateTools.Resolution)}.
+   *  
+   * @param dateResolution the default date resolution to set
+   */
+  public void setDateResolution(DateTools.Resolution dateResolution) {
+    this.dateResolution = dateResolution;
+  }
+  
+  /**
+   * Sets the date resolution used by RangeQueries for a specific field.
+   *  
+   * @param field field for which the date resolution is to be set 
+   * @param dateResolution date resolution to set
+   */
+  public void setDateResolution(String fieldName, DateTools.Resolution dateResolution) {
+    if (fieldName == null) {
+      throw new IllegalArgumentException("Field cannot be null.");
+    }
+    
+    if (fieldToDateResolution == null) {
+      // lazily initialize HashMap
+      fieldToDateResolution = new HashMap();
+    }
+    
+    fieldToDateResolution.put(fieldName, dateResolution);
+  }
+
+  /**
+   * Returns the date resolution that is used by RangeQueries for the given field. 
+   * Returns null, if no default or field specific date resolution has been set
+   * for the given field.
+   *
+   */
+  public DateTools.Resolution getDateResolution(String fieldName) {
+    if (fieldName == null) {
+      throw new IllegalArgumentException("Field cannot be null.");
+    }
+    
+    if (fieldToDateResolution == null) {
+      // no field specific date resolutions set; return default date resolution instead
+      return this.dateResolution;
+    }
+    
+    DateTools.Resolution resolution = (DateTools.Resolution) fieldToDateResolution.get(fieldName);
+    if (resolution == null) {
+      // no date resolutions set for the given field; return default date resolution instead
+      resolution = this.dateResolution;
+    }
+    
+    return resolution;
+  }
+
   protected void addClause(Vector clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
@@ -496,8 +572,17 @@ public class QueryParser {
         cal.set(Calendar.MILLISECOND, 999);
         d2 = cal.getTime();
       }
-      part1 = DateField.dateToString(d1);
-      part2 = DateField.dateToString(d2);
+      DateTools.Resolution resolution = getDateResolution(field);
+      if (resolution == null) {
+        // no default or field specific date resolution has been set,
+        // use deprecated DateField to maintain compatibilty with
+        // pre-1.9 Lucene versions.
+        part1 = DateField.dateToString(d1);
+        part2 = DateField.dateToString(d2);
+      } else {
+        part1 = DateTools.dateToString(d1, resolution);
+        part2 = DateTools.dateToString(d2, resolution);
+      }
     }
     catch (Exception e) { }
 

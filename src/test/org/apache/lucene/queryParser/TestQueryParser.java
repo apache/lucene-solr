@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateField;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -127,6 +129,16 @@ public class TestQueryParser extends TestCase {
     }
   }
 
+  public void assertQueryEquals(QueryParser qp, String field, String query, String result) 
+    throws Exception {
+    Query q = qp.parse(query);
+    String s = q.toString(field);
+    if (!s.equals(result)) {
+      fail("Query /" + query + "/ yielded /" + s
+           + "/, expecting /" + result + "/");
+    }
+  }
+  
   public void assertEscapedQueryEquals(String query, Analyzer a, String result)
     throws Exception {
     String escapedQuery = QueryParser.escape(query);
@@ -378,12 +390,28 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
   }
-
-  private String getDate(String s) throws Exception {
+  
+  /** for testing legacy DateField support */
+  private String getLegacyDate(String s) throws Exception {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     return DateField.dateToString(df.parse(s));
   }
 
+  /** for testing DateTools support */
+  private String getDate(String s, DateTools.Resolution resolution) throws Exception {
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
+    return getDate(df.parse(s), resolution);      
+  }
+  
+  /** for testing DateTools support */
+  private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
+      if (resolution == null) {
+        return DateField.dateToString(d);      
+      } else {
+        return DateTools.dateToString(d, resolution);
+      }
+    }
+  
   private String getLocalizedDate(int year, int month, int day, boolean extendLastDate) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     Calendar calendar = Calendar.getInstance();
@@ -397,16 +425,66 @@ public class TestQueryParser extends TestCase {
     return df.format(calendar.getTime());
   }
 
-  public void testDateRange() throws Exception {
+  /** for testing legacy DateField support */
+  public void testLegacyDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1, false);
     String endDate = getLocalizedDate(2002, 1, 4, false);
     Calendar endDateExpected = Calendar.getInstance();
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
     assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null,
-                      "[" + getDate(startDate) + " TO " + DateField.dateToString(endDateExpected.getTime()) + "]");
+                      "[" + getLegacyDate(startDate) + " TO " + DateField.dateToString(endDateExpected.getTime()) + "]");
     assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null,
-                      "{" + getDate(startDate) + " TO " + getDate(endDate) + "}");
+                      "{" + getLegacyDate(startDate) + " TO " + getLegacyDate(endDate) + "}");
+  }
+  
+  public void testDateRange() throws Exception {
+    String startDate = getLocalizedDate(2002, 1, 1, false);
+    String endDate = getLocalizedDate(2002, 1, 4, false);
+    Calendar endDateExpected = Calendar.getInstance();
+    endDateExpected.set(2002, 1, 4, 23, 59, 59);
+    endDateExpected.set(Calendar.MILLISECOND, 999);
+    final String defaultField = "default";
+    final String monthField = "month";
+    final String hourField = "hour";
+    QueryParser qp = new QueryParser("field", new SimpleAnalyzer());
+    
+    // Don't set any date resolution and verify if DateField is used
+    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
+                               endDateExpected.getTime(), null);
+    
+    // set a field specific date resolution
+    qp.setDateResolution(monthField, DateTools.Resolution.MONTH);
+    
+    // DateField should still be used for defaultField
+    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
+                               endDateExpected.getTime(), null);
+    
+    // set default date resolution to MILLISECOND 
+    qp.setDateResolution(DateTools.Resolution.MILLISECOND);
+    
+    // set second field specific date resolution    
+    qp.setDateResolution(hourField, DateTools.Resolution.HOUR);
+
+    // for this field no field specific date resolution has been set,
+    // so verify if the default resolution is used
+    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
+            endDateExpected.getTime(), DateTools.Resolution.MILLISECOND);
+
+    // verify if field specific date resolutions are used for these two fields
+    assertDateRangeQueryEquals(qp, monthField, startDate, endDate, 
+            endDateExpected.getTime(), DateTools.Resolution.MONTH);
+
+    assertDateRangeQueryEquals(qp, hourField, startDate, endDate, 
+            endDateExpected.getTime(), DateTools.Resolution.HOUR);  
+  }
+  
+  public void assertDateRangeQueryEquals(QueryParser qp, String field, String startDate, String endDate, 
+                                         Date endDateInclusive, DateTools.Resolution resolution) throws Exception {
+    assertQueryEquals(qp, field, field + ":[" + startDate + " TO " + endDate + "]",
+               "[" + getDate(startDate, resolution) + " TO " + getDate(endDateInclusive, resolution) + "]");
+    assertQueryEquals(qp, field, field + ":{" + startDate + " TO " + endDate + "}",
+               "{" + getDate(startDate, resolution) + " TO " + getDate(endDate, resolution) + "}");
   }
 
   public void testEscaped() throws Exception {
