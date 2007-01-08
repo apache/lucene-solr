@@ -20,6 +20,8 @@ class RequestTest < Test::Unit::TestCase
 
     request.query = "term"
     assert_equal "term", request.to_hash[:q]
+    
+    assert_equal "q=term&wt=ruby", request.to_http_body
   end
   
   def test_update_request

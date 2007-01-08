@@ -18,19 +18,22 @@ class SolrMockBaseTestCase < Test::Unit::TestCase
   
   def setup
     Connection.send(:alias_method, :orig_post, :post)
-    Connection.class_eval %{
-      def post(request)
-        "foo"
-      end
-    }
   end
   
   def teardown
     Connection.send(:alias_method, :post, :orig_post)
   end
     
-  def test_mock
-    connection = Connection.new("http://localhost:9999")
-    assert_equal "foo", connection.post(UpdateRequest.new("bogus"))
+  def set_post_return(value)
+    Connection.class_eval %{
+      def post(request)
+        %q{#{value}}
+      end
+    }
   end
+  
+  def test_dummy
+    # So Test::Unit is happy running this class
+  end
+    
 end

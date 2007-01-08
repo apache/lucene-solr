@@ -15,10 +15,30 @@ require 'solr'
 require 'solr_mock_base'
 
 class ConnectionTest < SolrMockBaseTestCase
+  def test_mock
+    connection = Connection.new("http://localhost:9999")
+    set_post_return("foo")
+    assert_equal "foo", connection.post(UpdateRequest.new("bogus"))
+  end
+
   def test_connection_initialize
     request = Solr::UpdateRequest.new("<commit/>")
     connection = Solr::Connection.new("http://localhost:8983")
     assert_equal("localhost", connection.url.host)
     assert_equal(8983, connection.url.port)
+  end
+  
+  def test_xml_response
+    connection = Connection.new("http://localhost:9999")
+    set_post_return "<bogus/>"
+    response = connection.send(UpdateRequest.new("bogus"))
+    assert_equal "<bogus/>", response.raw_response
+  end
+  
+  def test_ruby_response
+    connection = Connection.new("http://localhost:9999")
+    set_post_return "{}"
+    response = connection.send(StandardRequest.new)
+    assert_equal "{}", response.raw_response
   end
 end
