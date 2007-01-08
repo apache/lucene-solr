@@ -10,8 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'test/unit'
+require 'solr'
+
 class TestServer < Test::Unit::TestCase
-  def test_ok
-    assert_equal true, true
+  include Solr
+  
+  def test_commit
+    connection = Connection.new("http://localhost:8888")
+    response = connection.send(UpdateRequest.new("<commit/>"))
+    assert_equal "<result status=\"0\"></result>", response.raw_response
   end
 end

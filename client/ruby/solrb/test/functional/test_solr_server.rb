@@ -45,4 +45,24 @@ class TestSolrServer
     Process.kill('TERM', @pid)
     Process.wait
   end
- end
+  
+  def self.wrap(params = {})
+    error = false
+    solr_server = self.instance
+    solr_server.quiet = params[:quiet]
+    begin
+      puts "starting solr server"
+      solr_server.start
+      sleep 10
+      yield
+    rescue
+      error = true
+    ensure
+      puts "stopping solr server"
+      solr_server.stop
+    end
+    
+    return error
+  end
+
+end

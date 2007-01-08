@@ -82,21 +82,9 @@ task :test do
   # unit tests don't require a solr server
   Rake::Task[:test_units].invoke rescue got_error = true
 
-  # functional tests do
-  solr_server = TestSolrServer.instance
-  solr_server.quiet = false if ENV['SOLR_CONSOLE']
-
-  begin
-    puts
-    puts "starting solr server for functional tests"
-    solr_server.start
-    sleep 10
+  # wrap functional tests with a test-specific Solr server
+  got_error = TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
     Rake::Task[:test_functionals].invoke 
-  rescue 
-    got_error = true
-  ensure
-    puts "stopping solr server"
-    solr_server.stop
   end
 
   raise "test failures" if got_error
@@ -107,7 +95,11 @@ namespace :test do
   # borrowed from here: http://clarkware.com/cgi/blosxom/2007/01/05#RcovRakeTask
   task :coverage do
     rm_f "coverage"
-    system("rcov --text-summary -Ilib:test/unit test/unit/*_test.rb")
+    rm_f "coverage.data"
+    system("rcov --aggregate coverage.data --text-summary -Ilib:test/unit test/unit/*_test.rb")
+    TestSolrServer.wrap do
+      system("rcov --aggregate coverage.data --text-summary -Ilib:test/functional test/functional/*_test.rb")
+    end
     system("open coverage/index.html") if PLATFORM['darwin']
   end
 
