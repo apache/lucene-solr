@@ -37,7 +37,7 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 require 'rake/gempackagetask'
-require 'test/test_solr_server.rb'
+require 'test/functional/test_solr_server'
 
 task :default => [:test]
 

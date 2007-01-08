@@ -23,7 +23,7 @@ class TestSolrServer
   def initialize
     @port = 8888
     @quiet = true
-    root_dir = File.expand_path(File.dirname(__FILE__) + '/..')
+    root_dir = File.expand_path(File.dirname(__FILE__) + '/../..')
     @solr_dir = "#{root_dir}/solr"
     @solr_home = "#{root_dir}/test" 
     @pid = nil
