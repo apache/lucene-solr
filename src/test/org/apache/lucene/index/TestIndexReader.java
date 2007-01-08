@@ -749,6 +749,45 @@ public class TestIndexReader extends TestCase
         diskFree += 10;
       }
     }
+
+    public void testDocsOutOfOrderJIRA140() throws IOException {
+      Directory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      for(int i=0;i<11;i++) {
+        addDoc(writer, "aaa");
+      }
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+
+      // Try to delete an invalid docId, yet, within range
+      // of the final bits of the BitVector:
+
+      boolean gotException = false;
+      try {
+        reader.deleteDocument(11);
+      } catch (ArrayIndexOutOfBoundsException e) {
+        gotException = true;
+      }
+      reader.close();
+
+      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+
+      // We must add more docs to get a new segment written
+      for(int i=0;i<11;i++) {
+        addDoc(writer, "aaa");
+      }
+
+      try {
+        writer.optimize();
+      } catch (IllegalStateException e) {
+        e.printStackTrace();
+        fail("hit unexpected illegal state exception during optimize");
+      }
+
+      if (!gotException) {
+        fail("delete of out-of-bounds doc number failed to hit exception");
+      }
+    }
     
     private String arrayToString(String[] l) {
       String s = "";

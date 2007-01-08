@@ -541,8 +541,8 @@ public abstract class IndexReader {
   public final synchronized void deleteDocument(int docNum) throws IOException {
     if(directoryOwner)
       aquireWriteLock();
-    doDelete(docNum);
     hasChanges = true;
+    doDelete(docNum);
   }
 
 

@@ -348,9 +348,9 @@ final class SegmentMerger {
           doc = docMap[doc];                      // map around deletions
         doc += base;                              // convert to merged space
 
-        if (doc < lastDoc)
+        if (lastDoc != 0 && doc <= lastDoc)
           throw new IllegalStateException("docs out of order (" + doc +
-              " < " + lastDoc + " )");
+              " <= " + lastDoc + " )");
 
         df++;
 

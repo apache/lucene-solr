@@ -49,12 +49,18 @@ public final class BitVector {
 
   /** Sets the value of <code>bit</code> to one. */
   public final void set(int bit) {
+    if (bit >= size) {
+      throw new ArrayIndexOutOfBoundsException(bit);
+    }
     bits[bit >> 3] |= 1 << (bit & 7);
     count = -1;
   }
 
   /** Sets the value of <code>bit</code> to zero. */
   public final void clear(int bit) {
+    if (bit >= size) {
+      throw new ArrayIndexOutOfBoundsException(bit);
+    }
     bits[bit >> 3] &= ~(1 << (bit & 7));
     count = -1;
   }
@@ -62,6 +68,9 @@ public final class BitVector {
   /** Returns <code>true</code> if <code>bit</code> is one and
     <code>false</code> if it is zero. */
   public final boolean get(int bit) {
+    if (bit >= size) {
+      throw new ArrayIndexOutOfBoundsException(bit);
+    }
     return (bits[bit >> 3] & (1 << (bit & 7))) != 0;
   }
 
@@ -147,7 +156,7 @@ public final class BitVector {
     }
   }
 
-  /** Indicates if the bit vector is sparse and should be saved as a d-gaps list, or desnse, and should be saved as a bit set. */
+  /** Indicates if the bit vector is sparse and should be saved as a d-gaps list, or dense, and should be saved as a bit set. */
   private boolean isSparse() {
     // note: order of comparisons below set to favor smaller values (no binary range search.)
     // note: adding 4 because we start with ((int) -1) to indicate d-gaps format.

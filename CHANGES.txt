@@ -281,6 +281,15 @@ Bug fixes
     fixing the original FieldCache performance problem.
     (Chris Hostetter, Yonik Seeley)
 
+29. LUCENE-140: Fix IndexReader.deleteDocument(int docNum) to
+    correctly raise ArrayIndexOutOfBoundsException when docNum is too
+    large.  Previously, if docNum was only slightly too large (within
+    the same multiple of 8, ie, up to 7 ints beyond maxDoc), no
+    exception would be raised and instead the index would become
+    silently corrupted.  The corruption then only appears much later,
+    in mergeSegments, when the corrupted segment is merged with
+    segment(s) after it. (Mike McCandless)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
