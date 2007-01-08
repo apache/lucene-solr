@@ -55,8 +55,8 @@ module Solr
     private
     def field(name, value)
       field = REXML::Element.new("field")
-      field.add_attribute("name", name)
-      field.add_text(value)
+      field.add_attribute("name", name.to_s)
+      field.add_text(value.to_s)
     
       field
     end

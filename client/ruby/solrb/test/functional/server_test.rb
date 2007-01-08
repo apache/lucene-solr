@@ -15,10 +15,28 @@ require 'solr'
 
 class TestServer < Test::Unit::TestCase
   include Solr
+
+  def setup
+    @connection = Connection.new("http://localhost:8888")
+  end
   
   def test_commit
-    connection = Connection.new("http://localhost:8888")
-    response = connection.send(UpdateRequest.new("<commit/>"))
+    response = @connection.send(UpdateRequest.new("<commit/>"))
     assert_equal "<result status=\"0\"></result>", response.raw_response
+  end
+  
+  def test_escaping
+    doc = {:id => 47, :ruby_t => 'puts "ouch!"'}
+    request = AddDocumentRequest.new(doc)
+    @connection.send(request)
+    
+    @connection.send(UpdateRequest.new("<commit/>"))
+    
+    request = StandardRequest.new
+    request.query = "ruby_t:ouch"
+    request.field_list="*,score"
+    result = @connection.send(request)
+    
+    assert result.raw_response =~ /puts/
   end
 end
