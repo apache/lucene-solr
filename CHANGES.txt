@@ -300,6 +300,9 @@ Bug fixes
     state where close() fails to release the write lock.
     (Mike McCandless)
 
+31. Remove "tvp" from known index file extensions because it is
+    never used. (Nicolas Lalevée via Bernhard Messer)
+    
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
