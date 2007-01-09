@@ -788,7 +788,39 @@ public class TestIndexReader extends TestCase
         fail("delete of out-of-bounds doc number failed to hit exception");
       }
     }
-    
+
+    public void testExceptionReleaseWriteLockJIRA768() throws IOException {
+
+      Directory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      addDoc(writer, "aaa");
+      writer.close();
+
+      IndexReader reader = IndexReader.open(dir);
+      try {
+        reader.deleteDocument(1);
+        fail("did not hit exception when deleting an invalid doc number");
+      } catch (ArrayIndexOutOfBoundsException e) {
+        // expected
+      }
+      reader.close();
+      if (IndexReader.isLocked(dir)) {
+        fail("write lock is still held after close");
+      }
+
+      reader = IndexReader.open(dir);
+      try {
+        reader.setNorm(1, "content", (float) 2.0);
+        fail("did not hit exception when calling setNorm on an invalid doc number");
+      } catch (ArrayIndexOutOfBoundsException e) {
+        // expected
+      }
+      reader.close();
+      if (IndexReader.isLocked(dir)) {
+        fail("write lock is still held after close");
+      }
+    }
+
     private String arrayToString(String[] l) {
       String s = "";
       for(int i=0;i<l.length;i++) {

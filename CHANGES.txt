@@ -295,6 +295,11 @@ Bug fixes
     in mergeSegments, when the corrupted segment is merged with
     segment(s) after it. (Mike McCandless)
 
+30. LUCENE-768: Fix case where an Exception during deleteDocument,
+    undeleteAll or setNorm in IndexReader could leave the reader in a
+    state where close() fails to release the write lock.
+    (Mike McCandless)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for

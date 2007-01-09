@@ -425,8 +425,8 @@ public abstract class IndexReader {
           throws IOException{
     if(directoryOwner)
       aquireWriteLock();
-    doSetNorm(doc, field, value);
     hasChanges = true;
+    doSetNorm(doc, field, value);
   }
 
   /** Implements setNorm in subclass.*/
@@ -580,8 +580,8 @@ public abstract class IndexReader {
   public final synchronized void undeleteAll() throws IOException{
     if(directoryOwner)
       aquireWriteLock();
-    doUndeleteAll();
     hasChanges = true;
+    doUndeleteAll();
   }
 
   /** Implements actual undeleteAll() in subclass. */
