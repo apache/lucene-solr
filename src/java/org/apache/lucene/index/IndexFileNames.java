@@ -48,7 +48,7 @@ final class IndexFileNames {
    */
   static final String INDEX_EXTENSIONS[] = new String[] {
       "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
-      "tvx", "tvd", "tvf", "tvp", "gen", "nrm" 
+      "tvx", "tvd", "tvf", "gen", "nrm" 
   };
   
   /** File extensions of old-style index files */
