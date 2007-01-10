@@ -1901,7 +1901,10 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                 </p>
 <a name="N1068E"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
-<p>There's a norm file for each indexed field with a byte for
+<p>
+                    
+<b>Pre-2.1:</b>
+                    There's a norm file for each indexed field with a byte for
                     each document. The .f[0-9]* file contains,
                     for each document, a byte that encodes a value that is multiplied
                     into the score for hits on that field:
@@ -1911,6 +1914,30 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <sup>SegSize</sup>
                 
 </p>
+<p>
+                    
+<b>2.1 and above:</b>
+                    There's a single .nrm file containing all norms:
+                </p>
+<p>AllNorms
+                    (.nrm) --&gt; NormsHeader,&lt;Norms&gt;
+                    <sup>NumFieldsWithNorms</sup>
+                
+</p>
+<p>Norms
+                    --&gt; &lt;Byte&gt;
+                    <sup>SegSize</sup>
+                
+</p>
+<p>NormsHeader
+                    --&gt; 'N','R','M',Version
+                </p>
+<p>Version
+                    --&gt; Byte
+                </p>
+<p>NormsHeader 
+					has 4 bytes, last of which is the format version for this file, currently -1.
+                </p>
 <p>Each
                     byte encodes a floating point value. Bits 0-2 contain the 3-bit
                     mantissa, and bits 3-8 contain the 5-bit exponent.
@@ -1962,7 +1989,21 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N106C4"></a><a name="Term Vectors"></a>
+<p>A separate norm file is created when the norm values of an existing segment are modified. 
+					When field <em>N</em> is modified, a separate norm file <em>.sN</em> 
+					is created, to maintain the norm values for that field.
+                </p>
+<p>
+                    
+<b>Pre-2.1:</b>
+                    Separate norm files are created only for compound segments.
+                </p>
+<p>
+                    
+<b>2.1 and above:</b>
+                    Separate norm files are created (when adequate) for both compound and non compound segments.
+                </p>
+<a name="N106F7"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <ol>
                     
@@ -2088,7 +2129,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10757"></a><a name="Deleted Documents"></a>
+<a name="N1078A"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2160,7 +2201,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N1079A"></a><a name="Limitations"></a>
+<a name="N107CD"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There
