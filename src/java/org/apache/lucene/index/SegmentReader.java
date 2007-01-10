@@ -159,11 +159,21 @@ class SegmentReader extends IndexReader {
       fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
       fieldsReader = new FieldsReader(cfsDir, segment, fieldInfos);
 
+      // Verify two sources of "maxDoc" agree:
+      if (fieldsReader.size() != si.docCount) {
+        throw new IllegalStateException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
+      }
+
       tis = new TermInfosReader(cfsDir, segment, fieldInfos);
       
       // NOTE: the bitvector is stored using the regular directory, not cfs
       if (hasDeletions(si)) {
         deletedDocs = new BitVector(directory(), si.getDelFileName());
+
+        // Verify # deletes does not exceed maxDoc for this segment:
+        if (deletedDocs.count() > maxDoc()) {
+          throw new IllegalStateException("number of deletes (" + deletedDocs.count() + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name);
+        }
       }
 
       // make sure that all index files have been read or are kept open

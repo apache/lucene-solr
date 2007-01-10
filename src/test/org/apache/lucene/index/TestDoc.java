@@ -109,19 +109,19 @@ public class TestDoc extends TestCase {
       directory.close();
 
       indexDoc("one", "test.txt");
-      printSegment(out, "one");
+      printSegment(out, "one", 1);
 
       indexDoc("two", "test2.txt");
-      printSegment(out, "two");
+      printSegment(out, "two", 1);
 
       merge("one", 1, "two", 1, "merge", false);
-      printSegment(out, "merge");
+      printSegment(out, "merge", 2);
 
       merge("one", 1, "two", 1, "merge2", false);
-      printSegment(out, "merge2");
+      printSegment(out, "merge2", 2);
 
       merge("merge", 2, "merge2", 2, "merge3", false);
-      printSegment(out, "merge3");
+      printSegment(out, "merge3", 4);
 
       out.close();
       sw.close();
@@ -135,19 +135,19 @@ public class TestDoc extends TestCase {
       directory.close();
 
       indexDoc("one", "test.txt");
-      printSegment(out, "one");
+      printSegment(out, "one", 1);
 
       indexDoc("two", "test2.txt");
-      printSegment(out, "two");
+      printSegment(out, "two", 1);
 
       merge("one", 1, "two", 1, "merge", true);
-      printSegment(out, "merge");
+      printSegment(out, "merge", 2);
 
       merge("one", 1, "two", 1, "merge2", true);
-      printSegment(out, "merge2");
+      printSegment(out, "merge2", 2);
 
       merge("merge", 2, "merge2", 2, "merge3", true);
-      printSegment(out, "merge3");
+      printSegment(out, "merge3", 4);
 
       out.close();
       sw.close();
@@ -199,11 +199,11 @@ public class TestDoc extends TestCase {
    }
 
 
-   private void printSegment(PrintWriter out, String segment)
+   private void printSegment(PrintWriter out, String segment, int docCount)
    throws Exception {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
       SegmentReader reader =
-        SegmentReader.get(new SegmentInfo(segment, 1, directory));
+        SegmentReader.get(new SegmentInfo(segment, docCount, directory));
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

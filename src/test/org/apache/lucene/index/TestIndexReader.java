@@ -777,12 +777,11 @@ public class TestIndexReader extends TestCase
         addDoc(writer, "aaa");
       }
 
-      try {
-        writer.optimize();
-      } catch (IllegalStateException e) {
-        e.printStackTrace();
-        fail("hit unexpected illegal state exception during optimize");
-      }
+      // Without the fix for LUCENE-140 this call will
+      // [incorrectly] hit a "docs out of order"
+      // IllegalStateException because above out-of-bounds
+      // deleteDocument corrupted the index:
+      writer.optimize();
 
       if (!gotException) {
         fail("delete of out-of-bounds doc number failed to hit exception");
