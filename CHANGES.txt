@@ -37,6 +37,11 @@ Detailed Change List
 New Features
  1. SOLR-82: Default field values can be specified in the schema.xml.
     (Ryan McKinley via hossman)
+ 2. SOLR-89: Two new TokenFilters with corrisponding Factories...
+    * TrimFilter - Trims leading and trailing whitespace from Tokens
+    * PatternReplaceFilter - applies a Pattern to each token in the
+      stream, replacing match occurances with a specified replacement.
+    (hossman)
 
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 

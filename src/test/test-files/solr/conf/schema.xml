@@ -164,6 +164,17 @@
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldtype>
+    <fieldtype name="patternreplacefilt" class="solr.TextField">
+      <analyzer type="index">
+        <tokenizer class="solr.KeywordTokenizerFactory"/>
+        <filter class="solr.PatternReplaceFilterFactory"
+                pattern="([^a-zA-Z])" replacement="_" replace="all"
+        />
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.KeywordTokenizerFactory"/>
+      </analyzer>
+    </fieldtype>
     <fieldtype name="porterfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -340,6 +351,7 @@
    <field name="standardtokfilt" type="standardtokfilt" indexed="true" stored="true"/>
    <field name="standardfilt" type="standardfilt" indexed="true" stored="true"/>
    <field name="lowerfilt" type="lowerfilt" indexed="true" stored="true"/>
+   <field name="patternreplacefilt" type="patternreplacefilt" indexed="true" stored="true"/>
    <field name="porterfilt" type="porterfilt" indexed="true" stored="true"/>
    <field name="engporterfilt" type="engporterfilt" indexed="true" stored="true"/>
    <field name="custengporterfilt" type="custengporterfilt" indexed="true" stored="true"/>

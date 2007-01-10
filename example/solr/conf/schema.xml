@@ -182,6 +182,39 @@
       </analyzer>
     </fieldtype>
 
+    <!-- This is an example of using the KeywordTokenizer along
+         With various TokenFilterFactories to produce a sortable field
+         that does not include some properties of the source text
+      -->
+    <fieldtype name="alphaOnlySort" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+      <analyzer>
+        <!-- KeywordTokenizer does no actual tokenizing, so the entire
+             input string is preserved as a single token
+          -->
+        <tokenizer class="solr.KeywordTokenizerFactory"/>
+        <!-- The LowerCase TokenFilter does what you expect, which can be
+             when you want your sorting to be case insensitive
+          -->
+        <filter class="solr.LowerCaseFilterFactory" />
+        <!-- The TrimFilter removes any leading or trailing whitespace -->
+        <filter class="solr.TrimFilterFactory" />
+        <!-- The PatternReplaceFilter gives you the flexibility to use
+             Java Regular expression to replace any sequence of characters
+             matching a pattern with an arbitrary replacement string, 
+             which may include back refrences to portions of the orriginal
+             string matched by the pattern.
+             
+             See the Java Regular Expression documentation for more
+             infomation on pattern and replacement string syntax.
+             
+             http://java.sun.com/j2se/1.5.0/docs/api/java/util/regex/package-summary.html
+          -->
+        <filter class="solr.PatternReplaceFilterFactory"
+                pattern="([^a-z])" replacement="" replace="all"
+        />
+      </analyzer>
+    </fieldtype>
+
  </types>
 
 
@@ -204,6 +237,8 @@
    <field name="id" type="string" indexed="true" stored="true"/>
    <field name="sku" type="textTight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text" indexed="true" stored="true"/>
+   <field name="nameSort" type="string" indexed="true" stored="false"/>
+   <field name="alphaNameSort" type="alphaOnlySort" indexed="true" stored="false"/>
    <field name="manu" type="text" indexed="true" stored="true" omitNorms="true"/>
    <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true" omitNorms="true"/>
    <field name="features" type="text" indexed="true" stored="true" multiValued="true"/>
@@ -264,6 +299,8 @@
 
    <copyField source="cat" dest="text"/>
    <copyField source="name" dest="text"/>
+   <copyField source="name" dest="nameSort"/>
+   <copyField source="name" dest="alphaNameSort"/>
    <copyField source="manu" dest="text"/>
    <copyField source="features" dest="text"/>
    <copyField source="includes" dest="text"/>

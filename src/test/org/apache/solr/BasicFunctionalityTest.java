@@ -686,6 +686,26 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     
   }
   
+  public void testPatternReplaceFilter() {
+
+    assertU(adoc("id", "1",
+                 "patternreplacefilt", "My  fine-feathered friend!"));
+    assertU(adoc("id", "2",
+                 "patternreplacefilt", "  What's Up Doc?"));
+    assertU(commit());
+ 
+    assertQ("don't find Up",
+            req("q", "patternreplacefilt:Up"),
+            "*[count(//doc)=0]");
+    
+    assertQ("find doc",
+            req("q", "patternreplacefilt:__What_s_Up_Doc_"),
+            "*[count(//doc)=1]");
+
+    assertQ("find birds",
+            req("q", "patternreplacefilt:My__fine_feathered_friend_"),
+            "*[count(//doc)=1]");
+  }
 
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
