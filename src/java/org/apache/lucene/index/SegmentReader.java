@@ -360,7 +360,7 @@ class SegmentReader extends IndexReader {
   }
 
   public int maxDoc() {
-    return fieldsReader.size();
+    return si.docCount;
   }
 
   /**

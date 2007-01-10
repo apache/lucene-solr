@@ -114,13 +114,13 @@ public class TestDoc extends TestCase {
       indexDoc("two", "test2.txt");
       printSegment(out, "two");
 
-      merge("one", "two", "merge", false);
+      merge("one", 1, "two", 1, "merge", false);
       printSegment(out, "merge");
 
-      merge("one", "two", "merge2", false);
+      merge("one", 1, "two", 1, "merge2", false);
       printSegment(out, "merge2");
 
-      merge("merge", "merge2", "merge3", false);
+      merge("merge", 2, "merge2", 2, "merge3", false);
       printSegment(out, "merge3");
 
       out.close();
@@ -140,13 +140,13 @@ public class TestDoc extends TestCase {
       indexDoc("two", "test2.txt");
       printSegment(out, "two");
 
-      merge("one", "two", "merge", true);
+      merge("one", 1, "two", 1, "merge", true);
       printSegment(out, "merge");
 
-      merge("one", "two", "merge2", true);
+      merge("one", 1, "two", 1, "merge2", true);
       printSegment(out, "merge2");
 
-      merge("merge", "merge2", "merge3", true);
+      merge("merge", 2, "merge2", 2, "merge3", true);
       printSegment(out, "merge3");
 
       out.close();
@@ -174,12 +174,12 @@ public class TestDoc extends TestCase {
    }
 
 
-   private void merge(String seg1, String seg2, String merged, boolean useCompoundFile)
+   private void merge(String seg1, int docCount1, String seg2, int docCount2, String merged, boolean useCompoundFile)
    throws Exception {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
 
-      SegmentReader r1 = SegmentReader.get(new SegmentInfo(seg1, 1, directory));
-      SegmentReader r2 = SegmentReader.get(new SegmentInfo(seg2, 1, directory));
+      SegmentReader r1 = SegmentReader.get(new SegmentInfo(seg1, docCount1, directory));
+      SegmentReader r2 = SegmentReader.get(new SegmentInfo(seg2, docCount2, directory));
 
       SegmentMerger merger =
         new SegmentMerger(directory, merged);

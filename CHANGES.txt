@@ -303,6 +303,13 @@ Bug fixes
 31. Remove "tvp" from known index file extensions because it is
     never used. (Nicolas Lalevée via Bernhard Messer)
     
+32. LUCENE-767: Change how SegmentReader.maxDoc() is computed to not
+    rely on file length check and instead use the SegmentInfo's
+    docCount that's already stored explicitly in the index.  This is a
+    defensive bug fix (ie, there is no known problem seen "in real
+    life" due to this, just a possible future problem).  (Chuck
+    Williams via Mike McCandless)
+
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
