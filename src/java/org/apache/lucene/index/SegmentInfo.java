@@ -296,7 +296,6 @@ final class SegmentInfo {
       prefix = ".s";
       return IndexFileNames.fileNameFromGeneration(name, prefix + number, gen);
     }
-    
 
     if (withNrm()) {
       // case 2: lockless (or nrm file exists) - single file for all norms 
@@ -338,7 +337,7 @@ final class SegmentInfo {
   }
   
   /**
-   * Returns true iff this segment stores filed norms in a single .nrm file.
+   * Returns true iff this segment stores field norms in a single .nrm file.
    */
   private boolean withNrm () throws IOException {
     if (withNrm == -1) {
@@ -359,7 +358,6 @@ final class SegmentInfo {
       if (d!=dir && d!=null) {
         d.close();
       }
-      
     }
   }
 
@@ -375,7 +373,7 @@ final class SegmentInfo {
       output.writeInt(-1);
     } else {
       output.writeInt(normGen.length);
-      for(int j=0;j<normGen.length;j++) {
+      for(int j = 0; j < normGen.length; j++) {
         output.writeLong(normGen[j]);
       }
     }
