@@ -84,6 +84,10 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * and field length normalization will be disabled.  The benefit is
      * less memory usage as norms take up one byte per indexed field
      * for every document in the index.
+     * Note that once you index a given field <i>with</i> norms enabled,
+     * disabling norms will have no effect.  In other words, for NO_NORMS
+     * to have the above described effect on a field, all instances of that
+     * field must be indexed with NO_NORMS from the beginning.
      */
     public static final Index NO_NORMS = new Index("NO_NORMS");
 
