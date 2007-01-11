@@ -15,6 +15,12 @@ module Solr
     attr_reader :header, :raw_response, :data
     def initialize(body)
       @raw_response = body
+      if match = /^<result status="(\d+)"/.match(body)
+        unless 0 == match.captures.first.to_i
+          error = REXML::Document.new(body).root
+          raise RequestException.new(error.attributes["status"], error.text)
+        end
+      end
     end
   end
   

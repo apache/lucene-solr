@@ -34,4 +34,11 @@ class RequestTest < Test::Unit::TestCase
     request = Solr::AddDocumentRequest.new({:title => "title"})
     assert_equal("<add><doc><field name='title'>title</field></doc></add>", request.to_http_body)
   end
+  
+  def test_response_error
+    assert_raise(Solr::RequestException) do
+      new Solr::Response.new("<result status=\"400\">ERROR:</result>")
+    end
+  end
+  
 end

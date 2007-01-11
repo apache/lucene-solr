@@ -33,7 +33,12 @@ module Solr
         http.request(post)
       end
       
-      return response.body
+      case response
+      when Net::HTTPSuccess then response.body
+      else
+        response.error!
+      end
+      
     end
   end
 end
