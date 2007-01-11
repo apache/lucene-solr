@@ -1,6 +1,6 @@
 == Welcome to Solr Flare
 
-Flare promises to expose the power of Solr as a Ruby  DSL (domain specific language). Integral to Flare will be a general purpose Rails-based presentation framework including faceted browsing, auto-suggest, folksonomy tagging/annotating, and much more.
+Flare promises to expose the power of Solr through a Rails-based user interface. Integral to Flare will be general purpose faceted browsing, auto-suggest, folksonomy tagging/annotating, and much more.
 
   Visit the Solr Flare wiki for more information: http://wiki.apache.org/solr/Flare
 
@@ -10,28 +10,7 @@ Launch Solr:
 
   cd solr
   java -jar start.jar
+
+Launch Rails:
+  script/server
   
-In a separate shell, launch script/console.
-
-Set up a connection to Solr:
-
-  connection = Solr::Connection.new("http://localhost:8983")
-
-To add a document:
-
-  doc = {:id => "529", :text => "Solr Flare in Action"}
-  request = Solr::AddDocumentRequest.new(doc)
-  connection.send(request)
-
-Commit changes:
-
-  request = Solr::UpdateRequest.new("<commit/>")  # TODO: yes, this will be mapped as a simpler command!
-  connection.send(request)
-
-Search:
-
-  request = Solr::StandardRequest.new  
-  request.query = "solr flare"
-  connection.send(request)
-
-

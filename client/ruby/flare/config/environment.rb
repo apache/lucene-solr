@@ -56,3 +56,5 @@ end
 # Include your application configuration below
 $KCODE = 'UTF8'
 
+require 'solr'
+SOLR = Solr::Connection.new("http://localhost:8983")
