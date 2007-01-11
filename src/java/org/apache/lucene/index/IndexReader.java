@@ -278,6 +278,14 @@ public abstract class IndexReader {
   }
 
   /**
+   * Checks is the index is optimized (if it has a single segment and no deletions)
+   * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
+   */
+  public boolean isOptimized() {
+      return segmentInfos.size() == 1 && hasDeletions() == false;
+  }
+
+  /**
    *  Return an array of term frequency vectors for the specified document.
    *  The array contains a vector for each vectorized field in the document.
    *  Each vector contains terms and frequencies for all terms in a given vectorized field.
