@@ -16,8 +16,24 @@ require 'solr'
 class TestServer < Test::Unit::TestCase
   include Solr
 
+  class BadRequest < Request
+    def initialize
+      @url_path = "/bogus"
+    end
+    
+    def to_http_body
+      "bogus"
+    end
+  end
+  
   def setup
     @connection = Connection.new("http://localhost:8888")
+  end
+  
+  def test_error
+    assert_raise(Net::HTTPServerException) do
+      @connection.send(BadRequest.new)
+    end
   end
   
   def test_commit
