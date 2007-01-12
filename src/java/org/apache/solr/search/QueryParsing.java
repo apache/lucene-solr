@@ -131,110 +131,82 @@ public class QueryParsing {
   }
 
 
-  private static Pattern sortSeparator = Pattern.compile("[\\s,]+");
+  private static Pattern sortSep = Pattern.compile(",");
 
   /**
-   * Returns null if the sortSpec string doesn't look like a sort specification,
-   * or if the sort specification couldn't be converted into a Lucene Sort
-   * (because of a field not being indexed or undefined, etc).
+   * Returns null if the sortSpec is the standard sort desc.
    *
    * <p>
    * The form of the sort specification string currently parsed is:
    * </p>
    * <pre>>
-   * SortSpec ::= SingleSort [, SingleSort]* <number>?
+   * SortSpec ::= SingleSort [, SingleSort]*
    * SingleSort ::= <fieldname> SortDirection
    * SortDirection ::= top | desc | bottom | asc
    * </pre>
    * Examples:
    * <pre>
-   *   top 10                        #take the top 10 by score
-   *   desc 10                       #take the top 10 by score
-   *   score desc 10                 #take the top 10 by score
-   *   weight bottom 10              #sort by weight ascending and take the first 10
-   *   weight desc                   #sort by weight descending
-   *   height desc,weight desc       #sort by height descending, and use weight descending to break any ties
-   *   height desc,weight asc top 20 #sort by height descending, using weight ascending as a tiebreaker
+   *   score desc               #normal sort by score (will return null)
+   *   weight bottom            #sort by weight ascending 
+   *   weight desc              #sort by weight descending
+   *   height desc,weight desc  #sort by height descending, and use weight descending to break any ties
+   *   height desc,weight asc   #sort by height descending, using weight ascending as a tiebreaker
    * </pre>
    *
    */
   public static SortSpec parseSort(String sortSpec, IndexSchema schema) {
     if (sortSpec==null || sortSpec.length()==0) return null;
 
-    // I wonder how fast the regex is??? as least we cache the pattern.
-    String[] parts = sortSeparator.split(sortSpec.trim(),0);
+    String[] parts = sortSep.split(sortSpec.trim());
     if (parts.length == 0) return null;
 
-    ArrayList<SortField> lst = new ArrayList<SortField>();
-    int num=-1;
-
-    int pos=0;
-    String fn;
-    boolean top=true;
-    boolean normalSortOnScore=false;
-
-    while (pos < parts.length) {
-      String str=parts[pos];
-      if ("top".equals(str) || "bottom".equals(str) || "asc".equals(str) || "desc".equals(str)) {
-        // if the field name seems to be missing, default to "score".
-        // note that this will mess up a field name that has the same name
-        // as a sort direction specifier.
-        fn="score";
-      } else {
-        fn=str;
-        pos++;
+    SortField[] lst = new SortField[parts.length];
+    for( int i=0; i<parts.length; i++ ) {
+      String part = parts[i].trim();
+      boolean top=true;
+        
+      int idx = part.indexOf( ' ' );
+      if( idx > 0 ) {
+        String order = part.substring( idx+1 ).trim();
+    	if( "desc".equals( order ) || "top".equals(order) ) {
+    	  top = true;
+    	}
+    	else if ("asc".equals(order) || "bottom".equals(order)) {
+    	  top = false;
+    	}
+    	else {
+    	  throw new SolrException( 400, "Unknown sort order: "+order);
+    	}
+    	part = part.substring( 0, idx ).trim();
       }
-
-      // get the direction of the sort
-      str=parts[pos];
-      if ("top".equals(str) || "desc".equals(str)) {
-        top=true;
-      } else if ("bottom".equals(str) || "asc".equals(str)) {
-        top=false;
-      }  else {
-        return null;  // must not be a sort command
+      else {
+		throw new SolrException( 400, "Missing sort order." );
       }
-
-      // get the field to sort on
-      // hmmm - should there be a fake/pseudo-field named "score" in the schema?
-      if ("score".equals(fn)) {
+    	
+      if( "score".equals(part) ) {
         if (top) {
-          normalSortOnScore=true;
-          lst.add(SortField.FIELD_SCORE);
-        } else {
-          lst.add(new SortField(null, SortField.SCORE, true));
+          // If thre is only one thing in the list, just do the regular thing...
+          if( parts.length == 1 ) {
+            return null; // do normal scoring...
+          }
+          lst[i] = SortField.FIELD_SCORE;
         }
-      } else {
+        else {
+          lst[i] = new SortField(null, SortField.SCORE, true);
+        }
+      } 
+      else {
         // getField could throw an exception if the name isn't found
-        try {
-          SchemaField f = schema.getField(fn);
-          if (f == null || !f.indexed()) return null;
-          lst.add(f.getType().getSortField(f,top));
-        } catch (Exception e) {
-          return null;
+        SchemaField f = schema.getField(part);
+        if (f == null || !f.indexed()){
+          throw new SolrException( 400, "can not sort on unindexed field: "+part );
         }
-      }
-      pos++;
-
-      // If there is a leftover part, assume it is a count
-      if (pos+1 == parts.length) {
-        try {
-          num = Integer.parseInt(parts[pos]);
-        } catch (Exception e) {
-          return null;
-        }
-        pos++;
+        lst[i] = f.getType().getSortField(f,top);
       }
     }
-
-    Sort sort;
-    if (normalSortOnScore && lst.size() == 1) {
-      // Normalize the default sort on score descending to sort=null
-      sort=null;
-    } else {
-      sort = new Sort((SortField[]) lst.toArray(new SortField[lst.size()]));
-    }
-    return new SortSpec(sort,num);
+    // For more info on the 'num' field, -1, 
+    // see: https://issues.apache.org/jira/browse/SOLR-99
+    return new SortSpec( new Sort(lst),-1);
   }
 
 

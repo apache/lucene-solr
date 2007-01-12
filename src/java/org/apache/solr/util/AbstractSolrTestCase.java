@@ -18,6 +18,7 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.core.SolrException;
 import org.apache.solr.request.*;
 import org.apache.solr.util.TestHarness;
 
@@ -163,6 +164,19 @@ public abstract class AbstractSolrTestCase extends TestCase {
     }
   }
 
+  /** Makes sure a query throws a SolrException with the listed response code */
+  public void assertQEx(String message, SolrQueryRequest req, int code ) {
+    try {
+      h.query(req);
+      fail( message );
+    } catch (SolrException sex) {
+      assertEquals( code, sex.code() );
+    } catch (Exception e2) {
+      throw new RuntimeException("Exception during query", e2);
+    }
+  }
+
+  
   /**
    * @see TestHarness#optimize
    */

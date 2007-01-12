@@ -22,6 +22,7 @@ import org.apache.solr.util.*;
 
 import java.util.*;
 import java.io.IOException;
+
     
 /**
  * This tests was converted from a legacy testing system.
@@ -777,7 +778,20 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             ,"//doc[2]/int[.='1000']  "
             ,"//doc[3]/int[.='1001']"
             );
+    
+    // Sort parsing exception tests.  (SOLR-6, SOLR-99)
+    assertQEx( "can not sort unindexed fields",
+        req( "id_i:1000; shouldbeunindexed asc" ), 400 );
+    
+    assertQEx( "invalid query format",
+        req( "id_i:1000; nullfirst" ), 400 );
 
+    assertQEx( "unknown sort field",
+        req( "id_i:1000; abcde12345 asc" ), 1 ); 
+
+    assertQEx( "unknown sort order",
+        req( "id_i:1000; nullfirst aaa" ), 400 ); 
+        
     // test prefix query
 
     assertU("<delete><query>val_s:[* TO *]</query></delete>");

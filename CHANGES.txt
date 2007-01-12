@@ -61,6 +61,9 @@ Bug Fixes
  2. SOLR-92: DOMUtils.getText (used when parsing config files) did not 
     work properly with many DOM implementations when dealing with 
     "Attributes". (Ryan McKinley via hossman)
+ 3. SOLR-9,SOLR-99: Tighten up sort specification error checking, throw
+    exceptions for missing sort specifications or a sort on a non-indexed
+    field. (Ryan McKinley via yonik)
   
 Other Changes
  1.
