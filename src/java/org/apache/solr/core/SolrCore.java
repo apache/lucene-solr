@@ -182,7 +182,7 @@ public final class SolrCore {
       core = this;   // set singleton
 
       if (dataDir ==null) {
-        dataDir =SolrConfig.config.get("dataDir",Config.getInstanceDir()+"data");
+        dataDir = SolrConfig.config.get("dataDir",Config.getInstanceDir()+"data");
       }
 
       log.info("Opening new SolrCore at " + Config.getInstanceDir() + ", dataDir="+dataDir);
@@ -194,6 +194,8 @@ public final class SolrCore {
       this.schema = schema;
       this.dataDir = dataDir;
       this.index_path = dataDir + "/" + "index";
+
+      this.maxWarmingSearchers = SolrConfig.config.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
       parseListeners();
 
@@ -252,6 +254,7 @@ public final class SolrCore {
   final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor();
   private int onDeckSearchers;  // number of searchers preparing
   private Object searcherLock = new Object();  // the sync object for the searcher
+  private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
 
 
   public RefCounted<SolrIndexSearcher> getSearcher() {
@@ -337,20 +340,25 @@ public final class SolrCore {
       // first: increment count to signal other threads that we are
       //        opening a new searcher.
       onDeckSearchers++;
+      if (onDeckSearchers < 1) {
+        // should never happen... just a sanity check
+        log.severe("ERROR!!! onDeckSearchers is " + onDeckSearchers);
+        onDeckSearchers=1;  // reset
+      } else if (onDeckSearchers > maxWarmingSearchers) {
+        onDeckSearchers--;
+        String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
+        log.warning(msg);
+        // HTTP 503==service unavailable, or 409==Conflict
+        throw new SolrException(503,msg,true);
+      } else if (onDeckSearchers > 1) {
+        log.info("PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
+      }
     }
 
     // open the index synchronously
     // if this fails, we need to decrement onDeckSearchers again.
     SolrIndexSearcher tmp;
     try {
-      if (onDeckSearchers < 1) {
-        // should never happen... just a sanity check
-        log.severe("ERROR!!! onDeckSearchers is " + onDeckSearchers);
-        // reset to 1 (don't bother synchronizing)
-        onDeckSearchers=1;
-      } else if (onDeckSearchers > 1) {
-        log.info("PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
-      }
       tmp = new SolrIndexSearcher(schema, "main", index_path, true);
     } catch (Throwable th) {
       synchronized(searcherLock) {

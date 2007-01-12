@@ -42,6 +42,11 @@ New Features
     * PatternReplaceFilter - applies a Pattern to each token in the
       stream, replacing match occurances with a specified replacement.
     (hossman)
+ 3. SOLR-91: allow configuration of a limit of the number of searchers 
+    that can be warming in the background.  This can be used to avoid
+    out-of-memory errors, or contention caused by more and more searchers
+    warming in the background.  An error is thrown if the limit specified
+    by maxWarmingSearchers in solrconfig.xml is exceeded. (yonik)
 
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
