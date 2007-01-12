@@ -28,6 +28,9 @@ import java.util.Hashtable;
 
 import org.apache.lucene.index.IndexFileNameFilter;
 
+// Used only for WRITE_LOCK_NAME:
+import org.apache.lucene.index.IndexWriter;
+
 /**
  * Straightforward implementation of {@link Directory} as a directory of files.
  * Locking implementation is by default the {@link SimpleFSLockFactory}, but
@@ -73,17 +76,23 @@ public class FSDirectory extends Directory {
     return FSDirectory.disableLocks;
   }
 
-  // TODO: LOCK_DIR really should only appear in the SimpleFSLockFactory
-  // (and any other file-system based locking implementations).  When we
-  // can next break backwards compatibility we should deprecate it and then
-  // move it.
-
   /**
    * Directory specified by <code>org.apache.lucene.lockDir</code>
-   * or <code>java.io.tmpdir</code> system property.  This may be deprecated in the future.  Please use
-   * {@link SimpleFSLockFactory#LOCK_DIR} instead.
+   * or <code>java.io.tmpdir</code> system property.
+
+   * @deprecated As of 2.1, <code>LOCK_DIR</code> is unused
+   * because the write.lock is now stored by default in the
+   * index directory.  If you really want to store locks
+   * elsewhere you can create your own {@link
+   * SimpleFSLockFactory} (or {@link NativeFSLockFactory},
+   * etc.) passing in your preferred lock directory.  Then,
+   * pass this <code>LockFactory</code> instance to one of
+   * the <code>getDirectory</code> methods that take a
+   * <code>lockFactory</code> (for example, {@link
+   * #getDirectory(String, boolean, LockFactory)}).
    */
-  public static final String LOCK_DIR = SimpleFSLockFactory.LOCK_DIR;
+  public static final String LOCK_DIR = System.getProperty("org.apache.lucene.lockDir",
+                                                           System.getProperty("java.io.tmpdir"));
 
   /** The default class which implements filesystem-based directories. */
   private static Class IMPL;
@@ -250,6 +259,8 @@ public class FSDirectory extends Directory {
     // system property org.apache.lucene.store.FSDirectoryLockFactoryClass is set,
     // instantiate that; else, use SimpleFSLockFactory:
 
+    boolean doClearLockID = false;
+
     if (lockFactory == null) {
 
       if (disableLocks) {
@@ -258,7 +269,7 @@ public class FSDirectory extends Directory {
       } else {
         String lockClassName = System.getProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass");
 
-        if (lockClassName != null) {
+        if (lockClassName != null && !lockClassName.equals("")) {
           Class c;
 
           try {
@@ -277,14 +288,10 @@ public class FSDirectory extends Directory {
             throw new IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
           }
         } else {
-          // Our default lock is SimpleFSLockFactory:
-          File lockDir;
-          if (LOCK_DIR == null) {
-            lockDir = directory;
-          } else {
-            lockDir = new File(LOCK_DIR);
-          }
-          lockFactory = new SimpleFSLockFactory(lockDir);
+          // Our default lock is SimpleFSLockFactory;
+          // default lockDir is our index directory:
+          lockFactory = new SimpleFSLockFactory(path);
+          doClearLockID = true;
         }
       }
     }
@@ -297,6 +304,11 @@ public class FSDirectory extends Directory {
     directory = path;
 
     setLockFactory(lockFactory);
+    if (doClearLockID) {
+      // Clear the prefix because write.lock will be
+      // stored in our directory:
+      lockFactory.setLockPrefix(null);
+    }
 
     init(path, create, doRemoveOldFiles);
   }
@@ -320,7 +332,15 @@ public class FSDirectory extends Directory {
       }
     }
 
-    lockFactory.clearAllLocks();
+    if (lockFactory.getLockPrefix() != null) {
+      lockFactory.clearAllLocks();
+    } else {
+      // Lock file is stored in the index, so we just remove
+      // it ourselves here:
+      File lockFile = new File(directory, IndexWriter.WRITE_LOCK_NAME);
+      if (lockFile.exists() && !lockFile.delete())
+        throw new IOException("Cannot delete " + lockFile);
+    }
   }
 
   /** Returns an array of strings, one for each Lucene index file in the directory. */

@@ -46,6 +46,13 @@ Changes in runtime behavior
     that has since been fixed, plus we no longer support pre-1.4.2 JVMs.
     (Otis Gospodnetic)
 
+ 9. LUCENE-771: The default location of the write lock is now the
+    index directory, and is named simply "write.lock" (without a big
+    digest prefix).  The system properties "org.apache.lucene.lockDir"
+    nor "java.io.tmpdir" are no longer used as the global directory
+    for storing lock files, and the LOCK_DIR field of FSDirectory is
+    now deprecated.  (Mike McCandless)
+
 New features
 
  1. LUCENE-503: New ThaiAnalyzer and ThaiWordFilter in contrib/analyzers

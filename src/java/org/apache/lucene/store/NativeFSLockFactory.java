@@ -67,10 +67,6 @@ public class NativeFSLockFactory extends LockFactory {
    * system property is used.
    */
 
-  public static final String LOCK_DIR =
-    System.getProperty("org.apache.lucene.lockDir",
-                       System.getProperty("java.io.tmpdir"));
-
   private File lockDir;
 
   // Simple test to verify locking system is "working".  On
@@ -92,17 +88,6 @@ public class NativeFSLockFactory extends LockFactory {
     }
 
     l.release();
-  }
-
-  /**
-   * Create a NativeFSLockFactory instance, storing lock
-   * files into the default LOCK_DIR:
-   * <code>org.apache.lucene.lockDir</code> system property,
-   * or (if that is null) then the
-   * <code>java.io.tmpdir</code> system property.
-   */
-  public NativeFSLockFactory() throws IOException {
-    this(new File(LOCK_DIR));
   }
 
   /**
@@ -139,22 +124,17 @@ public class NativeFSLockFactory extends LockFactory {
   }
 
   public synchronized Lock makeLock(String lockName) {
-    String fullName;
-    if (lockPrefix.equals("")) {
-      fullName = lockName;
-    } else {
-      fullName = lockPrefix + "-n-" + lockName;
-    }
-
-    return new NativeFSLock(lockDir, fullName);
+    if (lockPrefix != null)
+      lockName = lockPrefix + "-n-" + lockName;
+    return new NativeFSLock(lockDir, lockName);
   }
 
-  public void clearAllLocks() throws IOException {
+  protected void clearAllLocks() throws IOException {
     // Note that this isn't strictly required anymore
     // because the existence of these files does not mean
     // they are locked, but, still do this in case people
     // really want to see the files go away:
-    if (lockDir.exists()) {
+    if (lockDir.exists() && lockPrefix != null) {
         String[] files = lockDir.list();
         if (files == null)
           throw new IOException("Cannot read lock directory " +

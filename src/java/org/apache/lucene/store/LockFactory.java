@@ -60,5 +60,5 @@ public abstract class LockFactory {
    * are certain the lock files are not in use. {@link FSDirectory}
    * calls this when creating a new index.
    */
-  public abstract void clearAllLocks() throws IOException;
+  abstract void clearAllLocks() throws IOException;
 }

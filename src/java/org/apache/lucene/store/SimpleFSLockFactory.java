@@ -38,20 +38,7 @@ public class SimpleFSLockFactory extends LockFactory {
    * system property is used.
    */
 
-  public static final String LOCK_DIR =
-    System.getProperty("org.apache.lucene.lockDir",
-                       System.getProperty("java.io.tmpdir"));
-
   private File lockDir;
-
-  /**
-   * Instantiate using default LOCK_DIR: <code>org.apache.lucene.lockDir</code>
-   * system property, or (if that is null) then <code>java.io.tmpdir</code>.
-   */
-  public SimpleFSLockFactory() throws IOException {
-    lockDir = new File(LOCK_DIR);
-    init(lockDir);
-  }
 
   /**
    * Instantiate using the provided directory (as a File instance).
@@ -71,17 +58,18 @@ public class SimpleFSLockFactory extends LockFactory {
   }
 
   protected void init(File lockDir) throws IOException {
-
     this.lockDir = lockDir;
-
   }
 
   public Lock makeLock(String lockName) {
-    return new SimpleFSLock(lockDir, lockPrefix + "-" + lockName);
+    if (lockPrefix != null) {
+      lockName = lockPrefix + "-" + lockName;
+    }
+    return new SimpleFSLock(lockDir, lockName);
   }
 
-  public void clearAllLocks() throws IOException {
-    if (lockDir.exists()) {
+  protected void clearAllLocks() throws IOException {
+    if (lockDir.exists() && lockPrefix != null) {
         String[] files = lockDir.list();
         if (files == null)
           throw new IOException("Cannot read lock directory " +
