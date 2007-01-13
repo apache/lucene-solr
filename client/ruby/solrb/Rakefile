@@ -80,7 +80,7 @@ end
 
 task :test do
   # unit tests don't require a solr server
-  Rake::Task[:test_units].invoke rescue got_error = true
+  Rake::Task[:test_units].invoke
 
   # wrap functional tests with a test-specific Solr server
   got_error = TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
