@@ -23,7 +23,7 @@ module Solr
     #   doc = Solr::Document.new(:creator => 'Jorge Luis Borges')
     def initialize(hash={})
       @fields = []
-      hash.each_pair {|k,v| @fields << Solr::Field.new(k => v)}
+      self << hash
     end
 
     # Append a Solr::Field
@@ -33,12 +33,12 @@ module Solr
     # If you are truly lazy you can simply pass in a hash:
     #
     #   doc << {:creator => 'Jorge Luis Borges'}
-    def <<(field)
-      case field
+    def <<(fields)
+      case fields
       when Hash
-        @fields << Solr::Field.new(field)
+        fields.each_pair {|k,v| @fields << Solr::Field.new(k => v)}
       when Solr::Field
-        @fields << field
+        @fields << fields
       else
         raise "must pass in Solr::Field or Hash"
       end
