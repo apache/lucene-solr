@@ -494,7 +494,7 @@ public class TestLockFactory extends TestCase {
             return lock;
         }
 
-        public void clearAllLocks() {}
+        public void clearLock(String specificLockName) {}
 
         public class MockLock extends Lock {
             public int lockAttempts;

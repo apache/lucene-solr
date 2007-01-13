@@ -56,9 +56,10 @@ public abstract class LockFactory {
   public abstract Lock makeLock(String lockName);
 
   /**
-   * Clear any existing locks.  Only call this at a time when you
-   * are certain the lock files are not in use. {@link FSDirectory}
-   * calls this when creating a new index.
+   * Attempt to clear (forcefully unlock and remove) the
+   * specified lock.  Only call this at a time when you are
+   * certain this lock is no longer in use.
+   * @param lockName name of the lock to be cleared.
    */
-  abstract void clearAllLocks() throws IOException;
+  abstract public void clearLock(String lockName) throws IOException;
 }

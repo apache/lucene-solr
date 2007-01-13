@@ -332,15 +332,7 @@ public class FSDirectory extends Directory {
       }
     }
 
-    if (lockFactory.getLockPrefix() != null) {
-      lockFactory.clearAllLocks();
-    } else {
-      // Lock file is stored in the index, so we just remove
-      // it ourselves here:
-      File lockFile = new File(directory, IndexWriter.WRITE_LOCK_NAME);
-      if (lockFile.exists() && !lockFile.delete())
-        throw new IOException("Cannot delete " + lockFile);
-    }
+    lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
   }
 
   /** Returns an array of strings, one for each Lucene index file in the directory. */

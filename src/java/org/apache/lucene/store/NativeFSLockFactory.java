@@ -129,24 +129,19 @@ public class NativeFSLockFactory extends LockFactory {
     return new NativeFSLock(lockDir, lockName);
   }
 
-  protected void clearAllLocks() throws IOException {
+  public void clearLock(String lockName) throws IOException {
     // Note that this isn't strictly required anymore
     // because the existence of these files does not mean
     // they are locked, but, still do this in case people
     // really want to see the files go away:
-    if (lockDir.exists() && lockPrefix != null) {
-        String[] files = lockDir.list();
-        if (files == null)
-          throw new IOException("Cannot read lock directory " +
-                                lockDir.getAbsolutePath());
-        String prefix = lockPrefix + "-n-";
-        for (int i = 0; i < files.length; i++) {
-          if (files[i].startsWith(prefix)) {
-            File lockFile = new File(lockDir, files[i]);
-            if (!lockFile.delete())
-              throw new IOException("Cannot delete " + lockFile);
-          }
-        }
+    if (lockDir.exists()) {
+      if (lockPrefix != null) {
+        lockName = lockPrefix + "-n-" + lockName;
+      }
+      File lockFile = new File(lockDir, lockName);
+      if (lockFile.exists() && !lockFile.delete()) {
+        throw new IOException("Cannot delete " + lockFile);
+      }
     }
   }
 };

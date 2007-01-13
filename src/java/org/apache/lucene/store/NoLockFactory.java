@@ -42,7 +42,7 @@ public class NoLockFactory extends LockFactory {
     return singletonLock;
   }
 
-  public void clearAllLocks() {};
+  public void clearLock(String lockName) {};
 };
 
 class NoLock extends Lock {

@@ -43,8 +43,12 @@ public class SingleInstanceLockFactory extends LockFactory {
     return new SingleInstanceLock(locks, lockName);
   }
 
-  public void clearAllLocks() throws IOException {
-    locks = new HashSet();
+  public void clearLock(String lockName) throws IOException {
+    synchronized(locks) {
+      if (locks.contains(lockName)) {
+        locks.remove(lockName);
+      }
+    }
   }
 };
 
