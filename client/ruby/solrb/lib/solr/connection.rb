@@ -18,16 +18,36 @@ module Solr
     
     def initialize(url)
       @url = URI.parse(url)
+      unless @url.kind_of? URI::HTTP
+        raise "invalid http url: #{url}"
+      end
+    end
+
+    # sends a commit message
+    def commit
+      self.send(Solr::Request::Commit.new)
+    end
+
+    # sends a ping message
+    def ping
+      response = send(Solr::Request::Ping.new)
     end
 
     def send(request)
       data = post(request)
-      return request.response_format == :ruby ? RubyResponse.new(data) : XmlResponse.new(data)
+      case request.response_format
+      when :ruby
+        return RubyResponse.new(data)
+      when :xml
+        return XmlResponse.new(data)
+      else
+        raise "Unknown response format: #{request.response_format}"
+      end
     end
     
     def post(request)
-      post = Net::HTTP::Post.new(request.url_path)
-      post.body = request.to_http_body
+      post = Net::HTTP::Post.new(@url.path + "/" + request.handler)
+      post.body = request.to_s
       post.content_type = 'application/x-www-form-urlencoded; charset=utf-8'
       response = Net::HTTP.start(@url.host, @url.port) do |http|
         http.request(post)

@@ -18,27 +18,32 @@ class ConnectionTest < SolrMockBaseTestCase
   def test_mock
     connection = Connection.new("http://localhost:9999")
     set_post_return("foo")
-    assert_equal "foo", connection.post(UpdateRequest.new("bogus"))
+    assert_equal "foo", connection.post(Solr::Request::Update.new)
   end
 
   def test_connection_initialize
-    request = Solr::UpdateRequest.new("<commit/>")
-    connection = Solr::Connection.new("http://localhost:8983")
-    assert_equal("localhost", connection.url.host)
-    assert_equal(8983, connection.url.port)
+    connection = Solr::Connection.new("http://localhost:8983/solr")
+    assert_equal 'localhost', connection.url.host
+    assert_equal 8983, connection.url.port
+    assert_equal '/solr', connection.url.path
   end
-  
+
+  def test_non_standard_context
+    connection = Solr::Connection.new("http://localhost:8983/index")
+    assert_equal '/index', connection.url.path
+  end
+
   def test_xml_response
     connection = Connection.new("http://localhost:9999")
     set_post_return "<bogus/>"
-    response = connection.send(UpdateRequest.new("bogus"))
+    response = connection.send(Solr::Request::Update.new)
     assert_equal "<bogus/>", response.raw_response
   end
   
   def test_ruby_response
     connection = Connection.new("http://localhost:9999")
     set_post_return "{}"
-    response = connection.send(StandardRequest.new)
+    response = connection.send(Solr::Request::Select.new('foo'))
     assert_equal "{}", response.raw_response
   end
 end

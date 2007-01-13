@@ -96,10 +96,10 @@ namespace :test do
   task :coverage do
     rm_f "coverage"
     rm_f "coverage.data"
-    system("rcov --aggregate coverage.data --text-summary -Ilib:test/unit test/unit/*_test.rb")
     TestSolrServer.wrap do
       system("rcov --aggregate coverage.data --text-summary -Ilib:test/functional test/functional/*_test.rb")
     end
+    system("rcov --aggregate coverage.data --text-summary -Ilib:test/unit test/unit/*_test.rb")
     system("open coverage/index.html") if PLATFORM['darwin']
   end
 

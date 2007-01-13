@@ -13,46 +13,34 @@
 require 'test/unit'
 require 'solr'
 
-class TestServer < Test::Unit::TestCase
+class ServerTest < Test::Unit::TestCase
   include Solr
 
-  class BadRequest < Request
-    def initialize
-      @url_path = "/bogus"
-    end
-    
-    def to_http_body
-      "bogus"
-    end
-  end
-  
   def setup
-    @connection = Connection.new("http://localhost:8888")
+    @connection = Connection.new("http://localhost:8888/solr")
   end
   
   def test_error
-    assert_raise(Net::HTTPServerException) do
-      @connection.send(BadRequest.new)
+    conn = Solr::Connection.new 'http://localhost:9999/poopville'
+    assert_raise(Net::HTTPFatalError) do
+      @connection.send(Solr::Request::Ping.new)
     end
   end
   
   def test_commit
-    response = @connection.send(UpdateRequest.new("<commit/>"))
+    response = @connection.send(Solr::Request::Commit.new)
     assert_equal "<result status=\"0\"></result>", response.raw_response
   end
   
   def test_escaping
-    doc = {:id => 47, :ruby_t => 'puts "ouch!"'}
-    request = AddDocumentRequest.new(doc)
-    @connection.send(request)
+    doc = Solr::Document.new :id => 47, :ruby_t => 'puts "ouch!"'
+    @connection.send(Solr::Request::AddDocument.new(doc))
+    @connection.commit
     
-    @connection.send(UpdateRequest.new("<commit/>"))
-    
-    request = StandardRequest.new
-    request.query = "ruby_t:ouch"
-    request.field_list="*,score"
+    request = Solr::Request::Select.new 'ruby_t:ouch'
     result = @connection.send(request)
     
-    assert result.raw_response =~ /puts/
+    assert_match /puts/, result.raw_response
   end
+
 end

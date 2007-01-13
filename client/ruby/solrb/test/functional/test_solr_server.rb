@@ -45,7 +45,7 @@ class TestSolrServer
     Process.kill('TERM', @pid)
     Process.wait
   end
-  
+
   def self.wrap(params = {})
     error = false
     solr_server = self.instance
