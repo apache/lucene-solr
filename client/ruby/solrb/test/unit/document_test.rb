@@ -30,12 +30,26 @@ class DocumentTest < Test::Unit::TestCase
     doc << Solr::Field.new(:creator => 'Otis Gospodnetic')
     assert "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
   end
+  
+  def test_bad_doc
+    doc = Solr::Document.new
+    assert_raise(RuntimeError) do
+      doc << "invalid"
+    end
+  end
 
   def test_hash_shorthand
     doc = Solr::Document.new :creator => 'Erik Hatcher', :title => 'Lucene in Action'
     assert_equal 'Erik Hatcher', doc[:creator]
     assert_equal 'Lucene in Action', doc[:title]
     assert_equal nil, doc[:foo]
+    
+    doc = Solr::Document.new
+    doc << {:creator => 'Erik Hatcher', :title => 'Lucene in Action'}
+    doc[:subject] = 'Search'
+    assert_equal 'Erik Hatcher', doc[:creator]
+    assert_equal 'Lucene in Action', doc[:title]
+    assert_equal 'Search', doc[:subject]
   end
 
 end

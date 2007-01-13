@@ -13,6 +13,12 @@
 require 'test/unit'
 require 'solr'
 
+class BadRequest < Solr::Request::Select
+  def response_format
+    :invalid
+  end
+end
+
 class ServerTest < Test::Unit::TestCase
   include Solr
 
@@ -20,16 +26,35 @@ class ServerTest < Test::Unit::TestCase
     @connection = Connection.new("http://localhost:8888/solr")
   end
   
-  def test_error
-    conn = Solr::Connection.new 'http://localhost:9999/poopville'
-    assert_raise(Net::HTTPFatalError) do
-      @connection.send(Solr::Request::Ping.new)
+  def test_bad_connection
+    conn = Solr::Connection.new 'http://localhost:9999/invalid'
+    assert_raise(Errno::ECONNREFUSED) do
+      conn.send(Solr::Request::Ping.new)
+    end
+  end
+  
+  def test_bad_url
+    conn = Solr::Connection.new 'http://localhost:8888/invalid'
+    assert_raise(Net::HTTPServerException) do
+      conn.send(Solr::Request::Ping.new)
     end
   end
   
   def test_commit
     response = @connection.send(Solr::Request::Commit.new)
     assert_equal "<result status=\"0\"></result>", response.raw_response
+  end
+  
+  def test_ping
+    response = @connection.ping
+    assert_match /ping/, response.raw_response
+  end
+  
+  def test_invalid_response_format
+    request = BadRequest.new("invalid")
+    assert_raise(RuntimeError) do
+      @connection.send(request)
+    end
   end
   
   def test_escaping

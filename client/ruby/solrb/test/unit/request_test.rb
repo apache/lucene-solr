@@ -30,6 +30,10 @@ class RequestTest < Test::Unit::TestCase
     assert_equal "<add><doc><field name='title'>title</field></doc></add>", request.to_s
     assert :xml, request.response_format
     assert 'update', request.handler
+    
+    assert_raise(RuntimeError) do
+      Solr::Request::AddDocument.new("invalid")
+    end
   end
 
   def test_select_request
