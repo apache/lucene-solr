@@ -267,7 +267,7 @@
          &amp; separated key=val pairs ... but there shouldn't be any
          URL escaping of the values -->
     <pingQuery>
-     qt=dismax&amp;q=solr&amp;start=3&amp;fq=id:[* TO *]&amp;fq=cat:[* TO *]
+     q=solr
     </pingQuery>
     <!-- configure a healthcheck file for servers behind a loadbalancer
     <healthcheck type="file">server-enabled</healthcheck>
