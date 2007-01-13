@@ -115,5 +115,16 @@
         </java>
     </target>
 
+    <property name="task.alg" value="${basedir}/conf/micro-standard.alg"/>
+    <property name="task.mem" value="140M"/>
+
+    <target name="run-task" depends="compile,check-files,get-files" description="Run compound penalty perf test">
+        <echo>Working Directory: ${working.dir}</echo>
+        <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="${task.mem}" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg line="${task.alg}"/>
+        </java>
+    </target>
+
     <target name="init" depends="common.init,check-files"/>
 </project>

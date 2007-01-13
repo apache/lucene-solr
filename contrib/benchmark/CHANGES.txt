@@ -1,0 +1,11 @@
+Lucene Benchmark Contrib Change Log
+
+The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
+
+$Id:$
+
+01/09/07
+
+1. Committed Doron Cohen's benchmarking contribution, which provides an easily expandable task based approach to benchmarking.  See the javadocs for information. (Doron Cohen via Grant Ingersoll)
+
+2. Added this file.
