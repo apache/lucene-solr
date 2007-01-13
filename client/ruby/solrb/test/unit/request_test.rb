@@ -13,6 +13,9 @@
 require 'test/unit'
 require 'solr'
 
+class BadRequest < Solr::Request::Base
+end
+
 class RequestTest < Test::Unit::TestCase
 
   def test_commit_request
@@ -35,6 +38,21 @@ class RequestTest < Test::Unit::TestCase
     assert 'select', request.handler
     assert 'belkin', request.to_hash['q']
     assert_match /q=belkin/, request.to_s
+  end
+  
+  def test_ping_request
+    request = Solr::Request::Ping.new
+    assert_equal :xml, request.response_format
+  end
+
+  def test_bad_request_class
+    assert_raise(RuntimeError) do
+      BadRequest.new.response_format
+    end
+    
+    assert_raise(RuntimeError) do
+      BadRequest.new.handler
+    end
   end
 
 end

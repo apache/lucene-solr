@@ -18,40 +18,14 @@ module Solr
       # response type is for a given request
       
       def response_format
-        case self
-        when Solr::Request::Commit
-          return :xml
-        when Solr::Request::Update
-          return :xml
-        when Solr::Request::Select
-          return :ruby
-        when Solr::Request::AddDocument
-          return :xml
-        when Solr::Request::Ping
-          return :xml
-        else
-          raise "unkown request type: #{self.class}"
-        end
+        raise "unknown request type: #{self.class}"
       end
 
       # returns the solr handler or url fragment that can 
       # respond to this type of request
       
       def handler
-        case self
-        when Solr::Request::Commit
-          return 'update'
-        when Solr::Request::Update
-          return 'update'
-        when Solr::Request::Select
-          return 'select' 
-        when Solr::Request::AddDocument
-          return 'update'
-        when Solr::Request::Ping
-          return 'admin/ping'
-        else
-          raise "unkown request type: #{self.class}"
-        end
+        raise "unkown request type: #{self.class}"
       end
 
     end

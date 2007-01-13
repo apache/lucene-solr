@@ -20,6 +20,12 @@ class ConnectionTest < SolrMockBaseTestCase
     set_post_return("foo")
     assert_equal "foo", connection.post(Solr::Request::Update.new)
   end
+  
+  def test_bad_url
+    assert_raise(RuntimeError) do
+      Connection.new("ftp://localhost:9999")
+    end
+  end
 
   def test_connection_initialize
     connection = Solr::Connection.new("http://localhost:8983/solr")

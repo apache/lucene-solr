@@ -12,11 +12,12 @@
 
 require 'solr/request/base'
 require 'solr/document'
+require 'solr/request/update'
 require 'rexml/document'
 
 module Solr
   module Request
-    class AddDocument < Solr::Request::Base
+    class AddDocument < Solr::Request::Update
 
       # create the request, optionally passing in a Solr::Document
       #

@@ -20,6 +20,14 @@ module Solr
       def initialize(query)
         @query = query
       end
+      
+      def response_format
+        :ruby
+      end
+      
+      def handler
+        'select'
+      end
 
       def to_hash
         return {:q => query, :wt => 'ruby', :fl => '*,score'}
@@ -35,7 +43,7 @@ module Solr
 
         http_params.join("&")
       end
-
+      
     end
   end
 end

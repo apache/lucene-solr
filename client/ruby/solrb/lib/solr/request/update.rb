@@ -13,7 +13,12 @@
 module Solr
   module Request
     class Update < Solr::Request::Base
-      def initialize
+      def response_format
+        :xml
+      end
+
+      def handler
+        'update'
       end
     end
   end

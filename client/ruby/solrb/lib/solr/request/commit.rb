@@ -14,7 +14,7 @@ require 'rexml/document'
 
 module Solr
   module Request
-    class Commit < Solr::Request::Base
+    class Commit < Solr::Request::Update
 
       def to_s
         return REXML::Element.new('commit').to_s

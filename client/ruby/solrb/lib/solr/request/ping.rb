@@ -13,6 +13,13 @@
 module Solr
   module Request
     class Ping < Solr::Request::Base
+      def response_format
+        :xml
+      end
+      
+      def handler
+        'admin/ping'
+      end
     end
   end
 end
