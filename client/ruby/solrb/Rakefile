@@ -42,7 +42,7 @@ require 'test/functional/test_solr_server'
 task :default => [:test]
 
 spec = Gem::Specification.new do |s|
-  s.name = 'solr'
+  s.name = 'solrb'
   s.version = SOLRB_VERSION
   s.author = 'Apache Solr'
   s.email = 'solr-user@lucene.apache.org'
