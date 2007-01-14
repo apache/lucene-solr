@@ -47,10 +47,11 @@ public class FSDirectory extends Directory {
     
   /** This cache of directories ensures that there is a unique Directory
    * instance per path, so that synchronization on the Directory can be used to
-   * synchronize access between readers and writers.
-   *
-   * This should be a WeakHashMap, so that entries can be GC'd, but that would
-   * require Java 1.2.  Instead we use refcounts...
+   * synchronize access between readers and writers.  We use
+   * refcounts to ensure when the last use of an FSDirectory
+   * instance for a given canonical path is closed, we remove the
+   * instance from the cache.  See LUCENE-776
+   * for some relevant discussion.
    */
   private static final Hashtable DIRECTORIES = new Hashtable();
 
