@@ -210,14 +210,8 @@
         EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
-   <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
-   <dynamicField name="*_l"  type="slong"   indexed="true"  stored="true"/>
-   <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
-   <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
-   <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
-   <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+   <dynamicField name="*_facet"  type="string"  indexed="true"  stored="true"/>
+   <dynamicField name="*_text"   type="text"    indexed="true"  stored="true"/>
  </fields>
 
  <!-- field to use to determine and enforce document uniqueness. -->
@@ -232,16 +226,7 @@
   <!-- copyField commands copy one field to another at the time a document
         is added to the index.  It's used either to index the same field differently,
         or to add multiple fields to the same field for easier/faster searching.  -->
-<!--   <copyField source="id" dest="sku"/>
-
-   <copyField source="cat" dest="text"/>
-   <copyField source="name" dest="text"/>
-   <copyField source="manu" dest="text"/>
-   <copyField source="features" dest="text"/>
-   <copyField source="includes" dest="text"/>
-
-   <copyField source="manu" dest="manu_exact"/>
--->
+ <copyField source="*_text" dest="text"/>
 
  <!-- Similarity is the scoring routine for each document vs. a query.
       A custom similarity may be specified here, but the default is fine

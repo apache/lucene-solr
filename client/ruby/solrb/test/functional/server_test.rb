@@ -58,11 +58,11 @@ class ServerTest < Test::Unit::TestCase
   end
   
   def test_escaping
-    doc = Solr::Document.new :id => 47, :ruby_t => 'puts "ouch!"'
+    doc = Solr::Document.new :id => 47, :ruby_text => 'puts "ouch!"'
     @connection.send(Solr::Request::AddDocument.new(doc))
     @connection.commit
     
-    request = Solr::Request::Standard.new :query => 'ruby_t:ouch'
+    request = Solr::Request::Standard.new :query => 'ouch'
     result = @connection.send(request)
     
     assert_match /puts/, result.raw_response
