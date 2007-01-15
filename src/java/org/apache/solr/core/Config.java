@@ -239,7 +239,7 @@ public class Config {
       instanceDir = normalizeDir(System.getProperty(prop));
       if (instanceDir==null) {
         instanceDir=project + '/';
-        log.info("Solr home defaulted to '" + instanceDir + "'");
+        log.info("Solr home defaulted to '" + instanceDir + "' (system property " + prop + " not set)");
       } else {
         log.info("Solr home set to '" + instanceDir + "' from system property " + prop);
       }
