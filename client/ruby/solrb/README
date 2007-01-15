@@ -1,42 +1,45 @@
 solrb exposes the power of Solr as a Ruby  DSL (domain specific language).
 
-  Visit the Solr Flare wiki for more information: http://wiki.apache.org/solr/Flare
+  Visit the solrb wiki for more information: http://wiki.apache.org/solr/solrb
 
 USAGE 
 
 First launch Solr.
 
-In a separate shell, launch script/console.
+   cd solr
+   java -jar start.jar
+
+In a separate shell, launch irb -Ilib.
+
+# Bring in the Solr library
+  require 'solr'
 
 # Set up a connection to Solr:
 
-  connection = Solr::Connection.new("http://localhost:8983")
+  connection = Solr::Connection.new 'http://localhost:8983/solr'
 
 # To add a document:
 
-  doc = {:id => "529", :text => "Solr Flare in Action"}
-  request = Solr::AddDocumentRequest.new(doc)
+  doc = Solr::Document.new :id => '529', :text => 'Solr Flare in Action'
+  request = Solr::Request::AddDocument.new(doc)
   connection.send(request)
-
+  
 # Commit changes:
 
-  request = Solr::UpdateRequest.new("<commit/>")  # TODO: yes, this will be mapped as a simpler command!
-  connection.send(request)
+  connection.commit
 
 # Search:
 
-  request = Solr::StandardRequest.new  
-  request.query = "solr flare"
+  request = Solr::Request::Standard.new :query => 'solr flare'
   connection.send(request)
-
 
 
 INSTALLATION
 
 First run the tests:
 
-  rake test
-
+  rake
+  
 then build the gem:
 
   rake package
