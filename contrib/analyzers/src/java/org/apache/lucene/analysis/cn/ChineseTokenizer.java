@@ -99,7 +99,7 @@ public final class ChineseTokenizer extends Tokenizer {
             if (bufferIndex >= dataLen) {
                 dataLen = input.read(ioBuffer);
                 bufferIndex = 0;
-            };
+            }
 
             if (dataLen == -1) return flush();
             else
