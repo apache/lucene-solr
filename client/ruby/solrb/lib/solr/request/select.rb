@@ -14,11 +14,12 @@ require 'erb'
 
 module Solr
   module Request
+    # "Abstract" base class, only useful with subclasses that add parameters
     class Select < Solr::Request::Base
-      attr_accessor :query
-
-      def initialize(query)
-        @query = query
+      attr_reader :query_type
+      
+      def initialize(qt=nil)
+        @query_type = qt
       end
       
       def response_format
@@ -30,15 +31,19 @@ module Solr
       end
 
       def to_hash
-        return {:q => query, :wt => 'ruby', :fl => '*,score'}
+        return {:qt => query_type, :wt => 'ruby'}
       end
-
+      
       def to_s
         raw_params = self.to_hash
 
         http_params = []
         raw_params.each do |key,value|
-        http_params << "#{key}=#{ERB::Util::url_encode(value)}" if value
+          if value.respond_to? :each
+            value.each { |v| http_params << "#{key}=#{ERB::Util::url_encode(v)}" }
+          else
+            http_params << "#{key}=#{ERB::Util::url_encode(value)}"
+          end
         end
 
         http_params.join("&")

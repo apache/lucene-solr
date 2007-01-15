@@ -20,7 +20,7 @@ class DocumentTest < Test::Unit::TestCase
     doc = Solr::Document.new
     doc << Solr::Field.new(:creator => 'Erik Hatcher')
     assert_kind_of REXML::Element, doc.to_xml
-    assert "<doc><field name='creator'>Erik Hatcher</field></doc>", 
+    assert_equal "<doc><field name='creator'>Erik Hatcher</field></doc>", 
       doc.to_xml.to_s
   end
 
@@ -28,7 +28,7 @@ class DocumentTest < Test::Unit::TestCase
     doc = Solr::Document.new
     doc << Solr::Field.new(:creator => 'Erik Hatcher')
     doc << Solr::Field.new(:creator => 'Otis Gospodnetic')
-    assert "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
+    assert_equal "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
   end
   
   def test_bad_doc

@@ -13,7 +13,7 @@
 require 'test/unit'
 require 'solr'
 
-class BadRequest < Solr::Request::Select
+class BadRequest < Solr::Request::Standard
   def response_format
     :invalid
   end
@@ -51,7 +51,7 @@ class ServerTest < Test::Unit::TestCase
   end
   
   def test_invalid_response_format
-    request = BadRequest.new("invalid")
+    request = BadRequest.new(:query => "solr")
     assert_raise(RuntimeError) do
       @connection.send(request)
     end
@@ -62,7 +62,7 @@ class ServerTest < Test::Unit::TestCase
     @connection.send(Solr::Request::AddDocument.new(doc))
     @connection.commit
     
-    request = Solr::Request::Select.new 'ruby_t:ouch'
+    request = Solr::Request::Standard.new :query => 'ruby_t:ouch'
     result = @connection.send(request)
     
     assert_match /puts/, result.raw_response
