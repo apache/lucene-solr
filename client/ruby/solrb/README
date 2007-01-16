@@ -12,7 +12,7 @@ First launch Solr.
 In a separate shell, launch irb -Ilib.
 
   # connect to the solr instance
-  conn = Connection.new('http://localhost:8983/solr')
+  conn = Connection.new('http://localhost:8983/solr', :autocommit => :on)
 
   # add a document to the index
   conn.add(:id => 123, :title => 'Lucene in Action')
