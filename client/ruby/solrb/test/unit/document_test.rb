@@ -31,6 +31,11 @@ class DocumentTest < Test::Unit::TestCase
     assert_equal "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
   end
   
+  def test_repeatable_in_hash
+    doc = Solr::Document.new({:creator => ['Erik Hatcher', 'Otis Gospodnetic']})
+    assert_equal "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
+  end
+  
   def test_bad_doc
     doc = Solr::Document.new
     assert_raise(RuntimeError) do
