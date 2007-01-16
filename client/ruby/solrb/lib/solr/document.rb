@@ -37,7 +37,11 @@ module Solr
       case fields
       when Hash
         fields.each_pair do |name,value|
-          value.each {|v| @fields << Solr::Field.new(name => v)}
+          if value.respond_to?(:each)
+            value.each {|v| @fields << Solr::Field.new(name => v)}
+          else
+            @fields << Solr::Field.new(name => value)
+          end
         end
       when Solr::Field
         @fields << fields
