@@ -13,64 +13,66 @@
 module Solr
   module Request
     class Standard < Solr::Request::Select
+
+      VALID_PARAMS = [:query, :sort, :default_field, :operator, :start, :rows,
+        :filter_queries, :field_list, :debug_query, :explain_other, :facets]
+      
       def initialize(params)
         super('standard')
         
+        raise "Invalid parameters: #{(params.keys - VALID_PARAMS).join(',')}" unless 
+          (params.keys - VALID_PARAMS).empty?
+        
         raise ":query parameter required" unless params[:query]
         
-        # devour StandardRequestHandler params
-        @query = params.delete(:query)
-        @sort = params.delete(:sort) # TODO add validation such that only :ascending and :descending are supported
-        @default_field = params.delete(:default_field)
-        @operator = params.delete(:operator)
-        @operator = @operator == :and ? "AND" : "OR" if @operator # TODO add validation such that only :and or :or are supported
+        @params = params.dup
+        
+        # Validate operator
+        if params[:operator]
+          raise "Only :and/:or operators allowed" unless 
+            [:and, :or].include?(params[:operator])
+            
+          @params[:operator] = params[:operator].to_s.upcase
+        end
 
-        # devour common parameters
-        @start = params.delete(:start) # TODO validate integer
-        @rows = params.delete(:rows)   # TODO validate integer
-        @filter_queries = params.delete(:filter_queries)
-        @field_list = params.delete(:field_list) || ["*","score"]
-        @debug_query = params.delete(:debug_query)
-        @explain_other = params.delete(:explain_other)
+        # Validate start, rows can be transformed to ints
+        @params[:start] = params[:start].to_i if params[:start]
+        @params[:rows] = params[:rows].to_i if params[:rows]
         
-        # devour faceting parameters
-        @facets = params.delete(:facets)
-        
+        @params[:field_list] ||= ["*","score"]
+
         #TODO model highlighting parameters: http://wiki.apache.org/solr/HighlightingParameters
-        
-        raise "Invalid parameters: #{params.keys.join(',')}" if params.size > 0
       end
       
       def to_hash
         hash = {}
         
         # standard request param processing
-        sort = @sort.collect do |sort|
+        sort = @params[:sort].collect do |sort|
           key = sort.keys[0]
           "#{key.to_s} #{sort[key] == :descending ? 'desc' : 'asc'}"
-        end.join(',') if @sort
-        q = sort ? "#{@query};#{sort}" : @query
-        hash[:q] = q
-        hash[:"q.op"] = @operator
-        hash[:df] = @default_field
+        end.join(',') if @params[:sort]
+        hash[:q] = sort ? "#{@params[:query]};#{sort}" : @params[:query]
+        hash[:"q.op"] = @params[:operator]
+        hash[:df] = @params[:default_field]
 
         # common parameter processing
-        hash[:start] = @start
-        hash[:rows] = @rows
-        hash[:fq] = @filter_queries
-        hash[:fl] = @field_list.join(',')
-        hash[:debugQuery] = @debug_query
-        hash[:explainOther] = @explain_other
+        hash[:start] = @params[:start]
+        hash[:rows] = @params[:rows]
+        hash[:fq] = @params[:filter_queries]
+        hash[:fl] = @params[:field_list].join(',')
+        hash[:debugQuery] = @params[:debug_query]
+        hash[:explainOther] = @params[:explain_other]
         
         # facet parameter processing
-        if @facets
+        if @params[:facets]
           hash[:facet] = true
           hash[:"facet.field"] = []
-          hash[:"facet.query"] = @facets[:queries]
-          hash[:"facet.missing"] = @facets[:missing]
-          hash[:"facet.zeros"] = @facets[:zeros]
-          hash[:"facet.limit"] = @facets[:limit]
-          @facets[:fields].each do |f|
+          hash[:"facet.query"] = @params[:facets][:queries]
+          hash[:"facet.missing"] = @params[:facets][:missing]
+          hash[:"facet.zeros"] = @params[:facets][:zeros]
+          hash[:"facet.limit"] = @params[:facets][:limit]
+          @params[:facets][:fields].each do |f|
             if f.kind_of? Hash
               key = f.keys[0]
               value = f[key]
