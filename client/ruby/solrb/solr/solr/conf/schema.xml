@@ -210,8 +210,8 @@
         EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
-   <dynamicField name="*_facet"  type="string"  indexed="true"  stored="true"/>
-   <dynamicField name="*_text"   type="text"    indexed="true"  stored="true"/>
+   <dynamicField name="*_facet"  type="string"  indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_text"   type="text"    indexed="true"  stored="true" multiValued="true"/>
  </fields>
 
  <!-- field to use to determine and enforce document uniqueness. -->
