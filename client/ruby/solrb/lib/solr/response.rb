@@ -12,7 +12,7 @@
 
 module Solr
   class Response
-    attr_reader :header, :raw_response, :data
+    attr_reader :header, :raw_response, :data, :parsed_response
     def initialize(body)
       @raw_response = body
       if match = /^<result status="(\d+)"/.match(body)
@@ -27,7 +27,7 @@ module Solr
   class RubyResponse < Response
     def initialize(body)
       super(body)
-      parsed_response = eval(body)
+      @parsed_response = eval(body)
       @header = parsed_response['responseHeader']
       @data = parsed_response['response']
     end
