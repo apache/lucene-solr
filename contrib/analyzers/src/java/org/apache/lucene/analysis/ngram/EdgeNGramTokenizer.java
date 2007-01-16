@@ -88,7 +88,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
   }
 
   static Side side(String label) {
-    if (label == null || label.isEmpty())
+    if (label == null || label.trim().length() == 0)
       throw new IllegalArgumentException("Label must be either 'front' or 'back'");
     if (label.equals("front"))
       return Side.FRONT;
