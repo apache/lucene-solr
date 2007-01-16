@@ -12,6 +12,8 @@
 
 module Solr
   module Request
+
+    # a parent class for all requests that go through the solr update handler
     class Update < Solr::Request::Base
       def response_format
         :xml

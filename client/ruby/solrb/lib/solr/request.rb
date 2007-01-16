@@ -13,6 +13,7 @@
 require 'solr/request/add_document'
 require 'solr/request/base'
 require 'solr/request/commit'
+require 'solr/request/delete'
 require 'solr/request/ping'
 require 'solr/request/select'
 require 'solr/request/standard'

@@ -12,11 +12,10 @@
 
 module Solr
   
-  class RequestException < Exception
-    attr_reader :code, :message
+  class Exception < Exception
+    attr_reader :message
     
-    def initialize(code, message)
-      @code = code
+    def initialize(message)
       @message = message
     end
     

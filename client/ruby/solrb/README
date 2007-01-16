@@ -6,33 +6,31 @@ USAGE
 
 First launch Solr.
 
-   cd solr
-   java -jar start.jar
+  cd solr
+  java -jar start.jar
 
 In a separate shell, launch irb -Ilib.
 
-# Bring in the Solr library
-  require 'solr'
+  # connect to the solr instance
+  conn = Connection.new('http://localhost:8983/solr')
 
-# Set up a connection to Solr:
+  # add a document to the index
+  conn.add(:id => 123, :title => 'Lucene in Action')
 
-  connection = Solr::Connection.new 'http://localhost:8983/solr'
+  # update the document
+  conn.update(:id => 123, :title => 'Solr in Action')
 
-# To add a document:
+  # print out the first hit in a query for 'action'
+  response = conn.query('action')
+  print response.hits[0]
 
-  doc = Solr::Document.new :id => '529', :text => 'Solr Flare in Action'
-  request = Solr::Request::AddDocument.new(doc)
-  connection.send(request)
-  
-# Commit changes:
+  # iterate through all the hits for 'action'
+  conn.query('action') do |hit|
+    puts hit
+  end
 
-  connection.commit
-
-# Search:
-
-  request = Solr::Request::Standard.new :query => 'solr flare'
-  connection.send(request)
-
+  # delete document by id
+  conn.delete(123)
 
 INSTALLATION
 

@@ -10,32 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  class Response
-    attr_reader :header, :raw_response, :data, :parsed_response
-    def initialize(body)
-      @raw_response = body
-      if match = /^<result status="(\d+)"/.match(body)
-        unless 0 == match.captures.first.to_i
-          error = REXML::Document.new(body).root
-          raise RequestException.new(error.attributes["status"], error.text)
-        end
-      end
-    end
-  end
-  
-  class RubyResponse < Response
-    def initialize(body)
-      super(body)
-      @parsed_response = eval(body)
-      @header = parsed_response['responseHeader']
-      @data = parsed_response['response']
-    end
-  end
-  
-  class XmlResponse < Response
-    def initialize(body)
-      super(body)
-    end
-  end
-end
+require 'solr/response/base'
+require 'solr/response/xml'
+require 'solr/response/ruby'
+require 'solr/response/ping'
+require 'solr/response/add_document'
+require 'solr/response/standard'
+require 'solr/response/commit'
+require 'solr/response/delete'
