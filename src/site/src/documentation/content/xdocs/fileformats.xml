@@ -762,8 +762,8 @@
                 <p>
                     The active segments in the index are stored in the
                     segment info file,
-                    <tt>segments_N</tt>
-                    . There may
+                    <tt>segments_N</tt>.
+                    There may
                     be one or more
                     <tt>segments_N</tt>
                     files in the
@@ -779,13 +779,13 @@
 
                 <p>
                     As of 2.1, there is also a file
-                    <tt>segments.gen</tt>
-                    . This file contains the
+                    <tt>segments.gen</tt>.
+                    This file contains the
                     current generation (the
                     <tt>_N</tt>
                     in
-                    <tt>segments_N</tt>
-                    ) of the index. This is
+                    <tt>segments_N</tt>)
+                    of the index. This is
                     used only as a fallback in case the current
                     generation cannot be accurately determined by
                     directory listing alone (as is the case for some
@@ -803,11 +803,9 @@
                 </p>
                 <p>
                     <b>2.1 and above:</b>
-                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, NumField, NormGen
-                    <sup>NumField</sup>
-                    &gt;
-                    <sup>SegCount</sup>
-                    , IsCompoundFile
+                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, HasSingleNormFile, NumField,
+                    NormGen<sup>NumField</sup>,
+                    IsCompoundFile&gt;<sup>SegCount</sup>
                 </p>
 
                 <p>
@@ -823,11 +821,11 @@
                 </p>
 
                 <p>
-                    IsCompoundFile --&gt; Int8
+                    IsCompoundFile, HasSingleNormFile --&gt; Int8
                 </p>
 
                 <p>
-                    Format is -1 as of Lucene 1.4 and -2 as of Lucene 2.1.
+                    Format is -1 as of Lucene 1.4 and -3 (SemgentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1.
                 </p>
 
                 <p>
@@ -881,6 +879,13 @@
                     exists.
                 </p>
 
+                <p>
+                    If HasSingleNormFile is 1, then the field norms are
+                    written as a single joined file (with extension
+                    <tt>.nrm</tt>); if it is 0 then each field's norms
+                    are stored as separate <tt>.fN</tt> files.  See
+                    "Normalization Factors" below for details.
+                </p>
 
             </section>
 

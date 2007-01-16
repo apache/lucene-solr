@@ -108,21 +108,21 @@ public class TestDoc extends TestCase {
       Directory directory = FSDirectory.getDirectory(indexDir, true);
       directory.close();
 
-      indexDoc("one", "test.txt");
-      printSegment(out, "one", 1);
+      SegmentInfo si1 = indexDoc("one", "test.txt");
+      printSegment(out, si1);
 
-      indexDoc("two", "test2.txt");
-      printSegment(out, "two", 1);
+      SegmentInfo si2 = indexDoc("two", "test2.txt");
+      printSegment(out, si2);
 
-      merge("one", 1, "two", 1, "merge", false);
-      printSegment(out, "merge", 2);
+      SegmentInfo siMerge = merge(si1, si2, "merge", false);
+      printSegment(out, siMerge);
 
-      merge("one", 1, "two", 1, "merge2", false);
-      printSegment(out, "merge2", 2);
+      SegmentInfo siMerge2 = merge(si1, si2, "merge2", false);
+      printSegment(out, siMerge2);
 
-      merge("merge", 2, "merge2", 2, "merge3", false);
-      printSegment(out, "merge3", 4);
-
+      SegmentInfo siMerge3 = merge(siMerge, siMerge2, "merge3", false);
+      printSegment(out, siMerge3);
+      
       out.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -134,21 +134,21 @@ public class TestDoc extends TestCase {
       directory = FSDirectory.getDirectory(indexDir, true);
       directory.close();
 
-      indexDoc("one", "test.txt");
-      printSegment(out, "one", 1);
+      si1 = indexDoc("one", "test.txt");
+      printSegment(out, si1);
 
-      indexDoc("two", "test2.txt");
-      printSegment(out, "two", 1);
+      si2 = indexDoc("two", "test2.txt");
+      printSegment(out, si2);
 
-      merge("one", 1, "two", 1, "merge", true);
-      printSegment(out, "merge", 2);
+      siMerge = merge(si1, si2, "merge", true);
+      printSegment(out, siMerge);
 
-      merge("one", 1, "two", 1, "merge2", true);
-      printSegment(out, "merge2", 2);
+      siMerge2 = merge(si1, si2, "merge2", true);
+      printSegment(out, siMerge2);
 
-      merge("merge", 2, "merge2", 2, "merge3", true);
-      printSegment(out, "merge3", 4);
-
+      siMerge3 = merge(siMerge, siMerge2, "merge3", true);
+      printSegment(out, siMerge3);
+      
       out.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
@@ -157,7 +157,7 @@ public class TestDoc extends TestCase {
    }
 
 
-   private void indexDoc(String segment, String fileName)
+   private SegmentInfo indexDoc(String segment, String fileName)
    throws Exception
    {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
@@ -171,18 +171,18 @@ public class TestDoc extends TestCase {
       writer.addDocument(segment, doc);
 
       directory.close();
+      return new SegmentInfo(segment, 1, directory, false, false);
    }
 
 
-   private void merge(String seg1, int docCount1, String seg2, int docCount2, String merged, boolean useCompoundFile)
+   private SegmentInfo merge(SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
 
-      SegmentReader r1 = SegmentReader.get(new SegmentInfo(seg1, docCount1, directory));
-      SegmentReader r2 = SegmentReader.get(new SegmentInfo(seg2, docCount2, directory));
+      SegmentReader r1 = SegmentReader.get(si1);
+      SegmentReader r2 = SegmentReader.get(si2);
 
-      SegmentMerger merger =
-        new SegmentMerger(directory, merged);
+      SegmentMerger merger = new SegmentMerger(directory, merged);
 
       merger.add(r1);
       merger.add(r2);
@@ -196,14 +196,14 @@ public class TestDoc extends TestCase {
       }
 
       directory.close();
+      return new SegmentInfo(merged, si1.docCount + si2.docCount, directory, useCompoundFile, true);
    }
 
 
-   private void printSegment(PrintWriter out, String segment, int docCount)
+   private void printSegment(PrintWriter out, SegmentInfo si)
    throws Exception {
       Directory directory = FSDirectory.getDirectory(indexDir, false);
-      SegmentReader reader =
-        SegmentReader.get(new SegmentInfo(segment, docCount, directory));
+      SegmentReader reader = SegmentReader.get(si);
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

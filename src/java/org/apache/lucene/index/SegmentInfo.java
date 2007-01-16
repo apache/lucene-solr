@@ -44,10 +44,11 @@ final class SegmentInfo {
                                                   // pre-2.1 (ie, must check file system to see
                                                   // if <name>.cfs and <name>.nrm exist)         
 
-  private byte withNrm;                           // 1 if this segment maintains norms in a single file; 
-                                                  // -1 if not; 0 if check file is required to tell.
-                                                  // would be -1 for segments populated by DocumentWriter.
-                                                  // would be 1 for (newly created) merge resulted segments (both compound and non compound).
+  private boolean hasSingleNormFile;              // true if this segment maintains norms in a single file; 
+                                                  // false otherwise
+                                                  // this is currently false for segments populated by DocumentWriter
+                                                  // and true for newly created merged segments (both
+                                                  // compound and non compound).
   
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
@@ -56,13 +57,13 @@ final class SegmentInfo {
     delGen = -1;
     isCompoundFile = 0;
     preLockless = true;
-    withNrm = 0;
+    hasSingleNormFile = false;
   }
 
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean withNrm) { 
+  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile) { 
     this(name, docCount, dir);
     this.isCompoundFile = (byte) (isCompoundFile ? 1 : -1);
-    this.withNrm = (byte) (withNrm ? 1 : -1);
+    this.hasSingleNormFile = hasSingleNormFile;
     preLockless = false;
   }
 
@@ -82,7 +83,7 @@ final class SegmentInfo {
       System.arraycopy(src.normGen, 0, normGen, 0, src.normGen.length);
     }
     isCompoundFile = src.isCompoundFile;
-    withNrm = src.withNrm;
+    hasSingleNormFile = src.hasSingleNormFile;
   }
 
   /**
@@ -99,6 +100,11 @@ final class SegmentInfo {
     docCount = input.readInt();
     if (format <= SegmentInfos.FORMAT_LOCKLESS) {
       delGen = input.readLong();
+      if (format <= SegmentInfos.FORMAT_SINGLE_NORM_FILE) {
+        hasSingleNormFile = (1 == input.readByte());
+      } else {
+        hasSingleNormFile = false;
+      }
       int numNormGen = input.readInt();
       if (numNormGen == -1) {
         normGen = null;
@@ -115,8 +121,8 @@ final class SegmentInfo {
       normGen = null;
       isCompoundFile = 0;
       preLockless = true;
+      hasSingleNormFile = false;
     }
-    withNrm = 0;
   }
   
   void setNumFields(int numFields) {
@@ -179,7 +185,7 @@ final class SegmentInfo {
     si.isCompoundFile = isCompoundFile;
     si.delGen = delGen;
     si.preLockless = preLockless;
-    si.withNrm = withNrm;
+    si.hasSingleNormFile = hasSingleNormFile;
     if (normGen != null) {
       si.normGen = (long[]) normGen.clone();
     }
@@ -297,7 +303,7 @@ final class SegmentInfo {
       return IndexFileNames.fileNameFromGeneration(name, prefix + number, gen);
     }
 
-    if (withNrm()) {
+    if (hasSingleNormFile) {
       // case 2: lockless (or nrm file exists) - single file for all norms 
       prefix = "." + IndexFileNames.NORMS_EXTENSION;
       return IndexFileNames.fileNameFromGeneration(name, prefix, 0);
@@ -337,31 +343,6 @@ final class SegmentInfo {
   }
   
   /**
-   * Returns true iff this segment stores field norms in a single .nrm file.
-   */
-  private boolean withNrm () throws IOException {
-    if (withNrm == -1) {
-      return false;
-    } 
-    if (withNrm == 1) {
-      return true;
-    }
-    Directory d = dir;
-    try {
-      if (getUseCompoundFile()) {
-        d = new CompoundFileReader(dir, name + ".cfs");
-      }
-      boolean res = d.fileExists(name + "." + IndexFileNames.NORMS_EXTENSION);
-      withNrm = (byte) (res ? 1 : -1); // avoid more file tests like this 
-      return res;
-    } finally {
-      if (d!=dir && d!=null) {
-        d.close();
-      }
-    }
-  }
-
-  /**
    * Save this segment's info.
    */
   void write(IndexOutput output)
@@ -369,6 +350,7 @@ final class SegmentInfo {
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
+    output.writeByte((byte) (hasSingleNormFile ? 1:0));
     if (normGen == null) {
       output.writeInt(-1);
     } else {

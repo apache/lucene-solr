@@ -85,46 +85,34 @@ public class TestBackwardsCompatibility extends TestCase
     rmDir(dirName);
   }
 
-  public void testSearchOldIndexCFS() throws IOException {
-    String dirName = "src/test/org/apache/lucene/index/index.prelockless.cfs";
-    unzip(dirName);
-    searchIndex(dirName);
-    rmDir(dirName);
+  public void testSearchOldIndex() throws IOException {
+    String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
+    for(int i=0;i<oldNames.length;i++) {
+      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
+      unzip(dirName);
+      searchIndex(dirName);
+      rmDir(dirName);
+    }
   }
 
-  public void testIndexOldIndexCFSNoAdds() throws IOException {
-    String dirName = "src/test/org/apache/lucene/index/index.prelockless.cfs";
-    unzip(dirName);
-    changeIndexNoAdds(dirName);
-    rmDir(dirName);
+  public void testIndexOldIndexNoAdds() throws IOException {
+    String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
+    for(int i=0;i<oldNames.length;i++) {
+      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
+      unzip(dirName);
+      changeIndexNoAdds(dirName);
+      rmDir(dirName);
+    }
   }
 
-  public void testIndexOldIndexCFS() throws IOException {
-    String dirName = "src/test/org/apache/lucene/index/index.prelockless.cfs";
-    unzip(dirName);
-    changeIndexWithAdds(dirName);
-    rmDir(dirName);
-  }
-
-  public void testSearchOldIndexNoCFS() throws IOException {
-    String dirName = "src/test/org/apache/lucene/index/index.prelockless.nocfs";
-    unzip(dirName);
-    searchIndex(dirName);
-    rmDir(dirName);
-  }
-
-  public void testIndexOldIndexNoCFS() throws IOException {
-    String dirName = "src/test/org/apache/lucene/index/index.prelockless.nocfs";
-    unzip(dirName);
-    changeIndexWithAdds(dirName);
-    rmDir(dirName);
-  }
-
-  public void testIndexOldIndexNoCFSNoAdds() throws IOException {
-    String dirName = "src/test/org/apache/lucene/index/index.prelockless.nocfs";
-    unzip(dirName);
-    changeIndexNoAdds(dirName);
-    rmDir(dirName);
+  public void testIndexOldIndex() throws IOException {
+    String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
+    for(int i=0;i<oldNames.length;i++) {
+      String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
+      unzip(dirName);
+      changeIndexWithAdds(dirName);
+      rmDir(dirName);
+    }
   }
 
   public void searchIndex(String dirName) throws IOException {

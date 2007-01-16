@@ -33,7 +33,7 @@ public final class SegmentInfos extends Vector {
   /* Works since counter, the old 1st entry, is always >= 0 */
   public static final int FORMAT = -1;
 
-  /** This is the current file format written.  It differs
+  /** This format adds details used for lockless commits.  It differs
    * slightly from the previous format in that file names
    * are never re-used (write once).  Instead, each file is
    * written to the next generation.  For example,
@@ -43,6 +43,13 @@ public final class SegmentInfos extends Vector {
    * formats</a> for details.
    */
   public static final int FORMAT_LOCKLESS = -2;
+
+  /** This is the current file format written.  It adds a
+   * "hasSingleNormFile" flag into each segment info.
+   * See <a href="http://issues.apache.org/jira/browse/LUCENE-756">LUCENE-756</a>
+   * for details.
+   */
+  public static final int FORMAT_SINGLE_NORM_FILE = -3;
 
   public int counter = 0;    // used to name new segments
   /**
@@ -184,7 +191,7 @@ public final class SegmentInfos extends Vector {
       int format = input.readInt();
       if(format < 0){     // file contains explicit format info
         // check that it is a format we can understand
-        if (format < FORMAT_LOCKLESS)
+        if (format < FORMAT_SINGLE_NORM_FILE)
           throw new IOException("Unknown format version: " + format);
         version = input.readLong(); // read version
         counter = input.readInt(); // read counter
@@ -245,7 +252,7 @@ public final class SegmentInfos extends Vector {
     IndexOutput output = directory.createOutput(segmentFileName);
 
     try {
-      output.writeInt(FORMAT_LOCKLESS); // write FORMAT
+      output.writeInt(FORMAT_SINGLE_NORM_FILE); // write FORMAT
       output.writeLong(++version); // every write changes
                                    // the index
       output.writeInt(counter); // write counter
@@ -311,7 +318,7 @@ public final class SegmentInfos extends Vector {
           try {
             format = input.readInt();
             if(format < 0){
-              if (format < FORMAT_LOCKLESS)
+              if (format < FORMAT_SINGLE_NORM_FILE)
                 throw new IOException("Unknown format version: " + format);
               version = input.readLong(); // read version
             }

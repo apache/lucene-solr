@@ -321,7 +321,7 @@ class SegmentReader extends IndexReader {
           if (addedNrm) continue; // add .nrm just once
           addedNrm = true;
         }
-            files.addElement(name);
+        files.addElement(name);
       }
     }
     return files;
