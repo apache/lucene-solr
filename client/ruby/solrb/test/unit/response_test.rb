@@ -12,19 +12,15 @@
 
 require 'test/unit'
 
-class ResponseTest < Test::Unit::TestCase
+class ResponseTest < SolrMockBaseTestCase
 
-  def test_response_error
-    assert_raise(Solr::RequestException) do
-      new Solr::Response.new("<result status=\"400\">ERROR:</result>")
-    end
-    
+  def test_response_xml_error
     begin
-      new Solr::Response.new("<result status=\"400\">ERROR:</result>")
-    rescue Solr::RequestException => exception
-      assert_equal "ERROR:", exception.message
-      assert_equal exception.message, exception.to_s
-      assert_equal "400", exception.code
+      Solr::Response::Xml.new("<broken>invalid xml&")
+      flunk("failed to get Solr::Exception as expected") 
+    rescue Exception => exception
+      assert_kind_of Solr::Exception, exception
+      assert_match 'invalid response xml', exception.to_s
     end
   end
 

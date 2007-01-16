@@ -73,4 +73,5 @@ class StandardRequestTest < Test::Unit::TestCase
     request = Solr::Request::Standard.new(:query => 'query', :sort => [{:title => :descending}])
     assert_equal 'query;title desc', request.to_hash[:q]
   end
+
 end

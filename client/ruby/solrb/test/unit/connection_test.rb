@@ -18,7 +18,7 @@ class ConnectionTest < SolrMockBaseTestCase
   def test_mock
     connection = Connection.new("http://localhost:9999")
     set_post_return("foo")
-    assert_equal "foo", connection.post(Solr::Request::Update.new)
+    assert_equal "foo", connection.post(Solr::Request::AddDocument.new)
   end
   
   def test_bad_url
@@ -42,14 +42,14 @@ class ConnectionTest < SolrMockBaseTestCase
   def test_xml_response
     connection = Connection.new("http://localhost:9999")
     set_post_return "<bogus/>"
-    response = connection.send(Solr::Request::Update.new)
+    response = connection.send(Solr::Request::Ping.new)
     assert_equal "<bogus/>", response.raw_response
   end
-  
+
   def test_ruby_response
     connection = Connection.new("http://localhost:9999")
-    set_post_return "{}"
-    response = connection.send(Solr::Request::Select.new('foo'))
-    assert_equal "{}", response.raw_response
+    set_post_return "{'responseHeader' => {}, 'response' => {}}"
+    response = connection.send(Solr::Request::Standard.new(:query => 'foo'))
+    assert_equal({'responseHeader' => {}, 'response' => {}}, response.data)
   end
 end

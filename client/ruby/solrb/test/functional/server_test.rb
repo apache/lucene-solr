@@ -11,7 +11,6 @@
 # limitations under the License.
 
 require 'test/unit'
-require 'solr'
 
 class BadRequest < Solr::Request::Standard
   def response_format
@@ -23,9 +22,33 @@ class ServerTest < Test::Unit::TestCase
   include Solr
 
   def setup
-    @connection = Connection.new("http://localhost:8888/solr")
+    @connection = Connection.new("http://localhost:8888/solr", :autocommit => :on)
+    clean
   end
-  
+ 
+  def test_full_lifecycle
+    # make sure autocommit is on
+    assert @connection.autocommit
+
+    # make sure this doc isn't there to begin with
+    @connection.delete(123456)
+
+    # add it
+    @connection.add(:id => 123456, :text => 'Borges')
+
+    # look for it
+    response = @connection.query('Borges')
+    assert_equal 1, response.total_hits
+    assert_equal '123456', response.hits[0]['id']
+
+    # delete it
+    @connection.delete(123456)
+
+    # make sure it's gone
+    response = @connection.query('Borges')
+    assert_equal 0, response.total_hits
+  end 
+
   def test_bad_connection
     conn = Solr::Connection.new 'http://localhost:9999/invalid'
     assert_raise(Errno::ECONNREFUSED) do
@@ -46,13 +69,21 @@ class ServerTest < Test::Unit::TestCase
   end
   
   def test_ping
-    response = @connection.ping
-    assert_match /ping/, response.raw_response
+    assert_equal true, @connection.ping
+  end
+
+  def test_delete_with_query
+    assert_equal true, @connection.delete_by_query('[* TO *]')
+  end
+
+  def test_ping_with_bad_server
+    conn = Solr::Connection.new 'http://localhost:8888/invalid'
+    assert_equal false, conn.ping
   end
   
   def test_invalid_response_format
     request = BadRequest.new(:query => "solr")
-    assert_raise(RuntimeError) do
+    assert_raise(Solr::Exception) do
       @connection.send(request)
     end
   end
@@ -66,6 +97,30 @@ class ServerTest < Test::Unit::TestCase
     result = @connection.send(request)
     
     assert_match /puts/, result.raw_response
+  end
+
+  def test_add_document
+    doc = {:id => 999, :text => 'hi there!'}
+    request = Solr::Request::AddDocument.new(doc)
+    response = @connection.send(request)
+    assert response.status_code == '0'
+  end
+
+  def test_update
+    @connection.update(:id => 999, :text => 'update test')
+  end
+
+  def test_no_such_field
+    doc = {:id => 999, :crap => 'foo'}
+    request = Solr::Request::AddDocument.new(doc)
+    response = @connection.send(request)
+    assert_equal false, response.ok? 
+    assert_equal "ERROR:unknown field 'crap'", response.status_message
+  end
+
+  # wipe the index clean
+  def clean
+    @connection.delete_by_query('[* TO *]')
   end
 
 end
