@@ -40,9 +40,9 @@ module Solr
         http_params = []
         raw_params.each do |key,value|
           if value.respond_to? :each
-            value.each { |v| http_params << "#{key}=#{ERB::Util::url_encode(v)}" }
+            value.each { |v| http_params << "#{key}=#{ERB::Util::url_encode(v)}" unless v.nil?}
           else
-            http_params << "#{key}=#{ERB::Util::url_encode(value)}"
+            http_params << "#{key}=#{ERB::Util::url_encode(value)}" unless value.nil?
           end
         end
 

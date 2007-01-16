@@ -41,8 +41,15 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_equal ['fq1','fq2'], request.to_hash[:fq]
     assert_equal "id,title,score", request.to_hash[:fl]
   end
+    
+  def test_empty_params
+    request = Solr::Request::Standard.new(:query => 'query', :debug_query => false)
+    assert_nil request.to_hash[:rows]
+    assert_no_match /rows/, request.to_s
+    assert_match /debugQuery/, request.to_s
+  end
   
-  def test_facet_params
+  def test_facet_params_all
     request = Solr::Request::Standard.new(:query => 'query',
        :facets => {
          :fields => [:genre,
