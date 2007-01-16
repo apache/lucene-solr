@@ -240,7 +240,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
   }
 
-  /** @see TestRemoveDuplicatesTokenFilter */
+  /** @see org.apache.solr.analysis.TestRemoveDuplicatesTokenFilter */
   public void testRemoveDuplicatesTokenFilter() {
     Query q = QueryParsing.parseQuery("TV", "dedup",
                                       h.getCore().getSchema());
@@ -508,76 +508,240 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
             ,"//lst[@name='trait_s']/int[not(@name)][.='1']"
             );
- 
+
+    assertQ("check counts with facet.mincount=1&facet.missing=true using fq",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"facet.mincount", "1"
+                ,"f.trait_s.facet.missing", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                )
+            ,"*[count(//doc)=4]"
+            ,"*[count(//lst[@name='trait_s']/int)=4]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
+            ,"//lst[@name='trait_s']/int[not(@name)][.='1']"
+            );
+
+    assertQ("check counts with facet.mincount=2&facet.missing=true using fq",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"facet.mincount", "2"
+                ,"f.trait_s.facet.missing", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                )
+            ,"*[count(//doc)=4]"
+            ,"*[count(//lst[@name='trait_s']/int)=2]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[not(@name)][.='1']"               
+            );
+
+    assertQ("check sorted paging",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                ,"facet.mincount","0"
+                ,"facet.offset","0"
+                ,"facet.limit","4"
+                )
+            ,"*[count(//lst[@name='trait_s']/int)=4]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Pig'][.='0']"
+            );
+
+    assertQ("check sorted paging",
+            req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                ,"facet.mincount","0"
+                ,"facet.offset","0"
+                ,"facet.limit","3"
+                ,"sort","true"
+                )
+            ,"*[count(//lst[@name='trait_s']/int)=3]"
+            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='1']"
+            ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
+            );
+
   }
  
-  public void testSimpleFacetCountsWithLimits() {
-    assertU(adoc("id", "1",  "t_s", "A"));
-    assertU(adoc("id", "2",  "t_s", "B"));
-    assertU(adoc("id", "3",  "t_s", "C"));
-    assertU(adoc("id", "4",  "t_s", "C"));
-    assertU(adoc("id", "5",  "t_s", "D"));
-    assertU(adoc("id", "6",  "t_s", "E"));
-    assertU(adoc("id", "7",  "t_s", "E"));
-    assertU(adoc("id", "8",  "t_s", "E"));
-    assertU(adoc("id", "9",  "t_s", "F"));
-    assertU(adoc("id", "10", "t_s", "G"));
-    assertU(adoc("id", "11", "t_s", "G"));
-    assertU(adoc("id", "12", "t_s", "G"));
-    assertU(adoc("id", "13", "t_s", "G"));
-    assertU(adoc("id", "14", "t_s", "G"));
+
+  public void testFacetMultiValued() {
+    doSimpleFacetCountsWithLimits("t_s");
+  }
+
+  public void testFacetSingleValued() {
+    doSimpleFacetCountsWithLimits("t_s1");
+  }
+
+  public void doSimpleFacetCountsWithLimits(String f) {
+    String pre = "//lst[@name='"+f+"']";
+    String notc = "id:[* TO *] -"+f+":C";
+
+    assertU(adoc("id", "1",  f, "A"));
+    assertU(adoc("id", "2",  f, "B"));
+    assertU(adoc("id", "3",  f, "C"));
+    assertU(adoc("id", "4",  f, "C"));
+    assertU(adoc("id", "5",  f, "D"));
+    assertU(adoc("id", "6",  f, "E"));
+    assertU(adoc("id", "7",  f, "E"));
+    assertU(adoc("id", "8",  f, "E"));
+    assertU(adoc("id", "9",  f, "F"));
+    assertU(adoc("id", "10", f, "G"));
+    assertU(adoc("id", "11", f, "G"));
+    assertU(adoc("id", "12", f, "G"));
+    assertU(adoc("id", "13", f, "G"));
+    assertU(adoc("id", "14", f, "G"));
     assertU(commit());
- 
+
     assertQ("check counts for unlimited facet",
             req("q", "id:[* TO *]"
                 ,"facet", "true"
-                ,"facet.field", "t_s"
+                ,"facet.field", f
                 )
-            ,"*[count(//lst[@name='facet_fields']/lst[@name='t_s']/int)=7]"
- 
-            ,"//lst[@name='t_s']/int[@name='G'][.='5']"
-            ,"//lst[@name='t_s']/int[@name='E'][.='3']"
-            ,"//lst[@name='t_s']/int[@name='C'][.='2']"
- 
-            ,"//lst[@name='t_s']/int[@name='A'][.='1']"
-            ,"//lst[@name='t_s']/int[@name='B'][.='1']"
-            ,"//lst[@name='t_s']/int[@name='D'][.='1']"
-            ,"//lst[@name='t_s']/int[@name='F'][.='1']"
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=7]"
+
+            ,pre+"/int[@name='G'][.='5']"
+            ,pre+"/int[@name='E'][.='3']"
+            ,pre+"/int[@name='C'][.='2']"
+
+            ,pre+"/int[@name='A'][.='1']"
+            ,pre+"/int[@name='B'][.='1']"
+            ,pre+"/int[@name='D'][.='1']"
+            ,pre+"/int[@name='F'][.='1']"
             );
- 
+
     assertQ("check counts for facet with generous limit",
             req("q", "id:[* TO *]"
                 ,"facet", "true"
                 ,"facet.limit", "100"
-                ,"facet.field", "t_s"
+                ,"facet.field", f
                 )
-            ,"*[count(//lst[@name='facet_fields']/lst[@name='t_s']/int)=7]"
- 
-            ,"//lst[@name='t_s']/int[1][@name='G'][.='5']"
-            ,"//lst[@name='t_s']/int[2][@name='E'][.='3']"
-            ,"//lst[@name='t_s']/int[3][@name='C'][.='2']"
- 
-            ,"//lst[@name='t_s']/int[@name='A'][.='1']"
-            ,"//lst[@name='t_s']/int[@name='B'][.='1']"
-            ,"//lst[@name='t_s']/int[@name='D'][.='1']"
-            ,"//lst[@name='t_s']/int[@name='F'][.='1']"
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=7]"
+
+            ,pre+"/int[1][@name='G'][.='5']"
+            ,pre+"/int[2][@name='E'][.='3']"
+            ,pre+"/int[3][@name='C'][.='2']"
+
+            ,pre+"/int[@name='A'][.='1']"
+            ,pre+"/int[@name='B'][.='1']"
+            ,pre+"/int[@name='D'][.='1']"
+            ,pre+"/int[@name='F'][.='1']"
             );
- 
+
     assertQ("check counts for limited facet",
             req("q", "id:[* TO *]"
                 ,"facet", "true"
                 ,"facet.limit", "2"
-                ,"facet.field", "t_s"
+                ,"facet.field", f
                 )
-            ,"*[count(//lst[@name='facet_fields']/lst[@name='t_s']/int)=2]"
- 
-            ,"//lst[@name='t_s']/int[1][@name='G'][.='5']"
-            ,"//lst[@name='t_s']/int[2][@name='E'][.='3']"
-            );
- 
-  }
-  
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
 
+            ,pre+"/int[1][@name='G'][.='5']"
+            ,pre+"/int[2][@name='E'][.='3']"
+            );
+
+   assertQ("check offset",
+            req("q", "id:[* TO *]"
+                ,"facet", "true"
+                ,"facet.offset", "1"
+                ,"facet.limit", "1"
+                ,"facet.field", f
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+
+            ,pre+"/int[1][@name='E'][.='3']"
+            );
+
+    assertQ("test sorted facet paging with zero (don't count in limit)",
+            req("q", "id:[* TO *]"
+                ,"fq",notc
+                ,"facet", "true"
+                ,"facet.field", f
+                ,"facet.mincount","1"
+                ,"facet.offset","0"
+                ,"facet.limit","6"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=6]"
+            ,pre+"/int[1][@name='G'][.='5']"
+            ,pre+"/int[2][@name='E'][.='3']"
+            ,pre+"/int[3][@name='A'][.='1']"
+            ,pre+"/int[4][@name='B'][.='1']"
+            ,pre+"/int[5][@name='D'][.='1']"
+            ,pre+"/int[6][@name='F'][.='1']"
+            );
+
+    assertQ("test sorted facet paging with zero (test offset correctness)",
+            req("q", "id:[* TO *]"
+                ,"fq",notc
+                ,"facet", "true"
+                ,"facet.field", f
+                ,"facet.mincount","1"
+                ,"facet.offset","3"
+                ,"facet.limit","2"
+                ,"facet.sort","true"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='B'][.='1']"
+            ,pre+"/int[2][@name='D'][.='1']"
+            );
+
+   assertQ("test facet unsorted paging",
+            req("q", "id:[* TO *]"
+                ,"fq",notc
+                ,"facet", "true"
+                ,"facet.field", f
+                ,"facet.mincount","1"
+                ,"facet.offset","0"
+                ,"facet.limit","6"
+                ,"facet.sort","false"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=6]"
+            ,pre+"/int[1][@name='A'][.='1']"
+            ,pre+"/int[2][@name='B'][.='1']"
+            ,pre+"/int[3][@name='D'][.='1']"
+            ,pre+"/int[4][@name='E'][.='3']"
+            ,pre+"/int[5][@name='F'][.='1']"
+            ,pre+"/int[6][@name='G'][.='5']"
+            );
+
+   assertQ("test facet unsorted paging",
+            req("q", "id:[* TO *]"
+                ,"fq",notc
+                ,"facet", "true"
+                ,"facet.field", f
+                ,"facet.mincount","1"
+                ,"facet.offset","3"
+                ,"facet.limit","2"
+                ,"facet.sort","false"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='E'][.='3']"
+            ,pre+"/int[2][@name='F'][.='1']"
+            );
+
+    assertQ("test facet unsorted paging, mincount=2",
+            req("q", "id:[* TO *]"
+                ,"fq",notc
+                ,"facet", "true"
+                ,"facet.field", f
+                ,"facet.mincount","2"
+                ,"facet.offset","1"
+                ,"facet.limit","2"
+                ,"facet.sort","false"
+                )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='G'][.='5']"
+            );
+  }
   
   private String mkstr(int len) {
     StringBuilder sb = new StringBuilder(len);

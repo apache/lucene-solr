@@ -37,16 +37,23 @@ Detailed Change List
 New Features
  1. SOLR-82: Default field values can be specified in the schema.xml.
     (Ryan McKinley via hossman)
+
  2. SOLR-89: Two new TokenFilters with corresponding Factories...
     * TrimFilter - Trims leading and trailing whitespace from Tokens
     * PatternReplaceFilter - applies a Pattern to each token in the
       stream, replacing match occurances with a specified replacement.
     (hossman)
+
  3. SOLR-91: allow configuration of a limit of the number of searchers 
     that can be warming in the background.  This can be used to avoid
     out-of-memory errors, or contention caused by more and more searchers
     warming in the background.  An error is thrown if the limit specified
     by maxWarmingSearchers in solrconfig.xml is exceeded. (yonik)
+
+ 4. SOLR-106: New faceting parameters that allow specification of a
+    minimum count for returned facets (facet.mincount), paging through facets
+    (facet.offset, facet.limit), and explicit sorting (facet.sort).
+    facet.zeros is now deprecated.  (yonik)
 
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
@@ -58,9 +65,11 @@ Optimizations
 Bug Fixes
  1. SOLR-87: Parsing of synonym files did not correctly handle escaped
     whitespace such as \r\n\t\b\f. (yonik)
+
  2. SOLR-92: DOMUtils.getText (used when parsing config files) did not 
     work properly with many DOM implementations when dealing with 
     "Attributes". (Ryan McKinley via hossman)
+
  3. SOLR-9,SOLR-99: Tighten up sort specification error checking, throw
     exceptions for missing sort specifications or a sort on a non-indexed
     field. (Ryan McKinley via yonik)

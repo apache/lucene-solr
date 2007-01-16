@@ -83,17 +83,32 @@ public abstract class SolrParams {
    * Facet Contraint Counts (multi-value)
    */
   public static final String FACET_FIELD = "facet.field";
+
+  /**
+   * The offset into the list of facets.
+   * Can be overriden on a per field basis.
+   */
+  public static final String FACET_OFFSET = "facet.offset";
+
   /**
    * Numeric option indicating the maximum number of facet field counts
    * be included in the response for each field - in descending order of count.
    * Can be overriden on a per field basis.
    */
   public static final String FACET_LIMIT = "facet.limit";
+
+  /**
+   * Numeric option indicating the minimum number of hits before a facet should
+   * be included in the response.  Can be overriden on a per field basis.
+   */
+  public static final String FACET_MINCOUNT = "facet.mincount";
+
   /**
    * Boolean option indicating whether facet field counts of "0" should 
    * be included in the response.  Can be overriden on a per field basis.
    */
   public static final String FACET_ZEROS = "facet.zeros";
+
   /**
    * Boolean option indicating whether the response should include a 
    * facet field count for all records which have no value for the 
@@ -101,6 +116,11 @@ public abstract class SolrParams {
    */
   public static final String FACET_MISSING = "facet.missing";
 
+  /**
+   * Boolean option: true causes facets to be sorted
+   * by the count, false results in natural index order.
+   */
+  public static final String FACET_SORT = "facet.sort";
 
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
@@ -166,6 +186,13 @@ public abstract class SolrParams {
     String val = get(param);
     return val==null ? def : Integer.parseInt(val);
   }
+
+  /** Returns the int value of the field param,
+  or the value for param, or def if neither is set. */
+  public Integer getFieldInt(String field, String param) {
+    String val = getFieldParam(field, param);
+    return val==null ? null : Integer.parseInt(val);
+  }
   
   /** Returns the int value of the field param, 
   or the value for param, or def if neither is set. */
@@ -173,6 +200,7 @@ public abstract class SolrParams {
     String val = getFieldParam(field, param);
     return val==null ? def : Integer.parseInt(val);
   }
+
 
   /** Returns the Float value of the param, or null if not set */
   public Float getFloat(String param) {
