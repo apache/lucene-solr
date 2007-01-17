@@ -20,18 +20,9 @@ Welcome to the Apache Solr project!
 Apache Solr is a search server based on the Apache Lucene search
 library. 
 
-Apache Solr is an effort undergoing incubation at The Apache Software
-Foundation (ASF), sponsored by Apache Lucene. Incubation is required of all
-newly accepted projects until a further review indicates that the
-infrastructure, communications, and decision making process have stabilized in
-a manner consistent with other successful ASF projects. While incubation status
-is not necessarily a reflection of the completeness or stability of the code,
-it does indicate that the project has yet to be fully endorsed by the ASF.
-
 For a complete description of the Solr project, team composition, source
-code repositories, and other details, please see the Solr incubation web site at
-http://incubator.apache.org/projects/solr.html.
-
+code repositories, and other details, please see the Solr web site at
+http://lucene.apache.org/solr.html.
 
 
 Getting Started

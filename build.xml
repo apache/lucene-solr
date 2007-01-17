@@ -54,10 +54,6 @@
     -->
   <property name="specversion" value="1.1.${dateversion}" />
 
-  <!-- Incubation Artifact Disclaimer Suffix -->
-  <!-- Once graduated from incubation, find/remove all refs to this prop -->
-  <property name="incubation-suffix" value="-incubating" />
-  
   <!-- 3rd party libraries for compilation -->
   <property name="lib" value="lib" />
 
@@ -77,7 +73,7 @@
   <property name="example" value="example" />
 
   <property name="fullname" value="apache-${ant.project.name}"/>
-  <property name="fullnamever" value="apache-${ant.project.name}-${version}${incubation-suffix}"/>
+  <property name="fullnamever" value="apache-${ant.project.name}-${version}"/>
 
   <!-- Javadoc properties -->
   <property name="javadoc.years" value="2006 - ${year}" />
@@ -207,8 +203,8 @@
       use="true"
       encoding="utf8"
       access="${javadoc.access}"
-      windowtitle="${Name} ${version}${incubation-suffix} API"
-      doctitle="${Name} ${version}${incubation-suffix} API (${specversion})"
+      windowtitle="${Name} ${version} API"
+      doctitle="${Name} ${version} API (${specversion})"
       bottom="Copyright &amp;copy; ${javadoc.years} The Apache Software Foundation"
       >
         <packageset dir="${src}/java"/>
@@ -358,7 +354,7 @@
                    value="org.apache.solr"/>
         <!-- impl version can be any string -->
         <attribute name="Implementation-Version" 
-                   value="${version}${incubation-suffix} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+                   value="${version} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
         <attribute name="Implementation-Vendor" 
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" 
