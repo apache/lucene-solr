@@ -7,6 +7,12 @@ module Solr
       def initialize(ruby_code)
         super(ruby_code)
         begin
+          #TODO: what about pulling up data/header/response to ResponseBase,
+          #      or maybe a new middle class like SelectResponseBase since
+          #      all Select queries return this same sort of stuff??
+          #      XML (&wt=xml) and Ruby (&wt=ruby) responses contain exactly the same structure.
+          #      a goal of solrb is to make it irrelevant which gets used under the hood, 
+          #      but favor Ruby responses.
           @data = eval(ruby_code)
           @header = @data['responseHeader']
           @response = @data['response']
