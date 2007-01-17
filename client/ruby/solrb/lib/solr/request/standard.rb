@@ -69,17 +69,19 @@ module Solr
           hash[:facet] = true
           hash[:"facet.field"] = []
           hash[:"facet.query"] = @params[:facets][:queries]
-          hash[:"facet.missing"] = @params[:facets][:missing]
-          hash[:"facet.zeros"] = @params[:facets][:zeros]
+          hash[:"facet.sort"] = (@params[:facets][:sort] == :count) if @params[:facets][:sort]
           hash[:"facet.limit"] = @params[:facets][:limit]
+          hash[:"facet.missing"] = @params[:facets][:missing]
+          hash[:"facet.mincount"] = @params[:facets][:mincount]
           @params[:facets][:fields].each do |f|
             if f.kind_of? Hash
               key = f.keys[0]
               value = f[key]
               hash[:"facet.field"] << key
-              hash[:"f.#{key}.facet.missing"] = value[:missing]
-              hash[:"f.#{key}.facet.zeros"] = value[:zeros]
+              hash[:"f.#{key}.facet.sort"] = (value[:sort] == :count) if value[:sort]
               hash[:"f.#{key}.facet.limit"] = value[:limit]
+              hash[:"f.#{key}.facet.missing"] = value[:missing]
+              hash[:"f.#{key}.facet.mincount"] = value[:mincount]
             else
               hash[:"facet.field"] << f
             end

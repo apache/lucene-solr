@@ -42,10 +42,11 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_equal "id,title,score", request.to_hash[:fl]
   end
     
-  def test_empty_params
-    request = Solr::Request::Standard.new(:query => 'query', :debug_query => false)
+  def test_missing_params
+    request = Solr::Request::Standard.new(:query => 'query', :debug_query => false, :facets => {:fields =>[:category_facet]})
     assert_nil request.to_hash[:rows]
     assert_no_match /rows/, request.to_s
+    assert_no_match /facet\.sort/, request.to_s
     assert_match /debugQuery/, request.to_s
   end
   
@@ -53,20 +54,20 @@ class StandardRequestTest < Test::Unit::TestCase
     request = Solr::Request::Standard.new(:query => 'query',
        :facets => {
          :fields => [:genre,
-                     {:year => {:limit => 50, :zeros => false, :missing => false}}], # field that overrides the global facet parameters
+                     {:year => {:limit => 50, :mincount => 0, :missing => false, :sort => :term}}], # field that overrides the global facet parameters
          :queries => ["q1", "q2"],
-         :limit => 5, :zeros => true, :missing => true  # global facet parameters
+         :limit => 5, :zeros => true, :mincount => 20, :sort => :count  # global facet parameters
         }
     )
     assert_equal true, request.to_hash[:facet]
     assert_equal [:genre, :year], request.to_hash[:"facet.field"]
     assert_equal ["q1", "q2"], request.to_hash[:"facet.query"]
-    assert_equal true, request.to_hash[:"facet.missing"]
     assert_equal 5, request.to_hash[:"facet.limit"]
-    assert_equal true, request.to_hash[:"facet.zeros"]
+    assert_equal 20, request.to_hash[:"facet.mincount"]
+    assert_equal true, request.to_hash[:"facet.sort"]
     assert_equal 50, request.to_hash[:"f.year.facet.limit"]
-    assert_equal false, request.to_hash[:"f.year.facet.zeros"]
-    assert_equal false, request.to_hash[:"f.year.facet.missing"]
+    assert_equal 0, request.to_hash[:"f.year.facet.mincount"]
+    assert_equal false, request.to_hash[:"f.year.facet.sort"]
   end
 
   def test_basic_sort

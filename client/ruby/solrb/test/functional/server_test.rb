@@ -11,6 +11,7 @@
 # limitations under the License.
 
 require 'test/unit'
+require 'solr'
 
 class BadRequest < Solr::Request::Standard
   def response_format
