@@ -4,21 +4,24 @@ solrb exposes the power of Solr as a Ruby  DSL (domain specific language).
 
 USAGE 
 
-First launch Solr.
+First launch Solr:
 
   cd solr
   java -jar start.jar
 
-In a separate shell, launch irb -Ilib.
+In a separate shell, launch {{{irb -Ilib}}}:
+
+  require 'solr'  # load the library
+  include Solr    # Allow Solr:: to be omitted from class/module references
 
   # connect to the solr instance
   conn = Connection.new('http://localhost:8983/solr', :autocommit => :on)
 
   # add a document to the index
-  conn.add(:id => 123, :title => 'Lucene in Action')
+  conn.add(:id => 123, :title_text => 'Lucene in Action')
 
   # update the document
-  conn.update(:id => 123, :title => 'Solr in Action')
+  conn.update(:id => 123, :title_text => 'Solr in Action')
 
   # print out the first hit in a query for 'action'
   response = conn.query('action')
@@ -26,7 +29,7 @@ In a separate shell, launch irb -Ilib.
 
   # iterate through all the hits for 'action'
   conn.query('action') do |hit|
-    puts hit
+    puts hit.inspect
   end
 
   # delete document by id

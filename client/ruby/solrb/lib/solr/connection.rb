@@ -70,6 +70,7 @@ module Solr
     #   end
    
     def query(query, options={}, &action)
+      # TODO: Shouldn't this return an exception if the Solr status is not ok?  (rather than true/false).
       options[:query] = query
       request = Solr::Request::Standard.new(options)
       response = send(request)
