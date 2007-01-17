@@ -38,6 +38,13 @@
       <title>News</title>
 
       <section>
+      <title>17 January 2007: Solr graduates from Incubator</title>
+      <p>
+        Solr has graduated from the Apache Incubator, and is now a sub-project of Lucene.
+      </p>
+      </section>
+
+      <section>
       <title>22 December 2006: Release 1.1.0 available</title>
       <p>
         This is the first release since Solr joined the Incubator, and brings
