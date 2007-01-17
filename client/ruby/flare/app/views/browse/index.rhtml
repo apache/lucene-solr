@@ -1,2 +1,14 @@
-<h1>Welcome to Solr Flare</h1>
-Coming soon!   For now, check out the <a href="http://wiki.apache.org/solr/Flare">Flare wiki</a>
+<% form_tag(:action=>'add_query') do %>
+  Query: <%=text_field_tag 'query'%>
+<% end %>
+<%=link_to 'clear constraints', :action => 'clear'%>
+Queries: <%=session[:queries].join(' AND ')%>
+Filters: <%=session[:filters].join(' >>> ')%>
+
+Found: <%=@results['response']['numFound']%>
+<ul>
+  <% @results['response']['docs'].each do |doc| %>
+    <li><%=doc.inspect%></li>
+  <% end %>
+</ul>
+<%=debug @results['responseHeader']%>

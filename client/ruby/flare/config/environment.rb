@@ -57,4 +57,4 @@ end
 $KCODE = 'UTF8'
 
 require 'solr'
-SOLR = Solr::Connection.new("http://localhost:8983")
+SOLR = Solr::Connection.new("http://localhost:8983/solr")

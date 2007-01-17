@@ -1,0 +1,3 @@
+<% @facets.each do |value,count| %>
+  <%= link_to value, :action => 'add_filter', :field => @field, :value => value %> (<%=count%>)
+<% end%>
