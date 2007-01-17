@@ -75,12 +75,12 @@ Instructions for Building Apache Solr from Source
    command path.  To test this, issue a "ant -version" command from your
    shell and verify that Ant is available.
 
-3. Download the Apache Solr distribution, linked from the above incubator
+3. Download the Apache Solr distribution, linked from the above 
    web site.  Expand the distribution to a folder of your choice, e.g. c:\solr.   
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the Subversion repository:
 
-     http://incubator.apache.org/solr/version_control.html
+     http://lucene.apache.org/solr/version_control.html
 
 4. Navigate to that folder and issue an "ant" command to see the available options
    for building, testing, and packaging Solr.
