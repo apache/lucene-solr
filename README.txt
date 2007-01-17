@@ -36,11 +36,11 @@ using the example setup can be found in "docs/tutorial.html"
 Files Included In Apache Solr Distributions
 -------------------------------------------
 
-dist/apache-solr-XX-incubating.war
+dist/apache-solr-XX.war
   The Apache Solr Application.  Deploy this WAR file to any servlet
   container to run Apache Solr.
 
-dist/apache-solr-XX-incubating.jar
+dist/apache-solr-XXg.jar
   The Apache Solr Libraries.  This JAR file is needed to compile
   Apache Solr Plugins (see http://wiki.apache.org/solr/SolrPlugins for
   more information).
