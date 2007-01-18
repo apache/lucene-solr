@@ -253,11 +253,11 @@ public class TestLockFactory extends TestCase {
         String indexDirName = "index.TestLockFactory5";
 
         LockFactory lf = new SingleInstanceLockFactory();
-        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, true, lf);
+        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lf);
 
         // Different lock factory instance should hit IOException:
         try {
-            FSDirectory fs2 = FSDirectory.getDirectory(indexDirName, true, new SingleInstanceLockFactory());
+            FSDirectory fs2 = FSDirectory.getDirectory(indexDirName, new SingleInstanceLockFactory());
             fail("Should have hit an IOException because LockFactory instances differ");
         } catch (IOException e) {
         }
@@ -266,7 +266,7 @@ public class TestLockFactory extends TestCase {
 
         // Same lock factory instance should not:
         try {
-            fs2 = FSDirectory.getDirectory(indexDirName, true, lf);
+            fs2 = FSDirectory.getDirectory(indexDirName, lf);
         } catch (IOException e) {
             e.printStackTrace(System.out);
             fail("Should not have hit an IOException because LockFactory instances are the same");
@@ -296,7 +296,7 @@ public class TestLockFactory extends TestCase {
     }
 
     public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws IOException {
-        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, true, lockFactory);
+        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lockFactory);
 
         // First create a 1 doc index:
         IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true);
@@ -350,8 +350,8 @@ public class TestLockFactory extends TestCase {
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get identical instances:
-      Directory dir1 = FSDirectory.getDirectory("TestLockFactory.8", true, new NativeFSLockFactory("TestLockFactory.8"));
-      Directory dir2 = FSDirectory.getDirectory("TestLockFactory.9", true, new NativeFSLockFactory("TestLockFactory.9"));
+      Directory dir1 = FSDirectory.getDirectory("TestLockFactory.8", new NativeFSLockFactory("TestLockFactory.8"));
+      Directory dir2 = FSDirectory.getDirectory("TestLockFactory.9", new NativeFSLockFactory("TestLockFactory.9"));
 
       String prefix1 = dir1.getLockFactory().getLockPrefix();
       String prefix2 = dir2.getLockFactory().getLockPrefix();
@@ -366,8 +366,8 @@ public class TestLockFactory extends TestCase {
     // write.lock is stored in index):
     public void testDefaultFSLockFactoryPrefix() throws IOException {
 
-      // Make sure we get identical instances:
-      Directory dir = FSDirectory.getDirectory("TestLockFactory.10", true);
+      // Make sure we get null prefix:
+      Directory dir = FSDirectory.getDirectory("TestLockFactory.10");
 
       String prefix = dir.getLockFactory().getLockPrefix();
 

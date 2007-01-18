@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store._TestHelper;
+import org.apache.lucene.util._TestUtil;
 
 
 /**
@@ -58,8 +59,9 @@ public class TestCompoundFile extends TestCase
 
 
     public void setUp() throws IOException {
-        //dir = new RAMDirectory();
-        dir = FSDirectory.getDirectory(new File(System.getProperty("tempDir"), "testIndex"), true);
+       File file = new File(System.getProperty("tempDir"), "testIndex");
+       _TestUtil.rmDir(file);
+       dir = FSDirectory.getDirectory(file);
     }
 
 

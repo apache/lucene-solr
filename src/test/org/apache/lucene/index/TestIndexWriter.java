@@ -447,7 +447,7 @@ public class TestIndexWriter extends TestCase
         File indexDir = new File(tempDir, "lucenetestindexwriter");
 
         try {
-          Directory dir = FSDirectory.getDirectory(indexDir, true);
+          Directory dir = FSDirectory.getDirectory(indexDir);
 
           // add one document & close writer
           IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);

@@ -128,13 +128,13 @@ public abstract class IndexReader {
   /** Returns an IndexReader reading the index in an FSDirectory in the named
    path. */
   public static IndexReader open(String path) throws IOException {
-    return open(FSDirectory.getDirectory(path, false), true);
+    return open(FSDirectory.getDirectory(path), true);
   }
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
    path. */
   public static IndexReader open(File path) throws IOException {
-    return open(FSDirectory.getDirectory(path, false), true);
+    return open(FSDirectory.getDirectory(path), true);
   }
 
   /** Returns an IndexReader reading the index in the given Directory. */
@@ -240,7 +240,7 @@ public abstract class IndexReader {
    * @throws IOException if segments file cannot be read
    */
   public static long getCurrentVersion(File directory) throws IOException {
-    Directory dir = FSDirectory.getDirectory(directory, false);
+    Directory dir = FSDirectory.getDirectory(directory);
     long version = getCurrentVersion(dir);
     dir.close();
     return version;
@@ -767,7 +767,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a problem with accessing the index
    */
   public static boolean isLocked(String directory) throws IOException {
-    Directory dir = FSDirectory.getDirectory(directory, false);
+    Directory dir = FSDirectory.getDirectory(directory);
     boolean result = isLocked(dir);
     dir.close();
     return result;
@@ -815,7 +815,7 @@ public abstract class IndexReader {
       File file = new File(filename);
       String dirname = file.getAbsoluteFile().getParent();
       filename = file.getName();
-      dir = FSDirectory.getDirectory(dirname, false);
+      dir = FSDirectory.getDirectory(dirname);
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.list();

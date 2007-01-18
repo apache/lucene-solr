@@ -28,7 +28,7 @@ import java.util.Hashtable;
 
 import org.apache.lucene.index.IndexFileNameFilter;
 
-// Used only for WRITE_LOCK_NAME:
+// Used only for WRITE_LOCK_NAME in deprecated create=true case:
 import org.apache.lucene.index.IndexWriter;
 
 /**
@@ -39,6 +39,11 @@ import org.apache.lucene.index.IndexWriter;
  * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code> Java system
  * property, or by calling {@link #setLockFactory} after creating
  * the Directory.
+
+ * <p>Directories are cached, so that, for a given canonical
+ * path, the same FSDirectory instance will always be
+ * returned by <code>getDirectory</code>.  This permits
+ * synchronization on directories.</p>
  *
  * @see Directory
  * @author Doug Cutting
@@ -89,8 +94,7 @@ public class FSDirectory extends Directory {
    * etc.) passing in your preferred lock directory.  Then,
    * pass this <code>LockFactory</code> instance to one of
    * the <code>getDirectory</code> methods that take a
-   * <code>lockFactory</code> (for example, {@link
-   * #getDirectory(String, boolean, LockFactory)}).
+   * <code>lockFactory</code> (for example, {@link #getDirectory(String, LockFactory)}).
    */
   public static final String LOCK_DIR = System.getProperty("org.apache.lucene.lockDir",
                                                            System.getProperty("java.io.tmpdir"));
@@ -128,73 +132,48 @@ public class FSDirectory extends Directory {
   private byte[] buffer = null;
 
   /** Returns the directory instance for the named location.
-   *
-   * <p>Directories are cached, so that, for a given canonical path, the same
-   * FSDirectory instance will always be returned.  This permits
-   * synchronization on directories.
-   *
    * @param path the path to the directory.
-   * @param create if true, create, or erase any existing contents.
    * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(String path, boolean create)
+  public static FSDirectory getDirectory(String path)
       throws IOException {
-    return getDirectory(new File(path), create, null, true);
-  }
-
-  /** Returns the directory instance for the named location, using the
-   * provided LockFactory implementation.
-   *
-   * <p>Directories are cached, so that, for a given canonical path, the same
-   * FSDirectory instance will always be returned.  This permits
-   * synchronization on directories.
-   *
-   * @param path the path to the directory.
-   * @param create if true, create, or erase any existing contents.
-   * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(String path, boolean create,
-                                         LockFactory lockFactory, boolean doRemoveOldFiles)
-      throws IOException {
-    return getDirectory(new File(path), create, lockFactory, doRemoveOldFiles);
-  }
-
-  public static FSDirectory getDirectory(String path, boolean create,
-                                         LockFactory lockFactory)
-      throws IOException {
-    return getDirectory(new File(path), create, lockFactory, true);
+    return getDirectory(new File(path), null);
   }
 
   /** Returns the directory instance for the named location.
-   *
-   * <p>Directories are cached, so that, for a given canonical path, the same
-   * FSDirectory instance will always be returned.  This permits
-   * synchronization on directories.
-   *
-   * @param file the path to the directory.
-   * @param create if true, create, or erase any existing contents.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file, boolean create, boolean doRemoveOldFiles)
-    throws IOException {
-    return getDirectory(file, create, null, doRemoveOldFiles);
-  }
-
-  /** Returns the directory instance for the named location, using the
-   * provided LockFactory implementation.
-   *
-   * <p>Directories are cached, so that, for a given canonical path, the same
-   * FSDirectory instance will always be returned.  This permits
-   * synchronization on directories.
-   *
-   * @param file the path to the directory.
-   * @param create if true, create, or erase any existing contents.
-   * @param lockFactory instance of  {@link LockFactory} providing the
+   * @param path the path to the directory.
+   * @param lockFactory instance of {@link LockFactory} providing the
    *        locking implementation.
    * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file, boolean create,
-                                         LockFactory lockFactory, boolean doRemoveOldFiles)
+  public static FSDirectory getDirectory(String path, LockFactory lockFactory)
+      throws IOException {
+    return getDirectory(new File(path), lockFactory);
+  }
+
+  /** Returns the directory instance for the named location.
+   * @param file the path to the directory.
+   * @return the FSDirectory for the named file.  */
+  public static FSDirectory getDirectory(File file)
     throws IOException {
+    return getDirectory(file, null);
+  }
+
+  /** Returns the directory instance for the named location.
+   * @param file the path to the directory.
+   * @param lockFactory instance of {@link LockFactory} providing the
+   *        locking implementation.
+   * @return the FSDirectory for the named file.  */
+  public static FSDirectory getDirectory(File file, LockFactory lockFactory)
+    throws IOException
+  {
     file = new File(file.getCanonicalPath());
+
+    if (file.exists() && !file.isDirectory())
+      throw new IOException(file + " not a directory");
+
+    if (!file.exists())
+      if (!file.mkdirs())
+        throw new IOException("Cannot create directory: " + file);
+
     FSDirectory dir;
     synchronized (DIRECTORIES) {
       dir = (FSDirectory)DIRECTORIES.get(file);
@@ -204,18 +183,13 @@ public class FSDirectory extends Directory {
         } catch (Exception e) {
           throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
         }
-        dir.init(file, create, lockFactory, doRemoveOldFiles);
+        dir.init(file, lockFactory);
         DIRECTORIES.put(file, dir);
       } else {
-
         // Catch the case where a Directory is pulled from the cache, but has a
         // different LockFactory instance.
         if (lockFactory != null && lockFactory != dir.getLockFactory()) {
           throw new IOException("Directory was previously created with a different LockFactory instance; please pass null as the lockFactory instance and use setLockFactory to change it");
-        }
-
-        if (create) {
-          dir.create(doRemoveOldFiles);
         }
       }
     }
@@ -225,16 +199,54 @@ public class FSDirectory extends Directory {
     return dir;
   }
 
-  public static FSDirectory getDirectory(File file, boolean create,
-                                         LockFactory lockFactory)
-    throws IOException
-  {
-    return getDirectory(file, create, lockFactory, true);
+
+  /** Returns the directory instance for the named location.
+   *
+   * @deprecated Use IndexWriter's create flag, instead, to
+   * create a new index.
+   *
+   * @param path the path to the directory.
+   * @param create if true, create, or erase any existing contents.
+   * @return the FSDirectory for the named file.  */
+  public static FSDirectory getDirectory(String path, boolean create)
+      throws IOException {
+    return getDirectory(new File(path), create);
   }
 
+  /** Returns the directory instance for the named location.
+   *
+   * @deprecated Use IndexWriter's create flag, instead, to
+   * create a new index.
+   *
+   * @param file the path to the directory.
+   * @param create if true, create, or erase any existing contents.
+   * @return the FSDirectory for the named file.  */
   public static FSDirectory getDirectory(File file, boolean create)
-    throws IOException {
-    return getDirectory(file, create, true);
+    throws IOException
+  {
+    FSDirectory dir = getDirectory(file, null);
+
+    // This is now deprecated (creation should only be done
+    // by IndexWriter):
+    if (create) {
+      dir.create();
+    }
+
+    return dir;
+  }
+
+  private void create() throws IOException {
+    if (directory.exists()) {
+      String[] files = directory.list(IndexFileNameFilter.getFilter());            // clear old files
+      if (files == null)
+        throw new IOException("Cannot read directory " + directory.getAbsolutePath());
+      for (int i = 0; i < files.length; i++) {
+        File file = new File(directory, files[i]);
+        if (!file.delete())
+          throw new IOException("Cannot delete " + file);
+      }
+    }
+    lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
   }
 
   private File directory = null;
@@ -242,23 +254,14 @@ public class FSDirectory extends Directory {
 
   protected FSDirectory() {};                     // permit subclassing
 
-  private void init(File path, boolean create, boolean doRemoveOldFiles) throws IOException {
-    directory = path;
-
-    if (create) {
-      create(doRemoveOldFiles);
-    }
-
-    if (!directory.isDirectory())
-      throw new IOException(path + " not a directory");
-  }
-
-  private void init(File path, boolean create, LockFactory lockFactory, boolean doRemoveOldFiles) throws IOException {
+  private void init(File path, LockFactory lockFactory) throws IOException {
 
     // Set up lockFactory with cascaded defaults: if an instance was passed in,
     // use that; else if locks are disabled, use NoLockFactory; else if the
     // system property org.apache.lucene.store.FSDirectoryLockFactoryClass is set,
     // instantiate that; else, use SimpleFSLockFactory:
+
+    directory = path;
 
     boolean doClearLockID = false;
 
@@ -297,43 +300,13 @@ public class FSDirectory extends Directory {
       }
     }
 
-    // Must initialize directory here because setLockFactory uses it
-    // (when the LockFactory calls getLockID).  But we want to create
-    // the lockFactory before calling init() because init() needs to
-    // use the lockFactory to clear old locks.  So this breaks
-    // chicken/egg:
-    directory = path;
-
     setLockFactory(lockFactory);
+
     if (doClearLockID) {
       // Clear the prefix because write.lock will be
       // stored in our directory:
       lockFactory.setLockPrefix(null);
     }
-
-    init(path, create, doRemoveOldFiles);
-  }
-
-  private synchronized void create(boolean doRemoveOldFiles) throws IOException {
-    if (!directory.exists())
-      if (!directory.mkdirs())
-        throw new IOException("Cannot create directory: " + directory);
-
-    if (!directory.isDirectory())
-      throw new IOException(directory + " not a directory");
-
-    if (doRemoveOldFiles) {
-      String[] files = directory.list(IndexFileNameFilter.getFilter());            // clear old files
-      if (files == null)
-        throw new IOException("Cannot read directory " + directory.getAbsolutePath());
-      for (int i = 0; i < files.length; i++) {
-        File file = new File(directory, files[i]);
-        if (!file.delete())
-          throw new IOException("Cannot delete " + file);
-      }
-    }
-
-    lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
   }
 
   /** Returns an array of strings, one for each Lucene index file in the directory. */
@@ -445,6 +418,7 @@ public class FSDirectory extends Directory {
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
   public IndexOutput createOutput(String name) throws IOException {
+
     File file = new File(directory, name);
     if (file.exists() && !file.delete())          // delete existing, if any
       throw new IOException("Cannot overwrite: " + file);

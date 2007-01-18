@@ -107,7 +107,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @see #RAMDirectory(Directory)
    */
   public RAMDirectory(File dir) throws IOException {
-    this(FSDirectory.getDirectory(dir, false), true);
+    this(FSDirectory.getDirectory(dir), true);
   }
 
   /**
@@ -118,7 +118,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @see #RAMDirectory(Directory)
    */
   public RAMDirectory(String dir) throws IOException {
-    this(FSDirectory.getDirectory(dir, false), true);
+    this(FSDirectory.getDirectory(dir), true);
   }
 
   /** Returns an array of strings, one for each file in the directory. */

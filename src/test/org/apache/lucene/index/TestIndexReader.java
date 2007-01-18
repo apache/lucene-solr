@@ -33,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util._TestUtil;
 
 import java.util.Collection;
 import java.util.Arrays;
@@ -253,7 +254,7 @@ public class TestIndexReader extends TestCase
             throw new IOException("tempDir undefined, cannot run test");
 
         File indexDir = new File(tempDir, "lucenetestnormwriter");
-        Directory dir = FSDirectory.getDirectory(indexDir, true);
+        Directory dir = FSDirectory.getDirectory(indexDir);
         IndexWriter writer = null;
         IndexReader reader = null;
         Term searchTerm = new Term("content", "aaa");
@@ -320,7 +321,7 @@ public class TestIndexReader extends TestCase
     private void deleteReaderWriterConflict(boolean optimize) throws IOException
     {
         //Directory dir = new RAMDirectory();
-        Directory dir = getDirectory(true);
+        Directory dir = getDirectory();
 
         Term searchTerm = new Term("content", "aaa");
         Term searchTerm2 = new Term("content", "bbb");
@@ -400,21 +401,23 @@ public class TestIndexReader extends TestCase
         reader.close();
     }
 
-  private Directory getDirectory(boolean create) throws IOException {
-    return FSDirectory.getDirectory(new File(System.getProperty("tempDir"), "testIndex"), create);
+  private Directory getDirectory() throws IOException {
+    return FSDirectory.getDirectory(new File(System.getProperty("tempDir"), "testIndex"));
   }
 
   public void testFilesOpenClose() throws IOException
     {
         // Create initial data set
-        Directory dir = getDirectory(true);
+        File dirFile = new File(System.getProperty("tempDir"), "testIndex");
+        Directory dir = getDirectory();
         IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
         addDoc(writer, "test");
         writer.close();
         dir.close();
 
         // Try to erase the data - this ensures that the writer closed all files
-        dir = getDirectory(true);
+        _TestUtil.rmDir(dirFile);
+        dir = getDirectory();
 
         // Now create the data set again, just as before
         writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
@@ -423,13 +426,14 @@ public class TestIndexReader extends TestCase
         dir.close();
 
         // Now open existing directory and test that reader closes all files
-        dir = getDirectory(false);
+        dir = getDirectory();
         IndexReader reader1 = IndexReader.open(dir);
         reader1.close();
         dir.close();
 
-        // The following will fail if reader did not close all files
-        dir = getDirectory(true);
+        // The following will fail if reader did not close
+        // all files
+        _TestUtil.rmDir(dirFile);
     }
 
     public void testLastModified() throws IOException {
@@ -833,7 +837,7 @@ public class TestIndexReader extends TestCase
 
     private void deleteReaderReaderConflict(boolean optimize) throws IOException
     {
-        Directory dir = getDirectory(true);
+        Directory dir = getDirectory();
 
         Term searchTerm1 = new Term("content", "aaa");
         Term searchTerm2 = new Term("content", "bbb");

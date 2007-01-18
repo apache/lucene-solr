@@ -71,7 +71,7 @@ public class TestRAMDirectory extends TestCase {
   
   public void testRAMDirectory () throws IOException {
     
-    Directory dir = FSDirectory.getDirectory(indexDir, false);
+    Directory dir = FSDirectory.getDirectory(indexDir);
     MockRAMDirectory ramDir = new MockRAMDirectory(dir);
     
     // close the underlaying directory

@@ -184,6 +184,11 @@ API Changes
 
 15. Added isOptimized() method to IndexReader.
     (Otis Gospodnetic)
+
+16. LUCENE-773: Deprecate the FSDirectory.getDirectory(*) methods that
+    take a boolean "create" argument.  Instead you should use
+    IndexWriter's "create" argument to create a new index.
+    (Mike McCandless)
     
 Bug fixes
 

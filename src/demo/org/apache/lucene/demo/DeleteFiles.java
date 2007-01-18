@@ -37,7 +37,7 @@ public class DeleteFiles {
       System.exit(1);
     }
     try {
-      Directory directory = FSDirectory.getDirectory("index", false);
+      Directory directory = FSDirectory.getDirectory("index");
       IndexReader reader = IndexReader.open(directory);
 
       Term term = new Term("path", args[0]);

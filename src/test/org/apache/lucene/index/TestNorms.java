@@ -65,7 +65,7 @@ public class TestNorms extends TestCase {
     
     // test with a single index: index1
     File indexDir1 = new File(tempDir, "lucenetestindex1");
-    Directory dir1 = FSDirectory.getDirectory(indexDir1, true);
+    Directory dir1 = FSDirectory.getDirectory(indexDir1);
 
     norms = new ArrayList();
     modifiedNorms = new ArrayList();
@@ -83,14 +83,14 @@ public class TestNorms extends TestCase {
     numDocNorms = 0;
     
     File indexDir2 = new File(tempDir, "lucenetestindex2");
-    Directory dir2 = FSDirectory.getDirectory(indexDir2, true);
+    Directory dir2 = FSDirectory.getDirectory(indexDir2);
 
     createIndex(dir2);
     doTestNorms(dir2);
 
     // add index1 and index2 to a third index: index3
     File indexDir3 = new File(tempDir, "lucenetestindex3");
-    Directory dir3 = FSDirectory.getDirectory(indexDir3, true);
+    Directory dir3 = FSDirectory.getDirectory(indexDir3);
 
     createIndex(dir3);
     IndexWriter iw = new IndexWriter(dir3,anlzr,false);

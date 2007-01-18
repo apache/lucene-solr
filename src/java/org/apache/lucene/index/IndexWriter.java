@@ -36,23 +36,27 @@ import java.util.HashSet;
 /**
   An IndexWriter creates and maintains an index.
 
-  The third argument to the 
+  <p>The third argument (<code>create</code>) to the 
   <a href="#IndexWriter(org.apache.lucene.store.Directory, org.apache.lucene.analysis.Analyzer, boolean)"><b>constructor</b></a>
   determines whether a new index is created, or whether an existing index is
-  opened for the addition of new documents.
+  opened for the addition of new documents.  Note that you
+  can open an index with create=true even while readers are
+  using the index.  The old readers will continue to search
+  the "point in time" snapshot they had opened, and won't
+  see the newly created index until they re-open.</p>
 
-  In either case, documents are added with the <a
+  <p>In either case, documents are added with the <a
   href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a> method.  
-  When finished adding documents, <a href="#close()"><b>close</b></a> should be called.
+  When finished adding documents, <a href="#close()"><b>close</b></a> should be called.</p>
 
   <p>If an index will not have more documents added for a while and optimal search
   performance is desired, then the <a href="#optimize()"><b>optimize</b></a>
-  method should be called before the index is closed.
+  method should be called before the index is closed.</p>
   
   <p>Opening an IndexWriter creates a lock file for the directory in use. Trying to open
   another IndexWriter on the same directory will lead to an IOException. The IOException
   is also thrown if an IndexReader on the same directory is used to delete documents
-  from the index.
+  from the index.</p>
   
   @see IndexModifier IndexModifier supports the important methods of IndexWriter plus deletion
   */
@@ -313,12 +317,12 @@ public class IndexWriter {
 
   private void init(String path, Analyzer a, final boolean create)
     throws IOException {
-    init(FSDirectory.getDirectory(path, create, null, false), a, create, true);
+    init(FSDirectory.getDirectory(path), a, create, true);
   }
 
   private void init(File path, Analyzer a, final boolean create)
     throws IOException {
-    init(FSDirectory.getDirectory(path, create, null, false), a, create, true);
+    init(FSDirectory.getDirectory(path), a, create, true);
   }
 
   private void init(Directory d, Analyzer a, final boolean create, boolean closeDir)
@@ -326,6 +330,11 @@ public class IndexWriter {
     this.closeDir = closeDir;
     directory = d;
     analyzer = a;
+
+    if (create) {
+      // Clear the write lock in case it's leftover:
+      directory.getLockFactory().clearLock(IndexWriter.WRITE_LOCK_NAME);
+    }
 
     Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
     if (!writeLock.obtain(writeLockTimeout)) // obtain write lock

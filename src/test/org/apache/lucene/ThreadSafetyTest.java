@@ -139,7 +139,7 @@ class ThreadSafetyTest {
     File indexDir = new File("index");
     if (! indexDir.exists()) indexDir.mkdirs();
     
-    IndexReader.unlock(FSDirectory.getDirectory(indexDir, false));
+    IndexReader.unlock(FSDirectory.getDirectory(indexDir));
 
     if (!readOnly) {
       IndexWriter writer = new IndexWriter(indexDir, ANALYZER, !add);

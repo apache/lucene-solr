@@ -47,7 +47,7 @@ public class TestWindowsMMap extends TestCase {
 
 	public void testMmapIndex() throws Exception {
 		FSDirectory storeDirectory;
-		storeDirectory = FSDirectory.getDirectory(storePathname, true);
+		storeDirectory = FSDirectory.getDirectory(storePathname);
 
 		// plan to add a set of useful stopwords, consider changing some of the
 		// interior filters.

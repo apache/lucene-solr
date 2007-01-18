@@ -119,7 +119,7 @@ public class TestBackwardsCompatibility extends TestCase
     //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer());
     //Query query = parser.parse("handle:1");
 
-    Directory dir = FSDirectory.getDirectory(dirName, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
     IndexSearcher searcher = new IndexSearcher(dir);
     
     Hits hits = searcher.search(new TermQuery(new Term("content", "aaa")));
@@ -137,7 +137,7 @@ public class TestBackwardsCompatibility extends TestCase
    * setNorm, and search */
   public void changeIndexWithAdds(String dirName) throws IOException {
 
-    Directory dir = FSDirectory.getDirectory(dirName, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
     // open writer
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
 
@@ -194,7 +194,7 @@ public class TestBackwardsCompatibility extends TestCase
    * setNorm, and search */
   public void changeIndexNoAdds(String dirName) throws IOException {
 
-    Directory dir = FSDirectory.getDirectory(dirName, false);
+    Directory dir = FSDirectory.getDirectory(dirName);
 
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir);
@@ -238,7 +238,7 @@ public class TestBackwardsCompatibility extends TestCase
 
   public void createIndex(String dirName, boolean doCFS) throws IOException {
 
-    Directory dir = FSDirectory.getDirectory(dirName, true);
+    Directory dir = FSDirectory.getDirectory(dirName);
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setUseCompoundFile(doCFS);
     
@@ -265,7 +265,7 @@ public class TestBackwardsCompatibility extends TestCase
   public void testExactFileNames() throws IOException {
 
     String outputDir = "lucene.backwardscompat0.index";
-    Directory dir = FSDirectory.getDirectory(outputDir, true);
+    Directory dir = FSDirectory.getDirectory(outputDir);
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     for(int i=0;i<35;i++) {
       addDoc(writer, i);

@@ -36,6 +36,7 @@ import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util._TestUtil;
 
 public class TestFieldsReader extends TestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -167,7 +168,8 @@ public class TestFieldsReader extends TestCase {
     String userName = System.getProperty("user.name");
     String path = tmpIODir + File.separator + "lazyDir" + userName;
     File file = new File(path);
-    FSDirectory tmpDir = FSDirectory.getDirectory(file, true);
+    _TestUtil.rmDir(file);
+    FSDirectory tmpDir = FSDirectory.getDirectory(file);
     assertTrue(tmpDir != null);
     DocumentWriter writer = new DocumentWriter(tmpDir, new WhitespaceAnalyzer(),
             Similarity.getDefault(), 50);

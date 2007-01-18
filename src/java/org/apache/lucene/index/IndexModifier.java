@@ -121,7 +121,7 @@ public class IndexModifier {
    * 	<code>false</code> to append to the existing index
    */
   public IndexModifier(String dirName, Analyzer analyzer, boolean create) throws IOException {
-    Directory dir = FSDirectory.getDirectory(dirName, create);
+    Directory dir = FSDirectory.getDirectory(dirName);
     init(dir, analyzer, create);
   }
 
@@ -134,7 +134,7 @@ public class IndexModifier {
    * 	<code>false</code> to append to the existing index
    */
   public IndexModifier(File file, Analyzer analyzer, boolean create) throws IOException {
-    Directory dir = FSDirectory.getDirectory(file, create);
+    Directory dir = FSDirectory.getDirectory(file);
     init(dir, analyzer, create);
   }
 

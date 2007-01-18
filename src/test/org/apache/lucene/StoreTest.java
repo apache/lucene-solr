@@ -22,6 +22,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util._TestUtil;
 
 import java.util.Date;
 import java.util.Random;
@@ -46,8 +47,11 @@ class StoreTest {
     Directory store;
     if (ram)
       store = new RAMDirectory();
-    else
-      store = FSDirectory.getDirectory("test.store", true);
+    else {
+      String dirName = "test.store";
+      _TestUtil.rmDir(dirName);
+      store = FSDirectory.getDirectory(dirName);
+    }
 
     final int LENGTH_MASK = 0xFFF;
 
@@ -84,7 +88,7 @@ class StoreTest {
     start = new Date();
 
     if (!ram)
-      store = FSDirectory.getDirectory("test.store", false);
+      store = FSDirectory.getDirectory("test.store");
 
     for (i = 0; i < count; i++) {
       String name = i + ".dat";
