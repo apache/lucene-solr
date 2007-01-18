@@ -43,14 +43,14 @@ See http://forrest.apache.org/docs/linking.html for more info
 
   <docs label="Documentation">
     <features    label="Features"         href="features.html" />
-    <faq         label="FAQ"              href="ext:faq" />
-    <wiki        label="Wiki"             href="ext:wiki" />
     <tutorial    label="Tutorial"         href="tutorial.html" />
-    <apidocs     label="API Docs"         href="api/index.html" />    
+    <wiki        label="Docs (Wiki)" href="ext:wiki" />
+    <faq         label="FAQ"              href="ext:faq" />
+    <apidocs     label="javadoc"          href="api/index.html" />    
   </docs>
 
   <resources label="Resources">
-    <download    label="Download"         href="ext:download" />
+    <download    label="Download"         href="ext:releases" />
     <contact     label="Mailing Lists"    href="mailing_lists.html" />
     <issues      label="Issue Tracking"   href="issue_tracking.html" />
     <svn         label="Version Control"  href="version_control.html" />
@@ -83,8 +83,8 @@ See http://forrest.apache.org/docs/linking.html for more info
     <nutch     href="http://lucene.apache.org/nutch/" />
     <wiki      href="http://wiki.apache.org/solr/" />
     <faq       href="http://wiki.apache.org/solr/FAQ" />
-    <nightly   href="http://people.apache.org/builds/lucene/solr/nightly/" />    
-    <download  href="http://people.apache.org/dist/incubator/solr/" />    
+    <nightly   href="http://people.apache.org/builds/lucene/solr/nightly/" /> 
+    <releases  href="http://www.apache.org/dyn/closer.cgi/lucene/solr/" />
     
   </external-refs>
 

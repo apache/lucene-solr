@@ -30,7 +30,7 @@ which will be used to configure the chosen Forrest skin.
     no search box. @domain will enable sitesearch for the specific domain with google.
     In other words google will search the @domain for the query string.
   -->
-  <search name="Solr" domain="incubator.apache.org" provider="google"/>
+  <search name="Solr" domain="lucene.apache.org" provider="google"/>
 
   <!-- Disable the print link? If enabled, invalid HTML 4.0.1 -->
   <disable-print-link>true</disable-print-link>  
@@ -68,17 +68,17 @@ which will be used to configure the chosen Forrest skin.
        default skin: renders it at the top -->
   <project-name>Solr</project-name>
   <project-description>Solr Description</project-description>
-  <project-url>http://incubator.apache.org/solr/</project-url>
+  <project-url>http://lucene.apache.org/solr/</project-url>
   <project-logo>images/solr.png</project-logo>
   <!-- Alternative static image:
   <project-logo>images/project-logo.gif</project-logo> -->
 
   <!-- optional group logo
        default skin: renders it at the top-left corner -->
-  <group-name>Apache Incubator</group-name>
-  <group-description>Apache Incubator</group-description>
-  <group-url>http://incubator.apache.org/</group-url>
-  <group-logo>http://incubator.apache.org/images/apache-incubator-logo.png</group-logo>
+  <group-name>Lucene</group-name>
+  <group-description>Apache Lucene</group-description>
+  <group-url>http://lucene.apache.org/</group-url>
+  <group-logo>images/lucene_green_150.gif</group-logo>
   <!-- Alternative static image:
   <group-logo>images/group-logo.gif</group-logo> -->
 
@@ -91,7 +91,7 @@ which will be used to configure the chosen Forrest skin.
   <favicon-url>images/favicon.ico</favicon-url>
 
   <!-- The following are used to construct a copyright statement -->
-  <year>2006</year>
+  <year>2007</year>
   <vendor>The Apache Software Foundation.</vendor>
   <copyright-link>http://www.apache.org/licenses/</copyright-link>
 
@@ -107,9 +107,9 @@ which will be used to configure the chosen Forrest skin.
     directory.
   -->
   <trail>
-    <link1 name="Apache" href="http://www.apache.org/"/>
-    <link2 name="Lucene" href="http://lucene.apache.org/"/>
-    <link3 name="Solr" href="http://incubator.apache.org/solr/"/>
+    <link1 name="apache" href="http://www.apache.org/"/>
+    <link2 name="lucene" href="http://lucene.apache.org/"/>
+    <link3 name="solr" href="index.html"/>
   </trail>
 
   <!-- Configure the TOC, i.e. the Table of Contents.

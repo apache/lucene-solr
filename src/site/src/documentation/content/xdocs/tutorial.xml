@@ -50,7 +50,7 @@ To follow along with this tutorial, you will need...
   <a href="http://www-106.ibm.com/developerworks/java/jdk/">IBM</a>, or
   <a href="http://www.bea.com/jrockit/">BEA</a>.
   </li>
-  <li>A <a href="http://cvs.apache.org/dist/lucene/solr/nightly/">Solr release</a>.
+  <li>A <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Solr release</a>.
   </li>
   <li>On Win32, <a href="http://www.cygwin.com/">cygwin</a>, for
       shell support.  (If you plan to use Subversion on Win32, be
