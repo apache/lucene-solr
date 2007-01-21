@@ -241,6 +241,8 @@
      </lst>
   </requestHandler>
 
+  <requestHandler name="indexinfo" class="solr.IndexInfoRequestHandler"/>
+
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
        for simple user-entered phrases. 
        see http://wiki.apache.org/solr/DisMaxRequestHandler
