@@ -278,6 +278,7 @@
            failureProperty="tests.failed"
            dir="src/test/test-files/"
            >
+      <formatter type="brief" usefile="false" if="junit.details"/>
       <syspropertyset>
         <propertyref prefix="solr" />
       </syspropertyset>
