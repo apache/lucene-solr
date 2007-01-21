@@ -29,7 +29,7 @@ module Solr
           @header = @data['responseHeader']
           raise "response should be a hash" unless @data.kind_of? Hash
           raise "response header missing" unless @header.kind_of? Hash
-        rescue Exception => e
+        rescue SyntaxError => e
           raise Solr::Exception.new("invalid ruby code: #{e}")
         end
       end

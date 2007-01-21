@@ -30,6 +30,16 @@ class DeleteTest <  SolrMockBaseTestCase
     response = conn.send(Solr::Request::Delete.new(:id => 123))
     assert_equal true, response.ok? 
   end
+  
+  def test_bad_delete_request
+    assert_raise(Solr::Exception) do
+      Solr::Request::Delete.new(:bogus => :param)
+    end
+
+    assert_raise(Solr::Exception) do
+      Solr::Request::Delete.new(:id => 529, :query => "id:529")
+    end
+  end
 
   def test_bad_delete_response
     conn = Solr::Connection.new 'http://localhost:9999/solr'

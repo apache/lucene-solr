@@ -23,5 +23,17 @@ class ResponseTest < SolrMockBaseTestCase
       assert_match 'invalid response xml', exception.to_s
     end
   end
+  
+  def test_invalid_ruby
+    assert_raise(Solr::Exception) do
+      Solr::Response::Ruby.new(' {...')
+    end
+  end
+  
+  def test_bogus_request_handling
+    assert_raise(Solr::Exception) do
+      Solr::Response::Base.make_response(Solr::Request::Select.new, "response data")
+    end
+  end
 
 end

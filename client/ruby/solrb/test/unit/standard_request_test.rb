@@ -31,15 +31,20 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_raise(RuntimeError) do
       Solr::Request::Standard.new(:query => "valid", :foo => "invalid")
     end
+    
+    assert_raise(RuntimeError) do
+      Solr::Request::Standard.new(:query => "valid", :operator => :bogus)
+    end
   end
   
   def test_common_params
     request = Solr::Request::Standard.new(:query => 'query', :start => 10, :rows => 50,
-           :filter_queries => ['fq1', 'fq2'], :field_list => ['id','title','score'])
+           :filter_queries => ['fq1', 'fq2'], :field_list => ['id','title','score'], :operator => :and)
     assert_equal 10, request.to_hash[:start]
     assert_equal 50, request.to_hash[:rows]
     assert_equal ['fq1','fq2'], request.to_hash[:fq]
     assert_equal "id,title,score", request.to_hash[:fl]
+    assert_equal "AND", request.to_hash[:"q.op"]
   end
     
   def test_missing_params
