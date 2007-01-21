@@ -28,6 +28,8 @@ module Solr
           raise Solr::Exception.new("unknown response format: #{request.response_format}" )
         end
 
+        # TODO: Factor out this case... perhaps the request object should provide the response class instead?  Or dynamically align by class name?
+        #       Maybe the request itself could have the response handling features that get mixed in with a single general purpose response object?
         case request
         when Solr::Request::Ping
           return Solr::Response::Ping.new(raw)
@@ -39,6 +41,8 @@ module Solr
           return Solr::Response::Standard.new(raw)
         when Solr::Request::Delete
           return Solr::Response::Delete.new(raw)
+        when Solr::Request::IndexInfo
+          return Solr::Response::IndexInfo.new(raw)
         else
           raise Solr::Exception.new("unknown request type: #{request.class}")
         end

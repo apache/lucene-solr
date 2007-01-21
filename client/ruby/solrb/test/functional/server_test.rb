@@ -91,7 +91,7 @@ class ServerTest < Test::Unit::TestCase
   
   def test_escaping
     doc = Solr::Document.new :id => 47, :ruby_text => 'puts "ouch!"'
-    @connection.send(Solr::Request::AddDocument.new(doc))
+    @connection.add(doc)
     @connection.commit
     
     request = Solr::Request::Standard.new :query => 'ouch'
@@ -119,6 +119,14 @@ class ServerTest < Test::Unit::TestCase
     assert_equal "ERROR:unknown field 'bogus'", response.status_message
   end
   
+  def test_index_info
+    doc = {:id => 999, :test_index_facet => 'value'}
+    @connection.add(doc)
+    info = @connection.send(Solr::Request::IndexInfo.new)
+    assert info.field_names.include?("id") && info.field_names.include?("test_index_facet")
+    assert_equal 1, info.num_docs
+  end
+
   # wipe the index clean
   def clean
     @connection.delete_by_query('[* TO *]')

@@ -224,6 +224,7 @@
      The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
+  <requestHandler name="indexinfo" class="solr.IndexInfoRequestHandler"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler">
     <!-- default values for query parameters -->
      <lst name="defaults">

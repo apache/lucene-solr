@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'solr/response/base'
-require 'solr/response/xml'
-require 'solr/response/ruby'
-require 'solr/response/ping'
-require 'solr/response/add_document'
-require 'solr/response/standard'
-require 'solr/response/commit'
-require 'solr/response/delete'
-require 'solr/response/index_info'
+module Solr
+  module Request
+    class IndexInfo < Solr::Request::Select
+      def initialize
+        super('indexinfo')
+      end
+    end
+  end
+end
