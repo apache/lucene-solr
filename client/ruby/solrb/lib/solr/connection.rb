@@ -46,7 +46,6 @@ module Solr
     # true/false will be returned to designate success/failure
     
     def add(doc)
-      doc = Solr::Document.new(doc)
       request = Solr::Request::AddDocument.new(doc)
       response = send(request)
       commit if @autocommit
