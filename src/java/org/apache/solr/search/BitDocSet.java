@@ -177,6 +177,31 @@ public class BitDocSet extends DocSetBase {
     }
   }
 
+  @Override
+   public DocSet andNot(DocSet other) {
+    OpenBitSet newbits = (OpenBitSet)(bits.clone());
+     if (other instanceof OpenBitSet) {
+       newbits.andNot(((BitDocSet)other).bits);
+     } else {
+       DocIterator iter = other.iterator();
+       while (iter.hasNext()) newbits.clear(iter.nextDoc());
+     }
+     return new BitDocSet(newbits);
+  }
+
+  @Override
+   public DocSet union(DocSet other) {
+     OpenBitSet newbits = (OpenBitSet)(bits.clone());
+     if (other instanceof BitDocSet) {
+       newbits.union(((BitDocSet)other).bits);
+     } else {
+       DocIterator iter = other.iterator();
+       while (iter.hasNext()) newbits.set(iter.nextDoc());
+     }
+     return new BitDocSet(newbits);
+  }
+
+
   public long memSize() {
     return (bits.getBits().length << 3) + 16;
   }

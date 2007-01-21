@@ -23,6 +23,7 @@ import java.util.Random;
 
 import org.apache.solr.util.OpenBitSet;
 import org.apache.solr.util.BitSetIterator;
+import org.apache.solr.util.BitUtil;
 
 /**
  * @author yonik
@@ -30,6 +31,7 @@ import org.apache.solr.util.BitSetIterator;
  */
 public class TestDocSet extends TestCase {
   Random rand = new Random();
+  float loadfactor;
 
   public OpenBitSet getRandomSet(int sz, int bitsToSet) {
     OpenBitSet bs = new OpenBitSet(sz);
@@ -104,5 +106,135 @@ public class TestDocSet extends TestCase {
   public void testRandomDocSets() {
     doMany(300, 5000);
   }
+
+
+  public HashDocSet getRandomHashDocset(int maxSetSize, int maxDoc) {
+    int n = rand.nextInt(maxSetSize);
+    OpenBitSet obs = new OpenBitSet(maxDoc);
+    int[] a = new int[n];
+    for (int i=0; i<n; i++) {
+      for(;;) {
+        int idx = rand.nextInt(maxDoc);
+        if (obs.getAndSet(idx)) continue;
+        a[i]=idx;
+        break;
+      }
+    }
+    return loadfactor!=0 ? new HashDocSet(a,0,n,1/loadfactor) : new HashDocSet(a,0,n);
+  }
+
+  public DocSet[] getRandomHashSets(int nSets, int maxSetSize, int maxDoc) {
+    DocSet[] sets = new DocSet[nSets];
+
+    for (int i=0; i<nSets; i++) {
+      sets[i] = getRandomHashDocset(maxSetSize,maxDoc);
+    }
+
+    return sets;
+  }
+
+  /**** needs code insertion into HashDocSet
+  public void testCollisions() {
+    loadfactor=.75f;
+    rand=new Random(12345);  // make deterministic
+    int maxSetsize=4000;
+    int nSets=256;
+    int iter=1;
+    int[] maxDocs=new int[] {100000,500000,1000000,5000000,10000000};
+    int ret=0;
+    long start=System.currentTimeMillis();
+    for (int maxDoc : maxDocs) {
+      int cstart = HashDocSet.collisions;
+      DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
+      for (DocSet s1 : sets) {
+        for (DocSet s2 : sets) {
+          if (s1!=s2) ret += s1.intersectionSize(s2);
+        }
+      }
+      int cend = HashDocSet.collisions;
+      System.out.println("maxDoc="+maxDoc+"\tcollisions="+(cend-cstart));      
+    }
+    long end=System.currentTimeMillis();
+    System.out.println("testIntersectionSizePerformance="+(end-start)+" ms");
+    if (ret==-1)System.out.println("wow!");
+    System.out.println("collisions="+HashDocSet.collisions);
+
+  }
+  ***/
+
+  /***
+  public void testIntersectionSizePerformance() {
+    loadfactor=.75f;
+    rand=new Random(12345);  // make deterministic
+    int maxSetsize=4000;
+    int nSets=128;
+    int iter=10;
+    int maxDoc=1000000;
+    DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
+    int ret=0;
+    long start=System.currentTimeMillis();
+    for (int i=0; i<iter; i++) {
+      for (DocSet s1 : sets) {
+        for (DocSet s2 : sets) {
+          ret += s1.intersectionSize(s2);
+        }
+      }
+    }
+    long end=System.currentTimeMillis();
+    System.out.println("testIntersectionSizePerformance="+(end-start)+" ms");
+    if (ret==-1)System.out.println("wow!");
+  }
+
+
+  public void testExistsPerformance() {
+    loadfactor=.75f;
+    rand=new Random(12345);  // make deterministic
+    int maxSetsize=4000;
+    int nSets=512;
+    int iter=1;
+    int maxDoc=1000000;
+    DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
+    int ret=0;
+    long start=System.currentTimeMillis();
+    for (int i=0; i<iter; i++) {
+      for (DocSet s1 : sets) {
+        for (int j=0; j<maxDoc; j++) {
+          ret += s1.exists(j) ? 1 :0;
+        }
+      }
+    }
+    long end=System.currentTimeMillis();
+    System.out.println("testExistsSizePerformance="+(end-start)+" ms");
+    if (ret==-1)System.out.println("wow!");
+  }
+   ***/
+
+   /**** needs code insertion into HashDocSet
+   public void testExistsCollisions() {
+    loadfactor=.75f;
+    rand=new Random(12345);  // make deterministic
+    int maxSetsize=4000;
+    int nSets=512;
+    int[] maxDocs=new int[] {100000,500000,1000000,5000000,10000000};
+    int ret=0;
+
+    for (int maxDoc : maxDocs) {
+      int mask = (BitUtil.nextHighestPowerOfTwo(maxDoc)>>1)-1;
+      DocSet[] sets = getRandomHashSets(nSets,maxSetsize, maxDoc);
+      int cstart = HashDocSet.collisions;      
+      for (DocSet s1 : sets) {
+        for (int j=0; j<maxDocs[0]; j++) {
+          int idx = rand.nextInt()&mask;
+          ret += s1.exists(idx) ? 1 :0;
+        }
+      }
+      int cend = HashDocSet.collisions;
+      System.out.println("maxDoc="+maxDoc+"\tcollisions="+(cend-cstart));
+    }
+    if (ret==-1)System.out.println("wow!");
+    System.out.println("collisions="+HashDocSet.collisions);
+  }
+  ***/
+
 
 }
