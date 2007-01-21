@@ -27,10 +27,8 @@ module Solr
           #      but favor Ruby responses.
           @data = eval(ruby_code)
           @header = @data['responseHeader']
-          @response = @data['response']
           raise "response should be a hash" unless @data.kind_of? Hash
           raise "response header missing" unless @header.kind_of? Hash
-          raise "response section missing" unless @response.kind_of? Hash
         rescue Exception => e
           raise Solr::Exception.new("invalid ruby code: #{e}")
         end

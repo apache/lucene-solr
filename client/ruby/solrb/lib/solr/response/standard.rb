@@ -17,6 +17,8 @@ module Solr
 
       def initialize(ruby_code)
         super(ruby_code)
+        @response = @data['response']
+        raise "response section missing" unless @response.kind_of? Hash
       end
 
       def total_hits
