@@ -112,13 +112,13 @@ class ServerTest < Test::Unit::TestCase
   end
 
   def test_no_such_field
-    doc = {:id => 999, :crap => 'foo'}
+    doc = {:id => 999, :bogus => 'foo'}
     request = Solr::Request::AddDocument.new(doc)
     response = @connection.send(request)
     assert_equal false, response.ok? 
-    assert_equal "ERROR:unknown field 'crap'", response.status_message
+    assert_equal "ERROR:unknown field 'bogus'", response.status_message
   end
-
+  
   # wipe the index clean
   def clean
     @connection.delete_by_query('[* TO *]')
