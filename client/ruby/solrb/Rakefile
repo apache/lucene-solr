@@ -49,7 +49,9 @@ spec = Gem::Specification.new do |s|
   s.homepage = 'http://wiki.apache.org/solr/Flare'
   s.platform = Gem::Platform::RUBY
   s.summary = 'Ruby library for working with Apache Solr'
-  s.files = Dir.glob("{lib,test}/**/*")
+  
+  # Omit functional tests from gem for now, as that requires a Solr instance
+  s.files = Dir.glob("lib/**/*").concat(Dir.glob("test/unit/**/*"))
   s.require_path = 'lib'
   s.autorequire = 'solr'
   s.has_rdoc = true
