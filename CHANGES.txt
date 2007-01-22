@@ -47,6 +47,13 @@ New Features
     (facet.offset, facet.limit), and explicit sorting (facet.sort).
     facet.zeros is now deprecated.  (yonik)
 
+ 5. SOLR-80: Negative queries are now allowed everywhere.  Negative queries
+    are generated and cached as their positive counterpart, speeding
+    generation and generally resulting in smaller sets to cache.
+    Set intersections in SolrIndexSearcher are more efficient,
+    starting with the smallest positive set, subtracting all negative
+    sets, then intersecting with all other positive sets.  (yonik)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

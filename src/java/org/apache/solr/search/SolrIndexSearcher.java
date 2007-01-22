@@ -469,44 +469,98 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * Returns the set of document ids matching a query.
    * This method is cache-aware and attempts to retrieve the answer from the cache if possible.
    * If the answer was not cached, it may have been inserted into the cache as a result of this call.
+   * This method can handle negative queries.
    * <p>
    * The DocSet returned should <b>not</b> be modified.
    */
   public DocSet getDocSet(Query query) throws IOException {
-    DocSet answer;
-    if (filterCache != null) {
-      answer = (DocSet)filterCache.get(query);
-      if (answer!=null) return answer;
-    }
-
-    answer = getDocSetNC(query, null);
+    // Get the absolute value (positive version) of this query.  If we
+    // get back the same reference, we know it's positive.
+    Query absQ = QueryUtils.getAbs(query);
+    boolean positive = query==absQ;
 
     if (filterCache != null) {
-      filterCache.put(query, answer);
-    }
-
-    return answer;
-  }
-
-
-  // TODO: do a more efficient version that starts with the
-  // smallest DocSet and drives the intersection off that
-  // or implement an intersection() function that takes multiple
-  // DocSets (prob the better way)
-  protected DocSet getDocSet(List<Query> queries) throws IOException {
-    DocSet answer=null;
-    if (queries==null) return null;
-    for (Query q : queries) {
-      if (answer==null) {
-        answer = getDocSet(q);
-      } else {
-        answer = answer.intersection(getDocSet(q));
+      DocSet absAnswer = (DocSet)filterCache.get(absQ);
+      if (absAnswer!=null) {
+        if (positive) return absAnswer;
+        else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
       }
     }
+
+    DocSet absAnswer = getDocSetNC(absQ, null);
+    DocSet answer = positive ? absAnswer : getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
+
+    if (filterCache != null) {
+      // cache negative queries as positive
+      filterCache.put(absQ, absAnswer);
+    }
+
+    return answer;
+  }
+
+  // only handle positive (non negative) queries
+  DocSet getPositiveDocSet(Query q) throws IOException {
+    DocSet answer;
+    if (filterCache != null) {
+      answer = (DocSet)filterCache.get(q);
+      if (answer!=null) return answer;
+    }
+    answer = getDocSetNC(q,null);
+    if (filterCache != null) filterCache.put(q,answer);
     return answer;
   }
 
 
+  private static Query matchAllDocsQuery = new MatchAllDocsQuery();
+
+
+  protected DocSet getDocSet(List<Query> queries) throws IOException {
+    if (queries==null) return null;
+    if (queries.size()==1) return getDocSet(queries.get(0));
+    DocSet answer=null;
+
+    boolean[] neg = new boolean[queries.size()];
+    DocSet[] sets = new DocSet[queries.size()];
+
+    int smallestIndex = -1;
+    int smallestCount = Integer.MAX_VALUE;
+    for (int i=0; i<sets.length; i++) {
+      Query q = queries.get(i);
+      Query posQuery = QueryUtils.getAbs(q);
+      sets[i] = getPositiveDocSet(posQuery);
+      // Negative query if absolute value different from original
+      if (q==posQuery) {
+        neg[i] = false;
+        // keep track of the smallest positive set.
+        // This optimization is only worth it if size() is cached, which it would
+        // be if we don't do any set operations.
+        int sz = sets[i].size();
+        if (sz<smallestCount) {
+          smallestCount=sz;
+          smallestIndex=i;
+          answer = sets[i];
+        }
+      } else {
+        neg[i] = true;
+      }
+    }
+
+    // if no positive queries, start off with all docs
+    if (answer==null) answer = getPositiveDocSet(matchAllDocsQuery);
+
+    // do negative queries first to shrink set size
+    for (int i=0; i<sets.length; i++) {
+      if (neg[i]) answer = answer.andNot(sets[i]);
+    }
+
+    for (int i=0; i<sets.length; i++) {
+      if (!neg[i] && i!=smallestIndex) answer = answer.intersection(sets[i]);
+    }
+
+    return answer;
+  }
+
+  // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     if (filter==null) {
       DocSetHitCollector hc = new DocSetHitCollector(maxDoc());
@@ -552,41 +606,22 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   public DocSet getDocSet(Query query, DocSet filter) throws IOException {
     if (filter==null) return getDocSet(query);
 
+    // Negative query if absolute value different from original
+    Query absQ = QueryUtils.getAbs(query);
+    boolean positive = absQ==query;
+
     DocSet first;
     if (filterCache != null) {
-      first = (DocSet)filterCache.get(query);
+      first = (DocSet)filterCache.get(absQ);
       if (first==null) {
-        first = getDocSetNC(query,null);
-        filterCache.put(query,first);
+        first = getDocSetNC(absQ,null);
+        filterCache.put(absQ,first);
       }
-      return first.intersection(filter);
+      return positive ? first.intersection(filter) : filter.andNot(first);
     }
 
-
-    // If there isn't a cache, then do a single filtered query.
-    return getDocSetNC(query,filter);
-
-
-    /******* OLD VERSION that did a filtered query instead of
-     * an intersection if the query docset wasn't found in the cache.
-     * It made misses != inserts (even if no evictions)
-    DocSet first=null;
-    if (filterCache != null) {
-      first = (DocSet)filterCache.get(query);
-      if (first != null) {
-        return first.intersection(filter);
-      }
-    }
-
-    DocSet answer = getDocSetNC(query, filter);
-    // nothing is inserted into the cache, because we don't cache materialized filters.
-    // Hmmm, we *could* make a hitcollector that made a DocSet out of the query at the
-    // same time it was running the filter though...
-
-    // Q: we could call getDocSet(query) and then take the intersection instead of running
-    // the query as a filter.  Then it could be cached.
-    return answer;
-    ****************/
+    // If there isn't a cache, then do a single filtered query if positive.
+    return positive ? getDocSetNC(absQ,filter) : filter.andNot(getPositiveDocSet(absQ));
   }
 
 
@@ -778,6 +813,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     int[] ids;
     float[] scores;
 
+    query = QueryUtils.makeQueryable(query);
 
     // handle zero case...
     if (lastDocRequested<=0) {
@@ -935,6 +971,9 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
     int[] ids;
     float[] scores;
     final DocSetHitCollector setHC = new DocSetHitCollector(maxDoc());
+
+    query = QueryUtils.makeQueryable(query);
+
     // TODO: perhaps unify getDocListAndSetNC and getDocListNC without imposing a significant performance hit
 
     // Comment: gathering the set before the filter is applied allows one to cache
@@ -1271,13 +1310,10 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public int numDocs(Query a, DocSet b) throws IOException {
-    // reverse: do the query on filter and filter using docs...
-    // or if filter is a term query, can get the freq and
-    // drive things off that.
-    //  this higher level API leaves open more optimization possibilities.
-    // prob only worth it if cacheHitRatio is bad...
-
-    return b.intersectionSize(getDocSet(a));
+    // Negative query if absolute value different from original
+    Query absQ = QueryUtils.getAbs(a);
+    DocSet positiveA = getPositiveDocSet(absQ);
+    return a==absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
   }
 
    /**
@@ -1291,7 +1327,25 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * @throws IOException
    */
   public int numDocs(Query a, Query b) throws IOException {
-    return getDocSet(b).intersectionSize(getDocSet(a));
+    Query absA = QueryUtils.getAbs(a);
+    Query absB = QueryUtils.getAbs(b);     
+    DocSet positiveA = getPositiveDocSet(absA);
+    DocSet positiveB = getPositiveDocSet(absB);
+
+    // Negative query if absolute value different from original
+    if (a==absA) {
+      if (b==absB) return positiveA.intersectionSize(positiveB);
+      return positiveA.andNotSize(positiveB);
+    }
+    if (b==absB) return positiveB.andNotSize(positiveA);
+
+    // if both negative, we need to create a temp DocSet since we
+    // don't have a counting method that takes three.
+    DocSet all = getPositiveDocSet(matchAllDocsQuery);
+
+    // -a -b == *:*.andNot(a).andNotSize(b) == *.*.andNotSize(a.union(b))
+    // we use the last form since the intermediate DocSet should normally be smaller.
+    return all.andNotSize(positiveA.union(positiveB));
   }
 
 
