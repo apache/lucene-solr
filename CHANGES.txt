@@ -189,7 +189,10 @@ API Changes
     take a boolean "create" argument.  Instead you should use
     IndexWriter's "create" argument to create a new index.
     (Mike McCandless)
-    
+
+17. LUCENE-780: Add a static Directory.copy() method to copy files
+    from one Directory to another.  (Jiri Kuhn via Mike McCandless)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

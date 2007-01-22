@@ -124,4 +124,49 @@ public abstract class Directory {
   public String getLockID() {
       return this.toString();
   }
+
+  /**
+   * Copy contents of a directory src to a directory dest.
+   * If a file in src already exists in dest then the
+   * one in dest will be blindly overwritten.
+   *
+   * @param src source directory
+   * @param dest destination directory
+   * @param closeDirSrc if <code>true</code>, call {@link #close()} method on source directory
+   * @throws IOException
+   */
+  public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
+      final String[] files = src.list();
+      byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
+      for (int i = 0; i < files.length; i++) {
+        IndexOutput os = null;
+        IndexInput is = null;
+        try {
+          // create file in dest directory
+          os = dest.createOutput(files[i]);
+          // read current file
+          is = src.openInput(files[i]);
+          // and copy to dest directory
+          long len = is.length();
+          long readCount = 0;
+          while (readCount < len) {
+            int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int)(len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
+            is.readBytes(buf, 0, toRead);
+            os.writeBytes(buf, toRead);
+            readCount += toRead;
+          }
+        } finally {
+          // graceful cleanup
+          try {
+            if (os != null)
+              os.close();
+          } finally {
+            if (is != null)
+              is.close();
+          }
+        }
+      }
+      if(closeDirSrc)
+        src.close();
+  }
 }

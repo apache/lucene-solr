@@ -74,29 +74,7 @@ public class RAMDirectory extends Directory implements Serializable {
   
   private RAMDirectory(Directory dir, boolean closeDir) throws IOException {
     this();
-    final String[] files = dir.list();
-    byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
-    for (int i = 0; i < files.length; i++) {
-      // make place on ram disk
-      IndexOutput os = createOutput(files[i]);
-      // read current file
-      IndexInput is = dir.openInput(files[i]);
-      // and copy to ram disk
-      long len = is.length();
-      long readCount = 0;
-      while (readCount < len) {
-        int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int)(len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
-        is.readBytes(buf, 0, toRead);
-        os.writeBytes(buf, toRead);
-        readCount += toRead;
-      }
-
-      // graceful cleanup
-      is.close();
-      os.close();
-    }
-    if(closeDir)
-      dir.close();
+    Directory.copy(dir, this, closeDir);
   }
 
   /**
