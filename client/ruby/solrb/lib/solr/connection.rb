@@ -21,17 +21,22 @@ module Solr
     #
     #   conn = Solr::Connection.new("http://example.com:8080/solr")
     #
-    # if you would prefer to issue your own commits to cut down on 
-    # network traffic use :autocommit => 'off'
+    # if you would prefer to have all adds/updates autocommitted, 
+    # use :autocommit => :on
     #
     #   conn = Solr::Connection.new('http://example.com:8080/solr', 
-    #     :autocommit => 'off')
+    #     :autocommit => :on)
     
     def initialize(url, opts={})
       @url = URI.parse(url)
       unless @url.kind_of? URI::HTTP
         raise "invalid http url: #{url}"
       end
+      
+      # TODO: Autocommit seems nice at one level, but it currently is confusing because
+      # only calls to Connection#add/#update/#delete, though a Connection#send(AddDocument.new(...))
+      # does not autocommit.  Maybe #send should check for the request types that require a commit and
+      # commit in #send instead of the individual methods?
       @autocommit = opts[:autocommit] == :on ? true : false
     end
 
@@ -114,9 +119,8 @@ module Solr
       return Solr::Response::Base.make_response(request, data)
     end
    
-    # send the http post request to solr: you will want to use
-    # one of the add(), query(), commit(), delete() or send()
-    # instead of this...
+    # send the http post request to solr; for convenience there are shortcuts
+    # to some requests: add(), query(), commit(), delete() or send()
     def post(request)
       post = Net::HTTP::Post.new(@url.path + "/" + request.handler)
       post.body = request.to_s
