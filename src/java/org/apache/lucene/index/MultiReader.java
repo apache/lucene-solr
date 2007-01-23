@@ -263,29 +263,6 @@ public class MultiReader extends IndexReader {
     return fieldSet;
   }
   
-  /**
-   * Returns <code>true</code> if all readers are still up-to-date.
-   * 
-   * @throws IOException
-   */
-  public boolean isCurrent() throws IOException {
-    for (int i = 0; i < subReaders.length; i++) {
-      IndexReader reader = subReaders[i];
-      if (!reader.isCurrent())
-        return false;
-    }
-    return true;
-  }
-
-  /**
-   * Not implemented.
-   * @throws UnsupportedOperationException
-   */
-  public long getVersion() {
-    throw new UnsupportedOperationException("This method is only implemented in " +
-        "IndexReader, not in MultiReader");
-  }
-
 }
 
 class MultiTermEnum extends TermEnum {

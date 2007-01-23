@@ -332,11 +332,6 @@ Bug fixes
     life" due to this, just a possible future problem).  (Chuck
     Williams via Mike McCandless)
 
-33. LUCENE-781: Fixed the NullPointerException in MultiReader.isCurrent()
-    and MultiReader.getVersion(). isCurrent() now returns true only if
-    all its readers are current. getVersion() now throws an
-    UnsupportedOperationException.  (Daniel Naber)
-
 Optimizations
 
   1. LUCENE-586: TermDocs.skipTo() is now more efficient for
