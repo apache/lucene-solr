@@ -88,6 +88,17 @@ public abstract class Directory {
   public Lock makeLock(String name) {
       return lockFactory.makeLock(name);
   }
+  /**
+   * Attempt to clear (forcefully unlock and remove) the
+   * specified lock.  Only call this at a time when you are
+   * certain this lock is no longer in use.
+   * @param lockName name of the lock to be cleared.
+   */
+  public void clearLock(String name) throws IOException {
+    if (lockFactory != null) {
+      lockFactory.clearLock(name);
+    }
+  }
 
   /** Closes the store. */
   public abstract void close()
@@ -106,8 +117,12 @@ public abstract class Directory {
       this.lockFactory = lockFactory;
       lockFactory.setLockPrefix(this.getLockID());
   }
+
   /**
-   * Get the LockFactory that this Directory instance is using for its locking implementation.
+   * Get the LockFactory that this Directory instance is
+   * using for its locking implementation.  Note that this
+   * may be null for Directory implementations that provide
+   * their own locking implementation.
    */
   public LockFactory getLockFactory() {
       return this.lockFactory;

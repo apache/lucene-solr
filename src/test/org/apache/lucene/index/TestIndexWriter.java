@@ -21,6 +21,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.SingleInstanceLockFactory;
 
 /**
  * @author goller
@@ -688,6 +691,43 @@ public class TestIndexWriter extends TestCase
         if (reader != null) {
           reader.close();
         }
+    }
+
+    // Make sure that a Directory implementation that does
+    // not use LockFactory at all (ie overrides makeLock and
+    // implements its own private locking) works OK.  This
+    // was raised on java-dev as loss of backwards
+    // compatibility.
+    public void testNullLockFactory() throws IOException {
+
+      final class MyRAMDirectory extends RAMDirectory {
+        private LockFactory myLockFactory;
+        MyRAMDirectory() {
+          lockFactory = null;
+          myLockFactory = new SingleInstanceLockFactory();
+        }
+        public Lock makeLock(String name) {
+          return myLockFactory.makeLock(name);
+        }
+      }
+      
+      Directory dir = new MyRAMDirectory();
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      for (int i = 0; i < 100; i++) {
+        addDoc(writer);
+      }
+      writer.close();
+      IndexReader reader = IndexReader.open(dir);
+      Term searchTerm = new Term("content", "aaa");        
+      IndexSearcher searcher = new IndexSearcher(dir);
+      Hits hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals("did not get right number of hits", 100, hits.length());
+      writer.close();
+
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      writer.close();
+
+      dir.close();
     }
 
     private void rmDir(File dir) {

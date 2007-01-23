@@ -193,6 +193,10 @@ API Changes
 17. LUCENE-780: Add a static Directory.copy() method to copy files
     from one Directory to another.  (Jiri Kuhn via Mike McCandless)
 
+18. LUCENE-773: Added Directory.clearLock(String name) to forcefully
+    remove an old lock.  The default implementation is to ask the
+    lockFactory (if non null) to clear the lock.  (Mike McCandless)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which

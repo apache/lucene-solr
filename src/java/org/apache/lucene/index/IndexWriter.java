@@ -333,7 +333,7 @@ public class IndexWriter {
 
     if (create) {
       // Clear the write lock in case it's leftover:
-      directory.getLockFactory().clearLock(IndexWriter.WRITE_LOCK_NAME);
+      directory.clearLock(IndexWriter.WRITE_LOCK_NAME);
     }
 
     Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
