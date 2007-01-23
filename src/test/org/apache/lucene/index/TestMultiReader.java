@@ -18,7 +18,10 @@ package org.apache.lucene.index;
  */
 
 import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -101,5 +104,35 @@ public class TestMultiReader extends TestCase {
   public void testTermVectors() {
     MultiReader reader = new MultiReader(dir, sis, false, readers);
     assertTrue(reader != null);
-  }    
+  }
+  
+  public void testIsCurrent() throws IOException {
+    RAMDirectory ramDir1=new RAMDirectory();
+    addDoc(ramDir1, "test foo", true);
+    RAMDirectory ramDir2=new RAMDirectory();
+    addDoc(ramDir2, "test blah", true);
+    IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1), IndexReader.open(ramDir2)};
+    MultiReader mr = new MultiReader(readers);
+    assertTrue(mr.isCurrent());   // just opened, must be current
+    addDoc(ramDir1, "more text", false);
+    assertFalse(mr.isCurrent());   // has been modified, not current anymore
+    addDoc(ramDir2, "even more text", false);
+    assertFalse(mr.isCurrent());   // has been modified even more, not current anymore
+    try {
+      mr.getVersion();
+      fail();
+    } catch (UnsupportedOperationException e) {
+      // expected exception
+    }
+    mr.close();
+  }
+
+  private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
+    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(), create);
+    Document doc = new Document();
+    doc.add(new Field("body", s, Field.Store.YES, Field.Index.TOKENIZED));
+    iw.addDocument(doc);
+    iw.close();
+  }
+
 }
