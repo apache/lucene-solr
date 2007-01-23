@@ -107,7 +107,7 @@
 	<h3>Assistance</h3>
   </td>
   <td>
-	[<a href="http://incubator.apache.org/solr/">Documentation</a>]
+	[<a href="http://lucene.apache.org/solr/">Documentation</a>]
 	[<a href="http://issues.apache.org/jira/browse/SOLR">Issue Tracker</a>]
 	[<a href="mailto:solr-user@lucene.apache.org">Send Email</a>]
 	<br>
