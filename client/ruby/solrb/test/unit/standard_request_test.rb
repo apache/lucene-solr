@@ -58,21 +58,27 @@ class StandardRequestTest < Test::Unit::TestCase
   def test_facet_params_all
     request = Solr::Request::Standard.new(:query => 'query',
        :facets => {
-         :fields => [:genre,
-                     {:year => {:limit => 50, :mincount => 0, :missing => false, :sort => :term}}], # field that overrides the global facet parameters
+         :fields => [:genre,           
+                     # field that overrides the global facet parameters
+                     {:year => {:limit => 50, :mincount => 0, :missing => false, :sort => :term, :prefix=>"199"}}], 
          :queries => ["q1", "q2"],
+         :prefix => "cat",
          :limit => 5, :zeros => true, :mincount => 20, :sort => :count  # global facet parameters
         }
     )
-    assert_equal true, request.to_hash[:facet]
-    assert_equal [:genre, :year], request.to_hash[:"facet.field"]
-    assert_equal ["q1", "q2"], request.to_hash[:"facet.query"]
-    assert_equal 5, request.to_hash[:"facet.limit"]
-    assert_equal 20, request.to_hash[:"facet.mincount"]
-    assert_equal true, request.to_hash[:"facet.sort"]
-    assert_equal 50, request.to_hash[:"f.year.facet.limit"]
-    assert_equal 0, request.to_hash[:"f.year.facet.mincount"]
-    assert_equal false, request.to_hash[:"f.year.facet.sort"]
+    
+    hash = request.to_hash
+    assert_equal true, hash[:facet]
+    assert_equal [:genre, :year], hash[:"facet.field"]
+    assert_equal ["q1", "q2"], hash[:"facet.query"]
+    assert_equal 5, hash[:"facet.limit"]
+    assert_equal 20, hash[:"facet.mincount"]
+    assert_equal true, hash[:"facet.sort"]
+    assert_equal "cat", hash[:"facet.prefix"]
+    assert_equal 50, hash[:"f.year.facet.limit"]
+    assert_equal 0, hash[:"f.year.facet.mincount"]
+    assert_equal false, hash[:"f.year.facet.sort"]
+    assert_equal "199", hash[:"f.year.facet.prefix"]
   end
 
   def test_basic_sort

@@ -66,6 +66,7 @@ module Solr
         
         # facet parameter processing
         if @params[:facets]
+          # TODO need validation of all that is under the :facets Hash too
           hash[:facet] = true
           hash[:"facet.field"] = []
           hash[:"facet.query"] = @params[:facets][:queries]
@@ -73,6 +74,7 @@ module Solr
           hash[:"facet.limit"] = @params[:facets][:limit]
           hash[:"facet.missing"] = @params[:facets][:missing]
           hash[:"facet.mincount"] = @params[:facets][:mincount]
+          hash[:"facet.prefix"] = @params[:facets][:prefix]
           @params[:facets][:fields].each do |f|
             if f.kind_of? Hash
               key = f.keys[0]
@@ -82,6 +84,7 @@ module Solr
               hash[:"f.#{key}.facet.limit"] = value[:limit]
               hash[:"f.#{key}.facet.missing"] = value[:missing]
               hash[:"f.#{key}.facet.mincount"] = value[:mincount]
+              hash[:"f.#{key}.facet.prefix"] = value[:prefix]
             else
               hash[:"facet.field"] << f
             end
