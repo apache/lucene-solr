@@ -53,7 +53,7 @@ module Solr
           "#{key.to_s} #{sort[key] == :descending ? 'desc' : 'asc'}"
         end.join(',') if @params[:sort]
         hash[:q] = sort ? "#{@params[:query]};#{sort}" : @params[:query]
-        hash[:"q.op"] = @params[:operator]
+        hash["q.op"] = @params[:operator]
         hash[:df] = @params[:default_field]
 
         # common parameter processing
@@ -68,25 +68,25 @@ module Solr
         if @params[:facets]
           # TODO need validation of all that is under the :facets Hash too
           hash[:facet] = true
-          hash[:"facet.field"] = []
-          hash[:"facet.query"] = @params[:facets][:queries]
-          hash[:"facet.sort"] = (@params[:facets][:sort] == :count) if @params[:facets][:sort]
-          hash[:"facet.limit"] = @params[:facets][:limit]
-          hash[:"facet.missing"] = @params[:facets][:missing]
-          hash[:"facet.mincount"] = @params[:facets][:mincount]
-          hash[:"facet.prefix"] = @params[:facets][:prefix]
+          hash["facet.field"] = []
+          hash["facet.query"] = @params[:facets][:queries]
+          hash["facet.sort"] = (@params[:facets][:sort] == :count) if @params[:facets][:sort]
+          hash["facet.limit"] = @params[:facets][:limit]
+          hash["facet.missing"] = @params[:facets][:missing]
+          hash["facet.mincount"] = @params[:facets][:mincount]
+          hash["facet.prefix"] = @params[:facets][:prefix]
           @params[:facets][:fields].each do |f|
             if f.kind_of? Hash
               key = f.keys[0]
               value = f[key]
-              hash[:"facet.field"] << key
-              hash[:"f.#{key}.facet.sort"] = (value[:sort] == :count) if value[:sort]
-              hash[:"f.#{key}.facet.limit"] = value[:limit]
-              hash[:"f.#{key}.facet.missing"] = value[:missing]
-              hash[:"f.#{key}.facet.mincount"] = value[:mincount]
-              hash[:"f.#{key}.facet.prefix"] = value[:prefix]
+              hash["facet.field"] << key
+              hash["f.#{key}.facet.sort"] = (value[:sort] == :count) if value[:sort]
+              hash["f.#{key}.facet.limit"] = value[:limit]
+              hash["f.#{key}.facet.missing"] = value[:missing]
+              hash["f.#{key}.facet.mincount"] = value[:mincount]
+              hash["f.#{key}.facet.prefix"] = value[:prefix]
             else
-              hash[:"facet.field"] << f
+              hash["facet.field"] << f
             end
           end
         end
