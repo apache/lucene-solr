@@ -62,21 +62,38 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.need_tar = true
 end
 
+# Generate rdoc documentation
 Rake::RDocTask.new('doc') do |rd|
   rd.rdoc_files.include("lib/**/*.rb")
-  rd.main = 'Solr::Connection'
+  rd.rdoc_files.include('README', 'CHANGES.txt', 'LICENSE.txt')
+  rd.main = 'README'
   rd.rdoc_dir = 'doc'
 end
 
+# Run unit tests
 Rake::TestTask.new(:test_units) do |t|
   t.pattern = 'test/unit/*_test.rb'
   t.verbose = true
   t.ruby_opts = ['-r solr', '-r test/unit', '-Itest/unit']
 end
 
+def egrep(pattern)
+  Dir['**/*.rb'].each do |fn|
+    count = 0
+    open(fn) do |f|
+      while line = f.gets
+	count += 1
+	if line =~ pattern
+	  puts "#{fn}:#{count}:#{line}"
+	end
+      end
+    end
+  end
+end
+
+desc "Look for TODO/FIXME/TBD tags in the code"
 task :todo do
-  # TODO (heh): is there a slicker way to do this?
-  exec("grep -r TODO lib | grep \".rb:\"")
+  egrep /#.*(FIXME|TODO|TBD)/
 end
 
 # NOTE: test_functionals does not work standalone currently.  It needs the TestSolrServer wrapper in the :test task
