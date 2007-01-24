@@ -44,7 +44,7 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_equal 50, request.to_hash[:rows]
     assert_equal ['fq1','fq2'], request.to_hash[:fq]
     assert_equal "id,title,score", request.to_hash[:fl]
-    assert_equal "AND", request.to_hash[:"q.op"]
+    assert_equal "AND", request.to_hash["q.op"]
   end
     
   def test_missing_params
@@ -69,16 +69,16 @@ class StandardRequestTest < Test::Unit::TestCase
     
     hash = request.to_hash
     assert_equal true, hash[:facet]
-    assert_equal [:genre, :year], hash[:"facet.field"]
-    assert_equal ["q1", "q2"], hash[:"facet.query"]
-    assert_equal 5, hash[:"facet.limit"]
-    assert_equal 20, hash[:"facet.mincount"]
-    assert_equal true, hash[:"facet.sort"]
-    assert_equal "cat", hash[:"facet.prefix"]
-    assert_equal 50, hash[:"f.year.facet.limit"]
-    assert_equal 0, hash[:"f.year.facet.mincount"]
-    assert_equal false, hash[:"f.year.facet.sort"]
-    assert_equal "199", hash[:"f.year.facet.prefix"]
+    assert_equal [:genre, :year], hash["facet.field"]
+    assert_equal ["q1", "q2"], hash["facet.query"]
+    assert_equal 5, hash["facet.limit"]
+    assert_equal 20, hash["facet.mincount"]
+    assert_equal true, hash["facet.sort"]
+    assert_equal "cat", hash["facet.prefix"]
+    assert_equal 50, hash["f.year.facet.limit"]
+    assert_equal 0, hash["f.year.facet.mincount"]
+    assert_equal false, hash["f.year.facet.sort"]
+    assert_equal "199", hash["f.year.facet.prefix"]
   end
 
   def test_basic_sort
