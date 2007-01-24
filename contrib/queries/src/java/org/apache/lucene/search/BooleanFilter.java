@@ -41,9 +41,10 @@ public class BooleanFilter extends Filter
 		if (shouldFilters!=null)
 		{
 			returnBits = ((Filter)shouldFilters.get(0)).bits(reader);
+//			avoid changing the original bitset - it may be cached
+			returnBits=(BitSet) returnBits.clone(); 
 			if (shouldFilters.size() > 1)
 			{
-				
 				for (int i = 1; i < shouldFilters.size(); i++)
 				{
 					returnBits.or(((Filter)shouldFilters.get(i)).bits(reader));
@@ -59,7 +60,7 @@ public class BooleanFilter extends Filter
 				BitSet notBits=((Filter)notFilters.get(i)).bits(reader);
 				if(returnBits==null)
 				{
-					returnBits=notBits;
+					returnBits=(BitSet) notBits.clone();					
 					returnBits.flip(0,reader.maxDoc());
 				}
 				else
@@ -77,7 +78,16 @@ public class BooleanFilter extends Filter
 				BitSet mustBits=((Filter)mustFilters.get(i)).bits(reader);
 				if(returnBits==null)
 				{
-					returnBits=mustBits;
+					if(mustFilters.size()==1)
+					{
+						returnBits=mustBits;
+						
+					}
+					else
+					{
+						//don't mangle the bitset
+						returnBits=(BitSet) mustBits.clone();						
+					}
 				}
 				else
 				{
