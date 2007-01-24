@@ -74,6 +74,11 @@ Rake::TestTask.new(:test_units) do |t|
   t.ruby_opts = ['-r solr', '-r test/unit', '-Itest/unit']
 end
 
+task :todo do
+  # TODO (heh): is there a slicker way to do this?
+  exec("grep -r TODO lib | grep \".rb:\"")
+end
+
 # NOTE: test_functionals does not work standalone currently.  It needs the TestSolrServer wrapper in the :test task
 Rake::TestTask.new(:test_functionals) do |t|
   t.pattern = 'test/functional/*_test.rb'
