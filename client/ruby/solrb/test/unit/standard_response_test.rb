@@ -123,6 +123,54 @@ RUBY_CODE
 
     assert_equal 10, count
   end
+  
+  def test_facets
+    ruby_code =
+    <<RUBY_CODE
+    {
+     'responseHeader'=>{
+      'status'=>0,
+      'QTime'=>1897,
+      'params'=>{
+    	'facet.limit'=>'20',
+    	'wt'=>'ruby',
+    	'rows'=>'0',
+    	'facet'=>'true',
+    	'facet.mincount'=>'1',
+    	'facet.field'=>[
+    	 'subject_genre_facet',
+    	 'subject_geographic_facet',
+    	 'subject_format_facet',
+    	 'subject_era_facet',
+    	 'subject_topic_facet'],
+    	'indent'=>'true',
+    	'fl'=>'*,score',
+    	'q'=>'[* TO *]',
+    	'qt'=>'standard',
+    	'facet.sort'=>'true'}},
+     'response'=>{'numFound'=>49999,'start'=>0,'maxScore'=>1.0,'docs'=>[]
+     },
+     'facet_counts'=>{
+      'facet_queries'=>{},
+      'facet_fields'=>{
+    	'subject_genre_facet'=>{
+    	 'Biography.'=>2605,
+    	 'Congresses.'=>1837,
+    	 'Bibliography.'=>672,
+    	 'Exhibitions.'=>642,
+    	 'Periodicals.'=>615,
+    	 'Sources.'=>485,
+    	 }}}
+  	 }
+RUBY_CODE
+    
+    set_post_return(ruby_code)
+    conn = Solr::Connection.new "http://localhost:9999"
+    response = conn.query('foo')
+    facets = response.field_facets('subject_genre_facet')
+    assert_equal 2605, facets[0][1]
+    assert_equal 485, facets[5][1]
+  end
 
 end
 
