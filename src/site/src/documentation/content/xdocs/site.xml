@@ -112,7 +112,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <xml.apache.org href="http://xml.apache.org/"/>
     <issues href="http://issues.apache.org/jira/browse/LUCENE"/>
 	<topLevel href="http://lucene.apache.org"/>
-    <solr    href="http://incubator.apache.org/solr/" />
+    <solr    href="http://lucene.apache.org/solr/" />
     <nutch     href="http://lucene.apache.org/nutch/" />
     <lucy href="http://lucene.apache.org/lucy/"/>
     <lucene-net href="http://incubator.apache.org/projects/lucene.net.html"/>
