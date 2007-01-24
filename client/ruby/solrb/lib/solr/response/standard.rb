@@ -36,6 +36,11 @@ module Solr
       def max_score
         return @response['maxScore']
       end
+      
+      def field_facets(field)
+        @data['facet_counts']['facet_fields'][field].sort {|a,b| b[1] <=> a[1]}
+      end
+      
 
       # supports enumeration of hits
       def each
