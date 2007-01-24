@@ -26,11 +26,13 @@ mapping = {
   #    String = 3 digit control field number or 3 digit data field number + subfield letter
   
   :id => '001',
-  :subject_genre_facet => ['600v', '610v', '611v', '651v', '650v', '655a'], 
-  :subject_era_facet => ['650y', '651y'],
-  :subject_topic_facet => ['650a', '650x'],
+  :subject_genre_facet => ['600v', '610v', '611v', '650v', '651v', '655a'], 
+  :subject_era_facet => ['650d', '650y', '651y', '655y'],
+  :subject_topic_facet => ['650a', '650b', '650x'],
+  :subject_geographic_facet => ['650c', '650z', '651a', '651x', '651z', '655z'],
   :title_text => '245a',
   :author_text => '100a',
+#  :call_number => '050a',
 }
 
 connection = Solr::Connection.new(solr_url)
