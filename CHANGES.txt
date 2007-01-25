@@ -54,6 +54,9 @@ New Features
     starting with the smallest positive set, subtracting all negative
     sets, then intersecting with all other positive sets.  (yonik)
 
+ 6. SOLR-117: Limit a field faceting to constraints with a prefix specified
+    by facet.prefix or f.<field>.facet.prefix. (yonik)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

@@ -20,12 +20,10 @@ package org.apache.solr.request;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
@@ -36,7 +34,8 @@ import org.apache.solr.util.NamedList;
 import org.apache.solr.util.BoundedTreeSet;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -132,17 +131,18 @@ public class SimpleFacets {
     boolean missing = params.getFieldBool(field, params.FACET_MISSING, false);
     // default to sorting if there is a limit.
     boolean sort = params.getFieldBool(field, params.FACET_SORT, limit>0);
+    String prefix = params.getFieldParam(field,params.FACET_PREFIX);
 
     NamedList counts;
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
     if (sf.multiValued() || ft.isTokenized() || ft instanceof BoolField) {
       // Always use filters for booleans... we know the number of values is very small.
-      counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort);
+      counts = getFacetTermEnumCounts(searcher, docs, field, offset, limit, mincount,missing,sort,prefix);
     } else {
       // TODO: future logic could use filters instead of the fieldcache if
       // the number of terms in the field is small enough.
-      counts = getFieldCacheCounts(searcher, docs, field, offset,limit, mincount, missing, sort);
+      counts = getFieldCacheCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix);
     }
 
     return counts;
@@ -184,11 +184,21 @@ public class SimpleFacets {
     return docs.andNotSize(hasVal);
   }
 
+
+  // first element of the fieldcache is null, so we need this comparator.
+  private static final Comparator nullStrComparator = new Comparator() {
+        public int compare(Object o1, Object o2) {
+          if (o1==null) return (o2==null) ? 0 : -1;
+          else if (o2==null) return 1;
+          return ((String)o1).compareTo((String)o2);
+        }
+      }; 
+
   /**
    * Use the Lucene FieldCache to get counts for each unique field value in <code>docs</code>.
    * The field must have at most one indexed token per document.
    */
-  public static NamedList getFieldCacheCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, boolean sort) throws IOException {
+  public static NamedList getFieldCacheCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, boolean sort, String prefix) throws IOException {
     // TODO: If the number of terms is high compared to docs.size(), and zeros==false,
     //  we should use an alternate strategy to avoid
     //  1) creating another huge int[] for the counts
@@ -198,58 +208,97 @@ public class SimpleFacets {
     // then use them instead of the FieldCache.
     //
 
-    FieldCache.StringIndex si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), fieldName);
-    final int[] count = new int[si.lookup.length];
-    DocIterator iter = docs.iterator();
-    while (iter.hasNext()) {
-      count[si.order[iter.nextDoc()]]++;
-    }
+    // TODO: this function is too big and could use some refactoring, but
+    // we also need a facet cache, and refactoring of SimpleFacets instead of
+    // trying to pass all the various params around.
 
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList res = new NamedList();
 
-    // IDEA: we could also maintain a count of "other"... everything that fell outside
-    // of the top 'N'
+    FieldCache.StringIndex si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), fieldName);
+    final String[] terms = si.lookup;
+    final int[] termNum = si.order;
 
-    int off=offset;
-    int lim=limit>=0 ? limit : Integer.MAX_VALUE;
+    if (prefix!=null && prefix.length()==0) prefix=null;
 
-    if (sort) {
-      // TODO: compare performance of BoundedTreeSet compare against priority queue?
-      int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
-      final BoundedTreeSet<CountPair<String,Integer>> queue = new BoundedTreeSet<CountPair<String,Integer>>(maxsize);
-      int min=mincount-1;  // the smallest value in the top 'N' values
-      for (int i=1; i<count.length; i++) {
-        int c = count[i];
-        if (c>min) {
-          // NOTE: we use c>min rather than c>=min as an optimization because we are going in
-          // index order, so we already know that the keys are ordered.  This can be very
-          // important if a lot of the counts are repeated (like zero counts would be).
-          queue.add(new CountPair<String,Integer>(ft.indexedToReadable(si.lookup[i]), c));
-          if (queue.size()>=maxsize) min=queue.last().val;
-        }
-      }
-      for (CountPair<String,Integer> p : queue) {
-        if (--off>=0) continue;
-        if (--lim<0) break;
-        res.add(p.key, p.val);
-      }
-    } else if (mincount<=0) {
-      // This is an optimization... if mincount<=0 and we aren't sorting then
-      // we know exactly where to start and end in the fieldcache.
-      for (int i=offset+1; i<offset+1+limit; i++) {
-        res.add(ft.indexedToReadable(si.lookup[i]),count[i]);
-      }
+    int startTermIndex, endTermIndex;
+    if (prefix!=null) {
+      startTermIndex = Arrays.binarySearch(terms,prefix,nullStrComparator);
+      if (startTermIndex<0) startTermIndex=-startTermIndex-1;
+      // find the end term.  \uffff isn't a legal unicode char, but only compareTo
+      // is used, so it should be fine, and is guaranteed to be bigger than legal chars.
+      endTermIndex = Arrays.binarySearch(terms,prefix+"\uffff\uffff\uffff\uffff",nullStrComparator);
+      endTermIndex = -endTermIndex-1;
     } else {
-      for (int i=1; i<count.length; i++) {
-        int c = count[i];
-        if (c<mincount || --off>=0) continue;
-        if (--lim<0) break;
-        res.add(ft.indexedToReadable(si.lookup[i]), c);      
+      startTermIndex=1;
+      endTermIndex=terms.length;
+    }
+
+    final int nTerms=endTermIndex-startTermIndex;
+
+    if (nTerms>0) {
+
+      // count collection array only needs to be as big as the number of terms we are
+      // going to collect counts for.
+      final int[] counts = new int[nTerms];
+
+      DocIterator iter = docs.iterator();
+      while (iter.hasNext()) {
+        int term = termNum[iter.nextDoc()];
+        int arrIdx = term-startTermIndex;
+        if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+      }
+
+      // IDEA: we could also maintain a count of "other"... everything that fell outside
+      // of the top 'N'
+
+      int off=offset;
+      int lim=limit>=0 ? limit : Integer.MAX_VALUE;
+
+      if (sort) {
+        int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
+        maxsize = Math.min(maxsize, nTerms);
+        final BoundedTreeSet<CountPair<String,Integer>> queue = new BoundedTreeSet<CountPair<String,Integer>>(maxsize);
+        int min=mincount-1;  // the smallest value in the top 'N' values
+        for (int i=0; i<nTerms; i++) {
+          int c = counts[i];
+          if (c>min) {
+            // NOTE: we use c>min rather than c>=min as an optimization because we are going in
+            // index order, so we already know that the keys are ordered.  This can be very
+            // important if a lot of the counts are repeated (like zero counts would be).
+            queue.add(new CountPair<String,Integer>(terms[startTermIndex+i], c));
+            if (queue.size()>=maxsize) min=queue.last().val;
+          }
+        }
+        // now select the right page from the results
+        for (CountPair<String,Integer> p : queue) {
+          if (--off>=0) continue;
+          if (--lim<0) break;
+          res.add(ft.indexedToReadable(p.key), p.val);
+        }
+      } else {
+        // add results in index order
+        int i=0;
+        if (mincount<=0) {
+          // if mincount<=0, then we won't discard any terms and we know exactly
+          // where to start.
+          i=off;
+          off=0;
+        }
+
+        for (; i<nTerms; i++) {          
+          int c = counts[i];
+          if (c<mincount || --off>=0) continue;
+          if (--lim<0) break;
+          res.add(ft.indexedToReadable(terms[startTermIndex+i]), c);
+        }
       }
     }
 
-    if (missing) res.add(null, count[0]);
+    if (missing) {
+      res.add(null, getFieldMissingCount(searcher,docs,fieldName));
+    }
+    
     return res;
   }
 
@@ -263,7 +312,7 @@ public class SimpleFacets {
    * @see SolrParams#FACET_ZEROS
    * @see SolrParams#FACET_MISSING
    */
-  public NamedList getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, boolean sort)
+  public NamedList getFacetTermEnumCounts(SolrIndexSearcher searcher, DocSet docs, String field, int offset, int limit, int mincount, boolean missing, boolean sort, String prefix)
     throws IOException {
 
     /* :TODO: potential optimization...
@@ -282,12 +331,16 @@ public class SimpleFacets {
     int min=mincount-1;  // the smallest value in the top 'N' values    
     int off=offset;
     int lim=limit>=0 ? limit : Integer.MAX_VALUE;
-    TermEnum te = r.terms(new Term(field,""));
+
+    String startTerm = prefix==null ? "" : ft.toInternal(prefix);
+    TermEnum te = r.terms(new Term(field,startTerm));
     do {
       Term t = te.term();
 
       if (null == t || ! t.field().equals(field))
         break;
+
+      if (prefix!=null && !t.text().startsWith(prefix)) break;
 
       int df = te.docFreq();
 

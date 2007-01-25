@@ -122,6 +122,11 @@ public abstract class SolrParams {
    */
   public static final String FACET_SORT = "facet.sort";
 
+  /**
+   * Only return constraints of a facet field with the given prefix.
+   */
+  public static final String FACET_PREFIX = "facet.prefix";
+
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
 

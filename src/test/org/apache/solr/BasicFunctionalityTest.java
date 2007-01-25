@@ -25,14 +25,12 @@ import org.apache.solr.search.*;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
 import org.apache.solr.schema.*;
-import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -575,14 +573,14 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
  
 
   public void testFacetMultiValued() {
-    doSimpleFacetCountsWithLimits("t_s");
+    doFacets("t_s");
   }
 
   public void testFacetSingleValued() {
-    doSimpleFacetCountsWithLimits("t_s1");
+    doFacets("t_s1");
   }
 
-  public void doSimpleFacetCountsWithLimits(String f) {
+  public void doFacets(String f) {
     String pre = "//lst[@name='"+f+"']";
     String notc = "id:[* TO *] -"+f+":C";
 
@@ -742,7 +740,268 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             ,pre+"/int[1][@name='G'][.='5']"
             );
   }
-  
+
+
+
+  public void testFacetPrefixMultiValued() {
+    doFacetPrefix("t_s");
+  }
+
+  public void testFacetPrefixSingleValued() {
+    doFacetPrefix("t_s1");
+  }
+
+  public void doFacetPrefix(String f) {
+    String indent="on";
+    String pre = "//lst[@name='"+f+"']";
+    String notc = "id:[* TO *] -"+f+":C";
+
+    assertU(adoc("id", "1",  f, "AAA"));
+    assertU(adoc("id", "2",  f, "B"));
+    assertU(adoc("id", "3",  f, "BB"));
+    assertU(adoc("id", "4",  f, "BB"));
+    assertU(adoc("id", "5",  f, "BBB"));
+    assertU(adoc("id", "6",  f, "BBB"));
+    assertU(adoc("id", "7",  f, "BBB"));
+    assertU(adoc("id", "8",  f, "CC"));
+    assertU(adoc("id", "9",  f, "CC"));
+    assertU(adoc("id", "10", f, "CCC"));
+    assertU(adoc("id", "11", f, "CCC"));
+    assertU(adoc("id", "12", f, "CCC"));
+    assertU(commit());
+
+    assertQ("test facet.prefix middle, exact match first term",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+            ,pre+"/int[1][@name='BBB'][.='3']"
+            ,pre+"/int[2][@name='BB'][.='2']"
+            ,pre+"/int[3][@name='B'][.='1']"
+    );
+
+    assertQ("test facet.prefix middle, exact match first term, unsorted",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","false"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+            ,pre+"/int[1][@name='B'][.='1']"
+            ,pre+"/int[2][@name='BB'][.='2']"
+            ,pre+"/int[3][@name='BBB'][.='3']"
+    );
+
+
+     assertQ("test facet.prefix middle, exact match first term, unsorted",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","false"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=3]"
+            ,pre+"/int[1][@name='B'][.='1']"
+            ,pre+"/int[2][@name='BB'][.='2']"
+            ,pre+"/int[3][@name='BBB'][.='3']"
+    );
+
+
+    assertQ("test facet.prefix middle, paging",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='BB'][.='2']"
+            ,pre+"/int[2][@name='B'][.='1']"
+    );
+
+    assertQ("test facet.prefix middle, paging",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","1"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='BB'][.='2']"
+    );
+
+    assertQ("test facet.prefix middle, paging",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","1"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","B"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='BB'][.='2']"
+    );
+
+    assertQ("test facet.prefix end, not exact match",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","C"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='CCC'][.='3']"
+            ,pre+"/int[2][@name='CC'][.='2']"
+    );
+
+    assertQ("test facet.prefix end, exact match",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","CC"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=2]"
+            ,pre+"/int[1][@name='CCC'][.='3']"
+            ,pre+"/int[2][@name='CC'][.='2']"
+    );
+
+    assertQ("test facet.prefix past end",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","X"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    assertQ("test facet.prefix past end",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","1"
+                    ,"facet.limit","-1"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","X"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    assertQ("test facet.prefix at start, exact match",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","AAA"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='AAA'][.='1']"
+    );
+    assertQ("test facet.prefix at Start, not exact match",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","AA"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='AAA'][.='1']"
+    );
+    assertQ("test facet.prefix at Start, not exact match",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","AA"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+            ,pre+"/int[1][@name='AAA'][.='1']"
+    );    
+    assertQ("test facet.prefix before start",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","0"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","999"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+    assertQ("test facet.prefix before start",
+            req("q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", f
+                    ,"facet.mincount","0"
+                    ,"facet.offset","2"
+                    ,"facet.limit","100"
+                    ,"facet.sort","true"
+                    ,"facet.prefix","999"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
+
+  }
+
+
   private String mkstr(int len) {
     StringBuilder sb = new StringBuilder(len);
     for (int i = 0; i < len; i++) {
