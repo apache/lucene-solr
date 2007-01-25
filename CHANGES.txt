@@ -57,6 +57,9 @@ New Features
  6. SOLR-117: Limit a field faceting to constraints with a prefix specified
     by facet.prefix or f.<field>.facet.prefix. (yonik)
 
+ 7. SOLR-107: JAVA API: Change NamedList to use Java5 generics
+    and implement Iterable<Map.Entry> (Ryan McKinley via yonik)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

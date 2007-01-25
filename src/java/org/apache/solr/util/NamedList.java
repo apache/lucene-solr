@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import java.util.*;
 import java.io.Serializable;
 
+
 /**
  * A simple container class for modeling an ordered list of name/value pairs.
  *
@@ -44,7 +45,7 @@ import java.io.Serializable;
  * @author yonik
  * @version $Id$
  */
-public class NamedList implements Cloneable, Serializable {
+public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> {
   protected final List nvPairs;
 
   /** Creates an empty instance */
@@ -81,14 +82,15 @@ public class NamedList implements Cloneable, Serializable {
    *
    * @return may be null
    */
-  public Object getVal(int idx) {
-    return nvPairs.get((idx << 1) + 1);
+  @SuppressWarnings("unchecked")
+  public T getVal(int idx) {
+    return (T)nvPairs.get((idx << 1) + 1);
   }
   
   /**
    * Adds a name/value pair to the end of the list.
    */
-  public void add(String name, Object val) {
+  public void add(String name, T val) {
     nvPairs.add(name);
     nvPairs.add(val);
   }
@@ -102,9 +104,13 @@ public class NamedList implements Cloneable, Serializable {
 
   /**
    * Modifies the value of the pair at the specified index.
+   * @return the value that used to be at index
    */
-  public void setVal(int idx, Object val) {
-    nvPairs.set((idx<<1)+1, val);
+  public T setVal(int idx, T val) {
+    int index = (idx<<1)+1;
+    T old = (T)nvPairs.get( index );
+    nvPairs.set(index, val);
+    return old;
   }
 
   /**
@@ -136,7 +142,7 @@ public class NamedList implements Cloneable, Serializable {
    * @see #indexOf
    * @see #get(String,int)
    */
-  public Object get(String name) {
+  public T get(String name) {
     return get(name,0);
   }
 
@@ -147,7 +153,7 @@ public class NamedList implements Cloneable, Serializable {
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    */
-  public Object get(String name, int start) {
+  public T get(String name, int start) {
     int sz = size();
     for (int i=start; i<sz; i++) {
       String n = getName(i);
@@ -178,18 +184,15 @@ public class NamedList implements Cloneable, Serializable {
   /**
    * Iterates over the Map and sequentially adds it's key/value pairs
    */
-  public boolean addAll(Map args) {
-    Set eset = args.entrySet();
-    Iterator iter = eset.iterator();
-    while (iter.hasNext()) {
-      Map.Entry entry = (Map.Entry)iter.next();
-      add(entry.getKey().toString(), entry.getValue());
+  public boolean addAll(Map<String,T> args) {
+    for( Map.Entry<String, T> entry : args.entrySet() ) {
+      add( entry.getKey(), entry.getValue() );
     }
     return args.size()>0;
   }
 
   /** Appends the elements of the given NamedList to this one. */
-  public boolean addAll(NamedList nl) {
+  public boolean addAll(NamedList<T> nl) {
     nvPairs.addAll(nl.nvPairs);
     return nl.size()>0;
   }
@@ -203,4 +206,54 @@ public class NamedList implements Cloneable, Serializable {
     return new NamedList(newList);
   }
 
+
+  //----------------------------------------------------------------------------
+  // Iterable interface
+  //----------------------------------------------------------------------------
+  
+  /**
+   * Support the Iterable interface
+   */
+  public Iterator<Map.Entry<String,T>> iterator() {
+    
+    final NamedList list = this;
+    
+    Iterator<Map.Entry<String,T>> iter = new Iterator<Map.Entry<String,T>>() {
+      
+      int idx = 0;
+      
+      public boolean hasNext() {
+        return idx < list.size();
+      }
+
+      public Map.Entry<String,T> next() {
+        final int index = idx++;
+        Map.Entry<String,T> nv = new Map.Entry<String,T>() {
+          public String getKey() {
+            return list.getName( index );
+          }
+
+          @SuppressWarnings("unchecked")
+		  public T getValue() {
+            return (T)list.getVal( index );
+          }
+          
+          public String toString()
+          {
+        	  return getKey()+"="+getValue();
+          }
+
+		  public T setValue(T value) {
+			return (T) list.setVal(index, value);
+		  }
+        };
+        return nv;
+      }
+
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
+    return iter;
+  }
 }
