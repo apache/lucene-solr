@@ -51,7 +51,7 @@ class ServerTest < Test::Unit::TestCase
   end 
 
   def test_bad_connection
-    conn = Solr::Connection.new 'http://localhost:9999/invalid'
+    conn = Solr::Connection.new 'http://127.0.0.1:9999/invalid'
     assert_raise(Errno::ECONNREFUSED) do
       conn.send(Solr::Request::Ping.new)
     end
