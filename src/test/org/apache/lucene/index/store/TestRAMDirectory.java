@@ -19,6 +19,10 @@ package org.apache.lucene.index.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.ByteArrayOutputStream;
+
 
 import junit.framework.TestCase;
 
@@ -189,6 +193,18 @@ public class TestRAMDirectory extends TestCase {
     
     writer.close();
   }
+
+
+  public void testSerializable() throws IOException {
+    Directory dir = new RAMDirectory();
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    assertEquals("initially empty", 0, bos.size());
+    ObjectOutput out = new ObjectOutputStream(bos);
+    int headerSize = bos.size();
+    out.writeObject(dir);
+    out.close();
+    assertTrue("contains more then just header", headerSize < bos.size());
+  } 
 
   public void tearDown() {
     // cleanup 

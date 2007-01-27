@@ -39,8 +39,6 @@ public class RAMDirectory extends Directory implements Serializable {
   private static final long serialVersionUID = 1l;
 
   HashMap fileMap = new HashMap();
-  private Set fileNames = fileMap.keySet();
-  Collection files = fileMap.values();
   long sizeInBytes = 0;
   
   // *****
@@ -101,6 +99,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Returns an array of strings, one for each file in the directory. */
   public synchronized final String[] list() {
+    Set fileNames = fileMap.keySet();
     String[] result = new String[fileNames.size()];
     int i = 0;
     Iterator it = fileNames.iterator();
@@ -230,8 +229,6 @@ public class RAMDirectory extends Directory implements Serializable {
   /** Closes the store to future operations, releasing associated memory. */
   public final void close() {
     fileMap = null;
-    fileNames = null;
-    files = null;
   }
 
 }

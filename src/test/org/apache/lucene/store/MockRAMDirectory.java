@@ -108,7 +108,7 @@ public class MockRAMDirectory extends RAMDirectory {
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
   public synchronized final long getRecomputedSizeInBytes() {
     long size = 0;
-    Iterator it = files.iterator();
+    Iterator it = fileMap.values().iterator();
     while (it.hasNext())
       size += ((RAMFile) it.next()).getSizeInBytes();
     return size;
@@ -122,7 +122,7 @@ public class MockRAMDirectory extends RAMDirectory {
 
   final long getRecomputedActualSizeInBytes() {
     long size = 0;
-    Iterator it = files.iterator();
+    Iterator it = fileMap.values().iterator();
     while (it.hasNext())
       size += ((RAMFile) it.next()).length;
     return size;
