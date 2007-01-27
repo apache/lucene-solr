@@ -13,6 +13,7 @@
 require 'test/unit'
 require 'solr'
 
+# TODO: Maybe replace this with flexmock
 class SolrMockBaseTestCase < Test::Unit::TestCase
   include Solr
   
