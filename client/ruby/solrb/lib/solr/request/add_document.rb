@@ -26,15 +26,17 @@ module Solr
       # as a short cut you can pass in a Hash instead:
       #
       #   request = Solr::Request.new :creator => 'Jorge Luis Borges'
+      # 
+      # or an array, to add multiple documents at the same time:
+      # 
+      #   request = Solr::Request::AddDocument.new([doc1, doc2, doc3])
         
       def initialize(doc={})
-        case doc
-        when Hash
-          @doc = Solr::Document.new(doc)
-        when Solr::Document
-          @doc = doc
+        @docs = []
+        if doc.is_a?(Array)
+          doc.each { |d| add_doc(d) }
         else
-          raise "must pass in Solr::Document or Hash"
+          add_doc(doc)
         end
       end
 
@@ -42,9 +44,25 @@ module Solr
       
       def to_s
         e = REXML::Element.new 'add'
-        e.add_element @doc.to_xml
+        for doc in @docs
+          e.add_element doc.to_xml
+        end
         return e.to_s
       end
+      
+    private
+      
+      def add_doc(doc)
+        case doc
+        when Hash
+          @docs << Solr::Document.new(doc)
+        when Solr::Document
+          @docs << doc
+        else
+          raise "must pass in Solr::Document or Hash"
+        end
+      end
+      
     end
   end
 end
