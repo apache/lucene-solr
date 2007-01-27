@@ -14,7 +14,7 @@ require 'net/http'
 
 module Solr
   class Connection
-    attr_reader :url, :autocommit
+    attr_reader :url, :autocommit, :connection
    
     # create a connection to a solr instance using the url for the solr
     # application context:
@@ -37,7 +37,10 @@ module Solr
       # only calls to Connection#add/#update/#delete, though a Connection#send(AddDocument.new(...))
       # does not autocommit.  Maybe #send should check for the request types that require a commit and
       # commit in #send instead of the individual methods?
-      @autocommit = opts[:autocommit] == :on ? true : false
+      @autocommit = opts[:autocommit] == :on
+      
+      # Not actually opening the connection yet, just setting up the persistent connection.
+      @connection = Net::HTTP.new(@url.host, @url.port)
     end
 
     # add a document to the index. you can pass in either a hash
@@ -87,6 +90,16 @@ module Solr
       response = send(Solr::Request::Commit.new)
       return response.ok?
     end
+    
+    # TODO add optimize, which can be hacked like this, interestingly!
+    # class OptimizeRequest
+    #  def handler 
+    #    "update"
+    #  end
+    #  def to_s
+    #    "<optimize/>"
+    #  end
+    # end
 
     # pings the connection and returns true/false if it is alive or not
     def ping
@@ -122,12 +135,9 @@ module Solr
     # send the http post request to solr; for convenience there are shortcuts
     # to some requests: add(), query(), commit(), delete() or send()
     def post(request)
-      post = Net::HTTP::Post.new(@url.path + "/" + request.handler)
-      post.body = request.to_s
-      post.content_type = 'application/x-www-form-urlencoded; charset=utf-8'
-      response = Net::HTTP.start(@url.host, @url.port) do |http|
-        http.request(post)
-      end
+      response = @connection.post(@url.path + "/" + request.handler,
+                                  request.to_s,
+                                  { "Content-Type" => "application/x-www-form-urlencoded; charset=utf-8" })
       
       case response
       when Net::HTTPSuccess then response.body
