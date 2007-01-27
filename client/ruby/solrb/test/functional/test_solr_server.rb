@@ -53,7 +53,7 @@ class TestSolrServer
     begin
       puts "starting solr server"
       solr_server.start
-      sleep 10
+      sleep params[:startup_wait] || 5
       yield
     rescue
       error = true
