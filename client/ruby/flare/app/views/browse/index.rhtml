@@ -1,14 +1,47 @@
 <% form_tag(:action=>'add_query') do %>
-  Query: <%=text_field_tag 'query'%>
+  Query: <%= text_field_with_auto_complete :search, :query %>
 <% end %>
 <%=link_to 'clear constraints', :action => 'clear'%>
-Queries: <%=session[:queries].join(' AND ')%>
-Filters: <%=session[:filters].join(' >>> ')%>
-
-Found: <%=@results['response']['numFound']%>
+<div>
+Queries:
 <ul>
-  <% @results['response']['docs'].each do |doc| %>
-    <li><%=doc.inspect%></li>
+<% session[:queries].each_with_index do |q,i| %>
+  <li><%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%> <%=q[:query]%> <%=link_to "remove", :action => :remove_query, :index => i %></li>
+<% end %>
+</ul>
+</div>
+<div>
+Filters:
+<ul>
+<% session[:filters].each_with_index do |filter, i| %>
+  <li>
+      <%=link_to filter[:negative] ? "-" : "+", :action => :invert_filter, :index => i%>
+      <%=filter[:field]%>:<%=filter[:value]%>
+      <%=link_to "remove", :action => :remove_filter, :index => i %>
+  </li>
+<% end %>
+</ul>
+</div>
+<h2>facets</h2>
+<div>
+<% @facet_fields.each do |field|%>
+<div>
+  <%=field%>:
+  <% @response.field_facets(field).each do |k,v| %>
+    <%= link_to "#{k} (#{v})", :action => 'add_filter', :field=>field, :value=>k%>
+  <% end %> <%=link_to "more...", :action => 'facet', :field => field%> 
+</div>
+<% end %>
+</div>
+<h2>results</h2>
+<div>
+Found: <%=@response.total_hits%>
+<ul>
+  <% @response.each do |doc| %>
+    <li><%= debug doc%></li>
   <% end %>
 </ul>
-<%=debug @results['responseHeader']%>
+</div>
+<h3>index info</h3><%=debug @info %>
+
+<h3>search/facet response header</h3><%=debug @response.data['responseHeader']%>

@@ -54,7 +54,7 @@ end
 # end
 
 # Include your application configuration below
-$KCODE = 'UTF8'
+# $KCODE = 'UTF8' # Rails 1.2 supposedly sets this automatically
 
 require 'solr'
 SOLR = Solr::Connection.new("http://localhost:8983/solr")
