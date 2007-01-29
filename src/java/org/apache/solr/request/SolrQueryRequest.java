@@ -39,6 +39,10 @@ public interface SolrQueryRequest {
    *  the original parameters returned by getOriginalParams()
    */
   public void setParams(SolrParams params);
+  
+  /** A Collection of ContentStreams passed to the request
+   */
+  public Iterable<ContentStream> getContentStreams();
 
   /** Returns the original request parameters.  As this
    * does not normally include configured defaults
@@ -116,4 +120,6 @@ public interface SolrQueryRequest {
   public long getElapsedTime();
   ******/
 }
+
+
 

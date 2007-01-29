@@ -17,41 +17,34 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.SolrException;
+import static org.apache.solr.request.SolrParams.FACET;
+import static org.apache.solr.request.SolrParams.FQ;
+import static org.apache.solr.request.SolrParams.Q;
 
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.SolrQueryParser;
-import org.apache.solr.search.QueryParsing;
-
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.SolrRequestHandler;
-
-import org.apache.solr.schema.IndexSchema;
-
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.HighlightingUtils;
-import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.DisMaxParams;
-import static org.apache.solr.request.SolrParams.*;
-
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.queryParser.QueryParser;
-
-/* this is the standard logging framework for Solr */
-
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.net.URL;
+
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrException;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.util.DisMaxParams;
+import org.apache.solr.util.HighlightingUtils;
+import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SolrPluginUtils;
     
 /**
  * <p>
@@ -122,9 +115,7 @@ import java.net.URL;
  * :TODO: make bf,pf,qf multival params now that SolrParams supports them
  * </pre>
  */
-public class DisMaxRequestHandler
-  implements SolrRequestHandler, SolrInfoMBean  {
-
+public class DisMaxRequestHandler extends RequestHandlerBase  {
 
   /**
    * A field we can't ever find in any schema, so we can safely tell
@@ -133,15 +124,6 @@ public class DisMaxRequestHandler
    */
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
     
-  // statistics
-  // TODO: should we bother synchronizing these, or is an off-by-one error
-  // acceptable every million requests or so?
-  long numRequests;
-  long numErrors;
-  
-  SolrParams defaults;
-  SolrParams appends;
-  SolrParams invariants;
     
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
@@ -155,75 +137,25 @@ public class DisMaxRequestHandler
   public DisMaxRequestHandler() {
     super();
   }
-    
-  /* returns URLs to the Wiki pages */
-  public URL[] getDocs() {
-    /* :TODO: need docs */
-    return new URL[0];
-  }
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  public NamedList getStatistics() {
-    NamedList lst = new NamedList();
-    lst.add("requests", numRequests);
-    lst.add("errors", numErrors);
-    return lst;
-  }
-
-  public String getVersion() {
-    return "$Revision:$";
-  }
-    
-  public String getDescription() {
-    return "DisjunctionMax Request Handler: Does relevancy based queries "
-      + "accross a variety of fields using configured boosts";
-  }
-    
-  public Category getCategory() {
-    return Category.QUERYHANDLER;
-  }
-    
-  public String getSourceId() {
-    return "$Id:$";
-  }
-    
-  public String getSource() {
-    return "$URL:$";
-  }
-
+  
   /** sets the default variables for any usefull info it finds in the config
    * if a config option is not inthe format expected, logs an warning
    * and ignores it..
    */
   public void init(NamedList args) {
-
+	// Handle an old format
     if (-1 == args.indexOf("defaults",0)) {
       // no explict defaults list, use all args implicitly
       // indexOf so "<null name="defaults"/> is valid indicator of no defaults
       defaults = SolrParams.toSolrParams(args);
     } else {
-      Object o = args.get("defaults");
-      if (o != null && o instanceof NamedList) {
-        defaults = SolrParams.toSolrParams((NamedList)o);
-      }
-      o = args.get("appends");
-      if (o != null && o instanceof NamedList) {
-        appends = SolrParams.toSolrParams((NamedList)o);
-      }
-      o = args.get("invariants");
-      if (o != null && o instanceof NamedList) {
-        invariants = SolrParams.toSolrParams((NamedList)o);
-      }
+      // otherwise use the new one.
+      super.init( args );
     }
   }
 
-  public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests++;
-        
-    try {
-      U.setDefaults(req,defaults,appends,invariants);
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
+  {
       SolrParams params = req.getParams();
       
       int flags = 0;
@@ -385,12 +317,6 @@ public class DisMaxRequestHandler
         if(sumData != null)
           rsp.add("highlighting", sumData);
       }
-            
-    } catch (Exception e) {
-      SolrException.log(SolrCore.log,e);
-      rsp.setException(e);
-      numErrors++;
-    }
   }
 
   /**
@@ -410,5 +336,35 @@ public class DisMaxRequestHandler
     return f.getFacetCounts();
   }
   
+
+	//////////////////////// SolrInfoMBeans methods //////////////////////
+
+	@Override
+	public String getDescription() {
+	    return "DisjunctionMax Request Handler: Does relevancy based queries "
+	       + "accross a variety of fields using configured boosts";
+	}
+
+	@Override
+	public String getVersion() {
+	    return "$Revision:$";
+	}
+
+	@Override
+	public String getSourceId() {
+	  return "$Id:$";
+	}
+
+	@Override
+	public String getSource() {
+	  return "$URL:$";
+	}
   
+  @Override
+  public URL[] getDocs() {
+    try {
+    return new URL[] { new URL("http://wiki.apache.org/solr/DisMaxRequestHandler") };
+    }
+    catch( MalformedURLException ex ) { return null; }
+  }
 }

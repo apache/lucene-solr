@@ -127,6 +127,13 @@ public abstract class SolrParams {
    */
   public static final String FACET_PREFIX = "facet.prefix";
 
+  /** If the content stream should come from a URL */
+  public static final String STREAM_URL = "stream.url";
+
+  /** If the content stream should come directly from a field */
+  public static final String STREAM_BODY = "stream.body";
+  
+  
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
 

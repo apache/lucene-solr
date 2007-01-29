@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.*;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -41,7 +42,10 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import javax.xml.xpath.XPathConstants;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -241,6 +245,18 @@ public final class SolrCore {
 
   void finalizer() { close(); }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  // Update Handler
+  ////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * RequestHandlers need access to the updateHandler so they can all talk to the
+   * same RAM indexer.  
+   */
+  public UpdateHandler getUpdateHandler()
+  {
+	  return updateHandler;
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   // Searcher Control
@@ -589,14 +605,7 @@ public final class SolrCore {
   }
 
 
-
-  public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
-    SolrRequestHandler handler = getRequestHandler(req.getQueryType());
-    if (handler==null) {
-      log.warning("Unknown Request Handler '" + req.getQueryType() +"' :" + req);
-      throw new SolrException(400,"Unknown Request Handler '" + req.getQueryType() + "'", true);
-    }
-    
+  public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header and handle request
     final NamedList responseHeader = new NamedList();
     rsp.add("responseHeader", responseHeader);
@@ -605,6 +614,16 @@ public final class SolrCore {
 
     log.info(req.getParamString()+ " 0 "+
 	     (int)(rsp.getEndTime() - req.getStartTime()));
+  }
+
+  @Deprecated
+  public void execute(SolrQueryRequest req, SolrQueryResponse rsp) {
+    SolrRequestHandler handler = getRequestHandler(req.getQueryType());
+    if (handler==null) {
+      log.warning("Unknown Request Handler '" + req.getQueryType() +"' :" + req);
+      throw new SolrException(400,"Unknown Request Handler '" + req.getQueryType() + "'", true);
+    }
+    execute(handler, req, rsp);
   }
   
   protected void setResponseHeaderValues(NamedList responseHeader,SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -625,344 +644,12 @@ public final class SolrCore {
     }
   }
 
-  XmlPullParserFactory factory;
-  {
-    try {
-      factory = XmlPullParserFactory.newInstance();
-    } catch (XmlPullParserException e) {
-      throw new RuntimeException(e);
-    }
-    factory.setNamespaceAware(false);
-  }
-
-
-  private int findNextTag(XmlPullParser xpp, String tag) throws XmlPullParserException, IOException {
-    int eventType;
-    while((eventType=xpp.next()) != XmlPullParser.END_DOCUMENT) {
-      if(eventType == XmlPullParser.START_TAG) {
-        if (tag.equals(xpp.getName())) break;
-      }
-    }
-    return eventType;
-  }
-
-
-  public void update(Reader reader, Writer writer) {
-
-    // TODO: add param to specify maximum time to commit?
-
-    // todo - might be nice to separate command parsing w/ a factory
-    // then new commands could be added w/o risk to old ones
-
-
-    XmlPullParser xpp = null;
-    try {
-      xpp = factory.newPullParser();
-    } catch (XmlPullParserException e) {
-      throw new RuntimeException(e);
-    }
-
-    long startTime=System.currentTimeMillis();
-
-    try {
-      xpp.setInput(reader);
-      xpp.nextTag();
-
-      String currTag = xpp.getName();
-      if ("add".equals(currTag)) {
-        log.finest("SolrCore.update(add)");
-        AddUpdateCommand cmd = new AddUpdateCommand();
-        cmd.allowDups=false;  // the default
-
-        int status=0;
-        boolean pendingAttr=false, committedAttr=false;
-        int attrcount = xpp.getAttributeCount();
-        for (int i=0; i<attrcount; i++) {
-          String attrName = xpp.getAttributeName(i);
-          String attrVal = xpp.getAttributeValue(i);
-          if ("allowDups".equals(attrName)) {
-            cmd.allowDups = StrUtils.parseBoolean(attrVal);
-          } else if ("overwritePending".equals(attrName)) {
-            cmd.overwritePending = StrUtils.parseBoolean(attrVal);
-            pendingAttr=true;
-          } else if ("overwriteCommitted".equals(attrName)) {
-            cmd.overwriteCommitted = StrUtils.parseBoolean(attrVal);
-            committedAttr=true;
-          } else {
-            log.warning("Unknown attribute id in add:" + attrName);
-          }
-        }
-
-        //set defaults for committed and pending based on allowDups value
-        if (!pendingAttr) cmd.overwritePending=!cmd.allowDups;
-        if (!committedAttr) cmd.overwriteCommitted=!cmd.allowDups;
-
-        DocumentBuilder builder = new DocumentBuilder(schema);
-        SchemaField uniqueKeyField = schema.getUniqueKeyField();
-        int eventType=0;
-        // accumulate responses
-        List<String> added = new ArrayList<String>(10);
-        while(true) {
-          // this may be our second time through the loop in the case
-          // that there are multiple docs in the add... so make sure that
-          // objects can handle that.
-
-          cmd.indexedId = null;  // reset the id for this add
-
-          if (eventType !=0) {
-            eventType=xpp.getEventType();
-            if (eventType==XmlPullParser.END_DOCUMENT) break;
-          }
-          // eventType = xpp.next();
-          eventType = xpp.nextTag();
-          if (eventType == XmlPullParser.END_TAG || eventType == XmlPullParser.END_DOCUMENT) break;  // should match </add>
-
-          readDoc(builder,xpp);
-          builder.endDoc();
-          cmd.doc = builder.getDoc();
-          log.finest("adding doc...");
-          updateHandler.addDoc(cmd);
-          String docId = null;
-          if (uniqueKeyField!=null)
-            docId = schema.printableUniqueKey(cmd.doc);
-          added.add(docId);
-          
-        } // end while
-        // write log and result
-        StringBuilder out = new StringBuilder();
-        for (String docId: added)
-          if(docId != null)
-            out.append(docId + ",");
-        String outMsg = out.toString();
-        if(outMsg.length() > 0)
-          outMsg = outMsg.substring(0, outMsg.length() - 1);
-        log.info("added id={" + outMsg  + "} in " + (System.currentTimeMillis()-startTime) + "ms");
-        writer.write("<result status=\"0\"></result>");
-
-    } // end add
-
-      else if ("commit".equals(currTag) || "optimize".equals(currTag)) {
-        log.finest("parsing "+currTag);
-        try {
-          CommitUpdateCommand cmd = new CommitUpdateCommand("optimize".equals(currTag));
-
-          boolean sawWaitSearcher=false, sawWaitFlush=false;
-          int attrcount = xpp.getAttributeCount();
-          for (int i=0; i<attrcount; i++) {
-            String attrName = xpp.getAttributeName(i);
-            String attrVal = xpp.getAttributeValue(i);
-            if ("waitFlush".equals(attrName)) {
-              cmd.waitFlush = StrUtils.parseBoolean(attrVal);
-              sawWaitFlush=true;
-            } else if ("waitSearcher".equals(attrName)) {
-              cmd.waitSearcher = StrUtils.parseBoolean(attrVal);
-              sawWaitSearcher=true;
-            } else {
-              log.warning("unexpected attribute commit/@" + attrName);
-            }
-          }
-
-          // If waitFlush is specified and waitSearcher wasn't, then
-          // clear waitSearcher.
-          if (sawWaitFlush && !sawWaitSearcher) {
-            cmd.waitSearcher=false;
-          }
-
-          updateHandler.commit(cmd);
-          if ("optimize".equals(currTag)) {
-            log.info("optimize 0 "+(System.currentTimeMillis()-startTime));
-          }
-          else {
-            log.info("commit 0 "+(System.currentTimeMillis()-startTime));
-          }
-          while (true) {
-            int eventType = xpp.nextTag();
-            if (eventType == XmlPullParser.END_TAG) break; // match </commit>
-          }
-          writer.write("<result status=\"0\"></result>");
-        } catch (SolrException e) {
-          log(e);
-          if ("optimize".equals(currTag)) {
-            log.info("optimize "+e.code+" "+
-                    (System.currentTimeMillis()-startTime));
-          }
-          else {
-            log.info("commit "+e.code+" "+
-                    (System.currentTimeMillis()-startTime));
-          }
-          writeResult(writer,e);
-        } catch (Exception e) {
-          SolrException.log(log, "Exception during commit/optimize",e);
-          writeResult(writer,e);
-        }
-      }  // end commit
-
-    else if ("delete".equals(currTag)) {
-      log.finest("parsing delete");
-      try {
-        DeleteUpdateCommand cmd = new DeleteUpdateCommand();
-        cmd.fromPending=true;
-        cmd.fromCommitted=true;
-        int attrcount = xpp.getAttributeCount();
-        for (int i=0; i<attrcount; i++) {
-          String attrName = xpp.getAttributeName(i);
-          String attrVal = xpp.getAttributeValue(i);
-          if ("fromPending".equals(attrName)) {
-            cmd.fromPending = StrUtils.parseBoolean(attrVal);
-          } else if ("fromCommitted".equals(attrName)) {
-            cmd.fromCommitted = StrUtils.parseBoolean(attrVal);
-          } else {
-            log.warning("unexpected attribute delete/@" + attrName);
-          }
-        }
-
-        int eventType = xpp.nextTag();
-        currTag = xpp.getName();
-        String val = xpp.nextText();
-
-        if ("id".equals(currTag)) {
-          cmd.id =  val;
-          updateHandler.delete(cmd);
-          log.info("delete(id " + val + ") 0 " +
-                   (System.currentTimeMillis()-startTime));
-        } else if ("query".equals(currTag)) {
-          cmd.query =  val;
-          updateHandler.deleteByQuery(cmd);
-          log.info("deleteByQuery(query " + val + ") 0 " +
-                   (System.currentTimeMillis()-startTime));
-        } else {
-          log.warning("unexpected XML tag /delete/"+currTag);
-          throw new SolrException(400,"unexpected XML tag /delete/"+currTag);
-        }
-
-        writer.write("<result status=\"0\"></result>");
-
-        while (xpp.nextTag() != XmlPullParser.END_TAG);
-
-      } catch (SolrException e) {
-        log(e);
-        log.info("delete "+e.code+" "+(System.currentTimeMillis()-startTime));
-        writeResult(writer,e);
-      } catch (Exception e) {
-        log(e);
-        writeResult(writer,e);
-      }
-    } // end delete
-
-
-    } catch (XmlPullParserException e) {
-      log(e);
-      writeResult(writer,e);
-    } catch (IOException e) {
-      log(e);
-      writeResult(writer,e);
-    } catch (SolrException e) {
-      log(e);
-      log.info("update "+e.code+" "+(System.currentTimeMillis()-startTime));
-      writeResult(writer,e);
-    } catch (Throwable e) {
-      log(e);
-      writeResult(writer,e);
-    }
-
-  }
-
-  private void readDoc(DocumentBuilder builder, XmlPullParser xpp) throws IOException, XmlPullParserException {
-    // xpp should be at <doc> at this point
-
-    builder.startDoc();
-
-    int attrcount = xpp.getAttributeCount();
-    float docBoost = 1.0f;
-
-    for (int i=0; i<attrcount; i++) {
-      String attrName = xpp.getAttributeName(i);
-      String attrVal = xpp.getAttributeValue(i);
-      if ("boost".equals(attrName)) {
-        docBoost = Float.parseFloat(attrVal);
-        builder.setBoost(docBoost);
-      } else {
-        log.warning("Unknown attribute doc/@" + attrName);
-      }
-    }
-    if (docBoost != 1.0f) builder.setBoost(docBoost);
-
-    // while (findNextTag(xpp,"field") != XmlPullParser.END_DOCUMENT) {
-
-    while(true) {
-      int eventType = xpp.nextTag();
-      if (eventType == XmlPullParser.END_TAG) break;  // </doc>
-
-      String tname=xpp.getName();
-      // System.out.println("FIELD READER AT TAG " + tname);
-
-      if (!"field".equals(tname)) {
-        log.warning("unexpected XML tag doc/"+tname);
-        throw new SolrException(400,"unexpected XML tag doc/"+tname);
-      }
-
-      //
-      // get field name and parse field attributes
-      //
-      attrcount = xpp.getAttributeCount();
-      String name=null;
-      float boost=1.0f;
-      boolean isNull=false;
-
-      for (int i=0; i<attrcount; i++) {
-        String attrName = xpp.getAttributeName(i);
-        String attrVal = xpp.getAttributeValue(i);
-        if ("name".equals(attrName)) {
-          name=attrVal;
-        } else if ("boost".equals(attrName)) {
-          boost=Float.parseFloat(attrVal);
-        } else if ("null".equals(attrName)) {
-          isNull=StrUtils.parseBoolean(attrVal);
-        } else {
-          log.warning("Unknown attribute doc/field/@" + attrName);
-        }
-      }
-
-      // now get the field value
-      String val = xpp.nextText();      // todo... text event for <field></field>???
-                                        // need this line for isNull???
-      // Don't add fields marked as null (for now at least)
-      if (!isNull) {
-        if (boost != 1.0f) {
-          builder.addField(name,val,boost);
-        } else {
-          builder.addField(name,val);
-        }
-      }
-
-      // do I have to do a nextTag here to read the end_tag?
-
-    } // end field loop
-
-  }
 
 
   final public static void log(Throwable e) {
     SolrException.logOnce(log,null,e);
   }
 
-
-  final static void writeResult(Writer out, SolrException e) {
-    try {
-      XML.writeXML(out,"result",e.getMessage(),"status",e.code());
-    } catch (Exception ee) {
-      log.severe("Error writing to putput stream: "+ee);
-    }
-  }
-
-  final static void writeResult(Writer out, Throwable e) {
-    try {
-      XML.writeXML(out,"result",SolrException.toStr(e),"status","1");
-    } catch (Exception ee) {
-      log.severe("Error writing to putput stream: "+ee);
-    }
-  }
-  
   
   
   private QueryResponseWriter defaultResponseWriter;
@@ -1030,6 +717,7 @@ public final class SolrCore {
     return getQueryResponseWriter(request.getParam("wt")); 
   }
 }
+
 
 
 

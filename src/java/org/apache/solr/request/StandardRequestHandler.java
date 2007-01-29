@@ -19,9 +19,10 @@ package org.apache.solr.request;
 
 import org.apache.lucene.search.*;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.net.URL;
 
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
@@ -29,8 +30,11 @@ import org.apache.solr.util.HighlightingUtils;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.search.*;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrException;
+import org.apache.solr.handler.RequestHandlerBase;
+
+import com.sun.org.apache.xerces.internal.util.URI.MalformedURIException;
+
 import static org.apache.solr.request.SolrParams.*;
 
 /**
@@ -53,43 +57,17 @@ import static org.apache.solr.request.SolrParams.*;
  * </ul>
  *
  */
-public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean {
-
-  // statistics
-  // TODO: should we bother synchronizing these, or is an off-by-one error
-  // acceptable every million requests or so?
-  long numRequests;
-  long numErrors;
-  SolrParams defaults;
-  SolrParams appends;
-  SolrParams invariants;
+public class StandardRequestHandler extends RequestHandlerBase {
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
     /* :NOOP */
   }
 
-  public void init(NamedList args) {
-    Object o = args.get("defaults");
-    if (o != null && o instanceof NamedList) {
-      defaults = SolrParams.toSolrParams((NamedList)o);
-    }
-    o = args.get("appends");
-    if (o != null && o instanceof NamedList) {
-      appends = SolrParams.toSolrParams((NamedList)o);
-    }
-    o = args.get("invariants");
-    if (o != null && o instanceof NamedList) {
-      invariants = SolrParams.toSolrParams((NamedList)o);
-    }
+
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
+  {
     
-  }
-
-  public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests++;
-
-    try {
-      U.setDefaults(req,defaults,appends,invariants);
       SolrParams p = req.getParams();
       String sreq = p.get(Q);
 
@@ -165,17 +143,6 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
         results.docList, query, req, new String[]{defaultField});
       if(sumData != null)
         rsp.add("highlighting", sumData);
-
-    } catch (SolrException e) {
-      rsp.setException(e);
-      numErrors++;
-      return;
-    } catch (Exception e) {
-      SolrException.log(SolrCore.log,e);
-      rsp.setException(e);
-      numErrors++;
-      return;
-    }
   }
 
   /**
@@ -199,21 +166,12 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
-
-  public String getName() {
-    return StandardRequestHandler.class.getName();
-  }
-
   public String getVersion() {
-    return SolrCore.version;
+    return "$Revision$";
   }
 
   public String getDescription() {
     return "The standard Solr request handler";
-  }
-
-  public Category getCategory() {
-    return Category.QUERYHANDLER;
   }
 
   public String getSourceId() {
@@ -225,14 +183,10 @@ public class StandardRequestHandler implements SolrRequestHandler, SolrInfoMBean
   }
 
   public URL[] getDocs() {
-    return null;
-  }
-
-  public NamedList getStatistics() {
-    NamedList lst = new NamedList();
-    lst.add("requests", numRequests);
-    lst.add("errors", numErrors);
-    return lst;
+    try {
+      return new URL[] { new URL("http://wiki.apache.org/solr/StandardRequestHandler") };
+    }
+    catch( MalformedURLException ex ) { return null; }
   }
 }
 

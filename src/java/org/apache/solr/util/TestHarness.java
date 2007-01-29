@@ -19,6 +19,7 @@ package org.apache.solr.util;
 
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,9 +37,12 @@ import javax.xml.xpath.XPathFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +66,7 @@ public class TestHarness {
   private SolrCore core;
   private XPath xpath = XPathFactory.newInstance().newXPath();
   private DocumentBuilder builder;
+  XmlUpdateRequestHandler updater;
         
   /**
    * Assumes "solrconfig.xml" is the config file to use, and
@@ -93,28 +98,36 @@ public class TestHarness {
       SolrConfig.initConfig(confFile);
       core = new SolrCore(dataDirectory, new IndexSchema(schemaFile));
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      
+      updater = new XmlUpdateRequestHandler();
+      updater.init( null );
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
+  
         
   /**
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
+   * 
+   * The better approach is to instanciate a Updatehandler directly
    *
    * @param xml The XML of the update
    * @return The XML response to the update
    */
+  @Deprecated
   public String update(String xml) {
                 
     StringReader req = new StringReader(xml);
     StringWriter writer = new StringWriter(32000);
-    core.update(req, writer);
+    
+    updater.doLegacyUpdate(req, writer);
+    
     return writer.toString();
-                
   }
-
+  
         
   /**
    * Validates that an "update" (add, commit or optimize) results in success.

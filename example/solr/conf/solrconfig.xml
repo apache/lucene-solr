@@ -222,7 +222,9 @@
 
   </query>
 
-
+  <!--Make sure your system has some authentication before enabling remote streaming!  -->
+  <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+    
   <!-- requestHandler plugins... incoming queries will be dispatched to the
      correct handler based on the qt (query type) param matching the
      name of registered handlers.
@@ -337,6 +339,22 @@
         2&lt;-1 5&lt;-2 6&lt;90%
      </str>
   </requestHandler>
+  
+  
+  <!-- Standard update plugin.  If we put this on /update, it will get all the new goodness  -->
+  <requestHandler name="/update/xml" class="solr.XmlUpdateRequestHandler" >
+    <!--
+    <lst name="defaults">
+     <str name="name">value</str>
+    </lst>
+    -->
+  </requestHandler>
+
+  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" />
+  
+  <!-- NOTE, /update is mapped to a servlet, we can have the filter handle requests off that! -->
+  <requestHandler name="/update/commit" class="solr.CommitRequestHandler" />
+
   
   <!-- queryResponseWriter plugins... query responses will be written using the
     writer specified by the 'wt' request parameter matching the name of a registered

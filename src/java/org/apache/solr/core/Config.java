@@ -181,7 +181,7 @@ public class Config {
 
   private static final String project = "solr";
   private static final String base = "org.apache" + "." + project;
-  private static final String[] packages = {"","analysis.","schema.","search.","update.","core.","request.","util."};
+  private static final String[] packages = {"","analysis.","schema.","search.","update.","core.","request.","handler.","util."};
 
   public static Class findClass(String cname, String... subpackages) {
     ClassLoader loader = getClassLoader();

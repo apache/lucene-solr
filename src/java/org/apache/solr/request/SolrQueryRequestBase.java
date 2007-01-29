@@ -23,6 +23,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -56,6 +57,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   protected final SolrParams origParams;
   protected SolrParams params;
   protected Map<Object,Object> context;
+  protected Iterable<ContentStream> streams;
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
     this.core = core;
@@ -115,15 +117,18 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     return s==null ? defval : s;
   }
 
+  @Deprecated
   public String getQueryString() {
     return params.get(SolrParams.Q);
   }
 
+  @Deprecated
   public String getQueryType() {
     return params.get(SolrParams.QT);
   }
 
   // starting position in matches to return to client
+  @Deprecated
   public int getStart() {
     return params.getInt(SolrParams.START, 0);
   }
@@ -175,6 +180,15 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     }
   }
 
+  /** A Collection of ContentStreams passed to the request
+   */
+  public Iterable<ContentStream> getContentStreams() {
+    return streams; 
+  }
+  
+  public void setContentStreams( Iterable<ContentStream> s ) {
+    streams = s; 
+  }
 
   public String getParamString() {
     return origParams.toString();

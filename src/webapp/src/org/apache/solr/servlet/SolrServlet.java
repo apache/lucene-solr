@@ -17,29 +17,27 @@
 
 package org.apache.solr.servlet;
 
-import org.apache.solr.core.Config;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.QueryResponseWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.logging.Logger;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.logging.Logger;
+
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrException;
+import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.SolrRequestHandler;
 
 /**
  * @author yonik
  * @author <a href='mailto:mbaranczak@epublishing.com'> Mike Baranczak </a>
  */
 
+@Deprecated
 public class SolrServlet extends HttpServlet {
     
   final Logger log = Logger.getLogger(SolrServlet.class.getName());
@@ -47,36 +45,8 @@ public class SolrServlet extends HttpServlet {
     
   public void init() throws ServletException {
     log.info("SolrServlet.init()");
-    try {
-      Context c = new InitialContext();
-
-      /***
-      System.out.println("Enumerating JNDI Context=" + c);
-      NamingEnumeration<NameClassPair> en = c.list("java:comp/env");
-      while (en.hasMore()) {
-        NameClassPair ncp = en.next();
-        System.out.println("  ENTRY:" + ncp);
-      }
-      System.out.println("JNDI lookup=" + c.lookup("java:comp/env/solr/home"));
-      ***/
-
-      String home = (String)c.lookup("java:comp/env/solr/home");
-      if (home!=null) Config.setInstanceDir(home);
-    } catch (NoInitialContextException e) {
-      log.info("JNDI not configured for Solr (NoInitialContextEx)");
-    } catch (NamingException e) {
-      log.info("No /solr/home in JNDI");
-    }
-
-    log.info("user.dir=" + System.getProperty("user.dir"));
     core = SolrCore.getSolrCore();
-                
     log.info("SolrServlet.init() done");
-  }
-
-  public void destroy() {
-    core.close();
-    super.destroy();
   }
 
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -87,7 +57,13 @@ public class SolrServlet extends HttpServlet {
     SolrServletRequest solrReq = new SolrServletRequest(core, request);;
     SolrQueryResponse solrRsp = new SolrQueryResponse();
     try {
-      core.execute(solrReq, solrRsp);
+
+      SolrRequestHandler handler = core.getRequestHandler(solrReq.getQueryType());
+      if (handler==null) {
+        log.warning("Unknown Request Handler '" + solrReq.getQueryType() +"' :" + solrReq);
+        throw new SolrException(400,"Unknown Request Handler '" + solrReq.getQueryType() + "'", true);
+      }
+      core.execute(handler, solrReq, solrRsp );
       if (solrRsp.getException() == null) {
         QueryResponseWriter responseWriter = core.getQueryResponseWriter(solrReq);
         response.setContentType(responseWriter.getContentType(solrReq, solrRsp));
@@ -127,14 +103,4 @@ public class SolrServlet extends HttpServlet {
       SolrException.log(log,e);
     }
   }
-
-  final int getParam(HttpServletRequest request, String param, int defval) {
-    final String pval = request.getParameter(param);
-    return (pval==null) ? defval : Integer.parseInt(pval);
-  }
-
-  final boolean paramExists(HttpServletRequest request, String param) {
-    return request.getParameter(param)!=null ? true : false;
-  }
-
 }

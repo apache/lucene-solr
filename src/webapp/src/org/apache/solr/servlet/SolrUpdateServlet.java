@@ -15,41 +15,46 @@ package org.apache.solr.servlet;/**
  * limitations under the License.
  */
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
-import org.apache.solr.request.XMLResponseWriter;
-import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.request.QueryResponseWriter;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.logging.Logger;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-import java.util.logging.Logger;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.PrintWriter;
+
+import org.apache.solr.core.SolrException;
+import org.apache.solr.handler.XmlUpdateRequestHandler;
+import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.util.XML;
 
 /**
  * @author yonik
  * @version $Id$
  */
+@Deprecated
 public class SolrUpdateServlet extends HttpServlet {
   final Logger log = Logger.getLogger(SolrUpdateServlet.class.getName());
-  private SolrCore core;
 
+  XmlUpdateRequestHandler legacyUpdateHandler;
   XMLResponseWriter xmlResponseWriter;
 
   public void init() throws ServletException
   {
-    core = SolrCore.getSolrCore();
+    legacyUpdateHandler = new XmlUpdateRequestHandler();
+    legacyUpdateHandler.init( null );
+    
     log.info("SolrUpdateServlet.init() done");
   }
 
   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     BufferedReader requestReader = request.getReader();
     response.setContentType(QueryResponseWriter.CONTENT_TYPE_XML_UTF8);
-    PrintWriter responseWriter = response.getWriter();
-    core.update(requestReader, responseWriter);
+
+    PrintWriter writer = response.getWriter();
+    legacyUpdateHandler.doLegacyUpdate(requestReader, writer);
   }
 }
