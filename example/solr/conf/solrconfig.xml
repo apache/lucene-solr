@@ -223,7 +223,7 @@
   </query>
 
   <!--Make sure your system has some authentication before enabling remote streaming!  -->
-  <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
     
   <!-- requestHandler plugins... incoming queries will be dispatched to the
      correct handler based on the qt (query type) param matching the
