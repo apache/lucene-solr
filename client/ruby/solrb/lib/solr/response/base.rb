@@ -28,20 +28,11 @@ class Solr::Response::Base
 
     # TODO: Factor out this case... perhaps the request object should provide the response class instead?  Or dynamically align by class name?
     #       Maybe the request itself could have the response handling features that get mixed in with a single general purpose response object?
-    case request
-    when Solr::Request::Ping
-      return Solr::Response::Ping.new(raw)
-    when Solr::Request::AddDocument
-      return Solr::Response::AddDocument.new(raw)
-    when Solr::Request::Commit
-      return Solr::Response::Commit.new(raw)
-    when Solr::Request::Standard
-      return Solr::Response::Standard.new(raw)
-    when Solr::Request::Delete
-      return Solr::Response::Delete.new(raw)
-    when Solr::Request::IndexInfo
-      return Solr::Response::IndexInfo.new(raw)
-    else
+    
+    begin
+      klass = eval(request.class.name.sub(/Request/,'Response'))
+      klass.new(raw)
+    rescue
       raise Solr::Exception.new("unknown request type: #{request.class}")
     end
   end
