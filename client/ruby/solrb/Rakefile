@@ -62,7 +62,7 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.need_tar = true
 end
 
-# Generate rdoc documentation
+desc "Generate rdoc documentation"
 Rake::RDocTask.new('doc') do |rd|
   rd.rdoc_files.include("lib/**/*.rb")
   rd.rdoc_files.include('README', 'CHANGES.txt', 'LICENSE.txt')
@@ -70,12 +70,48 @@ Rake::RDocTask.new('doc') do |rd|
   rd.rdoc_dir = 'doc'
 end
 
-# Run unit tests
+desc "Run unit tests"
 Rake::TestTask.new(:test_units) do |t|
   t.pattern = 'test/unit/*_test.rb'
   t.verbose = true
   t.ruby_opts = ['-r solr', '-r test/unit', '-Itest/unit']
 end
+
+# NOTE: test_functionals does not work standalone currently.  It needs the TestSolrServer wrapper in the :test task
+Rake::TestTask.new(:test_functionals) do |t|
+  t.pattern = 'test/functional/*_test.rb'
+  t.verbose = true
+  t.ruby_opts = ['-r solr', '-r test/unit', '-Itest/functional']
+end
+
+desc "Run unit and functional tests"
+task :test => [:test_units] do
+  rm_rf "test/data"  # remove functional test temp data directory
+  
+  # wrap functional tests with a test-specific Solr server
+  got_error = TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
+    Rake::Task[:test_functionals].invoke 
+  end
+
+  raise "test failures" if got_error
+end
+
+# TODO: consider replacing system() to rcov with the included
+#       Rake task: http://eigenclass.org/hiki.rb?cmd=view&p=rcov+FAQ&key=rake
+namespace :test do
+  desc 'Measures test coverage'
+  # borrowed from here: http://clarkware.com/cgi/blosxom/2007/01/05#RcovRakeTask
+  task :coverage do
+    rm_rf "coverage"
+    rm_rf "coverage.data"
+    TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
+      system("rcov --aggregate coverage.data --text-summary -Ilib:test/functional test/functional/*_test.rb")
+    end
+    system("rcov --aggregate coverage.data --text-summary -Ilib:test/unit test/unit/*_test.rb")
+    system("open coverage/index.html") if PLATFORM['darwin']
+  end
+end
+
 
 def egrep(pattern)
   Dir['**/*.rb'].each do |fn|
@@ -91,43 +127,8 @@ def egrep(pattern)
   end
 end
 
-desc "Look for TODO/FIXME/TBD tags in the code"
+desc "Report TODO/FIXME/TBD tags in the code"
 task :todo do
   egrep /#.*(FIXME|TODO|TBD)/
 end
 
-# NOTE: test_functionals does not work standalone currently.  It needs the TestSolrServer wrapper in the :test task
-Rake::TestTask.new(:test_functionals) do |t|
-  t.pattern = 'test/functional/*_test.rb'
-  t.verbose = true
-  t.ruby_opts = ['-r solr', '-r test/unit', '-Itest/functional']
-end
-
-task :test do
-  # unit tests don't require a solr server
-  Rake::Task[:test_units].invoke
-
-  rm_rf "test/data"  # remove functional test temp data directory
-  
-  # wrap functional tests with a test-specific Solr server
-  got_error = TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
-    Rake::Task[:test_functionals].invoke 
-  end
-
-  raise "test failures" if got_error
-end
-
-namespace :test do
-  desc 'Measures test coverage'
-  # borrowed from here: http://clarkware.com/cgi/blosxom/2007/01/05#RcovRakeTask
-  task :coverage do
-    rm_rf "coverage"
-    rm_rf "coverage.data"
-    TestSolrServer.wrap do
-      system("rcov --aggregate coverage.data --text-summary -Ilib:test/functional test/functional/*_test.rb")
-    end
-    system("rcov --aggregate coverage.data --text-summary -Ilib:test/unit test/unit/*_test.rb")
-    system("open coverage/index.html") if PLATFORM['darwin']
-  end
-
-end
