@@ -10,43 +10,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Response
-    class Standard < Solr::Response::Ruby
-      include Enumerable
-
-      def initialize(ruby_code)
-        super(ruby_code)
-        @response = @data['response']
-        raise "response section missing" unless @response.kind_of? Hash
-      end
-
-      def total_hits
-        return @response['numFound']
-      end
-
-      def start
-        return @response['start']
-      end
-
-      def hits
-        return @response['docs']
-      end
-
-      def max_score
-        return @response['maxScore']
-      end
-      
-      def field_facets(field)
-        @data['facet_counts']['facet_fields'][field].sort {|a,b| b[1] <=> a[1]}
-      end
-      
-
-      # supports enumeration of hits
-      def each
-        @response['docs'].each {|hit| yield hit}
-      end
-
-    end
+class Solr::Response::Standard < Solr::Response::Ruby
+  include Enumerable
+  
+  def initialize(ruby_code)
+    super(ruby_code)
+    @response = @data['response']
+    raise "response section missing" unless @response.kind_of? Hash
   end
+
+  def total_hits
+    @response['numFound']
+  end
+
+  def start
+    @response['start']
+  end
+
+  def hits
+    @response['docs']
+  end
+
+  def max_score
+    @response['maxScore']
+  end
+  
+  def field_facets(field)
+    @data['facet_counts']['facet_fields'][field].sort {|a,b| b[1] <=> a[1]}
+  end
+  
+
+  # supports enumeration of hits
+  def each
+    @response['docs'].each {|hit| yield hit}
+  end
+
 end

@@ -10,14 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Response
-
-    class AddDocument < Solr::Response::Xml
-      def initialize(xml)
-        super(xml)
-      end
-    end
-
+class Solr::Response::AddDocument < Solr::Response::Xml
+  def initialize(xml)
+    super(xml)
   end
 end

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+module Solr; module Response; end; end
 require 'solr/response/base'
 require 'solr/response/xml'
 require 'solr/response/ruby'

@@ -10,6 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  class Exception < Exception; end
-end
+class Solr::Exception < Exception; end

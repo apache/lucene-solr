@@ -12,14 +12,10 @@
 
 require 'rexml/document'
 
-module Solr
-  module Request
-    class Commit < Solr::Request::Update
+class Solr::Request::Commit < Solr::Request::Update
 
-      def to_s
-        return REXML::Element.new('commit').to_s
-      end
-
-    end
+  def to_s
+    REXML::Element.new('commit').to_s
   end
+
 end

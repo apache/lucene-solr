@@ -10,24 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Request
-    class Base
+class Solr::Request::Base
 
-      # returns either :xml or :ruby depending on what the
-      # response type is for a given request
-      
-      def response_format
-        raise "unknown request type: #{self.class}"
-      end
-
-      # returns the solr handler or url fragment that can 
-      # respond to this type of request
-      
-      def handler
-        raise "unkown request type: #{self.class}"
-      end
-
-    end
+  # returns either :xml or :ruby depending on what the
+  # response type is for a given request
+  
+  def response_format
+    raise "unknown request type: #{self.class}"
   end
+
+  # returns the solr handler or url fragment that can 
+  # respond to this type of request
+  
+  def handler
+    raise "unkown request type: #{self.class}"
+  end
+
 end

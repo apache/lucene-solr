@@ -10,9 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Response
-    class Delete < Solr::Response::Xml
-    end
-  end
-end
+class Solr::Response::Delete < Solr::Response::Xml; end

@@ -10,16 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Request
-    class Ping < Solr::Request::Base
-      def response_format
-        :xml
-      end
-      
-      def handler
-        'admin/ping'
-      end
-    end
+# TODO: Consider something lazy like this?
+# Solr::Request::Ping = Solr::Request.simple_request :format=>:xml, :handler=>'admin/ping'
+# class Solr::Request
+#   def self.simple_request(options)
+#     Class.new do 
+#       def response_format
+#         options[:format]
+#       end
+#       def handler
+#         options[:handler]
+#       end
+#     end
+#   end
+# end
+
+class Solr::Request::Ping < Solr::Request::Base
+  def response_format
+    :xml
+  end
+  
+  def handler
+    'admin/ping'
   end
 end

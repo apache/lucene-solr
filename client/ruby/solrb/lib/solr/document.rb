@@ -13,61 +13,59 @@
 require 'rexml/document'
 require 'solr/field'
 
-module Solr
-  class Document
-    include Enumerable
+class Solr::Document
+  include Enumerable
 
-    # Create a new Solr::Document, optionally passing in a hash of 
-    # key/value pairs for the fields
-    #
-    #   doc = Solr::Document.new(:creator => 'Jorge Luis Borges')
-    def initialize(hash={})
-      @fields = []
-      self << hash
-    end
+  # Create a new Solr::Document, optionally passing in a hash of 
+  # key/value pairs for the fields
+  #
+  #   doc = Solr::Document.new(:creator => 'Jorge Luis Borges')
+  def initialize(hash={})
+    @fields = []
+    self << hash
+  end
 
-    # Append a Solr::Field
-    #
-    #   doc << Solr::Field.new(:creator => 'Jorge Luis Borges')
-    #
-    # If you are truly lazy you can simply pass in a hash:
-    #
-    #   doc << {:creator => 'Jorge Luis Borges'}
-    def <<(fields)
-      case fields
-      when Hash
-        fields.each_pair do |name,value|
-          if value.respond_to?(:each)
-            value.each {|v| @fields << Solr::Field.new(name => v)}
-          else
-            @fields << Solr::Field.new(name => value)
-          end
+  # Append a Solr::Field
+  #
+  #   doc << Solr::Field.new(:creator => 'Jorge Luis Borges')
+  #
+  # If you are truly lazy you can simply pass in a hash:
+  #
+  #   doc << {:creator => 'Jorge Luis Borges'}
+  def <<(fields)
+    case fields
+    when Hash
+      fields.each_pair do |name,value|
+        if value.respond_to?(:each)
+          value.each {|v| @fields << Solr::Field.new(name => v)}
+        else
+          @fields << Solr::Field.new(name => value)
         end
-      when Solr::Field
-        @fields << fields
-      else
-        raise "must pass in Solr::Field or Hash"
       end
+    when Solr::Field
+      @fields << fields
+    else
+      raise "must pass in Solr::Field or Hash"
     end
+  end
 
-    # shorthand to allow hash lookups
-    #   doc['name']
-    def [](name)
-      field = @fields.find {|f| f.name == name.to_s}
-      return field.value if field
-      return nil
-    end
+  # shorthand to allow hash lookups
+  #   doc['name']
+  def [](name)
+    field = @fields.find {|f| f.name == name.to_s}
+    return field.value if field
+    return nil
+  end
 
-    # shorthand to assign as a hash
-    def []=(name,value)
-      @fields << Solr::Field.new(name => value)
-    end
+  # shorthand to assign as a hash
+  def []=(name,value)
+    @fields << Solr::Field.new(name => value)
+  end
 
-    # convert the Document to a REXML::Element 
-    def to_xml
-      e = REXML::Element.new 'doc'
-      @fields.each {|f| e.add_element(f.to_xml)}
-      return e
-    end
+  # convert the Document to a REXML::Element 
+  def to_xml
+    e = REXML::Element.new 'doc'
+    @fields.each {|f| e.add_element(f.to_xml)}
+    return e
   end
 end

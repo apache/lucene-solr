@@ -10,12 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Request
-    class IndexInfo < Solr::Request::Select
-      def initialize
-        super('indexinfo')
-      end
-    end
+class Solr::Request::IndexInfo < Solr::Request::Select
+  def initialize
+    super('indexinfo')
   end
 end

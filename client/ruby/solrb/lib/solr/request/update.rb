@@ -10,18 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr
-  module Request
+# a parent class for all requests that go through the solr update handler
+class Solr::Request::Update < Solr::Request::Base
+  def response_format
+    :xml
+  end
 
-    # a parent class for all requests that go through the solr update handler
-    class Update < Solr::Request::Base
-      def response_format
-        :xml
-      end
-
-      def handler
-        'update'
-      end
-    end
+  def handler
+    'update'
   end
 end
