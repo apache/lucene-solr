@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+module Solr; end
 require 'solr/exception'
 require 'solr/request'
 require 'solr/connection'
