@@ -216,7 +216,7 @@ public class HighlightingUtils
          return null;
       
       SolrIndexSearcher searcher = req.getSearcher();
-      NamedList fragments = new NamedList();
+      NamedList fragments = new SimpleOrderedMap();
       String[] fieldNames = getHighlightFields(query, req, defaultFields);
       Document[] readDocs = new Document[docs.size()];
       {
@@ -236,7 +236,7 @@ public class HighlightingUtils
       {
          int docId = iterator.nextDoc();
          Document doc = readDocs[i];
-         NamedList docSummaries = new NamedList();
+         NamedList docSummaries = new SimpleOrderedMap();
          for (String fieldName : fieldNames)
          {
             fieldName = fieldName.trim();

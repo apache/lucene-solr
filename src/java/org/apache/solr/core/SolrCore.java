@@ -27,11 +27,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.*;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.StrUtils;
-import org.apache.solr.util.XML;
+import org.apache.solr.util.*;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -607,7 +603,7 @@ public final class SolrCore {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header and handle request
-    final NamedList responseHeader = new NamedList();
+    final NamedList responseHeader = new SimpleOrderedMap();
     rsp.add("responseHeader", responseHeader);
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(responseHeader,req,rsp);

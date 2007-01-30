@@ -18,6 +18,7 @@
 package org.apache.solr.request;
 
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 
 import java.util.*;
 
@@ -60,7 +61,7 @@ public class SolrQueryResponse {
    * @see #setAllValues
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  protected  NamedList values = new NamedList();
+  protected  NamedList values = new SimpleOrderedMap();
 
   protected Set<String> defaultReturnFields;
 

@@ -27,6 +27,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SimpleOrderedMap;
 
 /**
  *
@@ -104,7 +105,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new NamedList();
+    NamedList lst = new SimpleOrderedMap();
     lst.add("requests", numRequests);
     lst.add("errors", numErrors);
     return lst;

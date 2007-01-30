@@ -44,6 +44,7 @@ import java.net.URL;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrException;
@@ -676,7 +677,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new NamedList();
+    NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
     lst.add("optimizes", optimizeCommands.get());
     lst.add("docsPending", numDocsPending.get());

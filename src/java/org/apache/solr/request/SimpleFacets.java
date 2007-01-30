@@ -32,6 +32,7 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.SimpleOrderedMap;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -76,7 +77,7 @@ public class SimpleFacets {
     if (!params.getBool(params.FACET,true))
       return null;
 
-    NamedList res = new NamedList();
+    NamedList res = new SimpleOrderedMap();
     try {
 
       res.add("facet_queries", getFacetQueryCounts());
@@ -98,7 +99,7 @@ public class SimpleFacets {
    */
   public NamedList getFacetQueryCounts() throws IOException,ParseException {
 
-    NamedList res = new NamedList();
+    NamedList res = new SimpleOrderedMap();
 
     /* Ignore SolrParams.DF - could have init param facet.query assuming
      * the schema default with query param DF intented to only affect Q.
@@ -160,7 +161,7 @@ public class SimpleFacets {
   public NamedList getFacetFieldCounts()
           throws IOException {
 
-    NamedList res = new NamedList();
+    NamedList res = new SimpleOrderedMap();
     String[] facetFs = params.getParams(SolrParams.FACET_FIELD);
     if (null != facetFs) {
       for (String f : facetFs) {

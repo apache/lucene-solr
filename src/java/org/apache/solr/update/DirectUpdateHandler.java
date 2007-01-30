@@ -38,6 +38,7 @@ import java.net.URL;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
@@ -374,7 +375,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new NamedList();
+    NamedList lst = new SimpleOrderedMap();
     return lst;
   }
 

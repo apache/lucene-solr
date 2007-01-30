@@ -32,6 +32,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.OpenBitSet;
+import org.apache.solr.util.SimpleOrderedMap;
 
 import java.io.IOException;
 import java.net.URL;
@@ -1434,7 +1435,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new NamedList();
+    NamedList lst = new SimpleOrderedMap();
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());

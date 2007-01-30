@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -252,7 +253,7 @@ public class LRUCache implements SolrCache {
   }
 
   public NamedList getStatistics() {
-    NamedList lst = new NamedList();
+    NamedList lst = new SimpleOrderedMap();
     synchronized (map) {
       lst.add("lookups", lookups);
       lst.add("hits", hits);

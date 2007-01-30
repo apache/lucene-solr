@@ -19,12 +19,14 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.ArrayList;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.request.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {
@@ -36,29 +38,21 @@ public class DumpRequestHandler extends RequestHandlerBase
         
     // Write the streams...
     if( req.getContentStreams() != null ) {
-      NamedList<Object> streams = new NamedList<Object>();
+      ArrayList streams = new ArrayList();
       // Cycle through each stream
       for( ContentStream content : req.getContentStreams() ) {
-        NamedList<Object> stream = new NamedList<Object>();
+        NamedList<Object> stream = new SimpleOrderedMap<Object>();
         stream.add( "name", content.getName() );
         stream.add( "fieldName", content.getSourceInfo() );
         stream.add( "size", content.getSize() );
         stream.add( "contentType", content.getContentType() );
         stream.add( "stream", IOUtils.toString( content.getStream() ) );
-        streams.add( "stream", stream );
+        streams.add( stream );
       }
       rsp.add( "streams", streams );
     }
 
-    // Show the context
-    Map<Object,Object> context = req.getContext();
-    if( context != null ) {
-      NamedList ctx = new NamedList();
-      for( Map.Entry<Object,Object> entry : context.entrySet() ) {
-        ctx.add( entry.getKey().toString(), entry.getValue() );
-      }
-      rsp.add( "context", ctx );
-    }
+    rsp.add("context", req.getContext());
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -70,16 +64,16 @@ public class DumpRequestHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
-      return "$Revision:$";
+      return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 }

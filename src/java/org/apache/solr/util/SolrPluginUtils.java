@@ -305,7 +305,7 @@ public class SolrPluginUtils {
 
     NamedList dbg = null;
     if (debug!=null) {
-      dbg = new NamedList();          
+      dbg = new SimpleOrderedMap();
 
       /* userQuery may have been pre-processes .. expose that */
       dbg.add("rawquerystring", req.getQueryString());
@@ -382,7 +382,7 @@ public class SolrPluginUtils {
 
     NamedList dbg = null;
     if (debug!=null) {
-      dbg = new NamedList();
+      dbg = new SimpleOrderedMap();
 
       /* userQuery may have been pre-processes .. expose that */
       dbg.add("rawquerystring", req.getQueryString());
@@ -425,7 +425,7 @@ public class SolrPluginUtils {
                                          IndexSchema schema)
     throws IOException {
         
-    NamedList explainList = new NamedList();
+    NamedList explainList = new SimpleOrderedMap();
     DocIterator iterator = docs.iterator();
     for (int i=0; i<docs.size(); i++) {
       int id = iterator.nextDoc();

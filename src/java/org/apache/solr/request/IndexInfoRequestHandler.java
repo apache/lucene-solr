@@ -22,6 +22,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -105,7 +106,7 @@ public class IndexInfoRequestHandler implements SolrRequestHandler, SolrInfoMBea
   }
 
   public NamedList getStatistics() {
-    return new NamedList();
+    return new SimpleOrderedMap();
   }
 }
 

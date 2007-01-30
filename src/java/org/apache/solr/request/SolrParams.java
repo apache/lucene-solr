@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.StrUtils;
+import org.apache.solr.util.SimpleOrderedMap;
 
 import javax.servlet.ServletRequest;
 
@@ -266,7 +267,7 @@ public abstract class SolrParams {
   
   /** Convert this to a NamedList */
   public NamedList toNamedList() {
-    final NamedList result = new NamedList();
+    final SimpleOrderedMap result = new SimpleOrderedMap();
     
     for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();

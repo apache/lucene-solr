@@ -32,7 +32,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.servlet.SolrServlet;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -41,6 +40,7 @@ import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.XML;
+import org.apache.solr.util.SimpleOrderedMap;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -113,7 +113,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     UpdateHandler updateHandler = core.getUpdateHandler();
     
     // TODO: What results should be returned?
-    NamedList res = new NamedList();
+    SimpleOrderedMap res = new SimpleOrderedMap();
 
     XmlPullParser xpp = factory.newPullParser();
     long startTime=System.currentTimeMillis();
@@ -384,16 +384,16 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
-      return "$Revision:$";
+      return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 }

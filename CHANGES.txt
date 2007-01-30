@@ -72,6 +72,11 @@ Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
 
+ 2. SOLR-125: Change default of json.nl to flat, change so that
+    json.nl only affects items where order matters (facet constraint
+    listings).  Fix JSON output bug for null values.  Internal JAVA API:
+    change most uses of NamedList to SimpleOrderedMap. (yonik)
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new
