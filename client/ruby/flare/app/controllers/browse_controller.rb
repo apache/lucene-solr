@@ -8,6 +8,7 @@ class BrowseController < ApplicationController
     @info = SOLR.send(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
     @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
     
+    # TODO Add paging and sorting
     request = Solr::Request::Standard.new :query => query,
                                           :filter_queries => filters,
                                           :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true}
