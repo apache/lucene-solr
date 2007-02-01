@@ -102,6 +102,13 @@ New features
     their passing unit tests.
     (Otis Gospodnetic)
 
+13. LUCENE-565: Added NewIndexModifier (subclass of IndexWriter) to
+    more efficiently handle updating documents (the "delete then add"
+    use case).  This is intended to be an eventual replacement for the
+    existing IndexModifier.  Added IndexWriter.flush() (renamed from
+    flushRamSegments()) to flush all pending updates (held in RAM), to
+    the Directory.  (Ning Li via Mike McCandless)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow

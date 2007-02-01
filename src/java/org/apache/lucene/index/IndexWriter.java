@@ -108,8 +108,8 @@ public class IndexWriter {
   private HashSet protectedSegments; // segment names that should not be deleted until commit
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
 
-  private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
-  private SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
+  protected SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  protected SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
   private final RAMDirectory ramDirectory = new RAMDirectory(); // for temp segs
   private IndexFileDeleter deleter;
 
@@ -124,6 +124,10 @@ public class IndexWriter {
   private boolean useCompoundFile = true;
 
   private boolean closeDir;
+
+  protected IndexFileDeleter getDeleter() {
+    return deleter;
+  }
 
   /** Get the current setting of whether to use the compound file format.
    *  Note that this just returns the value you set with setUseCompoundFile(boolean)
@@ -642,15 +646,20 @@ public class IndexWriter {
    * flushing/merging temporary free space requirements.</p>
    */
   public void addDocument(Document doc, Analyzer analyzer) throws IOException {
-    DocumentWriter dw =
-      new DocumentWriter(ramDirectory, analyzer, this);
+    SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
+    synchronized (this) {
+      ramSegmentInfos.addElement(newSegmentInfo);
+      maybeFlushRamSegments();
+    }
+  }
+
+  final SegmentInfo buildSingleDocSegment(Document doc, Analyzer analyzer)
+      throws IOException {
+    DocumentWriter dw = new DocumentWriter(ramDirectory, analyzer, this);
     dw.setInfoStream(infoStream);
     String segmentName = newRAMSegmentName();
     dw.addDocument(segmentName, doc);
-    synchronized (this) {
-      ramSegmentInfos.addElement(new SegmentInfo(segmentName, 1, ramDirectory, false, false));
-      maybeFlushRamSegments();
-    }
+    return new SegmentInfo(segmentName, 1, ramDirectory, false, false);
   }
 
   // for test purpose
@@ -658,7 +667,7 @@ public class IndexWriter {
     return ramSegmentInfos.size();
   }
 
-  private final synchronized String newRAMSegmentName() {
+  final synchronized String newRAMSegmentName() {
     return "_ram_" + Integer.toString(ramSegmentInfos.counter++, Character.MAX_RADIX);
   }
 
@@ -676,7 +685,7 @@ public class IndexWriter {
     }
   }
 
-  private final synchronized String newSegmentName() {
+  final synchronized String newSegmentName() {
     return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
   }
 
@@ -1219,18 +1228,44 @@ public class IndexWriter {
   //         counts x and y, then f(x) >= f(y).
   //      2: The number of committed segments on the same level (f(n)) <= M.
 
-  private final void maybeFlushRamSegments() throws IOException {
-    if (ramSegmentInfos.size() >= minMergeDocs) {
+  protected boolean timeToFlushRam() {
+    return ramSegmentInfos.size() >= minMergeDocs;
+  }
+
+  protected boolean anythingToFlushRam() {
+    return ramSegmentInfos.size() > 0;
+  }
+
+  // true if only buffered inserts, no buffered deletes
+  protected boolean onlyRamDocsToFlush() {
+    return true;
+  }
+
+  // whether the latest segment is the flushed merge of ram segments
+  protected void doAfterFlushRamSegments(boolean flushedRamSegments)
+      throws IOException {
+  }
+
+  protected final void maybeFlushRamSegments() throws IOException {
+    if (timeToFlushRam()) {
       flushRamSegments();
     }
   }
 
   /** Expert:  Flushes all RAM-resident segments (buffered documents), then may merge segments. */
-  public final synchronized void flushRamSegments() throws IOException {
-    if (ramSegmentInfos.size() > 0) {
+  private final synchronized void flushRamSegments() throws IOException {
+    if (anythingToFlushRam()) {
       mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
       maybeMergeSegments(minMergeDocs);
     }
+  }
+
+  /**
+   * Flush all in-memory buffered updates to the Directory.
+   * @throws IOException
+   */
+  public final synchronized void flush() throws IOException {
+    flushRamSegments();
   }
 
   /** Expert:  Return the total size of all index files currently cached in memory.
@@ -1315,10 +1350,10 @@ public class IndexWriter {
   private final int mergeSegments(SegmentInfos sourceSegments, int minSegment, int end)
     throws IOException {
 
+    boolean mergeFlag = end > 0;
     final String mergedName = newSegmentName();
-    if (infoStream != null) infoStream.print("merging segments");
-    SegmentMerger merger = new SegmentMerger(this, mergedName);
-    
+    SegmentMerger merger = null;
+
     final Vector segmentsToDelete = new Vector();
 
     String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
@@ -1326,21 +1361,26 @@ public class IndexWriter {
 
     SegmentInfo newSegment = null;
 
-    int mergedDocCount;
+    int mergedDocCount = 0;
 
     // This is try/finally to make sure merger's readers are closed:
     try {
+
+     if (mergeFlag) {
+      if (infoStream != null) infoStream.print("merging segments");
+      merger = new SegmentMerger(this, mergedName);
 
       for (int i = minSegment; i < end; i++) {
         SegmentInfo si = sourceSegments.info(i);
         if (infoStream != null)
           infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-        IndexReader reader = SegmentReader.get(si);
+        IndexReader reader = SegmentReader.get(si); // no need to set deleter (yet)
         merger.add(reader);
         if ((reader.directory() == this.directory) || // if we own the directory
             (reader.directory() == this.ramDirectory))
           segmentsToDelete.addElement(reader);   // queue segment for deletion
       }
+     }
 
       SegmentInfos rollback = null;
       boolean success = false;
@@ -1349,6 +1389,7 @@ public class IndexWriter {
       // if we hit exception when doing the merge:
       try {
 
+       if (mergeFlag) {
         mergedDocCount = merger.merge();
 
         if (infoStream != null) {
@@ -1357,22 +1398,31 @@ public class IndexWriter {
 
         newSegment = new SegmentInfo(mergedName, mergedDocCount,
                                      directory, false, true);
+       }
 
+        if (!inTransaction
+            && (sourceSegments != ramSegmentInfos || !onlyRamDocsToFlush())) {
+          // Now save the SegmentInfo instances that
+          // we are replacing:
+          rollback = (SegmentInfos) segmentInfos.clone();
+        }
 
+       if (mergeFlag) {
         if (sourceSegments == ramSegmentInfos) {
           segmentInfos.addElement(newSegment);
         } else {
-
-          if (!inTransaction) {
-            // Now save the SegmentInfo instances that
-            // we are replacing:
-            rollback = (SegmentInfos) segmentInfos.clone();
-          }
-
           for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
             sourceSegments.remove(i);
 
           segmentInfos.set(minSegment, newSegment);
+        }
+       }
+
+        if (sourceSegments == ramSegmentInfos) {
+          // Should not be necessary: no prior commit should
+          // have left pending files, so just defensive:
+          deleter.clearPendingFiles();
+          doAfterFlushRamSegments(mergeFlag);
         }
 
         if (!inTransaction) {
@@ -1396,7 +1446,7 @@ public class IndexWriter {
 
           // Must rollback so our state matches index:
 
-          if (sourceSegments == ramSegmentInfos) {
+          if (sourceSegments == ramSegmentInfos && onlyRamDocsToFlush()) {
             // Simple case: newSegment may or may not have
             // been added to the end of our segment infos,
             // so just check & remove if so:
@@ -1414,6 +1464,10 @@ public class IndexWriter {
             segmentInfos.addAll(rollback);
           }
 
+          // Erase any pending files that we were going to delete:
+          // i.e. old del files added by SegmentReader.doCommit() 
+          deleter.clearPendingFiles();
+
           // Delete any partially created files:
           deleter.deleteFile(nextSegmentsFileName);
           deleter.findDeletableFiles();
@@ -1422,18 +1476,21 @@ public class IndexWriter {
       }
     } finally {
       // close readers before we attempt to delete now-obsolete segments
-      merger.closeReaders();
+      if (mergeFlag) merger.closeReaders();
     }
 
     if (!inTransaction) {
+      // Attempt to delete all files we just obsoleted:
       deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
       deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
+      // including the old del files
+      deleter.commitPendingFiles();
     } else {
       deleter.addPendingFile(segmentsInfosFileName);    // delete old segments_N file
       deleter.deleteSegments(segmentsToDelete, protectedSegments);     // delete now-unused segments
     }
 
-    if (useCompoundFile) {
+    if (useCompoundFile && mergeFlag) {
 
       segmentsInfosFileName = nextSegmentsFileName;
       nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
