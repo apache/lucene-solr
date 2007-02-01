@@ -68,6 +68,10 @@ New Features
     accessed using a URL structure based on that name.
     (Ryan McKinley via hossman)
 
+ 9. SOLR-126: DirectUpdateHandler2 supports autocommitting after a specified time
+    (in ms), using <autoCommit><maxTime>10000</maxTime></autoCommit>.
+    (Ryan McKinley via klaas).
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

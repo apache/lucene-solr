@@ -31,8 +31,12 @@ import org.apache.lucene.search.Query;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -246,7 +250,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
           // adding document -- prep writer
           closeSearcher();
           openWriter();
-          tracker.increment(1);          
+          tracker.addedDocument();          
         } else {
           // exit prematurely
           return rc;
@@ -267,9 +271,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         numDocsPending.incrementAndGet();
       }
     }
-
-    // might need to commit (wait for searcher if so)
-    checkCommit(true);
     return rc;
   }
 
@@ -556,23 +557,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     log.info("closed " + this);
   }
 
-  /** Inform tracker that <code>docs</code> docs have been added.  Will 
-   * perform commit and/or optimize if constraints are satisfied.
-   */
-  protected void checkCommit() throws IOException {
-    checkCommit(false);
-  }
-  protected void checkCommit(boolean waitSearcher) throws IOException {
-    synchronized (tracker) {
-      if (tracker.needCommit()) {
-        CommitUpdateCommand cmd = new CommitUpdateCommand(false);
-        cmd.waitSearcher = waitSearcher;
-        log.info("autocommitting: " + cmd);
-        commit(cmd);
-      } 
-    }
-  }
-
   /** Helper class for tracking autoCommit state.
    *
    * Note: This is purely an implementation detail of autoCommit and will
@@ -581,69 +565,87 @@ public class DirectUpdateHandler2 extends UpdateHandler {
    *
    * Note: all access must be synchronized.
    */
-  class CommitTracker {
+  class CommitTracker implements Runnable 
+  {  
+    // settings, not final so we can change them in testing
+    int docsUpperBound;
+    long timeUpperBound;
 
-    // settings
-    private final ConstraintTester commitTester;
-
-    // state
-    private long timeOfCommit;
-    private long docsSinceCommit;    
-    private boolean needCommit;
-
-    public CommitTracker() {
-      timeOfCommit = timestamp();
-      docsSinceCommit = 0;
-      needCommit = false;
-
-      commitTester = new ConstraintTester(
-         SolrConfig.config.getInt("updateHandler/autoCommit/maxDocs", -1));
-      SolrCore.log.info("autocommit if " + commitTester);
-    }
-
-    /** Indicate that <code>count</code> docs have been added.  May set
-     * <code>needCommit()</code> and perhaps also <code>needOptimize</code>
-     */
-    public void increment(int count) {
-      docsSinceCommit += count;
-      if (docsSinceCommit > 0) {
-        needCommit = commitTester.testConstraints(docsSinceCommit);
-      }
-    }
-
-    /** @return true if commit is needed */
-    public boolean needCommit() { return needCommit; }
+    private final ScheduledExecutorService scheduler =
+       Executors.newScheduledThreadPool(1);
+    private ScheduledFuture pending;
     
-    /** Inform tracker that a commit has occurred */
-    public void didCommit() {
-      didCommit(docsSinceCommit);
+    // state
+    long docsSinceCommit;    
+    int autoCommitCount= 0;
+    long lastAddedTime = -1;
+    
+    public CommitTracker() {
+      docsSinceCommit = 0;
+      pending = null;
+
+      docsUpperBound = SolrConfig.config.getInt("updateHandler/autoCommit/maxDocs", -1);
+      timeUpperBound = SolrConfig.config.getInt("updateHandler/autoCommit/maxTime", -1);
+
+      SolrCore.log.info("CommitTracker: " + this);
     }
-    public void didCommit(long docsCommitted) {
-      timeOfCommit = timestamp();
-      docsSinceCommit -= docsCommitted;
-      needCommit = false;
 
-    }    
+    /** Indicate that documents have been added
+     */
+    public void addedDocument() {
+      docsSinceCommit++;
+      lastAddedTime = System.currentTimeMillis();
+      if( pending == null ) {  // Don't start a new event if one is already waiting 
+        if( timeUpperBound > 0 ) { 
+          pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
+        }
+        else if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
+          // 1/4 second seems fast enough for anyone using maxDocs
+          pending = scheduler.schedule( this, 250, TimeUnit.MILLISECONDS );
+        }
+      }
+    }
 
-    /** @return milliseconds since epoch */
-    private long timestamp() { return System.currentTimeMillis();}
+    /** Inform tracker that a commit has occurred, cancel any pending commits */
+    public void didCommit() {
+      if( pending != null ) {
+        pending.cancel(false);
+        pending = null; // let it start another one
+      }
+      docsSinceCommit = 0;
+    }
 
-    class ConstraintTester {
-      private long docsUpperBound = -1;
-      public ConstraintTester(long docsUpperBound) {
-        this.docsUpperBound = docsUpperBound;
+    /** This is the worker part for the ScheduledFuture **/
+    public synchronized void run() {
+      long started = System.currentTimeMillis();
+      try {
+        CommitUpdateCommand command = new CommitUpdateCommand( false );
+        command.waitFlush = true;
+        command.waitSearcher = true; 
+        commit( command );
+        autoCommitCount++;
+      } 
+      catch (Exception e) {
+        log.severe( "auto commit error..." );
+        e.printStackTrace();
       }
-      private boolean checkDocsUpper(long docs) {
-        return docsUpperBound == -1 ? false : docsUpperBound <= docs;
+      finally {
+        pending = null;
       }
-      public boolean testConstraints(long docs) {
-        return checkDocsUpper(docs);
-      }
-      public String toString() {
-        return docsUpperBound != -1 ? "docs >= " + docsUpperBound : "{no doc limit}" ;
+
+      // check if docs have been submitted since the commit started
+      if( lastAddedTime > started ) {
+        if( docsSinceCommit > docsUpperBound ) {
+          pending = scheduler.schedule( this, 100, TimeUnit.MILLISECONDS );
+        }
+        else if( timeUpperBound > 0 ) {
+          pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
+        }
       }
     }
   }
+      
+  
   /////////////////////////////////////////////////////////////////////
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
@@ -679,6 +681,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
+    lst.add("autocommits", tracker.autoCommitCount);
     lst.add("optimizes", optimizeCommands.get());
     lst.add("docsPending", numDocsPending.get());
     // pset.size() not synchronized, but it should be fine to access.
@@ -692,7 +695,6 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     lst.add("cumulative_deletesByQuery", deleteByQueryCommandsCumulative.get());
     lst.add("cumulative_errors", numErrorsCumulative.get());
     lst.add("docsDeleted", numDocsDeleted.get());
-
     return lst;
   }
 

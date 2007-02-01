@@ -60,10 +60,9 @@
   <updateHandler class="solr.DirectUpdateHandler2">
 
     <!-- autocommit pending docs if certain criteria are met 
-         NOTE: maxSecs not implemented yet 
     <autoCommit> 
       <maxDocs>10000</maxDocs>
-      <maxSec>3600</maxSec>  
+      <maxTime>3600000</maxTime> <!-- one hour in milliseconds -->  
     </autoCommit>
     -->
 
