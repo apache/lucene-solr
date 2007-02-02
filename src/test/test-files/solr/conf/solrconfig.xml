@@ -62,10 +62,9 @@
     <!-- autocommit pending docs if certain criteria are met 
     <autoCommit> 
       <maxDocs>10000</maxDocs>
-      <maxTime>3600000</maxTime> <!-- one hour in milliseconds -->  
+      <maxTime>3600000</maxTime> 
     </autoCommit>
     -->
-
     <!-- represents a lower bound on the frequency that commits may
     occur (in seconds). NOTE: not yet implemented
     
