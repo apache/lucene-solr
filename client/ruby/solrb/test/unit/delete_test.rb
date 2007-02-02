@@ -48,4 +48,9 @@ class DeleteTest <  SolrMockBaseTestCase
     assert_equal false, response.ok? 
   end
 
+  def test_delete_by_i18n_query_request
+    request = Solr::Request::Delete.new(:query => 'ëäïöü')
+    assert_equal "<delete><query>ëäïöü</query></delete>", request.to_s
+  end
+
 end

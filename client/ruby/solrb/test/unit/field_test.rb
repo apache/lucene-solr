@@ -20,5 +20,11 @@ class FieldTest < Test::Unit::TestCase
     assert_kind_of REXML::Element, field.to_xml
     assert_equal "<field name='creator'>Erik Hatcher</field>", field.to_xml.to_s
   end
-
+  
+  def test_i18n_xml
+    field = Solr::Field.new :i18nstring => 'Äêâîôû Öëäïöü'
+    assert_kind_of REXML::Element, field.to_xml
+    assert_equal "<field name='i18nstring'>Äêâîôû Öëäïöü</field>", field.to_xml.to_s
+  end
+  
 end

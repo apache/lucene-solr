@@ -50,6 +50,29 @@ class ServerTest < Test::Unit::TestCase
     assert_equal 0, response.total_hits
   end 
 
+  def test_i18n_full_lifecycle
+    # make sure autocommit is on
+    assert @connection.autocommit
+
+    # make sure this doc isn't there to begin with
+    @connection.delete(123456)
+
+    # add it
+    @connection.add(:id => 123456, :text => 'Åäöêâîôû')
+
+    # look for it
+    response = @connection.query('Åäöêâîôû')
+    assert_equal 1, response.total_hits
+    assert_equal '123456', response.hits[0]['id']
+
+    # delete it
+    @connection.delete(123456)
+
+    # make sure it's gone
+    response = @connection.query('Åäöêâîôû Öëäïöü')
+    assert_equal 0, response.total_hits
+  end
+
   def test_bad_connection
     conn = Solr::Connection.new 'http://127.0.0.1:9999/invalid'
     assert_raise(Errno::ECONNREFUSED) do
