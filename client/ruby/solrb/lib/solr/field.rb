@@ -11,6 +11,7 @@
 # limitations under the License.
 
 require 'rexml/document'
+require 'time'
 
 class Solr::Field
   attr_accessor :name
@@ -19,7 +20,9 @@ class Solr::Field
   def initialize(key_val, opts={})
     raise "first argument must be a hash" unless key_val.kind_of? Hash
     @name = key_val.keys[0].to_s
-    @value = key_val.values[0].to_s
+    @value = key_val.values[0]
+    # Convert any Time values into UTC/XML schema format (which Solr requires).
+    @value = @value.respond_to?(:utc) ? @value.utc.xmlschema : @value.to_s
   end
 
   def to_xml
