@@ -35,14 +35,14 @@ import java.util.Iterator;
  * deleted because they are no longer referenced by the
  * index.
  */
-public class IndexFileDeleter {
+final class IndexFileDeleter {
   private Vector deletable;
   private HashSet pending;
   private Directory directory;
   private SegmentInfos segmentInfos;
   private PrintStream infoStream;
 
-  public IndexFileDeleter(SegmentInfos segmentInfos, Directory directory)
+  IndexFileDeleter(SegmentInfos segmentInfos, Directory directory)
     throws IOException {
     this.segmentInfos = segmentInfos;
     this.directory = directory;
@@ -67,7 +67,7 @@ public class IndexFileDeleter {
    * file is successfully deleted.
    */
 
-  public void findDeletableFiles() throws IOException {
+  void findDeletableFiles() throws IOException {
 
     // Gather all "current" segments:
     HashMap current = new HashMap();
@@ -167,7 +167,7 @@ public class IndexFileDeleter {
    * process, and queue the file for subsequent deletion.
    */
 
-  public final void deleteSegments(Vector segments) throws IOException {
+  void deleteSegments(Vector segments) throws IOException {
 
     deleteFiles();                                // try to delete files that we couldn't before
 
@@ -186,7 +186,7 @@ public class IndexFileDeleter {
    * them to the pending set.
   */
      
-  public final void deleteSegments(Vector segments, HashSet protectedSegments) throws IOException {
+  void deleteSegments(Vector segments, HashSet protectedSegments) throws IOException {
 
     deleteFiles();                                // try to delete files that we couldn't before
 
@@ -204,13 +204,13 @@ public class IndexFileDeleter {
     }
   }
   
-  public final void deleteFiles(Vector files, Directory directory)
+  void deleteFiles(Vector files, Directory directory)
        throws IOException {
     for (int i = 0; i < files.size(); i++)
       directory.deleteFile((String)files.elementAt(i));
   }
 
-  public final void deleteFiles(Vector files)
+  void deleteFiles(Vector files)
        throws IOException {
     deleteFiles();                                // try to delete files that we couldn't before
     for (int i = 0; i < files.size(); i++) {
@@ -218,7 +218,7 @@ public class IndexFileDeleter {
     }
   }
 
-  public final void deleteFile(String file)
+  void deleteFile(String file)
        throws IOException {
     try {
       directory.deleteFile(file);		  // try to delete each file
@@ -231,7 +231,7 @@ public class IndexFileDeleter {
     }
   }
 
-  final void clearPendingFiles() {
+  void clearPendingFiles() {
     pending = null;
   }
 
@@ -239,7 +239,7 @@ public class IndexFileDeleter {
     Record that the files for these segments should be
     deleted, once the pending deletes are committed.
    */
-  final void addPendingSegments(Vector segments) throws IOException {
+  void addPendingSegments(Vector segments) throws IOException {
     for (int i = 0; i < segments.size(); i++) {
       SegmentReader reader = (SegmentReader)segments.elementAt(i);
       if (reader.directory() == this.directory) {
@@ -252,7 +252,7 @@ public class IndexFileDeleter {
     Record list of files for deletion, but do not delete
     them until commitPendingFiles is called.
   */
-  final void addPendingFiles(Vector files) {
+  void addPendingFiles(Vector files) {
     for(int i=0;i<files.size();i++) {
       addPendingFile((String) files.elementAt(i));
     }
@@ -262,14 +262,14 @@ public class IndexFileDeleter {
     Record a file for deletion, but do not delete it until
     commitPendingFiles is called.
   */
-  final void addPendingFile(String fileName) {
+  void addPendingFile(String fileName) {
     if (pending == null) {
       pending = new HashSet();
     }
     pending.add(fileName);
   }
 
-  final void commitPendingFiles() throws IOException {
+  void commitPendingFiles() throws IOException {
     if (pending != null) {
       if (deletable == null) {
         deletable = new Vector();
@@ -283,14 +283,14 @@ public class IndexFileDeleter {
     }
   }
 
-  public final void addDeletableFile(String fileName) {
+  void addDeletableFile(String fileName) {
     if (deletable == null) {
       deletable = new Vector();
     }
     deletable.addElement(fileName);
   }
 
-  public final void deleteFiles()
+  void deleteFiles()
     throws IOException {
     if (deletable != null) {
       Vector oldDeletable = deletable;
