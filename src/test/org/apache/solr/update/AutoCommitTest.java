@@ -68,7 +68,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     DirectUpdateHandler2 updater = (DirectUpdateHandler2)SolrCore.getSolrCore().getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
     tracker.timeUpperBound = -1;
-    tracker.docsUpperBound = 5;
+    tracker.docsUpperBound = 14;
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
@@ -79,7 +79,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     // Add a single document
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
-    for( int i=0; i<15; i++ ) {
+    for( int i=0; i<14; i++ ) {
       req.setContentStreams( toContentStreams(
         adoc("id", "A"+i, "subject", "info" ), null ) );
       handler.handleRequest( req, rsp );
@@ -88,6 +88,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:A1") ,"//result[@numFound=0]" );
     assertEquals( 0, tracker.autoCommitCount );
 
+    req.setContentStreams( toContentStreams(
+        adoc("id", "A14", "subject", "info" ), null ) );
+    handler.handleRequest( req, rsp );
     // Wait longer then the autocommit time
     Thread.sleep( 500 );
       
@@ -96,7 +99,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertEquals( 1, tracker.autoCommitCount );
     
     // Now add some more
-    for( int i=0; i<15; i++ ) {
+    for( int i=0; i<14; i++ ) {
       req.setContentStreams( toContentStreams(
         adoc("id", "B"+i, "subject", "info" ), null ) );
       handler.handleRequest( req, rsp );
@@ -105,7 +108,11 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("shouldn't find any", req("id:B1") ,"//result[@numFound=0]" );
     assertEquals( 1, tracker.autoCommitCount );
     
+    req.setContentStreams( toContentStreams(
+        adoc("id", "B14", "subject", "info" ), null ) );
+    handler.handleRequest( req, rsp );
     Thread.sleep( 500 );
+
     assertQ("should find one", req("id:B1") ,"//result[@numFound=1]" );
     assertEquals( 2, tracker.autoCommitCount );
   }
