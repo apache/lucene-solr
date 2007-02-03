@@ -11,6 +11,9 @@
 # limitations under the License.
 
 require 'test/unit'
+require 'solr'
+require 'solr_mock_base'
+
 
 class ResponseTest < SolrMockBaseTestCase
 

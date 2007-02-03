@@ -11,8 +11,7 @@
 # limitations under the License.
 
 require 'test/unit'
-require 'solr/document'
-require 'solr/field'
+require 'solr'
 
 class DocumentTest < Test::Unit::TestCase
 
