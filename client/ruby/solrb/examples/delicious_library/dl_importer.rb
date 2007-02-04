@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # The ASF licenses this file to You under the Apache License, Version 2.0
 # (the "License"); you may not use this file except in compliance with
 # the License.  You may obtain a copy of the License at
@@ -22,7 +23,7 @@ debug = ARGV[1] == "-debug"
 solr = Solr::Connection.new(solr_url)
 
 lines = IO.readlines(dl_filename)
-headers = lines[0].split("\t")
+headers = lines[0].split("\t").collect{|h| h.chomp}
 puts headers.join(','),"-----" if debug
 
 # Exported column names
@@ -41,11 +42,13 @@ mapping = {
   :title_text => :title,
   :notes_text => :notes,
   :publisher_text => :publisher,
-  :description_text => :description
+  :description_text => :description,
+  :author_text => :author,
+  :pages_text => :pages
 }
 
 lines[1..-1].each do |line|
-  data = headers.zip(line.split("\t"))
+  data = headers.zip(line.split("\t").collect{|s| s.chomp})
   def data.method_missing(key)
     self.assoc(key.to_s)[1]
   end
@@ -60,6 +63,7 @@ lines[1..-1].each do |line|
     doc[solr_name] = value if value
   end
   
+  puts data.title
   puts doc.inspect if debug
   solr.add doc unless debug
 
