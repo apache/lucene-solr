@@ -1,0 +1,149 @@
+body {
+  font-family: Verdana, Geneva, Arial, helvetica, sans-serif;
+  font-size: 13px;
+  margin: 0px;
+}
+
+td {
+	font-family: Verdana, Geneva, Arial, helvetica, sans-serif;
+	font-size: 13px;
+}
+a, a:visited {
+	color: #000099;
+	text-decoration: none;
+}
+a:hover {
+	color: #0000CC; 
+	text-decoration: underline;
+}
+
+#search {
+	background-color: #EFEFDE;
+	padding-top: 30px;
+	padding-left: 30px;
+	padding-bottom: 20px;
+	margin-bottom: 20px;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #CCCCCC;	
+}
+#sidebar {
+	float: right;
+	width: 339px;
+	font-size:90%;
+	line-height: 18px;
+	margin-left: 20px;
+	margin-bottom: 20px;
+}
+
+#results {
+	margin-right: 380px;
+}
+
+.resultsPager {
+	padding: 4px;
+	margin-top: 30px;
+	margin-bottom: 20px;
+	border: 1px solid #A2C9EF;
+	background-color: #E4F1FD;
+}
+
+/* SIDE BAR  */
+
+.box {
+    width:339px;
+    background:#F3F3F3 url(../images/hits_bot.gif) no-repeat left bottom;
+	margin-bottom: 20px;
+    padding:0 0 6px;
+    color:#333;
+    line-height:1.5em;
+}
+.box2 {
+    width:100%;
+    background:url(../images/hits_top.gif) no-repeat left top;
+    padding:6px 0 0;
+}
+.box3 {
+    background:url(../images/hits_rails.gif) repeat-y;
+    padding:0px;
+}
+.boxContent {
+	padding-left: 15px;
+	padding-right: 15px;
+	padding-bottom: 15px;
+}
+.box p {
+	margin:0 0 .6em;
+}
+.sidebar-title {
+	font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+	margin:0;
+	padding:0 0 .2em;
+	border-bottom:1px dotted #fa0;
+	font-size:115%;
+	line-height:1.5em;
+	color:#333;
+}
+
+
+
+.recordAmazon {
+	margin-left: 150px;
+}
+.recordAuthor {
+	margin-top: 10px;
+}
+.recordBasic {
+	margin-left: 150px;
+}
+.recordBookJacket {
+	float: left;
+	margin-right: 20px;
+}
+.recordFullText {
+	margin: 30px; 
+	padding: 10px; 
+}
+.recordHoldings {
+	background-color: #EFEFEF;
+	margin: 10px;
+	padding: 10px;
+	border: 1px solid #CCCCCC;
+}
+.recordHoldingHead {
+	border-bottom-style: solid;
+	border-bottom-color: #CCCCCC;
+	border-bottom-width: 1px;
+	margin-bottom: 10px;
+	padding: 5px;
+	text-align: left;
+}
+.recordHoldingBody {
+	background-color: #EFEFEF;
+	padding: 5px;
+	padding-right: 10px;
+}
+.recordImprint {
+	margin-top: 10px;
+}
+.recordTitle {
+	font-size: 18px;
+	font-weight: bold;
+}
+.home {
+	clear: both;
+	width: 640px;
+	margin: 0 auto;
+}
+.homeSearch {
+	margin-top: 80px;
+	margin-bottom: 20px;
+	background-color: #EFEFDE;
+	padding-top: 30px;
+	padding-left: 30px;
+	padding-bottom: 20px;
+	border-width: 1px;
+	border-style: solid;
+	border-color: #CCCCCC;	
+}
+

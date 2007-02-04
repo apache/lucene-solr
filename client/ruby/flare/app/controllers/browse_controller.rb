@@ -18,7 +18,7 @@ class BrowseController < ApplicationController
   end
   
   def facet
-    @facets = retrieve_field_facets("#{params[:field]}")
+    @facets = retrieve_field_facets(params[:field_name])
   end
   
   def auto_complete_for_search_query
@@ -57,7 +57,7 @@ class BrowseController < ApplicationController
   end
   
   def add_filter
-    session[:filters] << {:field => params[:field], :value => params[:value]} 
+    session[:filters] << {:field => params[:field_name], :value => params[:value]} 
     redirect_to :action => 'index'
   end
   
@@ -88,18 +88,4 @@ class BrowseController < ApplicationController
     results.field_facets(field)
   end
   
-  def query
-    queries = session[:queries]
-    if queries.nil? || queries.empty?
-      query = "[* TO *]"
-    else
-      query = session[:queries].collect{|q| "#{q[:negative] ? '-' : ''}(#{q[:query]})"}.join(' AND ')
-    end
-    
-    query
-  end
-  
-  def filters
-    session[:filters].collect {|filter| "#{filter[:negative] ? '-' : ''}#{filter[:field]}:\"#{filter[:value]}\""}
-  end
 end

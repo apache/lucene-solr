@@ -7,4 +7,21 @@
 class ApplicationController < ActionController::Base
   # Pick a unique cookie name to distinguish our session data from others'
   session :session_key => '_flare_session_id'
+
+
+  def query
+    queries = session[:queries]
+    if queries.nil? || queries.empty?
+      query = "[* TO *]"
+    else
+      query = session[:queries].collect{|q| "#{q[:negative] ? '-' : ''}(#{q[:query]})"}.join(' AND ')
+    end
+    
+    query
+  end
+  
+  def filters
+    session[:filters].collect {|filter| "#{filter[:negative] ? '-' : ''}#{filter[:field]}:\"#{filter[:value]}\""}
+  end
+
 end

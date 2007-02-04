@@ -23,14 +23,17 @@ Filters:
 </ul>
 </div>
 <h2>facets</h2>
-<div>
+
+
+<div class="boxContent">
+
 <% @facet_fields.each do |field|%>
-<div>
-  <%=field%>:
+  <h4><%=field%></h4>
+  <ul>
   <% @response.field_facets(field).each do |k,v| %>
-    <%= link_to "#{k} (#{v})", :action => 'add_filter', :field=>field, :value=>k%>
-  <% end %> <%=link_to "more...", :action => 'facet', :field => field%> 
-</div>
+    <li><%= link_to "#{k} (#{v})", :action => 'add_filter', :field_name=>field, :value=>k%></li>
+  <% end %> <li><%=link_to "more...", :action => 'facet', :field_name => field%></li>
+  </ul>
 <% end %>
 </div>
 <h2>results</h2>
