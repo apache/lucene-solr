@@ -1,15 +1,11 @@
 package org.apache.lucene.xmlparser;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Source;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.dom.DOMSource;
 
 import junit.framework.TestCase;
 
@@ -24,6 +20,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -49,7 +46,6 @@ public class TestQueryTemplateManager extends TestCase {
 
 	CoreParser builder;
 	Analyzer analyzer=new StandardAnalyzer();
-	HashMap templates=new HashMap();
 	private IndexSearcher searcher;
 	
 	//A collection of documents' field values for use in our tests
@@ -66,26 +62,31 @@ public class TestQueryTemplateManager extends TestCase {
 	// a choice of query style template to use in the test, with expected number of hits
 	String queryForms[]=
 	{
-			"artist=Fugazi \texpectedMatches=2 \ttemplate=albumBooleanQuery.xsl",
-			"artist=Fugazi \treleaseDate=1990 \texpectedMatches=1 \ttemplate=albumBooleanQuery.xsl",
-			"artist=Buckley \tgenre=rock \texpectedMatches=1 \ttemplate=albumFilteredQuery.xsl",
-			"artist=Buckley \tgenre=electronic \texpectedMatches=0 \ttemplate=albumFilteredQuery.xsl",
-			"queryString=artist:buckly~ NOT genre:electronic \texpectedMatches=1 \ttemplate=albumLuceneClassicQuery.xsl"
+			"artist=Fugazi \texpectedMatches=2 \ttemplate=albumBooleanQuery",
+			"artist=Fugazi \treleaseDate=1990 \texpectedMatches=1 \ttemplate=albumBooleanQuery",
+			"artist=Buckley \tgenre=rock \texpectedMatches=1 \ttemplate=albumFilteredQuery",
+			"artist=Buckley \tgenre=electronic \texpectedMatches=0 \ttemplate=albumFilteredQuery",
+			"queryString=artist:buckly~ NOT genre:electronic \texpectedMatches=1 \ttemplate=albumLuceneClassicQuery"
 	};
 	
 	
 	public void testFormTransforms() throws SAXException, IOException, ParserConfigurationException, TransformerException, ParserException 
 	{
+		//Cache all the query templates we will be referring to.
+		QueryTemplateManager qtm=new QueryTemplateManager();
+		qtm.addQueryTemplate("albumBooleanQuery", getClass().getResourceAsStream("albumBooleanQuery.xsl"));
+		qtm.addQueryTemplate("albumFilteredQuery", getClass().getResourceAsStream("albumFilteredQuery.xsl"));
+		qtm.addQueryTemplate("albumLuceneClassicQuery", getClass().getResourceAsStream("albumLuceneClassicQuery.xsl"));
 		//Run all of our test queries
 		for (int i = 0; i < queryForms.length; i++)
 		{
 			Properties queryFormProperties=getPropsFromString(queryForms[i]);
 			
 			//Get the required query XSL template for this test
-			Source template=getTemplate(queryFormProperties.getProperty("template"));
+//			Templates template=getTemplate(queryFormProperties.getProperty("template"));
 			
 			//Transform the queryFormProperties into a Lucene XML query
-			Document doc=QueryTemplateManager.getQueryAsDOM(queryFormProperties,template);
+			Document doc=qtm.getQueryAsDOM(queryFormProperties,queryFormProperties.getProperty("template"));
 			
 			//Parse the XML query using the XML parser
 			Query q=builder.getQuery(doc.getDocumentElement());
@@ -100,20 +101,6 @@ public class TestQueryTemplateManager extends TestCase {
 		}
 	}
 	
-		
-	private Source getTemplate(String templateName) throws ParserConfigurationException, SAXException, IOException 
-	{
-		Source result=(Source) templates.get(templateName);
-		if(result==null)
-		{
-			//Not yet loaded - load the stylesheet
-			result=QueryTemplateManager.getDOMSource(getClass().getResourceAsStream(templateName));
-			templates.put(templateName,result);
-		}
-		return result;
-	}
-
-
 	//Helper method to construct Lucene query forms used in our test
 	Properties getPropsFromString(String nameValuePairs)
 	{

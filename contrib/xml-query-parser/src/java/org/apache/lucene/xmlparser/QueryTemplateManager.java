@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Properties;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -11,7 +12,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
+import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
@@ -21,6 +24,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -43,49 +47,136 @@ import org.xml.sax.SAXException;
  * and changing how user input is turned into Lucene queries. 
  * Database applications often adopt similar practices by externalizing SQL in template files that can
  * be easily changed/optimized by a DBA.  
+ * The static methods can be used on their own or by creating an instance of this class you can store and 
+ * re-use compiled stylesheets for fast use (e.g. in a server environment) 
  * @author Mark Harwood
  */
 public class QueryTemplateManager
 {
 	static DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance ();
 	static TransformerFactory tFactory = TransformerFactory.newInstance();
+
+	HashMap compiledTemplatesCache=new HashMap();
+	Templates defaultCompiledTemplates=null;
+
 	
-	public static String getQueryAsXmlString(Properties formProperties, String templateName) throws SAXException, IOException, ParserConfigurationException, TransformerException 
+	public QueryTemplateManager()
 	{
-		return getQueryAsXmlString(formProperties, 
-				getDOMSource(QueryTemplateManager.class.getResourceAsStream(templateName)));
+		
+	}
+	public QueryTemplateManager(InputStream xslIs) throws TransformerConfigurationException, ParserConfigurationException, SAXException, IOException
+	{
+		addDefaultQueryTemplate(xslIs);
+	}
+	public void addDefaultQueryTemplate(InputStream xslIs) throws TransformerConfigurationException, ParserConfigurationException, SAXException, IOException
+	{
+		defaultCompiledTemplates=getTemplates(xslIs);
+	}
+	public void addQueryTemplate(String name, InputStream xslIs) throws TransformerConfigurationException, ParserConfigurationException, SAXException, IOException
+	{
+		compiledTemplatesCache.put(name,getTemplates(xslIs));
+	}
+	public String getQueryAsXmlString(Properties formProperties,String queryTemplateName) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+		Templates ts=(Templates) compiledTemplatesCache.get(queryTemplateName);
+		return getQueryAsXmlString(formProperties, ts);
 	}
 	
-	public static String getQueryAsXmlString(Properties formProperties, Source xslDs) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	public Document getQueryAsDOM(Properties formProperties,String queryTemplateName) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+		Templates ts=(Templates) compiledTemplatesCache.get(queryTemplateName);
+		return getQueryAsDOM(formProperties, ts);
+	}
+	public String getQueryAsXmlString(Properties formProperties) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+		return getQueryAsXmlString(formProperties, defaultCompiledTemplates);
+	}
+	
+	public Document getQueryAsDOM(Properties formProperties) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+		return getQueryAsDOM(formProperties, defaultCompiledTemplates);
+	}
+	
+	
+	/**
+	 * Fast means of constructing query using a precompiled stylesheet  
+	 */		
+	public static String getQueryAsXmlString(Properties formProperties, Templates template) throws SAXException, IOException, ParserConfigurationException, TransformerException 
 	{
   		ByteArrayOutputStream baos=new ByteArrayOutputStream();
   		StreamResult result=new StreamResult(baos);
-  		transformCriteria(formProperties,xslDs,result);
-  		return baos.toString();
+  		transformCriteria(formProperties,template,result);
+  		return baos.toString();  		
 	}
 	
-	public static Document getQueryAsDOM(Properties formProperties, String templateName) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	/**
+	 * Slow means of constructing query parsing a stylesheet from an input stream  
+	 */		
+	public static String getQueryAsXmlString(Properties formProperties, InputStream xslIs) throws SAXException, IOException, ParserConfigurationException, TransformerException 
 	{
-		return getQueryAsDOM(formProperties, getDOMSource(QueryTemplateManager.class.getResourceAsStream(templateName)));
+  		ByteArrayOutputStream baos=new ByteArrayOutputStream();
+  		StreamResult result=new StreamResult(baos);
+  		transformCriteria(formProperties,xslIs,result);
+  		return baos.toString();  		
 	}
-	public static Document getQueryAsDOM(Properties formProperties, InputStream xslIs) throws SAXException, IOException, ParserConfigurationException, TransformerException
-	{
-		return getQueryAsDOM(formProperties, getDOMSource(xslIs));
-	}
-	
-	
-	public static Document getQueryAsDOM(Properties formProperties, Source xslDs) throws SAXException, IOException, ParserConfigurationException, TransformerException
+			
+
+	/**
+	 * Fast means of constructing query using a cached,precompiled stylesheet  
+	 */	
+	public static Document getQueryAsDOM(Properties formProperties, Templates template) throws SAXException, IOException, ParserConfigurationException, TransformerException
 	{
   		DOMResult result=new DOMResult();
-  		transformCriteria(formProperties,xslDs,result);
+  		transformCriteria(formProperties,template,result);
+  		return (Document)result.getNode();
+	}
+
+	
+	/**
+	 * Slow means of constructing query - parses stylesheet from input stream 
+	 */
+	public static Document getQueryAsDOM(Properties formProperties, InputStream xslIs) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+  		DOMResult result=new DOMResult();
+  		transformCriteria(formProperties,xslIs,result);
   		return (Document)result.getNode();
 	}
 	
-	public static void transformCriteria(Properties formProperties, Source xslDs, Result result) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	
+	
+	
+	/**
+	 * Slower transformation using an uncompiled stylesheet (suitable for development environment)
+	 */
+	public static void transformCriteria(Properties formProperties, InputStream xslIs, Result result) throws SAXException, IOException, ParserConfigurationException, TransformerException
 	{
         dbf.setNamespaceAware(true);	    
+		DocumentBuilder builder = dbf.newDocumentBuilder();
+		org.w3c.dom.Document xslDoc = builder.parse(xslIs);
+		DOMSource ds = new DOMSource(xslDoc);
 		
-		Transformer transformer = tFactory.newTransformer(xslDs);
+		Transformer transformer =null;
+		synchronized (tFactory)
+		{
+			transformer = tFactory.newTransformer(ds);			
+		}
+		transformCriteria(formProperties,transformer,result);
+	}
+	
+	/**
+	 * Fast transformation using a pre-compiled stylesheet (suitable for production environments)
+	 */
+	public static void transformCriteria(Properties formProperties, Templates template, Result result) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+		transformCriteria(formProperties,template.newTransformer(),result);
+	}
+	
+	
+	
+	public static void transformCriteria(Properties formProperties, Transformer transformer, Result result) throws SAXException, IOException, ParserConfigurationException, TransformerException
+	{
+        dbf.setNamespaceAware(true);
+        
 	    //Create an XML document representing the search index document.
 		DocumentBuilder db = dbf.newDocumentBuilder ();
 		org.w3c.dom.Document doc = db.newDocument ();
@@ -107,11 +198,15 @@ public class QueryTemplateManager
 		transformer.transform(xml,result);		
 	}
 	
-	public static DOMSource getDOMSource(InputStream xslIs) throws ParserConfigurationException, SAXException, IOException 
+	/**
+	 * Parses a query stylesheet for repeated use
+	 */
+	public static Templates getTemplates(InputStream xslIs) throws ParserConfigurationException, SAXException, IOException, TransformerConfigurationException  
 	{
         dbf.setNamespaceAware(true);	    
 		DocumentBuilder builder = dbf.newDocumentBuilder();
 		org.w3c.dom.Document xslDoc = builder.parse(xslIs);
-		return new DOMSource(xslDoc);		
+		DOMSource ds = new DOMSource(xslDoc);
+		return tFactory.newTemplates(ds);
 	}
 }
