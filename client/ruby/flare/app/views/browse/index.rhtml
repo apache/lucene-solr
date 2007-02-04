@@ -1,50 +1,57 @@
-<% form_tag(:action=>'add_query') do %>
-  Query: <%= text_field_with_auto_complete :search, :query %>
-<% end %>
-<%=link_to 'clear constraints', :action => 'clear'%>
-<div>
-Queries:
-<ul>
-<% session[:queries].each_with_index do |q,i| %>
-  <li><%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%> <%=q[:query]%> <%=link_to "remove", :action => :remove_query, :index => i %></li>
-<% end %>
-</ul>
-</div>
-<div>
-Filters:
-<ul>
-<% session[:filters].each_with_index do |filter, i| %>
-  <li>
-      <%=link_to filter[:negative] ? "-" : "+", :action => :invert_filter, :index => i%>
-      <%=filter[:field]%>:<%=filter[:value]%>
-      <%=link_to "remove", :action => :remove_filter, :index => i %>
-  </li>
-<% end %>
-</ul>
-</div>
+<div id="sidebar"><div class="boxContent">
+  <% form_tag(:action=>'add_query') do %>
+    <%= text_field_with_auto_complete :search, :query %>
+    <%=submit_tag "search"%>
+  <% end %>
 <h2>facets</h2>
 
-
-<div class="boxContent">
-
 <% @facet_fields.each do |field|%>
-  <h4><%=field%></h4>
+  <h4><%=link_to field, :action => 'facet', :field_name => field%></h4>
   <ul>
   <% @response.field_facets(field).each do |k,v| %>
     <li><%= link_to "#{k} (#{v})", :action => 'add_filter', :field_name=>field, :value=>k%></li>
-  <% end %> <li><%=link_to "more...", :action => 'facet', :field_name => field%></li>
+  <% end %>
   </ul>
 <% end %>
 </div>
-<h2>results</h2>
-<div>
-Found: <%=@response.total_hits%>
-<ul>
-  <% @response.each do |doc| %>
-    <li><%= debug doc%></li>
-  <% end %>
-</ul>
 </div>
-<h3>index info</h3><%=debug @info %>
 
-<h3>search/facet response header</h3><%=debug @response.data['responseHeader']%>
+<div>
+Queries:
+<% session[:queries].each_with_index do |q,i| %>
+   <%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%> <%=q[:query]%> <%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %>
+<% end %>
+</div>
+<div>
+Filters:
+<% session[:filters].each_with_index do |filter, i| %>
+      <%=link_to filter[:negative] ? "-" : "+", :action => :invert_filter, :index => i%>
+      <%=filter[:field]%>:<%=filter[:value]%>
+      <%=link_to image_tag("x-close.gif"), :action => :remove_filter, :index => i %>
+<% end %>
+<div><%=link_to 'clear constraints', :action => 'clear'%></div>
+</div>
+
+<div>Results <strong>1-<%=[@response.total_hits,10].min%></strong> of <strong><%=@response.total_hits%></strong></div>
+
+
+<div id="results"><table cellpadding="10">
+  <% display_fields = [:title, :author, :pages, :rating]; @response.each do |doc| %>
+<tr valign="top">
+  <td>
+    <table>
+      <% display_fields.each do |f|%>
+      <tr><th><%=f.to_s%></th><td><%=doc["#{f.to_s}_text"] %><%=doc["#{f.to_s}_facet"] %></td></tr>
+      <% end %>
+    </table>
+  </td>
+</tr>
+  <% end %>
+</table>
+</div>
+
+
+
+<!-- <h3>index info</h3><%=debug @info %>
+
+<h3>search/facet response header</h3><%=debug @response.data['responseHeader']%> -->

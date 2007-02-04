@@ -13,20 +13,23 @@
 
 class SimileController < ApplicationController
   def exhibit
+    # TODO this code was copied from BrowseController#index, and is here only as a quick and dirty prototype.
+    # TODO figuring out where these calls cleanly belong is the key.
+    
     @info = SOLR.send(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
     @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
     
-    # TODO Add paging and sorting
     req = Solr::Request::Standard.new :query => query,
                                           :filter_queries => filters,
                                           :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true}
     @data = SOLR.send(req)
+    
+    # Exhibit seems to require a label attribute to be happy
     @data.each {|d| d['label'] = d['title_text']}
     
     respond_to do |format| 
-      puts "format = #{format.inspect}"
-      format.html # renders index.rhtml 
-      format.json { render :json => {'items' => @data}.to_json } 
+      format.html # renders exhibit.rhtml 
+      format.json { render :json => {'items' => @data}.to_json } # Exhibit seems to require data to be in a 'items' Hash
     end                                         
   end
 end

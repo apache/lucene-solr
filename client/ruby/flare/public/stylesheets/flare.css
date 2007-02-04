@@ -4,6 +4,11 @@ body {
   margin: 0px;
 }
 
+#header {
+	font-size: 20px;
+  background:url(../images/flare.jpg) no-repeat left top;
+}
+
 td {
 	font-family: Verdana, Geneva, Arial, helvetica, sans-serif;
 	font-size: 13px;
