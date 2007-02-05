@@ -254,7 +254,6 @@ class JSONWriter extends TextResponseWriter {
   // NamedList("a"=1,"b"=2,null=3) => ["a",1,"b",2,null,3]
   protected void writeNamedListAsFlat(String name, NamedList val) throws IOException {
     int sz = val.size();
-    indent();
     writer.write('[');
     incLevel();
 
@@ -264,7 +263,11 @@ class JSONWriter extends TextResponseWriter {
       }
       String key = val.getName(i);
       indent();
-      writeStr(null, key, true);
+      if (key==null) {
+        writeNull(null);
+      } else {
+        writeStr(null, key, true);
+      }
       writer.write(',');
       writeVal(key, val.getVal(i));
     }
