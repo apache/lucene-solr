@@ -93,9 +93,16 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     handler.handleRequest( req, rsp );
     // Wait longer then the autocommit time
     Thread.sleep( 500 );
+    // blocks until commit is complete
+    req.setContentStreams( toContentStreams(
+        adoc("id", "A15", "subject", "info" ), null ) );
+    handler.handleRequest( req, rsp );
       
     // Now make sure we can find it
-    assertQ("should find one", req("id:A1") ,"//result[@numFound=1]" );
+    assertQ("should find one", req("id:A14") ,"//result[@numFound=1]" );
+    assertEquals( 1, tracker.autoCommitCount );
+    // But not the one added afterward
+    assertQ("should find one", req("id:A15") ,"//result[@numFound=0]" );
     assertEquals( 1, tracker.autoCommitCount );
     
     // Now add some more
@@ -113,7 +120,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     handler.handleRequest( req, rsp );
     Thread.sleep( 500 );
 
-    assertQ("should find one", req("id:B1") ,"//result[@numFound=1]" );
+    // add request will block if commit has already started or completed
+    req.setContentStreams( toContentStreams(
+        adoc("id", "B15", "subject", "info" ), null ) );
+    handler.handleRequest( req, rsp );
+
+    assertQ("should find one", req("id:B14") ,"//result[@numFound=1]" );
+    assertEquals( 2, tracker.autoCommitCount );
+    assertQ("should find none", req("id:B15") ,"//result[@numFound=0]" );
     assertEquals( 2, tracker.autoCommitCount );
   }
 
@@ -134,10 +148,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
     req.setContentStreams( toContentStreams(
-      adoc("id", "529",
-           "field_t", "what's inside?",
-           "subject", "info"
-      ), null ) );
+      adoc("id", "529", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
 
     // Check it it is in the index
@@ -145,9 +156,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
     // Wait longer then the autocommit time
     Thread.sleep( 1000 );
+    req.setContentStreams( toContentStreams(
+      adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
+    handler.handleRequest( req, rsp );
       
     // Now make sure we can find it
     assertQ("should find one", req("id:529") ,"//result[@numFound=1]" );
+    // But not this one
+    assertQ("should find none", req("id:530") ,"//result[@numFound=0]" );
     
     // now make the call 10 times really fast and make sure it 
     // only commits once
@@ -161,8 +177,11 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     // Wait longer then the autocommit time
     Thread.sleep( 1000 );
+    req.setContentStreams( toContentStreams(
+      adoc("id", "531", "field_t", "what's inside?", "subject", "info"), null ) );
 
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
+    assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );
     assertEquals( 2, tracker.autoCommitCount );
   }
 }
