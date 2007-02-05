@@ -351,7 +351,10 @@ public class FSDirectory extends Directory {
       throw new IOException("Cannot delete " + file);
   }
 
-  /** Renames an existing file in the directory. */
+  /** Renames an existing file in the directory. 
+   * Warning: This is not atomic.
+   * @deprecated 
+   */
   public synchronized void renameFile(String from, String to)
       throws IOException {
     File old = new File(directory, from);

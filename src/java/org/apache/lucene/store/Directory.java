@@ -63,8 +63,10 @@ public abstract class Directory {
        throws IOException;
 
   /** Renames an existing file in the directory.
-    If a file already exists with the new name, then it is replaced.
-    This replacement should be atomic. */
+   * If a file already exists with the new name, then it is replaced.
+   * This replacement is not guaranteed to be atomic.
+   * @deprecated 
+   */
   public abstract void renameFile(String from, String to)
        throws IOException;
 

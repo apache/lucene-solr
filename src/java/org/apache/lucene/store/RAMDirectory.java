@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.File;
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -185,8 +183,9 @@ public class RAMDirectory extends Directory implements Serializable {
       throw new FileNotFoundException(name);
   }
 
-  /** Removes an existing file in the directory.
-   * @throws IOException if from does not exist
+  /** Renames an existing file in the directory.
+   * @throws FileNotFoundException if from does not exist
+   * @deprecated
    */
   public synchronized final void renameFile(String from, String to) throws IOException {
     RAMFile fromFile = (RAMFile)fileMap.get(from);

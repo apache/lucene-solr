@@ -204,6 +204,9 @@ API Changes
     remove an old lock.  The default implementation is to ask the
     lockFactory (if non null) to clear the lock.  (Mike McCandless)
 
+19. LUCENE-795: Directory.renameFile() has been deprecated as it is
+    not used anymore inside Lucene.  (Daniel Naber)
+
 Bug fixes
 
  1. Fixed the web application demo (built with "ant war-demo") which
