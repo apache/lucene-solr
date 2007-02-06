@@ -153,23 +153,21 @@ RUBY_CODE
      'facet_counts'=>{
       'facet_queries'=>{},
       'facet_fields'=>{
-    	'subject_genre_facet'=>{
-    	 'Biography.'=>2605,
-    	 'Congresses.'=>1837,
-    	 'Bibliography.'=>672,
-    	 'Exhibitions.'=>642,
-    	 'Periodicals.'=>615,
-    	 'Sources.'=>485,
-    	 }}}
+    	'subject_genre_facet'=>[
+    	  'Biography.',2605,
+    	 'Congresses.',1837,
+    	 'Bibliography.',672,
+    	 'Exhibitions.',642,
+    	 'Periodicals.',615,
+    	 'Sources.',485]}}
   	 }
 RUBY_CODE
-    
     set_post_return(ruby_code)
     conn = Solr::Connection.new "http://localhost:9999"
     response = conn.query('foo')
     facets = response.field_facets('subject_genre_facet')
-    assert_equal 2605, facets[0][1]
-    assert_equal 485, facets[5][1]
+    assert_equal 2605, facets[0].value
+    assert_equal 485, facets[5].value
   end
 
 end

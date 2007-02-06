@@ -11,6 +11,7 @@
 # limitations under the License.
 
 class Solr::Response::Standard < Solr::Response::Ruby
+  FacetValue = Struct.new(:name, :value)
   include Enumerable
   
   def initialize(ruby_code)
@@ -36,11 +37,19 @@ class Solr::Response::Standard < Solr::Response::Ruby
   end
   
   def field_facets(field)
-    @data['facet_counts']['facet_fields'][field].sort {|a,b| b[1] <=> a[1]}
+    facets = []
+    values = @data['facet_counts']['facet_fields'][field]
+    0.upto(values.size / 2 - 1) do |i|
+      n = i * 2
+      facets << FacetValue.new(values[n], values[n+1])
+    end
+    
+    facets
   end
   
 
   # supports enumeration of hits
+  # TODO revisit - should this iterate through *all* hits by re-requesting more?
   def each
     @response['docs'].each {|hit| yield hit}
   end
