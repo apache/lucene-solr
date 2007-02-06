@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # The ASF licenses this file to You under the Apache License, Version 2.0
 # (the "License"); you may not use this file except in compliance with
 # the License.  You may obtain a copy of the License at
@@ -37,6 +38,13 @@ mapping = {
 
 connection = Solr::Connection.new(solr_url)
 
+if marc_filename =~ /.gz$/
+  puts "Unzipping data file..."
+  system("cp #{marc_filename} /tmp/marc_data.mrc.gz")
+  system("gunzip /tmp/marc_data.mrc.gz")
+  marc_filename = "/tmp/marc_data.mrc"
+end
+
 reader = MARC::Reader.new(marc_filename)
 count = 0
 
@@ -61,6 +69,7 @@ def extract_record_data(record, fields)
   extracted_data.compact.uniq
 end
 
+puts "Indexing..."
 for record in reader
   doc = {}
   mapping.each do |key,value|
@@ -87,3 +96,4 @@ for record in reader
 end
 
 connection.send(Solr::Request::Commit.new) unless debug
+puts "Done"
