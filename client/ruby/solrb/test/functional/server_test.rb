@@ -139,7 +139,7 @@ class ServerTest < Test::Unit::TestCase
     request = Solr::Request::AddDocument.new(doc)
     response = @connection.send(request)
     assert_equal false, response.ok? 
-    assert_equal "ERROR:unknown field 'bogus'", response.status_message
+    assert_match "ERROR:unknown field 'bogus'", response.status_message
   end
   
   def test_index_info
