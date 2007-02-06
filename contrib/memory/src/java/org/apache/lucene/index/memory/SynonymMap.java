@@ -37,7 +37,7 @@ import java.util.TreeSet;
  * high-frequency lookups of synonyms for any given (lowercase) word string.
  * <p>
  * There holds: If B is a synonym for A (A -> B) then A is also a synonym for B (B -> A).
- * There does not necessary hold: A -> B, B -> C then A -> C.
+ * There does not necessarily hold: A -> B, B -> C then A -> C.
  * <p>
  * Loading typically takes some 1.5 secs, so should be done only once per
  * (server) program execution, using a singleton pattern. Once loaded, a
