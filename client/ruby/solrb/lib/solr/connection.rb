@@ -114,21 +114,25 @@ class Solr::Connection
   def delete(document_id)
     response = send(Solr::Request::Delete.new(:id => document_id))
     commit if @autocommit
-    return response.ok?
+    response.ok?
   end
 
   # delete using a query
   def delete_by_query(query)
     response = send(Solr::Request::Delete.new(:query => query))
     commit if @autocommit
-    return response.ok?
+    response.ok?
   end
-
+  
+  def info
+    send(Solr::Request::IndexInfo.new)
+  end
+  
   # send a given Solr::Request and return a RubyResponse or XmlResponse
   # depending on the type of request
   def send(request)
     data = post(request)
-    return Solr::Response::Base.make_response(request, data)
+    Solr::Response::Base.make_response(request, data)
   end
 
   # send the http post request to solr; for convenience there are shortcuts
