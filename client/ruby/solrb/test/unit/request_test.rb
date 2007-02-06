@@ -27,7 +27,7 @@ class RequestTest < Test::Unit::TestCase
   
   def test_add_doc_request
     request = Solr::Request::AddDocument.new(:title => "title")
-    assert_equal "<add><doc><field name='title'>title</field></doc></add>", request.to_s
+    assert_match(/<add>[\s]*<doc>[\s]*<field name=["']title["']>title<\/field>[\s]*<\/doc>[\s]*<\/add>/m, request.to_s)
     assert_equal :xml, request.response_format
     assert_equal 'update', request.handler
     
@@ -38,7 +38,7 @@ class RequestTest < Test::Unit::TestCase
   
   def test_add_multidoc_request
     request = Solr::Request::AddDocument.new([{:title => "title1"}, {:title => "title2"}])
-    assert_equal "<add><doc><field name='title'>title1</field></doc><doc><field name='title'>title2</field></doc></add>", request.to_s
+    assert_match(/<add>[\s]*<doc>[\s]*<field name=["']title["']>title1<\/field>[\s]*<\/doc>[\s]*<doc>[\s]*<field name=["']title["']>title2<\/field>[\s]*<\/doc>[\s]*<\/add>/m, request.to_s)
     assert_equal :xml, request.response_format
     assert_equal 'update', request.handler
   end

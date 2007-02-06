@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'rexml/document'
+require 'solr/xml'
 
 class Solr::Request::Commit < Solr::Request::Update
 
   def to_s
-    REXML::Element.new('commit').to_s
+    Solr::XML::Element.new('commit').to_s
   end
 
 end

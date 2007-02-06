@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'rexml/document'
+require 'solr/xml'
 require 'time'
 
 class Solr::Field
@@ -26,7 +26,7 @@ class Solr::Field
   end
 
   def to_xml
-    e = REXML::Element.new 'field'
+    e = Solr::XML::Element.new 'field'
     e.attributes['name'] = @name
     e.text = @value
     return e

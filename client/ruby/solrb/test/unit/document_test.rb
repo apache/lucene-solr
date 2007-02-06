@@ -18,21 +18,21 @@ class DocumentTest < Test::Unit::TestCase
   def test_xml
     doc = Solr::Document.new
     doc << Solr::Field.new(:creator => 'Erik Hatcher')
-    assert_kind_of REXML::Element, doc.to_xml
-    assert_equal "<doc><field name='creator'>Erik Hatcher</field></doc>", 
-      doc.to_xml.to_s
+    assert_kind_of Solr::XML::Element, doc.to_xml
+    assert_match(/<doc>[\s]*<field name=['"]creator['"]>Erik Hatcher<\/field>[\s]*<\/doc>/m, doc.to_xml.to_s)
   end
 
   def test_repeatable
     doc = Solr::Document.new
     doc << Solr::Field.new(:creator => 'Erik Hatcher')
     doc << Solr::Field.new(:creator => 'Otis Gospodnetic')
-    assert_equal "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
+    assert_kind_of Solr::XML::Element, doc.to_xml
+    assert_match(/<doc>[\s]*<field name=['"]creator['"]>Erik Hatcher<\/field>[\s]*<field name=['"]creator['"]>Otis Gospodnetic<\/field>[\s]*<\/doc>/m, doc.to_xml.to_s)
   end
   
   def test_repeatable_in_hash
     doc = Solr::Document.new({:creator => ['Erik Hatcher', 'Otis Gospodnetic']})
-    assert_equal "<doc><field name='creator'>Erik Hatcher</field><field name='creator'>Otis Gospodnetic</field></doc>", doc.to_xml.to_s
+    assert_match(/<doc>[\s]*<field name=['"]creator['"]>Erik Hatcher<\/field>[\s]*<field name=['"]creator['"]>Otis Gospodnetic<\/field>[\s]*<\/doc>/m, doc.to_xml.to_s)
   end
   
   def test_bad_doc

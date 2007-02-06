@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'rexml/document'
+require 'solr/xml'
 
 class Solr::Request::Delete < Solr::Request::Update
 
@@ -34,13 +34,13 @@ class Solr::Request::Delete < Solr::Request::Update
   end
 
   def to_s
-    delete_element = REXML::Element.new('delete')
+    delete_element = Solr::XML::Element.new('delete')
     if @document_id
-      id_element = REXML::Element.new('id')
+      id_element = Solr::XML::Element.new('id')
       id_element.text = @document_id
       delete_element.add_element(id_element)
     elsif @query
-      query = REXML::Element.new('query')
+      query = Solr::XML::Element.new('query')
       query.text = @query 
       delete_element.add_element(query)
     end

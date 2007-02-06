@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'solr/xml'
 require 'solr/request/base'
 require 'solr/document'
 require 'solr/request/update'
-require 'rexml/document'
 
 class Solr::Request::AddDocument < Solr::Request::Update
 
@@ -41,7 +41,7 @@ class Solr::Request::AddDocument < Solr::Request::Update
   # returns the request as a string suitable for posting
   
   def to_s
-    e = REXML::Element.new 'add'
+    e = Solr::XML::Element.new 'add'
     for doc in @docs
       e.add_element doc.to_xml
     end

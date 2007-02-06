@@ -16,12 +16,12 @@ class DeleteTest <  SolrMockBaseTestCase
 
   def test_delete_request
     request = Solr::Request::Delete.new(:id => '123')
-    assert_equal "<delete><id>123</id></delete>", request.to_s
+    assert_match(/<delete>[\s]*<id>123<\/id>[\s]*<\/delete>/m, request.to_s)
   end
 
   def test_delete_by_query_request
     request = Solr::Request::Delete.new(:query => 'name:summers')
-    assert_equal "<delete><query>name:summers</query></delete>", request.to_s
+    assert_match(/<delete>[\s]*<query>name:summers<\/query>[\s]*<\/delete>/m, request.to_s)
   end
 
   def test_delete_response
@@ -50,7 +50,7 @@ class DeleteTest <  SolrMockBaseTestCase
 
   def test_delete_by_i18n_query_request
     request = Solr::Request::Delete.new(:query => 'ëäïöü')
-    assert_equal "<delete><query>ëäïöü</query></delete>", request.to_s
+    assert_match(/<delete>[\s]*<query>ëäïöü<\/query>[\s]*<\/delete>/m, request.to_s)
   end
 
 end

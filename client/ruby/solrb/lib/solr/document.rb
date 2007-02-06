@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'rexml/document'
+require 'solr/xml'
 require 'solr/field'
 
 class Solr::Document
@@ -64,7 +64,7 @@ class Solr::Document
 
   # convert the Document to a REXML::Element 
   def to_xml
-    e = REXML::Element.new 'doc'
+    e = Solr::XML::Element.new 'doc'
     @fields.each {|f| e.add_element(f.to_xml)}
     return e
   end
