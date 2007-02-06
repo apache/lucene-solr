@@ -23,6 +23,14 @@ $Id$
 
 ================== Release 1.2-dev, YYYYMMDD ==================
 
+Upgrading from Solr 1.1
+-------------------------------------
+The JSON response format for facets has changed to make it easier for
+clients to retain sorted order.  Use json.nl=map explicitly in clients
+to get the old behavior, or add it as a default to the request handler
+in solrconfig.xml
+
+
 Detailed Change List
 --------------------
 
