@@ -78,7 +78,7 @@ class BrowseController < ApplicationController
     req = Solr::Request::Standard.new(:query => query,
        :filter_queries => filters,
        :facets => {:fields => [field],
-                   :mincount => 1, :limit => limit, :prefix => prefix
+                   :mincount => 1, :limit => limit, :prefix => prefix, :missing => true, :sort => :count
                   },
        :rows => 0
     )

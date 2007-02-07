@@ -8,13 +8,16 @@
 <% @facet_fields.each do |field|%>
   <h4><%=link_to field, :action => 'facet', :field_name => field%></h4>
   <ul>
-  <% @response.field_facets(field).each do |k,v| %>
-    <li><%= link_to "#{k} (#{v})", :action => 'add_filter', :field_name=>field, :value=>k%></li>
+  <% @response.field_facets(field).each do |f| %>
+    <li>
+      <%= sparkline_tag [(f.value * 100.0 / @response.total_hits).ceil], :type => 'pie', :diameter => 20, :share_color => 'blue'%>
+      <%= link_to "#{f.name} (#{f.value})", :action => 'add_filter', :field_name=>field, :value=>f.name%>
+    </li>
   <% end %>
   </ul>
 <% end %>
-</div>
-</div>
+<%=link_to image_tag("simile-exhibit.png"), :controller => :simile, :action => :exhibit %>
+</div></div>
 
 <div>
 Queries:
@@ -49,6 +52,7 @@ Filters:
   <% end %>
 </table>
 </div>
+
 
 
 
