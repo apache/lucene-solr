@@ -1,0 +1,7 @@
+author: topfunky
+summary: A library for making small graphs, a la Edward Tufte. A generator and helper are also included.
+homepage: http://nubyonrails.com/pages/sparklines
+plugin: http://topfunky.net/svn/plugins/sparklines
+license: MIT
+version: 0.4.0
+rails_version: 1.1+
