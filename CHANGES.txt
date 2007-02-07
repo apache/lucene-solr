@@ -106,7 +106,10 @@ Bug Fixes
  3. SOLR-9,SOLR-99: Tighten up sort specification error checking, throw
     exceptions for missing sort specifications or a sort on a non-indexed
     field. (Ryan McKinley via yonik)
-  
+    
+ 4. SOLR-145: Fix for bug introduced in SOLR-104 where some Exceptions
+    were being ignored by all "out of the box" RequestHandlers. (hossman)
+      
 Other Changes
  1.
 

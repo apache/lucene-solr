@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.net.URL;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrParams;
@@ -74,12 +75,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     try {
       U.setDefaults(req,defaults,appends,invariants);
       handleRequestBody( req, rsp );
-    } 
-    catch( SolrException se ) {
-      numErrors++;
-      throw se;
-    }
-    catch( Exception e) {
+    } catch (Exception e) {
+      SolrException.log(SolrCore.log,e);
+      rsp.setException(e);
       numErrors++;
     }
   }

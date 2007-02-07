@@ -22,6 +22,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.*;
+import org.apache.solr.handler.*;
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
 import org.apache.solr.schema.*;
@@ -143,6 +144,27 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
   }
 
+  public void testRequestHandlerBaseException() {
+    final String tmp = "BOO!";
+    SolrRequestHandler handler = new RequestHandlerBase() {
+        public String getDescription() { return tmp; }
+        public String getSourceId() { return tmp; }
+        public String getSource() { return tmp; }
+        public String getVersion() { return tmp; }
+        public void handleRequestBody
+          ( SolrQueryRequest req, SolrQueryResponse rsp ) {
+          throw new RuntimeException(tmp);
+        }
+      };
+    handler.init(new NamedList());
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    h.getCore().execute(handler, 
+                        new LocalSolrQueryRequest(h.getCore(),
+                                                  new NamedList()),
+                        rsp);
+    assertNotNull("should have found an exception", rsp.getException());
+                        
+  }
 
   public void testMultipleUpdatesPerAdd() {
 
