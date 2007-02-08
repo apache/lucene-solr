@@ -138,7 +138,7 @@ public class TestMultiSearcher extends TestCase
         searchers2[0] = new IndexSearcher(indexStoreB);
         searchers2[1] = new IndexSearcher(indexStoreA);
         // creating the mulitSearcher
-        Searcher mSearcher2 = getMultiSearcherInstance(searchers2);
+        MultiSearcher mSearcher2 = getMultiSearcherInstance(searchers2);
         // performing the same search
         Hits hits2 = mSearcher2.search(query);
 
@@ -150,6 +150,17 @@ public class TestMultiSearcher extends TestCase
             Document d = hits2.doc(i);
         }
         mSearcher2.close();
+
+        // test the subSearcher() method:
+        Query subSearcherQuery = parser.parse("id:doc1");
+        hits2 = mSearcher2.search(subSearcherQuery);
+        assertEquals(2, hits2.length());
+        assertEquals(0, mSearcher2.subSearcher(hits2.id(0)));   // hit from searchers2[0]
+        assertEquals(1, mSearcher2.subSearcher(hits2.id(1)));   // hit from searchers2[1]
+        subSearcherQuery = parser.parse("id:doc2");
+        hits2 = mSearcher2.search(subSearcherQuery);
+        assertEquals(1, hits2.length());
+        assertEquals(1, mSearcher2.subSearcher(hits2.id(0)));   // hit from searchers2[1]
 
         //--------------------------------------------------------------------
         // scenario 3
