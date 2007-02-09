@@ -62,6 +62,31 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.need_tar = true
 end
 
+namespace :package do
+  desc "Package solrb for use in Rails' /vendor directory. Takes an optional DIR parameter which is the root of the Rails app you'd like to package this for."
+  task :vendor do
+    require "fileutils"
+    
+    current_dir = File.dirname(__FILE__)
+    
+    vendor_dir = File.join(ENV["DIR"] || File.join(current_dir, "pkg"), "vendor")
+    solr_dir = File.join(vendor_dir, "solr")
+    File.makedirs(solr_dir)
+    
+    Dir.glob(File.join(current_dir, "lib", "**", "*")).each do |d|
+      new_d = d.gsub(File.join(current_dir, "lib"), vendor_dir)
+      if File.directory?(d)
+        File.makedirs(new_d)
+      elsif d =~ /solr\.rb$/
+        File.cp(d, File.join(solr_dir, "solr.rb"))
+      elsif d !~ /.svn/
+        File.cp(d, new_d)
+      end
+    end
+    
+  end
+end
+
 desc "Generate rdoc documentation"
 Rake::RDocTask.new('doc') do |rd|
   rd.rdoc_files.include("lib/**/*.rb")
