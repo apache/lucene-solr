@@ -31,10 +31,12 @@ class Solr::Response::Base
     
     begin
       klass = eval(request.class.name.sub(/Request/,'Response'))
-      klass.new(raw)
-    rescue
+    rescue NameError
       raise Solr::Exception.new("unknown request type: #{request.class}")
+    else
+      klass.new(raw)
     end
+    
   end
 
 end
