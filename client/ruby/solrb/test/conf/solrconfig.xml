@@ -236,6 +236,30 @@
         -->
      </lst>
   </requestHandler>
+  
+  <!-- DisMaxRequestHandler allows easy searching across multiple fields
+       for simple user-entered phrases. 
+       see http://wiki.apache.org/solr/DisMaxRequestHandler
+   -->
+  <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
+    <lst name="defaults">
+     <str name="echoParams">explicit</str>
+     <float name="tie">0.01</float>
+     <str name="qf">
+        text^1.9
+     </str>
+     <str name="pf">
+        text^1.9
+     </str>
+     <str name="fl">
+        id, text
+     </str>
+     <str name="mm">
+        2&lt;-1 5&lt;-2 6&lt;90%
+     </str>
+     <int name="ps">100</int> -->
+    </lst>
+  </requestHandler>
 
   <!-- queryResponseWriter plugins... query responses will be written using the
     writer specified by the 'wt' request parameter matching the name of a registered

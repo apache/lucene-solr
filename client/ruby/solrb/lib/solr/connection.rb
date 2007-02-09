@@ -77,11 +77,11 @@ class Solr::Connection
 
   def query(query, options={}, &action)
     # TODO: Shouldn't this return an exception if the Solr status is not ok?  (rather than true/false).
-    options[:query] = query
-    request = Solr::Request::Standard.new(options)
-    response = send(request)
-    return response unless action
-    response.each {|hit| action.call(hit)}
+    create_and_send_query(Solr::Request::Standard, options.update(:query => query), &action)
+  end
+  
+  def search(query, options={}, &action)
+    create_and_send_query(Solr::Request::Dismax, options.update(:query => query), &action)
   end
 
   # sends a commit message to the server
@@ -149,5 +149,14 @@ class Solr::Connection
     end
   
   end
-
+  
+private
+  
+  def create_and_send_query(klass, options = {}, &action)
+    request = klass.new(options)
+    response = send(request)
+    return response unless action
+    response.each {|hit| action.call(hit)}
+  end
+  
 end

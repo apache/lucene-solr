@@ -41,6 +41,11 @@ class ServerTest < Test::Unit::TestCase
     response = @connection.query('Borges')
     assert_equal 1, response.total_hits
     assert_equal '123456', response.hits[0]['id']
+    
+    # look for it via dismax
+    response = @connection.search('Borges')
+    assert_equal 1, response.total_hits
+    assert_equal '123456', response.hits[0]['id']
 
     # delete it
     @connection.delete(123456)
