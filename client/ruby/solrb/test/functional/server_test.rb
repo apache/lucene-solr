@@ -149,6 +149,22 @@ class ServerTest < Test::Unit::TestCase
     assert info.field_names.include?("id") && info.field_names.include?("test_index_facet")
     assert_equal 1, info.num_docs
   end
+  
+  def test_highlighting
+    @connection.add(:id => 1, :title_text => "Apache Solr")
+    
+    request = Solr::Request::Standard.new(:query => 'solr',
+      :highlighting => {
+        :field_list => ['title_text'],
+        :max_snippets => 3,
+        :prefix => ">>",
+        :suffix => "<<"
+      }
+    )
+    
+    response = @connection.send(request)
+    assert_equal ["Apache >>Solr<<"], response.highlighted(1, :title_text)
+  end
 
   # wipe the index clean
   def clean

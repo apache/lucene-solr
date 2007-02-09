@@ -13,7 +13,7 @@
 class Solr::Request::Standard < Solr::Request::Select
 
   VALID_PARAMS = [:query, :sort, :default_field, :operator, :start, :rows,
-    :filter_queries, :field_list, :debug_query, :explain_other, :facets]
+    :filter_queries, :field_list, :debug_query, :explain_other, :facets, :highlighting]
   
   def initialize(params)
     super('standard')
@@ -38,8 +38,6 @@ class Solr::Request::Standard < Solr::Request::Select
     @params[:rows] = params[:rows].to_i if params[:rows]
     
     @params[:field_list] ||= ["*","score"]
-
-    #TODO model highlighting parameters: http://wiki.apache.org/solr/HighlightingParameters
   end
   
   def to_hash
@@ -88,6 +86,18 @@ class Solr::Request::Standard < Solr::Request::Select
         end
       end
     end
+    
+    # highlighting parameter processing - http://wiki.apache.org/solr/HighlightingParameters
+    #TODO need to add per-field overriding to snippets, fragsize, requiredFieldMatch, formatting, and simple.pre/post
+    if @params[:highlighting]
+      hash[:hl] = true
+      hash["hl.fl"] = @params[:highlighting][:field_list].join(',') if @params[:highlighting][:field_list]
+      hash["hl.snippets"] = @params[:highlighting][:max_snippets]
+      hash["hl.requireFieldMatch"] = @params[:highlighting][:require_field_match]
+      hash["hl.simple.pre"] = @params[:highlighting][:prefix]
+      hash["hl.simple.post"] = @params[:highlighting][:suffix]
+    end
+    
     
     hash.merge(super.to_hash)
   end

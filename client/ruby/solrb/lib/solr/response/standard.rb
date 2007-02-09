@@ -47,7 +47,10 @@ class Solr::Response::Standard < Solr::Response::Ruby
     facets
   end
   
-
+  def highlighted(id, field)
+    @data['highlighting'][id.to_s][field.to_s]
+  end
+  
   # supports enumeration of hits
   # TODO revisit - should this iterate through *all* hits by re-requesting more?
   def each

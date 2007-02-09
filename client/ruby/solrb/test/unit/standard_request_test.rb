@@ -85,5 +85,24 @@ class StandardRequestTest < Test::Unit::TestCase
     request = Solr::Request::Standard.new(:query => 'query', :sort => [{:title => :descending}])
     assert_equal 'query;title desc', request.to_hash[:q]
   end
+  
+  def test_highlighting
+    request = Solr::Request::Standard.new(:query => 'query',
+      :highlighting => {
+        :field_list => ['title', 'author'],
+        :max_snippets => 3,
+        :require_field_match => true,
+        :prefix => "<blink>",
+        :suffix => "</blink>"
+      }
+    )
+    
+    hash = request.to_hash
+    assert_equal true, hash[:hl]
+    assert_equal "title,author", hash["hl.fl"]
+    assert_equal true, hash["hl.requireFieldMatch"]
+    assert_equal "<blink>", hash["hl.simple.pre"]
+    assert_equal "</blink>", hash["hl.simple.post"]
+  end
 
 end
