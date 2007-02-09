@@ -97,6 +97,11 @@ class ServerTest < Test::Unit::TestCase
     assert_equal "<result status=\"0\"></result>", response.raw_response
   end
   
+  def test_optimize
+    response = @connection.send(Solr::Request::Optimize.new)
+    assert_equal "<result status=\"0\"></result>", response.raw_response
+  end
+  
   def test_ping
     assert_equal true, @connection.ping
   end

@@ -10,15 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Request; end; end
-require 'solr/request/add_document'
-require 'solr/request/base'
-require 'solr/request/commit'
-require 'solr/request/delete'
-require 'solr/request/ping'
-require 'solr/request/select'
-require 'solr/request/standard'
-require 'solr/request/dismax'
-require 'solr/request/update'
-require 'solr/request/index_info'
-require 'solr/request/optimize'
+require 'test/unit'
+require 'solr'
+
+class DismaxRequestTest < Test::Unit::TestCase
+  
+  def test_basic_query
+    request = Solr::Request::Dismax.new(:query => 'query', :phrase_slop => '1000')
+    assert_match(/q=query/, request.to_s)
+    assert_match(/qt=dismax/, request.to_s)
+    assert_match(/ps=1000/, request.to_s)
+  end
+  
+end

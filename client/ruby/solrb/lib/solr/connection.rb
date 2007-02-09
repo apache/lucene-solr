@@ -90,16 +90,12 @@ class Solr::Connection
     return response.ok?
   end
 
-  # TODO add optimize, which can be hacked like this, interestingly!
-  # class OptimizeRequest
-  #  def handler 
-  #    "update"
-  #  end
-  #  def to_s
-  #    "<optimize/>"
-  #  end
-  # end
-
+  # sends an optimize message to the server
+  def optimize
+    response = send(Solr::Request::Optimize.new)
+    return response.ok?
+  end
+  
   # pings the connection and returns true/false if it is alive or not
   def ping
     begin
