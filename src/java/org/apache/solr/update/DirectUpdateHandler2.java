@@ -548,6 +548,11 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     log.info("closing " + this);
     iwCommit.lock();
     try{
+      // cancel any pending operations
+      if( tracker.pending != null ) {
+        tracker.pending.cancel( true );
+        tracker.pending = null;
+      }
       doDeletions();
       closeSearcher();
       closeWriter();
