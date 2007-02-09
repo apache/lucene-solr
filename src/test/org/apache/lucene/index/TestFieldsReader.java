@@ -17,26 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.LoadFirstFieldSelector;
-import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.document.*;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util._TestUtil;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class TestFieldsReader extends TestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -225,6 +216,41 @@ public class TestFieldsReader extends TestCase {
     System.out.println("Average Non-lazy time (should be very close to zero): " + regularTime / length + " ms for " + length + " reads");
     System.out.println("Average Lazy Time (should be greater than zero): " + lazyTime / length + " ms for " + length + " reads");
   }
-
+  
+  public void testLoadSize() throws IOException {
+    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    Document doc;
+    
+    doc = reader.doc(0, new FieldSelector(){
+      public FieldSelectorResult accept(String fieldName) {
+        if (fieldName.equals(DocHelper.TEXT_FIELD_1_KEY) ||
+            fieldName.equals(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY) ||
+            fieldName.equals(DocHelper.LAZY_FIELD_BINARY_KEY))
+          return FieldSelectorResult.SIZE;
+        else if (fieldName.equals(DocHelper.TEXT_FIELD_3_KEY))
+          return FieldSelectorResult.LOAD;
+        else
+          return FieldSelectorResult.NO_LOAD;
+      }
+    });
+    Fieldable f1 = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
+    Fieldable f3 = doc.getFieldable(DocHelper.TEXT_FIELD_3_KEY);
+    Fieldable fb = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
+    assertTrue(f1.isBinary());
+    assertTrue(!f3.isBinary());
+    assertTrue(fb.isBinary());
+    assertSizeEquals(2*DocHelper.FIELD_1_TEXT.length(), f1.binaryValue());
+    assertEquals(DocHelper.FIELD_3_TEXT, f3.stringValue());
+    assertSizeEquals(DocHelper.LAZY_FIELD_BINARY_BYTES.length, fb.binaryValue());
+    
+    reader.close();
+  }
+  
+  private void assertSizeEquals(int size, byte[] sizebytes) {
+    assertEquals((byte) (size>>>24), sizebytes[0]);
+    assertEquals((byte) (size>>>16), sizebytes[1]);
+    assertEquals((byte) (size>>> 8), sizebytes[2]);
+    assertEquals((byte)  size      , sizebytes[3]);
+  }
 
 }

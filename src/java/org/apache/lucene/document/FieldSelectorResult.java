@@ -60,6 +60,17 @@ public final class FieldSelectorResult {
      */
   public static final FieldSelectorResult LOAD_FOR_MERGE = new FieldSelectorResult(4);
 
+     /** Expert:  Load the size of this {@link Field} rather than its value.
+       * Size is measured as number of bytes required to store the field == bytes for a binary or any compressed value, and 2*chars for a String value.
+      * The size is stored as a binary value, represented as an int in a byte[], with the higher order byte first in [0]
+      */
+  public static final FieldSelectorResult SIZE = new FieldSelectorResult(5);
+
+  /** Expert: Like {@link #SIZE} but immediately break from the field loading loop, i.e. stop loading further fields, after the size is loaded */         
+  public static final FieldSelectorResult SIZE_AND_BREAK = new FieldSelectorResult(6);
+
+
+
   private int id;
 
   private FieldSelectorResult(int id) {

@@ -17,20 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
-
-import org.apache.lucene.document.AbstractField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
 
 /**
  * Class responsible for access to stored document fields.
@@ -95,25 +90,33 @@ final class FieldsReader {
       int fieldNumber = fieldsStream.readVInt();
       FieldInfo fi = fieldInfos.fieldInfo(fieldNumber);
       FieldSelectorResult acceptField = fieldSelector == null ? FieldSelectorResult.LOAD : fieldSelector.accept(fi.name);
-      boolean lazy = acceptField.equals(FieldSelectorResult.LAZY_LOAD) == true;
       
       byte bits = fieldsStream.readByte();
       boolean compressed = (bits & FieldsWriter.FIELD_IS_COMPRESSED) != 0;
       boolean tokenize = (bits & FieldsWriter.FIELD_IS_TOKENIZED) != 0;
       boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;
-      if (acceptField.equals(FieldSelectorResult.LOAD) == true) {
+      //TODO: Find an alternative approach here if this list continues to grow beyond the
+      //list of 5 or 6 currently here.  See Lucene 762 for discussion
+      if (acceptField.equals(FieldSelectorResult.LOAD)) {
         addField(doc, fi, binary, compressed, tokenize);
       }
-      else if (acceptField.equals(FieldSelectorResult.LOAD_FOR_MERGE) == true) {
+      else if (acceptField.equals(FieldSelectorResult.LOAD_FOR_MERGE)) {
         addFieldForMerge(doc, fi, binary, compressed, tokenize);
       }
-      else if (acceptField.equals(FieldSelectorResult.LOAD_AND_BREAK) == true){
+      else if (acceptField.equals(FieldSelectorResult.LOAD_AND_BREAK)){
         addField(doc, fi, binary, compressed, tokenize);
         break;//Get out of this loop
       }
-      else if (lazy == true){
+      else if (acceptField.equals(FieldSelectorResult.LAZY_LOAD)) {
         addFieldLazy(doc, fi, binary, compressed, tokenize);
-      }       
+      }
+      else if (acceptField.equals(FieldSelectorResult.SIZE)){
+        skipField(binary, compressed, addFieldSize(doc, fi, binary, compressed));
+      }
+      else if (acceptField.equals(FieldSelectorResult.SIZE_AND_BREAK)){
+        addFieldSize(doc, fi, binary, compressed);
+        break;
+      }
       else {
         skipField(binary, compressed);
       }
@@ -127,9 +130,10 @@ final class FieldsReader {
    * This will have the most payoff on large fields.
    */
   private void skipField(boolean binary, boolean compressed) throws IOException {
-
-    int toRead = fieldsStream.readVInt();
-
+    skipField(binary, compressed, fieldsStream.readVInt());
+  }
+  
+  private void skipField(boolean binary, boolean compressed, int toRead) throws IOException {
     if (binary || compressed) {
       long pointer = fieldsStream.getFilePointer();
       fieldsStream.seek(pointer + toRead);
@@ -235,6 +239,20 @@ final class FieldsReader {
       }
       doc.add(f);
     }
+  }
+  
+  // Add the size of field as a byte[] containing the 4 bytes of the integer byte size (high order byte first; char = 2 bytes)
+  // Read just the size -- caller must skip the field content to continue reading fields
+  // Return the size in bytes or chars, depending on field type
+  private int addFieldSize(Document doc, FieldInfo fi, boolean binary, boolean compressed) throws IOException {
+    int size = fieldsStream.readVInt(), bytesize = binary || compressed ? size : 2*size;
+    byte[] sizebytes = new byte[4];
+    sizebytes[0] = (byte) (bytesize>>>24);
+    sizebytes[1] = (byte) (bytesize>>>16);
+    sizebytes[2] = (byte) (bytesize>>> 8);
+    sizebytes[3] = (byte)  bytesize      ;
+    doc.add(new Field(fi.name, sizebytes, Field.Store.YES));
+    return size;
   }
 
   private Field.TermVector getTermVectorType(FieldInfo fi) {
