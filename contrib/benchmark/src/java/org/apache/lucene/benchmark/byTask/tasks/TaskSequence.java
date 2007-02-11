@@ -210,6 +210,12 @@ public class TaskSequence extends PerfTask {
    */
   public void setNoChildReport() {
     letChildReport  = false;
+    for (Iterator it = tasks.iterator(); it.hasNext();) {
+      PerfTask task = (PerfTask) it.next();
+      if (task instanceof TaskSequence) {
+        ((TaskSequence)task).setNoChildReport();
+  }
+    }
   }
 
   /**

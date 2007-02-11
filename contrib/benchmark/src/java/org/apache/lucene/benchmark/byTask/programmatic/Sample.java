@@ -51,6 +51,10 @@ public class Sample {
     // task to report
     RepSumByNameTask rep = new RepSumByNameTask(runData);
     top.addTask(rep);
+
+    // print algorithm
+    System.out.println(top.toString());
+    
     // execute
     top.doLogic();
   }

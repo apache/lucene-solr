@@ -44,7 +44,7 @@ Contained packages:
  </tr>
  <tr>
    <td><a href="feeds/package-summary.html">feeds</a></td>
-   <td>Sources foe benchmark inputs: documents and queries.</td>
+   <td>Sources for benchmark inputs: documents and queries.</td>
  </tr>
  <tr>
    <td><a href="utils/package-summary.html">utils</a></td>
@@ -92,7 +92,7 @@ Easiest way to run a benchmarks is using the predefined ant task:
      <br>- would run the <code>compound-penalty.alg</code> "algorithm".
  </li>
  <li>ant run-task -Dtask.alg=[full-path-to-your-alg-file]
-     <br>- would run the <code>your perf test</code> "algorithm".
+     <br>- would run <code>your perf test</code> "algorithm".
  </li>
  <li>java org.apache.lucene.benchmark.byTask.programmatic.Sample
      <br>- would run a performance test programmatically - without using an alg file.
@@ -109,7 +109,7 @@ otherwise, you can extend the framework to meet your needs, as explained herein.
 <p>
 Each benchmark run has a DocMaker and a QueryMaker. These two should usually match, so
 that "meaningful" queries are used for a certain collection.
-Properties defined at the header of the alg file define which "makers" should be used.
+Properties set at the header of the alg file define which "makers" should be used.
 You can also specify your own makers, implementing the DocMaker and QureyMaker interfaces.
 </p>
 
@@ -275,8 +275,8 @@ regular index/search work tasks, report tasks, and control tasks.
      <br>This increments a global "round counter". All task runs that would start now would
      record the new, updated round counter as their round number. This would appear in reports.
      In particular, see <font color="#FF0066">RepSumByNameRound</font> above.
-     <br>An additional effect of NewRound, is that numeric and boolean properties defined in the
-     .properties file as a sequence of values, e.g. <font color="#FF0066">merge.factor=mrg:10:100:10:100</font> would
+     <br>An additional effect of NewRound, is that numeric and boolean properties defined (at the head 
+     of the .alg file) as a sequence of values, e.g. <font color="#FF0066">merge.factor=mrg:10:100:10:100</font> would
      increment (cyclic) to the next value.
      Note: this would also be reflected in the reports, in this case under a column that would be named "mrg".
      </li>
@@ -368,7 +368,7 @@ Some of the currently defined properties are:
     (Make sure it is no shorter than any value in the sequence).
     <ul>
         <li><font color="#FF0066">max.buffered</font>
-        <br>Example: buffered=buf.10.10.100.100 -
+        <br>Example: max.buffered=buf:10:10:100:100 -
         this would define using maxBufferedDocs of 10 in iterations 0 and 1,
         and 100 in iterations 2 and 3.
         </li>

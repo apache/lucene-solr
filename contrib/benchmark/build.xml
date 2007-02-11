@@ -8,6 +8,7 @@
     <import file="../contrib-build.xml"/>
     <property name="working.dir" value="work"/>
 
+
     <target name="check-files">
 
         <available file="temp/news20.tar.gz" property="news20.exists"/>
@@ -84,8 +85,11 @@
     <property name="collections.jar" value="commons-collections-3.1.jar"/>
     <property name="logging.jar" value="commons-logging-1.0.4.jar"/>
     <property name="bean-utils.jar" value="commons-beanutils-1.7.0.jar"/>
+    <property name="lucene-demos.jar" location="${common.dir}/build/lucene-demos-${version}.jar"/>
+
     <path id="classpath">
         <pathelement path="${lucene.jar}"/>
+        <pathelement path="${lucene-demos.jar}"/>
         <pathelement path="${basedir}/lib/${digester.jar}"/>
         <pathelement path="${basedir}/lib/${collections.jar}"/>
         <pathelement path="${basedir}/lib/${logging.jar}"/>

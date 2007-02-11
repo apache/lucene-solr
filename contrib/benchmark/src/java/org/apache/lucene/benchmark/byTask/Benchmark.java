@@ -27,8 +27,17 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  * Run the benchmark algorithm.
  * <p>Usage: java Benchmark  algorithm-file
  * <ol>
- * <li>Read algorithm.
- * <li> Run the algorithm.
+ * <li>Read algorithm.</li>
+ * <li> Run the algorithm.</li>
+ * </ol>
+ * Things to be added/fixed in "Benchmarking by tasks":
+ * <ol>
+ * <li>TODO - report into Excel and/or graphed view.</li>
+ * <li>TODO - perf comparison between Lucene releases over the years.</li>
+ * <li>TODO - perf report adequate to include in Lucene nightly build site? (so we can easily track performance changes.)</li>
+ * <li>TODO - add overall time control for repeated execution (vs. current by-count only).</li>
+ * <li>TODO - query maker that is based on index statistics.</li>
+ * <li>TODO - prpoerties documentation - each task should document the properties it relies on.</li> 
  * </ol>
  */
 public class Benchmark {

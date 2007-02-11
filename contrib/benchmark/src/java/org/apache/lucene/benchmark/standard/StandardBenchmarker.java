@@ -1,19 +1,5 @@
 package org.apache.lucene.benchmark.standard;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Arrays;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.benchmark.AbstractBenchmarker;
@@ -33,6 +19,11 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.FSDirectory;
+
+import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 /**
  * Copyright 2005 The Apache Software Foundation
  *
@@ -66,7 +57,7 @@ public class StandardBenchmarker extends AbstractBenchmarker implements Benchmar
 
     public static final String INDEX_DIR = "index";
     //30-MAR-1987 14:22:36.87
-    private static DateFormat format = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS");
+    private static DateFormat format = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS",Locale.US);
     //DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
     static{
         format.setLenient(true);

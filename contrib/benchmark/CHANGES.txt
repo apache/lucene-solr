@@ -9,3 +9,6 @@ $Id:$
 1. Committed Doron Cohen's benchmarking contribution, which provides an easily expandable task based approach to benchmarking.  See the javadocs for information. (Doron Cohen via Grant Ingersoll)
 
 2. Added this file.
+
+3. 2/11/07: LUCENE-790 and 788:  Fixed Locale issue with date formatter. Fixed some minor issues with benchmarking by task.  Added a dependency
+ on the Lucene demo to the build classpath.  (Doron Cohen, Grant Ingersoll)
