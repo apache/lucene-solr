@@ -109,6 +109,10 @@ New features
     flushRamSegments()) to flush all pending updates (held in RAM), to
     the Directory.  (Ning Li via Mike McCandless)
 
+14. LUCENE-762: Added in SIZE and SIZE_AND_BREAK FieldSelectorResult options
+    which allow one to retrieve the size of a field without retrieving the actual field.
+    (Chuck Williams via Grant Ingersoll)
+
 API Changes
 
  1. LUCENE-438: Remove "final" from Token, implement Cloneable, allow
