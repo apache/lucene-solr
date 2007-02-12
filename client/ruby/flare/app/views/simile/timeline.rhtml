@@ -1,0 +1,46 @@
+<html>
+  <head>
+    ...
+    <script src="http://simile.mit.edu/timeline/api/timeline-api.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var tl;
+    function onLoad() {
+      var eventSource = new Timeline.DefaultEventSource();
+      var bandInfos = [
+        Timeline.createBandInfo({
+            eventSource:    eventSource,
+            date:           "Jun 28 2006 00:00:00 GMT",
+            width:          "70%", 
+            intervalUnit:   Timeline.DateTime.CENTURY, 
+            intervalPixels: 200
+        }),
+        Timeline.createBandInfo({
+            eventSource:    eventSource,
+            date:           "Jun 28 2006 00:00:00 GMT",
+            width:          "30%", 
+            intervalUnit:   Timeline.DateTime.YEAR, 
+            intervalPixels: 200
+        })
+      ];
+      bandInfos[0].syncWith = 1;
+      bandInfos[0].highlight = true;
+
+      tl = Timeline.create(document.getElementById("my-timeline"), bandInfos);
+      Timeline.loadXML("timeline.xml", function(xml, url) { eventSource.loadXML(xml, url); });
+    }
+    
+    var resizeTimerID = null;
+    function onResize() {
+        if (resizeTimerID == null) {
+            resizeTimerID = window.setTimeout(function() {
+                resizeTimerID = null;
+                tl.layout();
+            }, 500);
+        }
+    }
+    </script>
+  </head>
+  <body onload="onLoad();" onresize="onResize();">
+    <div id="my-timeline" style="height: 300px; border: 1px solid #aaa"></div>
+  </body>
+</html>
