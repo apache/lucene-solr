@@ -21,6 +21,12 @@ class FieldTest < Test::Unit::TestCase
     assert_match(/<field name=["']creator["']>Erik Hatcher<\/field>/, field.to_xml.to_s)
   end
   
+  def test_escaped_xml
+    field = Solr::Field.new :creator => 'Erik Hatcher & His Amazing Leaping Ability'
+    assert_kind_of Solr::XML::Element, field.to_xml
+    assert_match(/<field name=["']creator["']>Erik Hatcher &amp; His Amazing Leaping Ability<\/field>/, field.to_xml.to_s)
+  end
+  
   def test_xml_date
     field = Solr::Field.new :time => Time.now
     assert_kind_of Solr::XML::Element, field.to_xml

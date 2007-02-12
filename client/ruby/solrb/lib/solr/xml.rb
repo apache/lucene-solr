@@ -31,7 +31,7 @@ begin
 
     # element.text = "blah" should work
     def text=(x)
-      self.content = x.to_s
+      self << x.to_s
     end
   end
   
