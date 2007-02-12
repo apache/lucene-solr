@@ -84,38 +84,17 @@ namespace :rails do
     end
   end
   
+  desc "Install the Rails plugin version into the vendor/plugins dir. Need to set PLUGINS_DIR environment variable."
+  task :install_solrb => :package do
+    plugins_dir = ENV["PLUGINS_DIR"] or raise "You must set PLUGINS_DIR"
+    File.cp_r(File.join("pkg","rails", "solrb-rails-#{SOLRB_VERSION}/"), File.join(plugins_dir, "solrb-rails-#{SOLRB_VERSION}/"))
+  end
 end
 
 task :package => ["rails:package", "gem:package"]
 task :repackage => [:clobber_package, :package]
 task :clobber_package => ["rails:clobber_package", "gem:clobber_package"] do rm_r "pkg" rescue nil end
 task :clobber => [:clobber_package]
-
-namespace :package do
-  desc "Package solrb for use in Rails' /vendor directory. Takes an optional DIR parameter which is the root of the Rails app you'd like to package this for."
-  task :vendor do
-    require "fileutils"
-    
-    current_dir = File.dirname(__FILE__)
-    
-    vendor_dir = File.join(ENV["DIR"] || File.join(current_dir, "pkg"), "vendor")
-    lib_dir = File.join(vendor_dir, "lib")
-    solr_dir = File.join(vendor_dir, "lib/solr")
-    File.makedirs(solr_dir)
-    
-    Dir.glob(File.join(current_dir, "lib", "**", "*")).each do |d|
-      new_d = d.gsub(File.join(current_dir, "lib"), vendor_dir)
-      if File.directory?(d)
-        File.makedirs(new_d)
-      elsif d =~ /solr\.rb$/
-        File.cp(d, File.join(solr_dir, "solr.rb"))
-      elsif d !~ /.svn/
-        File.cp(d, new_d)
-      end
-    end
-    
-  end
-end
 
 desc "Generate rdoc documentation"
 Rake::RDocTask.new('doc') do |rd|
