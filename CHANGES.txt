@@ -80,6 +80,8 @@ New Features
     (in ms), using <autoCommit><maxTime>10000</maxTime></autoCommit>.
     (Ryan McKinley via klaas).
 
+10. SOLR-116: IndexInfoRequestHandler added. (Erik Hatcher)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
