@@ -362,10 +362,16 @@ final class FieldsReader {
         IndexInput localFieldsStream = getFieldStream();
         try {
           localFieldsStream.seek(pointer);
-          //read in chars b/c we already know the length we need to read
-          char[] chars = new char[toRead];
-          localFieldsStream.readChars(chars, 0, toRead);
-          fieldsData = new String(chars);
+          if (isCompressed) {
+            final byte[] b = new byte[toRead];
+            localFieldsStream.readBytes(b, 0, b.length);
+            fieldsData = new String(uncompress(b), "UTF-8");
+          } else {
+            //read in chars b/c we already know the length we need to read
+            char[] chars = new char[toRead];
+            localFieldsStream.readChars(chars, 0, toRead);
+            fieldsData = new String(chars);
+          }
         } catch (IOException e) {
           throw new FieldReaderException(e);
         }
