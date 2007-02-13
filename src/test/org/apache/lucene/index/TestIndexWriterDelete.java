@@ -15,7 +15,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestNewIndexModifierDelete extends TestCase {
+public class TestIndexWriterDelete extends TestCase {
 
   // test the simple case
   public void testSimpleCase() throws IOException {
@@ -26,7 +26,7 @@ public class TestNewIndexModifierDelete extends TestCase {
     String[] text = { "Amsterdam", "Venice" };
 
     Directory dir = new RAMDirectory();
-    NewIndexModifier modifier = new NewIndexModifier(dir,
+    IndexWriter modifier = new IndexWriter(dir,
         new WhitespaceAnalyzer(), true);
     modifier.setUseCompoundFile(true);
     modifier.setMaxBufferedDeleteTerms(1);
@@ -59,7 +59,7 @@ public class TestNewIndexModifierDelete extends TestCase {
   // test when delete terms only apply to disk segments
   public void testNonRAMDelete() throws IOException {
     Directory dir = new RAMDirectory();
-    NewIndexModifier modifier = new NewIndexModifier(dir,
+    IndexWriter modifier = new IndexWriter(dir,
         new WhitespaceAnalyzer(), true);
     modifier.setMaxBufferedDocs(2);
     modifier.setMaxBufferedDeleteTerms(2);
@@ -72,7 +72,7 @@ public class TestNewIndexModifierDelete extends TestCase {
     }
     modifier.flush();
 
-    assertEquals(0, modifier.getRAMSegmentCount());
+    assertEquals(0, modifier.getRamSegmentCount());
     assertTrue(0 < modifier.getSegmentCount());
 
     IndexReader reader = IndexReader.open(dir);
@@ -92,7 +92,7 @@ public class TestNewIndexModifierDelete extends TestCase {
   // test when delete terms only apply to ram segments
   public void testRAMDeletes() throws IOException {
     Directory dir = new RAMDirectory();
-    NewIndexModifier modifier = new NewIndexModifier(dir,
+    IndexWriter modifier = new IndexWriter(dir,
         new WhitespaceAnalyzer(), true);
     modifier.setMaxBufferedDocs(4);
     modifier.setMaxBufferedDeleteTerms(4);
@@ -125,7 +125,7 @@ public class TestNewIndexModifierDelete extends TestCase {
   // test when delete terms apply to both disk and ram segments
   public void testBothDeletes() throws IOException {
     Directory dir = new RAMDirectory();
-    NewIndexModifier modifier = new NewIndexModifier(dir,
+    IndexWriter modifier = new IndexWriter(dir,
         new WhitespaceAnalyzer(), true);
     modifier.setMaxBufferedDocs(100);
     modifier.setMaxBufferedDeleteTerms(100);
@@ -158,7 +158,7 @@ public class TestNewIndexModifierDelete extends TestCase {
   // test that batched delete terms are flushed together
   public void testBatchDeletes() throws IOException {
     Directory dir = new RAMDirectory();
-    NewIndexModifier modifier = new NewIndexModifier(dir,
+    IndexWriter modifier = new IndexWriter(dir,
         new WhitespaceAnalyzer(), true);
     modifier.setMaxBufferedDocs(2);
     modifier.setMaxBufferedDeleteTerms(2);
@@ -196,7 +196,7 @@ public class TestNewIndexModifierDelete extends TestCase {
     modifier.close();
   }
 
-  private void addDoc(NewIndexModifier modifier, int id, int value)
+  private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.TOKENIZED));
@@ -257,7 +257,7 @@ public class TestNewIndexModifierDelete extends TestCase {
     // Iterate w/ ever increasing free disk space:
     while (!done) {
       MockRAMDirectory dir = new MockRAMDirectory(startDir);
-      NewIndexModifier modifier = new NewIndexModifier(dir,
+      IndexWriter modifier = new IndexWriter(dir,
           new WhitespaceAnalyzer(), false);
 
       modifier.setMaxBufferedDocs(1000); // use flush or close
@@ -314,11 +314,9 @@ public class TestNewIndexModifierDelete extends TestCase {
                     Field.Index.UN_TOKENIZED));
                 d.add(new Field("content", "bbb " + i, Field.Store.NO,
                     Field.Index.TOKENIZED));
-                modifier.updateDocument(
-                    new Term("id", Integer.toString(docId)), d);
+                modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
               } else { // deletes
-                modifier
-                    .deleteDocuments(new Term("id", Integer.toString(docId)));
+                modifier.deleteDocuments(new Term("id", Integer.toString(docId)));
                 // modifier.setNorm(docId, "contents", (float)2.0);
               }
               docId += 12;

@@ -32,6 +32,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 /**
   An IndexWriter creates and maintains an index.
@@ -58,7 +61,16 @@ import java.util.HashSet;
   is also thrown if an IndexReader on the same directory is used to delete documents
   from the index.</p>
   
-  @see IndexModifier IndexModifier supports the important methods of IndexWriter plus deletion
+  <p>As of <b>2.1</b>, IndexWriter can now delete documents
+  by {@link Term} (see {@link #deleteDocuments} ) and update
+  (delete then add) documents (see {@link #updateDocument}).
+  Deletes are buffered until {@link
+  #setMaxBufferedDeleteTerms} <code>Terms</code> at which
+  point they are flushed to the index.  Note that a flush
+  occurs when there are enough buffered deletes or enough
+  added documents, whichever is sooner.  When a flush
+  occurs, both pending deletes and added documents are
+  flushed to the index.</p>
   */
 
 public class IndexWriter {
@@ -82,6 +94,11 @@ public class IndexWriter {
    * Default value is 10. Change using {@link #setMaxBufferedDocs(int)}.
    */
   public final static int DEFAULT_MAX_BUFFERED_DOCS = 10;
+
+  /**
+   * Default value is 1000. Change using {@link #setMaxBufferedDeleteTerms(int)}.
+   */
+  public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = 1000;
 
   /**
    * Default value is {@link Integer#MAX_VALUE}. Change using {@link #setMaxMergeDocs(int)}.
@@ -108,14 +125,24 @@ public class IndexWriter {
   private HashSet protectedSegments; // segment names that should not be deleted until commit
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
 
-  protected SegmentInfos segmentInfos = new SegmentInfos();       // the segments
-  protected SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
+  SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
   private final RAMDirectory ramDirectory = new RAMDirectory(); // for temp segs
   private IndexFileDeleter deleter;
 
   private Lock writeLock;
 
   private int termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
+
+  // The max number of delete terms that can be buffered before
+  // they must be flushed to disk.
+  private int maxBufferedDeleteTerms = DEFAULT_MAX_BUFFERED_DELETE_TERMS;
+
+  // This Hashmap buffers delete terms in ram before they are applied.
+  // The key is delete term; the value is number of ram
+  // segments the term applies to.
+  private HashMap bufferedDeleteTerms = new HashMap();
+  private int numBufferedDeleteTerms = 0;
 
   /** Use compound file setting. Defaults to true, minimizing the number of
    * files used.  Setting this to false may improve indexing performance, but
@@ -124,10 +151,6 @@ public class IndexWriter {
   private boolean useCompoundFile = true;
 
   private boolean closeDir;
-
-  protected IndexFileDeleter getDeleter() {
-    return deleter;
-  }
 
   /** Get the current setting of whether to use the compound file format.
    *  Note that this just returns the value you set with setUseCompoundFile(boolean)
@@ -440,6 +463,28 @@ public class IndexWriter {
     return minMergeDocs;
   }
 
+  /**
+   * <p>Determines the minimal number of delete terms required before the buffered
+   * in-memory delete terms are applied and flushed. If there are documents
+   * buffered in memory at the time, they are merged and a new segment is
+   * created.</p>
+
+   * <p>The default value is {@link #DEFAULT_MAX_BUFFERED_DELETE_TERMS}.
+   * @throws IllegalArgumentException if maxBufferedDeleteTerms is smaller than 1</p>
+   */
+  public void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
+    if (maxBufferedDeleteTerms < 1)
+      throw new IllegalArgumentException("maxBufferedDeleteTerms must at least be 1");
+    this.maxBufferedDeleteTerms = maxBufferedDeleteTerms;
+  }
+
+  /**
+   * @see #setMaxBufferedDeleteTerms
+   */
+  public int getMaxBufferedDeleteTerms() {
+    return maxBufferedDeleteTerms;
+  }
+
   /** Determines how often segment indices are merged by addDocument().  With
    * smaller values, less RAM is used while indexing, and searches on
    * unoptimized indices are faster, but indexing speed is slower.  With larger
@@ -653,27 +698,84 @@ public class IndexWriter {
     }
   }
 
-  final SegmentInfo buildSingleDocSegment(Document doc, Analyzer analyzer)
+  SegmentInfo buildSingleDocSegment(Document doc, Analyzer analyzer)
       throws IOException {
     DocumentWriter dw = new DocumentWriter(ramDirectory, analyzer, this);
     dw.setInfoStream(infoStream);
-    String segmentName = newRAMSegmentName();
+    String segmentName = newRamSegmentName();
     dw.addDocument(segmentName, doc);
     return new SegmentInfo(segmentName, 1, ramDirectory, false, false);
   }
 
-  // for test purpose
-  final synchronized int getRAMSegmentCount() {
-    return ramSegmentInfos.size();
+  /**
+   * Deletes the document(s) containing <code>term</code>.
+   * @param term the term to identify the documents to be deleted
+   */
+  public synchronized void deleteDocuments(Term term) throws IOException {
+    bufferDeleteTerm(term);
+    maybeFlushRamSegments();
   }
 
-  final synchronized String newRAMSegmentName() {
+  /**
+   * Deletes the document(s) containing any of the
+   * terms. All deletes are flushed at the same time.
+   * @param terms array of terms to identify the documents
+   * to be deleted
+   */
+  public synchronized void deleteDocuments(Term[] terms) throws IOException {
+    for (int i = 0; i < terms.length; i++) {
+      bufferDeleteTerm(terms[i]);
+    }
+    maybeFlushRamSegments();
+  }
+
+  /**
+   * Updates a document by first deleting the document(s)
+   * containing <code>term</code> and then adding the new
+   * document.  The delete and then add are atomic as seen
+   * by a reader on the same index (flush may happen only after
+   * the add).
+   * @param term the term to identify the document(s) to be
+   * deleted
+   * @param doc the document to be added
+   */
+  public void updateDocument(Term term, Document doc) throws IOException {
+    updateDocument(term, doc, getAnalyzer());
+  }
+
+  /**
+   * Updates a document by first deleting the document(s)
+   * containing <code>term</code> and then adding the new
+   * document.  The delete and then add are atomic as seen
+   * by a reader on the same index (flush may happen only after
+   * the add).
+   * @param term the term to identify the document(s) to be
+   * deleted
+   * @param doc the document to be added
+   * @param analyzer the analyzer to use when analyzing the document
+   */
+  public void updateDocument(Term term, Document doc, Analyzer analyzer)
+      throws IOException {
+    SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
+    synchronized (this) {
+      bufferDeleteTerm(term);
+      ramSegmentInfos.addElement(newSegmentInfo);
+      maybeFlushRamSegments();
+    }
+  }
+
+  final synchronized String newRamSegmentName() {
     return "_ram_" + Integer.toString(ramSegmentInfos.counter++, Character.MAX_RADIX);
   }
 
   // for test purpose
   final synchronized int getSegmentCount(){
     return segmentInfos.size();
+  }
+
+  // for test purpose
+  final synchronized int getRamSegmentCount(){
+    return ramSegmentInfos.size();
   }
 
   // for test purpose
@@ -1228,40 +1330,32 @@ public class IndexWriter {
   //         counts x and y, then f(x) >= f(y).
   //      2: The number of committed segments on the same level (f(n)) <= M.
 
-  protected boolean timeToFlushRam() {
-    return ramSegmentInfos.size() >= minMergeDocs;
-  }
-
-  protected boolean anythingToFlushRam() {
-    return ramSegmentInfos.size() > 0;
-  }
-
-  // true if only buffered inserts, no buffered deletes
-  protected boolean onlyRamDocsToFlush() {
-    return true;
-  }
-
-  // whether the latest segment is the flushed merge of ram segments
-  protected void doAfterFlushRamSegments(boolean flushedRamSegments)
-      throws IOException {
+  // This is called after pending added and deleted
+  // documents have been flushed to the Directory but before
+  // the change is committed (new segments_N file written).
+  void doAfterFlush()
+    throws IOException {
   }
 
   protected final void maybeFlushRamSegments() throws IOException {
-    if (timeToFlushRam()) {
+    // A flush is triggered if enough new documents are buffered or
+    // if enough delete terms are buffered
+    if (ramSegmentInfos.size() >= minMergeDocs || numBufferedDeleteTerms >= maxBufferedDeleteTerms) {
       flushRamSegments();
     }
   }
 
   /** Expert:  Flushes all RAM-resident segments (buffered documents), then may merge segments. */
   private final synchronized void flushRamSegments() throws IOException {
-    if (anythingToFlushRam()) {
+    if (ramSegmentInfos.size() > 0 || bufferedDeleteTerms.size() > 0) {
       mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
       maybeMergeSegments(minMergeDocs);
     }
   }
 
   /**
-   * Flush all in-memory buffered updates to the Directory.
+   * Flush all in-memory buffered updates (adds and deletes)
+   * to the Directory.
    * @throws IOException
    */
   public final synchronized void flush() throws IOException {
@@ -1350,7 +1444,9 @@ public class IndexWriter {
   private final int mergeSegments(SegmentInfos sourceSegments, int minSegment, int end)
     throws IOException {
 
-    boolean mergeFlag = end > 0;
+    // We may be called solely because there are deletes
+    // pending, in which case doMerge is false:
+    boolean doMerge = end > 0;
     final String mergedName = newSegmentName();
     SegmentMerger merger = null;
 
@@ -1366,21 +1462,21 @@ public class IndexWriter {
     // This is try/finally to make sure merger's readers are closed:
     try {
 
-     if (mergeFlag) {
-      if (infoStream != null) infoStream.print("merging segments");
-      merger = new SegmentMerger(this, mergedName);
+      if (doMerge) {
+        if (infoStream != null) infoStream.print("merging segments");
+        merger = new SegmentMerger(this, mergedName);
 
-      for (int i = minSegment; i < end; i++) {
-        SegmentInfo si = sourceSegments.info(i);
-        if (infoStream != null)
-          infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-        IndexReader reader = SegmentReader.get(si); // no need to set deleter (yet)
-        merger.add(reader);
-        if ((reader.directory() == this.directory) || // if we own the directory
-            (reader.directory() == this.ramDirectory))
-          segmentsToDelete.addElement(reader);   // queue segment for deletion
+        for (int i = minSegment; i < end; i++) {
+          SegmentInfo si = sourceSegments.info(i);
+          if (infoStream != null)
+            infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
+          IndexReader reader = SegmentReader.get(si); // no need to set deleter (yet)
+          merger.add(reader);
+          if ((reader.directory() == this.directory) || // if we own the directory
+              (reader.directory() == this.ramDirectory))
+            segmentsToDelete.addElement(reader);   // queue segment for deletion
+        }
       }
-     }
 
       SegmentInfos rollback = null;
       boolean success = false;
@@ -1389,40 +1485,41 @@ public class IndexWriter {
       // if we hit exception when doing the merge:
       try {
 
-       if (mergeFlag) {
-        mergedDocCount = merger.merge();
+        if (doMerge) {
+          mergedDocCount = merger.merge();
 
-        if (infoStream != null) {
-          infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
+          if (infoStream != null) {
+            infoStream.println(" into "+mergedName+" ("+mergedDocCount+" docs)");
+          }
+
+          newSegment = new SegmentInfo(mergedName, mergedDocCount,
+                                       directory, false, true);
         }
 
-        newSegment = new SegmentInfo(mergedName, mergedDocCount,
-                                     directory, false, true);
-       }
-
         if (!inTransaction
-            && (sourceSegments != ramSegmentInfos || !onlyRamDocsToFlush())) {
+            && (sourceSegments != ramSegmentInfos || bufferedDeleteTerms.size() > 0)) {
           // Now save the SegmentInfo instances that
           // we are replacing:
           rollback = (SegmentInfos) segmentInfos.clone();
         }
 
-       if (mergeFlag) {
-        if (sourceSegments == ramSegmentInfos) {
-          segmentInfos.addElement(newSegment);
-        } else {
-          for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
-            sourceSegments.remove(i);
+        if (doMerge) {
+          if (sourceSegments == ramSegmentInfos) {
+            segmentInfos.addElement(newSegment);
+          } else {
+            for (int i = end-1; i > minSegment; i--)     // remove old infos & add new
+              sourceSegments.remove(i);
 
-          segmentInfos.set(minSegment, newSegment);
+            segmentInfos.set(minSegment, newSegment);
+          }
         }
-       }
 
         if (sourceSegments == ramSegmentInfos) {
           // Should not be necessary: no prior commit should
           // have left pending files, so just defensive:
           deleter.clearPendingFiles();
-          doAfterFlushRamSegments(mergeFlag);
+          maybeApplyDeletes(doMerge);
+          doAfterFlush();
         }
 
         if (!inTransaction) {
@@ -1446,7 +1543,7 @@ public class IndexWriter {
 
           // Must rollback so our state matches index:
 
-          if (sourceSegments == ramSegmentInfos && onlyRamDocsToFlush()) {
+          if (sourceSegments == ramSegmentInfos && 0 == bufferedDeleteTerms.size()) {
             // Simple case: newSegment may or may not have
             // been added to the end of our segment infos,
             // so just check & remove if so:
@@ -1476,21 +1573,21 @@ public class IndexWriter {
       }
     } finally {
       // close readers before we attempt to delete now-obsolete segments
-      if (mergeFlag) merger.closeReaders();
+      if (doMerge) merger.closeReaders();
     }
 
     if (!inTransaction) {
       // Attempt to delete all files we just obsoleted:
       deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
       deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
-      // including the old del files
+      // Includes the old del files
       deleter.commitPendingFiles();
     } else {
       deleter.addPendingFile(segmentsInfosFileName);    // delete old segments_N file
       deleter.deleteSegments(segmentsToDelete, protectedSegments);     // delete now-unused segments
     }
 
-    if (useCompoundFile && mergeFlag) {
+    if (useCompoundFile && doMerge) {
 
       segmentsInfosFileName = nextSegmentsFileName;
       nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
@@ -1531,6 +1628,58 @@ public class IndexWriter {
     return mergedDocCount;
   }
 
+  // Called during flush to apply any buffered deletes.  If
+  // doMerge is true then a new segment was just created and
+  // flushed from the ram segments.
+  private final void maybeApplyDeletes(boolean doMerge) throws IOException {
+
+    if (bufferedDeleteTerms.size() > 0) {
+      if (infoStream != null)
+        infoStream.println("flush " + numBufferedDeleteTerms + " buffered deleted terms on "
+                           + segmentInfos.size() + " segments.");
+
+      if (doMerge) {
+        IndexReader reader = null;
+        try {
+          reader = SegmentReader.get(segmentInfos.info(segmentInfos.size() - 1));
+          reader.setDeleter(deleter);
+
+          // Apply delete terms to the segment just flushed from ram
+          // apply appropriately so that a delete term is only applied to
+          // the documents buffered before it, not those buffered after it.
+          applyDeletesSelectively(bufferedDeleteTerms, reader);
+        } finally {
+          if (reader != null)
+            reader.close();
+        }
+      }
+
+      int infosEnd = segmentInfos.size();
+      if (doMerge) {
+        infosEnd--;
+      }
+
+      for (int i = 0; i < infosEnd; i++) {
+        IndexReader reader = null;
+        try {
+          reader = SegmentReader.get(segmentInfos.info(i));
+          reader.setDeleter(deleter);
+
+          // Apply delete terms to disk segments
+          // except the one just flushed from ram.
+          applyDeletes(bufferedDeleteTerms, reader);
+        } finally {
+          if (reader != null)
+            reader.close();
+        }
+      }
+
+      // Clean up bufferedDeleteTerms.
+      bufferedDeleteTerms.clear();
+      numBufferedDeleteTerms = 0;
+    }
+  }
+
   private final boolean checkNonDecreasingLevels(int start) {
     int lowerBound = -1;
     int upperBound = minMergeDocs;
@@ -1547,5 +1696,84 @@ public class IndexWriter {
       }
     }
     return true;
+  }
+
+  // For test purposes.
+  final synchronized int getBufferedDeleteTermsSize() {
+    return bufferedDeleteTerms.size();
+  }
+
+  // For test purposes.
+  final synchronized int getNumBufferedDeleteTerms() {
+    return numBufferedDeleteTerms;
+  }
+
+  // Number of ram segments a delete term applies to.
+  private class Num {
+    private int num;
+
+    Num(int num) {
+      this.num = num;
+    }
+
+    int getNum() {
+      return num;
+    }
+
+    void setNum(int num) {
+      this.num = num;
+    }
+  }
+
+  // Buffer a term in bufferedDeleteTerms, which records the
+  // current number of documents buffered in ram so that the
+  // delete term will be applied to those ram segments as
+  // well as the disk segments.
+  private void bufferDeleteTerm(Term term) {
+    Num num = (Num) bufferedDeleteTerms.get(term);
+    if (num == null) {
+      bufferedDeleteTerms.put(term, new Num(ramSegmentInfos.size()));
+    } else {
+      num.setNum(ramSegmentInfos.size());
+    }
+    numBufferedDeleteTerms++;
+  }
+
+  // Apply buffered delete terms to the segment just flushed from ram
+  // apply appropriately so that a delete term is only applied to
+  // the documents buffered before it, not those buffered after it.
+  private final void applyDeletesSelectively(HashMap deleteTerms,
+      IndexReader reader) throws IOException {
+    Iterator iter = deleteTerms.entrySet().iterator();
+    while (iter.hasNext()) {
+      Entry entry = (Entry) iter.next();
+      Term term = (Term) entry.getKey();
+
+      TermDocs docs = reader.termDocs(term);
+      if (docs != null) {
+        int num = ((Num) entry.getValue()).getNum();
+        try {
+          while (docs.next()) {
+            int doc = docs.doc();
+            if (doc >= num) {
+              break;
+            }
+            reader.deleteDocument(doc);
+          }
+        } finally {
+          docs.close();
+        }
+      }
+    }
+  }
+
+  // Apply buffered delete terms to this reader.
+  private final void applyDeletes(HashMap deleteTerms, IndexReader reader)
+      throws IOException {
+    Iterator iter = deleteTerms.entrySet().iterator();
+    while (iter.hasNext()) {
+      Entry entry = (Entry) iter.next();
+      reader.deleteDocuments((Term) entry.getKey());
+    }
   }
 }

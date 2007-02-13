@@ -40,7 +40,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
       checkInvariants(writer);
-      if (writer.getRAMSegmentCount() + writer.getSegmentCount() >= 18) {
+      if (writer.getRamSegmentCount() + writer.getSegmentCount() >= 18) {
         noOverMerge = true;
       }
     }
@@ -178,7 +178,7 @@ public class TestIndexWriterMergePolicy extends TestCase {
     int mergeFactor = writer.getMergeFactor();
     int maxMergeDocs = writer.getMaxMergeDocs();
 
-    int ramSegmentCount = writer.getRAMSegmentCount();
+    int ramSegmentCount = writer.getRamSegmentCount();
     assertTrue(ramSegmentCount < maxBufferedDocs);
 
     int lowerBound = -1;
