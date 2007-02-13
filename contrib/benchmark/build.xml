@@ -85,11 +85,10 @@
     <property name="collections.jar" value="commons-collections-3.1.jar"/>
     <property name="logging.jar" value="commons-logging-1.0.4.jar"/>
     <property name="bean-utils.jar" value="commons-beanutils-1.7.0.jar"/>
-    <property name="lucene-demos.jar" location="${common.dir}/build/lucene-demos-${version}.jar"/>
 
     <path id="classpath">
-        <pathelement path="${lucene.jar}"/>
-        <pathelement path="${lucene-demos.jar}"/>
+        <pathelement path="${common.dir}/build/classes/java"/>
+        <pathelement path="${common.dir}/build/classes/demo"/>
         <pathelement path="${basedir}/lib/${digester.jar}"/>
         <pathelement path="${basedir}/lib/${collections.jar}"/>
         <pathelement path="${basedir}/lib/${logging.jar}"/>
@@ -98,10 +97,6 @@
     <path id="run.classpath">
         <path refid="classpath"/>
         <pathelement location="${build.dir}/classes/java"/>
-        <pathelement path="${basedir}/lib/${digester.jar}"/>
-        <pathelement path="${basedir}/lib/${collections.jar}"/>
-        <pathelement path="${basedir}/lib/${logging.jar}"/>
-        <pathelement path="${basedir}/lib/${bean-utils.jar}"/>
     </path>
 
     <target name="run-standard" depends="compile,check-files,get-files" description="Run the standard baseline">
@@ -130,5 +125,12 @@
         </java>
     </target>
 
-    <target name="init" depends="common.init,check-files"/>
+    <target name="compile-demo">
+      <subant target="compile-demo">
+         <fileset dir="${common.dir}" includes="build.xml"/>
+      </subant>
+    </target> 
+
+    <target name="init" depends="common.init,compile-demo,check-files"/>
+
 </project>

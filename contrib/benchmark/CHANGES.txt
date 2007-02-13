@@ -12,3 +12,5 @@ $Id:$
 
 3. 2/11/07: LUCENE-790 and 788:  Fixed Locale issue with date formatter. Fixed some minor issues with benchmarking by task.  Added a dependency
  on the Lucene demo to the build classpath.  (Doron Cohen, Grant Ingersoll)
+
+4. 2/13/07: LUCENE-801: build.xml now builds Lucene core and Demo first and has classpath dependencies on the output of that build.  (Doron Cohen, Grant Ingersoll)
