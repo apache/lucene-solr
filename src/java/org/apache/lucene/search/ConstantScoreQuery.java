@@ -37,6 +37,11 @@ public class ConstantScoreQuery extends Query {
     this.filter=filter;
   }
 
+  /** Returns the encapsulated filter */
+  public Filter getFilter() {
+    return filter;
+  }
+
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
