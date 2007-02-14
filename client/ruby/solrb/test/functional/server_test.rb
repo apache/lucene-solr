@@ -77,6 +77,21 @@ class ServerTest < Test::Unit::TestCase
     response = @connection.query('Åäöêâîôû Öëäïöü')
     assert_equal 0, response.total_hits
   end
+  
+  def test_sorting
+    @connection.add(:id => 1, :text => 'aaa woot')
+    @connection.add(:id => 2, :text => 'bbb woot')
+    @connection.add(:id => 3, :text => 'ccc woot')
+    @connection.commit
+    
+    results = @connection.query('woot', :sort => [:id => :descending], :rows => 2)
+    assert_equal([3, 2], results.hits.map { |h| h['id'].to_i })
+    
+    results = @connection.search('woot', :sort => [:id => :descending], :rows => 2)
+    assert_equal([3, 2], results.hits.map { |h| h['id'].to_i })
+    
+    @connection.delete_by_query("id:1 OR id:2 OR id:3")
+  end
 
   def test_bad_connection
     conn = Solr::Connection.new 'http://127.0.0.1:9999/invalid'

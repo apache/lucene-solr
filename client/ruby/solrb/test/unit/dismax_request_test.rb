@@ -16,10 +16,11 @@ require 'solr'
 class DismaxRequestTest < Test::Unit::TestCase
   
   def test_basic_query
-    request = Solr::Request::Dismax.new(:query => 'query', :phrase_slop => '1000')
+    request = Solr::Request::Dismax.new(:query => 'query', :phrase_slop => '1000', :sort => [{:deedle => :descending}])
     assert_match(/q=query/, request.to_s)
     assert_match(/qt=dismax/, request.to_s)
     assert_match(/ps=1000/, request.to_s)
+    assert_match(/sort=deedle%20desc/, request.to_s)
   end
   
 end

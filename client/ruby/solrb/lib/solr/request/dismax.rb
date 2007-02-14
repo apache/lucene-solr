@@ -1,3 +1,15 @@
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 class Solr::Request::Dismax < Solr::Request::Standard
 
   VALID_PARAMS.replace(VALID_PARAMS + [:tie_breaker, :query_fields, :minimum_match, :phrase_fields, :phrase_slop,
@@ -5,6 +17,8 @@ class Solr::Request::Dismax < Solr::Request::Standard
 
   def initialize(params)
     super(params)
+    @sort_values = @params[:sort]
+    @params.delete(:sort)
     @query_type = "dismax"
   end
   
@@ -17,6 +31,12 @@ class Solr::Request::Dismax < Solr::Request::Standard
     hash[:ps]  = @params[:phrase_slop]
     hash[:bq]  = @params[:boost_query]
     hash[:bf]  = @params[:boost_functions]
+    # FIXME: 2007-02-13 <coda.hale@gmail.com> --  This code is duplicated in
+    # Solr::Request::Standard. It should be refactored into a single location.
+    hash[:sort] = @sort_values.collect do |sort|
+      key = sort.keys[0]
+      "#{key.to_s} #{sort[key] == :descending ? 'desc' : 'asc'}"
+    end.join(',') if @sort_values
     return hash
   end
 
