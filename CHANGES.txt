@@ -2,6 +2,17 @@ Lucene Change Log
 
 $Id$
 
+======================= Trunk (not yet released) =======================
+New features
+
+Changes in runtime behavior
+
+API Changes
+
+Bug fixes
+
+Optimizations
+
 ======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior
