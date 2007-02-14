@@ -2,7 +2,7 @@ Lucene Change Log
 
 $Id$
 
-Trunk (not yet released)
+======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior
 
