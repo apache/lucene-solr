@@ -58,10 +58,10 @@ public class IndexInfoRequestHandler extends RequestHandlerBase {
       }
       rsp.add("fields", fields);
 
-      Map<String,Number> indexInfo = new HashMap<String,Number>();
+      Map<String,Object> indexInfo = new HashMap<String,Object>();
       indexInfo.put("numDocs", reader.numDocs());
       indexInfo.put("maxDoc", reader.maxDoc());
-      indexInfo.put("version", reader.getVersion());
+      indexInfo.put("version", Long.toString(reader.getVersion()));
       // indexInfo.put("age", );  // computed from SolrIndexSearcher.openedAt?
 
       rsp.add("index", indexInfo);
