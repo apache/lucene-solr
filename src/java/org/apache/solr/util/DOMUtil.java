@@ -238,8 +238,8 @@ public class DOMUtil {
 
   /**
    * Replaces ${system.property[:default value]} references in all attributes
-   * and text nodes of supplied node.  If the system property is not defined, an empty string
-   * is substituted or the default value if provided.
+   * and text nodes of supplied node.  If the system property is not defined and no
+   * default value is provided, a runtime exception is thrown.
    *
    * @param node DOM node to walk for substitutions
    */
