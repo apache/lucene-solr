@@ -59,6 +59,8 @@ public class Config {
 
     javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     doc = builder.parse(is);
+
+    DOMUtil.substituteSystemProperties(doc);
   }
 
   public Document getDocument() {
@@ -124,7 +126,7 @@ public class Config {
     if (nd==null) return null;
 
     String txt = DOMUtil.getText(nd);
-    
+
     log.fine(name + ' '+path+'='+txt);
     return txt;
 
@@ -255,7 +257,7 @@ public class Config {
 
   /** Singleton classloader loading resources specified in any configs */
   private static ClassLoader classLoader = null;
-  
+
   /**
    * Returns the singleton classloader to be use when loading resources
    * specified in any configs.
@@ -269,7 +271,7 @@ public class Config {
   static ClassLoader getClassLoader() {
     if (null == classLoader) {
       classLoader = Thread.currentThread().getContextClassLoader();
-      
+
       File f = new File(getInstanceDir() + "lib/");
       if (f.canRead() && f.isDirectory()) {
         File[] jarFiles = f.listFiles();

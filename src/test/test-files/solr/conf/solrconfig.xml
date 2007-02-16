@@ -261,6 +261,9 @@
     <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
   </admin>
 
+  <!-- test getting system property -->
+  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
+            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
 
 </config>

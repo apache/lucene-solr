@@ -82,6 +82,10 @@ New Features
 
 10. SOLR-116: IndexInfoRequestHandler added. (Erik Hatcher)
 
+11. SOLR-79: Add system property ${<sys.prop>[:<default>]} substitution for
+    configuration files loaded, including schema.xml and solrconfig.xml.
+    (Erik Hatcher with inspiration from Andrew Saar)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
