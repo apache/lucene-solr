@@ -16,6 +16,7 @@ require 'solr'
 
 solr_url = ENV["SOLR_URL"] || "http://localhost:8983/solr"
 marc_filename = ARGV[0]
+file_number = marc_filename.scan(/\d\d/)
 debug = ARGV[1] == "-debug"
 
 $KCODE = 'UTF8'
@@ -31,18 +32,24 @@ mapping = {
   :subject_era_facet => ['650d', '650y', '651y', '655y'],
   :subject_topic_facet => ['650a', '650b', '650x'],
   :subject_geographic_facet => ['650c', '650z', '651a', '651x', '651z', '655z'],
+  :year_facet => Proc.new do |r|
+    extract_record_data(r,'260c').collect {|f| f.scan(/\d\d\d\d/)}.flatten
+  end,
   :title_text => '245a',
   :author_text => '100a',
-#  :call_number => '050a',
+  :call_number_text => '050a',
+  :isbn_text => '010a',
+  :filename_facet => Proc.new {|r| file_number},
 }
 
 connection = Solr::Connection.new(solr_url)
 
 if marc_filename =~ /.gz$/
   puts "Unzipping data file..."
-  system("cp #{marc_filename} /tmp/marc_data.mrc.gz")
-  system("gunzip /tmp/marc_data.mrc.gz")
-  marc_filename = "/tmp/marc_data.mrc"
+  temp_filename = "/tmp/marc_data_#{file_number}.mrc"
+  system("cp #{marc_filename} #{temp_filename}.gz")
+  system("gunzip #{temp_filename}")
+  marc_filename = temp_filename
 end
 
 reader = MARC::Reader.new(marc_filename)
@@ -69,7 +76,7 @@ def extract_record_data(record, fields)
   extracted_data.compact.uniq
 end
 
-puts "Indexing..."
+puts "Indexing #{marc_filename}..."
 for record in reader
   doc = {}
   mapping.each do |key,value|
