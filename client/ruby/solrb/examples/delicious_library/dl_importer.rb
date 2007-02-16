@@ -40,11 +40,14 @@ mapping = {
   :language_facet => :language,
   :genre_facet => Proc.new {|data| data.genre.split('/').map {|s| s.strip}},
   :title_text => :title,
+  :full_title_text => :fullTitle,
+  :asin_text => :asin,  # TODO: schema needs a field for non-tokenized text which is not a facet
   :notes_text => :notes,
-  :publisher_text => :publisher,
+  :publisher_facet => :publisher,
   :description_text => :description,
   :author_text => :author,
-  :pages_text => :pages
+  :pages_text => :pages,
+  :published_year_facet => Proc.new {|data| data.published.scan(/\d\d\d\d/)[0]}
 }
 
 lines[1..-1].each do |line|
@@ -52,6 +55,8 @@ lines[1..-1].each do |line|
   def data.method_missing(key)
     self.assoc(key.to_s)[1]
   end
+  
+  # puts data.inspect if debug
 
   doc = {}
   mapping.each do |solr_name, data_column_or_proc|
@@ -70,3 +75,4 @@ lines[1..-1].each do |line|
 end
 
 solr.commit unless debug
+solr.optimize unless debug
