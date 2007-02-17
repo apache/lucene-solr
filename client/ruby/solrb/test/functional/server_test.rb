@@ -95,8 +95,12 @@ class ServerTest < Test::Unit::TestCase
 
   def test_bad_connection
     conn = Solr::Connection.new 'http://127.0.0.1:9999/invalid'
-    assert_raise(Errno::ECONNREFUSED) do
+    begin
       conn.send(Solr::Request::Ping.new)
+      flunk "Expected exception not raised"
+    rescue ::Exception
+      # expected
+      assert true
     end
   end
   
