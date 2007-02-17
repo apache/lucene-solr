@@ -36,14 +36,21 @@ public class StrUtils {
     ArrayList<String> lst = new ArrayList<String>(4);
     int pos=0, start=0, end=s.length();
     char inString=0;
+    char ch=0;
     while (pos < end) {
-      char ch = s.charAt(pos++);
+      char prevChar=ch;
+      ch = s.charAt(pos++);
       if (ch=='\\') {    // skip escaped chars
         pos++;
       } else if (inString != 0 && ch==inString) {
         inString=0;
       } else if (ch=='\'' || ch=='"') {
-        inString=ch;
+        // If char is directly preceeded by a number or letter
+        // then don't treat it as the start of a string.
+        // Examples: 50" TV, or can't
+        if (!Character.isLetterOrDigit(prevChar)) {
+          inString=ch;
+        }
       } else if (ch==separator && inString==0) {
         lst.add(s.substring(start,pos-1));
         start=pos;
