@@ -158,12 +158,12 @@ class SolrConnection:
     if optimize: xstr='<optimize'
     if not waitSearcher:  #just handle deviations from the default
       if not waitFlush: xstr +=' waitFlush="false" waitSearcher="false"'
-      else: xstr += 'waitSearcher="false"'
+      else: xstr += ' waitSearcher="false"'
     xstr += '/>'
     return self.doUpdateXML(xstr)
 
   def search(self, **params):
-    request=urllib.urlencode(params)
+    request=urllib.urlencode(params, doseq=True)
     try:
       rsp = self.doPost(self.solrBase+'/select', request, self.formheaders)
       data = rsp.read()
