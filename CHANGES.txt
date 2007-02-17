@@ -25,6 +25,23 @@ $Id$
 
 Upgrading from Solr 1.1
 -------------------------------------
+IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves
+should be upgraded before the master!  If the master were to be updated
+first, the older searchers would not be able to read the new index format.
+
+Older Apache Solr installations can be upgraded by replacing
+the relevant war file with the new version.  No changes to configuration
+files should be needed.  
+
+This version of Solr contains a new version of Lucene implementing
+an updated index format.  This version of Solr/Lucene can still read
+and update indexes in the older formats, and will convert them to the new
+format on the first index change.  One change in the new index format 
+is that all "norms" are kept in a single file, greatly reducing the number
+of files per segment. Users of compound file indexes will want to consider
+converting to the non-compound format for faster indexing and slightly better
+search concurrency.
+
 The JSON response format for facets has changed to make it easier for
 clients to retain sorted order.  Use json.nl=map explicitly in clients
 to get the old behavior, or add it as a default to the request handler
@@ -117,7 +134,7 @@ Bug Fixes
     were being ignored by all "out of the box" RequestHandlers. (hossman)
       
 Other Changes
- 1.
+ 1. Updated to Lucene 2.1
 
 ================== Release 1.1.0, 20061222 ==================
 
