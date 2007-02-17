@@ -12,6 +12,8 @@
 
 require 'net/http'
 
+# TODO: add a convenience method to POST a Solr .xml file, like Solr's example post.sh
+
 class Solr::Connection
   attr_reader :url, :autocommit, :connection
 
