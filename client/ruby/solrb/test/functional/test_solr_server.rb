@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# A singleton class for starting/stopping a Solr server for testing purposes
+# The behavior of TestSolrServer can be modified prior to start() by changing 
+# port, solr_home, and quiet properties.
+
 class TestSolrServer
   require 'singleton'
   include Singleton
