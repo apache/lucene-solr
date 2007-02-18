@@ -18,7 +18,7 @@ debug = ARGV[0] == "-debug"
 
 solr = Solr::Connection.new(solr_url)
 
-html = Hpricot(open('tangeng_utf8.html'))
+html = Hpricot(open('poems.html'))
 max = 320
 
 def next_blockquote(elem)
