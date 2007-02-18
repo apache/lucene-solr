@@ -608,7 +608,8 @@ public final class SolrCore {
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(responseHeader,req,rsp);
 
-    log.info(req.getParamString()+ " 0 "+
+    log.info(req.getContext().get("path") + " "
+            + req.getParamString()+ " 0 "+
 	     (int)(rsp.getEndTime() - req.getStartTime()));
   }
 

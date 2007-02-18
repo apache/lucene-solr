@@ -103,6 +103,10 @@ New Features
     configuration files loaded, including schema.xml and solrconfig.xml.
     (Erik Hatcher with inspiration from Andrew Saar)
 
+12. SOLR-149: Changes to make Solr more easily embeddable, in addition
+    to logging which request handler handled each request.
+    (Ryan McKinley via yonik)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

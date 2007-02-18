@@ -248,6 +248,11 @@ public class Config {
     }
     return instanceDir;
   }
+  
+  public static boolean isInstanceDirInitalized()
+  {
+    return instanceDir != null;
+  }
 
   // The directory where solr will look for config files by default.
   // defaults to "./solr/conf/"

@@ -40,6 +40,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
@@ -53,31 +54,30 @@ public class SolrDispatchFilter implements Filter
     
   protected SolrCore core;
   protected SolrRequestParsers parsers;
+  protected boolean handleSelect = false;
+  protected String pathPrefix = null; // strip this from the begging of a path
   
   public void init(FilterConfig config) throws ServletException 
   {
     log.info("SolrDispatchFilter.init()");
-    try {
-      Context c = new InitialContext();
-
-      /***
-      System.out.println("Enumerating JNDI Context=" + c);
-      NamingEnumeration<NameClassPair> en = c.list("java:comp/env");
-      while (en.hasMore()) {
-        NameClassPair ncp = en.next();
-        System.out.println("  ENTRY:" + ncp);
+    
+    // Only initalize the directory if it has not been done yet
+    if( !Config.isInstanceDirInitalized() ) {
+      try {
+        Context c = new InitialContext();
+        String home = (String)c.lookup("java:comp/env/solr/home");
+        if (home!=null) Config.setInstanceDir(home);
+      } catch (NoInitialContextException e) {
+        log.info("JNDI not configured for Solr (NoInitialContextEx)");
+      } catch (NamingException e) {
+        log.info("No /solr/home in JNDI");
       }
-      System.out.println("JNDI lookup=" + c.lookup("java:comp/env/solr/home"));
-      ***/
-
-      String home = (String)c.lookup("java:comp/env/solr/home");
-      if (home!=null) Config.setInstanceDir(home);
-    } catch (NoInitialContextException e) {
-      log.info("JNDI not configured for Solr (NoInitialContextEx)");
-    } catch (NamingException e) {
-      log.info("No /solr/home in JNDI");
     }
-
+    
+    // web.xml configuration
+    this.pathPrefix = config.getInitParameter( "path-prefix" );
+    this.handleSelect = "true".equals( config.getInitParameter( "handle-select" ) );
+    
     log.info("user.dir=" + System.getProperty("user.dir"));
     core = SolrCore.getSolrCore();
     parsers = new SolrRequestParsers( core, SolrConfig.config );
@@ -99,17 +99,34 @@ public class SolrDispatchFilter implements Filter
           // this lets you handle /update/commit when /update is a servlet
           path += req.getPathInfo(); 
         }
+        if( pathPrefix != null && path.startsWith( pathPrefix ) ) {
+          path = path.substring( pathPrefix.length() );
+        }
+        
         int idx = path.indexOf( ':' );
         if( idx > 0 ) {
           // save the portion after the ':' for a 'handler' path parameter
           path = path.substring( 0, idx );
         }
         
+        SolrQueryRequest solrReq = null;
         SolrRequestHandler handler = core.getRequestHandler( path );
+        if( handler == null && handleSelect ) {
+          if( "/select".equals( path ) || "/select/".equals( path ) ) {
+            solrReq = parsers.parse( path, req );
+            String qt = solrReq.getParams().get( SolrParams.QT );
+            handler = core.getRequestHandler( qt );
+            if( handler == null ) {
+              throw new SolrException( 400, "unknown handler: "+qt);
+            }
+          }
+        }
         if( handler != null ) {
-          SolrQueryRequest solrReq = parsers.parse( path, req );
+          if( solrReq == null ) {
+            solrReq = parsers.parse( path, req );
+          }
           SolrQueryResponse solrRsp = new SolrQueryResponse();
-          core.execute( handler, solrReq, solrRsp );
+          this.execute( req, handler, solrReq, solrRsp );
           if( solrRsp.getException() != null ) {
             sendError( (HttpServletResponse)response, solrRsp.getException() );
             return;
@@ -131,6 +148,12 @@ public class SolrDispatchFilter implements Filter
     
     // Otherwise let the webapp handle the request
     chain.doFilter(request, response);
+  }
+
+  protected void execute( HttpServletRequest req, SolrRequestHandler handler, SolrQueryRequest sreq, SolrQueryResponse rsp) {
+    // a custom filter could add more stuff to the request before passing it on.
+    // for example: sreq.getContext().put( "HttpServletRequest", req );
+    core.execute( handler, sreq, rsp );
   }
   
   protected void sendError(HttpServletResponse res, Throwable ex) throws IOException 
@@ -156,5 +179,50 @@ public class SolrDispatchFilter implements Filter
       }
     }
     res.sendError( code, ex.getMessage() + trace );
+  }
+
+  //---------------------------------------------------------------------
+  //---------------------------------------------------------------------
+
+  /**
+   * Should the filter handle /select even if it is not mapped in solrconfig.xml
+   * 
+   * This will use consistent error handling for /select?qt=xxx and /update/xml
+   * 
+   */
+  public boolean isHandleSelect() {
+    return handleSelect;
+  }
+
+  public void setHandleSelect(boolean handleSelect) {
+    this.handleSelect = handleSelect;
+  }
+
+  /**
+   * set the prefix for all paths.  This is useful if you want to apply the
+   * filter to something other then *.  
+   * 
+   * For example, if web.xml specifies:
+   * 
+   * <filter-mapping>
+   *  <filter-name>SolrRequestFilter</filter-name>
+   *  <url-pattern>/xxx/*</url-pattern>
+   * </filter-mapping>
+   * 
+   * Make sure to set the PathPrefix to "/xxx" either with this function
+   * or in web.xml
+   * 
+   * <init-param>
+   *  <param-name>path-prefix</param-name>
+   *  <param-value>/xxx</param-value>
+   * </init-param>
+   * 
+   */
+  public void setPathPrefix(String pathPrefix) {
+    this.pathPrefix = pathPrefix;
+  }
+
+  public String getPathPrefix() {
+    return pathPrefix;
   }
 }
