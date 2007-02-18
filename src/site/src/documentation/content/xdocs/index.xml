@@ -28,7 +28,21 @@
 
         <section id="Lucene News">
           <title>Lucene News</title>
-
+          <section>
+            <title>18 February 2007 - Lucene at ApacheCon Europe</title>
+            <p>
+              <a href="http://www.eu.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-europe-125x125.png" style="float: left; padding: 3px;" alt="ApacheCon Europe logo" /></a>
+              Lucene Java and related <a href="http://lucene.apache.org/">Lucene</a> projects will have extensive representation at <a href="http://www.eu.apachecon.com">ApacheCon Europe</a> in Amsterdam this year. For the 2007 session,
+              Yonik Seeley will be giving the <a href="http://www.eu.apachecon.com/program/talk/11">Full-Text Search with Lucene</a> talk at 10:30 am on May 2nd.  Immediately following, Grant Ingersoll
+              will be presenting <a href="http://www.eu.apachecon.com/program/talk/12">Advanced Lucene</a> at 11:30.  Grant will also be leading a full day tutorial session on May 1st titled
+              <a href="http://www.eu.apachecon.com/program/talk/127">Lucene Boot Camp</a>.
+            </p>
+            <p>Lucene related talks include Solr committer Bertrand Delacrétaz's talk titled <a
+            href="http://www.eu.apachecon.com/program/talk/34">Beyond full-text searches with Solr and Lucene</a> and
+              Hadoop committer Owen O'Malley's <a href="http://www.eu.apachecon.com/program/talk/36">Introduction to Hadoop</a>.
+            </p>
+          <p>Registration is now open on the ApacheCon website.</p>
+          </section>
           <section>
             <title>17 February 2007 - Release 2.1 available</title>
 
