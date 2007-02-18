@@ -407,6 +407,14 @@
           depends="dist-war">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
+    <jar destfile="${example}/exampledocs/post.jar"
+         basedir="${dest}"
+         includes="org/apache/solr/util/SimplePostTool*.class">
+       <manifest>
+          <attribute name="Main-Class"
+                     value="org.apache.solr.util.SimplePostTool"/>
+       </manifest>
+    </jar>
     <copy todir="${example}/solr/bin">
       <fileset dir="${src}/scripts">
         <exclude name="scripts.conf"/>
