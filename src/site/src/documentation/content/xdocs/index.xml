@@ -27,7 +27,30 @@
         </section>
 
         <section id="Lucene News">
-            <title>Lucene News</title>
+          <title>Lucene News</title>
+
+          <section>
+            <title>17 February 2007 - Release 2.1 available</title>
+
+            <p>This release has many improvements since release
+              2.0, including new features, performance
+              improvements, bug fixes, etc. See
+              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_1_0/CHANGES.txt">CHANGES.txt</a>
+              for details.
+            </p>
+
+            <p>Lucene 2.1 includes index format changes that are not readable
+              by older versions of Lucene.  Lucene 2.1 can both read and update
+              older Lucene indexes.  Adding to an index with an older format
+              will cause it to be converted to the newer format.
+            </p>
+
+            <p>Binary and source distributions are
+              available
+              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+            </p>
+          </section>
+
             <section>
                 <title>3 January 2007 - Nightly Source builds available</title>
 

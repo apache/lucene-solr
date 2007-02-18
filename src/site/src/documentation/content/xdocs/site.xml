@@ -75,6 +75,7 @@ See http://forrest.apache.org/docs/linking.html for more info
       <rel1_9_0 label="1.9.0" href="ext:rel1_9_0"/>
       <rel1_9_1 label="1.9.1" href="ext:rel1_9_1"/>
       <rel2_0_0 label="2.0.0" href="ext:rel2_0_0"/>
+      <rel2_0_0 label="2.1.0" href="ext:rel2_1_0"/>
 <!-- Needs to be filled in -->
 <!--      <nightly label="Nightly" href=""/> -->
 
@@ -107,6 +108,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <rel1_9_0 href="http://lucene.apache.org/java/1_9_0/"/>
     <rel1_9_1 href="http://lucene.apache.org/java/1_9_1/"/>
     <rel2_0_0 href="http://lucene.apache.org/java/2_0_0/"/>
+    <rel2_1_0 href="http://lucene.apache.org/java/2_1_0/"/>
 
     <cocoon href="http://cocoon.apache.org/"/>
     <xml.apache.org href="http://xml.apache.org/"/>
