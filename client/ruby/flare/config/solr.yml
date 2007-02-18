@@ -1,0 +1,8 @@
+development:
+  solr_url: http://localhost:8983/solr
+  
+delicious:
+  solr_url: http://localhost:8985/solr
+
+tang:
+  solr_url: http://localhost:8987/solr

@@ -19,7 +19,7 @@ xml.data do
       :image => "#{doc['asin_text']}")
   end
 end
-
+# Amazon images: http://www.betaversion.org/~stefano/linotype/news/66/
 # <data>
 #     <event 
 #         start="May 28 2006 09:00:00 GMT"

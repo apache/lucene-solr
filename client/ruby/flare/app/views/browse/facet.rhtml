@@ -1,3 +1,7 @@
 <% @facets.each do |f| %>
-  <%= link_to (f.name ? f.name : '#### NO VALUE ###'), :action => 'add_filter', :field_name => params[:field_name], :value => f.name %> (<%=f.value%>)
+  <% if f.name %>
+    <%= link_to f.name, :action => 'add_filter', :field_name => params[:field_name], :value => f.name %> (<%=f.value%>)
+  <% else %>
+    <%= link_to '---- NO VALUE ----', :action => 'add_filter', :field_name => params[:field_name], :value => "[* TO *]", :negative => true %> (<%=f.value%>)
+  <% end %>
 <% end%>

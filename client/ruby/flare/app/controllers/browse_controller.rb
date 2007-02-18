@@ -2,17 +2,31 @@
 # License::   Apache Version 2.0 (see http://www.apache.org/licenses/)
 
 class BrowseController < ApplicationController
-  before_filter :setup_session
-
+  before_filter :flare_before
+  
+  # TODO: use in-place-editor for queries, allowing editing of them (instead of remove and re-add new one)
+  
+  # def self.flare(options={})
+  #   define_method() do
+  #   end
+  # end
+  # 
+  # flare do |f|
+  #   f.facet_fields = []
+  # end
+  
   def index
-    @info = SOLR.send(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
-    @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
-    
     # TODO Add paging and sorting
-    request = Solr::Request::Standard.new :query => query,
+    @info = solr(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
+    @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
+    @text_fields = @info.field_names.find_all {|v| v =~ /_text$/}
+
+    request = Solr::Request::Standard.new(:query => query,
                                           :filter_queries => filters,
-                                          :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true}
-    @response = SOLR.send(request)                                          
+                                          :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true},
+                                          :highlighting => {:field_list => @text_fields})
+    logger.info({:query => query, :filter_queries => filters}.inspect)
+    @response = solr(request)
     
     #TODO: call response.field_facets(??) - maybe field_facets should be return a higher level? 
   end
@@ -28,12 +42,17 @@ class BrowseController < ApplicationController
     render :partial => 'suggest'
   end
 
-
   def add_query
     session[:queries] << {:query => params[:search][:query]}
     redirect_to :action => 'index'
   end
   
+  def update_query
+    logger.debug "update_query: #{params.inspect}"
+    session[:queries][params[:index].to_i][:query] = params[:value]
+    render :layout => false, :text => params[:value]
+  end
+
   def invert_query
     q = session[:queries][params[:index].to_i]
     q[:negative] = !q[:negative]
@@ -57,19 +76,19 @@ class BrowseController < ApplicationController
   end
   
   def add_filter
-    session[:filters] << {:field => params[:field_name], :value => params[:value]} 
+    session[:filters] << {:field => params[:field_name], :value => params[:value], :negative => (params[:negative] ? true : false)} 
     redirect_to :action => 'index'
   end
   
   def clear
     session[:queries] = nil
     session[:filters] = nil
-    setup_session
+    flare_before
     redirect_to :action => 'index'
   end
   
   private
-  def setup_session
+  def flare_before
     session[:queries] ||= [] 
     session[:filters] ||= []
   end

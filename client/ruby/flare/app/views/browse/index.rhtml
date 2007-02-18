@@ -7,6 +7,7 @@
 
 <% @facet_fields.each do |field|%>
   <h4><%=link_to field, :action => 'facet', :field_name => field%></h4>
+  
   <ul>
   <% @response.field_facets(field).each do |f| %>
     <li>
@@ -22,7 +23,10 @@
 <div>
 Queries:
 <% session[:queries].each_with_index do |q,i| %>
-   <%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%> <%=q[:query]%> <%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %>
+<%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%>
+<span id="query_<%=i%>"><%=q[:query]%></span>
+<%= in_place_editor "query_#{i}", :url=> url_for(:action=>"update_query", :index=>i) %>
+<%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %>
 <% end %>
 </div>
 <div>
@@ -39,12 +43,15 @@ Filters:
 
 
 <div id="results"><table cellpadding="10">
-  <% display_fields = [:title, :author, :pages, :rating]; @response.each do |doc| %>
+  <% @response.each do |doc| %>
 <tr valign="top">
   <td>
     <table>
-      <% display_fields.each do |f|%>
-      <tr><th><%=f.to_s%></th><td><%=doc["#{f.to_s}_text"] %><%=doc["#{f.to_s}_facet"] %></td></tr>
+      <tr colspan="2">
+        <th><%=doc['title_text']%></th>
+      </tr>
+      <% doc.each do |k,v|; highlighting = @response.highlighted(doc['id'], k) %>
+      <tr><td><%=k%>:</td><td><%= highlighting ? "...#{highlighting}..." : v%></td></tr>
       <% end %>
     </table>
   </td>

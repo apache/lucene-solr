@@ -16,12 +16,8 @@ class SimileController < ApplicationController
     # TODO this code was copied from BrowseController#index, and is here only as a quick and dirty prototype.
     # TODO figuring out where these calls cleanly belong is the key.
     
-    @info = SOLR.send(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
-    @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
-    
-    req = Solr::Request::Standard.new :query => query,
-                                          :filter_queries => filters,
-                                          :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true}
+    req = Solr::Request::Standard.new :query => query, :filter_queries => filters
+                                          
     @data = SOLR.send(req)
     
     # Exhibit seems to require a label attribute to be happy
@@ -38,11 +34,8 @@ class SimileController < ApplicationController
     # TODO figuring out where these calls cleanly belong is the key.
     
     @info = SOLR.send(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
-    @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
-    
-    req = Solr::Request::Standard.new :query => query,
-                                          :filter_queries => filters,
-                                          :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true}
+    req = Solr::Request::Standard.new :query => query, :filter_queries => filters
+                                          
     @data = SOLR.send(req)
     
     
