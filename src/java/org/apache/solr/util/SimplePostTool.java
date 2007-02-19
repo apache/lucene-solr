@@ -42,7 +42,7 @@ import java.net.MalformedURLException;
 public class SimplePostTool {
   public static final String DEFAULT_POST_URL = "http://localhost:8983/solr/update";
   public static final String POST_ENCODING = "UTF-8";
-  public static final String VERSION = "$Id$";
+  public static final String VERSION_OF_THIS_TOOL = "1.0";
   private static final String SOLR_OK_RESPONSE = "<result status=\"0\"></result>";
   protected URL solrUrl;
 
@@ -53,7 +53,7 @@ public class SimplePostTool {
   }
   
   public static void main(String[] args) {
-    info(VERSION);
+    info("version " + VERSION_OF_THIS_TOOL);
     
     if (args.length < 2) {
       fatal(
