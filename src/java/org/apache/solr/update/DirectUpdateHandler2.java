@@ -640,7 +640,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
       // check if docs have been submitted since the commit started
       if( lastAddedTime > started ) {
-        if( docsSinceCommit > docsUpperBound ) {
+        if( docsUpperBound > 0 && docsSinceCommit > docsUpperBound ) {
           pending = scheduler.schedule( this, 100, TimeUnit.MILLISECONDS );
         }
         else if( timeUpperBound > 0 ) {
