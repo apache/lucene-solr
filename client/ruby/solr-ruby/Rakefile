@@ -41,6 +41,14 @@ require 'test/functional/test_solr_server'
 
 task :default => [:test_units]
 
+SOLR_PARAMS = {
+  :quiet => ENV['SOLR_CONSOLE'] ? false : true,
+  :jetty_home => ENV['SOLR_JETTY_HOME'] || File.expand_path('../../../example'),
+  :jetty_port => ENV['SOLR_JETTY_PORT'] || 8888,
+  :solr_home => ENV['SOLR_HOME'] || File.expand_path('test')
+}
+
+
 spec = Gem::Specification.new do |s|
   s.name = 'solr-ruby'
   s.version = SOLR_RUBY_VERSION
@@ -123,7 +131,7 @@ task :test => [:test_units] do
   rm_rf "test/data"  # remove functional test temp data directory
   
   # wrap functional tests with a test-specific Solr server
-  got_error = TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
+  got_error = TestSolrServer.wrap(SOLR_PARAMS) do
     Rake::Task[:test_functionals].invoke 
   end
 
@@ -138,7 +146,7 @@ namespace :test do
   task :coverage do
     rm_rf "coverage"
     rm_rf "coverage.data"
-    TestSolrServer.wrap(:quiet => ENV['SOLR_CONSOLE'] ? false : true) do
+    TestSolrServer.wrap(SOLR_PARAMS) do
       system("rcov --aggregate coverage.data --text-summary -Ilib:test/functional test/functional/*_test.rb")
     end
     system("rcov --aggregate coverage.data --text-summary -Ilib:test/unit test/unit/*_test.rb")
