@@ -1,6 +1,6 @@
-solrb exposes the power of Solr as a Ruby  DSL (domain specific language).
+solr-ruby exposes the power of Solr as a Ruby  DSL (domain specific language).
 
-  Visit the solrb wiki for more information: http://wiki.apache.org/solr/solrb
+  Visit the solr-ruby wiki for more information: http://wiki.apache.org/solr/solr-ruby
 
 USAGE 
 

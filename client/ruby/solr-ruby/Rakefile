@@ -29,7 +29,7 @@
 # 
 #    rake SOLR_CONSOLE=true
 
-SOLRB_VERSION = '0.0.1'
+SOLR_RUBY_VERSION = '0.0.1'
 
 require 'rubygems'
 require 'rake'
@@ -42,11 +42,11 @@ require 'test/functional/test_solr_server'
 task :default => [:test_units]
 
 spec = Gem::Specification.new do |s|
-  s.name = 'solrb'
-  s.version = SOLRB_VERSION
+  s.name = 'solr-ruby'
+  s.version = SOLR_RUBY_VERSION
   s.author = 'Apache Solr'
-  s.email = 'solr-user@lucene.apache.org'
-  s.homepage = 'http://wiki.apache.org/solr/Flare'
+  s.email = 'ruby-dev@lucene.apache.org'
+  s.homepage = 'http://wiki.apache.org/solr/solr-ruby'
   s.platform = Gem::Platform::RUBY
   s.summary = 'Ruby library for working with Apache Solr'
   
@@ -70,7 +70,7 @@ namespace :rails do
   task :package => "init.rb" do
     File.rm_f("init.rb")
   end
-  Rake::PackageTask.new("solrb-rails", SOLRB_VERSION) do |pkg|
+  Rake::PackageTask.new("solr-ruby-rails", SOLR_RUBY_VERSION) do |pkg|
     pkg.need_zip = true
     pkg.need_tar = true
     pkg.package_dir = "pkg/rails"
@@ -85,9 +85,9 @@ namespace :rails do
   end
   
   desc "Install the Rails plugin version into the vendor/plugins dir. Need to set PLUGINS_DIR environment variable."
-  task :install_solrb => :package do
+  task :install_solr_ruby => :package do
     plugins_dir = ENV["PLUGINS_DIR"] or raise "You must set PLUGINS_DIR"
-    File.cp_r(File.join("pkg","rails", "solrb-rails-#{SOLRB_VERSION}/"), File.join(plugins_dir, "solrb-rails-#{SOLRB_VERSION}/"))
+    File.cp_r(File.join("pkg","rails", "solr-ruby-rails-#{SOLR_RUBY_VERSION}/"), File.join(plugins_dir, "solr-ruby-rails-#{SOLR_RUBY_VERSION}/"))
   end
 end
 
