@@ -24,6 +24,10 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.util.DOMUtil;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
 import javax.xml.parsers.*;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
@@ -236,15 +240,38 @@ public class Config {
   }
 
   public static String getInstanceDir() {
-    if (instanceDir==null) {
-      String prop = project + ".solr.home";
-      instanceDir = normalizeDir(System.getProperty(prop));
-      if (instanceDir==null) {
-        instanceDir=project + '/';
-        log.info("Solr home defaulted to '" + instanceDir + "' (system property " + prop + " not set)");
-      } else {
-        log.info("Solr home set to '" + instanceDir + "' from system property " + prop);
+    if ( ! isInstanceDirInitalized() ) {
+      String home = null;
+      // Try JNDI
+      try {
+        Context c = new InitialContext();
+        home = (String)c.lookup("java:comp/env/solr/home");
+        log.info("Using JNDI solr.home: "+home );
+      } catch (NoInitialContextException e) {
+        log.info("JNDI not configured for Solr (NoInitialContextEx)");
+      } catch (NamingException e) {
+        log.info("No /solr/home in JNDI");
+      } catch( RuntimeException ex ) {
+        log.warning("Odd RuntimeException while testing for JNDI: " 
+                    + ex.getMessage());
+      } 
+      
+      // Now try system property
+      if( home == null ) {
+        String prop = project + ".solr.home";
+        home = normalizeDir(System.getProperty(prop));
+        if( home != null ) {
+          log.info("using system property solr.home: " + home );
+        }
       }
+      
+      // if all else fails, try 
+      if( home == null ) {
+        home = project + '/';
+        log.info("Solr home defaulted to '" + instanceDir + "' (could not find system property or JNDI)");
+      }
+      
+      setInstanceDir(home);
     }
     return instanceDir;
   }

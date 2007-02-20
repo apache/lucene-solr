@@ -88,7 +88,7 @@ New Features
  8. SOLR-104: Support for "Update Plugins" -- RequestHandlers that want
     access to streams of data for doing updates.  ContentStreams can come
     from the raw POST body, multi-part form data, or remote URLs.
-    Included in this change is a new SlrDispatchFilter that allows
+    Included in this change is a new SolrDispatchFilter that allows
     RequestHandlers registered with names that begin with a "/" to be
     accessed using a URL structure based on that name.
     (Ryan McKinley via hossman)
@@ -140,6 +140,14 @@ Bug Fixes
  4. SOLR-145: Fix for bug introduced in SOLR-104 where some Exceptions
     were being ignored by all "out of the box" RequestHandlers. (hossman)
       
+ 5. SOLR-166: JNDI solr.home code refactoring.  SOLR-104 moved
+    some JNDI related code to the init method of a Servlet Filter -
+    according to the Servlet Spec, all Filter's should be initialized
+    prior to initializing any Servlets, but this is not the case in at
+    least one Servlet Container (Resin).  This "bug fix" refactors
+    this JNDI code so that it should be executed the first time any
+    attempt is made to use the solr.home dir.
+
 Other Changes
  1. Updated to Lucene 2.1
 

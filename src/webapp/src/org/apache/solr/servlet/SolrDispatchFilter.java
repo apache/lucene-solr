@@ -22,10 +22,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Logger;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -35,7 +31,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
@@ -60,20 +55,7 @@ public class SolrDispatchFilter implements Filter
   public void init(FilterConfig config) throws ServletException 
   {
     log.info("SolrDispatchFilter.init()");
-    
-    // Only initalize the directory if it has not been done yet
-    if( !Config.isInstanceDirInitalized() ) {
-      try {
-        Context c = new InitialContext();
-        String home = (String)c.lookup("java:comp/env/solr/home");
-        if (home!=null) Config.setInstanceDir(home);
-      } catch (NoInitialContextException e) {
-        log.info("JNDI not configured for Solr (NoInitialContextEx)");
-      } catch (NamingException e) {
-        log.info("No /solr/home in JNDI");
-      }
-    }
-    
+        
     // web.xml configuration
     this.pathPrefix = config.getInitParameter( "path-prefix" );
     this.handleSelect = "true".equals( config.getInitParameter( "handle-select" ) );
