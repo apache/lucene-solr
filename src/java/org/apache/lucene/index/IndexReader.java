@@ -372,7 +372,7 @@ public abstract class IndexReader {
    * Get the {@link org.apache.lucene.document.Document} at the <code>n</code><sup>th</sup> position. The {@link org.apache.lucene.document.FieldSelector}
    * may be used to determine what {@link org.apache.lucene.document.Field}s to load and how they should be loaded.
    * 
-   * <b>NOTE:</b> If this Reader (more specifically, the underlying {@link FieldsReader} is closed before the lazy {@link org.apache.lucene.document.Field} is
+   * <b>NOTE:</b> If this Reader (more specifically, the underlying {@link FieldsReader}) is closed before the lazy {@link org.apache.lucene.document.Field} is
    * loaded an exception may be thrown.  If you want the value of a lazy {@link org.apache.lucene.document.Field} to be available after closing you must
    * explicitly load it or fetch the Document again with a new loader.
    * 
