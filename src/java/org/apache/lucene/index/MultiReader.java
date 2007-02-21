@@ -103,7 +103,8 @@ public class MultiReader extends IndexReader {
     return maxDoc;
   }
 
-  public Document document(int n, FieldSelector fieldSelector) throws IOException {
+  // inherit javadoc
+  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     int i = readerIndex(n);                          // find segment num
     return subReaders[i].document(n - starts[i], fieldSelector);    // dispatch to segment reader
   }
@@ -115,16 +116,17 @@ public class MultiReader extends IndexReader {
 
   public boolean hasDeletions() { return hasDeletions; }
 
-  protected void doDelete(int n) throws IOException {
+  protected void doDelete(int n) throws CorruptIndexException, IOException {
     numDocs = -1;                             // invalidate cache
     int i = readerIndex(n);                   // find segment num
     subReaders[i].deleteDocument(n - starts[i]);      // dispatch to segment reader
     hasDeletions = true;
   }
 
-  protected void doUndeleteAll() throws IOException {
+  protected void doUndeleteAll() throws CorruptIndexException, IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].undeleteAll();
+
     hasDeletions = false;
     numDocs = -1;                                 // invalidate cache
   }
@@ -189,7 +191,7 @@ public class MultiReader extends IndexReader {
   }
 
   protected void doSetNorm(int n, String field, byte value)
-    throws IOException {
+    throws CorruptIndexException, IOException {
     normsCache.remove(field);                         // clear cache
     int i = readerIndex(n);                           // find segment num
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch

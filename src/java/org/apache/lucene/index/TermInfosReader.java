@@ -41,7 +41,7 @@ final class TermInfosReader {
   private SegmentTermEnum indexEnum;
 
   TermInfosReader(Directory dir, String seg, FieldInfos fis)
-       throws IOException {
+       throws CorruptIndexException, IOException {
     directory = dir;
     segment = seg;
     fieldInfos = fis;

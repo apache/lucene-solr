@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
 
 /**
  * Wrapper used by {@link HitIterator} to provide a lazily loaded hit
@@ -50,8 +51,10 @@ public class Hit implements java.io.Serializable {
    * Returns document for this hit.
    *
    * @see Hits#doc(int)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public Document getDocument() throws IOException {
+  public Document getDocument() throws CorruptIndexException, IOException {
     if (!resolved) fetchTheHit();
     return doc;
   }
@@ -74,7 +77,7 @@ public class Hit implements java.io.Serializable {
     return hits.id(hitNumber);
   }
 
-  private void fetchTheHit() throws IOException {
+  private void fetchTheHit() throws CorruptIndexException, IOException {
     doc = hits.doc(hitNumber);
     resolved = true;
   }
@@ -85,8 +88,10 @@ public class Hit implements java.io.Serializable {
    * Returns the boost factor for this hit on any field of the underlying document.
    *
    * @see Document#getBoost()
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public float getBoost() throws IOException {
+  public float getBoost() throws CorruptIndexException, IOException {
     return getDocument().getBoost();
   }
 
@@ -97,8 +102,10 @@ public class Hit implements java.io.Serializable {
    * exist, returns null.
    *
    * @see Document#get(String)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public String get(String name) throws IOException {
+  public String get(String name) throws CorruptIndexException, IOException {
     return getDocument().get(name);
   }
 

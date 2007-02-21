@@ -117,19 +117,31 @@ class SegmentReader extends IndexReader {
 
   protected SegmentReader() { super(null); }
 
-  public static SegmentReader get(SegmentInfo si) throws IOException {
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
     return get(si.dir, si, null, false, false);
   }
 
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
   public static SegmentReader get(SegmentInfos sis, SegmentInfo si,
-                                  boolean closeDir) throws IOException {
+                                  boolean closeDir) throws CorruptIndexException, IOException {
     return get(si.dir, si, sis, closeDir, true);
   }
 
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
   public static SegmentReader get(Directory dir, SegmentInfo si,
                                   SegmentInfos sis,
                                   boolean closeDir, boolean ownDir)
-    throws IOException {
+    throws CorruptIndexException, IOException {
     SegmentReader instance;
     try {
       instance = (SegmentReader)IMPL.newInstance();
@@ -141,7 +153,7 @@ class SegmentReader extends IndexReader {
     return instance;
   }
 
-  private void initialize(SegmentInfo si) throws IOException {
+  private void initialize(SegmentInfo si) throws CorruptIndexException, IOException {
     segment = si.name;
     this.si = si;
 
@@ -161,7 +173,7 @@ class SegmentReader extends IndexReader {
 
       // Verify two sources of "maxDoc" agree:
       if (fieldsReader.size() != si.docCount) {
-        throw new IllegalStateException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
+        throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
       }
 
       tis = new TermInfosReader(cfsDir, segment, fieldInfos);
@@ -172,7 +184,7 @@ class SegmentReader extends IndexReader {
 
         // Verify # deletes does not exceed maxDoc for this segment:
         if (deletedDocs.count() > maxDoc()) {
-          throw new IllegalStateException("number of deletes (" + deletedDocs.count() + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name);
+          throw new CorruptIndexException("number of deletes (" + deletedDocs.count() + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name);
         }
       }
 
@@ -335,7 +347,11 @@ class SegmentReader extends IndexReader {
     return tis.terms(t);
   }
 
-  public synchronized Document document(int n, FieldSelector fieldSelector) throws IOException {
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public synchronized Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     if (isDeleted(n))
       throw new IllegalArgumentException
               ("attempt to access a deleted document");

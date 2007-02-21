@@ -173,8 +173,10 @@ public final class SegmentInfos extends Vector {
    *
    * @param directory -- directory containing the segments file
    * @param segmentFileName -- segment file to load
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public final void read(Directory directory, String segmentFileName) throws IOException {
+  public final void read(Directory directory, String segmentFileName) throws CorruptIndexException, IOException {
     boolean success = false;
 
     IndexInput input = directory.openInput(segmentFileName);
@@ -192,7 +194,7 @@ public final class SegmentInfos extends Vector {
       if(format < 0){     // file contains explicit format info
         // check that it is a format we can understand
         if (format < FORMAT_SINGLE_NORM_FILE)
-          throw new IOException("Unknown format version: " + format);
+          throw new CorruptIndexException("Unknown format version: " + format);
         version = input.readLong(); // read version
         counter = input.readInt(); // read counter
       }
@@ -224,14 +226,16 @@ public final class SegmentInfos extends Vector {
   /**
    * This version of read uses the retry logic (for lock-less
    * commits) to find the right segments file to load.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public final void read(Directory directory) throws IOException {
+  public final void read(Directory directory) throws CorruptIndexException, IOException {
 
     generation = lastGeneration = -1;
 
     new FindSegmentsFile(directory) {
 
-      public Object doBody(String segmentFileName) throws IOException {
+      public Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         read(directory, segmentFileName);
         return null;
       }
@@ -304,12 +308,14 @@ public final class SegmentInfos extends Vector {
 
   /**
    * Current version number from segments file.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   public static long readCurrentVersion(Directory directory)
-    throws IOException {
+    throws CorruptIndexException, IOException {
 
     return ((Long) new FindSegmentsFile(directory) {
-        public Object doBody(String segmentFileName) throws IOException {
+        public Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
 
           IndexInput input = directory.openInput(segmentFileName);
 
@@ -319,7 +325,7 @@ public final class SegmentInfos extends Vector {
             format = input.readInt();
             if(format < 0){
               if (format < FORMAT_SINGLE_NORM_FILE)
-                throw new IOException("Unknown format version: " + format);
+                throw new CorruptIndexException("Unknown format version: " + format);
               version = input.readLong(); // read version
             }
           }
@@ -436,7 +442,7 @@ public final class SegmentInfos extends Vector {
       this.directory = directory;
     }
 
-    public Object run() throws IOException {
+    public Object run() throws CorruptIndexException, IOException {
       String segmentFileName = null;
       long lastGen = -1;
       long gen = 0;
@@ -482,7 +488,7 @@ public final class SegmentInfos extends Vector {
             for(int i=0;i<files.length;i++) {
               s += " " + files[i];
             }
-            throw new FileNotFoundException("no segments* file found: files:" + s);
+            throw new FileNotFoundException("no segments* file found in " + directory + ": files:" + s);
           }
         }
 
@@ -624,5 +630,5 @@ public final class SegmentInfos extends Vector {
      * during the processing that could have been caused by
      * a writer committing.
      */
-    protected abstract Object doBody(String segmentFileName) throws IOException;}
+    protected abstract Object doBody(String segmentFileName) throws CorruptIndexException, IOException;}
 }

@@ -87,9 +87,10 @@ final class SegmentMerger {
   /**
    * Merges the readers specified by the {@link #add} method into the directory passed to the constructor
    * @return The number of documents that were merged
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  final int merge() throws IOException {
+  final int merge() throws CorruptIndexException, IOException {
     int value;
     
     value = mergeFields();
@@ -167,9 +168,10 @@ final class SegmentMerger {
   /**
    * 
    * @return The number of documents in all of the readers
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  private final int mergeFields() throws IOException {
+  private final int mergeFields() throws CorruptIndexException, IOException {
     fieldInfos = new FieldInfos();		  // merge field names
     int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
@@ -240,7 +242,7 @@ final class SegmentMerger {
   private int skipInterval;
   private SegmentMergeQueue queue = null;
 
-  private final void mergeTerms() throws IOException {
+  private final void mergeTerms() throws CorruptIndexException, IOException {
     try {
       freqOutput = directory.createOutput(segment + ".frq");
       proxOutput = directory.createOutput(segment + ".prx");
@@ -260,7 +262,7 @@ final class SegmentMerger {
     }
   }
 
-  private final void mergeTermInfos() throws IOException {
+  private final void mergeTermInfos() throws CorruptIndexException, IOException {
     int base = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
@@ -306,9 +308,11 @@ final class SegmentMerger {
    *
    * @param smis array of segments
    * @param n number of cells in the array actually occupied
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   private final void mergeTermInfo(SegmentMergeInfo[] smis, int n)
-          throws IOException {
+          throws CorruptIndexException, IOException {
     long freqPointer = freqOutput.getFilePointer();
     long proxPointer = proxOutput.getFilePointer();
 
@@ -330,9 +334,11 @@ final class SegmentMerger {
    * @param smis array of segments
    * @param n number of cells in the array actually occupied
    * @return number of documents across all segments where this term was found
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   private final int appendPostings(SegmentMergeInfo[] smis, int n)
-          throws IOException {
+          throws CorruptIndexException, IOException {
     int lastDoc = 0;
     int df = 0;					  // number of docs w/ term
     resetSkip();
@@ -349,7 +355,7 @@ final class SegmentMerger {
         doc += base;                              // convert to merged space
 
         if (doc < 0 || (df > 0 && doc <= lastDoc))
-          throw new IllegalStateException("docs out of order (" + doc +
+          throw new CorruptIndexException("docs out of order (" + doc +
               " <= " + lastDoc + " )");
 
         df++;

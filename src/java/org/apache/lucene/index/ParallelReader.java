@@ -124,7 +124,7 @@ public class ParallelReader extends IndexReader {
   }
 
   // delete in all readers
-  protected void doDelete(int n) throws IOException {
+  protected void doDelete(int n) throws CorruptIndexException, IOException {
     for (int i = 0; i < readers.size(); i++) {
       ((IndexReader)readers.get(i)).deleteDocument(n);
     }
@@ -132,7 +132,7 @@ public class ParallelReader extends IndexReader {
   }
 
   // undeleteAll in all readers
-  protected void doUndeleteAll() throws IOException {
+  protected void doUndeleteAll() throws CorruptIndexException, IOException {
     for (int i = 0; i < readers.size(); i++) {
       ((IndexReader)readers.get(i)).undeleteAll();
     }
@@ -140,7 +140,7 @@ public class ParallelReader extends IndexReader {
   }
 
   // append fields from storedFieldReaders
-  public Document document(int n, FieldSelector fieldSelector) throws IOException {
+  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     Document result = new Document();
     for (int i = 0; i < storedFieldReaders.size(); i++) {
       IndexReader reader = (IndexReader)storedFieldReaders.get(i);
@@ -204,7 +204,7 @@ public class ParallelReader extends IndexReader {
   }
 
   protected void doSetNorm(int n, String field, byte value)
-    throws IOException {
+    throws CorruptIndexException, IOException {
     IndexReader reader = ((IndexReader)fieldToReader.get(field));
     if (reader!=null)
       reader.doSetNorm(n, field, value);

@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.CorruptIndexException;
 
 import java.io.IOException;
 import java.rmi.Naming;
@@ -76,7 +77,7 @@ public class RemoteSearchable
     return local.search (weight, filter, n, sort);
   }
 
-  public Document doc(int i) throws IOException {
+  public Document doc(int i) throws CorruptIndexException, IOException {
     return local.doc(i);
   }
 

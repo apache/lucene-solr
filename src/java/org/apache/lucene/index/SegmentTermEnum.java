@@ -40,7 +40,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   private int formatM1SkipInterval;
 
   SegmentTermEnum(IndexInput i, FieldInfos fis, boolean isi)
-          throws IOException {
+          throws CorruptIndexException, IOException {
     input = i;
     fieldInfos = fis;
     isIndex = isi;
@@ -61,7 +61,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
 
       // check that it is a format we can understand
       if (format < TermInfosWriter.FORMAT)
-        throw new IOException("Unknown format version:" + format);
+        throw new CorruptIndexException("Unknown format version:" + format);
 
       size = input.readLong();                    // read the size
       

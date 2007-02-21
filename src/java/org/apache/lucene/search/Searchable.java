@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.CorruptIndexException;
 
 import java.io.IOException;       // for javadoc
 
@@ -92,8 +93,10 @@ public interface Searchable extends java.rmi.Remote {
   /** Expert: Returns the stored fields of document <code>i</code>.
    * Called by {@link HitCollector} implementations.
    * @see IndexReader#document(int)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  Document doc(int i) throws IOException;
+  Document doc(int i) throws CorruptIndexException, IOException;
 
   /** Expert: called to re-write queries into primitive queries.
    * @throws BooleanQuery.TooManyClauses

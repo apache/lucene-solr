@@ -103,11 +103,11 @@ public class FilterIndexReader extends IndexReader {
   public int numDocs() { return in.numDocs(); }
   public int maxDoc() { return in.maxDoc(); }
 
-  public Document document(int n, FieldSelector fieldSelector) throws IOException { return in.document(n, fieldSelector); }
+  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException { return in.document(n, fieldSelector); }
 
   public boolean isDeleted(int n) { return in.isDeleted(n); }
   public boolean hasDeletions() { return in.hasDeletions(); }
-  protected void doUndeleteAll() throws IOException { in.undeleteAll(); }
+  protected void doUndeleteAll() throws CorruptIndexException, IOException {in.undeleteAll();}
 
   public boolean hasNorms(String field) throws IOException {
     return in.hasNorms(field);
@@ -117,7 +117,7 @@ public class FilterIndexReader extends IndexReader {
   public void norms(String f, byte[] bytes, int offset) throws IOException {
     in.norms(f, bytes, offset);
   }
-  protected void doSetNorm(int d, String f, byte b) throws IOException {
+  protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
     in.setNorm(d, f, b);
   }
 
@@ -132,7 +132,7 @@ public class FilterIndexReader extends IndexReader {
     return in.termPositions();
   }
 
-  protected void doDelete(int n) throws IOException { in.deleteDocument(n); }
+  protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
   protected void doCommit() throws IOException { in.commit(); }
   protected void doClose() throws IOException { in.close(); }
 
@@ -142,5 +142,5 @@ public class FilterIndexReader extends IndexReader {
   }
 
   public long getVersion() { return in.getVersion(); }
-  public boolean isCurrent() throws IOException { return in.isCurrent(); }
+  public boolean isCurrent() throws CorruptIndexException, IOException { return in.isCurrent(); }
 }

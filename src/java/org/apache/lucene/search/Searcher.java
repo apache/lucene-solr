@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 
@@ -187,7 +188,7 @@ public abstract class Searcher implements Searchable {
   abstract public int docFreq(Term term) throws IOException;
   abstract public int maxDoc() throws IOException;
   abstract public TopDocs search(Weight weight, Filter filter, int n) throws IOException;
-  abstract public Document doc(int i) throws IOException;
+  abstract public Document doc(int i) throws CorruptIndexException, IOException;
   abstract public Query rewrite(Query query) throws IOException;
   abstract public Explanation explain(Weight weight, int doc) throws IOException;
   abstract public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort) throws IOException;

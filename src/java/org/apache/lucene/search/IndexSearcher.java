@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.CorruptIndexException;
 
 /** Implements search over a single IndexReader.
  *
@@ -38,13 +39,19 @@ public class IndexSearcher extends Searcher {
   IndexReader reader;
   private boolean closeReader;
 
-  /** Creates a searcher searching the index in the named directory. */
-  public IndexSearcher(String path) throws IOException {
+  /** Creates a searcher searching the index in the named directory.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public IndexSearcher(String path) throws CorruptIndexException, IOException {
     this(IndexReader.open(path), true);
   }
 
-  /** Creates a searcher searching the index in the provided directory. */
-  public IndexSearcher(Directory directory) throws IOException {
+  /** Creates a searcher searching the index in the provided directory.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public IndexSearcher(Directory directory) throws CorruptIndexException, IOException {
     this(IndexReader.open(directory), true);
   }
 
@@ -80,7 +87,7 @@ public class IndexSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public Document doc(int i) throws IOException {
+  public Document doc(int i) throws CorruptIndexException, IOException {
     return reader.document(i);
   }
 

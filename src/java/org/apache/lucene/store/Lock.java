@@ -53,9 +53,10 @@ public abstract class Lock {
    *  lockWaitTimeout is passed.
    * @param lockWaitTimeout length of time to wait in ms
    * @return true if lock was obtained
-   * @throws IOException if lock wait times out or obtain() throws an IOException
+   * @throws LockObtainFailedException if lock wait times out
+   * @throws IOException if obtain() throws IOException
    */
-  public boolean obtain(long lockWaitTimeout) throws IOException {
+  public boolean obtain(long lockWaitTimeout) throws LockObtainFailedException, IOException {
     failureReason = null;
     boolean locked = obtain();
     int maxSleepCount = (int)(lockWaitTimeout / LOCK_POLL_INTERVAL);
@@ -66,7 +67,7 @@ public abstract class Lock {
         if (failureReason != null) {
           reason += ": " + failureReason;
         }
-        IOException e = new IOException(reason);
+        LockObtainFailedException e = new LockObtainFailedException(reason);
         if (failureReason != null) {
           e.initCause(failureReason);
         }
@@ -108,8 +109,12 @@ public abstract class Lock {
     /** Calls {@link #doBody} while <i>lock</i> is obtained.  Blocks if lock
      * cannot be obtained immediately.  Retries to obtain lock once per second
      * until it is obtained, or until it has tried ten times. Lock is released when
-     * {@link #doBody} exits. */
-    public Object run() throws IOException {
+     * {@link #doBody} exits.
+     * @throws LockObtainFailedException if lock could not
+     * be obtained
+     * @throws IOException if {@link Lock#obtain} throws IOException
+     */
+    public Object run() throws LockObtainFailedException, IOException {
       boolean locked = false;
       try {
          locked = lock.obtain(lockWaitTimeout);

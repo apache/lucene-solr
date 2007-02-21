@@ -91,15 +91,15 @@ final class TermInfosWriter {
     Term must be lexicographically greater than all previous Terms added.
     TermInfo pointers must be positive and greater than all previous.*/
   final void add(Term term, TermInfo ti)
-       throws IOException {
+       throws CorruptIndexException, IOException {
     if (!isIndex && term.compareTo(lastTerm) <= 0)
-      throw new IOException("term out of order (\"" + term + 
+      throw new CorruptIndexException("term out of order (\"" + term + 
           "\".compareTo(\"" + lastTerm + "\") <= 0)");
     if (ti.freqPointer < lastTi.freqPointer)
-      throw new IOException("freqPointer out of order (" + ti.freqPointer +
+      throw new CorruptIndexException("freqPointer out of order (" + ti.freqPointer +
           " < " + lastTi.freqPointer + ")");
     if (ti.proxPointer < lastTi.proxPointer)
-      throw new IOException("proxPointer out of order (" + ti.proxPointer + 
+      throw new CorruptIndexException("proxPointer out of order (" + ti.proxPointer + 
           " < " + lastTi.proxPointer + ")");
 
     if (!isIndex && size % indexInterval == 0)

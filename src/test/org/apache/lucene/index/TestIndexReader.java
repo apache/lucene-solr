@@ -25,6 +25,7 @@ import junit.textui.TestRunner;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -245,6 +246,96 @@ public class TestIndexReader extends TestCase
         reader.close();
     }
 
+    // Make sure attempts to make changes after reader is
+    // closed throws IOException:
+    public void testChangesAfterClose() throws IOException
+    {
+        Directory dir = new RAMDirectory();
+
+        IndexWriter writer = null;
+        IndexReader reader = null;
+        Term searchTerm = new Term("content", "aaa");
+
+        //  add 11 documents with term : aaa
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 11; i++)
+        {
+            addDoc(writer, searchTerm.text());
+        }
+        writer.close();
+
+        reader = IndexReader.open(dir);
+
+        // Close reader:
+        reader.close();
+
+        // Then, try to make changes:
+        try {
+          reader.deleteDocument(4);
+          fail("deleteDocument after close failed to throw IOException");
+        } catch (IOException e) {
+          // expected
+        }
+
+        try {
+          reader.setNorm(5, "aaa", 2.0f);
+          fail("setNorm after close failed to throw IOException");
+        } catch (IOException e) {
+          // expected
+        }
+
+        try {
+          reader.undeleteAll();
+          fail("undeleteAll after close failed to throw IOException");
+        } catch (IOException e) {
+          // expected
+        }
+    }
+
+    // Make sure we get lock obtain failed exception with 2 writers:
+    public void testLockObtainFailed() throws IOException
+    {
+        Directory dir = new RAMDirectory();
+
+        IndexWriter writer = null;
+        IndexReader reader = null;
+        Term searchTerm = new Term("content", "aaa");
+
+        //  add 11 documents with term : aaa
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 11; i++)
+        {
+            addDoc(writer, searchTerm.text());
+        }
+
+        // Create reader:
+        reader = IndexReader.open(dir);
+
+        // Try to make changes
+        try {
+          reader.deleteDocument(4);
+          fail("deleteDocument should have hit LockObtainFailedException");
+        } catch (LockObtainFailedException e) {
+          // expected
+        }
+
+        try {
+          reader.setNorm(5, "aaa", 2.0f);
+          fail("setNorm should have hit LockObtainFailedException");
+        } catch (LockObtainFailedException e) {
+          // expected
+        }
+
+        try {
+          reader.undeleteAll();
+          fail("undeleteAll should have hit LockObtainFailedException");
+        } catch (LockObtainFailedException e) {
+          // expected
+        }
+        writer.close();
+        reader.close();
+    }
+
     // Make sure you can set norms & commit even if a reader
     // is open against the index:
     public void testWritingNorms() throws IOException
@@ -371,7 +462,7 @@ public class TestIndexReader extends TestCase
         try {
             deleted = reader.deleteDocuments(searchTerm);
             fail("Delete allowed on an index reader with stale segment information");
-        } catch (IOException e) {
+        } catch (StaleReaderException e) {
             /* success */
         }
 

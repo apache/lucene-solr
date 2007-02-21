@@ -68,7 +68,7 @@ final class DocumentWriter {
   }
 
   final void addDocument(String segment, Document doc)
-          throws IOException {
+          throws CorruptIndexException, IOException {
     // write field names
     fieldInfos = new FieldInfos();
     fieldInfos.add(doc);
@@ -295,7 +295,7 @@ final class DocumentWriter {
   }
 
   private final void writePostings(Posting[] postings, String segment)
-          throws IOException {
+          throws CorruptIndexException, IOException {
     IndexOutput freq = null, prox = null;
     TermInfosWriter tis = null;
     TermVectorsWriter termVectorWriter = null;

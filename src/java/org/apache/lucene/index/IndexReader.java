@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -114,6 +115,7 @@ public abstract class IndexReader {
   private boolean directoryOwner;
   private boolean closeDirectory;
   protected IndexFileDeleter deleter;
+  private boolean isClosed;
 
   private SegmentInfos segmentInfos;
   private Lock writeLock;
@@ -126,27 +128,36 @@ public abstract class IndexReader {
   private SegmentInfos rollbackSegmentInfos;
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
-   path. */
-  public static IndexReader open(String path) throws IOException {
+   path.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(String path) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true);
   }
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
-   path. */
-  public static IndexReader open(File path) throws IOException {
+   path.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+  */
+  public static IndexReader open(File path) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true);
   }
 
-  /** Returns an IndexReader reading the index in the given Directory. */
-  public static IndexReader open(final Directory directory) throws IOException {
+  /** Returns an IndexReader reading the index in the given Directory.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
     return open(directory, false);
   }
 
-  private static IndexReader open(final Directory directory, final boolean closeDirectory) throws IOException {
+  private static IndexReader open(final Directory directory, final boolean closeDirectory) throws CorruptIndexException, IOException {
 
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
 
-      public Object doBody(String segmentFileName) throws IOException {
+      public Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
 
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
@@ -186,8 +197,10 @@ public abstract class IndexReader {
    * Returns the time the index in the named directory was last modified.
    * Do not use this to check whether the reader is still up-to-date, use
    * {@link #isCurrent()} instead. 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public static long lastModified(String directory) throws IOException {
+  public static long lastModified(String directory) throws CorruptIndexException, IOException {
     return lastModified(new File(directory));
   }
 
@@ -195,8 +208,10 @@ public abstract class IndexReader {
    * Returns the time the index in the named directory was last modified. 
    * Do not use this to check whether the reader is still up-to-date, use
    * {@link #isCurrent()} instead. 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public static long lastModified(File fileDirectory) throws IOException {
+  public static long lastModified(File fileDirectory) throws CorruptIndexException, IOException {
     return ((Long) new SegmentInfos.FindSegmentsFile(fileDirectory) {
         public Object doBody(String segmentFileName) {
           return new Long(FSDirectory.fileModified(fileDirectory, segmentFileName));
@@ -208,8 +223,10 @@ public abstract class IndexReader {
    * Returns the time the index in the named directory was last modified. 
    * Do not use this to check whether the reader is still up-to-date, use
    * {@link #isCurrent()} instead. 
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public static long lastModified(final Directory directory2) throws IOException {
+  public static long lastModified(final Directory directory2) throws CorruptIndexException, IOException {
     return ((Long) new SegmentInfos.FindSegmentsFile(directory2) {
         public Object doBody(String segmentFileName) throws IOException {
           return new Long(directory2.fileModified(segmentFileName));
@@ -224,9 +241,10 @@ public abstract class IndexReader {
    * 
    * @param directory where the index resides.
    * @return version number.
-   * @throws IOException if segments file cannot be read
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public static long getCurrentVersion(String directory) throws IOException {
+  public static long getCurrentVersion(String directory) throws CorruptIndexException, IOException {
     return getCurrentVersion(new File(directory));
   }
 
@@ -237,9 +255,10 @@ public abstract class IndexReader {
    * 
    * @param directory where the index resides.
    * @return version number.
-   * @throws IOException if segments file cannot be read
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public static long getCurrentVersion(File directory) throws IOException {
+  public static long getCurrentVersion(File directory) throws CorruptIndexException, IOException {
     Directory dir = FSDirectory.getDirectory(directory);
     long version = getCurrentVersion(dir);
     dir.close();
@@ -253,9 +272,10 @@ public abstract class IndexReader {
    * 
    * @param directory where the index resides.
    * @return version number.
-   * @throws IOException if segments file cannot be read.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public static long getCurrentVersion(Directory directory) throws IOException {
+  public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
     return SegmentInfos.readCurrentVersion(directory);
   }
 
@@ -271,9 +291,10 @@ public abstract class IndexReader {
    * If this is not the case you will need to re-open the IndexReader to
    * make sure you see the latest changes made to the index.
    * 
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public boolean isCurrent() throws IOException {
+  public boolean isCurrent() throws CorruptIndexException, IOException {
     return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
   }
 
@@ -363,8 +384,11 @@ public abstract class IndexReader {
   public abstract int maxDoc();
 
   /** Returns the stored fields of the <code>n</code><sup>th</sup>
-   <code>Document</code> in this index. */
-  public Document document(int n) throws IOException{
+   <code>Document</code> in this index.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public Document document(int n) throws CorruptIndexException, IOException {
     return document(n, null);
   }
 
@@ -372,7 +396,7 @@ public abstract class IndexReader {
    * Get the {@link org.apache.lucene.document.Document} at the <code>n</code><sup>th</sup> position. The {@link org.apache.lucene.document.FieldSelector}
    * may be used to determine what {@link org.apache.lucene.document.Field}s to load and how they should be loaded.
    * 
-   * <b>NOTE:</b> If this Reader (more specifically, the underlying {@link FieldsReader}) is closed before the lazy {@link org.apache.lucene.document.Field} is
+   * <b>NOTE:</b> If this Reader (more specifically, the underlying <code>FieldsReader</code>) is closed before the lazy {@link org.apache.lucene.document.Field} is
    * loaded an exception may be thrown.  If you want the value of a lazy {@link org.apache.lucene.document.Field} to be available after closing you must
    * explicitly load it or fetch the Document again with a new loader.
    * 
@@ -380,7 +404,8 @@ public abstract class IndexReader {
    * @param n Get the document at the <code>n</code><sup>th</sup> position
    * @param fieldSelector The {@link org.apache.lucene.document.FieldSelector} to use to determine what Fields should be loaded on the Document.  May be null, in which case all Fields will be loaded.
    * @return The stored fields of the {@link org.apache.lucene.document.Document} at the nth position
-   * @throws IOException If there is a problem reading this document
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    * 
    * @see org.apache.lucene.document.Fieldable
    * @see org.apache.lucene.document.FieldSelector
@@ -388,7 +413,7 @@ public abstract class IndexReader {
    * @see org.apache.lucene.document.LoadFirstFieldSelector
    */
   //When we convert to JDK 1.5 make this Set<String>
-  public abstract Document document(int n, FieldSelector fieldSelector) throws IOException;
+  public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
   
   
 
@@ -422,33 +447,50 @@ public abstract class IndexReader {
 
   /** Expert: Resets the normalization factor for the named field of the named
    * document.  The norm represents the product of the field's {@link
-   * Fieldable#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
+   * org.apache.lucene.document.Fieldable#setBoost(float) boost} and its {@link Similarity#lengthNorm(String,
    * int) length normalization}.  Thus, to preserve the length normalization
    * values when resetting this, one should base the new value upon the old.
    *
    * @see #norms(String)
    * @see Similarity#decodeNorm(byte)
+   * @throws StaleReaderException if the index has changed
+   *  since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if this reader was closed already
+   *  or there is a low-level IO error
    */
   public final synchronized  void setNorm(int doc, String field, byte value)
-          throws IOException{
+          throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     if(directoryOwner)
-      aquireWriteLock();
+      acquireWriteLock();
     hasChanges = true;
     doSetNorm(doc, field, value);
   }
 
   /** Implements setNorm in subclass.*/
   protected abstract void doSetNorm(int doc, String field, byte value)
-          throws IOException;
+          throws CorruptIndexException, IOException;
 
   /** Expert: Resets the normalization factor for the named field of the named
    * document.
    *
    * @see #norms(String)
    * @see Similarity#decodeNorm(byte)
+   * 
+   * @throws StaleReaderException if the index has changed
+   *  since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if this reader was closed already
+   *  or there is a low-level IO error
    */
   public void setNorm(int doc, String field, float value)
-          throws IOException {
+          throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     setNorm(doc, field, Similarity.encodeNorm(value));
   }
 
@@ -515,16 +557,24 @@ public abstract class IndexReader {
    * Tries to acquire the WriteLock on this directory.
    * this method is only valid if this IndexReader is directory owner.
    * 
-   * @throws IOException If WriteLock cannot be acquired.
+   * @throws StaleReaderException if the index has changed
+   * since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  private void aquireWriteLock() throws IOException {
+  private void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     if (stale)
-      throw new IOException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+      throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+    if (isClosed)
+      throw new IOException("this reader is closed");
 
     if (writeLock == null) {
       Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
       if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
-        throw new IOException("Index locked for write: " + writeLock);
+        throw new LockObtainFailedException("Index locked for write: " + writeLock);
       this.writeLock = writeLock;
 
       // we have to check whether index has changed since this reader was opened.
@@ -533,7 +583,7 @@ public abstract class IndexReader {
         stale = true;
         this.writeLock.release();
         this.writeLock = null;
-        throw new IOException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+        throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
       }
     }
   }
@@ -545,10 +595,19 @@ public abstract class IndexReader {
    * method will result in an error.  The presence of this document may still be
    * reflected in the {@link #docFreq} statistic, though
    * this will be corrected eventually as the index is further modified.
+   *
+   * @throws StaleReaderException if the index has changed
+   * since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if this reader was closed already
+   *  or there is a low-level IO error
    */
-  public final synchronized void deleteDocument(int docNum) throws IOException {
+  public final synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     if(directoryOwner)
-      aquireWriteLock();
+      acquireWriteLock();
     hasChanges = true;
     doDelete(docNum);
   }
@@ -557,7 +616,7 @@ public abstract class IndexReader {
   /** Implements deletion of the document numbered <code>docNum</code>.
    * Applications should call {@link #deleteDocument(int)} or {@link #deleteDocuments(Term)}.
    */
-  protected abstract void doDelete(int docNum) throws IOException;
+  protected abstract void doDelete(int docNum) throws CorruptIndexException, IOException;
 
 
   /** Deletes all documents that have a given <code>term</code> indexed.
@@ -567,9 +626,18 @@ public abstract class IndexReader {
    * passes it to this method.
    * See {@link #deleteDocument(int)} for information about when this deletion will 
    * become effective.
+   *
    * @return the number of documents deleted
+   * @throws StaleReaderException if the index has changed
+   *  since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if this reader was closed already
+   *  or there is a low-level IO error
    */
-  public final int deleteDocuments(Term term) throws IOException {
+  public final int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     TermDocs docs = termDocs(term);
     if (docs == null) return 0;
     int n = 0;
@@ -584,16 +652,26 @@ public abstract class IndexReader {
     return n;
   }
 
-  /** Undeletes all documents currently marked as deleted in this index.*/
-  public final synchronized void undeleteAll() throws IOException{
+  /** Undeletes all documents currently marked as deleted in this index.
+   *
+   * @throws StaleReaderException if the index has changed
+   *  since this reader was opened
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if this reader was closed already
+   *  or there is a low-level IO error
+   */
+  public final synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     if(directoryOwner)
-      aquireWriteLock();
+      acquireWriteLock();
     hasChanges = true;
     doUndeleteAll();
   }
 
   /** Implements actual undeleteAll() in subclass. */
-  protected abstract void doUndeleteAll() throws IOException;
+  protected abstract void doUndeleteAll() throws CorruptIndexException, IOException;
 
   /**
    * Should internally checkpoint state that will change
@@ -633,10 +711,9 @@ public abstract class IndexReader {
    * If an exception is hit, then either no changes or all
    * changes will have been committed to the index
    * (transactional semantics).
-   * 
-   * @throws IOException
+   * @throws IOException if there is a low-level IO error
    */
-  protected final synchronized void commit() throws IOException{
+  protected final synchronized void commit() throws IOException {
     if(hasChanges){
       if (deleter == null) {
         // In the MultiReader case, we share this deleter
@@ -716,12 +793,20 @@ public abstract class IndexReader {
    * Closes files associated with this index.
    * Also saves any new deletions to disk.
    * No other methods should be called after this has been called.
+   * @throws IOException if this reader was closed already
+   *  or there is a low-level IO error
    */
   public final synchronized void close() throws IOException {
+    if (directoryOwner && isClosed) {
+      throw new IOException("this reader is already closed");
+    }
     commit();
     doClose();
     if(closeDirectory)
       directory.close();
+    if (directoryOwner) {
+      isClosed = true;
+    }
   }
 
   /** Implements close. */
@@ -753,7 +838,7 @@ public abstract class IndexReader {
    * Returns <code>true</code> iff the index in the named directory is
    * currently locked.
    * @param directory the directory to check for a lock
-   * @throws IOException if there is a problem with accessing the index
+   * @throws IOException if there is a low-level IO error
    */
   public static boolean isLocked(Directory directory) throws IOException {
     return
@@ -764,7 +849,7 @@ public abstract class IndexReader {
    * Returns <code>true</code> iff the index in the named directory is
    * currently locked.
    * @param directory the directory to check for a lock
-   * @throws IOException if there is a problem with accessing the index
+   * @throws IOException if there is a low-level IO error
    */
   public static boolean isLocked(String directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory);

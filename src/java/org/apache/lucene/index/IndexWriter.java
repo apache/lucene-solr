@@ -23,6 +23,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
@@ -55,7 +56,8 @@ import java.util.Map.Entry;
   method should be called before the index is closed.</p>
   
   <p>Opening an IndexWriter creates a lock file for the directory in use. Trying to open
-  another IndexWriter on the same directory will lead to an IOException. The IOException
+  another IndexWriter on the same directory will lead to a
+  {@link LockObtainFailedException}. The {@link LockObtainFailedException}
   is also thrown if an IndexReader on the same directory is used to delete documents
   from the index.</p>
   
@@ -225,12 +227,17 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist, and <code>create</code> is
-   *  <code>false</code>
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
    */
   public IndexWriter(String path, Analyzer a, boolean create)
-       throws IOException {
+       throws CorruptIndexException, LockObtainFailedException, IOException {
     init(path, a, create);
   }
 
@@ -245,12 +252,17 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist, and <code>create</code> is
-   *  <code>false</code>
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
    */
   public IndexWriter(File path, Analyzer a, boolean create)
-       throws IOException {
+       throws CorruptIndexException, LockObtainFailedException, IOException {
     init(path, a, create);
   }
 
@@ -265,12 +277,17 @@ public class IndexWriter {
    * @param create <code>true</code> to create the index or overwrite
    *  the existing one; <code>false</code> to append to the existing
    *  index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist, and <code>create</code> is
-   *  <code>false</code>
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
    */
   public IndexWriter(Directory d, Analyzer a, boolean create)
-       throws IOException {
+       throws CorruptIndexException, LockObtainFailedException, IOException {
     init(d, a, create, false);
   }
 
@@ -282,11 +299,16 @@ public class IndexWriter {
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IOException if the directory cannot be
-   *  created or read/written to
+   *  read/written to or if there is any other low-level
+   *  IO error
    */
   public IndexWriter(String path, Analyzer a) 
-    throws IOException {
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     if (IndexReader.indexExists(path)) {
       init(path, a, false);
     } else {
@@ -303,11 +325,16 @@ public class IndexWriter {
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IOException if the directory cannot be
-   *  created or read/written to
+   *  read/written to or if there is any other low-level
+   *  IO error
    */
   public IndexWriter(File path, Analyzer a) 
-    throws IOException {
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     if (IndexReader.indexExists(path)) {
       init(path, a, false);
     } else {
@@ -323,11 +350,16 @@ public class IndexWriter {
    *
    * @param d the index directory
    * @param a the analyzer to use
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IOException if the directory cannot be
-   *  created or read/written to
+   *  read/written to or if there is any other low-level
+   *  IO error
    */
   public IndexWriter(Directory d, Analyzer a) 
-    throws IOException {
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     if (IndexReader.indexExists(d)) {
       init(d, a, false, false);
     } else {
@@ -336,17 +368,17 @@ public class IndexWriter {
   }
 
   private void init(String path, Analyzer a, final boolean create)
-    throws IOException {
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     init(FSDirectory.getDirectory(path), a, create, true);
   }
 
   private void init(File path, Analyzer a, final boolean create)
-    throws IOException {
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     init(FSDirectory.getDirectory(path), a, create, true);
   }
 
   private void init(Directory d, Analyzer a, final boolean create, boolean closeDir)
-    throws IOException {
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     this.closeDir = closeDir;
     directory = d;
     analyzer = a;
@@ -358,7 +390,7 @@ public class IndexWriter {
 
     Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
     if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
-      throw new IOException("Index locked for write: " + writeLock);
+      throw new LockObtainFailedException("Index locked for write: " + writeLock);
     this.writeLock = writeLock;                   // save it
 
     try {
@@ -576,8 +608,10 @@ public class IndexWriter {
    *
    * after which, you must be certain not to use the writer
    * instance anymore.</p>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public synchronized void close() throws IOException {
+  public synchronized void close() throws CorruptIndexException, IOException {
     flushRamSegments();
     ramDirectory.close();
     if (writeLock != null) {
@@ -668,8 +702,11 @@ public class IndexWriter {
    * segments in the index, which is the worst case for
    * temporary space usage) then the maximum free disk space
    * required is the same as {@link #optimize}.</p>
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Document doc) throws IOException {
+  public void addDocument(Document doc) throws CorruptIndexException, IOException {
     addDocument(doc, analyzer);
   }
 
@@ -682,8 +719,11 @@ public class IndexWriter {
    * <p>See {@link #addDocument(Document)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Document doc, Analyzer analyzer) throws IOException {
+  public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
     SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
     synchronized (this) {
       ramSegmentInfos.addElement(newSegmentInfo);
@@ -692,7 +732,7 @@ public class IndexWriter {
   }
 
   SegmentInfo buildSingleDocSegment(Document doc, Analyzer analyzer)
-      throws IOException {
+      throws CorruptIndexException, IOException {
     DocumentWriter dw = new DocumentWriter(ramDirectory, analyzer, this);
     dw.setInfoStream(infoStream);
     String segmentName = newRamSegmentName();
@@ -703,8 +743,10 @@ public class IndexWriter {
   /**
    * Deletes the document(s) containing <code>term</code>.
    * @param term the term to identify the documents to be deleted
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public synchronized void deleteDocuments(Term term) throws IOException {
+  public synchronized void deleteDocuments(Term term) throws CorruptIndexException, IOException {
     bufferDeleteTerm(term);
     maybeFlushRamSegments();
   }
@@ -714,8 +756,10 @@ public class IndexWriter {
    * terms. All deletes are flushed at the same time.
    * @param terms array of terms to identify the documents
    * to be deleted
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public synchronized void deleteDocuments(Term[] terms) throws IOException {
+  public synchronized void deleteDocuments(Term[] terms) throws CorruptIndexException, IOException {
     for (int i = 0; i < terms.length; i++) {
       bufferDeleteTerm(terms[i]);
     }
@@ -731,8 +775,10 @@ public class IndexWriter {
    * @param term the term to identify the document(s) to be
    * deleted
    * @param doc the document to be added
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, Document doc) throws IOException {
+  public void updateDocument(Term term, Document doc) throws CorruptIndexException, IOException {
     updateDocument(term, doc, getAnalyzer());
   }
 
@@ -746,9 +792,11 @@ public class IndexWriter {
    * deleted
    * @param doc the document to be added
    * @param analyzer the analyzer to use when analyzing the document
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
-      throws IOException {
+      throws CorruptIndexException, IOException {
     SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
     synchronized (this) {
       bufferDeleteTerm(term);
@@ -879,8 +927,10 @@ public class IndexWriter {
    * using compound file format.  This will occur when the
    * Exception is hit during conversion of the segment into
    * compound format.</p>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
   */
-  public synchronized void optimize() throws IOException {
+  public synchronized void optimize() throws CorruptIndexException, IOException {
     flushRamSegments();
     while (segmentInfos.size() > 1 ||
            (segmentInfos.size() == 1 &&
@@ -1016,9 +1066,11 @@ public class IndexWriter {
    * <p>See <a target="_top"
    * href="http://issues.apache.org/jira/browse/LUCENE-702">LUCENE-702</a>
    * for details.</p>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   public synchronized void addIndexes(Directory[] dirs)
-    throws IOException {
+    throws CorruptIndexException, IOException {
 
     optimize();					  // start with zero or 1 seg
 
@@ -1072,9 +1124,11 @@ public class IndexWriter {
    * details on transactional semantics, temporary free
    * space required in the Directory, and non-CFS segments
    * on an Exception.</p>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   public synchronized void addIndexesNoOptimize(Directory[] dirs)
-      throws IOException {
+      throws CorruptIndexException, IOException {
     // Adding indexes can be viewed as adding a sequence of segments S to
     // a sequence of segments T. Segments in T follow the invariants but
     // segments in S may not since they could come from multiple indexes.
@@ -1208,9 +1262,11 @@ public class IndexWriter {
    * details on transactional semantics, temporary free
    * space required in the Directory, and non-CFS segments
    * on an Exception.</p>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   public synchronized void addIndexes(IndexReader[] readers)
-    throws IOException {
+    throws CorruptIndexException, IOException {
 
     optimize();					  // start with zero or 1 seg
 
@@ -1330,7 +1386,7 @@ public class IndexWriter {
     throws IOException {
   }
 
-  protected final void maybeFlushRamSegments() throws IOException {
+  protected final void maybeFlushRamSegments() throws CorruptIndexException, IOException {
     // A flush is triggered if enough new documents are buffered or
     // if enough delete terms are buffered
     if (ramSegmentInfos.size() >= minMergeDocs || numBufferedDeleteTerms >= maxBufferedDeleteTerms) {
@@ -1339,7 +1395,7 @@ public class IndexWriter {
   }
 
   /** Expert:  Flushes all RAM-resident segments (buffered documents), then may merge segments. */
-  private final synchronized void flushRamSegments() throws IOException {
+  private final synchronized void flushRamSegments() throws CorruptIndexException, IOException {
     if (ramSegmentInfos.size() > 0 || bufferedDeleteTerms.size() > 0) {
       mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
       maybeMergeSegments(minMergeDocs);
@@ -1349,9 +1405,10 @@ public class IndexWriter {
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory.
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public final synchronized void flush() throws IOException {
+  public final synchronized void flush() throws CorruptIndexException, IOException {
     flushRamSegments();
   }
 
@@ -1370,7 +1427,7 @@ public class IndexWriter {
   }
   
   /** Incremental segment merger.  */
-  private final void maybeMergeSegments(int startUpperBound) throws IOException {
+  private final void maybeMergeSegments(int startUpperBound) throws CorruptIndexException, IOException {
     long lowerBound = -1;
     long upperBound = startUpperBound;
 
@@ -1435,7 +1492,7 @@ public class IndexWriter {
    * single segment.
    */
   private final int mergeSegments(SegmentInfos sourceSegments, int minSegment, int end)
-    throws IOException {
+    throws CorruptIndexException, IOException {
 
     // We may be called solely because there are deletes
     // pending, in which case doMerge is false:
@@ -1624,7 +1681,7 @@ public class IndexWriter {
   // Called during flush to apply any buffered deletes.  If
   // doMerge is true then a new segment was just created and
   // flushed from the ram segments.
-  private final void maybeApplyDeletes(boolean doMerge) throws IOException {
+  private final void maybeApplyDeletes(boolean doMerge) throws CorruptIndexException, IOException {
 
     if (bufferedDeleteTerms.size() > 0) {
       if (infoStream != null)
@@ -1736,7 +1793,7 @@ public class IndexWriter {
   // apply appropriately so that a delete term is only applied to
   // the documents buffered before it, not those buffered after it.
   private final void applyDeletesSelectively(HashMap deleteTerms,
-      IndexReader reader) throws IOException {
+      IndexReader reader) throws CorruptIndexException, IOException {
     Iterator iter = deleteTerms.entrySet().iterator();
     while (iter.hasNext()) {
       Entry entry = (Entry) iter.next();
@@ -1762,7 +1819,7 @@ public class IndexWriter {
 
   // Apply buffered delete terms to this reader.
   private final void applyDeletes(HashMap deleteTerms, IndexReader reader)
-      throws IOException {
+      throws CorruptIndexException, IOException {
     Iterator iter = deleteTerms.entrySet().iterator();
     while (iter.hasNext()) {
       Entry entry = (Entry) iter.next();

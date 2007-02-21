@@ -9,6 +9,13 @@ Changes in runtime behavior
 
 API Changes
 
+ 1. LUCENE-793: created new exceptions and added them to throws clause
+    for many methods (all subclasses of IOException for backwards
+    compatibility): index.StaleReaderException,
+    index.CorruptIndexException, store.LockObtainFailedException.
+    This was done to better call out the possible root causes of an
+    IOException from these methods.  (Mike McCandless)
+
 Bug fixes
 
 Optimizations

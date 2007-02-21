@@ -94,7 +94,7 @@ public abstract class Directory {
    * Attempt to clear (forcefully unlock and remove) the
    * specified lock.  Only call this at a time when you are
    * certain this lock is no longer in use.
-   * @param lockName name of the lock to be cleared.
+   * @param name name of the lock to be cleared.
    */
   public void clearLock(String name) throws IOException {
     if (lockFactory != null) {

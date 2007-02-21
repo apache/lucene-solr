@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.CorruptIndexException;
 
 /** Implements search over a set of <code>Searchables</code>.
  *
@@ -142,7 +143,7 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public Document doc(int n) throws IOException {
+  public Document doc(int n) throws CorruptIndexException, IOException {
     int i = subSearcher(n);			  // find searcher index
     return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
   }

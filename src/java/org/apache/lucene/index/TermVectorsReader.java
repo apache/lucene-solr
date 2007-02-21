@@ -37,7 +37,7 @@ class TermVectorsReader implements Cloneable {
   private int tvfFormat;
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos)
-    throws IOException {
+    throws CorruptIndexException, IOException {
     if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
       tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION);
       checkValidFormat(tvx);
@@ -51,13 +51,13 @@ class TermVectorsReader implements Cloneable {
     this.fieldInfos = fieldInfos;
   }
   
-  private int checkValidFormat(IndexInput in) throws IOException
+  private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
     if (format > TermVectorsWriter.FORMAT_VERSION)
     {
-      throw new IOException("Incompatible format version: " + format + " expected " 
-              + TermVectorsWriter.FORMAT_VERSION + " or less");
+      throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
+                                      + TermVectorsWriter.FORMAT_VERSION + " or less");
     }
     return format;
   }

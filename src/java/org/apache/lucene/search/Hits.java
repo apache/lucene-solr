@@ -22,6 +22,7 @@ import java.util.Vector;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.CorruptIndexException;
 
 /** A ranked list of documents, used to hold search results. */
 public final class Hits {
@@ -86,9 +87,12 @@ public final class Hits {
   }
 
   /** Returns the stored fields of the n<sup>th</sup> document in this set.
-   <p>Documents are cached, so that repeated requests for the same element may
-   return the same Document object. */
-  public final Document doc(int n) throws IOException {
+   * <p>Documents are cached, so that repeated requests for the same element may
+   * return the same Document object.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public final Document doc(int n) throws CorruptIndexException, IOException {
     HitDoc hitDoc = hitDoc(n);
 
     // Update LRU cache of documents

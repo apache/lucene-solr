@@ -79,7 +79,7 @@ final class FieldsReader {
     return size;
   }
 
-  final Document doc(int n, FieldSelector fieldSelector) throws IOException {
+  final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     indexStream.seek(n * 8L);
     long position = indexStream.readLong();
     fieldsStream.seek(position);
@@ -199,7 +199,7 @@ final class FieldsReader {
     doc.add(new FieldForMerge(data, fi, binary, compressed, tokenize));
   }
   
-  private void addField(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
+  private void addField(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws CorruptIndexException, IOException {
 
     //we have a binary stored field, and it may be compressed
     if (binary) {
@@ -397,7 +397,7 @@ final class FieldsReader {
   }
 
   private final byte[] uncompress(final byte[] input)
-          throws IOException {
+          throws CorruptIndexException, IOException {
 
     Inflater decompressor = new Inflater();
     decompressor.setInput(input);
@@ -414,7 +414,7 @@ final class FieldsReader {
       }
       catch (DataFormatException e) {
         // this will happen if the field is not compressed
-        IOException newException = new IOException("field data are in wrong format: " + e.toString());
+        CorruptIndexException newException = new CorruptIndexException("field data are in wrong format: " + e.toString());
         newException.initCause(e);
         throw newException;
       }

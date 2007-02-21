@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -112,8 +113,13 @@ public class IndexModifier {
    * @param analyzer the analyzer to use for adding new documents
    * @param create <code>true</code> to create the index or overwrite the existing one;
    * 	<code>false</code> to append to the existing index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public IndexModifier(Directory directory, Analyzer analyzer, boolean create) throws IOException {
+  public IndexModifier(Directory directory, Analyzer analyzer, boolean create) throws CorruptIndexException, LockObtainFailedException, IOException {
     init(directory, analyzer, create);
   }
 
@@ -124,8 +130,13 @@ public class IndexModifier {
    * @param analyzer the analyzer to use for adding new documents
    * @param create <code>true</code> to create the index or overwrite the existing one;
    * 	<code>false</code> to append to the existing index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public IndexModifier(String dirName, Analyzer analyzer, boolean create) throws IOException {
+  public IndexModifier(String dirName, Analyzer analyzer, boolean create) throws CorruptIndexException, LockObtainFailedException, IOException {
     Directory dir = FSDirectory.getDirectory(dirName);
     init(dir, analyzer, create);
   }
@@ -137,17 +148,26 @@ public class IndexModifier {
    * @param analyzer the analyzer to use for adding new documents
    * @param create <code>true</code> to create the index or overwrite the existing one;
    * 	<code>false</code> to append to the existing index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public IndexModifier(File file, Analyzer analyzer, boolean create) throws IOException {
+  public IndexModifier(File file, Analyzer analyzer, boolean create) throws CorruptIndexException, LockObtainFailedException, IOException {
     Directory dir = FSDirectory.getDirectory(file);
     init(dir, analyzer, create);
   }
 
   /**
    * Initialize an IndexWriter.
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  protected void init(Directory directory, Analyzer analyzer, boolean create) throws IOException {
+  protected void init(Directory directory, Analyzer analyzer, boolean create) throws CorruptIndexException, LockObtainFailedException, IOException {
     this.directory = directory;
     synchronized(this.directory) {
       this.analyzer = analyzer;
@@ -168,9 +188,13 @@ public class IndexModifier {
 
   /**
    * Close the IndexReader and open an IndexWriter.
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  protected void createIndexWriter() throws IOException {
+  protected void createIndexWriter() throws CorruptIndexException, LockObtainFailedException, IOException {
     if (indexWriter == null) {
       if (indexReader != null) {
         indexReader.close();
@@ -187,9 +211,10 @@ public class IndexModifier {
 
   /**
    * Close the IndexWriter and open an IndexReader.
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  protected void createIndexReader() throws IOException {
+  protected void createIndexReader() throws CorruptIndexException, IOException {
     if (indexReader == null) {
       if (indexWriter != null) {
         indexWriter.close();
@@ -201,9 +226,13 @@ public class IndexModifier {
 
   /**
    * Make sure all changes are written to disk.
-   * @throws IOException
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public void flush() throws IOException {
+  public void flush() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       if (indexWriter != null) {
@@ -225,8 +254,13 @@ public class IndexModifier {
    * discarded.
    * @see IndexWriter#addDocument(Document, Analyzer)
    * @throws IllegalStateException if the index is closed
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Document doc, Analyzer docAnalyzer) throws IOException {
+  public void addDocument(Document doc, Analyzer docAnalyzer) throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -243,8 +277,13 @@ public class IndexModifier {
    * discarded.
    * @see IndexWriter#addDocument(Document)
    * @throws IllegalStateException if the index is closed
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Document doc) throws IOException {
+  public void addDocument(Document doc) throws CorruptIndexException, LockObtainFailedException, IOException {
     addDocument(doc, null);
   }
 
@@ -257,8 +296,15 @@ public class IndexModifier {
    * @return the number of documents deleted
    * @see IndexReader#deleteDocuments(Term)
    * @throws IllegalStateException if the index is closed
+   * @throws StaleReaderException if the index has changed
+   *  since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public int deleteDocuments(Term term) throws IOException {
+  public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexReader();
@@ -269,9 +315,15 @@ public class IndexModifier {
   /**
    * Deletes the document numbered <code>docNum</code>.
    * @see IndexReader#deleteDocument(int)
+   * @throws StaleReaderException if the index has changed
+   *  since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
    * @throws IllegalStateException if the index is closed
    */
-  public void deleteDocument(int docNum) throws IOException {
+  public void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexReader();
@@ -302,8 +354,13 @@ public class IndexModifier {
    * for search.
    * @see IndexWriter#optimize()
    * @throws IllegalStateException if the index is closed
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public void optimize() throws IOException {
+  public void optimize() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -329,10 +386,14 @@ public class IndexModifier {
   }
 
   /**
-   * @throws IOException
    * @see IndexModifier#setInfoStream(PrintStream)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public PrintStream getInfoStream() throws IOException {
+  public PrintStream getInfoStream() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -358,10 +419,14 @@ public class IndexModifier {
   }
 
   /**
-   * @throws IOException
    * @see IndexModifier#setUseCompoundFile(boolean)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public boolean getUseCompoundFile() throws IOException {
+  public boolean getUseCompoundFile() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -394,10 +459,14 @@ public class IndexModifier {
   }
 
   /**
-   * @throws IOException
    * @see IndexModifier#setMaxFieldLength(int)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public int getMaxFieldLength() throws IOException {
+  public int getMaxFieldLength() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -429,10 +498,14 @@ public class IndexModifier {
   }
 
   /**
-   * @throws IOException
    * @see IndexModifier#setMaxBufferedDocs(int)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public int getMaxBufferedDocs() throws IOException {
+  public int getMaxBufferedDocs() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -464,10 +537,14 @@ public class IndexModifier {
   }
 
   /**
-   * @throws IOException
    * @see IndexModifier#setMergeFactor(int)
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if there is a low-level IO error
    */
-  public int getMergeFactor() throws IOException {
+  public int getMergeFactor() throws CorruptIndexException, LockObtainFailedException, IOException {
     synchronized(directory) {
       assureOpen();
       createIndexWriter();
@@ -479,8 +556,10 @@ public class IndexModifier {
    * Close this index, writing all pending changes to disk.
    *
    * @throws IllegalStateException if the index has been closed before already
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
-  public void close() throws IOException {
+  public void close() throws CorruptIndexException, IOException {
     synchronized(directory) {
       if (!open)
         throw new IllegalStateException("Index is closed already");
