@@ -6,6 +6,8 @@
    <meta content="Grant Ingersoll"  name="Author">
 </head>
 <body>
+Code to search indices.
+
 <h2>Table Of Contents</h2>
 <p>
     <ol>
@@ -113,7 +115,7 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
                 <a href="spans/SpanQuery.html">SpanQuery</a>
                 instances. <a href="spans/SpanNearQuery.html">SpanNearQuery</a> allows for
                 much more
-                complicated phrase queries since it is constructed from other to <a
+                complicated phrase queries since it is constructed from other <a
                     href="spans/SpanQuery.html">SpanQuery</a>
                 instances, instead of only <a href="TermQuery.html">TermQuery</a>
                 instances.</p>
@@ -153,12 +155,10 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
     Note that the <a href="WildcardQuery.html">WildcardQuery</a> can be quite slow. Also
     note that
     <a href="WildcardQuery.html">WildcardQuery</a> should
-    not start with <tt>*</tt> and <tt>?</tt>, as these are extremely slow. For tricks on how to search using a wildcard
-    at
-    the beginning of a term, see
-    <a href="http://www.gossamer-threads.com/lists/lucene/java-user/13373#13373">
-        Starts With x and Ends With x Queries</a>
-    from the Lucene users's mailing list.
+    not start with <tt>*</tt> and <tt>?</tt>, as these are extremely slow. 
+	To remove this protection and allow a wildcard at the beginning of a term, see method
+	<a href="../queryParser/QueryParser.html#setAllowLeadingWildcard(boolean)">setAllowLeadingWildcard</a> in 
+	<a href="../queryParser/QueryParser.html">QueryParser</a>.
 </p>
 <h4>
     <a href="FuzzyQuery.html">FuzzyQuery</a>
