@@ -22,8 +22,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -335,11 +333,6 @@ public class IndexWriter {
     } else {
       init(d, a, true, false);
     }
-  }
-
-  private IndexWriter(Directory d, Analyzer a, final boolean create, boolean closeDir)
-    throws IOException {
-    init(d, a, create, closeDir);
   }
 
   private void init(String path, Analyzer a, final boolean create)
