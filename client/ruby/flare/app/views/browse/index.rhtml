@@ -11,7 +11,7 @@
   <ul>
   <% @response.field_facets(field).each do |f| %>
     <li>
-      <%= sparkline_tag [(f.value * 100.0 / @response.total_hits).ceil], :type => 'pie', :diameter => 20, :share_color => 'blue'%>
+      <%= image_tag "pie_#{(f.value * 100.0 / @response.total_hits).ceil}.png"%>
       <%= link_to "#{f.name} (#{f.value})", :action => 'add_filter', :field_name=>field, :value=>f.name%>
     </li>
   <% end %>
