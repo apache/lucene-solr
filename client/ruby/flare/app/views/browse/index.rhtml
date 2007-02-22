@@ -1,13 +1,19 @@
 <div id="sidebar"><div class="boxContent">
+	<div class="searchbar">
   <% form_tag(:action=>'add_query') do %>
     <%= text_field_with_auto_complete :search, :query %>
     <%=submit_tag "search"%>
   <% end %>
-<h2>facets</h2>
+	</div>
+<!-- <h2>browse facets</h2> -->
 
 <% @facet_fields.each do |field|%>
-  <h4><%=link_to field, :action => 'facet', :field_name => field%></h4>
-  
+  <h4> 
+<%=h field%> <%=link_to "[browse]", :action => 'facet', :field_name => field%> 
+<!-- <%=link_to field, :action => 'facet', :field_name => field%> -->
+</h4> 
+
+
   <ul>
   <% @response.field_facets(field).each do |f| %>
     <li>
@@ -17,41 +23,56 @@
   <% end %>
   </ul>
 <% end %>
-<%=link_to image_tag("simile-exhibit.png"), :controller => :simile, :action => :exhibit %>
-</div></div>
+<span class="exhibit"><%=link_to image_tag("simile-exhibit.png"), :controller => :simile, :action => :exhibit %></span>
+</div></div> 
 
+<div id="variables">
+	<div class="clear">
+		<%=link_to '[clear constraints]', :action => 'clear'%>
+	</div>
+	
 <div>
-Queries:
+<span class="varheader">Queries:</span>
+	<div id="queries">
 <% session[:queries].each_with_index do |q,i| %>
 <%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%>
 <span id="query_<%=i%>"><%=q[:query]%></span>
 <%= in_place_editor "query_#{i}", :url=> url_for(:action=>"update_query", :index=>i) %>
-<%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %>
+<%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %><br/>
 <% end %>
+	</div>
 </div>
+
 <div>
-Filters:
+<span class="varheader">Filters:</span>
+	<div id="filters">
 <% session[:filters].each_with_index do |filter, i| %>
       <%=link_to filter[:negative] ? "-" : "+", :action => :invert_filter, :index => i%>
       <%=filter[:field]%>:<%=filter[:value]%>
-      <%=link_to image_tag("x-close.gif"), :action => :remove_filter, :index => i %>
+      <%=link_to image_tag("x-close.gif"), :action => :remove_filter, :index => i %><br/>
 <% end %>
-<div><%=link_to 'clear constraints', :action => 'clear'%></div>
+	</div>
 </div>
 
-<div>Results <strong>1-<%=[@response.total_hits,10].min%></strong> of <strong><%=@response.total_hits%></strong></div>
+<div class="clear">
+	<%=link_to '[clear constraints]', :action => 'clear'%>
+</div>
+
+</div>
+
+<div class="resultsheader">Results <strong>1-<%=[@response.total_hits,10].min%></strong> of <strong><%=@response.total_hits%></strong></div>
 
 
 <div id="results"><table cellpadding="10">
   <% @response.each do |doc| %>
 <tr valign="top">
   <td>
-    <table>
-      <tr colspan="2">
-        <th><%=doc['title_text']%></th>
+    <table class="entry">
+      <tr>
+        <td class="title" colspan="2"><%=doc['title_text']%></td>
       </tr>
       <% doc.each do |k,v|; highlighting = @response.highlighted(doc['id'], k) %>
-      <tr><td><%=k%>:</td><td><%= highlighting ? "...#{highlighting}..." : v%></td></tr>
+      <tr><td class="field"><%=k%>:</td><td><%= highlighting ? "...#{highlighting}..." : v%></td></tr>
       <% end %>
     </table>
   </td>
