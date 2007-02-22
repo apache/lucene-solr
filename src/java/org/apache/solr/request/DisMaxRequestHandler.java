@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.core.SolrCore;
@@ -60,6 +61,12 @@ import org.apache.solr.util.SolrPluginUtils;
  * </p>
  *
  * <ul>
+ * <li>q.alt - An alternate query to be used in cases where the main
+ *             query (q) is not specified (or blank).  This query should
+ *             be expressed in the Standard SolrQueryParser syntax (you
+ *             can use <code>q.alt=*:*</code> to denote that all documents
+ *             should be returned when no query is specified)
+ * </li>
  * <li>tie - (Tie breaker) float value to use as tiebreaker in
  *           DisjunctionMaxQueries (should be something much less than 1)
  * </li>
@@ -189,42 +196,58 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       pp.setPhraseSlop(pslop);
             
             
-      /* * * Main User Query * * */
-
-      String userQuery = U.partialEscape
-        (U.stripUnbalancedQuotes(params.get(Q))).toString();
-            
       /* the main query we will execute.  we disable the coord because
        * this query is an artificial construct
        */
       BooleanQuery query = new BooleanQuery(true);
 
-      String minShouldMatch = params.get(DMP.MM, "100%");
-      Query dis = up.parse(userQuery);
-      Query parsedUserQuery = dis;
-
-      if (dis instanceof BooleanQuery) {
-        BooleanQuery t = new BooleanQuery();
-        U.flattenBooleanQuery(t, (BooleanQuery)dis);
-        U.setMinShouldMatch(t, minShouldMatch);                
-        parsedUserQuery = t;
-      } 
-      query.add(parsedUserQuery, Occur.MUST);
-
-      /* * * Add on Phrases for the Query * * */
-            
-      /* build up phrase boosting queries */
-
-      /* if the userQuery already has some quotes, stip them out.
-       * we've already done the phrases they asked for in the main
-       * part of the query, this is to boost docs that may not have
-       * matched those phrases but do match looser phrases.
-       */
-      String userPhraseQuery = userQuery.replace("\"","");
-      Query phrase = pp.parse("\"" + userPhraseQuery + "\"");
-      if (null != phrase) {
-        query.add(phrase, Occur.SHOULD);
+      /* * * Main User Query * * */
+      Query parsedUserQuery = null;
+      String userQuery = params.get( Q );
+      Query altUserQuery = null;
+      if( userQuery == null || userQuery.trim().length() < 1 ) {
+        // If no query is specified, we may have an alternate
+        String altQ = params.get( DMP.ALTQ );
+        if (altQ != null) {
+          altUserQuery = p.parse(altQ);
+          query.add( altUserQuery , Occur.MUST );
+        } else {
+          throw new SolrException( 400, "missing query string" );
+        }
       }
+      else {
+        // There is a valid query string
+        userQuery = U.partialEscape(U.stripUnbalancedQuotes(userQuery)).toString();
+            
+        String minShouldMatch = params.get(DMP.MM, "100%");
+        Query dis = up.parse(userQuery);
+        parsedUserQuery = dis;
+  
+        if (dis instanceof BooleanQuery) {
+          BooleanQuery t = new BooleanQuery();
+          U.flattenBooleanQuery(t, (BooleanQuery)dis);
+          U.setMinShouldMatch(t, minShouldMatch);                
+          parsedUserQuery = t;
+        } 
+        query.add(parsedUserQuery, Occur.MUST);
+        
+
+        /* * * Add on Phrases for the Query * * */
+              
+        /* build up phrase boosting queries */
+
+        /* if the userQuery already has some quotes, stip them out.
+         * we've already done the phrases they asked for in the main
+         * part of the query, this is to boost docs that may not have
+         * matched those phrases but do match looser phrases.
+         */
+        String userPhraseQuery = userQuery.replace("\"","");
+        Query phrase = pp.parse("\"" + userPhraseQuery + "\"");
+        if (null != phrase) {
+          query.add(phrase, Occur.SHOULD);
+        }
+      }
+
             
       /* * * Boosting Query * * */
 
@@ -289,6 +312,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       try {
         NamedList debug = U.doStandardDebug(req, userQuery, query, results.docList);
         if (null != debug) {
+          debug.add("altquerystring", altUserQuery);
           debug.add("boostquery", boostQuery);
           debug.add("boostfunc", boostFunc);
           if (null != restrictions) {
@@ -309,7 +333,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       }
 
       /* * * Highlighting/Summarizing  * * */
-      if(HighlightingUtils.isHighlightingEnabled(req)) {
+      if(HighlightingUtils.isHighlightingEnabled(req) && parsedUserQuery != null) {
         String[] highFields = queryFields.keySet().toArray(new String[0]);
         NamedList sumData =
           HighlightingUtils.doHighlighting(results.docList, parsedUserQuery, 
@@ -347,17 +371,17 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
 
 	@Override
 	public String getVersion() {
-	    return "$Revision:$";
+	    return "$Revision$";
 	}
 
 	@Override
 	public String getSourceId() {
-	  return "$Id:$";
+	  return "$Id$";
 	}
 
 	@Override
 	public String getSource() {
-	  return "$URL:$";
+	  return "$URL$";
 	}
   
   @Override

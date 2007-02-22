@@ -110,6 +110,12 @@ New Features
 13. SOLR-86: Added standalone Java-based command-line updater.
     (Erik Hatcher via Bertrand Delecretaz)
 
+14. SOLR-152: DisMaxRequestHandler now supports configurable alternate
+    behavior when q is not specified.  A "q.alt" param can be specified
+    using SolrQueryParser syntax as a mechanism for specifying what query
+    the dismax handler should execute if the main user query (q) is blank.
+    (Ryan McKinley via hossman)
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

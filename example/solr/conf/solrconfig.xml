@@ -270,6 +270,7 @@
         2&lt;-1 5&lt;-2 6&lt;90%
      </str>
      <int name="ps">100</int>
+     <str name="q.alt">*:*</str>
     </lst>
   </requestHandler>
 

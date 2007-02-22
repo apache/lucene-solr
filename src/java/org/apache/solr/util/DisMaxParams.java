@@ -61,6 +61,11 @@ import java.io.IOException;
     public static String BQ = "bq";
     /** query and init param for boosting functions */
     public static String BF = "bf";
+    /**
+     * Alternate query (expressed in Solr QuerySyntax)
+     * to use if main query (q) is empty
+     */
+    public static String ALTQ = "q.alt";
     /** query and init param for filtering query
      * @deprecated use SolrParams.FQ or SolrPluginUtils.parseFilterQueries
      */

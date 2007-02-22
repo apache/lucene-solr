@@ -107,7 +107,20 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
             ,"//*[@numFound='3']"
             );
 
-
+    assertQ("relying on ALTQ from config",
+            req( "qt", "dismax",
+                 "fq", "id:666",
+                 "facet", "false" )
+            ,"//*[@numFound='1']"
+            );
+    
+    assertQ("explicit ALTQ",
+            req( "qt", "dismax",
+                 "q.alt", "id:blahbalh",
+                 "fq", "id:666",
+                 "facet", "false" )
+            ,"//*[@numFound='0']"
+            );
   }
 
   public void testOldStyleDefaults() throws Exception {

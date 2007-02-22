@@ -215,6 +215,7 @@
   </requestHandler>
   <requestHandler name="dismax" class="solr.DisMaxRequestHandler" >
     <lst name="defaults">
+     <str name="q.alt">*:*</str>
      <float name="tie">0.01</float>
      <str name="qf">
         text^0.5 features_t^1.0 subject^1.4 title_stemmed^2.0
