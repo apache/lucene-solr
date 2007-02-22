@@ -18,15 +18,11 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.highlight.*;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.request.SolrParams;
@@ -849,156 +845,5 @@ public class SolrPluginUtils {
 
 }
 
-/** 
- * Helper class which creates a single TokenStream out of values from a 
- * multi-valued field.
- */
-class MultiValueTokenStream extends TokenStream {
-  private String fieldName;
-  private String[] values;
-  private Analyzer analyzer;
-  private int curIndex;                  // next index into the values array
-  private int curOffset;                 // offset into concatenated string
-  private TokenStream currentStream;     // tokenStream currently being iterated
-  private boolean orderTokenOffsets;
-
-  /** Constructs a TokenStream for consecutively-analyzed field values
-   *
-   * @param fieldName name of the field
-   * @param values array of field data
-   * @param analyzer analyzer instance
-   */
-  public MultiValueTokenStream(String fieldName, String[] values, 
-                               Analyzer analyzer, boolean orderTokenOffsets) {
-    this.fieldName = fieldName;
-    this.values = values;
-    this.analyzer = analyzer;
-    curIndex = -1;
-    curOffset = 0;
-    currentStream = null;
-    this.orderTokenOffsets=orderTokenOffsets;
-  }
-
-  /** Returns the next token in the stream, or null at EOS. */
-  public Token next() throws IOException {
-    int extra = 0;
-    if(currentStream == null) {
-      curIndex++;        
-      if(curIndex < values.length) {
-        currentStream = analyzer.tokenStream(fieldName, 
-                                             new StringReader(values[curIndex]));
-        if (orderTokenOffsets) currentStream = new TokenOrderingFilter(currentStream,10);
-        // add extra space between multiple values
-        if(curIndex > 0) 
-          extra = analyzer.getPositionIncrementGap(fieldName);
-      } else {
-        return null;
-      }
-    }
-    Token nextToken = currentStream.next();
-    if(nextToken == null) {
-      curOffset += values[curIndex].length();
-      currentStream = null;
-      return next();
-    }
-    // create an modified token which is the offset into the concatenated
-    // string of all values
-    Token offsetToken = new Token(nextToken.termText(), 
-                                  nextToken.startOffset() + curOffset,
-                                  nextToken.endOffset() + curOffset);
-    offsetToken.setPositionIncrement(nextToken.getPositionIncrement() + extra*10);
-    return offsetToken;
-  }
-
-  /**
-   * Returns all values as a single String into which the Tokens index with
-   * their offsets.
-   */
-  public String asSingleValue() {
-    StringBuilder sb = new StringBuilder();
-    for(String str : values)
-      sb.append(str);
-    return sb.toString();
-  }
-
-}
-
-/**
- * A simple modification of SimpleFragmenter which additionally creates new
- * fragments when an unusually-large position increment is encountered
- * (this behaves much better in the presence of multi-valued fields).
- */
-class GapFragmenter extends SimpleFragmenter {
-  public static final int INCREMENT_THRESHOLD = 50;
-  protected int fragOffsetAccum = 0;
-  
-  public GapFragmenter() {
-  }
-  
-  public GapFragmenter(int fragsize) {
-     super(fragsize);
-  }
-  
-  /* (non-Javadoc)
-   * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
-   */
-  public void start(String originalText) {
-    fragOffsetAccum = 0;
-  }
-
-  /* (non-Javadoc)
-   * @see org.apache.lucene.search.highlight.TextFragmenter#isNewFragment(org.apache.lucene.analysis.Token)
-   */
-  public boolean isNewFragment(Token token) {
-    boolean isNewFrag = 
-      token.endOffset() >= fragOffsetAccum + getFragmentSize() ||
-      token.getPositionIncrement() > INCREMENT_THRESHOLD;
-    if(isNewFrag) {
-        fragOffsetAccum += token.endOffset() - fragOffsetAccum;
-    }
-    return isNewFrag;
-  }
-}
 
 
-/** Orders Tokens in a window first by their startOffset ascending.
- * endOffset is currently ignored.
- * This is meant to work around fickleness in the highlighter only.  It
- * can mess up token positions and should not be used for indexing or querying.
- */
-class TokenOrderingFilter extends TokenFilter {
-  private final int windowSize;
-  private final LinkedList<Token> queue = new LinkedList<Token>();
-  private boolean done=false;
-
-  protected TokenOrderingFilter(TokenStream input, int windowSize) {
-    super(input);
-    this.windowSize = windowSize;
-  }
-
-  public Token next() throws IOException {
-    while (!done && queue.size() < windowSize) {
-      Token newTok = input.next();
-      if (newTok==null) {
-        done=true;
-        break;
-      }
-
-      // reverse iterating for better efficiency since we know the
-      // list is already sorted, and most token start offsets will be too.
-      ListIterator<Token> iter = queue.listIterator(queue.size());
-      while(iter.hasPrevious()) {
-        if (newTok.startOffset() >= iter.previous().startOffset()) {
-          // insertion will be before what next() would return (what
-          // we just compared against), so move back one so the insertion
-          // will be after.
-          iter.next();
-          break;
-        }
-      }
-      iter.add(newTok);
-    }
-
-    return queue.isEmpty() ? null : queue.removeFirst();
-  }
-}

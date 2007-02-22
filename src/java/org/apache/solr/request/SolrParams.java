@@ -60,14 +60,6 @@ public abstract class SolrParams {
   public static final String DEBUG_QUERY = "debugQuery";
   /** another query to explain against */
   public static final String EXPLAIN_OTHER = "explainOther";
-  /** wether to highlight */
-  public static final String HIGHLIGHT = "highlight";
-  /** fields to highlight */
-  public static final String HIGHLIGHT_FIELDS = "highlightFields";
-  /** maximum highlight fragments to return */
-  public static final String MAX_SNIPPETS = "maxSnippets";
-  /** override default highlight Formatter class */
-  public static final String HIGHLIGHT_FORMATTER_CLASS = "highlightFormatterClass";
 
   /**
    * Should facet counts be calculated?
