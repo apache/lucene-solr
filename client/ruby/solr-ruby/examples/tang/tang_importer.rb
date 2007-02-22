@@ -14,11 +14,11 @@ require 'hpricot'
 require 'solr'
 
 solr_url = ENV["SOLR_URL"] || "http://localhost:8983/solr"
-debug = ARGV[0] == "-debug"
+debug = ARGV[1] == "-debug"
 
 solr = Solr::Connection.new(solr_url)
 
-html = Hpricot(open('poems.html'))
+html = Hpricot(open(ARGV[0]))
 max = 320
 
 def next_blockquote(elem)
