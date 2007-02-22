@@ -21,6 +21,9 @@ body {
 	color: #CD3700;
 }
 
+a img {
+	border: 0;
+}
 
 td {
 	font-family: Verdana, Geneva, Arial, helvetica, sans-serif;
@@ -59,16 +62,6 @@ em {
 	color: #000;
 }
 
-#search {
-	background-color: #EFEFDE;
-	padding-top: 30px;
-	padding-left: 30px;
-	padding-bottom: 20px;
-	margin-bottom: 20px;
-	border-bottom-width: 1px;
-	border-bottom-style: solid;
-	border-bottom-color: #CCCCCC;	
-}
 #sidebar {
 	float: right;
 	width: 339px;
@@ -76,6 +69,10 @@ em {
 	line-height: 20px;
 	margin-bottom: 20px;
 	padding: 10px;
+}
+
+.searchbar {
+	line-height: 12px;
 }
 
 #sidebar ul {
@@ -160,8 +157,4 @@ em {
 .field {
 	color: #999;
 	font-style: italic;
-}
-
-.searchbar {
-	padding: 1px;
 }
