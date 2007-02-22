@@ -115,6 +115,11 @@ New Features
     using SolrQueryParser syntax as a mechanism for specifying what query
     the dismax handler should execute if the main user query (q) is blank.
     (Ryan McKinley via hossman)
+
+15. SOLR-158: new "qs" (Query Slop) param for DisMaxRequestHandler
+    allows for specifying the amount of default slop to use when parsing
+    explicit phrase queries from the user.
+    (Adam Hiatt via hossman)
     
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 

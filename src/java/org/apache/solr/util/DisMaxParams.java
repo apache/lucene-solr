@@ -55,8 +55,16 @@ import java.io.IOException;
     public static String PF = "pf";
     /** query and init param for MinShouldMatch specification */
     public static String MM = "mm";
-    /** query and init param for Phrase Slop value */
+    /**
+     * query and init param for Phrase Slop value in phrase
+     * boost query (in pf fields)
+     */
     public static String PS = "ps";
+    /**
+     * query and init param for phrase Slop value in phrases
+     * explicitly included in the user's query string ( in qf fields)
+     */
+    public static String QS = "qs";
     /** query and init param for boosting query */
     public static String BQ = "bq";
     /** query and init param for boosting functions */

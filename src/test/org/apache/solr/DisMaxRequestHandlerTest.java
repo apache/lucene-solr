@@ -121,6 +121,18 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
                  "facet", "false" )
             ,"//*[@numFound='0']"
             );
+
+    assertQ("no query slop == no match",
+            req( "qt", "dismax",
+                 "q", "\"cool chick\"" )
+            ,"//*[@numFound='0']"
+            );
+    assertQ("query slop == match",
+            req( "qt", "dismax",
+                 "qs", "2",
+                 "q", "\"cool chick\"" )
+            ,"//*[@numFound='1']"
+            );
   }
 
   public void testOldStyleDefaults() throws Exception {

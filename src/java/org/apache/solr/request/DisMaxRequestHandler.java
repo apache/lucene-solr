@@ -85,6 +85,9 @@ import org.apache.solr.util.SolrPluginUtils;
  * <li> ps - (Phrase Slop) amount of slop on phrase queries built for pf
  *           fields.
  * </li>
+ * <li> ps - (Query Slop) amount of slop on phrase queries explicitly
+ *           specified in the "q" for qf fields.
+ * </li>
  * <li> bq - (Boost Query) a raw lucene query that will be included in the 
  *           users query to influence the score.  If this is a BooleanQuery
  *           with a default boost (1.0f), then the individual clauses will be
@@ -176,6 +179,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       float tiebreaker = params.getFloat(DMP.TIE, 0.0f);
             
       int pslop = params.getInt(DMP.PS, 0);
+      int qslop = params.getInt(DMP.QS, 0);
 
       /* a generic parser for parsing regular lucene queries */
       QueryParser p = new SolrQueryParser(schema, null);
@@ -187,7 +191,8 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
         new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
       up.addAlias(IMPOSSIBLE_FIELD_NAME,
                   tiebreaker, queryFields);
-
+      up.setPhraseSlop(qslop);
+      
       /* for parsing slopy phrases using DisjunctionMaxQueries */
       U.DisjunctionMaxQueryParser pp =
         new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
