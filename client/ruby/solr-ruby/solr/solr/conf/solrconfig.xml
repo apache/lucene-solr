@@ -114,7 +114,7 @@
          -->
     <filterCache
       class="solr.LRUCache"
-      size="200000"
+      size="300000"
       initialSize="100000"
       autowarmCount="50000"/>
 
