@@ -12,7 +12,7 @@ private
   def query
     queries = session[:queries]
     if queries.nil? || queries.empty?
-      query = "[* TO *]"
+      query = "*:*"
     else
       query = session[:queries].collect{|q| "#{q[:negative] ? '-' : ''}(#{q[:query]})"}.join(' AND ')
     end
