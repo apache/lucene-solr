@@ -37,7 +37,7 @@
 
   <patternset id="src.dist.patterns"
               includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,"
-              excludes="contrib/*/lib/,src/site/build/"
+              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/"
   />
   <patternset id="binary.build.dist.patterns"
               includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar"
