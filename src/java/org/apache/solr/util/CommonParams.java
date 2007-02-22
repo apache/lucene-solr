@@ -42,20 +42,6 @@ public class CommonParams {
   /** another query to explain against */
   @Deprecated
   public static String EXPLAIN_OTHER = "explainOther";
-  /** wether to highlight */
-  @Deprecated
-  public static String HIGHLIGHT = "highlight";
-  /** fields to highlight */
-  @Deprecated
-  public static String HIGHLIGHT_FIELDS = "highlightFields";
-  /** maximum highlight fragments to return */
-  @Deprecated
-  public static String MAX_SNIPPETS = "maxSnippets";
-  /** override default highlight Formatter class */
-  @Deprecated
-  public static String HIGHLIGHT_FORMATTER_CLASS = "highlightFormatterClass";
-
-
 
 
   /** the default field list to be used */
@@ -138,44 +124,6 @@ public class CommonParams {
         explainOther = tmp.toString();
       } else {
         SolrCore.log.severe("init param is not a str: " + SolrParams.EXPLAIN_OTHER);
-      }
-    }
-
-    tmp = args.get(SolrParams.HIGHLIGHT);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        // Any non-empty string other than 'false' implies highlighting
-        String val = tmp.toString().trim();
-        highlight = !(val.equals("") || val.equals("false"));
-      } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.HIGHLIGHT);
-      }
-    }
-
-    tmp = args.get(SolrParams.HIGHLIGHT_FIELDS);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        highlightFields = tmp.toString();
-      } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.HIGHLIGHT);
-      }
-    }
-
-    tmp = args.get(SolrParams.MAX_SNIPPETS);
-    if (null != tmp) {
-      if (tmp instanceof Integer) {
-        maxSnippets = ((Integer)tmp).intValue();
-      } else {
-        SolrCore.log.severe("init param is not an int: " + SolrParams.MAX_SNIPPETS);
-      }
-    }
-
-    tmp = args.get(SolrParams.HIGHLIGHT_FORMATTER_CLASS);
-    if (null != tmp) {
-      if (tmp instanceof String) {
-        highlightFormatterClass = tmp.toString();
-      } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.HIGHLIGHT_FORMATTER_CLASS);
       }
     }
 
