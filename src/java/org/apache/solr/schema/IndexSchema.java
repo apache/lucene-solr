@@ -23,11 +23,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.core.Config;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
+import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -149,12 +151,33 @@ public final class IndexSchema {
   private String defaultSearchFieldName=null;
   private String queryParserDefaultOperator = "OR";
 
-  /** Name of the default search field specified in the schema file */
+  /**
+   * A SolrQueryParser linked to this IndexSchema for field datatype
+   * information, and populated with default options from the
+   * &lt;solrQueryParser&gt; configuration for this IndexSchema.
+   *
+   * @param defaultField if non-null overrides the schema default
+   */
+  public SolrQueryParser getSolrQueryParser(String defaultField) {
+    SolrQueryParser qp = new SolrQueryParser(this,defaultField);
+    String operator = getQueryParserDefaultOperator();
+    qp.setDefaultOperator("AND".equals(operator) ?
+                          QueryParser.Operator.AND : QueryParser.Operator.OR);
+    return qp;
+  }
+  
+  /**
+   * Name of the default search field specified in the schema file
+   * @deprecated use getSolrQueryParser().getField()
+   */
   public String getDefaultSearchFieldName() {
     return defaultSearchFieldName;
   }
 
-  /** default operator ("AND" or "OR") for QueryParser */
+  /**
+   * default operator ("AND" or "OR") for QueryParser
+   * @deprecated use getSolrQueryParser().getDefaultOperator()
+   */
   public String getQueryParserDefaultOperator() {
     return queryParserDefaultOperator;
   }

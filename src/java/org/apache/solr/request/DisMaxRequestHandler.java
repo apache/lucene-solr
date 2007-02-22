@@ -182,7 +182,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       int qslop = params.getInt(DMP.QS, 0);
 
       /* a generic parser for parsing regular lucene queries */
-      QueryParser p = new SolrQueryParser(schema, null);
+      QueryParser p = schema.getSolrQueryParser(null);
 
       /* a parser for dealing with user input, which will convert
        * things to DisjunctionMaxQueries

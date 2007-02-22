@@ -106,7 +106,7 @@ public class SimpleFacets {
      * If user doesn't want schema default for facet.query, they should be
      * explicit.
      */
-    SolrQueryParser qp = new SolrQueryParser(searcher.getSchema(),null);
+    SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
     String[] facetQs = params.getParams(SolrParams.FACET_QUERY);
     if (null != facetQs && 0 != facetQs.length) {

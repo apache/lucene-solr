@@ -130,6 +130,13 @@ Changes in runtime behavior
     listings).  Fix JSON output bug for null values.  Internal JAVA API:
     change most uses of NamedList to SimpleOrderedMap. (yonik)
 
+ 3. A new method "getSolrQueryParser" has been added to the IndexSchema
+    class for retrieving a new SolrQueryParser instance with all options
+    specified in the schema.xml's <solrQueryParser> block set.  The
+    documentation for the SolrQueryParser constructor and it's use of
+    IndexSchema have also been clarified.
+    (Erik Hatcher and hossman)
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new

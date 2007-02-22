@@ -62,7 +62,7 @@ public class QueryParsing {
    */
   public static Query parseQuery(String qs, String defaultField, IndexSchema schema) {
     try {
-      Query query = new SolrQueryParser(schema, defaultField).parse(qs);
+      Query query = schema.getSolrQueryParser(defaultField).parse(qs);
 
       if (SolrCore.log.isLoggable(Level.FINEST)) {
         SolrCore.log.finest("After QueryParser:" + query);
@@ -85,7 +85,7 @@ public class QueryParsing {
    */
   public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
     try {
-      SolrQueryParser parser = new SolrQueryParser(schema, defaultField);
+      SolrQueryParser parser = schema.getSolrQueryParser(defaultField);
       String opParam = params.get(OP);
       if (opParam != null) {
         parser.setDefaultOperator("AND".equals(opParam) ? QueryParser.Operator.AND : QueryParser.Operator.OR);
