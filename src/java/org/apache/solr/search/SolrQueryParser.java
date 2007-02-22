@@ -60,6 +60,8 @@ public class SolrQueryParser extends QueryParser {
     super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
     this.schema = schema;
     setLowercaseExpandedTerms(false);
+    String operator = schema.getQueryParserDefaultOperator();
+    setDefaultOperator("AND".equals(operator) ? QueryParser.Operator.AND : QueryParser.Operator.OR);
   }
 
   protected Query getFieldQuery(String field, String queryText) throws ParseException {

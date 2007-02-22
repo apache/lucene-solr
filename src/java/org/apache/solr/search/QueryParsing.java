@@ -85,10 +85,11 @@ public class QueryParsing {
    */
   public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
     try {
-      String opParam = params.get(OP, schema.getQueryParserDefaultOperator());
-      QueryParser.Operator defaultOperator = "AND".equals(opParam) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
       SolrQueryParser parser = new SolrQueryParser(schema, defaultField);
-      parser.setDefaultOperator(defaultOperator);
+      String opParam = params.get(OP);
+      if (opParam != null) {
+        parser.setDefaultOperator("AND".equals(opParam) ? QueryParser.Operator.AND : QueryParser.Operator.OR);
+      }
       Query query = parser.parse(qs);
 
       if (SolrCore.log.isLoggable(Level.FINEST)) {
