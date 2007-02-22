@@ -158,3 +158,9 @@ em {
 	color: #999;
 	font-style: italic;
 }
+
+div.auto_complete {
+	padding-left: 20px;
+	padding-top: 10px;
+	background: #fff;
+}
