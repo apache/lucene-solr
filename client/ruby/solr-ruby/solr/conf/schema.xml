@@ -134,16 +134,15 @@
     </fieldtype>
 
     <fieldtype name="text" class="solr.TextField" positionIncrementGap="100">
-      <analyzer type="index">
+      <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
-      <analyzer type="query">
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
+    </fieldtype>
+    
+    <fieldtype name="text_zh" class="solr.TextField">
+      <analyzer class="org.apache.lucene.analysis.cn.ChineseAnalyzer"/>
     </fieldtype>
 
 
@@ -194,6 +193,7 @@
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
    <dynamicField name="*_facet"  type="string"  indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_zh_text"   type="text_zh"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_text"   type="text"    indexed="true"  stored="true" multiValued="true"/>
  </fields>
 
