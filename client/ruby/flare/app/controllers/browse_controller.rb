@@ -24,7 +24,7 @@ class BrowseController < ApplicationController
         
     @results_per_page = 25
     
-    @start = (session[:page] - 1) * @results_per_page + 1
+    @start = (session[:page] - 1) * @results_per_page
     
     request = Solr::Request::Standard.new(:query => query,
                                           :filter_queries => filters,
@@ -51,12 +51,14 @@ class BrowseController < ApplicationController
 
   def add_query
     session[:queries] << {:query => params[:search][:query]}
+    session[:page] = 1
     redirect_to :action => 'index'
   end
   
   def update_query
     logger.debug "update_query: #{params.inspect}"
     session[:queries][params[:index].to_i][:query] = params[:value]
+    session[:page] = 1
     render :update do |page|
       page.redirect_to '/browse'
     end
@@ -65,27 +67,32 @@ class BrowseController < ApplicationController
   def invert_query
     q = session[:queries][params[:index].to_i]
     q[:negative] = !q[:negative]
+    session[:page] = 1
     redirect_to :action => 'index'
   end
 
   def remove_query
     session[:queries].delete_at(params[:index].to_i)
+    session[:page] = 1
     redirect_to :action => 'index'
   end
 
   def invert_filter
     f = session[:filters][params[:index].to_i]
     f[:negative] = !f[:negative]
+    session[:page] = 1
     redirect_to :action => 'index'
   end
   
   def remove_filter
     session[:filters].delete_at(params[:index].to_i)
+    session[:page] = 1
     redirect_to :action => 'index'
   end
   
   def add_filter
     session[:filters] << {:field => params[:field_name], :value => params[:value], :negative => (params[:negative] ? true : false)} 
+    session[:page] = 1
     redirect_to :action => 'index'
   end
   
