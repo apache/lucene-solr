@@ -1,0 +1,12 @@
+<tr valign="top">
+  <td>
+    <table class="entry">
+      <tr>
+        <td class="title" colspan="2"><%=@doc['title_text']%></td>
+      </tr>
+      <% @doc.each do |k,v|; highlighting = @response.highlighted(@doc['id'], k) %>
+      <tr><td class="field"><%=k%>:</td><td><%= highlighting ? "...#{highlighting}..." : (v.respond_to?('join') ? v.join(',') : v.to_s)%></td></tr>
+      <% end %>
+    </table>
+  </td>
+</tr>

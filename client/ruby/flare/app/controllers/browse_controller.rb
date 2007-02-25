@@ -4,8 +4,6 @@
 class BrowseController < ApplicationController
   before_filter :flare_before
   
-  # TODO: use in-place-editor for queries, allowing editing of them (instead of remove and re-add new one)
-  
   # def self.flare(options={})
   #   define_method() do
   #   end
@@ -20,9 +18,18 @@ class BrowseController < ApplicationController
     @info = solr(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
     @facet_fields = @info.field_names.find_all {|v| v =~ /_facet$/}
     @text_fields = @info.field_names.find_all {|v| v =~ /_text$/}
-
+    
+    session[:page] = params[:page].to_i if params[:page]
+    session[:page] = 1 if session[:page] <= 0
+        
+    @results_per_page = 25
+    
+    @start = (session[:page] - 1) * @results_per_page + 1
+    
     request = Solr::Request::Standard.new(:query => query,
                                           :filter_queries => filters,
+                                          :rows => @results_per_page,
+                                          :start => @start,
                                           :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true},
                                           :highlighting => {:field_list => @text_fields})
     logger.info({:query => query, :filter_queries => filters}.inspect)
@@ -50,7 +57,9 @@ class BrowseController < ApplicationController
   def update_query
     logger.debug "update_query: #{params.inspect}"
     session[:queries][params[:index].to_i][:query] = params[:value]
-    render :layout => false, :text => params[:value]
+    render :update do |page|
+      page.redirect_to '/browse'
+    end
   end
 
   def invert_query
@@ -83,6 +92,7 @@ class BrowseController < ApplicationController
   def clear
     session[:queries] = nil
     session[:filters] = nil
+    session[:page] = 1
     flare_before
     redirect_to :action => 'index'
   end
@@ -91,6 +101,7 @@ class BrowseController < ApplicationController
   def flare_before
     session[:queries] ||= [] 
     session[:filters] ||= []
+    session[:page] ||= 1
   end
   
   def retrieve_field_facets(field, limit=-1, prefix=nil)

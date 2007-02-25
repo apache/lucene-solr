@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # The ASF licenses this file to You under the Apache License, Version 2.0
 # (the "License"); you may not use this file except in compliance with
 # the License.  You may obtain a copy of the License at
@@ -11,16 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'rubygems'
-require 'sparklines'
 
-0.upto(100) do |i|
-   Sparklines.plot_to_file("public/images/pie_#{i}.png",
-           [i],  :type => 'pie',
-           :share_color => "#D43D1A",
-           :remain_color => "#dcdcdc"
-#           :background_color => "#ededed"
-   )
+class DocumentController < ApplicationController
+  def result
+    @doc = params[:doc]
+    @response = params[:response]  # TODO: FlareContext?
+    render :template => "document/document_#{SOLR_ENV}"    
+  end
 end
-
-

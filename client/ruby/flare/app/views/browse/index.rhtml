@@ -37,7 +37,7 @@
 <% session[:queries].each_with_index do |q,i| %>
 <%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%>
 <span id="query_<%=i%>"><%=q[:query]%></span>
-<%= in_place_editor "query_#{i}", :url=> url_for(:action=>"update_query", :index=>i) %>
+<%= in_place_editor "query_#{i}", :url=> url_for(:action=>"update_query", :index=>i, :script=>true) %>
 <%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %><br/>
 <% end %>
 	</div>
@@ -60,26 +60,16 @@
 
 </div>
 
-<div class="resultsheader">Results <strong>1-<%=[@response.total_hits,10].min%></strong> of <strong><%=@response.total_hits%></strong></div>
-
+<div class="resultsheader">Results <strong><%=@start%>-<%=[@response.total_hits,@results_per_page + @start -1].min%></strong> of <strong><%=@response.total_hits%></strong></div>
 
 <div id="results"><table cellpadding="10">
   <% @response.each do |doc| %>
-<tr valign="top">
-  <td>
-    <table class="entry">
-      <tr>
-        <td class="title" colspan="2"><%=doc['title_text']%></td>
-      </tr>
-      <% doc.each do |k,v|; highlighting = @response.highlighted(doc['id'], k) %>
-      <tr><td class="field"><%=k%>:</td><td><%= highlighting ? "...#{highlighting}..." : (v.respond_to?('join') ? v.join(',') : v.to_s)%></td></tr>
-      <% end %>
-    </table>
-  </td>
-</tr>
+    <%= render_component :controller => DocumentController, :action => "result", :params => {:doc => doc, :response => @response} %>
   <% end %>
 </table>
 </div>
+
+<div class="resultsheader"><%=link_to_if session[:page] != 1,  "<<", :page => session[:page] - 1%> Results <strong><%=@start%>-<%=[@response.total_hits,@results_per_page + @start -1].min%></strong> of <strong><%=@response.total_hits%></strong><%=link_to_if session[:page] < (@response.total_hits.to_f / @results_per_page).ceil, ">>", :page => session[:page] + 1%></div>
 
 
 

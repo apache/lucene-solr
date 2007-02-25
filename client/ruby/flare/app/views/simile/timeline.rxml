@@ -13,10 +13,9 @@
 xml.data do 
   @data.each do |doc| 
     xml.event(doc['title_text'],
-      :start => doc['published_year_facet'],
-      :end => doc['published_year_facet'],
-      :title => doc['title_text'],
-      :image => "#{doc['asin_text']}")
+      :start => doc['year_facet'],
+      :end => doc['year_facet'],
+      :title => doc['title_text'])
   end
 end
 # Amazon images: http://www.betaversion.org/~stefano/linotype/news/66/

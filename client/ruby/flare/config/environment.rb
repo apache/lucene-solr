@@ -57,8 +57,24 @@ end
 # $KCODE = 'UTF8' # Rails 1.2 supposedly sets this automatically
 
 require 'solr'
-solr_environments = YAML.load_file("#{RAILS_ROOT}/config/solr.yml")
+
+
+
+solr_environments = {
+  :development => {
+  },
+
+  :uva => {
+  },
+
+  :delicious => {
+  },
+
+  :tang => {
+  }
+}
 SOLR_ENV = ENV["SOLR_ENV"] || "development"
-SOLR_CONFIG = solr_environments[SOLR_ENV]
-puts "SOLR_CONFIG = #{SOLR_CONFIG.to_yaml}"
-SOLR = Solr::Connection.new("#{SOLR_CONFIG['solr_url']}")
+SOLR_CONFIG = solr_environments[SOLR_ENV.to_sym]
+puts "#{SOLR_ENV}: SOLR_CONFIG = #{SOLR_CONFIG.inspect}"
+solr_url = SOLR_CONFIG[:solr_url] || "http://localhost:8983/solr"
+SOLR = Solr::Connection.new(solr_url)
