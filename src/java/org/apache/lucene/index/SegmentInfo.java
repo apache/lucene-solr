@@ -94,7 +94,7 @@ final class SegmentInfo {
    * @param format format of the segments info file
    * @param input input handle to read segment info from
    */
-  public SegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
+  SegmentInfo(Directory dir, int format, IndexInput input) throws IOException {
     this.dir = dir;
     name = input.readString();
     docCount = input.readInt();

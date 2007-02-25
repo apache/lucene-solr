@@ -157,7 +157,7 @@ public abstract class IndexReader {
 
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
 
-      public Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
 
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);

@@ -71,7 +71,7 @@ final class IndexFileNames {
    * @param extension -- extension of the filename (including .)
    * @param gen -- generation
    */
-  public static final String fileNameFromGeneration(String base, String extension, long gen) {
+  static final String fileNameFromGeneration(String base, String extension, long gen) {
     if (gen == -1) {
       return null;
     } else if (gen == 0) {

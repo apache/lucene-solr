@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
 
-public final class SegmentInfos extends Vector {
+final class SegmentInfos extends Vector {
   
   /** The file format version, a negative number. */
   /* Works since counter, the old 1st entry, is always >= 0 */
@@ -235,7 +235,7 @@ public final class SegmentInfos extends Vector {
 
     new FindSegmentsFile(directory) {
 
-      public Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         read(directory, segmentFileName);
         return null;
       }
@@ -315,7 +315,7 @@ public final class SegmentInfos extends Vector {
     throws CorruptIndexException, IOException {
 
     return ((Long) new FindSegmentsFile(directory) {
-        public Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+        protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
 
           IndexInput input = directory.openInput(segmentFileName);
 
@@ -630,5 +630,6 @@ public final class SegmentInfos extends Vector {
      * during the processing that could have been caused by
      * a writer committing.
      */
-    protected abstract Object doBody(String segmentFileName) throws CorruptIndexException, IOException;}
+    protected abstract Object doBody(String segmentFileName) throws CorruptIndexException, IOException;
+  }
 }

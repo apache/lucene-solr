@@ -16,6 +16,10 @@ API Changes
     This was done to better call out the possible root causes of an
     IOException from these methods.  (Mike McCandless)
 
+ 2. LUCENE-811: make SegmentInfos class, plus a few methods from related
+    classes, package-private again (they were unnecessarily made public
+    as part of LUCENE-701).  (Mike McCandless)
+
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)
