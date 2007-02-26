@@ -13,11 +13,12 @@
 xml.data do 
   @data.each do |doc| 
     xml.event(doc['title_text'],
-      :start => doc['year_facet'],
-      :end => doc['year_facet'],
+      :start => doc[SOLR_CONFIG[:timeline_dates].to_s],
+      :end => doc[SOLR_CONFIG[:timeline_dates].to_s],
       :title => doc['title_text'])
   end
 end
+
 # Amazon images: http://www.betaversion.org/~stefano/linotype/news/66/
 # <data>
 #     <event 
