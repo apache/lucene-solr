@@ -58,20 +58,30 @@ end
 
 require 'solr'
 
-
-
 solr_environments = {
+  # facets: default, all *_facet fields are considered facet fields
+  # title: default, :title_text is title field
+  # timeline: default, no timeline support without knowing the field(s) to use
+  
   :development => {
   },
 
-  :uva => {
-  },
-
   :delicious => {
+#    :image_url => Proc.new {|d| "http://images.amazon.com/images/P/#{d[:asin_text]}.01.MZZZZZZZ"},
+    :timeline_dates => :published_year_facet
   },
 
   :tang => {
-  }
+  },
+  
+  :marc => {
+    :timeline_dates => :year_facet
+  },
+  
+  # TODO: :uva could inherit :marc settings, only overriding the template for VIRGO links
+  :uva => {
+    :timeline_dates => :year_facet
+  },
 }
 SOLR_ENV = ENV["SOLR_ENV"] || "development"
 SOLR_CONFIG = solr_environments[SOLR_ENV.to_sym]
