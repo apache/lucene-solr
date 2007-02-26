@@ -23,6 +23,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SimpleOrderedMap;
 
@@ -427,6 +428,7 @@ class JSONWriter extends TextResponseWriter {
     incLevel();
     boolean first=true;
 
+    SolrIndexSearcher searcher = req.getSearcher();
     DocIterator iterator = ids.iterator();
     for (int i=0; i<sz; i++) {
       int id = iterator.nextDoc();

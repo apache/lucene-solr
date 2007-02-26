@@ -39,7 +39,6 @@ public abstract class TextResponseWriter {
   
   protected final Writer writer;
   protected final IndexSchema schema;
-  protected final SolrIndexSearcher searcher;
   protected final SolrQueryRequest req;
   protected final SolrQueryResponse rsp;
 
@@ -53,7 +52,6 @@ public abstract class TextResponseWriter {
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     this.writer = writer;
     this.schema = req.getSchema();
-    this.searcher = req.getSearcher();
     this.req = req;
     this.rsp = rsp;
     String indent = req.getParam("indent");

@@ -82,7 +82,7 @@ final public class XMLWriter {
     // and to encapsulate writer, schema, and searcher so
     // they don't have to be passed around in every function.
     //
-    XMLWriter xw = new XMLWriter(writer, req.getSchema(), req.getSearcher(), ver);
+    XMLWriter xw = new XMLWriter(writer, req.getSchema(), req, ver);
     xw.defaultFieldList = rsp.getReturnFields();
 
     String indent = req.getParam("indent");
@@ -135,7 +135,7 @@ final public class XMLWriter {
 
   private final Writer writer;
   private final IndexSchema schema; // needed to write fields of docs
-  private final SolrIndexSearcher searcher;  // needed to retrieve docs
+  private final SolrQueryRequest request; // the request
 
   private int level;
   private boolean defaultIndent=false;
@@ -159,10 +159,11 @@ final public class XMLWriter {
   private final Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
   private final StringBuilder sb = new StringBuilder();
 
-  public XMLWriter(Writer writer, IndexSchema schema, SolrIndexSearcher searcher, String version) {
+  public XMLWriter(Writer writer, IndexSchema schema, SolrQueryRequest req, String version) {
     this.writer = writer;
     this.schema = schema;
-    this.searcher = searcher;
+    this.request = req;
+    
     float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
     this.version = (int)(ver*1000);
   }
@@ -357,6 +358,7 @@ final public class XMLWriter {
     }
 
     incLevel();
+    SolrIndexSearcher searcher = request.getSearcher();
     DocIterator iterator = ids.iterator();
     for (int i=0; i<sz; i++) {
       int id = iterator.nextDoc();

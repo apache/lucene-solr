@@ -167,6 +167,12 @@ Bug Fixes
     attempt is made to use the solr.home dir.
     (Ryan McKinley via hossman)
 
+ 6. SOLR-173: Bug fix to SolrDispatchFilter to reduce "too many open
+    files" problem was that SolrDispatchFilter was not closing requests
+    when finished.  Also modified ResponseWriters to only fetch a Searcher
+    reference if necessary for writing out DocLists.
+    (Ryan McKinley via hossman)
+ 
 Other Changes
  1. Updated to Lucene 2.1
 

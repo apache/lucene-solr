@@ -24,5 +24,5 @@ for f in $FILES; do
 done
 
 #send the commit command to make sure all the changes are flushed and visible
-curl $URL --data-binary '<commit/>'
+curl $URL --data-binary '<commit/>' -H 'Content-type:text/xml; charset=utf-8'
 echo

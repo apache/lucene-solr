@@ -74,6 +74,7 @@ public class SolrDispatchFilter implements Filter
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException 
   {
     if( request instanceof HttpServletRequest) {
+      SolrQueryRequest solrReq = null;
       HttpServletRequest req = (HttpServletRequest)request;
       try {
         String path = req.getServletPath();    
@@ -91,7 +92,6 @@ public class SolrDispatchFilter implements Filter
           path = path.substring( 0, idx );
         }
         
-        SolrQueryRequest solrReq = null;
         SolrRequestHandler handler = core.getRequestHandler( path );
         if( handler == null && handleSelect ) {
           if( "/select".equals( path ) || "/select/".equals( path ) ) {
@@ -125,6 +125,11 @@ public class SolrDispatchFilter implements Filter
       catch( Throwable ex ) {
         sendError( (HttpServletResponse)response, ex );
         return;
+      }
+      finally {
+        if( solrReq != null ) {
+          solrReq.close();
+        }
       }
     }
     
