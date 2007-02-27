@@ -291,6 +291,12 @@ public class FSDirectory extends Directory {
           } catch (ClassCastException e) {
             throw new IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
           }
+
+          if (lockFactory instanceof NativeFSLockFactory) {
+            ((NativeFSLockFactory) lockFactory).setLockDir(path);
+          } else if (lockFactory instanceof SimpleFSLockFactory) {
+            ((SimpleFSLockFactory) lockFactory).setLockDir(path);
+          }
         } else {
           // Our default lock is SimpleFSLockFactory;
           // default lockDir is our index directory:

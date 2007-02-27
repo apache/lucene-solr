@@ -52,10 +52,6 @@ import java.util.Random;
  * is fine because the OS will free the locks held against
  * these files even though the files still remain.</p>
  *
- * <p>Native locks file names have the substring "-n-", which
- * you can use to differentiate them from lock files created
- * by {@link SimpleFSLockFactory}.</p>
- *
  * @see LockFactory
  */
 
@@ -91,6 +87,17 @@ public class NativeFSLockFactory extends LockFactory {
   }
 
   /**
+   * Create a NativeFSLockFactory instance, with null (unset)
+   * lock directory.  This is package-private and is only
+   * used by FSDirectory when creating this LockFactory via
+   * the System property
+   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
+   */
+  NativeFSLockFactory() throws IOException {
+    this((File) null);
+  }
+
+  /**
    * Create a NativeFSLockFactory instance, storing lock
    * files into the specified lockDirName:
    *
@@ -107,20 +114,30 @@ public class NativeFSLockFactory extends LockFactory {
    * @param lockDir where lock files are created.
    */
   public NativeFSLockFactory(File lockDir) throws IOException {
+    setLockDir(lockDir);
+  }
 
+  /**
+   * Set the lock directory.  This is package-private and is
+   * only used externally by FSDirectory when creating this
+   * LockFactory via the System property
+   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
+   */
+  void setLockDir(File lockDir) throws IOException {
     this.lockDir = lockDir;
-
-    // Ensure that lockDir exists and is a directory.
-    if (!lockDir.exists()) {
-      if (!lockDir.mkdirs())
-        throw new IOException("Cannot create directory: " +
+    if (lockDir != null) {
+      // Ensure that lockDir exists and is a directory.
+      if (!lockDir.exists()) {
+        if (!lockDir.mkdirs())
+          throw new IOException("Cannot create directory: " +
+                                lockDir.getAbsolutePath());
+      } else if (!lockDir.isDirectory()) {
+        throw new IOException("Found regular file where directory expected: " + 
                               lockDir.getAbsolutePath());
-    } else if (!lockDir.isDirectory()) {
-      throw new IOException("Found regular file where directory expected: " + 
-                            lockDir.getAbsolutePath());
-    }
+      }
 
-    acquireTestLock();
+      acquireTestLock();
+    }
   }
 
   public synchronized Lock makeLock(String lockName) {

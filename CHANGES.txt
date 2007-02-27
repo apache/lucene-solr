@@ -29,6 +29,11 @@ Bug fixes
     that there is a single trailing wildcard (and no additional wildcard 
     or '?' in the query text).  (Doron Cohen)
 
+ 3. LUCENE-812: Add no-argument constructors to NativeFSLockFactory
+    and SimpleFSLockFactory.  This enables all 4 builtin LockFactory
+    implementations to be specified via the System property
+    org.apache.lucene.store.FSDirectoryLockFactoryClass.  (Mike McCandless)
+
 Optimizations
 
 ======================= Release 2.1.0 2007-02-14 =======================

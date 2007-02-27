@@ -41,11 +41,22 @@ public class SimpleFSLockFactory extends LockFactory {
   private File lockDir;
 
   /**
+   * Create a SimpleFSLockFactory instance, with null (unset)
+   * lock directory.  This is package-private and is only
+   * used by FSDirectory when creating this LockFactory via
+   * the System property
+   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
+   */
+  SimpleFSLockFactory() throws IOException {
+    this((File) null);
+  }
+
+  /**
    * Instantiate using the provided directory (as a File instance).
    * @param lockDir where lock files should be created.
    */
   public SimpleFSLockFactory(File lockDir) throws IOException {
-    init(lockDir);
+    setLockDir(lockDir);
   }
 
   /**
@@ -54,10 +65,16 @@ public class SimpleFSLockFactory extends LockFactory {
    */
   public SimpleFSLockFactory(String lockDirName) throws IOException {
     lockDir = new File(lockDirName);
-    init(lockDir);
+    setLockDir(lockDir);
   }
 
-  protected void init(File lockDir) throws IOException {
+  /**
+   * Set the lock directory.  This is package-private and is
+   * only used externally by FSDirectory when creating this
+   * LockFactory via the System property
+   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
+   */
+  void setLockDir(File lockDir) throws IOException {
     this.lockDir = lockDir;
   }
 

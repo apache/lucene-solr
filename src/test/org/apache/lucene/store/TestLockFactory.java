@@ -197,23 +197,47 @@ public class TestLockFactory extends TestCase {
     
 
     // Verify: setting custom lock factory class (as system property) works:
+    // Verify: all 4 builtin LockFactory implementations are
+    //         settable this way 
     // Verify: FSDirectory does basic locking correctly
     public void testLockClassProperty() throws IOException {
         String indexDirName = "index.TestLockFactory3";
+        String prpName = "org.apache.lucene.store.FSDirectoryLockFactoryClass";
 
-        System.setProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass",
-                           "org.apache.lucene.store.NoLockFactory");
+        try {
 
-        IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          // NoLockFactory:
+          System.setProperty(prpName, "org.apache.lucene.store.NoLockFactory");
+          IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
+                     NoLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+          writer.close();
 
-        assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
-                   NoLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+          // SingleInstanceLockFactory:
+          System.setProperty(prpName, "org.apache.lucene.store.SingleInstanceLockFactory");
+          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
+                     SingleInstanceLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+          writer.close();
 
-        // Put back to the correct default for subsequent tests:
-        // System.clearProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass");
-        System.setProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass", "");
+          // NativeFSLockFactory:
+          System.setProperty(prpName, "org.apache.lucene.store.NativeFSLockFactory");
+          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
+                     NativeFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+          writer.close();
 
-        writer.close();
+          // SimpleFSLockFactory:
+          System.setProperty(prpName, "org.apache.lucene.store.SimpleFSLockFactory");
+          writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true);
+          assertTrue("FSDirectory did not use correct LockFactory: got " + writer.getDirectory().getLockFactory(),
+                     SimpleFSLockFactory.class.isInstance(writer.getDirectory().getLockFactory()));
+          writer.close();
+        } finally {
+          // Put back to the correct default for subsequent tests:
+          System.setProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass", "");
+        }
+
         // Cleanup
         rmDir(indexDirName);
     }
