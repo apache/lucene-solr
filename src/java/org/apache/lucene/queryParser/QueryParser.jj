@@ -77,7 +77,7 @@ import org.apache.lucene.util.Parameter;
  * By default a date is converted into a search term using the deprecated
  * {@link DateField} for compatibility reasons.
  * To use the new {@link DateTools} to convert dates, a
- * {@link DateTools.Resolution} has to be set.
+ * {@link org.apache.lucene.document.DateTools.Resolution} has to be set.
  * </p>
  * <p>
  * The date resolution that shall be used for RangeQueries can be set
@@ -345,7 +345,7 @@ public class QueryParser {
   /**
    * Sets the date resolution used by RangeQueries for a specific field.
    *  
-   * @param field field for which the date resolution is to be set 
+   * @param fieldName field for which the date resolution is to be set 
    * @param dateResolution date resolution to set
    */
   public void setDateResolution(String fieldName, DateTools.Resolution dateResolution) {
@@ -882,7 +882,7 @@ PARSER_END(QueryParser)
 | <QUOTED:     "\"" (~["\""] | "\\\"")+ "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
-| <PREFIXTERM:  (<_TERM_START_CHAR> | "*") (<_TERM_CHAR>)* "*" >
+| <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
 | <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
 | <RANGEIN_START: "[" > : RangeIn
 | <RANGEEX_START: "{" > : RangeEx

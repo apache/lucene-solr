@@ -197,8 +197,8 @@ public class TestQueryParser extends TestCase {
 
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("türm term term", null, "türm term term");
-    assertQueryEquals("ümlaut", null, "ümlaut");
+    assertQueryEquals("türm term term", new WhitespaceAnalyzer(), "türm term term");
+    assertQueryEquals("ümlaut", new WhitespaceAnalyzer(), "ümlaut");
 
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
@@ -357,6 +357,14 @@ public class TestQueryParser extends TestCase {
     // Test suffix queries: then allow
     assertWildcardQueryEquals("*Term", true, "*term", true);
     assertWildcardQueryEquals("?Term", true, "?term", true);
+  }
+  
+  public void testLeadingWildcardType() throws Exception {
+    QueryParser qp = getParser(null);
+    qp.setAllowLeadingWildcard(true);
+    assertEquals(WildcardQuery.class, qp.parse("t*erm*").getClass());
+    assertEquals(WildcardQuery.class, qp.parse("?term*").getClass());
+    assertEquals(WildcardQuery.class, qp.parse("*term*").getClass());
   }
 
   public void testQPA() throws Exception {

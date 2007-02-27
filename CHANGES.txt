@@ -24,6 +24,11 @@ Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)
 
+ 2. LUCENE-813: Leading wildcard fixed to work with trailing wildcard.
+    Query parser modified to create a prefix query only for the case 
+    that there is a single trailing wildcard (and no additional wildcard 
+    or '?' in the query text).  (Doron Cohen)
+
 Optimizations
 
 ======================= Release 2.1.0 2007-02-14 =======================

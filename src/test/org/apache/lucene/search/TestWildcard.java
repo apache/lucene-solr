@@ -19,10 +19,14 @@ package org.apache.lucene.search;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -152,4 +156,102 @@ public class TestWildcard
     Hits result = searcher.search(q);
     assertEquals(expectedMatches, result.length());
   }
+
+  /**
+   * Test that wild card queries are parsed to the correct type and are searched correctly.
+   * This test looks at both parsing and execution of wildcard queries.
+   * Although placed here, it also tests prefix queries, verifying that
+   * prefix queries are not parsed into wild card queries, and viceversa.
+   * @throws Exception
+   */
+  public void testParsingAndSearching() throws Exception {
+    String field = "content";
+    boolean dbg = false;
+    QueryParser qp = new QueryParser(field, new WhitespaceAnalyzer());
+    qp.setAllowLeadingWildcard(true);
+    String docs[] = {
+        "abcdefg1",
+        "hijklmn1",
+        "opqrstu1",
+    };
+    // queries that should find all docs
+    String matchAll[] = {
+        "*", "*1", "**1", "*?", "*?1", "?*1", "**", "***",
+    };
+    // queries that should find no docs
+    String matchNone[] = {
+        "a*h", "a?h", "*a*h", "?a", "a?",
+    };
+    // queries that should be parsed to prefix queries
+    String matchOneDocPrefix[][] = {
+        {"a*", "ab*", "abc*"}, // these should find only doc 0 
+        {"h*", "hi*", "hij*"}, // these should find only doc 1
+        {"o*", "op*", "opq*"}, // these should find only doc 2
+    };
+    // queries that should be parsed to wildcard queries
+    String matchOneDocWild[][] = {
+        {"*a*", "*ab*", "*abc**", "ab*e*", "*g?", "*f?1", "abc**"}, // these should find only doc 0
+        {"*h*", "*hi*", "*hij**", "hi*k*", "*n?", "*m?1", "hij**"}, // these should find only doc 1
+        {"*o*", "*op*", "*opq**", "op*q*", "*u?", "*t?1", "opq**"}, // these should find only doc 2
+    };
+
+    // prepare the index
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer());
+    for (int i = 0; i < docs.length; i++) {
+      Document doc = new Document();
+      doc.add(new Field(field,docs[i],Store.NO,Index.UN_TOKENIZED));
+      iw.addDocument(doc);
+    }
+    iw.close();
+    
+    IndexSearcher searcher = new IndexSearcher(dir);
+    
+    // test queries that must find all
+    for (int i = 0; i < matchAll.length; i++) {
+      String qtxt = matchAll[i];
+      Query q = qp.parse(qtxt);
+      if (dbg) System.out.println("matchAll: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+      Hits hits = searcher.search(q);
+      assertEquals(docs.length,hits.length());
+    }
+    
+    // test queries that must find none
+    for (int i = 0; i < matchNone.length; i++) {
+      String qtxt = matchNone[i];
+      Query q = qp.parse(qtxt);
+      if (dbg) System.out.println("matchNone: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+      Hits hits = searcher.search(q);
+      assertEquals(0,hits.length());
+    }
+
+    // test queries that must be prefix queries and must find only one doc
+    for (int i = 0; i < matchOneDocPrefix.length; i++) {
+      for (int j = 0; j < matchOneDocPrefix[i].length; j++) {
+        String qtxt = matchOneDocPrefix[i][j];
+        Query q = qp.parse(qtxt);
+        if (dbg) System.out.println("match 1 prefix: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+        assertEquals(PrefixQuery.class, q.getClass());
+        Hits hits = searcher.search(q);
+        assertEquals(1,hits.length());
+        assertEquals(i,hits.id(0));
+      }
+    }
+
+    // test queries that must be wildcard queries and must find only one doc
+    for (int i = 0; i < matchOneDocPrefix.length; i++) {
+      for (int j = 0; j < matchOneDocWild[i].length; j++) {
+        String qtxt = matchOneDocWild[i][j];
+        Query q = qp.parse(qtxt);
+        if (dbg) System.out.println("match 1 wild: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+        assertEquals(WildcardQuery.class, q.getClass());
+        Hits hits = searcher.search(q);
+        assertEquals(1,hits.length());
+        assertEquals(i,hits.id(0));
+      }
+    }
+
+    searcher.close();
+  }
+  
 }
