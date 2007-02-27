@@ -64,7 +64,7 @@
 
 <div id="results"><table cellpadding="10">
   <% @response.each do |doc| %>
-    <%= render_component :controller => DocumentController, :action => "result", :params => {:doc => doc, :response => @response} %>
+    <%= render :partial => "document/document_#{SOLR_ENV}", :locals => {:doc => doc, :response => @response}%>  
   <% end %>
 </table>
 </div>

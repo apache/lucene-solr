@@ -1,8 +1,8 @@
 <%
-    virgo_link = "http://virgo.lib.virginia.edu/uhtbin/cgisirsi/uva/0/0/5?searchdata1=#{@doc['id'][1..-1]}%7bCKEY%7d"
+    virgo_link = "http://virgo.lib.virginia.edu/uhtbin/cgisirsi/uva/0/0/5?searchdata1=#{doc['id'][1..-1]}%7bCKEY%7d"
     # url = URI.parse(virgo_link)
     # res = Net::HTTP.start(url.host, url.port) {|http|
-    #   http.get("/uhtbin/cgisirsi/uva/0/0/5?searchdata1=#{@doc['id'][1..-1]}{CKEY}")
+    #   http.get("/uhtbin/cgisirsi/uva/0/0/5?searchdata1=#{doc['id'][1..-1]}{CKEY}")
     # }
     # availability = Regexp.new("Copy\ info\:(.*)td\>", Regexp::MULTILINE).match(res.body)[1]
 %>
@@ -10,9 +10,9 @@
   <td>
     <table class="entry">
       <tr>
-        <td class="title" colspan="2"><%= link_to @doc['title_text'], virgo_link, {:target => "_blank"}%></td>
+        <td class="title" colspan="2"><%= link_to doc['title_text'], virgo_link, {:target => "_blank"}%></td>
       </tr>
-      <% @doc.each do |k,v|; highlighting = @response.highlighted(@doc['id'], k) %>
+      <% doc.each do |k,v|; highlighting = response.highlighted(doc['id'], k) %>
       <tr><td class="field"><%=k%>:</td><td><%= highlighting ? "...#{highlighting}..." : (v.respond_to?('join') ? v.join(',') : v.to_s)%></td></tr>
       <% end %>
       <tr>

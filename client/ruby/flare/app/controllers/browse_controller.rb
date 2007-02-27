@@ -30,7 +30,10 @@ class BrowseController < ApplicationController
                                           :filter_queries => filters,
                                           :rows => @results_per_page,
                                           :start => @start,
-                                          :facets => {:fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count, :debug_query=>true},
+                                          :facets => {
+                                            :fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count,
+#                                            :queries => session[:saved].collect {|constraints| make_query(constraints)}
+                                          },
                                           :highlighting => {:field_list => @text_fields})
     logger.info({:query => query, :filter_queries => filters}.inspect)
     @response = solr(request)
@@ -104,6 +107,12 @@ class BrowseController < ApplicationController
     redirect_to :action => 'index'
   end
   
+  def save
+    session[:saved] ||= {}
+    session[:saved][params[:name]] = {:filters => session[:filters], :queries => session[:queries]}
+    redirect_to :action => 'index'
+  end
+  
   private
   def flare_before
     session[:queries] ||= [] 
@@ -123,6 +132,25 @@ class BrowseController < ApplicationController
     results = SOLR.send(req)
     
     results.field_facets(field)
+  end
+  
+  def make_query(constraints)
+    queries = constraints[:queries]
+    if queries.nil? || queries.empty?
+      query = "*:*"
+    else
+      query = session[:queries].collect{|q| "#{q[:negative] ? '-' : ''}(#{q[:query]})"}.join(' AND ')
+    end
+    
+    filter = constraints[:filters].collect do |filter|
+      value = filter[:value]
+      if value != "[* TO *]"
+        value = "\"#{value}\""
+      end
+      "#{filter[:negative] ? '-' : ''}#{filter[:field]}:#{value}"
+    end.join(" AND ")
+    
+    "#{query} AND #{filter}"
   end
   
 end
