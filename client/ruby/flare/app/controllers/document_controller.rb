@@ -12,9 +12,6 @@
 
 
 class DocumentController < ApplicationController
-  def result
-    @doc = params[:doc]
-    @response = params[:response]  # TODO: FlareContext?
-    render :template => "document/document_#{SOLR_ENV}"    
-  end
+  # Currently not used, as partials are used for rendering documents in search results
+  # TODO: how best to allow pluggable document rendering?
 end
