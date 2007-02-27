@@ -900,13 +900,17 @@
                 </p>
 
                 <p>
-                    The write lock is named "XXXX-write.lock" where
-                    XXXX is typically a unique prefix computed by the
-                    directory path to the index. When this file is
-                    present, a process is currently adding documents
-                    to an index, or removing files from that index.
-                    This lock file prevents several processes from
-                    attempting to modify an index at the same time.
+                    The write lock, which is stored in the index
+                    directory by default, is named "write.lock".  If
+                    the lock directory is different from the index
+                    directory then the write lock will be named
+                    "XXXX-write.lock" where XXXX is a unique prefix
+                    derived from the full path to the index directory.
+                    When this file is present, a process is currently
+                    adding documents to an index, or removing files
+                    from that index.  This lock file prevents several
+                    processes from attempting to modify an index at
+                    the same time.
                 </p>
 
                 <p>
