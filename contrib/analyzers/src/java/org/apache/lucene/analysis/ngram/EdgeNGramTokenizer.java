@@ -24,75 +24,123 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Tokenizes the input into n-grams of the given size.
+ * Tokenizes the input from an edge into n-grams of given size(s).
  * @author Otis Gospodnetic
+ * @author Adam Hiatt
  */
 public class EdgeNGramTokenizer extends Tokenizer {
-  // which side to get the n-gram from
-  // TODO: switch to using this enum when we move to 1.5+
-//  public enum Side {
-//    FRONT (),
-//    BACK ();
-//  }
+  public static final Side DEFAULT_SIDE = Side.FRONT;
+  public static final int DEFAULT_MAX_GRAM_SIZE = 1;
+  public static final int DEFAULT_MIN_GRAM_SIZE = 1;
+
+  // Replace this with an enum when the Java 1.5 upgrade is made, the impl will be simplified
   /** Specifies which side of the input the n-gram should be generated from */
   public static class Side {
+    private String label;
+
     /** Get the n-gram from the front of the input */
     public static Side FRONT = new Side("front");
+
     /** Get the n-gram from the end of the input */
     public static Side BACK = new Side("back");
-    private Side(String label) {}
+
+    // Private ctor
+    private Side(String label) { this.label = label; }
+
+
+    public String getLabel() { return label; }
+
+    // Get the appropriate Side from a string
+    public static Side getSide(String sideName) {
+      if (FRONT.getLabel().equals(sideName)) {
+        return FRONT;
+      }
+      else if (BACK.getLabel().equals(sideName)) {
+        return BACK;
+      }
+      return null;
+    }
   }
+
+  private int minGram;
+  private int maxGram;
   private int gramSize;
   private Side side;
+  private boolean started = false;
   private int inLen;
   private String inStr;
-  private boolean started = false;
+
 
   /**
-   * Creates EdgeNGramTokenizer that can generate an n-gram of the given size.
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
    * @param input Reader holding the input to be tokenized
-   * @param side the {@link Side} from which to chop off an n-gram 
-   * @param gramSize the size of the n-gram to generate
+   * @param side the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
    */
-  public EdgeNGramTokenizer(Reader input, Side side, int gramSize) {
+  public EdgeNGramTokenizer(Reader input, Side side, int minGram, int maxGram) {
     super(input);
-    if (gramSize < 1) {
-      throw new IllegalArgumentException("gramSize must be greater than zero");
+
+    if (side == null) {
+      throw new IllegalArgumentException("sideLabel must be either front or back");
     }
-    this.gramSize = gramSize;
+
+    if (minGram < 1) {
+      throw new IllegalArgumentException("minGram must be greater than zero");
+    }
+
+    if (minGram > maxGram) {
+      throw new IllegalArgumentException("minGram must not be greater than maxGram");
+    }
+
+    this.minGram = minGram;
+    this.maxGram = maxGram;
     this.side = side;
   }
-  public EdgeNGramTokenizer(Reader input, String side, int gramSize) {
-
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param input Reader holding the input to be tokenized
+   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public EdgeNGramTokenizer(Reader input, String sideLabel, int minGram, int maxGram) {
+    this(input, Side.getSide(sideLabel), minGram, maxGram);
   }
 
   /** Returns the next token in the stream, or null at EOS. */
   public final Token next() throws IOException {
-    // if we already returned the edge n-gram, we are done
-    if (started)
-      return null;
+    // if we are just starting, read the whole input
     if (!started) {
       started = true;
       char[] chars = new char[1024];
       input.read(chars);
-      inStr = new String(chars).trim();  // remove any trailing empty strings 
+      inStr = new String(chars).trim();  // remove any trailing empty strings
       inLen = inStr.length();
+      gramSize = minGram;
     }
-    // if the input is too short, we can't generate any n-grams
-    if (gramSize > inLen)
-      return null;
-    if (side == Side.FRONT)
-      return new Token(inStr.substring(0, gramSize), 0, gramSize);
-    else
-      return new Token(inStr.substring(inLen-gramSize), inLen-gramSize, inLen);            
-  }
 
-  static Side side(String label) {
-    if (label == null || label.trim().length() == 0)
-      throw new IllegalArgumentException("Label must be either 'front' or 'back'");
-    if (label.equals("front"))
-      return Side.FRONT;
-    else
-      return Side.BACK;
+    // if the remaining input is too short, we can't generate any n-grams
+    if (gramSize > inLen) {
+      return null;
+    }
+
+    // if we have hit the end of our n-gram size range, quit
+    if (gramSize > maxGram) {
+      return null;
+    }
+
+    Token tok;
+    if (side == Side.FRONT) {
+      tok = new Token(inStr.substring(0, gramSize), 0, gramSize);
+    }
+    else {
+      tok = new Token(inStr.substring(inLen-gramSize), inLen-gramSize, inLen);
+    }
+
+    gramSize++;
+    return tok;
   }
 }
