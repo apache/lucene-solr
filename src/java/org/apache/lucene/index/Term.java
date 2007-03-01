@@ -30,7 +30,7 @@ public final class Term implements Comparable, java.io.Serializable {
   String text;
 
   /** Constructs a Term with the given field and text.
-   * <p>Note that a text value of null results in undefined
+   * <p>Note that a null field or null text value results in undefined
    * behavior for most Lucene APIs that accept a Term parameter. */
   public Term(String fld, String txt) {
     this(fld, txt, true);
