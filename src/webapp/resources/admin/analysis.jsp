@@ -249,7 +249,8 @@
         }
       }
 
-      for (List<Tok> lst : arrLst) {
+      for (int posIndex=0; posIndex<arrLst.length; posIndex++) {
+        List<Tok> lst = arrLst[posIndex];
         if (lst.size() <= idx) continue;
         if (match!=null && match.contains(lst.get(idx))) {
           out.print("<td class=\"highlight\"");
@@ -257,8 +258,10 @@
           out.print("<td class=\"debugdata\"");
         }
 
-        if (idx==0 && lst.size()==1 && maxSz > 1) {
-          out.print("rowspan=\""+maxSz+'"');
+        // if the last value in the column, use up
+        // the rest of the space via rowspan.
+        if (lst.size() == idx+1 && lst.size() < maxSz) {
+          out.print("rowspan=\""+(maxSz-lst.size()+1)+'"');
         }
 
         out.print('>');
@@ -309,25 +312,11 @@
 
     List<Tok>[] arr = (List<Tok>[])map.values().toArray(new ArrayList[map.size()]);
 
-    /***
-    // This generics version works fine with Resin, but fails with Tomcat 5.5
-    // with java.lang.AbstractMethodError
-    //    at java.util.Arrays.mergeSort(Arrays.java:1284)
-    //    at java.util.Arrays.sort(Arrays.java:1223)
     Arrays.sort(arr, new Comparator<List<Tok>>() {
       public int compare(List<Tok> toks, List<Tok> toks1) {
         return toks.get(0).pos - toks1.get(0).pos;
       }
     }
-    ***/
-    Arrays.sort(arr, new Comparator() {
-      public int compare(Object a, Object b) {
-        List<Tok> toks = (List<Tok>)a;
-        List<Tok> toks1 = (List<Tok>)b;
-        return toks.get(0).pos - toks1.get(0).pos;
-      }
-    }
-
     );
 
     out.println("<table width=\"auto\" class=\"analysis\" border=\"1\">");

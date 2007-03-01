@@ -172,6 +172,9 @@ Bug Fixes
     when finished.  Also modified ResponseWriters to only fetch a Searcher
     reference if necessary for writing out DocLists.
     (Ryan McKinley via hossman)
+
+ 7. SOLR-168: Fix display positioning of multiple tokens at the same
+    position in analysis.jsp (yonik)
  
 Other Changes
  1. Updated to Lucene 2.1
