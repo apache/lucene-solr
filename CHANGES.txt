@@ -175,6 +175,9 @@ Bug Fixes
 
  7. SOLR-168: Fix display positioning of multiple tokens at the same
     position in analysis.jsp (yonik)
+
+ 8. SOLR-167: The SynonymFilter sometimes generated incorrect offsets when
+    multi token synonyms were mached in the source text. (yonik) 
  
 Other Changes
  1. Updated to Lucene 2.1

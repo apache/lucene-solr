@@ -86,8 +86,7 @@ public class SynonymFilter extends TokenFilter {
 
       // OK, we matched a token, so find the longest match.
 
-      // since matched is only used for matches >= 2, defer creation until now
-      if (matched==null) matched=new LinkedList();
+      matched = new LinkedList();
 
       SynonymMap result = match((SynonymMap)o);
 
