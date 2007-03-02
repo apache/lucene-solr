@@ -88,6 +88,10 @@ public class SpellChecker {
         IndexWriter writer = new IndexWriter(spellIndex, null, true);
         writer.close();
     }
+    // close the old searcher, if there was one
+    if (searcher != null) {
+      searcher.close();
+    }
     searcher = new IndexSearcher(this.spellIndex);
   }
 
@@ -99,6 +103,14 @@ public class SpellChecker {
   }
 
   /**
+   * As the Lucene similarity that is used to fetch the most relevant n-grammed terms
+   * is not the same as the edit distance strategy used to calculate the best
+   * matching spell-checked word from the hits that Lucene found, one usually has
+   * to retrieve a couple of numSug's in order to get the true best match.
+   *
+   * I.e. if numSug == 1, don't count on that suggestion being the best one.
+   * Thus, you should set this value to <b>at least</b> 5 for a good suggestion.
+   *
    * Suggest similar words
    * @param word String the word you want a spell check done on
    * @param numSug int the number of suggest words
@@ -110,6 +122,14 @@ public class SpellChecker {
   }
 
   /**
+   * As the Lucene similarity that is used to fetch the most relevant n-grammed terms
+   * is not the same as the edit distance strategy used to calculate the best
+   * matching spell-checked word from the hits that Lucene found, one usually has
+   * to retrieve a couple of numSug's in order to get the true best match.
+   *
+   * I.e. if numSug == 1, don't count on that suggestion being the best one.
+   * Thus, you should set this value to <b>at least</b> 5 for a good suggestion.
+   *
    * Suggest similar words (restricted or not to a field of a user index)
    * @param word String the word you want a spell check done on
    * @param numSug int the number of suggest words
