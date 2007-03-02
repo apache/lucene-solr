@@ -148,9 +148,9 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
     super();
   }
   
-  /** sets the default variables for any usefull info it finds in the config
-   * if a config option is not inthe format expected, logs an warning
-   * and ignores it..
+  /** Sets the default variables for any useful info it finds in the config.
+   * If a config option is not in the format expected, logs a warning
+   * and ignores it.
    */
   public void init(NamedList args) {
 	// Handle an old format
