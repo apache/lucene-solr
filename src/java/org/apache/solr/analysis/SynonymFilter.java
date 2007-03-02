@@ -67,8 +67,6 @@ public class SynonymFilter extends TokenFilter {
    *    merging token streams to preserve token positions.
    *  - preserve original positionIncrement of first matched token
    */
-
-
   public Token next() throws IOException {
     while (true) {
       // if there are any generated tokens, return them... don't try any
@@ -173,8 +171,6 @@ public class SynonymFilter extends TokenFilter {
     buffer.addFirst(t);
   }
 
-
-
   private SynonymMap match(SynonymMap map) throws IOException {
     SynonymMap result = null;
 
@@ -186,7 +182,7 @@ public class SynonymFilter extends TokenFilter {
 
         SynonymMap subMap = (SynonymMap)map.submap.get(str);
 
-        if (subMap !=null) {
+        if (subMap != null) {
           // recurse
           result = match(subMap);
         }
