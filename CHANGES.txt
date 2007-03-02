@@ -34,6 +34,11 @@ Bug fixes
     implementations to be specified via the System property
     org.apache.lucene.store.FSDirectoryLockFactoryClass.  (Mike McCandless)
 
+New features
+
+ 1. LUCENE-759: Added two n-gram-producing TokenFilters.
+    (Otis Gospodnetic)
+
 Optimizations
 
 ======================= Release 2.1.0 2007-02-14 =======================
