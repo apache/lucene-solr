@@ -25,6 +25,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TextField;
 
 import java.io.Writer;
 import java.io.IOException;
@@ -290,8 +291,10 @@ final public class XMLWriter {
       FieldType ft = schema.getFieldType(fname);
       ***/
 
-      SchemaField sf = schema.getField(fname);
-
+      SchemaField sf = schema.getFieldOrNull(fname);
+      if( sf == null ) {
+        sf = new SchemaField( fname, new TextField() );
+      }
       if (fidx1+1 == fidx2) {
         // single field value
         if (version>=2100 && sf.multiValued()) {
@@ -411,10 +414,12 @@ final public class XMLWriter {
       writeMap(name, (Map)val);
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
-    } else if (val instanceof Collection) {
-      writeArray(name,(Collection)val);
+    } else if (val instanceof Iterable) {
+      writeArray(name,((Iterable)val).iterator());
     } else if (val instanceof Object[]) {
       writeArray(name,(Object[])val);
+    } else if (val instanceof Iterator) {
+      writeArray(name,(Iterator)val);
     } else {
       // default...
       writeStr(name, val.getClass().getName() + ':' + val.toString());
@@ -468,21 +473,22 @@ final public class XMLWriter {
   }
 
   public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val));
+    writeArray(name, Arrays.asList(val).iterator());
   }
 
-  public void writeArray(String name, Collection val) throws IOException {
-    int sz = val.size();
-    startTag("arr", name, sz<=0);
-    incLevel();
-    for (Object o : val) {
-      // if (sz<indentThreshold) indent();
-      writeVal(null, o);
-    }
-    decLevel();
-    if (sz > 0) {
+  public void writeArray(String name, Iterator iter) throws IOException {
+    if( iter.hasNext() ) {
+      startTag("arr", name, false );
+      incLevel();
+      while( iter.hasNext() ) {
+        writeVal(null, iter.next());
+      }
+      decLevel();
       if (doIndent) indent();
       writer.write("</arr>");
+    }
+    else {
+      startTag("arr", name, true );
     }
   }
 

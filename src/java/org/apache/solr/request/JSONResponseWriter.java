@@ -532,24 +532,21 @@ class JSONWriter extends TextResponseWriter {
     }
   }
 
-
   public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val));
+    writeArray(name, Arrays.asList(val).iterator());
   }
 
-  public void writeArray(String name, Collection val) throws IOException {
+  public void writeArray(String name, Iterator val) throws IOException {
     writer.write('[');
-    int sz = val.size();
     incLevel();
     boolean first=true;
-    for (Object o : val) {
-      if (first) {
-        first=false;
-      } else {
+    while( val.hasNext() ) {
+      if( !first ) indent();
+      writeVal(null, val.next());
+      if( val.hasNext() ) {
         writer.write(',');
       }
-      if (sz>1) indent();
-      writeVal(null, o);
+      first=false;
     }
     decLevel();
     writer.write(']');

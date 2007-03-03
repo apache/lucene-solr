@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -140,10 +141,12 @@ public abstract class TextResponseWriter {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
-    } else if (val instanceof Collection) {
-      writeArray(name,(Collection)val);
+    } else if (val instanceof Iterable) {
+      writeArray(name,((Iterable)val).iterator());
     } else if (val instanceof Object[]) {
       writeArray(name,(Object[])val);
+    } else if (val instanceof Iterator) {
+      writeArray(name,(Iterator)val);
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -164,7 +167,7 @@ public abstract class TextResponseWriter {
 
   public abstract void writeArray(String name, Object[] val) throws IOException;
 
-  public abstract void writeArray(String name, Collection val) throws IOException;
+  public abstract void writeArray(String name, Iterator val) throws IOException;
 
   public abstract void writeNull(String name) throws IOException;
 
