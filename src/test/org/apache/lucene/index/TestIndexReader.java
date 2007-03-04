@@ -386,6 +386,38 @@ public class TestIndexReader extends TestCase
     }
 
 
+    // Make sure you can set norms & commit, and there are
+    // no extra norms files left:
+    public void testWritingNormsNoReader() throws IOException
+    {
+        Directory dir = new MockRAMDirectory();
+        IndexWriter writer = null;
+        IndexReader reader = null;
+        Term searchTerm = new Term("content", "aaa");
+
+        //  add 1 documents with term : aaa
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        writer.setUseCompoundFile(false);
+        addDoc(writer, searchTerm.text());
+        writer.close();
+
+        //  now open reader & set norm for doc 0 (writes to
+        //  _0_1.s0)
+        reader = IndexReader.open(dir);
+        reader.setNorm(0, "content", (float) 2.0);
+        reader.close();
+        
+        //  now open reader again & set norm for doc 0 (writes to _0_2.s0)
+        reader = IndexReader.open(dir);
+        reader.setNorm(0, "content", (float) 2.0);
+        reader.close();
+        assertFalse("failed to remove first generation norms file on writing second generation",
+                    dir.fileExists("_0_1.s0"));
+        
+        dir.close();
+    }
+
+
     public void testDeleteReaderWriterConflictUnoptimized() throws IOException{
       deleteReaderWriterConflict(false);
     }

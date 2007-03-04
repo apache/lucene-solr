@@ -19,8 +19,11 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * This is a subclass of RAMDirectory that adds methods
@@ -35,18 +38,37 @@ public class MockRAMDirectory extends RAMDirectory {
   long maxUsedSize;
   double randomIOExceptionRate;
   Random randomState;
+  boolean noDeleteOpenFile = true;
+
+  // NOTE: we cannot initialize the Map here due to the
+  // order in which our constructor actually does this
+  // member initialization vs when it calls super.  It seems
+  // like super is called, then our members are initialized:
+  Map openFiles;
 
   public MockRAMDirectory() throws IOException {
     super();
+    if (openFiles == null) {
+      openFiles = new HashMap();
+    }
   }
   public MockRAMDirectory(String dir) throws IOException {
     super(dir);
+    if (openFiles == null) {
+      openFiles = new HashMap();
+    }
   }
   public MockRAMDirectory(Directory dir) throws IOException {
     super(dir);
+    if (openFiles == null) {
+      openFiles = new HashMap();
+    }
   }
   public MockRAMDirectory(File dir) throws IOException {
     super(dir);
+    if (openFiles == null) {
+      openFiles = new HashMap();
+    }
   }
 
   public void setMaxSizeInBytes(long maxSize) {
@@ -65,6 +87,17 @@ public class MockRAMDirectory extends RAMDirectory {
   }
   public void resetMaxUsedSizeInBytes() {
     this.maxUsedSize = getRecomputedActualSizeInBytes();
+  }
+
+  /**
+   * Emulate windows whereby deleting an open file is not
+   * allowed (raise IOException).
+  */
+  public void setNoDeleteOpenFile(boolean value) {
+    this.noDeleteOpenFile = value;
+  }
+  public boolean getNoDeleteOpenFile() {
+    return noDeleteOpenFile;
   }
 
   /**
@@ -91,7 +124,26 @@ public class MockRAMDirectory extends RAMDirectory {
     }
   }
 
+  public synchronized void deleteFile(String name) throws IOException {
+    synchronized(openFiles) {
+      if (noDeleteOpenFile && openFiles.containsKey(name)) {
+        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot delete");
+      }
+    }
+    super.deleteFile(name);
+  }
+
   public IndexOutput createOutput(String name) {
+    if (openFiles == null) {
+      openFiles = new HashMap();
+    }
+    synchronized(openFiles) {
+      if (noDeleteOpenFile && openFiles.containsKey(name)) {
+        // RuntimeException instead of IOException because
+        // super() does not throw IOException currently:
+        throw new RuntimeException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
+      }
+    }
     RAMFile file = new RAMFile(this);
     synchronized (this) {
       RAMFile existing = (RAMFile)fileMap.get(name);
@@ -103,6 +155,27 @@ public class MockRAMDirectory extends RAMDirectory {
     }
 
     return new MockRAMOutputStream(this, file);
+  }
+
+  public IndexInput openInput(String name) throws IOException {
+    RAMFile file;
+    synchronized (this) {
+      file = (RAMFile)fileMap.get(name);
+    }
+    if (file == null)
+      throw new FileNotFoundException(name);
+    else {
+      synchronized(openFiles) {
+        if (openFiles.containsKey(name)) {
+          Integer v = (Integer) openFiles.get(name);
+          v = new Integer(v.intValue()+1);
+          openFiles.put(name, v);
+        } else {
+          openFiles.put(name, new Integer(1));
+        }
+      }
+    }
+    return new MockRAMInputStream(this, name, file);
   }
 
   /** Provided for testing purposes.  Use sizeInBytes() instead. */

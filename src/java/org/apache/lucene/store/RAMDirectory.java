@@ -173,7 +173,7 @@ public class RAMDirectory extends Directory implements Serializable {
   /** Removes an existing file in the directory.
    * @throws IOException if the file does not exist
    */
-  public synchronized final void deleteFile(String name) throws IOException {
+  public synchronized void deleteFile(String name) throws IOException {
     RAMFile file = (RAMFile)fileMap.get(name);
     if (file!=null) {
         fileMap.remove(name);
@@ -215,7 +215,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Returns a stream reading an existing file. */
-  public final IndexInput openInput(String name) throws IOException {
+  public IndexInput openInput(String name) throws IOException {
     RAMFile file;
     synchronized (this) {
       file = (RAMFile)fileMap.get(name);
