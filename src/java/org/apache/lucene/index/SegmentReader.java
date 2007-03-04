@@ -54,6 +54,9 @@ class SegmentReader extends IndexReader {
   IndexInput freqStream;
   IndexInput proxStream;
 
+  // optionally used for the .nrm file shared by multiple norms
+  private IndexInput singleNormStream;
+
   // Compound File Reader when based on a compound file segment
   CompoundFileReader cfsReader = null;
 
@@ -91,6 +94,17 @@ class SegmentReader extends IndexReader {
         out.close();
       }
       this.dirty = false;
+    }
+
+    /** Closes the underlying IndexInput for this norm.
+     * It is still valid to access all other norm properties after close is called.
+     * @throws IOException
+     */
+    public void close() throws IOException {
+      if (in != null && in != singleNormStream) {
+        in.close();
+      }
+      in = null;
     }
   }
 
@@ -457,6 +471,9 @@ class SegmentReader extends IndexReader {
       byte[] bytes = new byte[maxDoc()];
       norms(field, bytes, 0);
       norm.bytes = bytes;                         // cache it
+      // it's OK to close the underlying IndexInput as we have cached the
+      // norms and will never read them again.
+      norm.close();
     }
     return norm.bytes;
   }
@@ -473,6 +490,7 @@ class SegmentReader extends IndexReader {
     Norm norm = (Norm) norms.get(field);
     if (norm == null)                             // not an indexed field
       return;
+
     norm.dirty = true;                            // mark it dirty
     normsDirty = true;
 
@@ -494,13 +512,10 @@ class SegmentReader extends IndexReader {
       return;
     }
 
-    IndexInput normStream = (IndexInput) norm.in.clone();
-    try {                                         // read from disk
-      normStream.seek(norm.normSeek);
-      normStream.readBytes(bytes, offset, maxDoc());
-    } finally {
-      normStream.close();
-    }
+    // Read from disk.  norm.in may be shared across  multiple norms and
+    // should only be used in a synchronized context.
+    norm.in.seek(norm.normSeek);
+    norm.in.readBytes(bytes, offset, maxDoc());
   }
 
 
@@ -515,8 +530,27 @@ class SegmentReader extends IndexReader {
         if (!si.hasSeparateNorms(fi.number)) {
           d = cfsDir;
         }
-        long normSeek = (fileName.endsWith("." + IndexFileNames.NORMS_EXTENSION) ? nextNormSeek : 0);
-        norms.put(fi.name, new Norm(d.openInput(fileName), fi.number, normSeek));
+        
+        // singleNormFile means multiple norms share this file
+        boolean singleNormFile = fileName.endsWith("." + IndexFileNames.NORMS_EXTENSION);
+        IndexInput normInput = null;
+        long normSeek;
+
+        if (singleNormFile) {
+          normSeek = nextNormSeek;
+          if (singleNormStream==null) {
+            singleNormStream = d.openInput(fileName);
+          }
+          // All norms in the .nrm file can share a single IndexInput since
+          // they are only used in a synchronized context.
+          // If this were to change in the future, a clone could be done here.
+          normInput = singleNormStream;
+        } else {
+          normSeek = 0;
+          normInput = d.openInput(fileName);
+        }
+
+        norms.put(fi.name, new Norm(normInput, fi.number, normSeek));
         nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
@@ -527,7 +561,11 @@ class SegmentReader extends IndexReader {
       Enumeration enumerator = norms.elements();
       while (enumerator.hasMoreElements()) {
         Norm norm = (Norm) enumerator.nextElement();
-        norm.in.close();
+        norm.close();
+      }
+      if (singleNormStream != null) {
+        singleNormStream.close();
+        singleNormStream = null;
       }
     }
   }

@@ -149,7 +149,6 @@ public class TestMultiSearcher extends TestCase
             // no exception should happen at this point
             Document d = hits2.doc(i);
         }
-        mSearcher2.close();
 
         // test the subSearcher() method:
         Query subSearcherQuery = parser.parse("id:doc1");
@@ -161,6 +160,7 @@ public class TestMultiSearcher extends TestCase
         hits2 = mSearcher2.search(subSearcherQuery);
         assertEquals(1, hits2.length());
         assertEquals(1, mSearcher2.subSearcher(hits2.id(0)));   // hit from searchers2[1]
+        mSearcher2.close();
 
         //--------------------------------------------------------------------
         // scenario 3
