@@ -1,4 +1,6 @@
 package org.apache.lucene.document;
+
+import java.io.Serializable;
 /**
  * Copyright 2004 The Apache Software Foundation
  *
@@ -20,7 +22,7 @@ package org.apache.lucene.document;
  *
  **/
 //Replace with an enumerated type in 1.5
-public final class FieldSelectorResult {
+public final class FieldSelectorResult implements Serializable {
 
     /**
      * Load this {@link Field} every time the {@link Document} is loaded, reading in the data as it is encounterd.
@@ -28,7 +30,7 @@ public final class FieldSelectorResult {
      *<p/>
      * {@link Document#add(Fieldable)} should be called by the Reader.
       */
-  public static final FieldSelectorResult LOAD = new FieldSelectorResult(0);
+  public transient static final FieldSelectorResult LOAD = new FieldSelectorResult(0);
     /**
      * Lazily load this {@link Field}.  This means the {@link Field} is valid, but it may not actually contain its data until
      * invoked.  {@link Document#getField(String)} SHOULD NOT BE USED.  {@link Document#getFieldable(String)} is safe to use and should
@@ -36,14 +38,14 @@ public final class FieldSelectorResult {
      *<p/>
      * {@link Document#add(Fieldable)} should be called by the Reader.
      */
-  public static final FieldSelectorResult LAZY_LOAD = new FieldSelectorResult(1);
+  public transient static final FieldSelectorResult LAZY_LOAD = new FieldSelectorResult(1);
     /**
      * Do not load the {@link Field}.  {@link Document#getField(String)} and {@link Document#getFieldable(String)} should return null.
      * {@link Document#add(Fieldable)} is not called.
      * <p/>
      * {@link Document#add(Fieldable)} should not be called by the Reader.
      */
-  public static final FieldSelectorResult NO_LOAD = new FieldSelectorResult(2);
+  public transient static final FieldSelectorResult NO_LOAD = new FieldSelectorResult(2);
     /**
      * Load this field as in the {@link #LOAD} case, but immediately return from {@link Field} loading for the {@link Document}.  Thus, the
      * Document may not have its complete set of Fields.  {@link Document#getField(String)} and {@link Document#getFieldable(String)} should
@@ -51,23 +53,23 @@ public final class FieldSelectorResult {
      * <p/>
      * {@link Document#add(Fieldable)} should be called by the Reader.
      */
-  public static final FieldSelectorResult LOAD_AND_BREAK = new FieldSelectorResult(3);
+  public transient static final FieldSelectorResult LOAD_AND_BREAK = new FieldSelectorResult(3);
     /**
      * Behaves much like {@link #LOAD} but does not uncompress any compressed data.  This is used for internal purposes.
      * {@link Document#getField(String)} and {@link Document#getFieldable(String)} should not return null.
      * <p/>
      * {@link Document#add(Fieldable)} should be called by the Reader.
      */
-  public static final FieldSelectorResult LOAD_FOR_MERGE = new FieldSelectorResult(4);
+  public transient static final FieldSelectorResult LOAD_FOR_MERGE = new FieldSelectorResult(4);
 
      /** Expert:  Load the size of this {@link Field} rather than its value.
        * Size is measured as number of bytes required to store the field == bytes for a binary or any compressed value, and 2*chars for a String value.
       * The size is stored as a binary value, represented as an int in a byte[], with the higher order byte first in [0]
       */
-  public static final FieldSelectorResult SIZE = new FieldSelectorResult(5);
+  public transient static final FieldSelectorResult SIZE = new FieldSelectorResult(5);
 
   /** Expert: Like {@link #SIZE} but immediately break from the field loading loop, i.e. stop loading further fields, after the size is loaded */         
-  public static final FieldSelectorResult SIZE_AND_BREAK = new FieldSelectorResult(6);
+  public transient static final FieldSelectorResult SIZE_AND_BREAK = new FieldSelectorResult(6);
 
 
 

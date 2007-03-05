@@ -17,21 +17,23 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import junit.framework.TestCase;
 import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
-
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Tests {@link MultiSearcher} class.
@@ -200,7 +202,7 @@ public class TestMultiSearcher extends TestCase
         Document document=new Document();
         
         document.add(new Field("contents", contents1, Field.Store.YES, Field.Index.UN_TOKENIZED));
-        
+      document.add(new Field("other", "other contents", Field.Store.YES, Field.Index.UN_TOKENIZED));
         if (contents2!=null) {
             document.add(new Field("contents", contents2, Field.Store.YES, Field.Index.UN_TOKENIZED));
         }
@@ -223,12 +225,57 @@ public class TestMultiSearcher extends TestCase
             }
         }
     }
-    
-    /* uncomment this when the highest score is always normalized to 1.0, even when it was < 1.0
-    public void testNormalization1() throws IOException {
-        testNormalization(1, "Using 1 document per index:");
-    }
-     */
+
+  public void testFieldSelector() throws Exception {
+    RAMDirectory ramDirectory1, ramDirectory2;
+    IndexSearcher indexSearcher1, indexSearcher2;
+
+    ramDirectory1 = new RAMDirectory();
+    ramDirectory2 = new RAMDirectory();
+    Query query = new TermQuery(new Term("contents", "doc0"));
+
+    // Now put the documents in a different index
+    initIndex(ramDirectory1, 10, true, null); // documents with a single token "doc0", "doc1", etc...
+    initIndex(ramDirectory2, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+
+    indexSearcher1 = new IndexSearcher(ramDirectory1);
+    indexSearcher2 = new IndexSearcher(ramDirectory2);
+
+    MultiSearcher searcher = getMultiSearcherInstance(new Searcher[]{indexSearcher1, indexSearcher2});
+    assertTrue("searcher is null and it shouldn't be", searcher != null);
+    Hits hits = searcher.search(query);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    assertTrue(hits.length() + " does not equal: " + 2, hits.length() == 2);
+    Document document = searcher.doc(hits.id(0));
+    assertTrue("document is null and it shouldn't be", document != null);
+    assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 2, document.getFields().size() == 2);
+    //Should be one document from each directory
+    //they both have two fields, contents and other
+    Set ftl = new HashSet();
+    ftl.add("other");
+    SetBasedFieldSelector fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
+    document = searcher.doc(hits.id(0), fs);
+    assertTrue("document is null and it shouldn't be", document != null);
+    assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
+    String value = document.get("contents");
+    assertTrue("value is not null and it should be", value == null);
+    value = document.get("other");
+    assertTrue("value is null and it shouldn't be", value != null);
+    ftl.clear();
+    ftl.add("contents");
+    fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
+    document = searcher.doc(hits.id(1), fs);
+    value = document.get("contents");
+    assertTrue("value is null and it shouldn't be", value != null);    
+    value = document.get("other");
+    assertTrue("value is not null and it should be", value == null);
+  }
+
+  /* uncomment this when the highest score is always normalized to 1.0, even when it was < 1.0
+ public void testNormalization1() throws IOException {
+     testNormalization(1, "Using 1 document per index:");
+ }
+  */
     
     public void testNormalization10() throws IOException {
         testNormalization(10, "Using 10 documents per index:");

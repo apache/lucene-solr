@@ -21,14 +21,14 @@ public class MapFieldSelector implements FieldSelector {
     Map fieldSelections;
     
     /** Create a a MapFieldSelector
-     * @param fieldSelections maps from field names to FieldSelectorResults
+     * @param fieldSelections maps from field names (String) to FieldSelectorResults
      */
     public MapFieldSelector(Map fieldSelections) {
         this.fieldSelections = fieldSelections;
     }
     
     /** Create a a MapFieldSelector
-     * @param fields fields to LOAD.  All other fields are NO_LOAD.
+     * @param fields fields to LOAD.  List of Strings.  All other fields are NO_LOAD.
      */
     public MapFieldSelector(List fields) {
         fieldSelections = new HashMap(fields.size()*5/3);

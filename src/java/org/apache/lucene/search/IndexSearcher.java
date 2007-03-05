@@ -17,14 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.BitSet;
-
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.Directory;
+
+import java.io.IOException;
+import java.util.BitSet;
 
 /** Implements search over a single IndexReader.
  *
@@ -90,7 +91,12 @@ public class IndexSearcher extends Searcher {
   public Document doc(int i) throws CorruptIndexException, IOException {
     return reader.document(i);
   }
-
+  
+  // inherit javadoc
+  public Document doc(int i, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+	    return reader.document(i, fieldSelector);
+  }
+  
   // inherit javadoc
   public int maxDoc() throws IOException {
     return reader.maxDoc();

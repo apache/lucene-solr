@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CorruptIndexException;
 
@@ -81,6 +82,10 @@ public class RemoteSearchable
     return local.doc(i);
   }
 
+  public Document doc(int i, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+	    return local.doc(i, fieldSelector);
+  }
+  
   public Query rewrite(Query original) throws IOException {
     return local.rewrite(original);
   }

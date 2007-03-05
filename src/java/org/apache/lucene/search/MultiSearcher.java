@@ -17,15 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.Term;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.CorruptIndexException;
 
 /** Implements search over a set of <code>Searchables</code>.
  *
@@ -84,6 +85,10 @@ public class MultiSearcher extends Searcher {
 
     public Document doc(int i) {
       throw new UnsupportedOperationException();
+    }
+    
+    public Document doc(int i, FieldSelector fieldSelector) {
+        throw new UnsupportedOperationException();
     }
 
     public Explanation explain(Weight weight,int doc) {
@@ -148,7 +153,12 @@ public class MultiSearcher extends Searcher {
     return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
   }
 
-
+  // inherit javadoc
+  public Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+    int i = subSearcher(n);			  // find searcher index
+    return searchables[i].doc(n - starts[i], fieldSelector);	  // dispatch to searcher
+  }
+  
   /** Returns index of the searcher for document <code>n</code> in the array
    * used to construct this searcher. */
   public int subSearcher(int n) {                 // find searcher for doc n:

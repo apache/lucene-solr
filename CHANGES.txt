@@ -43,6 +43,8 @@ New features
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
     (Otis Gospodnetic)
 
+ 2. LUCENE-822: Added FieldSelector capabilities to Searchable for use with RemoteSearcher, and other Searchable implementations. (Mark Miller, Grant Ingersoll)
+
 Optimizations
 
 ======================= Release 2.1.0 2007-02-14 =======================

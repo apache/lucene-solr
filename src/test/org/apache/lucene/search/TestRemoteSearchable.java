@@ -18,16 +18,17 @@ package org.apache.lucene.search;
  */
 
 import junit.framework.TestCase;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.RAMDirectory;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
-
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import java.util.Collections;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * @version $Id$
@@ -56,6 +57,7 @@ public class TestRemoteSearchable extends TestCase {
     IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(),true);
     Document doc = new Document();
     doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
@@ -74,7 +76,20 @@ public class TestRemoteSearchable extends TestCase {
     Hits result = searcher.search(query);
 
     assertEquals(1, result.length());
-    assertEquals("test text", result.doc(0).get("test"));
+    Document document = result.doc(0);
+    assertTrue("document is null and it shouldn't be", document != null);
+    assertEquals("test text", document.get("test"));
+    assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 2, document.getFields().size() == 2);
+    Set ftl = new HashSet();
+    ftl.add("other");
+    FieldSelector fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
+    document = searcher.doc(0, fs);
+    assertTrue("document is null and it shouldn't be", document != null);
+    assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
+    fs = new MapFieldSelector(new String[]{"other"});
+    document = searcher.doc(0, fs);
+    assertTrue("document is null and it shouldn't be", document != null);
+    assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
   }
 
   public void testTermQuery() throws Exception {
