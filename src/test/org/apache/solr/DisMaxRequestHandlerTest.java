@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.regex.Pattern;
 
 /**
  * Tests some basic functionality of the DisMaxRequestHandler
@@ -46,8 +47,8 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
        "facet.field","t_s"
        );
   }
-  public void testSomeStuff() throws Exception {
-
+  /** Add some documents to the index */
+  protected void populate() {    
     assertU(adoc("id", "666",
                  "features_t", "cool and scary stuff",
                  "subject", "traveling in hell",
@@ -77,7 +78,11 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
                  "weight", "97.3",
                  "iind", "8675309"));
     assertU(commit());
-    
+  }
+
+  public void testSomeStuff() throws Exception {
+    populate();
+
     assertQ("basic match",
             req("guide")
             ,"//*[@numFound='2']"
@@ -93,6 +98,42 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[1]/int[@name='id'][.='42']"
             ,"//result/doc[2]/int[@name='id'][.='666']"
             ,"//result/doc[3]/int[@name='id'][.='8675309']"
+            );
+
+    assertQ("multi qf",
+            req("q", "cool"
+                ,"qt", "dismax"
+                ,"version", "2.0"
+                ,"qf", "subject"
+                ,"qf", "features_t"
+                )
+            ,"//*[@numFound='3']"
+            );
+
+    assertQ("boost query",
+            req("q", "cool stuff"
+                ,"qt", "dismax"
+                ,"version", "2.0"
+                ,"bq", "subject:hell^400"
+                )
+            ,"//*[@numFound='3']"
+            ,"//result/doc[1]/int[@name='id'][.='666']"
+            ,"//result/doc[2]/int[@name='id'][.='42']"
+            ,"//result/doc[3]/int[@name='id'][.='8675309']"
+            );
+
+    assertQ("multi boost query",
+            req("q", "cool stuff"
+                ,"qt", "dismax"
+                ,"version", "2.0"
+                ,"bq", "subject:hell^400"
+                ,"bq", "subject:cool^4"
+                ,"debugQuery", "true"
+                )
+            ,"//*[@numFound='3']"
+            ,"//result/doc[1]/int[@name='id'][.='666']"
+            ,"//result/doc[2]/int[@name='id'][.='8675309']"
+            ,"//result/doc[3]/int[@name='id'][.='42']"
             );
     
     assertQ("minimum mm is three",
@@ -133,6 +174,33 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
                  "q", "\"cool chick\"" )
             ,"//*[@numFound='1']"
             );
+  }
+
+  public void testExtraBlankBQ() throws Exception {
+    populate();
+    // if the boost queries are in their own boolean query, the clauses will be
+    // surrounded by ()'s in the debug output
+    Pattern p = Pattern.compile("subject:hell\\s*subject:cool");
+    Pattern p_bool = Pattern.compile("\\(subject:hell\\s*subject:cool\\)");
+    String resp = h.query(req("q", "cool stuff"
+                ,"qt", "dismax"
+                ,"version", "2.0"
+                ,"bq", "subject:hell OR subject:cool"
+                ,"debugQuery", "true"
+                              ));
+    assertTrue(p.matcher(resp).find());
+    assertFalse(p_bool.matcher(resp).find());
+
+    resp = h.query(req("q", "cool stuff"
+                ,"qt", "dismax"
+                ,"version", "2.0"
+                ,"bq", "subject:hell OR subject:cool"
+                ,"bq",""
+                ,"debugQuery", "true"
+                              ));    
+    assertTrue(p.matcher(resp).find());
+    assertTrue(p_bool.matcher(resp).find());
+
   }
 
   public void testOldStyleDefaults() throws Exception {

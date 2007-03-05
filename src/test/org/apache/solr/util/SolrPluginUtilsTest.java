@@ -92,6 +92,10 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
                  ("  fieldOne^2.3   fieldTwo fieldThree^-0.4   "));
     assertEquals("really spacey e1", e1, SolrPluginUtils.parseFieldBoosts
                  (" \t fieldOne^2.3 \n  fieldTwo fieldThree^-0.4   "));
+    assertEquals("really spacey e1", e1, SolrPluginUtils.parseFieldBoosts
+                 (new String[]{" \t fieldOne^2.3 \n",
+                               "  fieldTwo fieldThree^-0.4   ",
+                               " "}));
 
     Map<String,Float> e2 = new HashMap<String,Float>();
     assertEquals("empty e2", e2, SolrPluginUtils.parseFieldBoosts

@@ -138,9 +138,9 @@ public class StandardRequestHandler extends RequestHandlerBase {
         SolrException.logOnce(SolrCore.log, "Exception during debug", e);
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
-
+      
       NamedList sumData = HighlightingUtils.doHighlighting(
-        results.docList, query, req, new String[]{defaultField});
+        results.docList, query.rewrite(req.getSearcher().getReader()), req, new String[]{defaultField});
       if(sumData != null)
         rsp.add("highlighting", sumData);
   }

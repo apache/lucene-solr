@@ -31,6 +31,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.request.SolrParams;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.logging.Level;
 import java.io.IOException;
@@ -469,6 +470,16 @@ public class QueryParsing {
 
   }
 
+  /**
+   * Builds a list of String which are stringified versions of a list of Queries
+   */
+  public static List<String> toString(List<Query> queries, IndexSchema schema) {
+    List<String> out = new ArrayList<String>(queries.size());
+    for (Query q : queries) {
+      out.add(QueryParsing.toString(q, schema));
+    }
+    return out;
+  }
 
   private static ValueSource parseValSource(StrParser sp, IndexSchema schema) throws ParseException {
     String id = sp.getId();

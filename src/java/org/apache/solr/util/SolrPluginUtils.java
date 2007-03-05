@@ -483,20 +483,31 @@ public class SolrPluginUtils {
    * @return Map of fieldOne =&gt; 2.3, fieldTwo =&gt; null, fieldThree =&gt; -0.4
    */
   public static Map<String,Float> parseFieldBoosts(String in) {
-
-    if (null == in || "".equals(in.trim())) {
+    return parseFieldBoosts(new String[]{in});
+  }
+  /**
+   * Like <code>parseFieldBoosts(String)</code>, but parses all the strings
+   * in the provided array (which may be null).
+   *
+   * @param fieldList an array of Strings eg. <code>{"fieldOne^2.3", "fieldTwo"}</code>
+   * @return Map of fieldOne =&gt; 2.3, fieldThree =&gt; -0.4
+   */
+  public static Map<String,Float> parseFieldBoosts(String[] fieldLists) {
+    if (null == fieldLists || 0 == fieldLists.length) {
       return new HashMap<String,Float>();
     }
-        
-    String[] bb = in.trim().split("\\s+");
     Map<String, Float> out = new HashMap<String,Float>(7);
-    for (String s : bb) {
-      String[] bbb = s.split("\\^");
-      out.put(bbb[0], 1 == bbb.length ? null : Float.valueOf(bbb[1]));
+    for (String in : fieldLists) {
+      if (null == in || "".equals(in.trim()))
+        continue;
+      String[] bb = in.trim().split("\\s+");
+      for (String s : bb) {
+        String[] bbb = s.split("\\^");
+        out.put(bbb[0], 1 == bbb.length ? null : Float.valueOf(bbb[1]));
+      }
     }
     return out;
   }
-
   /**
    * Given a string containing functions with optional boosts, returns
    * an array of Queries representing those functions with the specified
@@ -804,10 +815,16 @@ public class SolrPluginUtils {
    * @return null if no filter queries
    */
   public static List<Query> parseFilterQueries(SolrQueryRequest req) throws ParseException {
-    String[] in = req.getParams().getParams(SolrParams.FQ);
-    
-    if (null == in || 0 == in.length) return null;
+    return parseQueryStrings(req, req.getParams().getParams(SolrParams.FQ));
+  }
 
+  /** Turns an array of query strings into a List of Query objects.
+   *
+   * @return null if no queries are generated
+   */
+  public static List<Query> parseQueryStrings(SolrQueryRequest req, 
+                                              String[] queries) throws ParseException {    
+    if (null == queries || 0 == queries.length) return null;
     List<Query> out = new LinkedList<Query>();
     SolrIndexSearcher s = req.getSearcher();
     /* Ignore SolrParams.DF - could have init param FQs assuming the
@@ -815,7 +832,7 @@ public class SolrPluginUtils {
      * If user doesn't want schema default, they should be explicit in the FQ.
      */
     SolrQueryParser qp = new SolrQueryParser(s.getSchema(), null);
-    for (String q : in) {
+    for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
         out.add(qp.parse(q));
       }

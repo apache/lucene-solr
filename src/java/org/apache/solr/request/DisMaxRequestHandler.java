@@ -73,6 +73,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * <li> qf - (Query Fields) fields and boosts to use when building
  *           DisjunctionMaxQueries from the users query.  Format is:
  *           "<code>fieldA^1.0 fieldB^2.2</code>".
+ *           This param can be specified multiple times, and the fields
+ *           are additive.
  * </li>
  * <li> mm - (Minimum Match) this supports a wide variety of
  *           complex expressions.
@@ -81,6 +83,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * <li> pf - (Phrase Fields) fields/boosts to make phrase queries out
  *           of, to boost the users query for exact matches on the specified fields.
  *           Format is: "<code>fieldA^1.0 fieldB^2.2</code>".
+ *           This param can be specified multiple times, and the fields
+ *           are additive.
  * </li>
  * <li> ps - (Phrase Slop) amount of slop on phrase queries built for pf
  *           fields.
@@ -93,12 +97,19 @@ import org.apache.solr.util.SolrPluginUtils;
  *           with a default boost (1.0f), then the individual clauses will be
  *           added directly to the main query.  Otherwise, the query will be
  *           included as is.
+ *           This param can be specified multiple times, and the boosts are 
+ *           are additive.  NOTE: the behaviour listed above is only in effect
+ *           if a single <code>bq</code> paramter is specified.  Hence you can
+ *           disable it by specifying an additional, blank, <code>bq</code> 
+ *           parameter.
  * </li>
  * <li> bf - (Boost Functions) functions (with optional boosts) that will be
  *           included in the users query to influence the score.
  *           Format is: "<code>funcA(arg1,arg2)^1.2
  *           funcB(arg3,arg4)^2.2</code>".  NOTE: Whitespace is not allowed
  *           in the function arguments.
+ *           This param can be specified multiple times, and the functions
+ *           are additive.
  * </li>
  * <li> fq - (Filter Query) a raw lucene query that can be used
  *           to restrict the super set of products we are interested in - more
@@ -122,7 +133,6 @@ import org.apache.solr.util.SolrPluginUtils;
  * <pre>
  * :TODO: document facet param support
  *
- * :TODO: make bf,pf,qf multival params now that SolrParams supports them
  * </pre>
  */
 public class DisMaxRequestHandler extends RequestHandlerBase  {
@@ -173,8 +183,8 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       SolrIndexSearcher s = req.getSearcher();
       IndexSchema schema = req.getSchema();
             
-      Map<String,Float> queryFields = U.parseFieldBoosts(params.get(DMP.QF));
-      Map<String,Float> phraseFields = U.parseFieldBoosts(params.get(DMP.PF));
+      Map<String,Float> queryFields = U.parseFieldBoosts(params.getParams(DMP.QF));
+      Map<String,Float> phraseFields = U.parseFieldBoosts(params.getParams(DMP.PF));
 
       float tiebreaker = params.getFloat(DMP.TIE, 0.0f);
             
@@ -255,29 +265,39 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
 
             
       /* * * Boosting Query * * */
-
-      String boostQuery = params.get(DMP.BQ);
-      if (null != boostQuery && !boostQuery.equals("")) {
-        Query tmp = p.parse(boostQuery);
-        /* if the default boost was used, and we've got a BooleanQuery
-         * extract the subqueries out and use them directly
-         */
-        if (1.0f == tmp.getBoost() && tmp instanceof BooleanQuery) {
-          for (BooleanClause c : ((BooleanQuery)tmp).getClauses()) {
-            query.add(c);
+      String[] boostParams = params.getParams(DMP.BQ);
+      List<Query> boostQueries = U.parseQueryStrings(req, boostParams);
+      if (null != boostQueries) {
+        if(1 == boostQueries.size() && 1 == boostParams.length) {
+          /* legacy logic */
+          Query f = boostQueries.get(0);
+          if (1.0f == f.getBoost() && f instanceof BooleanQuery) {
+            /* if the default boost was used, and we've got a BooleanQuery
+             * extract the subqueries out and use them directly
+             */
+            for (BooleanClause c : ((BooleanQuery)f).getClauses()) {
+              query.add(c);
+            }
+          } else {
+            query.add(f, BooleanClause.Occur.SHOULD);
           }
         } else {
-          query.add(tmp, BooleanClause.Occur.SHOULD);
+          for(Query f : boostQueries) {
+            query.add(f, BooleanClause.Occur.SHOULD);
+          }
         }
       }
 
       /* * * Boosting Functions * * */
 
-      String boostFunc = params.get(DMP.BF);
-      if (null != boostFunc && !boostFunc.equals("")) {
-        List<Query> funcs = U.parseFuncs(schema, boostFunc);
-        for (Query f : funcs) {
-          query.add(f, Occur.SHOULD);
+      String[] boostFuncs = params.getParams(DMP.BF);
+      if (null != boostFuncs && 0 != boostFuncs.length) {
+        for (String boostFunc : boostFuncs) {
+          if(null == boostFunc || "".equals(boostFunc)) continue;
+          List<Query> funcs = U.parseFuncs(schema, boostFunc);
+          for (Query f : funcs) {
+            query.add(f, Occur.SHOULD);          
+          }
         }
       }
             
@@ -318,22 +338,23 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
         NamedList debug = U.doStandardDebug(req, userQuery, query, results.docList);
         if (null != debug) {
           debug.add("altquerystring", altUserQuery);
-          debug.add("boostquery", boostQuery);
-          debug.add("boostfunc", boostFunc);
+          if (null != boostQueries) {
+            debug.add("boost_queries", boostParams);
+            debug.add("parsed_boost_queries", 
+                      QueryParsing.toString(boostQueries, req.getSchema()));
+          }
+          debug.add("boostfuncs", params.getParams(DMP.BF));
           if (null != restrictions) {
             debug.add("filter_queries", params.getParams(FQ));
-            List<String> fqs = new ArrayList<String>(restrictions.size());
-            for (Query fq : restrictions) {
-              fqs.add(QueryParsing.toString(fq, req.getSchema()));
-            }
-            debug.add("parsed_filter_queries",fqs);
+            debug.add("parsed_filter_queries", 
+                      QueryParsing.toString(restrictions, req.getSchema()));
           }
           rsp.add("debug", debug);
         }
 
       } catch (Exception e) {
         SolrException.logOnce(SolrCore.log,
-                              "Exception durring debug", e);
+                              "Exception during debug", e);
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
 
@@ -341,8 +362,11 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
       if(HighlightingUtils.isHighlightingEnabled(req) && parsedUserQuery != null) {
         String[] highFields = queryFields.keySet().toArray(new String[0]);
         NamedList sumData =
-          HighlightingUtils.doHighlighting(results.docList, parsedUserQuery, 
-                                           req, highFields);
+          HighlightingUtils.doHighlighting(
+	       results.docList, 
+	       parsedUserQuery.rewrite(req.getSearcher().getReader()), 
+	       req, 
+	       highFields);
         if(sumData != null)
           rsp.add("highlighting", sumData);
       }

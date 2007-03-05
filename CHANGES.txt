@@ -137,6 +137,12 @@ Changes in runtime behavior
     IndexSchema have also been clarified.
     (Erik Hatcher and hossman)
 
+ 4. DisMaxRequestHandler's bq, bf, qf, and pf parameters can now accept
+    multiple values (klaas).
+
+ 5. Query are re-written before highlighting is performed.  This enables
+    proper highlighting of prefix and wildcard queries (klaas).
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new
