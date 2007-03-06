@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -59,8 +60,8 @@ public class TestMultiSearcher extends TestCase
         throws Exception
     {
         // creating two directories for indices
-        Directory indexStoreA = new RAMDirectory();
-        Directory indexStoreB = new RAMDirectory();
+        Directory indexStoreA = new MockRAMDirectory();
+        Directory indexStoreB = new MockRAMDirectory();
 
         // creating a document to store
         Document lDoc = new Document();
@@ -196,6 +197,8 @@ public class TestMultiSearcher extends TestCase
             Document d = hits3.doc(i);
         }
         mSearcher3.close();
+        indexStoreA.close();
+        indexStoreB.close();
     }
     
     private static Document createDocument(String contents1, String contents2) {
@@ -288,7 +291,7 @@ public class TestMultiSearcher extends TestCase
         IndexSearcher indexSearcher1;
         Hits hits;
         
-        ramDirectory1=new RAMDirectory();
+        ramDirectory1=new MockRAMDirectory();
         
         // First put the documents in the same index
         initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
@@ -316,8 +319,8 @@ public class TestMultiSearcher extends TestCase
         RAMDirectory ramDirectory2;
         IndexSearcher indexSearcher2;
         
-        ramDirectory1=new RAMDirectory();
-        ramDirectory2=new RAMDirectory();
+        ramDirectory1=new MockRAMDirectory();
+        ramDirectory2=new MockRAMDirectory();
         
         // Now put the documents in a different index
         initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...

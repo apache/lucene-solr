@@ -200,4 +200,17 @@ public class MockRAMDirectory extends RAMDirectory {
       size += ((RAMFile) it.next()).length;
     return size;
   }
+
+  public void close() {
+    if (openFiles == null) {
+      openFiles = new HashMap();
+    }
+    synchronized(openFiles) {
+      if (noDeleteOpenFile && openFiles.size() > 0) {
+        // RuntimeException instead of IOException because
+        // super() does not throw IOException currently:
+        throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles);
+      }
+    }
+  }
 }

@@ -36,6 +36,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestParallelReader extends TestCase {
 
@@ -103,7 +104,7 @@ public class TestParallelReader extends TestCase {
     Directory dir1 = getDir1();
 
     // one document only:
-    Directory dir2 = new RAMDirectory();
+    Directory dir2 = new MockRAMDirectory();
     IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(), true);
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.TOKENIZED));
@@ -137,7 +138,7 @@ public class TestParallelReader extends TestCase {
 
   // Fiels 1-4 indexed together:
   private Searcher single() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), true);
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));
@@ -167,7 +168,7 @@ public class TestParallelReader extends TestCase {
   }
 
   private Directory getDir1() throws IOException {
-    Directory dir1 = new RAMDirectory();
+    Directory dir1 = new MockRAMDirectory();
     IndexWriter w1 = new IndexWriter(dir1, new StandardAnalyzer(), true);
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.TOKENIZED));

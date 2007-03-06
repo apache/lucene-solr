@@ -150,7 +150,7 @@ public class TestStressIndexing extends TestCase {
   public void testStressIndexAndSearching() throws Exception {
 
     // First in a RAM directory:
-    Directory directory = new RAMDirectory();
+    Directory directory = new MockRAMDirectory();
     runStressTest(directory);
     directory.close();
 

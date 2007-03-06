@@ -1274,42 +1274,49 @@ public class IndexWriter {
     SegmentMerger merger = new SegmentMerger(this, mergedName);
 
     final Vector segmentsToDelete = new Vector();
+    SegmentInfo info;
+    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+
     IndexReader sReader = null;
-    if (segmentInfos.size() == 1){ // add existing index, if any
+    try {
+      if (segmentInfos.size() == 1){ // add existing index, if any
         sReader = SegmentReader.get(segmentInfos.info(0));
         merger.add(sReader);
         segmentsToDelete.addElement(sReader);   // queue segment for deletion
-    }
+      }
 
-    for (int i = 0; i < readers.length; i++)      // add new indexes
-      merger.add(readers[i]);
+      for (int i = 0; i < readers.length; i++)      // add new indexes
+        merger.add(readers[i]);
 
-    SegmentInfo info;
+      boolean success = false;
 
-    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+      startTransaction();
 
-    boolean success = false;
+      try {
+        int docCount = merger.merge();                // merge 'em
 
-    startTransaction();
+        segmentInfos.setSize(0);                      // pop old infos & add new
+        info = new SegmentInfo(mergedName, docCount, directory, false, true);
+        segmentInfos.addElement(info);
+        commitPending = true;
 
-    try {
-      int docCount = merger.merge();                // merge 'em
+        if(sReader != null) {
+          sReader.close();
+          sReader = null;
+        }
 
-      segmentInfos.setSize(0);                      // pop old infos & add new
-      info = new SegmentInfo(mergedName, docCount, directory, false, true);
-      segmentInfos.addElement(info);
-      commitPending = true;
+        success = true;
 
-      if(sReader != null)
-        sReader.close();
-
-      success = true;
-
+      } finally {
+        if (!success) {
+          rollbackTransaction();
+        } else {
+          commitTransaction();
+        }
+      }
     } finally {
-      if (!success) {
-        rollbackTransaction();
-      } else {
-        commitTransaction();
+      if (sReader != null) {
+        sReader.close();
       }
     }
 
@@ -1317,7 +1324,7 @@ public class IndexWriter {
     deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
 
     if (useCompoundFile) {
-      success = false;
+      boolean success = false;
 
       segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
       Vector filesToDelete;
@@ -1699,8 +1706,13 @@ public class IndexWriter {
           // the documents buffered before it, not those buffered after it.
           applyDeletesSelectively(bufferedDeleteTerms, reader);
         } finally {
-          if (reader != null)
-            reader.close();
+          if (reader != null) {
+            try {
+              reader.doCommit();
+            } finally {
+              reader.doClose();
+            }
+          }
         }
       }
 
@@ -1719,8 +1731,13 @@ public class IndexWriter {
           // except the one just flushed from ram.
           applyDeletes(bufferedDeleteTerms, reader);
         } finally {
-          if (reader != null)
-            reader.close();
+          if (reader != null) {
+            try {
+              reader.doCommit();
+            } finally {
+              reader.doClose();
+            }
+          }
         }
       }
 

@@ -38,6 +38,11 @@ Bug fixes
     failed to reduce the number of open descriptors since it was still
     opened once per field with norms. (yonik)
 
+ 5. LUCENE-823: Make sure internal file handles are closed when
+    hitting an exception (eg disk full) while flushing deletes in
+    IndexWriter's mergeSegments, and also during
+    IndexWriter.addIndexes.  (Mike McCandless)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.

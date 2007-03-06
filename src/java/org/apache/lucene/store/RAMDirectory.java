@@ -226,7 +226,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Closes the store to future operations, releasing associated memory. */
-  public final void close() {
+  public void close() {
     fileMap = null;
   }
 

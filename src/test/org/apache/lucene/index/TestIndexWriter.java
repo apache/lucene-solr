@@ -427,6 +427,7 @@ public class TestIndexWriter extends TestCase
 
       assertTrue("optimized used too much temporary space: starting usage was " + startDiskUsage + " bytes; max temp usage was " + maxDiskUsage + " but should have been " + (2*startDiskUsage) + " (= 2X starting usage)",
                  maxDiskUsage <= 2*startDiskUsage);
+      dir.close();
     }
 
     private String arrayToString(String[] l) {

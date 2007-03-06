@@ -25,6 +25,7 @@ package org.apache.lucene.store;
 public class MockRAMInputStream extends RAMInputStream {
   private MockRAMDirectory dir;
   private String name;
+  private boolean isClone;
 
   /** Construct an empty output buffer. */
   public MockRAMInputStream(MockRAMDirectory dir, String name, RAMFile f) {
@@ -35,19 +36,29 @@ public class MockRAMInputStream extends RAMInputStream {
 
   public void close() {
     super.close();
-    synchronized(dir.openFiles) {
-      Integer v = (Integer) dir.openFiles.get(name);
-      if (v.intValue() == 1) {
-        dir.openFiles.remove(name);
-      } else {
-        v = new Integer(v.intValue()-1);
-        dir.openFiles.put(name, v);
+    // Pending resolution on LUCENE-686 we may want to
+    // remove the conditional check so we also track that
+    // all clones get closed:
+    if (!isClone) {
+      synchronized(dir.openFiles) {
+        Integer v = (Integer) dir.openFiles.get(name);
+        if (v.intValue() == 1) {
+          dir.openFiles.remove(name);
+        } else {
+          v = new Integer(v.intValue()-1);
+          dir.openFiles.put(name, v);
+        }
       }
     }
   }
 
   public Object clone() {
     MockRAMInputStream clone = (MockRAMInputStream) super.clone();
+    clone.isClone = true;
+    // Pending resolution on LUCENE-686 we may want to
+    // uncomment this code so that we also track that all
+    // clones get closed:
+    /*
     synchronized(dir.openFiles) {
       if (dir.openFiles.containsKey(name)) {
         Integer v = (Integer) dir.openFiles.get(name);
@@ -57,6 +68,7 @@ public class MockRAMInputStream extends RAMInputStream {
         throw new RuntimeException("BUG: cloned file was not open?");
       }
     }
+    */
     return clone;
   }
 }

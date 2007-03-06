@@ -23,6 +23,7 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -91,7 +92,7 @@ public class TestFilterIndexReader extends TestCase {
    * @throws Exception on error
    */
   public void testFilterIndexReader() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    RAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer =
       new IndexWriter(directory, new WhitespaceAnalyzer(), true);
 
@@ -123,5 +124,6 @@ public class TestFilterIndexReader extends TestCase {
     }
 
     reader.close();
+    directory.close();
   }
 }

@@ -61,7 +61,7 @@ public class TestIndexReader extends TestCase
 
     public void testIsCurrent() throws Exception
     {
-      RAMDirectory d = new RAMDirectory();
+      RAMDirectory d = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true);
       addDocumentWithFields(writer);
       writer.close();
@@ -79,6 +79,7 @@ public class TestIndexReader extends TestCase
       writer.close();
       assertFalse(reader.isCurrent());
       reader.close();
+      d.close();
     }
 
     /**
@@ -87,7 +88,7 @@ public class TestIndexReader extends TestCase
      */
     public void testGetFieldNames() throws Exception
     {
-        RAMDirectory d = new RAMDirectory();
+        RAMDirectory d = new MockRAMDirectory();
         // set up writer
         IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(), true);
         addDocumentWithFields(writer);
@@ -99,6 +100,7 @@ public class TestIndexReader extends TestCase
         assertTrue(fieldNames.contains("text"));
         assertTrue(fieldNames.contains("unindexed"));
         assertTrue(fieldNames.contains("unstored"));
+        reader.close();
         // add more documents
         writer = new IndexWriter(d, new StandardAnalyzer(), false);
         // want to get some more segments here
@@ -173,7 +175,8 @@ public class TestIndexReader extends TestCase
         fieldNames = reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET);
         assertEquals(1, fieldNames.size());    // 4 fields are indexed with term vectors
         assertTrue(fieldNames.contains("tvpositionoffset"));
-        
+        reader.close();
+        d.close();
     }
 
 
@@ -205,7 +208,7 @@ public class TestIndexReader extends TestCase
 
     public void testBasicDelete() throws IOException
     {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         IndexWriter writer = null;
         IndexReader reader = null;
@@ -224,6 +227,7 @@ public class TestIndexReader extends TestCase
         reader = IndexReader.open(dir);
         assertEquals("first docFreq", 100, reader.docFreq(searchTerm));
         assertTermDocsCount("first reader", reader, searchTerm, 100);
+        reader.close();
 
         // DELETE DOCUMENTS CONTAINING TERM: aaa
         int deleted = 0;
@@ -244,6 +248,8 @@ public class TestIndexReader extends TestCase
         assertEquals("deleted docFreq", 100, reader.docFreq(searchTerm));
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
         reader.close();
+        reader2.close();
+        dir.close();
     }
 
     // Make sure attempts to make changes after reader is
@@ -561,7 +567,7 @@ public class TestIndexReader extends TestCase
 
     public void testLastModified() throws IOException {
       assertFalse(IndexReader.indexExists("there_is_no_such_index"));
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       assertFalse(IndexReader.indexExists(dir));
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
@@ -580,11 +586,12 @@ public class TestIndexReader extends TestCase
       reader = IndexReader.open(dir);
       assertTrue("old lastModified is " + version + "; new lastModified is " + IndexReader.lastModified(dir), version <= IndexReader.lastModified(dir));
       reader.close();
+      dir.close();
     }
 
     public void testVersion() throws IOException {
       assertFalse(IndexReader.indexExists("there_is_no_such_index"));
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       assertFalse(IndexReader.indexExists(dir));
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
@@ -603,10 +610,11 @@ public class TestIndexReader extends TestCase
       reader = IndexReader.open(dir);
       assertTrue("old version is " + version + "; new version is " + IndexReader.getCurrentVersion(dir), version < IndexReader.getCurrentVersion(dir));
       reader.close();
+      dir.close();
     }
 
     public void testLock() throws IOException {
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
       writer.close();
@@ -622,10 +630,11 @@ public class TestIndexReader extends TestCase
       reader.deleteDocument(0);
       reader.close();
       writer.close();
+      dir.close();
     }
 
     public void testUndeleteAll() throws IOException {
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
@@ -638,10 +647,11 @@ public class TestIndexReader extends TestCase
       reader = IndexReader.open(dir);
       assertEquals(2, reader.numDocs());	// nothing has really been deleted thanks to undeleteAll()
       reader.close();
+      dir.close();
     }
 
     public void testUndeleteAllAfterClose() throws IOException {
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
@@ -654,10 +664,11 @@ public class TestIndexReader extends TestCase
       reader.undeleteAll();
       assertEquals(2, reader.numDocs());	// nothing has really been deleted thanks to undeleteAll()
       reader.close();
+      dir.close();
     }
 
     public void testUndeleteAllAfterCloseThenReopen() throws IOException {
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
@@ -672,6 +683,7 @@ public class TestIndexReader extends TestCase
       reader = IndexReader.open(dir);
       assertEquals(2, reader.numDocs());	// nothing has really been deleted thanks to undeleteAll()
       reader.close();
+      dir.close();
     }
 
     public void testDeleteReaderReaderConflictUnoptimized() throws IOException{
@@ -694,7 +706,7 @@ public class TestIndexReader extends TestCase
       int END_COUNT = 144;
       
       // First build up a starting index:
-      RAMDirectory startDir = new RAMDirectory();
+      RAMDirectory startDir = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(), true);
       for(int i=0;i<157;i++) {
         Document d = new Document();
@@ -875,10 +887,12 @@ public class TestIndexReader extends TestCase
         // Try again with 10 more bytes of free space:
         diskFree += 10;
       }
+
+      startDir.close();
     }
 
     public void testDocsOutOfOrderJIRA140() throws IOException {
-      Directory dir = new RAMDirectory();      
+      Directory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       for(int i=0;i<11;i++) {
         addDoc(writer, "aaa");
@@ -913,11 +927,12 @@ public class TestIndexReader extends TestCase
       if (!gotException) {
         fail("delete of out-of-bounds doc number failed to hit exception");
       }
+      dir.close();
     }
 
     public void testExceptionReleaseWriteLockJIRA768() throws IOException {
 
-      Directory dir = new RAMDirectory();      
+      Directory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
       addDoc(writer, "aaa");
       writer.close();
@@ -945,6 +960,7 @@ public class TestIndexReader extends TestCase
       if (IndexReader.isLocked(dir)) {
         fail("write lock is still held after close");
       }
+      dir.close();
     }
 
     private String arrayToString(String[] l) {
