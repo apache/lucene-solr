@@ -43,15 +43,19 @@ public class TestBackwardsCompatibility extends TestCase
 
   /* Unzips dirName + ".zip" --> dirName, removing dirName
      first */
-  public void unzip(String dirName) throws IOException {
-    rmDir(dirName);
+  public void unzip(String zipName, String destDirName) throws IOException {
 
     Enumeration entries;
     ZipFile zipFile;
-    zipFile = new ZipFile(dirName + ".zip");
+    zipFile = new ZipFile(zipName + ".zip");
 
     entries = zipFile.entries();
+
+    String dirName = fullDir(destDirName);
+
     File fileDir = new File(dirName);
+    rmDir(dirName);
+
     fileDir.mkdir();
 
     while (entries.hasMoreElements()) {
@@ -89,9 +93,9 @@ public class TestBackwardsCompatibility extends TestCase
     String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName);
-      searchIndex(dirName);
-      rmDir(dirName);
+      unzip(dirName, oldNames[i]);
+      searchIndex(oldNames[i]);
+      rmDir(oldNames[i]);
     }
   }
 
@@ -99,9 +103,9 @@ public class TestBackwardsCompatibility extends TestCase
     String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName);
-      changeIndexNoAdds(dirName);
-      rmDir(dirName);
+      unzip(dirName, oldNames[i]);
+      changeIndexNoAdds(oldNames[i]);
+      rmDir(oldNames[i]);
     }
   }
 
@@ -109,15 +113,17 @@ public class TestBackwardsCompatibility extends TestCase
     String[] oldNames = {"prelockless.cfs", "prelockless.nocfs"};
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
-      unzip(dirName);
-      changeIndexWithAdds(dirName);
-      rmDir(dirName);
+      unzip(dirName, oldNames[i]);
+      changeIndexWithAdds(oldNames[i]);
+      rmDir(oldNames[i]);
     }
   }
 
   public void searchIndex(String dirName) throws IOException {
     //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer());
     //Query query = parser.parse("handle:1");
+
+    dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.getDirectory(dirName);
     IndexSearcher searcher = new IndexSearcher(dir);
@@ -136,6 +142,8 @@ public class TestBackwardsCompatibility extends TestCase
   /* Open pre-lockless index, add docs, do a delete &
    * setNorm, and search */
   public void changeIndexWithAdds(String dirName) throws IOException {
+
+    dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.getDirectory(dirName);
     // open writer
@@ -194,6 +202,8 @@ public class TestBackwardsCompatibility extends TestCase
    * setNorm, and search */
   public void changeIndexNoAdds(String dirName) throws IOException {
 
+    dirName = fullDir(dirName);
+
     Directory dir = FSDirectory.getDirectory(dirName);
 
     // make sure searching sees right # hits
@@ -238,6 +248,8 @@ public class TestBackwardsCompatibility extends TestCase
 
   public void createIndex(String dirName, boolean doCFS) throws IOException {
 
+    dirName = fullDir(dirName);
+
     Directory dir = FSDirectory.getDirectory(dirName);
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     writer.setUseCompoundFile(doCFS);
@@ -265,7 +277,7 @@ public class TestBackwardsCompatibility extends TestCase
   public void testExactFileNames() throws IOException {
 
     String outputDir = "lucene.backwardscompat0.index";
-    Directory dir = FSDirectory.getDirectory(outputDir);
+    Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
     for(int i=0;i<35;i++) {
       addDoc(writer, i);
@@ -342,8 +354,8 @@ public class TestBackwardsCompatibility extends TestCase
     writer.addDocument(doc);
   }
 
-  private void rmDir(String dir) {
-    File fileDir = new File(dir);
+  private void rmDir(String dir) throws IOException {
+    File fileDir = new File(fullDir(dir));
     if (fileDir.exists()) {
       File[] files = fileDir.listFiles();
       if (files != null) {
@@ -353,5 +365,9 @@ public class TestBackwardsCompatibility extends TestCase
       }
       fileDir.delete();
     }
+  }
+
+  public static String fullDir(String dirName) throws IOException {
+    return new File(System.getProperty("tempDir"), dirName).getCanonicalPath();
   }
 }
