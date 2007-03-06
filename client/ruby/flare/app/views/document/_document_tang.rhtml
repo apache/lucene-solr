@@ -1,27 +1,27 @@
 <%
-  body_zh_highlighted = @response.highlighted(@doc['id'], 'body_zh_text')
-  body_en_highlighted = @response.highlighted(@doc['id'], 'body_en_text')
+  body_zh_highlighted = response.highlighted(doc['id'], 'body_zh_text')
+  body_en_highlighted = response.highlighted(doc['id'], 'body_en_text')
 -%>
 <tr valign="top">
   <td>
     <table class="entry">
       <tr>
-        <td class="title" colspan="2"><%=@doc['title_zh_text']%> (<%=@doc['title_en_text']%>)</td>
+        <td class="title" colspan="2"><%=doc['title_zh_text']%> (<%=doc['title_en_text']%>)</td>
       </tr>
       <tr>
-        <td class="field">author:</td><td><%=@doc['author_zh_facet']%> (<%=@doc['author_en_facet']%>)</td>
+        <td class="field">author:</td><td><%=doc['author_zh_facet']%> (<%=doc['author_en_facet']%>)</td>
       </tr>
       <tr>
-        <td class="field">type:</td><td><%=@doc['type_zh_facet']%> (<%=@doc['type_en_facet']%>)</td>
+        <td class="field">type:</td><td><%=doc['type_zh_facet']%> (<%=doc['type_en_facet']%>)</td>
       </tr>
       <tr>
         <td class="field">body:</td>
         <td>
           <blockquote>
-            <%= body_zh_highlighted ? "...#{body_zh_highlighted}..." :  @doc['body_zh_text'] %>
+            <%= body_zh_highlighted ? "...#{body_zh_highlighted}..." :  doc['body_zh_text'] %>
           </blockquote>
           <blockquote>
-            <%= body_en_highlighted ? "...#{body_en_highlighted}..." :  @doc['body_en_text'] %>
+            <%= body_en_highlighted ? "...#{body_en_highlighted}..." :  doc['body_en_text'] %>
           </blockquote>
         </td>
       </tr>

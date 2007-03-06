@@ -68,14 +68,16 @@ solr_environments = {
 
   :delicious => {
 #    :image_url => Proc.new {|d| "http://images.amazon.com/images/P/#{d[:asin_text]}.01.MZZZZZZZ"},
-    :timeline_dates => :published_year_facet
+    :timeline_dates => :published_year_facet,
+    :exhibit_facets => ".medium_facet, .country_facet, .signed_facet, .rating_facet, .language_facet, .genre_facet, .publisher_facet, .published_year_facet"
   },
 
   :tang => {
   },
   
   :marc => {
-    :timeline_dates => :year_facet
+    :timeline_dates => :year_facet,
+    :exhibit_facets => ".subject_genre_facet, .subject_era_facet, .subject_topic_facet, .subject_geographic_facet, .year_facet"
   },
   
   # TODO: :uva could inherit :marc settings, only overriding the template for VIRGO links
@@ -86,5 +88,5 @@ solr_environments = {
 SOLR_ENV = ENV["SOLR_ENV"] || "development"
 SOLR_CONFIG = solr_environments[SOLR_ENV.to_sym]
 puts "#{SOLR_ENV}: SOLR_CONFIG = #{SOLR_CONFIG.inspect}"
-solr_url = SOLR_CONFIG[:solr_url] || "http://localhost:8983/solr"
-SOLR = Solr::Connection.new(solr_url)
+SOLR_CONFIG[:solr_url] ||= "http://localhost:8983/solr"
+#SOLR = Solr::Connection.new(SOLR_CONFIG[:solr_url])

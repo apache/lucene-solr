@@ -13,13 +13,8 @@
 
 class SimileController < ApplicationController
   def exhibit
-    # TODO this code was copied from BrowseController#index, and is here only as a quick and dirty prototype.
-    # TODO figuring out where these calls cleanly belong is the key.
-    
-    req = Solr::Request::Standard.new :query => query, :filter_queries => filters
+    @data = @flare.search(0, 10)
                                           
-    @data = SOLR.send(req)
-    
     # Exhibit seems to require a label attribute to be happy
     @data.each {|d| d['label'] = d['title_text']}
     
@@ -30,15 +25,8 @@ class SimileController < ApplicationController
   end
   
   def timeline
-    # TODO this code was copied from BrowseController#index, and is here only as a quick and dirty prototype.
-    # TODO figuring out where these calls cleanly belong is the key.
-    
-    @info = SOLR.send(Solr::Request::IndexInfo.new) # TODO move this call to only have it called when the index may have changed
-    req = Solr::Request::Standard.new :query => query, :filter_queries => filters
-                                          
-    @data = SOLR.send(req)
-    
-    
+    @data = @flare.search(0, 10)
+                                              
     respond_to do |format| 
       format.html # renders timeline.rhtml 
       format.xml # renders timeline.rxml

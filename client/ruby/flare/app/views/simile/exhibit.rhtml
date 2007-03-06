@@ -16,7 +16,7 @@
                 <div id="exhibit-view-panel"></div>
             </td>
             <td width="25%">
-                <div id="exhibit-browse-panel" ex:facets=".subject_genre_facet, .subject_era_facet, .subject_topic_facet, .subject_geographic_facet, .year_facet"></div>
+                <div id="exhibit-browse-panel" ex:facets="<%= SOLR_CONFIG[:exhibit_facets] -%>"></div>
             </td>
         </tr>
     </table>

@@ -16,32 +16,16 @@
 class ApplicationController < ActionController::Base
   # Pick a unique cookie name to distinguish our session data from others'
   session :session_key => '_flare_session_id'
+  
+  before_filter :flare_before
+  
 
 private
-  def query
-    queries = session[:queries]
-    if queries.nil? || queries.empty?
-      query = "*:*"
-    else
-      query = session[:queries].collect{|q| "#{q[:negative] ? '-' : ''}(#{q[:query]})"}.join(' AND ')
-    end
+  def flare_before
+    session[:page] ||= 1
+  
+    session[:flare_context] ||= FlareContext.new(SOLR_CONFIG)
     
-    query
+    @flare = session[:flare_context]
   end
-  
-  def filters
-    session[:filters].collect do |filter|
-      value = filter[:value]
-      if value != "[* TO *]"
-        value = "\"#{value}\""
-      end
-      "#{filter[:negative] ? '-' : ''}#{filter[:field]}:#{value}"
-    end
-  end
-  
-  def solr(request)
-    logger.info "---\n#{request.inspect}\n---"
-    SOLR.send(request)  
-  end
-
 end

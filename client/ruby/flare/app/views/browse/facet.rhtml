@@ -6,7 +6,7 @@
 <div>
 Queries:
 	<div id="queries">
-<% session[:queries].each_with_index do |q,i| %>
+<% @flare.queries.each_with_index do |q,i| %>
 <%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%>
 <span id="query_<%=i%>"><%=q[:query]%></span>
 <%= in_place_editor "query_#{i}", :url=> url_for(:action=>"update_query", :index=>i) %>
@@ -18,7 +18,7 @@ Queries:
 <div>
 Filters:
 	<div id="filters">
-<% session[:filters].each_with_index do |filter, i| %>
+<% @flare.filters.each_with_index do |filter, i| %>
       <%=link_to filter[:negative] ? "-" : "+", :action => :invert_filter, :index => i%>
       <%=filter[:field]%>:<%=filter[:value]%>
       <%=link_to image_tag("x-close.gif"), :action => :remove_filter, :index => i %>
@@ -32,10 +32,11 @@ Filters:
 
 </div>
 
+<h1><%=params[:field]%></h1>
 <% @facets.each do |f| %>
   <% if f.name %>
-    <%= link_to f.name, :action => 'add_filter', :field_name => params[:field_name], :value => f.name %> (<%=f.value%>)
+    <%= link_to f.name, :action => 'add_filter', :field => params[:field], :value => f.name %> (<%=f.value%>)
   <% else %>
-    <%= link_to '---- NO VALUE ----', :action => 'add_filter', :field_name => params[:field_name], :value => "[* TO *]", :negative => true %> (<%=f.value%>)
+    <%= link_to '---- NO VALUE ----', :action => 'add_filter', :field => params[:field], :value => "[* TO *]", :negative => true %> (<%=f.value%>)
   <% end %>
 <% end%>
