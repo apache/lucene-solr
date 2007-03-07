@@ -481,6 +481,10 @@ final class SegmentInfos extends Vector {
             files = fileDirectory.list();
           }
 
+          if (files == null) {
+            throw new FileNotFoundException("no segments* file found in directory " + directory + ": list() returned null");
+          }
+
           gen = getCurrentSegmentGeneration(files);
 
           if (gen == -1) {

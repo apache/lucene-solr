@@ -974,6 +974,28 @@ public class TestIndexReader extends TestCase
       return s;
     }
 
+    public void testOpenReaderAfterDelete() throws IOException {
+      File dirFile = new File(System.getProperty("tempDir"),
+                          "deletetest");
+      Directory dir = FSDirectory.getDirectory(dirFile);
+      try {
+        IndexReader reader = IndexReader.open(dir);
+        fail("expected CorruptIndexException");
+      } catch (FileNotFoundException e) {
+        // expected
+      }
+
+      dirFile.delete();
+
+      // Make sure we still get a CorruptIndexException (not NPE):
+      try {
+        IndexReader reader = IndexReader.open(dir);
+        fail("expected CorruptIndexException");
+      } catch (FileNotFoundException e) {
+        // expected
+      }
+    }
+
     private void deleteReaderReaderConflict(boolean optimize) throws IOException
     {
         Directory dir = getDirectory();

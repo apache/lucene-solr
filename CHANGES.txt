@@ -43,6 +43,11 @@ Bug fixes
     IndexWriter's mergeSegments, and also during
     IndexWriter.addIndexes.  (Mike McCandless)
 
+ 6. LUCENE-825: If directory is removed after
+    FSDirectory.getDirectory() but before IndexReader.open you now get
+    a FileNotFoundException like Lucene pre-2.1 (before this fix you
+    got an NPE).  (Mike McCandless)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
