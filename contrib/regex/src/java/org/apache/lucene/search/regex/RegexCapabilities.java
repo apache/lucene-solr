@@ -21,7 +21,7 @@ package org.apache.lucene.search.regex;
  * Defines basic operations needed by {@link RegexQuery} for a regular
  * expression implementation.
  */
-interface RegexCapabilities {
+public interface RegexCapabilities {
   /**
    * Called by the constructor of {@link RegexTermEnum} allowing
    * implementations to cache a compiled version of the regular
