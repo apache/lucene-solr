@@ -143,6 +143,7 @@ public class TestAddIndexesNoOptimize extends TestCase {
     }
     catch (IllegalArgumentException e) {
       assertEquals(100, writer.docCount());
+      assertEquals(1, writer.getSegmentCount());
     }
 
     writer.setMaxMergeDocs(maxMergeDocs);

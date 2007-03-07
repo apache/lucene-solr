@@ -1169,33 +1169,26 @@ public class IndexWriter {
 
     try {
 
-      try {
-        for (int i = 0; i < dirs.length; i++) {
-          if (directory == dirs[i]) {
-            // cannot add this index: segments may be deleted in merge before added
-            throw new IllegalArgumentException("Cannot add this index to itself");
-          }
+      for (int i = 0; i < dirs.length; i++) {
+        if (directory == dirs[i]) {
+          // cannot add this index: segments may be deleted in merge before added
+          throw new IllegalArgumentException("Cannot add this index to itself");
+        }
 
-          SegmentInfos sis = new SegmentInfos(); // read infos from dir
-          sis.read(dirs[i]);
-          for (int j = 0; j < sis.size(); j++) {
-            SegmentInfo info = sis.info(j);
-            segmentInfos.addElement(info); // add each info
-
-            while (startUpperBound < info.docCount) {
-              startUpperBound *= mergeFactor; // find the highest level from dirs
-              if (startUpperBound > maxMergeDocs) {
-                // upper bound cannot exceed maxMergeDocs
-                throw new IllegalArgumentException("Upper bound cannot exceed maxMergeDocs");
-              }
+        SegmentInfos sis = new SegmentInfos(); // read infos from dir
+        sis.read(dirs[i]);
+        for (int j = 0; j < sis.size(); j++) {
+          SegmentInfo info = sis.info(j);
+          segmentInfos.addElement(info); // add each info
+          
+          while (startUpperBound < info.docCount) {
+            startUpperBound *= mergeFactor; // find the highest level from dirs
+            if (startUpperBound > maxMergeDocs) {
+              // upper bound cannot exceed maxMergeDocs
+              throw new IllegalArgumentException("Upper bound cannot exceed maxMergeDocs");
             }
           }
         }
-      } catch (IllegalArgumentException e) {
-        for (int i = segmentInfos.size() - 1; i >= start; i--) {
-          segmentInfos.remove(i);
-        }
-        throw e;
       }
 
       // 3 maybe merge segments starting from the highest level from dirs
