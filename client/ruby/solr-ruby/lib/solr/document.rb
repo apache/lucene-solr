@@ -15,6 +15,7 @@ require 'solr/field'
 
 class Solr::Document
   include Enumerable
+  attr_accessor :boost
 
   # Create a new Solr::Document, optionally passing in a hash of 
   # key/value pairs for the fields
@@ -65,6 +66,7 @@ class Solr::Document
   # convert the Document to a REXML::Element 
   def to_xml
     e = Solr::XML::Element.new 'doc'
+    e.attributes['boost'] = @boost.to_s if @boost
     @fields.each {|f| e.add_element(f.to_xml)}
     return e
   end

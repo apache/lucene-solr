@@ -39,4 +39,10 @@ class FieldTest < Test::Unit::TestCase
     assert_match(/<field name=["']i18nstring["']>Äêâîôû Öëäïöü<\/field>/m, field.to_xml.to_s)
   end
   
+  def test_boost_values
+    field = Solr::Field.new(:blah => "squee", :boost => 3.0)
+    assert_kind_of Solr::XML::Element, field.to_xml
+    assert_match(/<field name=["']blah["'] boost=["']3.0["']>squee<\/field>/, field.to_xml.to_s)
+  end
+  
 end

@@ -14,13 +14,16 @@ require 'solr/xml'
 require 'time'
 
 class Solr::Field
+  VALID_PARAMS = [:boost]
   attr_accessor :name
   attr_accessor :value
+  attr_accessor :boost
 
-  def initialize(key_val, opts={})
-    raise "first argument must be a hash" unless key_val.kind_of? Hash
-    @name = key_val.keys[0].to_s
-    @value = key_val.values[0]
+  # Accepts an optional <tt>:boost</tt> parameter, used to boost the relevance of a particular field.
+  def initialize(params)
+    @boost = params[:boost]
+    name_key = (params.keys - VALID_PARAMS).first
+    @name, @value = name_key.to_s, params[name_key]
     # Convert any Time values into UTC/XML schema format (which Solr requires).
     @value = @value.respond_to?(:utc) ? @value.utc.xmlschema : @value.to_s
   end
@@ -28,6 +31,7 @@ class Solr::Field
   def to_xml
     e = Solr::XML::Element.new 'field'
     e.attributes['name'] = @name
+    e.attributes['boost'] = @boost.to_s if @boost
     e.text = @value
     return e
   end
