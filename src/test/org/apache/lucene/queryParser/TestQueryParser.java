@@ -298,12 +298,9 @@ public class TestQueryParser extends TestCase {
     fq = (FuzzyQuery)getQuery("term~", null);
     assertEquals(0.5f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
-    try {
-      getQuery("term~1.1", null);   // value > 1, throws exception
-      fail();
-    } catch(ParseException pe) {
-      // expected exception
-    }
+    
+    assertParseException("term~1.1"); // value > 1, throws exception
+
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
 /* Tests to see that wild card terms are (or are not) properly
@@ -566,11 +563,7 @@ public class TestQueryParser extends TestCase {
     
     assertQueryEquals("c\\:\\\\temp\\\\\\~foo.txt", a, "c:\\temp\\~foo.txt");
     
-
-    try {
-        assertQueryEquals("XY\\", a, "XYZ");
-        fail("ParseException expected, not thrown");
-    } catch (ParseException expected) {}
+    assertParseException("XY\\"); // there must be a character after the escape char
     
     // test unicode escaping
     assertQueryEquals("a\\u0062c", a, "abc");
@@ -578,24 +571,16 @@ public class TestQueryParser extends TestCase {
     assertQueryEquals("XY\\u005A", a, "XYZ");
     assertQueryEquals("\"a \\\\\\u0028\\u0062\\\" c\"", a, "\"a \\(b\" c\"");
     
-    try {
-        assertQueryEquals("XY\\u005G", a, "XYZ");
-        fail("ParseException expected, not thrown");
-    } catch (ParseException expected) {}
-
-    try {
-        assertQueryEquals("XY\\u005", a, "XYZ");
-        fail("ParseException expected, not thrown");
-    } catch (ParseException expected) {}
+    assertParseException("XY\\u005G");  // test non-hex character in escaped unicode sequence
+    assertParseException("XY\\u005");   // test incomplete escaped unicode sequence
     
     // Tests bug LUCENE-800
     assertQueryEquals("(item:\\\\ item:ABCD\\\\)", a, "item:\\ item:ABCD\\");
+    assertParseException("(item:\\\\ item:ABCD\\\\))"); // unmatched closing paranthesis 
     assertQueryEquals("\\*", a, "*");
     assertQueryEquals("\\\\", a, "\\");  // escaped backslash
-    try {
-      assertQueryEquals("\\", a, "\\");
-      fail("ParseException expected not thrown (backslash must be escaped)");
-    } catch (ParseException expected) {}
+    
+    assertParseException("\\"); // a backslash must always be escaped
   }
 
   public void testQueryStringEscaping() throws Exception {
@@ -701,13 +686,24 @@ public class TestQueryParser extends TestCase {
     assertEquals(1.0f, q.getBoost(), 0.01f);
   }
 
-  public void testException() throws Exception {
+  public void assertParseException(String queryString) throws Exception {
     try {
-      assertQueryEquals("\"some phrase", null, "abc");
-      fail("ParseException expected, not thrown");
+      Query q = getQuery(queryString, null);
     } catch (ParseException expected) {
+      return;
     }
+    fail("ParseException expected, not thrown");
   }
+       
+  public void testException() throws Exception {
+    assertParseException("\"some phrase");
+    assertParseException("(foo bar");
+    assertParseException("foo bar))");
+    assertParseException("field:term:with:colon some more terms");
+    assertParseException("(sub query)^5.0^2.0 plus more");
+    assertParseException("secret AND illegal) AND access:confidential");
+  }
+  
 
   public void testCustomQueryParserWildcard() {
     try {

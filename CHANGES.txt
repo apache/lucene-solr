@@ -53,6 +53,10 @@ Bug fixes
     list to contain all possible characters, because every character that 
     follows a backslash should be considered as escaped. (Michael Busch)
 
+ 8. LUCENE-372: QueryParser.parse() now ensures that the entire input string 
+    is consumed. Now a ParseException is thrown if a query contains too many
+    closing parentheses. (Andreas Neumann via Michael Busch)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.

@@ -142,7 +142,8 @@ public class QueryParser implements QueryParserConstants {
   public Query parse(String query) throws ParseException {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
-      return Query(field);
+          // TopLevelQuery is a Query followed by the end-of-input (EOF)
+      return TopLevelQuery(field);
     }
     catch (ParseException tme) {
       // rethrow to include the original query:
@@ -881,6 +882,15 @@ public class QueryParser implements QueryParserConstants {
       ;
     }
     {if (true) return ret;}
+    throw new Error("Missing return statement in function");
+  }
+
+// This makes sure that there is no garbage after the query string
+  final public Query TopLevelQuery(String field) throws ParseException {
+        Query q;
+    q = Query(field);
+    jj_consume_token(0);
+                {if (true) return q;}
     throw new Error("Missing return statement in function");
   }
 

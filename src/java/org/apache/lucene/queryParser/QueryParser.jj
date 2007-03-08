@@ -166,7 +166,8 @@ public class QueryParser {
   public Query parse(String query) throws ParseException {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
-      return Query(field);
+	  // TopLevelQuery is a Query followed by the end-of-input (EOF)
+      return TopLevelQuery(field);
     }
     catch (ParseException tme) {
       // rethrow to include the original query:
@@ -929,6 +930,18 @@ int Modifiers() : {
      | <NOT> { ret = MOD_NOT; }
   ]
   { return ret; }
+}
+
+// This makes sure that there is no garbage after the query string
+Query TopLevelQuery(String field) : 
+{
+	Query q;
+}
+{
+	q=Query(field) <EOF>
+	{
+		return q;
+	}
 }
 
 Query Query(String field) :

@@ -55,7 +55,7 @@ public class TestMultiFieldQueryParser extends TestCase {
     q = mfqp.parse("+one +two");
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
 
-    q = mfqp.parse("+one -two -three)");
+    q = mfqp.parse("+one -two -three");
     assertEquals("+(b:one t:one) -(b:two t:two) -(b:three t:three)", q.toString());
     
     q = mfqp.parse("one^2 two");
