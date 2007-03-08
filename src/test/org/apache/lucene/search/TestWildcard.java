@@ -170,13 +170,13 @@ public class TestWildcard
     QueryParser qp = new QueryParser(field, new WhitespaceAnalyzer());
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
-        "abcdefg1",
-        "hijklmn1",
-        "opqrstu1",
+        "\\ abcdefg1",
+        "\\79 hijklmn1",
+        "\\\\ opqrstu1",
     };
     // queries that should find all docs
     String matchAll[] = {
-        "*", "*1", "**1", "*?", "*?1", "?*1", "**", "***",
+        "*", "*1", "**1", "*?", "*?1", "?*1", "**", "***", "\\\\*"
     };
     // queries that should find no docs
     String matchNone[] = {
@@ -184,9 +184,9 @@ public class TestWildcard
     };
     // queries that should be parsed to prefix queries
     String matchOneDocPrefix[][] = {
-        {"a*", "ab*", "abc*"}, // these should find only doc 0 
-        {"h*", "hi*", "hij*"}, // these should find only doc 1
-        {"o*", "op*", "opq*"}, // these should find only doc 2
+        {"a*", "ab*", "abc*", }, // these should find only doc 0 
+        {"h*", "hi*", "hij*", "\\\\7*"}, // these should find only doc 1
+        {"o*", "op*", "opq*", "\\\\\\\\*"}, // these should find only doc 2
     };
     // queries that should be parsed to wildcard queries
     String matchOneDocWild[][] = {
@@ -200,7 +200,7 @@ public class TestWildcard
     IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer());
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field,docs[i],Store.NO,Index.UN_TOKENIZED));
+      doc.add(new Field(field,docs[i],Store.NO,Index.TOKENIZED));
       iw.addDocument(doc);
     }
     iw.close();

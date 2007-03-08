@@ -794,7 +794,7 @@ public class QueryParser implements QueryParserConstants {
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
-      // NOTE: keep this in sync with _ESCAPED_CHAR below!
+      // These characters are part of the query syntax and must be escaped
       if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
         || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
         || c == '*' || c == '?') {

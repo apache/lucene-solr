@@ -522,6 +522,8 @@ public class TestQueryParser extends TestCase {
     //assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
     //assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");*/
 
+    assertQueryEquals("\\a", a, "a");
+    
     assertQueryEquals("a\\-b:c", a, "a-b:c");
     assertQueryEquals("a\\+b:c", a, "a+b:c");
     assertQueryEquals("a\\:b:c", a, "a:b:c");
@@ -584,6 +586,15 @@ public class TestQueryParser extends TestCase {
     try {
         assertQueryEquals("XY\\u005", a, "XYZ");
         fail("ParseException expected, not thrown");
+    } catch (ParseException expected) {}
+    
+    // Tests bug LUCENE-800
+    assertQueryEquals("(item:\\\\ item:ABCD\\\\)", a, "item:\\ item:ABCD\\");
+    assertQueryEquals("\\*", a, "*");
+    assertQueryEquals("\\\\", a, "\\");  // escaped backslash
+    try {
+      assertQueryEquals("\\", a, "\\");
+      fail("ParseException expected not thrown (backslash must be escaped)");
     } catch (ParseException expected) {}
   }
 

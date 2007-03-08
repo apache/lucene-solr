@@ -1,4 +1,4 @@
-Lucene Change Log
+﻿Lucene Change Log
 
 $Id$
 
@@ -47,6 +47,11 @@ Bug fixes
     FSDirectory.getDirectory() but before IndexReader.open you now get
     a FileNotFoundException like Lucene pre-2.1 (before this fix you
     got an NPE).  (Mike McCandless)
+
+ 7. LUCENE-800: Removed backslash from the TERM_CHAR list in the queryparser, 
+    because the backslash is the escape character. Also changed the ESCAPED_CHAR
+    list to contain all possible characters, because every character that 
+    follows a backslash should be considered as escaped. (Michael Busch)
 
 New features
 
