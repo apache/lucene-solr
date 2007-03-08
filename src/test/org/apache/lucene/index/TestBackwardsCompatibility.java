@@ -54,7 +54,7 @@ public class TestBackwardsCompatibility extends TestCase
     String dirName = fullDir(destDirName);
 
     File fileDir = new File(dirName);
-    rmDir(dirName);
+    rmDir(destDirName);
 
     fileDir.mkdir();
 
