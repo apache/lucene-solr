@@ -980,7 +980,7 @@ public class TestIndexReader extends TestCase
       Directory dir = FSDirectory.getDirectory(dirFile);
       try {
         IndexReader reader = IndexReader.open(dir);
-        fail("expected CorruptIndexException");
+        fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
       }
@@ -990,7 +990,7 @@ public class TestIndexReader extends TestCase
       // Make sure we still get a CorruptIndexException (not NPE):
       try {
         IndexReader reader = IndexReader.open(dir);
-        fail("expected CorruptIndexException");
+        fail("expected FileNotFoundException");
       } catch (FileNotFoundException e) {
         // expected
       }

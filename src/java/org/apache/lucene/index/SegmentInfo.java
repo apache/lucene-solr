@@ -236,6 +236,9 @@ final class SegmentInfo {
         // code.  So we must fallback to the original
         // directory list check:
         String[] result = dir.list();
+        if (result == null)
+          throw new IOException("cannot read directory " + dir + ": list() returned null");
+        
         String pattern;
         pattern = name + ".s";
         int patternLength = pattern.length();

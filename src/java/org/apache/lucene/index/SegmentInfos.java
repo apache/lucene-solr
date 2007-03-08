@@ -113,7 +113,7 @@ final class SegmentInfos extends Vector {
   public static long getCurrentSegmentGeneration(Directory directory) throws IOException {
     String[] files = directory.list();
     if (files == null)
-      throw new IOException("Cannot read directory " + directory);
+      throw new IOException("cannot read directory " + directory + ": list() returned null");
     return getCurrentSegmentGeneration(files);
   }
 
@@ -477,12 +477,12 @@ final class SegmentInfos extends Vector {
         if (0 == method) {
           if (directory != null) {
             files = directory.list();
+            if (files == null)
+              throw new FileNotFoundException("cannot read directory " + directory + ": list() returned null");
           } else {
             files = fileDirectory.list();
-          }
-
-          if (files == null) {
-            throw new FileNotFoundException("no segments* file found in directory " + directory + ": list() returned null");
+            if (files == null)
+              throw new FileNotFoundException("cannot read directory " + fileDirectory + ": list() returned null");
           }
 
           gen = getCurrentSegmentGeneration(files);

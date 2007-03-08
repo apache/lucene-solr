@@ -42,7 +42,11 @@ public abstract class Directory {
    * this Directory instance). */
   protected LockFactory lockFactory;
 
-  /** Returns an array of strings, one for each file in the directory. */
+  /** Returns an array of strings, one for each file in the
+   * directory.  This method may return null (for example for
+   * {@link FSDirectory} if the underlying directory doesn't
+   * exist in the filesystem or there are permissions
+   * problems).*/
   public abstract String[] list()
        throws IOException;
 
@@ -154,6 +158,10 @@ public abstract class Directory {
    */
   public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
       final String[] files = src.list();
+
+      if (files == null)
+        throw new IOException("cannot read directory " + src + ": list() returned null");
+
       byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
       for (int i = 0; i < files.length; i++) {
         IndexOutput os = null;

@@ -84,6 +84,8 @@ final class IndexFileDeleter {
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
 
     String[] files = directory.list();
+    if (files == null)
+      throw new IOException("cannot read directory " + directory + ": list() returned null");
 
     for (int i = 0; i < files.length; i++) {
 

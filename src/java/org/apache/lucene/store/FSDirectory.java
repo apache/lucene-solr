@@ -239,7 +239,7 @@ public class FSDirectory extends Directory {
     if (directory.exists()) {
       String[] files = directory.list(IndexFileNameFilter.getFilter());            // clear old files
       if (files == null)
-        throw new IOException("Cannot read directory " + directory.getAbsolutePath());
+        throw new IOException("cannot read directory " + directory.getAbsolutePath() + ": list() returned null");
       for (int i = 0; i < files.length; i++) {
         File file = new File(directory, files[i]);
         if (!file.delete())
