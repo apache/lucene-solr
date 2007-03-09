@@ -31,7 +31,7 @@
                 capabilities and refinements onto this model to support boolean and fuzzy searching, but it
                 essentially remains a VSM based system at the heart.
                 For some valuable references on VSM and IR in general refer to the
-                <a href="http://wiki.apache.org/jakarta-lucene/InformationRetrieval">Lucene Wiki IR references</a>.
+                <a href="http://wiki.apache.org/lucene-java/InformationRetrieval">Lucene Wiki IR references</a>.
             </p>
             <p>The rest of this document will cover <a href="#Scoring">Scoring</a> basics and how to change your
                 <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>.  Next it will cover ways you can
@@ -189,7 +189,7 @@
         <section id="Appendix"><title>Appendix</title>
             <section id="Class Diagrams"><title>Class Diagrams</title>
                 <p>
-                    <a href="http://wiki.apache.org/jakarta-lucene/KarlWettin?action=AttachFile&amp;do=view&amp;target=search_uml_1.jpg">
+                    <a href="http://wiki.apache.org/lucene-java/KarlWettin?action=AttachFile&amp;do=view&amp;target=search_uml_1.jpg">
                         Karl Wettin's UML on the Wiki</a>
                 </p>
             </section>

@@ -119,11 +119,11 @@ See http://forrest.apache.org/docs/linking.html for more info
     <lucy href="http://lucene.apache.org/lucy/"/>
     <lucene-net href="http://incubator.apache.org/projects/lucene.net.html"/>
     <hadoop href="http://lucene.apache.org/hadoop/"/>
-    <wiki      href="http://wiki.apache.org/jakarta-lucene" />
-    <faq       href="http://wiki.apache.org/jakarta-lucene/LuceneFAQ" />
+    <wiki      href="http://wiki.apache.org/lucene-java" />
+    <faq       href="http://wiki.apache.org/lucene-java/LuceneFAQ" />
     <releases href="http://www.apache.org/dyn/closer.cgi/lucene/java/" />
     <source href="http://svn.apache.org/viewcvs.cgi/lucene/java/"/>
-    <powered-by href="http://wiki.apache.org/jakarta-lucene/PoweredBy"/>
+    <powered-by href="http://wiki.apache.org/lucene-java/PoweredBy"/>
   </external-refs>
 
 </site>

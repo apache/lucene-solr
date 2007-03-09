@@ -20,7 +20,7 @@ import org.apache.lucene.search.Similarity;
  * demoting effect
  * 
  * This code was originally made available here: [WWW] http://marc.theaimsgroup.com/?l=lucene-user&m=108058407130459&w=2
- * and is documented here: http://wiki.apache.org/jakarta-lucene/CommunityContributions
+ * and is documented here: http://wiki.apache.org/lucene-java/CommunityContributions
  */
 public class BoostingQuery extends Query {
     private float boost;                            // the amount to boost by

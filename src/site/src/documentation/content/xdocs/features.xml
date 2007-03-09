@@ -37,7 +37,7 @@
 	<a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License</a>
 	which lets you use Lucene in both commercial and Open Source programs</li>
 <li>100%-pure Java</li>
-<li>Implementations <a href="http://wiki.apache.org/jakarta-lucene/LuceneImplementations">in other
+<li>Implementations <a href="http://wiki.apache.org/lucene-java/LuceneImplementations">in other
 	programming languages available</a> that are index-compatible</li>
 </ul>
 </section>

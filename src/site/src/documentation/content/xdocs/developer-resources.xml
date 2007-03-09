@@ -7,7 +7,7 @@
 <body>
 <section id="Making a Contribution"><title>Making a Contribution</title>
     <p>Lucene Java is always looking for contributions, especially in the areas of documentation.  See the <a
-    href="http://wiki.apache.org/jakarta-lucene">Wiki</a> for details on contributing. </p>
+    href="http://wiki.apache.org/lucene-java">Wiki</a> for details on contributing. </p>
 </section>
     <!-- <section id="Code Coverage"><title>Code Coverage</title>
        <p>Code Coverage reports are available <a

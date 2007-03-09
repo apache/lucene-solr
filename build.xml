@@ -115,7 +115,7 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="docs" description="Build the website">
-      <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite</echo>
+      <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/lucene-java/HowToUpdateTheWebsite</echo>
   </target>
 
   <target name="javadocs" description="Generate javadoc">

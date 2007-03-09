@@ -38,7 +38,7 @@
   -->
 
   <tab id="" label="Main" dir=""/>
-  <tab id="wiki" label="Wiki" href="http://wiki.apache.org/jakarta-lucene"/>
+  <tab id="wiki" label="Wiki" href="http://wiki.apache.org/lucene-java"/>
   
   <!--
   <tab id="samples" label="Samples" dir="samples" indexfile="sample.html">

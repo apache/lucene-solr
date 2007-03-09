@@ -28,7 +28,7 @@
             <p>
                 Apache Lucene is written in Java, but several
                 efforts are underway to write
-                <a href="http://wiki.apache.org/jakarta-lucene/LuceneImplementations">versions
+                <a href="http://wiki.apache.org/lucene-java/LuceneImplementations">versions
                     of Lucene in other programming
                 languages</a>.  If these versions are to remain compatible with Apache
                 Lucene, then a language-independent definition of the Lucene index

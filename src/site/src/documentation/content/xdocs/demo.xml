@@ -29,7 +29,7 @@ functionalities of Lucene and how one should go about adding Lucene to their app
 <p>
 First, you should <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download</a> the
 latest Lucene distribution and then extract it to a working directory.  Alternatively, you can <a
-href="http://wiki.apache.org/jakarta-lucene/SourceRepository">check out the sources from
+href="http://wiki.apache.org/lucene-java/SourceRepository">check out the sources from
 Subversion</a>, and then run <code>ant war-demo</code> to generate the JARs and WARs.
 </p>
 <p>
