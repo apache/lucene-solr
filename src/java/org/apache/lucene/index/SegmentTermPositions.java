@@ -30,7 +30,7 @@ extends SegmentTermDocs implements TermPositions {
   // these variables are being used to remember information
   // for a lazy skip
   private long lazySkipPointer = 0;
-  private int lazySkipDocCount = 0;
+  private int lazySkipProxCount = 0;
   
   SegmentTermPositions(SegmentReader p) {
     super(p);
@@ -42,7 +42,7 @@ extends SegmentTermDocs implements TermPositions {
     if (ti != null)
       lazySkipPointer = ti.proxPointer;
     
-    lazySkipDocCount = 0;
+    lazySkipProxCount = 0;
     proxCount = 0;
   }
 
@@ -59,14 +59,14 @@ extends SegmentTermDocs implements TermPositions {
   }
 
   protected final void skippingDoc() throws IOException {
-    // we remember to skip the remaining positions of the current
-    // document lazily
-    lazySkipDocCount += freq;
+    // we remember to skip a document lazily
+    lazySkipProxCount += freq;
   }
 
   public final boolean next() throws IOException {
-    // we remember to skip a document lazily
-    lazySkipDocCount += proxCount;
+    // we remember to skip the remaining positions of the current
+    // document lazily
+    lazySkipProxCount += proxCount;
     
     if (super.next()) {               // run super
       proxCount = freq;               // note frequency
@@ -85,7 +85,7 @@ extends SegmentTermDocs implements TermPositions {
   protected void skipProx(long proxPointer) throws IOException {
     // we save the pointer, we might have to skip there lazily
     lazySkipPointer = proxPointer;
-    lazySkipDocCount = 0;
+    lazySkipProxCount = 0;
     proxCount = 0;
   }
 
@@ -115,9 +115,9 @@ extends SegmentTermDocs implements TermPositions {
       lazySkipPointer = 0;
     }
      
-    if (lazySkipDocCount != 0) {
-      skipPositions(lazySkipDocCount);
-      lazySkipDocCount = 0;
+    if (lazySkipProxCount != 0) {
+      skipPositions(lazySkipProxCount);
+      lazySkipProxCount = 0;
     }
   }
 
