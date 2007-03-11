@@ -34,7 +34,7 @@ extends SegmentTermDocs implements TermPositions {
   
   SegmentTermPositions(SegmentReader p) {
     super(p);
-    this.proxStream = (IndexInput)parent.proxStream.clone();
+    this.proxStream = null;  // the proxStream will be cloned lazily when nextPosition() is called for the first time
   }
 
   final void seek(TermInfo ti) throws IOException {
@@ -48,7 +48,7 @@ extends SegmentTermDocs implements TermPositions {
 
   public final void close() throws IOException {
     super.close();
-    proxStream.close();
+    if (proxStream != null) proxStream.close();
   }
 
   public final int nextPosition() throws IOException {
@@ -105,6 +105,11 @@ extends SegmentTermDocs implements TermPositions {
   // So we move the prox pointer lazily to the document
   // as soon as positions are requested.
   private void lazySkip() throws IOException {
+    if (proxStream == null) {
+      // clone lazily
+      proxStream = (IndexInput)parent.proxStream.clone();
+    }
+      
     if (lazySkipPointer != 0) {
       proxStream.seek(lazySkipPointer);
       lazySkipPointer = 0;
