@@ -307,6 +307,9 @@
           debuglookahead="${javacc.debug.lookahead}"
           javacchome="${javacc.home}"
       />
+      <fixcrlf srcdir="@{outputDir}" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fixcrlf>
     </sequential>
   </macrodef>
 

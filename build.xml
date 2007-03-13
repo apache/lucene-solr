@@ -287,12 +287,15 @@
 
   <target name="clean-javacc">
     <delete>
-      <fileset dir="src">
-        <include name="java/org/apache/lucene/analysis/standard/StandardTokenizer.java"/>
-        <include name="java/org/apache/lucene/queryParser/QueryParser.java"/>
-        <include name="java/org/apache/lucene/queryParser/CharStream.java"/>
-        <include name="demo/org/apache/lucene/demo/html/HTMLParser.java"/>
-        <include name="demo/org/apache/lucene/demo/html/SimpleCharStream.java"/>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+        <exclude name="ParseException.java"/>
+      </fileset>
+      <fileset dir="src/java/org/apache/lucene/queryParser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
+      <fileset dir="src/demo/org/apache/lucene/demo/html" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
     </delete>
   </target>
