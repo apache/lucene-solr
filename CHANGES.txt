@@ -20,6 +20,15 @@ API Changes
     classes, package-private again (they were unnecessarily made public
     as part of LUCENE-701).  (Mike McCandless)
 
+ 3. LUCENE-710: added optional autoCommit boolean to IndexWriter
+    constructors.  When this is false, index changes are not committed
+    until the writer is closed.  This gives explicit control over when
+    a reader will see the changes.  Also added optional custom
+    deletion policy to explicitly control when prior commits are
+    removed from the index.  This is intended to allow applications to
+    share an index over NFS by customizing when prior commits are
+    deleted. (Mike McCandless)
+
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)

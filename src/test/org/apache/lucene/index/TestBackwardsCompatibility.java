@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.zip.*;
 
 /*
-  Verify we can read the pre-XXX file format, do searches
+  Verify we can read the pre-2.1 file format, do searches
   against it, and add documents to it.
 */
 
@@ -104,7 +104,11 @@ public class TestBackwardsCompatibility extends TestCase
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
-      changeIndexNoAdds(oldNames[i]);
+      changeIndexNoAdds(oldNames[i], true);
+      rmDir(oldNames[i]);
+
+      unzip(dirName, oldNames[i]);
+      changeIndexNoAdds(oldNames[i], false);
       rmDir(oldNames[i]);
     }
   }
@@ -114,7 +118,11 @@ public class TestBackwardsCompatibility extends TestCase
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
-      changeIndexWithAdds(oldNames[i]);
+      changeIndexWithAdds(oldNames[i], true);
+      rmDir(oldNames[i]);
+
+      unzip(dirName, oldNames[i]);
+      changeIndexWithAdds(oldNames[i], false);
       rmDir(oldNames[i]);
     }
   }
@@ -141,13 +149,14 @@ public class TestBackwardsCompatibility extends TestCase
 
   /* Open pre-lockless index, add docs, do a delete &
    * setNorm, and search */
-  public void changeIndexWithAdds(String dirName) throws IOException {
+  public void changeIndexWithAdds(String dirName, boolean autoCommit) throws IOException {
 
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.getDirectory(dirName);
+
     // open writer
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
 
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -166,7 +175,7 @@ public class TestBackwardsCompatibility extends TestCase
     assertEquals("wrong first document", "21", d.get("id"));
     searcher.close();
 
-    // make sure we can do another delete & another setNorm against this
+    // make sure we can do delete & setNorm against this
     // pre-lockless segment:
     IndexReader reader = IndexReader.open(dir);
     Term searchTerm = new Term("id", "6");
@@ -175,7 +184,7 @@ public class TestBackwardsCompatibility extends TestCase
     reader.setNorm(22, "content", (float) 2.0);
     reader.close();
 
-    // make sure 2nd delete & 2nd norm "took":
+    // make sure they "took":
     searcher = new IndexSearcher(dir);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")));
     assertEquals("wrong number of hits", 43, hits.length());
@@ -184,7 +193,7 @@ public class TestBackwardsCompatibility extends TestCase
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+    writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
     writer.optimize();
     writer.close();
 
@@ -200,7 +209,7 @@ public class TestBackwardsCompatibility extends TestCase
 
   /* Open pre-lockless index, add docs, do a delete &
    * setNorm, and search */
-  public void changeIndexNoAdds(String dirName) throws IOException {
+  public void changeIndexNoAdds(String dirName, boolean autoCommit) throws IOException {
 
     dirName = fullDir(dirName);
 
@@ -214,7 +223,7 @@ public class TestBackwardsCompatibility extends TestCase
     assertEquals("wrong first document", "21", d.get("id"));
     searcher.close();
 
-    // make sure we can do another delete & another setNorm against this
+    // make sure we can do a delete & setNorm against this
     // pre-lockless segment:
     IndexReader reader = IndexReader.open(dir);
     Term searchTerm = new Term("id", "6");
@@ -223,7 +232,7 @@ public class TestBackwardsCompatibility extends TestCase
     reader.setNorm(22, "content", (float) 2.0);
     reader.close();
 
-    // make sure 2nd delete & 2nd norm "took":
+    // make sure they "took":
     searcher = new IndexSearcher(dir);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")));
     assertEquals("wrong number of hits", 33, hits.length());
@@ -232,7 +241,7 @@ public class TestBackwardsCompatibility extends TestCase
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
     writer.optimize();
     writer.close();
 
@@ -273,66 +282,78 @@ public class TestBackwardsCompatibility extends TestCase
 
   /* Verifies that the expected file names were produced */
 
-  // disable until hardcoded file names are fixes:
   public void testExactFileNames() throws IOException {
 
-    String outputDir = "lucene.backwardscompat0.index";
-    Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
-    for(int i=0;i<35;i++) {
-      addDoc(writer, i);
-    }
-    assertEquals("wrong doc count", 35, writer.docCount());
-    writer.close();
+    for(int pass=0;pass<2;pass++) {
 
-    // Delete one doc so we get a .del file:
-    IndexReader reader = IndexReader.open(dir);
-    Term searchTerm = new Term("id", "7");
-    int delCount = reader.deleteDocuments(searchTerm);
-    assertEquals("didn't delete the right number of documents", 1, delCount);
+      String outputDir = "lucene.backwardscompat0.index";
 
-    // Set one norm so we get a .s0 file:
-    reader.setNorm(21, "content", (float) 1.5);
-    reader.close();
+      try {
+        Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
 
-    // The numbering of fields can vary depending on which
-    // JRE is in use.  On some JREs we see content bound to
-    // field 0; on others, field 1.  So, here we have to
-    // figure out which field number corresponds to
-    // "content", and then set our expected file names below
-    // accordingly:
-    CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
-    FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
-    int contentFieldIndex = -1;
-    for(int i=0;i<fieldInfos.size();i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
-      if (fi.name.equals("content")) {
-        contentFieldIndex = i;
-        break;
+        boolean autoCommit = 0 == pass;
+      
+        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+        //IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for(int i=0;i<35;i++) {
+          addDoc(writer, i);
+        }
+        assertEquals("wrong doc count", 35, writer.docCount());
+        writer.close();
+
+        // Delete one doc so we get a .del file:
+        IndexReader reader = IndexReader.open(dir);
+        Term searchTerm = new Term("id", "7");
+        int delCount = reader.deleteDocuments(searchTerm);
+        assertEquals("didn't delete the right number of documents", 1, delCount);
+
+        // Set one norm so we get a .s0 file:
+        reader.setNorm(21, "content", (float) 1.5);
+        reader.close();
+
+        // The numbering of fields can vary depending on which
+        // JRE is in use.  On some JREs we see content bound to
+        // field 0; on others, field 1.  So, here we have to
+        // figure out which field number corresponds to
+        // "content", and then set our expected file names below
+        // accordingly:
+        CompoundFileReader cfsReader = new CompoundFileReader(dir, "_2.cfs");
+        FieldInfos fieldInfos = new FieldInfos(cfsReader, "_2.fnm");
+        int contentFieldIndex = -1;
+        for(int i=0;i<fieldInfos.size();i++) {
+          FieldInfo fi = fieldInfos.fieldInfo(i);
+          if (fi.name.equals("content")) {
+            contentFieldIndex = i;
+            break;
+          }
+        }
+        cfsReader.close();
+        assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
+
+        // Now verify file names:
+        String[] expected = {"_0.cfs",
+                             "_0_1.del",
+                             "_1.cfs",
+                             "_2.cfs",
+                             "_2_1.s" + contentFieldIndex,
+                             "_3.cfs",
+                             "segments_a",
+                             "segments.gen"};
+        if (!autoCommit) {
+          expected[6] = "segments_3";
+        }
+
+        String[] actual = dir.list();
+        Arrays.sort(expected);
+        Arrays.sort(actual);
+        if (!Arrays.equals(expected, actual)) {
+          fail("incorrect filenames in index: expected:\n    " + asString(expected) + "\n  actual:\n    " + asString(actual));
+        }
+        dir.close();
+      } finally {
+        rmDir(outputDir);
       }
     }
-    cfsReader.close();
-    assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
-
-    // Now verify file names:
-    String[] expected = {"_0.cfs",
-                         "_0_1.del",
-                         "_1.cfs",
-                         "_2.cfs",
-                         "_2_1.s" + contentFieldIndex,
-                         "_3.cfs",
-                         "segments_a",
-                         "segments.gen"};
-
-    String[] actual = dir.list();
-    Arrays.sort(expected);
-    Arrays.sort(actual);
-    if (!Arrays.equals(expected, actual)) {
-      fail("incorrect filenames in index: expected:\n    " + asString(expected) + "\n  actual:\n    " + asString(actual));
-    }
-    dir.close();
-
-    rmDir(outputDir);
   }
 
   private String asString(String[] l) {

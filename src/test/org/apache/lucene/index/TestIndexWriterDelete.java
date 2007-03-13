@@ -25,175 +25,259 @@ public class TestIndexWriterDelete extends TestCase {
         "Venice has lots of canals" };
     String[] text = { "Amsterdam", "Venice" };
 
-    Directory dir = new RAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir,
-        new WhitespaceAnalyzer(), true);
-    modifier.setUseCompoundFile(true);
-    modifier.setMaxBufferedDeleteTerms(1);
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
 
-    for (int i = 0; i < keywords.length; i++) {
-      Document doc = new Document();
-      doc.add(new Field("id", keywords[i], Field.Store.YES,
-          Field.Index.UN_TOKENIZED));
-      doc.add(new Field("country", unindexed[i], Field.Store.YES,
-          Field.Index.NO));
-      doc.add(new Field("contents", unstored[i], Field.Store.NO,
-          Field.Index.TOKENIZED));
-      doc
+      Directory dir = new RAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setUseCompoundFile(true);
+      modifier.setMaxBufferedDeleteTerms(1);
+
+      for (int i = 0; i < keywords.length; i++) {
+        Document doc = new Document();
+        doc.add(new Field("id", keywords[i], Field.Store.YES,
+                          Field.Index.UN_TOKENIZED));
+        doc.add(new Field("country", unindexed[i], Field.Store.YES,
+                          Field.Index.NO));
+        doc.add(new Field("contents", unstored[i], Field.Store.NO,
+                          Field.Index.TOKENIZED));
+        doc
           .add(new Field("city", text[i], Field.Store.YES,
-              Field.Index.TOKENIZED));
-      modifier.addDocument(doc);
+                         Field.Index.TOKENIZED));
+        modifier.addDocument(doc);
+      }
+      modifier.optimize();
+
+      if (!autoCommit) {
+        modifier.close();
+      }
+
+      Term term = new Term("city", "Amsterdam");
+      int hitCount = getHitCount(dir, term);
+      assertEquals(1, hitCount);
+      if (!autoCommit) {
+        modifier = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer());
+        modifier.setUseCompoundFile(true);
+      }
+      modifier.deleteDocuments(term);
+      if (!autoCommit) {
+        modifier.close();
+      }
+      hitCount = getHitCount(dir, term);
+      assertEquals(0, hitCount);
+
+      if (autoCommit) {
+        modifier.close();
+      }
+      dir.close();
     }
-    modifier.optimize();
-
-    Term term = new Term("city", "Amsterdam");
-    int hitCount = getHitCount(dir, term);
-    assertEquals(1, hitCount);
-    modifier.deleteDocuments(term);
-    hitCount = getHitCount(dir, term);
-    assertEquals(0, hitCount);
-
-    modifier.close();
   }
 
   // test when delete terms only apply to disk segments
   public void testNonRAMDelete() throws IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir,
-        new WhitespaceAnalyzer(), true);
-    modifier.setMaxBufferedDocs(2);
-    modifier.setMaxBufferedDeleteTerms(2);
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
 
-    int id = 0;
-    int value = 100;
+      Directory dir = new RAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setMaxBufferedDocs(2);
+      modifier.setMaxBufferedDeleteTerms(2);
 
-    for (int i = 0; i < 7; i++) {
-      addDoc(modifier, ++id, value);
+      int id = 0;
+      int value = 100;
+
+      for (int i = 0; i < 7; i++) {
+        addDoc(modifier, ++id, value);
+      }
+      modifier.flush();
+
+      assertEquals(0, modifier.getRamSegmentCount());
+      assertTrue(0 < modifier.getSegmentCount());
+
+      if (!autoCommit) {
+        modifier.close();
+      }
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(7, reader.numDocs());
+      reader.close();
+
+      if (!autoCommit) {
+        modifier = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer());
+        modifier.setMaxBufferedDocs(2);
+        modifier.setMaxBufferedDeleteTerms(2);
+      }
+
+      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+
+      if (!autoCommit) {
+        modifier.close();
+      }
+
+      reader = IndexReader.open(dir);
+      assertEquals(0, reader.numDocs());
+      reader.close();
+      if (autoCommit) {
+        modifier.close();
+      }
+      dir.close();
     }
-    modifier.flush();
-
-    assertEquals(0, modifier.getRamSegmentCount());
-    assertTrue(0 < modifier.getSegmentCount());
-
-    IndexReader reader = IndexReader.open(dir);
-    assertEquals(7, reader.numDocs());
-    reader.close();
-
-    modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-    modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-
-    reader = IndexReader.open(dir);
-    assertEquals(0, reader.numDocs());
-    reader.close();
-
-    modifier.close();
   }
 
   // test when delete terms only apply to ram segments
   public void testRAMDeletes() throws IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir,
-        new WhitespaceAnalyzer(), true);
-    modifier.setMaxBufferedDocs(4);
-    modifier.setMaxBufferedDeleteTerms(4);
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
+      Directory dir = new RAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setMaxBufferedDocs(4);
+      modifier.setMaxBufferedDeleteTerms(4);
 
-    int id = 0;
-    int value = 100;
+      int id = 0;
+      int value = 100;
 
-    addDoc(modifier, ++id, value);
-    modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-    addDoc(modifier, ++id, value);
-    modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+      addDoc(modifier, ++id, value);
+      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+      addDoc(modifier, ++id, value);
+      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
 
-    assertEquals(2, modifier.getNumBufferedDeleteTerms());
-    assertEquals(1, modifier.getBufferedDeleteTermsSize());
+      assertEquals(2, modifier.getNumBufferedDeleteTerms());
+      assertEquals(1, modifier.getBufferedDeleteTermsSize());
 
-    addDoc(modifier, ++id, value);
-    assertEquals(0, modifier.getSegmentCount());
-    modifier.flush();
+      addDoc(modifier, ++id, value);
+      assertEquals(0, modifier.getSegmentCount());
+      modifier.flush();
 
-    IndexReader reader = IndexReader.open(dir);
-    assertEquals(1, reader.numDocs());
+      if (!autoCommit) {
+        modifier.close();
+      }
 
-    int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
-    assertEquals(1, hitCount);
-    reader.close();
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(1, reader.numDocs());
 
-    modifier.close();
+      int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
+      assertEquals(1, hitCount);
+      reader.close();
+      if (autoCommit) {
+        modifier.close();
+      }
+      dir.close();
+    }
   }
 
   // test when delete terms apply to both disk and ram segments
   public void testBothDeletes() throws IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir,
-        new WhitespaceAnalyzer(), true);
-    modifier.setMaxBufferedDocs(100);
-    modifier.setMaxBufferedDeleteTerms(100);
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
 
-    int id = 0;
-    int value = 100;
+      Directory dir = new RAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setMaxBufferedDocs(100);
+      modifier.setMaxBufferedDeleteTerms(100);
 
-    for (int i = 0; i < 5; i++) {
-      addDoc(modifier, ++id, value);
+      int id = 0;
+      int value = 100;
+
+      for (int i = 0; i < 5; i++) {
+        addDoc(modifier, ++id, value);
+      }
+
+      value = 200;
+      for (int i = 0; i < 5; i++) {
+        addDoc(modifier, ++id, value);
+      }
+      modifier.flush();
+
+      for (int i = 0; i < 5; i++) {
+        addDoc(modifier, ++id, value);
+      }
+      modifier.deleteDocuments(new Term("value", String.valueOf(value)));
+
+      modifier.flush();
+      if (!autoCommit) {
+        modifier.close();
+      }
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(5, reader.numDocs());
+      if (autoCommit) {
+        modifier.close();
+      }
     }
-
-    value = 200;
-    for (int i = 0; i < 5; i++) {
-      addDoc(modifier, ++id, value);
-    }
-    modifier.flush();
-
-    for (int i = 0; i < 5; i++) {
-      addDoc(modifier, ++id, value);
-    }
-    modifier.deleteDocuments(new Term("value", String.valueOf(value)));
-    modifier.flush();
-
-    IndexReader reader = IndexReader.open(dir);
-    assertEquals(5, reader.numDocs());
-
-    modifier.close();
   }
 
   // test that batched delete terms are flushed together
   public void testBatchDeletes() throws IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir,
-        new WhitespaceAnalyzer(), true);
-    modifier.setMaxBufferedDocs(2);
-    modifier.setMaxBufferedDeleteTerms(2);
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
+      Directory dir = new RAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setMaxBufferedDocs(2);
+      modifier.setMaxBufferedDeleteTerms(2);
 
-    int id = 0;
-    int value = 100;
+      int id = 0;
+      int value = 100;
 
-    for (int i = 0; i < 7; i++) {
-      addDoc(modifier, ++id, value);
+      for (int i = 0; i < 7; i++) {
+        addDoc(modifier, ++id, value);
+      }
+      modifier.flush();
+      if (!autoCommit) {
+        modifier.close();
+      }
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(7, reader.numDocs());
+      reader.close();
+      
+      if (!autoCommit) {
+        modifier = new IndexWriter(dir, autoCommit,
+                                   new WhitespaceAnalyzer());
+        modifier.setMaxBufferedDocs(2);
+        modifier.setMaxBufferedDeleteTerms(2);
+      }
+
+      id = 0;
+      modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
+      modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
+
+      if (!autoCommit) {
+        modifier.close();
+      }
+
+      reader = IndexReader.open(dir);
+      assertEquals(5, reader.numDocs());
+      reader.close();
+
+      Term[] terms = new Term[3];
+      for (int i = 0; i < terms.length; i++) {
+        terms[i] = new Term("id", String.valueOf(++id));
+      }
+      if (!autoCommit) {
+        modifier = new IndexWriter(dir, autoCommit,
+                                   new WhitespaceAnalyzer());
+        modifier.setMaxBufferedDocs(2);
+        modifier.setMaxBufferedDeleteTerms(2);
+      }
+      modifier.deleteDocuments(terms);
+      if (!autoCommit) {
+        modifier.close();
+      }
+      reader = IndexReader.open(dir);
+      assertEquals(2, reader.numDocs());
+      reader.close();
+
+      if (autoCommit) {
+        modifier.close();
+      }
+      dir.close();
     }
-    modifier.flush();
-
-    IndexReader reader = IndexReader.open(dir);
-    assertEquals(7, reader.numDocs());
-    reader.close();
-
-    id = 0;
-    modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
-    modifier.deleteDocuments(new Term("id", String.valueOf(++id)));
-
-    reader = IndexReader.open(dir);
-    assertEquals(5, reader.numDocs());
-    reader.close();
-
-    Term[] terms = new Term[3];
-    for (int i = 0; i < terms.length; i++) {
-      terms[i] = new Term("id", String.valueOf(++id));
-    }
-    modifier.deleteDocuments(terms);
-
-    reader = IndexReader.open(dir);
-    assertEquals(2, reader.numDocs());
-    reader.close();
-
-    modifier.close();
   }
 
   private void addDoc(IndexWriter modifier, int id, int value)
@@ -233,201 +317,203 @@ public class TestIndexWriterDelete extends TestCase {
     int START_COUNT = 157;
     int END_COUNT = 144;
 
-    // First build up a starting index:
-    RAMDirectory startDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(),
-        true);
-    for (int i = 0; i < 157; i++) {
-      Document d = new Document();
-      d.add(new Field("id", Integer.toString(i), Field.Store.YES,
-          Field.Index.UN_TOKENIZED));
-      d.add(new Field("content", "aaa " + i, Field.Store.NO,
-          Field.Index.TOKENIZED));
-      writer.addDocument(d);
-    }
-    writer.close();
+    for(int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
 
-    long diskUsage = startDir.sizeInBytes();
-    long diskFree = diskUsage + 10;
+      // First build up a starting index:
+      RAMDirectory startDir = new RAMDirectory();
+      IndexWriter writer = new IndexWriter(startDir, autoCommit,
+                                           new WhitespaceAnalyzer(), true);
+      for (int i = 0; i < 157; i++) {
+        Document d = new Document();
+        d.add(new Field("id", Integer.toString(i), Field.Store.YES,
+                        Field.Index.UN_TOKENIZED));
+        d.add(new Field("content", "aaa " + i, Field.Store.NO,
+                        Field.Index.TOKENIZED));
+        writer.addDocument(d);
+      }
+      writer.close();
 
-    IOException err = null;
+      long diskUsage = startDir.sizeInBytes();
+      long diskFree = diskUsage + 10;
 
-    boolean done = false;
+      IOException err = null;
 
-    // Iterate w/ ever increasing free disk space:
-    while (!done) {
-      MockRAMDirectory dir = new MockRAMDirectory(startDir);
-      IndexWriter modifier = new IndexWriter(dir,
-          new WhitespaceAnalyzer(), false);
+      boolean done = false;
 
-      modifier.setMaxBufferedDocs(1000); // use flush or close
-      modifier.setMaxBufferedDeleteTerms(1000); // use flush or close
+      // Iterate w/ ever increasing free disk space:
+      while (!done) {
+        MockRAMDirectory dir = new MockRAMDirectory(startDir);
+        IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                               new WhitespaceAnalyzer());
 
-      // For each disk size, first try to commit against
-      // dir that will hit random IOExceptions & disk
-      // full; after, give it infinite disk space & turn
-      // off random IOExceptions & retry w/ same reader:
-      boolean success = false;
+        modifier.setMaxBufferedDocs(1000); // use flush or close
+        modifier.setMaxBufferedDeleteTerms(1000); // use flush or close
 
-      for (int x = 0; x < 2; x++) {
+        // For each disk size, first try to commit against
+        // dir that will hit random IOExceptions & disk
+        // full; after, give it infinite disk space & turn
+        // off random IOExceptions & retry w/ same reader:
+        boolean success = false;
 
-        double rate = 0.1;
-        double diskRatio = ((double)diskFree) / diskUsage;
-        long thisDiskFree;
-        String testName;
+        for (int x = 0; x < 2; x++) {
 
-        if (0 == x) {
-          thisDiskFree = diskFree;
-          if (diskRatio >= 2.0) {
-            rate /= 2;
-          }
-          if (diskRatio >= 4.0) {
-            rate /= 2;
-          }
-          if (diskRatio >= 6.0) {
-            rate = 0.0;
-          }
-          if (debug) {
-            System.out.println("\ncycle: " + diskFree + " bytes");
-          }
-          testName = "disk full during reader.close() @ " + thisDiskFree
-              + " bytes";
-        } else {
-          thisDiskFree = 0;
-          rate = 0.0;
-          if (debug) {
-            System.out.println("\ncycle: same writer: unlimited disk space");
-          }
-          testName = "reader re-use after disk full";
-        }
+          double rate = 0.1;
+          double diskRatio = ((double)diskFree) / diskUsage;
+          long thisDiskFree;
+          String testName;
 
-        dir.setMaxSizeInBytes(thisDiskFree);
-        dir.setRandomIOExceptionRate(rate, diskFree);
-
-        try {
           if (0 == x) {
-            int docId = 12;
-            for (int i = 0; i < 13; i++) {
-              if (updates) {
-                Document d = new Document();
-                d.add(new Field("id", Integer.toString(i), Field.Store.YES,
-                    Field.Index.UN_TOKENIZED));
-                d.add(new Field("content", "bbb " + i, Field.Store.NO,
-                    Field.Index.TOKENIZED));
-                modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
-              } else { // deletes
-                modifier.deleteDocuments(new Term("id", Integer.toString(docId)));
-                // modifier.setNorm(docId, "contents", (float)2.0);
+            thisDiskFree = diskFree;
+            if (diskRatio >= 2.0) {
+              rate /= 2;
+            }
+            if (diskRatio >= 4.0) {
+              rate /= 2;
+            }
+            if (diskRatio >= 6.0) {
+              rate = 0.0;
+            }
+            if (debug) {
+              System.out.println("\ncycle: " + diskFree + " bytes");
+            }
+            testName = "disk full during reader.close() @ " + thisDiskFree
+              + " bytes";
+          } else {
+            thisDiskFree = 0;
+            rate = 0.0;
+            if (debug) {
+              System.out.println("\ncycle: same writer: unlimited disk space");
+            }
+            testName = "reader re-use after disk full";
+          }
+
+          dir.setMaxSizeInBytes(thisDiskFree);
+          dir.setRandomIOExceptionRate(rate, diskFree);
+
+          try {
+            if (0 == x) {
+              int docId = 12;
+              for (int i = 0; i < 13; i++) {
+                if (updates) {
+                  Document d = new Document();
+                  d.add(new Field("id", Integer.toString(i), Field.Store.YES,
+                                  Field.Index.UN_TOKENIZED));
+                  d.add(new Field("content", "bbb " + i, Field.Store.NO,
+                                  Field.Index.TOKENIZED));
+                  modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
+                } else { // deletes
+                  modifier.deleteDocuments(new Term("id", Integer.toString(docId)));
+                  // modifier.setNorm(docId, "contents", (float)2.0);
+                }
+                docId += 12;
               }
-              docId += 12;
+            }
+            modifier.close();
+            success = true;
+            if (0 == x) {
+              done = true;
             }
           }
-          modifier.close();
-          success = true;
-          if (0 == x) {
-            done = true;
+          catch (IOException e) {
+            if (debug) {
+              System.out.println("  hit IOException: " + e);
+            }
+            err = e;
+            if (1 == x) {
+              e.printStackTrace();
+              fail(testName + " hit IOException after disk space was freed up");
+            }
           }
-        }
-        catch (IOException e) {
-          if (debug) {
-            System.out.println("  hit IOException: " + e);
+
+          // Whether we succeeded or failed, check that all
+          // un-referenced files were in fact deleted (ie,
+          // we did not create garbage). Just create a
+          // new IndexFileDeleter, have it delete
+          // unreferenced files, then verify that in fact
+          // no files were deleted:
+          String[] startFiles = dir.list();
+          SegmentInfos infos = new SegmentInfos();
+          infos.read(dir);
+          IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null);
+          String[] endFiles = dir.list();
+
+          Arrays.sort(startFiles);
+          Arrays.sort(endFiles);
+
+          // for(int i=0;i<startFiles.length;i++) {
+          // System.out.println(" startFiles: " + i + ": " + startFiles[i]);
+          // }
+
+          if (!Arrays.equals(startFiles, endFiles)) {
+            String successStr;
+            if (success) {
+              successStr = "success";
+            } else {
+              successStr = "IOException";
+              err.printStackTrace();
+            }
+            fail("reader.close() failed to delete unreferenced files after "
+                 + successStr + " (" + diskFree + " bytes): before delete:\n    "
+                 + arrayToString(startFiles) + "\n  after delete:\n    "
+                 + arrayToString(endFiles));
           }
-          err = e;
-          if (1 == x) {
+
+          // Finally, verify index is not corrupt, and, if
+          // we succeeded, we see all docs changed, and if
+          // we failed, we see either all docs or no docs
+          // changed (transactional semantics):
+          IndexReader newReader = null;
+          try {
+            newReader = IndexReader.open(dir);
+          }
+          catch (IOException e) {
             e.printStackTrace();
-            fail(testName + " hit IOException after disk space was freed up");
+            fail(testName
+                 + ":exception when creating IndexReader after disk full during close: "
+                 + e);
           }
-        }
 
-        // Whether we succeeded or failed, check that all
-        // un-referenced files were in fact deleted (ie,
-        // we did not create garbage). Just create a
-        // new IndexFileDeleter, have it delete
-        // unreferenced files, then verify that in fact
-        // no files were deleted:
-        String[] startFiles = dir.list();
-        SegmentInfos infos = new SegmentInfos();
-        infos.read(dir);
-        IndexFileDeleter d = new IndexFileDeleter(infos, dir);
-        d.findDeletableFiles();
-        d.deleteFiles();
-        String[] endFiles = dir.list();
-
-        Arrays.sort(startFiles);
-        Arrays.sort(endFiles);
-
-        // for(int i=0;i<startFiles.length;i++) {
-        // System.out.println(" startFiles: " + i + ": " + startFiles[i]);
-        // }
-
-        if (!Arrays.equals(startFiles, endFiles)) {
-          String successStr;
+          IndexSearcher searcher = new IndexSearcher(newReader);
+          Hits hits = null;
+          try {
+            hits = searcher.search(new TermQuery(searchTerm));
+          }
+          catch (IOException e) {
+            e.printStackTrace();
+            fail(testName + ": exception when searching: " + e);
+          }
+          int result2 = hits.length();
           if (success) {
-            successStr = "success";
+            if (result2 != END_COUNT) {
+              fail(testName
+                   + ": method did not throw exception but hits.length for search on term 'aaa' is "
+                   + result2 + " instead of expected " + END_COUNT);
+            }
           } else {
-            successStr = "IOException";
-            err.printStackTrace();
+            // On hitting exception we still may have added
+            // all docs:
+            if (result2 != START_COUNT && result2 != END_COUNT) {
+              err.printStackTrace();
+              fail(testName
+                   + ": method did throw exception but hits.length for search on term 'aaa' is "
+                   + result2 + " instead of expected " + START_COUNT);
+            }
           }
-          fail("reader.close() failed to delete unreferenced files after "
-              + successStr + " (" + diskFree + " bytes): before delete:\n    "
-              + arrayToString(startFiles) + "\n  after delete:\n    "
-              + arrayToString(endFiles));
-        }
 
-        // Finally, verify index is not corrupt, and, if
-        // we succeeded, we see all docs changed, and if
-        // we failed, we see either all docs or no docs
-        // changed (transactional semantics):
-        IndexReader newReader = null;
-        try {
-          newReader = IndexReader.open(dir);
-        }
-        catch (IOException e) {
-          e.printStackTrace();
-          fail(testName
-              + ":exception when creating IndexReader after disk full during close: "
-              + e);
-        }
+          searcher.close();
+          newReader.close();
 
-        IndexSearcher searcher = new IndexSearcher(newReader);
-        Hits hits = null;
-        try {
-          hits = searcher.search(new TermQuery(searchTerm));
-        }
-        catch (IOException e) {
-          e.printStackTrace();
-          fail(testName + ": exception when searching: " + e);
-        }
-        int result2 = hits.length();
-        if (success) {
-          if (result2 != END_COUNT) {
-            fail(testName
-                + ": method did not throw exception but hits.length for search on term 'aaa' is "
-                + result2 + " instead of expected " + END_COUNT);
-          }
-        } else {
-          // On hitting exception we still may have added
-          // all docs:
-          if (result2 != START_COUNT && result2 != END_COUNT) {
-            err.printStackTrace();
-            fail(testName
-                + ": method did throw exception but hits.length for search on term 'aaa' is "
-                + result2 + " instead of expected " + START_COUNT);
+          if (result2 == END_COUNT) {
+            break;
           }
         }
 
-        searcher.close();
-        newReader.close();
+        dir.close();
 
-        if (result2 == END_COUNT) {
-          break;
-        }
+        // Try again with 10 more bytes of free space:
+        diskFree += 10;
       }
-
-      dir.close();
-
-      // Try again with 10 more bytes of free space:
-      diskFree += 10;
     }
   }
 

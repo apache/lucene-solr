@@ -21,6 +21,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
 
 final class SegmentInfo {
   public String name;				  // unique name in dir
@@ -50,6 +52,9 @@ final class SegmentInfo {
                                                   // and true for newly created merged segments (both
                                                   // compound and non compound).
   
+  private List files;                             // cached list of files that this segment uses
+                                                  // in the Directory
+
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -71,6 +76,7 @@ final class SegmentInfo {
    * Copy everything from src SegmentInfo into our instance.
    */
   void reset(SegmentInfo src) {
+    files = null;
     name = src.name;
     docCount = src.docCount;
     dir = src.dir;
@@ -134,7 +140,7 @@ final class SegmentInfo {
 
       if (!preLockless) {
         // This is a FORMAT_LOCKLESS segment, which means
-        // there are no norms:
+        // there are no separate norms:
         for(int i=0;i<numFields;i++) {
           normGen[i] = -1;
         }
@@ -174,10 +180,12 @@ final class SegmentInfo {
     } else {
       delGen++;
     }
+    files = null;
   }
 
   void clearDelGen() {
     delGen = -1;
+    files = null;
   }
 
   public Object clone () {
@@ -199,7 +207,7 @@ final class SegmentInfo {
       return null;
     } else {
       // If delGen is 0, it's the pre-lockless-commit file format
-      return IndexFileNames.fileNameFromGeneration(name, ".del", delGen);
+      return IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen);
     }
   }
 
@@ -283,6 +291,7 @@ final class SegmentInfo {
     } else {
       normGen[fieldIndex]++;
     }
+    files = null;
   }
 
   /**
@@ -329,6 +338,7 @@ final class SegmentInfo {
     } else {
       this.isCompoundFile = -1;
     }
+    files = null;
   }
 
   /**
@@ -341,7 +351,7 @@ final class SegmentInfo {
     } else if (isCompoundFile == 1) {
       return true;
     } else {
-      return dir.fileExists(name + ".cfs");
+      return dir.fileExists(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
     }
   }
   
@@ -363,5 +373,90 @@ final class SegmentInfo {
       }
     }
     output.writeByte(isCompoundFile);
+  }
+
+  /*
+   * Return all files referenced by this SegmentInfo.  The
+   * returns List is a locally cached List so you should not
+   * modify it.
+   */
+
+  public List files() throws IOException {
+
+    if (files != null) {
+      // Already cached:
+      return files;
+    }
+    
+    files = new ArrayList();
+    
+    boolean useCompoundFile = getUseCompoundFile();
+
+    if (useCompoundFile) {
+      files.add(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
+    } else {
+      for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE.length; i++) {
+        String ext = IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE[i];
+        String fileName = name + "." + ext;
+        if (dir.fileExists(fileName)) {
+          files.add(fileName);
+        }
+      }
+    }
+
+    String delFileName = IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen);
+    if (delFileName != null && (delGen > 0 || dir.fileExists(delFileName))) {
+      files.add(delFileName);
+    }
+
+    // Careful logic for norms files:
+    if (normGen != null) {
+      for(int i=0;i<normGen.length;i++) {
+        long gen = normGen[i];
+        if (gen > 0) {
+          // Definitely a separate norm file, with generation:
+          files.add(IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.SEPARATE_NORMS_EXTENSION + i, gen));
+        } else if (-1 == gen) {
+          // No separate norms but maybe non-separate norms
+          // in the non compound file case:
+          if (!hasSingleNormFile && !useCompoundFile) {
+            String fileName = name + "." + IndexFileNames.SINGLE_NORMS_EXTENSION + i;
+            if (dir.fileExists(fileName)) {
+              files.add(fileName);
+            }
+          }
+        } else if (0 == gen) {
+          // Pre-2.1: we have to check file existence
+          String fileName = null;
+          if (useCompoundFile) {
+            fileName = name + "." + IndexFileNames.SEPARATE_NORMS_EXTENSION + i;
+          } else if (!hasSingleNormFile) {
+            fileName = name + "." + IndexFileNames.SINGLE_NORMS_EXTENSION + i;
+          }
+          if (fileName != null && dir.fileExists(fileName)) {
+            files.add(fileName);
+          }
+        }
+      }
+    } else if (preLockless || (!hasSingleNormFile && !useCompoundFile)) {
+      // Pre-2.1: we have to scan the dir to find all
+      // matching _X.sN/_X.fN files for our segment:
+      String prefix;
+      if (useCompoundFile)
+        prefix = name + "." + IndexFileNames.SEPARATE_NORMS_EXTENSION;
+      else
+        prefix = name + "." + IndexFileNames.SINGLE_NORMS_EXTENSION;
+      int prefixLength = prefix.length();
+      String[] allFiles = dir.list();
+      if (allFiles == null)
+        throw new IOException("cannot read directory " + dir + ": list() returned null");
+      for(int i=0;i<allFiles.length;i++) {
+        String fileName = allFiles[i];
+        if (fileName.length() > prefixLength && Character.isDigit(fileName.charAt(prefixLength)) && fileName.startsWith(prefix)) {
+          files.add(fileName);
+        }
+      }
+    }
+    return files;
   }
 }

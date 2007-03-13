@@ -37,7 +37,19 @@ final class IndexFileNames {
    
   /** Extension of norms file */
   static final String NORMS_EXTENSION = "nrm";
-  
+
+  /** Extension of compound file */
+  static final String COMPOUND_FILE_EXTENSION = "cfs";
+
+  /** Extension of deletes */
+  static final String DELETES_EXTENSION = "del";
+
+  /** Extension of single norms */
+  static final String SINGLE_NORMS_EXTENSION = "f";
+
+  /** Extension of separate norms */
+  static final String SEPARATE_NORMS_EXTENSION = "s";
+
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with two exceptions, namely the
@@ -49,6 +61,13 @@ final class IndexFileNames {
   static final String INDEX_EXTENSIONS[] = new String[] {
       "cfs", "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx", "del",
       "tvx", "tvd", "tvf", "gen", "nrm" 
+  };
+
+  /** File extensions that are added to a compound file
+   * (same as above, minus "del", "gen", "cfs"). */
+  static final String[] INDEX_EXTENSIONS_IN_COMPOUND_FILE = new String[] {
+      "fnm", "fdx", "fdt", "tii", "tis", "frq", "prx",
+      "tvx", "tvd", "tvf", "nrm" 
   };
   
   /** File extensions of old-style index files */

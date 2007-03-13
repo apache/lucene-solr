@@ -388,6 +388,9 @@ final class DocumentWriter {
     this.infoStream = infoStream;
   }
 
+  int getNumFields() {
+    return fieldInfos.size();
+  }
 }
 
 final class Posting {				  // info about a Term in a doc

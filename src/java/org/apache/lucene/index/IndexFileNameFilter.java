@@ -31,11 +31,16 @@ public class IndexFileNameFilter implements FilenameFilter {
 
   static IndexFileNameFilter singleton = new IndexFileNameFilter();
   private HashSet extensions;
+  private HashSet extensionsInCFS;
 
   public IndexFileNameFilter() {
     extensions = new HashSet();
     for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
       extensions.add(IndexFileNames.INDEX_EXTENSIONS[i]);
+    }
+    extensionsInCFS = new HashSet();
+    for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE.length; i++) {
+      extensionsInCFS.add(IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE[i]);
     }
   }
 
@@ -72,10 +77,7 @@ public class IndexFileNameFilter implements FilenameFilter {
     int i = name.lastIndexOf('.');
     if (i != -1) {
       String extension = name.substring(1+i);
-      if (extensions.contains(extension) &&
-           !extension.equals("del") &&
-           !extension.equals("gen") &&
-          !extension.equals("cfs")) {
+      if (extensionsInCFS.contains(extension)) {
         return true;
       }
       if (extension.startsWith("f") &&

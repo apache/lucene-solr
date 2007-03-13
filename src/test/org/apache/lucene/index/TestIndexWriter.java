@@ -71,7 +71,7 @@ public class TestIndexWriter extends TestCase
         reader.close();
 
         // optimize the index and check that the new doc count is correct
-        writer = new IndexWriter(dir, new WhitespaceAnalyzer());
+        writer = new IndexWriter(dir, true, new WhitespaceAnalyzer());
         writer.optimize();
         assertEquals(60, writer.docCount());
         writer.close();
@@ -163,7 +163,7 @@ public class TestIndexWriter extends TestCase
       // addIndexes will certainly run out of space &
       // fail.  Verify that when this happens, index is
       // not corrupt and index in fact has added no
-      // documents.  Then, we increase disk space by 1000
+      // documents.  Then, we increase disk space by 2000
       // bytes each iteration.  At some point there is
       // enough free disk space and addIndexes should
       // succeed and index should show all documents were
@@ -178,10 +178,13 @@ public class TestIndexWriter extends TestCase
         startDiskUsage += startDir.fileLength(files[i]);
       }
 
-      for(int method=0;method<3;method++) {
+      for(int iter=0;iter<6;iter++) {
 
         // Start with 100 bytes more than we are currently using:
         long diskFree = diskUsage+100;
+
+        boolean autoCommit = iter % 2 == 0;
+        int method = iter/2;
 
         boolean success = false;
         boolean done = false;
@@ -195,7 +198,7 @@ public class TestIndexWriter extends TestCase
           methodName = "addIndexesNoOptimize(Directory[])";
         }
 
-        String testName = "disk full test for method " + methodName + " with disk full at " + diskFree + " bytes";
+        String testName = "disk full test for method " + methodName + " with disk full at " + diskFree + " bytes with autoCommit = " + autoCommit;
 
         int cycleCount = 0;
 
@@ -205,7 +208,7 @@ public class TestIndexWriter extends TestCase
 
           // Make a new dir that will enforce disk usage:
           MockRAMDirectory dir = new MockRAMDirectory(startDir);
-          writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false);
+          writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
           IOException err = null;
 
           for(int x=0;x<2;x++) {
@@ -285,38 +288,27 @@ public class TestIndexWriter extends TestCase
               }
             }
 
-            // Whether we succeeded or failed, check that all
-            // un-referenced files were in fact deleted (ie,
-            // we did not create garbage).  Just create a
-            // new IndexFileDeleter, have it delete
-            // unreferenced files, then verify that in fact
-            // no files were deleted:
-            String[] startFiles = dir.list();
-            SegmentInfos infos = new SegmentInfos();
-            infos.read(dir);
-            IndexFileDeleter d = new IndexFileDeleter(infos, dir);
-            d.findDeletableFiles();
-            d.deleteFiles();
-            String[] endFiles = dir.list();
+            if (autoCommit) {
 
-            Arrays.sort(startFiles);
-            Arrays.sort(endFiles);
+              // Whether we succeeded or failed, check that
+              // all un-referenced files were in fact
+              // deleted (ie, we did not create garbage).
+              // Only check this when autoCommit is true:
+              // when it's false, it's expected that there
+              // are unreferenced files (ie they won't be
+              // referenced until the "commit on close").
+              // Just create a new IndexFileDeleter, have it
+              // delete unreferenced files, then verify that
+              // in fact no files were deleted:
 
-            /*
-              for(int i=0;i<startFiles.length;i++) {
-              System.out.println("  " + i + ": " + startFiles[i]);
-              }
-            */
-
-            if (!Arrays.equals(startFiles, endFiles)) {
               String successStr;
               if (success) {
                 successStr = "success";
               } else {
                 successStr = "IOException";
-                err.printStackTrace();
               }
-              fail(methodName + " failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes): before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
+              String message = methodName + " failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes)";
+              assertNoUnreferencedFiles(dir, message);
             }
 
             if (debug) {
@@ -335,8 +327,10 @@ public class TestIndexWriter extends TestCase
             }
             int result = reader.docFreq(searchTerm);
             if (success) {
-              if (result != END_COUNT) {
+              if (autoCommit && result != END_COUNT) {
                 fail(testName + ": method did not throw exception but docFreq('aaa') is " + result + " instead of expected " + END_COUNT);
+              } else if (!autoCommit && result != START_COUNT) {
+                fail(testName + ": method did not throw exception but docFreq('aaa') is " + result + " instead of expected " + START_COUNT + " [autoCommit = false]");
               }
             } else {
               // On hitting exception we still may have added
@@ -374,29 +368,105 @@ public class TestIndexWriter extends TestCase
               System.out.println("  count is " + result);
             }
 
-            if (result == END_COUNT) {
+            if (done || result == END_COUNT) {
               break;
             }
           }
 
-          // Javadocs state that temp free Directory space
-          // required is at most 2X total input size of
-          // indices so let's make sure:
-          assertTrue("max free Directory space required exceeded 1X the total input index sizes during " + methodName +
-                     ": max temp usage = " + (dir.getMaxUsedSizeInBytes()-startDiskUsage) + " bytes; " +
-                     "starting disk usage = " + startDiskUsage + " bytes; " +
-                     "input index disk usage = " + inputDiskUsage + " bytes",
-                     (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
+          if (debug) {
+            System.out.println("  start disk = " + startDiskUsage + "; input disk = " + inputDiskUsage + "; max used = " + dir.getMaxUsedSizeInBytes());
+          }
+
+          if (done) {
+            // Javadocs state that temp free Directory space
+            // required is at most 2X total input size of
+            // indices so let's make sure:
+            assertTrue("max free Directory space required exceeded 1X the total input index sizes during " + methodName +
+                       ": max temp usage = " + (dir.getMaxUsedSizeInBytes()-startDiskUsage) + " bytes; " +
+                       "starting disk usage = " + startDiskUsage + " bytes; " +
+                       "input index disk usage = " + inputDiskUsage + " bytes",
+                       (dir.getMaxUsedSizeInBytes()-startDiskUsage) < 2*(startDiskUsage + inputDiskUsage));
+          }
 
           writer.close();
           dir.close();
 
-          // Try again with 1000 more bytes of free space:
-          diskFree += 1000;
+          // Try again with 2000 more bytes of free space:
+          diskFree += 2000;
         }
       }
 
       startDir.close();
+    }
+
+    /*
+     * Make sure IndexWriter cleans up on hitting a disk
+     * full exception in addDocument.
+     */
+    public void testAddDocumentOnDiskFull() throws IOException {
+
+      for(int pass=0;pass<3;pass++) {
+        boolean autoCommit = pass == 0;
+        boolean doAbort = pass == 2;
+        long diskFree = 200;
+        while(true) {
+          MockRAMDirectory dir = new MockRAMDirectory();
+          dir.setMaxSizeInBytes(diskFree);
+          IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+          boolean hitError = false;
+          try {
+            for(int i=0;i<200;i++) {
+              addDoc(writer);
+            }
+          } catch (IOException e) {
+            // e.printStackTrace();
+            hitError = true;
+          }
+
+          if (hitError) {
+            if (doAbort) {
+              writer.abort();
+            } else {
+              try {
+                writer.close();
+              } catch (IOException e) {
+                // e.printStackTrace();
+                dir.setMaxSizeInBytes(0);
+                writer.close();
+              }
+            }
+
+            assertNoUnreferencedFiles(dir, "after disk full during addDocument with autoCommit=" + autoCommit);
+
+            // Make sure reader can open the index:
+            IndexReader.open(dir).close();
+
+            dir.close();
+
+            // Now try again w/ more space:
+            diskFree += 500;
+          } else {
+            dir.close();
+            break;
+          }
+        }
+      }
+    
+    }                                               
+
+    public void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
+      String[] startFiles = dir.list();
+      SegmentInfos infos = new SegmentInfos();
+      infos.read(dir);
+      IndexFileDeleter d = new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null);
+      String[] endFiles = dir.list();
+
+      Arrays.sort(startFiles);
+      Arrays.sort(endFiles);
+
+      if (!Arrays.equals(startFiles, endFiles)) {
+        fail(message + ": before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
+      }
     }
 
     /**
@@ -692,6 +762,205 @@ public class TestIndexWriter extends TestCase
         if (reader != null) {
           reader.close();
         }
+    }
+
+    /*
+     * Simple test for "commit on close": open writer with
+     * autoCommit=false, so it will only commit on close,
+     * then add a bunch of docs, making sure reader does not
+     * see these docs until writer is closed.
+     */
+    public void testCommitOnClose() throws IOException {
+        Directory dir = new RAMDirectory();      
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        for (int i = 0; i < 14; i++) {
+          addDoc(writer);
+        }
+        writer.close();
+
+        Term searchTerm = new Term("content", "aaa");        
+        IndexSearcher searcher = new IndexSearcher(dir);
+        Hits hits = searcher.search(new TermQuery(searchTerm));
+        assertEquals("first number of hits", 14, hits.length());
+        searcher.close();
+
+        IndexReader reader = IndexReader.open(dir);
+
+        writer = new IndexWriter(dir, false, new WhitespaceAnalyzer());
+        for(int i=0;i<3;i++) {
+          for(int j=0;j<11;j++) {
+            addDoc(writer);
+          }
+          searcher = new IndexSearcher(dir);
+          hits = searcher.search(new TermQuery(searchTerm));
+          assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length());
+          searcher.close();
+          assertTrue("reader should have still been current", reader.isCurrent());
+        }
+
+        // Now, close the writer:
+        writer.close();
+        assertFalse("reader should not be current now", reader.isCurrent());
+
+        searcher = new IndexSearcher(dir);
+        hits = searcher.search(new TermQuery(searchTerm));
+        assertEquals("reader did not see changes after writer was closed", 47, hits.length());
+        searcher.close();
+    }
+
+    /*
+     * Simple test for "commit on close": open writer with
+     * autoCommit=false, so it will only commit on close,
+     * then add a bunch of docs, making sure reader does not
+     * see them until writer has closed.  Then instead of
+     * closing the writer, call abort and verify reader sees
+     * nothing was added.  Then verify we can open the index
+     * and add docs to it.
+     */
+    public void testCommitOnCloseAbort() throws IOException {
+      Directory dir = new RAMDirectory();      
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      for (int i = 0; i < 14; i++) {
+        addDoc(writer);
+      }
+      writer.close();
+
+      Term searchTerm = new Term("content", "aaa");        
+      IndexSearcher searcher = new IndexSearcher(dir);
+      Hits hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals("first number of hits", 14, hits.length());
+      searcher.close();
+
+      writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      for(int j=0;j<17;j++) {
+        addDoc(writer);
+      }
+      // Delete all docs:
+      writer.deleteDocuments(searchTerm);
+
+      searcher = new IndexSearcher(dir);
+      hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length());
+      searcher.close();
+
+      // Now, close the writer:
+      writer.abort();
+
+      assertNoUnreferencedFiles(dir, "unreferenced files remain after abort()");
+
+      searcher = new IndexSearcher(dir);
+      hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals("saw changes after writer.abort", 14, hits.length());
+      searcher.close();
+          
+      // Now make sure we can re-open the index, add docs,
+      // and all is good:
+      writer = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      for(int i=0;i<12;i++) {
+        for(int j=0;j<17;j++) {
+          addDoc(writer);
+        }
+        searcher = new IndexSearcher(dir);
+        hits = searcher.search(new TermQuery(searchTerm));
+        assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length());
+        searcher.close();
+      }
+
+      writer.close();
+      searcher = new IndexSearcher(dir);
+      hits = searcher.search(new TermQuery(searchTerm));
+      assertEquals("didn't see changes after close", 218, hits.length());
+      searcher.close();
+
+      dir.close();
+    }
+
+    /*
+     * Verify that a writer with "commit on close" indeed
+     * cleans up the temp segments created after opening
+     * that are not referenced by the starting segments
+     * file.  We check this by using MockRAMDirectory to
+     * measure max temp disk space used.
+     */
+    public void testCommitOnCloseDiskUsage() throws IOException {
+      MockRAMDirectory dir = new MockRAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      for(int j=0;j<30;j++) {
+        addDocWithIndex(writer, j);
+      }
+      writer.close();
+      dir.resetMaxUsedSizeInBytes();
+
+      long startDiskUsage = dir.getMaxUsedSizeInBytes();
+      writer  = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      for(int j=0;j<1470;j++) {
+        addDocWithIndex(writer, j);
+      }
+      long midDiskUsage = dir.getMaxUsedSizeInBytes();
+      dir.resetMaxUsedSizeInBytes();
+      writer.optimize();
+      writer.close();
+      long endDiskUsage = dir.getMaxUsedSizeInBytes();
+
+      // Ending index is 50X as large as starting index; due
+      // to 2X disk usage normally we allow 100X max
+      // transient usage.  If something is wrong w/ deleter
+      // and it doesn't delete intermediate segments then it
+      // will exceed this 100X:
+      // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " + endDiskUsage);
+      assertTrue("writer used to much space while adding documents when autoCommit=false",     
+                 midDiskUsage < 100*startDiskUsage);
+      assertTrue("writer used to much space after close when autoCommit=false",     
+                 endDiskUsage < 100*startDiskUsage);
+    }
+
+
+    /*
+     * Verify that calling optimize when writer is open for
+     * "commit on close" works correctly both for abort()
+     * and close().
+     */
+    public void testCommitOnCloseOptimize() throws IOException {
+      RAMDirectory dir = new RAMDirectory();      
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+      for(int j=0;j<17;j++) {
+        addDocWithIndex(writer, j);
+      }
+      writer.close();
+
+      writer  = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      writer.optimize();
+
+      // Open a reader before closing (commiting) the writer:
+      IndexReader reader = IndexReader.open(dir);
+
+      // Reader should see index as unoptimized at this
+      // point:
+      assertFalse("Reader incorrectly sees that the index is optimized", reader.isOptimized());
+      reader.close();
+
+      // Abort the writer:
+      writer.abort();
+      assertNoUnreferencedFiles(dir, "aborted writer after optimize");
+
+      // Open a reader after aborting writer:
+      reader = IndexReader.open(dir);
+
+      // Reader should still see index as unoptimized:
+      assertFalse("Reader incorrectly sees that the index is optimized", reader.isOptimized());
+      reader.close();
+
+      writer  = new IndexWriter(dir, false, new WhitespaceAnalyzer(), false);
+      writer.optimize();
+      writer.close();
+      assertNoUnreferencedFiles(dir, "aborted writer after optimize");
+
+      // Open a reader after aborting writer:
+      reader = IndexReader.open(dir);
+
+      // Reader should still see index as unoptimized:
+      assertTrue("Reader incorrectly sees that the index is unoptimized", reader.isOptimized());
+      reader.close();
     }
 
     // Make sure that a Directory implementation that does

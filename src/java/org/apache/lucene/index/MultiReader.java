@@ -220,13 +220,6 @@ public class MultiReader extends IndexReader {
     return new MultiTermPositions(subReaders, starts);
   }
 
-  protected void setDeleter(IndexFileDeleter deleter) {
-    // Share deleter to our SegmentReaders:
-    this.deleter = deleter;
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].setDeleter(deleter);
-  }
-
   protected void doCommit() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit();

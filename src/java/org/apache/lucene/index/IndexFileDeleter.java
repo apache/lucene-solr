@@ -18,286 +18,488 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Vector;
+import java.util.Map;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
-/**
- * A utility class (used by both IndexReader and
- * IndexWriter) to keep track of files that need to be
- * deleted because they are no longer referenced by the
- * index.
+/*
+ * This class keeps track of each SegmentInfos instance that
+ * is still "live", either because it corresponds to a
+ * segments_N in the Directory (a real commit) or because
+ * it's the in-memory SegmentInfos that a writer is actively
+ * updating but has not yet committed (currently this only
+ * applies when autoCommit=false in IndexWriter).  This
+ * class uses simple reference counting to map the live
+ * SegmentInfos instances to individual files in the
+ * Directory.
+ *
+ * A separate deletion policy interface
+ * (IndexDeletionPolicy) is consulted on creation (onInit)
+ * and once per commit (onCommit), to decide when a commit
+ * should be removed.
+ * 
+ * The current default deletion policy is {@link
+ * KeepOnlyLastCommitDeletionPolicy}, which removes all
+ * prior commits when a new commit has completed.  This
+ * matches the behavior before 2.2.
+ *
+ * Note that you must hold the write.lock before
+ * instantiating this class.  It opens segments_N file(s)
+ * directly with no retry logic.
  */
-final class IndexFileDeleter {
-  private Vector deletable;
-  private HashSet pending;
-  private Directory directory;
-  private SegmentInfos segmentInfos;
-  private PrintStream infoStream;
 
-  IndexFileDeleter(SegmentInfos segmentInfos, Directory directory)
-    throws IOException {
-    this.segmentInfos = segmentInfos;
-    this.directory = directory;
-  }
-  void setSegmentInfos(SegmentInfos segmentInfos) {
-    this.segmentInfos = segmentInfos;
-  }
-  SegmentInfos getSegmentInfos() {
-    return segmentInfos;
-  }
+final class IndexFileDeleter {
+
+  /* Files that we tried to delete but failed (likely
+   * because they are open and we are running on Windows),
+   * so we will retry them again later: */
+  private List deletable;
+
+  /* Reference count for all files in the index.  Maps
+   * String to RefCount (class below) instances: */
+  private Map refCounts = new HashMap();
+
+  /* Holds all commits (segments_N) currently in the index.
+   * This will have just 1 commit if you are using the
+   * default delete policy (KeepOnlyLastCommitDeletionPolicy).
+   * Other policies may leave commit points live for longer
+   * in which case this list would be longer than 1: */
+  private List commits = new ArrayList();
+
+  /* Holds files we had incref'd from the previous
+   * non-commit checkpoint: */
+  private List lastFiles = new ArrayList();
+
+  private PrintStream infoStream;
+  private List toDelete = new ArrayList();
+  private Directory directory;
+  private IndexDeletionPolicy policy;
 
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
   }
+  
+  private void message(String message) {
+    infoStream.println(this + " " + Thread.currentThread().getName() + ": " + message);
+  }
 
-  /** Determine index files that are no longer referenced
-   * and therefore should be deleted.  This is called once
-   * (by the writer), and then subsequently we add onto
-   * deletable any files that are no longer needed at the
-   * point that we create the unused file (eg when merging
-   * segments), and we only remove from deletable when a
-   * file is successfully deleted.
+  /**
+   * Initialize the deleter: find all previous commits in
+   * the Directory, incref the files they reference, call
+   * the policy to let it delete commits.  The incoming
+   * segmentInfos must have been loaded from a commit point
+   * and not yet modified.  This will remove any files not
+   * referenced by any of the commits.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
+  public IndexFileDeleter(Directory directory, IndexDeletionPolicy policy, SegmentInfos segmentInfos, PrintStream infoStream)
+    throws CorruptIndexException, IOException {
 
-  void findDeletableFiles() throws IOException {
+    this.infoStream = infoStream;
+    this.policy = policy;
+    this.directory = directory;
 
-    // Gather all "current" segments:
-    HashMap current = new HashMap();
-    for(int j=0;j<segmentInfos.size();j++) {
-      SegmentInfo segmentInfo = (SegmentInfo) segmentInfos.elementAt(j);
-      current.put(segmentInfo.name, segmentInfo);
-    }
-
-    // Then go through all files in the Directory that are
-    // Lucene index files, and add to deletable if they are
-    // not referenced by the current segments info:
-
-    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
+    // First pass: walk the files and initialize our ref
+    // counts:
+    long currentGen = segmentInfos.getGeneration();
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
 
     String[] files = directory.list();
     if (files == null)
       throw new IOException("cannot read directory " + directory + ": list() returned null");
 
-    for (int i = 0; i < files.length; i++) {
+    CommitPoint currentCommitPoint = null;
 
-      if (filter.accept(null, files[i]) && !files[i].equals(segmentsInfosFileName) && !files[i].equals(IndexFileNames.SEGMENTS_GEN)) {
+    for(int i=0;i<files.length;i++) {
 
-        String segmentName;
-        String extension;
+      String fileName = files[i];
 
-        // First remove any extension:
-        int loc = files[i].indexOf('.');
-        if (loc != -1) {
-          extension = files[i].substring(1+loc);
-          segmentName = files[i].substring(0, loc);
-        } else {
-          extension = null;
-          segmentName = files[i];
-        }
+      if (filter.accept(null, fileName) && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
 
-        // Then, remove any generation count:
-        loc = segmentName.indexOf('_', 1);
-        if (loc != -1) {
-          segmentName = segmentName.substring(0, loc);
-        }
+        // Add this file to refCounts with initial count 0:
+        getRefCount(fileName);
 
-        // Delete this file if it's not a "current" segment,
-        // or, it is a single index file but there is now a
-        // corresponding compound file:
-        boolean doDelete = false;
+        if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
 
-        if (!current.containsKey(segmentName)) {
-          // Delete if segment is not referenced:
-          doDelete = true;
-        } else {
-          // OK, segment is referenced, but file may still
-          // be orphan'd:
-          SegmentInfo info = (SegmentInfo) current.get(segmentName);
-
-          if (filter.isCFSFile(files[i]) && info.getUseCompoundFile()) {
-            // This file is in fact stored in a CFS file for
-            // this segment:
-            doDelete = true;
-          } else {
-            
-            if ("del".equals(extension)) {
-              // This is a _segmentName_N.del file:
-              if (!files[i].equals(info.getDelFileName())) {
-                // If this is a seperate .del file, but it
-                // doesn't match the current del filename for
-                // this segment, then delete it:
-                doDelete = true;
-              }
-            } else if (extension != null && extension.startsWith("s") && extension.matches("s\\d+")) {
-              int field = Integer.parseInt(extension.substring(1));
-              // This is a _segmentName_N.sX file:
-              if (!files[i].equals(info.getNormFileName(field))) {
-                // This is an orphan'd separate norms file:
-                doDelete = true;
-              }
-            } else if ("cfs".equals(extension) && !info.getUseCompoundFile()) {
-              // This is a partially written
-              // _segmentName.cfs:
-              doDelete = true;
+          // This is a commit (segments or segments_N), and
+          // it's valid (<= the max gen).  Load it, then
+          // incref all files it refers to:
+          if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen) {
+            if (infoStream != null) {
+              message("init: load commit \"" + fileName + "\"");
             }
-          }
-        }
-
-        if (doDelete) {
-          addDeletableFile(files[i]);
-          if (infoStream != null) {
-            infoStream.println("IndexFileDeleter: file \"" + files[i] + "\" is unreferenced in index and will be deleted on next commit");
+            SegmentInfos sis = new SegmentInfos();
+            sis.read(directory, fileName);
+            CommitPoint commitPoint = new CommitPoint(sis);
+            if (sis.getGeneration() == segmentInfos.getGeneration()) {
+              currentCommitPoint = commitPoint;
+            }
+            commits.add(commitPoint);
+            incRef(sis, true);
           }
         }
       }
     }
+
+    if (currentCommitPoint == null) {
+      throw new CorruptIndexException("failed to locate current segments_N file");
+    }
+
+    // We keep commits list in sorted order (oldest to newest):
+    Collections.sort(commits);
+
+    // Now delete anything with ref count at 0.  These are
+    // presumably abandoned files eg due to crash of
+    // IndexWriter.
+    Iterator it = refCounts.keySet().iterator();
+    while(it.hasNext()) {
+      String fileName = (String) it.next();
+      RefCount rc = (RefCount) refCounts.get(fileName);
+      if (0 == rc.count) {
+        if (infoStream != null) {
+          message("init: removing unreferenced file \"" + fileName + "\"");
+        }
+        deleteFile(fileName);
+      }
+    }
+
+    // Finally, give policy a chance to remove things on
+    // startup:
+    policy.onInit(commits);
+
+    // It's OK for the onInit to remove the current commit
+    // point; we just have to checkpoint our in-memory
+    // SegmentInfos to protect those files that it uses:
+    if (currentCommitPoint.deleted) {
+      checkpoint(segmentInfos, false);
+    }
+    
+    deleteCommits();
   }
 
-  /*
-   * Some operating systems (e.g. Windows) don't permit a file to be deleted
-   * while it is opened for read (e.g. by another process or thread). So we
-   * assume that when a delete fails it is because the file is open in another
-   * process, and queue the file for subsequent deletion.
+  /**
+   * Remove the CommitPoints in the toDelete List by
+   * DecRef'ing all files from each SegmentInfos.
    */
+  private void deleteCommits() throws IOException {
 
-  void deleteSegments(Vector segments) throws IOException {
+    int size = toDelete.size();
 
-    deleteFiles();                                // try to delete files that we couldn't before
+    if (size > 0) {
 
-    for (int i = 0; i < segments.size(); i++) {
-      SegmentReader reader = (SegmentReader)segments.elementAt(i);
-      if (reader.directory() == this.directory)
-        deleteFiles(reader.files()); // try to delete our files
-      else
-        deleteFiles(reader.files(), reader.directory()); // delete other files
+      // First decref all files that had been referred to by
+      // the now-deleted commits:
+      for(int i=0;i<size;i++) {
+        CommitPoint commit = (CommitPoint) toDelete.get(i);
+        if (infoStream != null) {
+          message("deleteCommits: now remove commit \"" + commit.getSegmentsFileName() + "\"");
+        }
+        int size2 = commit.files.size();
+        for(int j=0;j<size2;j++) {
+          decRef((List) commit.files.get(j));
+        }
+        decRef(commit.getSegmentsFileName());
+      }
+      toDelete.clear();
+
+      // Now compact commits to remove deleted ones:
+      size = commits.size();
+      int readFrom = 0;
+      int writeTo = 0;
+      while(readFrom < size) {
+        CommitPoint commit = (CommitPoint) commits.get(readFrom);
+        if (!commit.deleted) {
+          if (writeTo != readFrom) {
+            commits.set(writeTo, commits.get(readFrom));
+          }
+          writeTo++;
+        }
+        readFrom++;
+      }
+
+      while(size > writeTo) {
+        commits.remove(size-1);
+        size--;
+      }
     }
   }
 
   /**
-   * Delete these segments, as long as they are not listed
-   * in protectedSegments.  If they are, then, instead, add
-   * them to the pending set.
-  */
-     
-  void deleteSegments(Vector segments, HashSet protectedSegments) throws IOException {
-
-    deleteFiles();                                // try to delete files that we couldn't before
-
-    for (int i = 0; i < segments.size(); i++) {
-      SegmentReader reader = (SegmentReader)segments.elementAt(i);
-      if (reader.directory() == this.directory) {
-        if (protectedSegments.contains(reader.getSegmentName())) {
-          addPendingFiles(reader.files()); // record these for deletion on commit
-        } else {
-          deleteFiles(reader.files()); // try to delete our files
+   * Writer calls this when it has hit an error and had to
+   * roll back, to tell us that there may now be
+   * unreferenced files in the filesystem.  So we re-list
+   * the filesystem and delete such files:
+   */
+  public void refresh() throws IOException {
+    String[] files = directory.list();
+    if (files == null)
+      throw new IOException("cannot read directory " + directory + ": list() returned null");
+    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
+    for(int i=0;i<files.length;i++) {
+      String fileName = files[i];
+      if (filter.accept(null, fileName) && !refCounts.containsKey(fileName) && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+        // Unreferenced file, so remove it
+        if (infoStream != null) {
+          message("refresh: removing newly created unreferenced file \"" + fileName + "\"");
         }
-      }  else {
-        deleteFiles(reader.files(), reader.directory()); // delete other files
+        deleteFile(fileName);
       }
     }
   }
-  
-  void deleteFiles(Vector files, Directory directory)
-       throws IOException {
-    for (int i = 0; i < files.size(); i++)
-      directory.deleteFile((String)files.elementAt(i));
-  }
 
-  void deleteFiles(Vector files)
-       throws IOException {
-    deleteFiles();                                // try to delete files that we couldn't before
-    for (int i = 0; i < files.size(); i++) {
-      deleteFile((String) files.elementAt(i));
+  /**
+   * Writer calls this when it has made a "consistent
+   * change" to the index, meaning new files are written to
+   * the index and the in-memory SegmentInfos have been
+   * modified to point to those files.
+   *
+   * This may or may not be a commit (segments_N may or may
+   * not have been written).
+   *
+   * We simply incref the files referenced by the new
+   * SegmentInfos and decref the files we had previously
+   * seen (if any).
+   *
+   * If this is a commit, we also call the policy to give it
+   * a chance to remove other commits.  If any commits are
+   * removed, we decref their files as well.
+   */
+  public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
+
+    if (infoStream != null) {
+      message("now checkpoint \"" + segmentInfos.getCurrentSegmentFileName() + "\" [isCommit = " + isCommit + "]");
+    }
+
+    // Try again now to delete any previously un-deletable
+    // files (because they were in use, on Windows):
+    if (deletable != null) {
+      List oldDeletable = deletable;
+      deletable = null;
+      int size = oldDeletable.size();
+      for(int i=0;i<size;i++) {
+        deleteFile((String) oldDeletable.get(i));
+      }
+    }
+
+    // Incref the files:
+    incRef(segmentInfos, isCommit);
+
+    if (isCommit) {
+      // Append to our commits list:
+      commits.add(new CommitPoint(segmentInfos));
+
+      // Tell policy so it can remove commits:
+      policy.onCommit(commits);
+
+      // Decref files for commits that were deleted by the policy:
+      deleteCommits();
+    }
+
+    // DecRef old files from the last checkpoint, if any:
+    int size = lastFiles.size();
+    if (size > 0) {
+      for(int i=0;i<size;i++) {
+        decRef((List) lastFiles.get(i));
+      }
+      lastFiles.clear();
+    }
+
+    if (!isCommit) {
+      // Save files so we can decr on next checkpoint/commit:
+      size = segmentInfos.size();
+      for(int i=0;i<size;i++) {
+        SegmentInfo segmentInfo = segmentInfos.info(i);
+        if (segmentInfo.dir == directory) {
+          lastFiles.add(segmentInfo.files());
+        }
+      }
     }
   }
 
-  void deleteFile(String file)
+  private void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
+    int size = segmentInfos.size();
+    for(int i=0;i<size;i++) {
+      SegmentInfo segmentInfo = segmentInfos.info(i);
+      if (segmentInfo.dir == directory) {
+        incRef(segmentInfo.files());
+      }
+    }
+
+    if (isCommit) {
+      // Since this is a commit point, also incref its
+      // segments_N file:
+      getRefCount(segmentInfos.getCurrentSegmentFileName()).IncRef();
+    }
+  }
+
+  private void incRef(List files) throws IOException {
+    int size = files.size();
+    for(int i=0;i<size;i++) {
+      String fileName = (String) files.get(i);
+      RefCount rc = getRefCount(fileName);
+      if (infoStream != null) {
+        message("  IncRef \"" + fileName + "\": pre-incr count is " + rc.count);
+      }
+      rc.IncRef();
+    }
+  }
+
+  private void decRef(List files) throws IOException {
+    int size = files.size();
+    for(int i=0;i<size;i++) {
+      decRef((String) files.get(i));
+    }
+  }
+
+  private void decRef(String fileName) throws IOException {
+    RefCount rc = getRefCount(fileName);
+    if (infoStream != null) {
+      message("  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
+    }
+    if (0 == rc.DecRef()) {
+      // This file is no longer referenced by any past
+      // commit points nor by the in-memory SegmentInfos:
+      deleteFile(fileName);
+      refCounts.remove(fileName);
+    }
+  }
+
+  private RefCount getRefCount(String fileName) {
+    RefCount rc;
+    if (!refCounts.containsKey(fileName)) {
+      rc = new RefCount();
+      refCounts.put(fileName, rc);
+    } else {
+      rc = (RefCount) refCounts.get(fileName);
+    }
+    return rc;
+  }
+
+  private void deleteFile(String fileName)
        throws IOException {
     try {
-      directory.deleteFile(file);		  // try to delete each file
+      if (infoStream != null) {
+        message("delete \"" + fileName + "\"");
+      }
+      directory.deleteFile(fileName);
     } catch (IOException e) {			  // if delete fails
-      if (directory.fileExists(file)) {
-        if (infoStream != null)
-          infoStream.println("IndexFileDeleter: unable to remove file \"" + file + "\": " + e.toString() + "; Will re-try later.");
-        addDeletableFile(file);                  // add to deletable
+      if (directory.fileExists(fileName)) {
+
+        // Some operating systems (e.g. Windows) don't
+        // permit a file to be deleted while it is opened
+        // for read (e.g. by another process or thread). So
+        // we assume that when a delete fails it is because
+        // the file is open in another process, and queue
+        // the file for subsequent deletion.
+
+        if (infoStream != null) {
+          message("IndexFileDeleter: unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
+        }
+        if (deletable == null) {
+          deletable = new ArrayList();
+        }
+        deletable.add(fileName);                  // add to deletable
       }
     }
   }
 
-  void clearPendingFiles() {
-    pending = null;
-  }
-
-  /*
-    Record that the files for these segments should be
-    deleted, once the pending deletes are committed.
+  /**
+   * Blindly delete the files used by the specific segments,
+   * with no reference counting and no retry.  This is only
+   * currently used by writer to delete its RAM segments
+   * from a RAMDirectory.
    */
-  void addPendingSegments(Vector segments) throws IOException {
-    for (int i = 0; i < segments.size(); i++) {
-      SegmentReader reader = (SegmentReader)segments.elementAt(i);
-      if (reader.directory() == this.directory) {
-        addPendingFiles(reader.files());
+  public void deleteDirect(Directory otherDir, List segments) throws IOException {
+    int size = segments.size();
+    for(int i=0;i<size;i++) {
+      List toDelete = ((SegmentInfo) segments.get(i)).files();
+      int size2 = toDelete.size();
+      for(int j=0;j<size2;j++) {
+        otherDir.deleteFile((String) toDelete.get(j));
       }
     }
   }
 
-  /*
-    Record list of files for deletion, but do not delete
-    them until commitPendingFiles is called.
-  */
-  void addPendingFiles(Vector files) {
-    for(int i=0;i<files.size();i++) {
-      addPendingFile((String) files.elementAt(i));
+  /**
+   * Tracks the reference count for a single index file:
+   */
+  final private static class RefCount {
+
+    int count;
+
+    final private int IncRef() {
+      return ++count;
+    }
+
+    final private int DecRef() {
+      return --count;
     }
   }
 
-  /*
-    Record a file for deletion, but do not delete it until
-    commitPendingFiles is called.
-  */
-  void addPendingFile(String fileName) {
-    if (pending == null) {
-      pending = new HashSet();
-    }
-    pending.add(fileName);
-  }
+  /**
+   * Holds details for each commit point.  This class is
+   * also passed to the deletion policy.  Note: this class
+   * has a natural ordering that is inconsistent with
+   * equals.
+   */
 
-  void commitPendingFiles() throws IOException {
-    if (pending != null) {
-      if (deletable == null) {
-        deletable = new Vector();
+  final private class CommitPoint implements Comparable, IndexCommitPoint {
+
+    long gen;
+    List files;
+    String segmentsFileName;
+    boolean deleted;
+
+    public CommitPoint(SegmentInfos segmentInfos) throws IOException {
+      segmentsFileName = segmentInfos.getCurrentSegmentFileName();
+      int size = segmentInfos.size();
+      files = new ArrayList(size);
+      gen = segmentInfos.getGeneration();
+      for(int i=0;i<size;i++) {
+        SegmentInfo segmentInfo = segmentInfos.info(i);
+        if (segmentInfo.dir == directory) {
+          files.add(segmentInfo.files());
+        }
       }
-      Iterator it = pending.iterator();
-      while(it.hasNext()) {
-        deletable.addElement(it.next());
+    }
+
+    /**
+     * Get the segments_N file for this commit point.
+     */
+    public String getSegmentsFileName() {
+      return segmentsFileName;
+    }
+
+    /**
+     * Called only be the deletion policy, to remove this
+     * commit point from the index.
+     */
+    public void delete() {
+      if (!deleted) {
+        deleted = true;
+        toDelete.add(this);
       }
-      pending = null;
-      deleteFiles();
     }
-  }
 
-  void addDeletableFile(String fileName) {
-    if (deletable == null) {
-      deletable = new Vector();
-    }
-    deletable.addElement(fileName);
-  }
-
-  void deleteFiles()
-    throws IOException {
-    if (deletable != null) {
-      Vector oldDeletable = deletable;
-      deletable = null;
-      deleteFiles(oldDeletable); // try to delete deletable
+    public int compareTo(Object obj) {
+      CommitPoint commit = (CommitPoint) obj;
+      if (gen < commit.gen) {
+        return -1;
+      } else if (gen > commit.gen) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
   }
 }

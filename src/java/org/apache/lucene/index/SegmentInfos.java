@@ -88,16 +88,9 @@ final class SegmentInfos extends Vector {
     for (int i = 0; i < files.length; i++) {
       String file = files[i];
       if (file.startsWith(IndexFileNames.SEGMENTS) && !file.equals(IndexFileNames.SEGMENTS_GEN)) {
-        if (file.equals(IndexFileNames.SEGMENTS)) {
-          // Pre lock-less commits:
-          if (max == -1) {
-            max = 0;
-          }
-        } else {
-          long v = Long.parseLong(file.substring(prefixLen), Character.MAX_RADIX);
-          if (v > max) {
-            max = v;
-          }
+        long gen = generationFromSegmentsFileName(file);
+        if (gen > max) {
+          max = gen;
         }
       }
     }
@@ -152,6 +145,22 @@ final class SegmentInfos extends Vector {
   }
 
   /**
+   * Parse the generation off the segments file name and
+   * return it.
+   */
+  public static long generationFromSegmentsFileName(String fileName) {
+    if (fileName.equals(IndexFileNames.SEGMENTS)) {
+      return 0;
+    } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+      return Long.parseLong(fileName.substring(1+IndexFileNames.SEGMENTS.length()),
+                            Character.MAX_RADIX);
+    } else {
+      throw new IllegalArgumentException("fileName \"" + fileName + "\" is not a segments file");
+    }
+  }
+
+
+  /**
    * Get the next segments_N filename that will be written.
    */
   public String getNextSegmentFileName() {
@@ -181,12 +190,8 @@ final class SegmentInfos extends Vector {
 
     IndexInput input = directory.openInput(segmentFileName);
 
-    if (segmentFileName.equals(IndexFileNames.SEGMENTS)) {
-      generation = 0;
-    } else {
-      generation = Long.parseLong(segmentFileName.substring(1+IndexFileNames.SEGMENTS.length()),
-                                  Character.MAX_RADIX);
-    }
+    generation = generationFromSegmentsFileName(segmentFileName);
+
     lastGeneration = generation;
 
     try {
@@ -255,6 +260,8 @@ final class SegmentInfos extends Vector {
 
     IndexOutput output = directory.createOutput(segmentFileName);
 
+    boolean success = false;
+
     try {
       output.writeInt(FORMAT_SINGLE_NORM_FILE); // write FORMAT
       output.writeLong(++version); // every write changes
@@ -266,7 +273,16 @@ final class SegmentInfos extends Vector {
       }         
     }
     finally {
-      output.close();
+      try {
+        output.close();
+        success = true;
+      } finally {
+        if (!success) {
+          // Try not to leave a truncated segments_N file in
+          // the index:
+          directory.deleteFile(segmentFileName);
+        }
+      }
     }
 
     try {
@@ -304,6 +320,9 @@ final class SegmentInfos extends Vector {
    */
   public long getVersion() {
     return version;
+  }
+  public long getGeneration() {
+    return generation;
   }
 
   /**

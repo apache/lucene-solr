@@ -114,7 +114,7 @@ public abstract class IndexReader {
   private Directory directory;
   private boolean directoryOwner;
   private boolean closeDirectory;
-  protected IndexFileDeleter deleter;
+  private IndexDeletionPolicy deletionPolicy;
   private boolean isClosed;
 
   private SegmentInfos segmentInfos;
@@ -131,29 +131,43 @@ public abstract class IndexReader {
    path.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   */
+   * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true);
+    return open(FSDirectory.getDirectory(path), true, null);
   }
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
-   path.
+   * path.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-  */
+   * @param path the path to the index directory */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true);
+    return open(FSDirectory.getDirectory(path), true, null);
   }
 
   /** Returns an IndexReader reading the index in the given Directory.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @param directory the index directory
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, false);
+    return open(directory, false, null);
   }
 
-  private static IndexReader open(final Directory directory, final boolean closeDirectory) throws CorruptIndexException, IOException {
+  /** Expert: returns an IndexReader reading the index in the given
+   * Directory, with a custom {@link IndexDeletionPolicy}.
+   * @param directory the index directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
+    return open(directory, false, deletionPolicy);
+  }
+
+  private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
 
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
 
@@ -162,8 +176,10 @@ public abstract class IndexReader {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
 
+        IndexReader reader;
+
         if (infos.size() == 1) {		  // index is optimized
-          return SegmentReader.get(infos, infos.info(0), closeDirectory);
+          reader = SegmentReader.get(infos, infos.info(0), closeDirectory);
         } else {
 
           // To reduce the chance of hitting FileNotFound
@@ -184,8 +200,10 @@ public abstract class IndexReader {
             }
           }
 
-          return new MultiReader(directory, infos, closeDirectory, readers);
+          reader = new MultiReader(directory, infos, closeDirectory, readers);
         }
+        reader.deletionPolicy = deletionPolicy;
+        return reader;
       }
     }.run();
   }
@@ -715,19 +733,13 @@ public abstract class IndexReader {
    */
   protected final synchronized void commit() throws IOException {
     if(hasChanges){
-      if (deleter == null) {
-        // In the MultiReader case, we share this deleter
-        // across all SegmentReaders:
-        setDeleter(new IndexFileDeleter(segmentInfos, directory));
-      }
       if(directoryOwner){
 
-        // Should not be necessary: no prior commit should
-        // have left pending files, so just defensive:
-        deleter.clearPendingFiles();
-
-        String oldInfoFileName = segmentInfos.getCurrentSegmentFileName();
-        String nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
+        // Default deleter (for backwards compatibility) is
+        // KeepOnlyLastCommitDeleter:
+        IndexFileDeleter deleter =  new IndexFileDeleter(directory,
+                                                         deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
+                                                         segmentInfos, null);
 
         // Checkpoint the state we are about to change, in
         // case we have to roll back:
@@ -749,24 +761,16 @@ public abstract class IndexReader {
             // actually in the index):
             rollbackCommit();
 
-            // Erase any pending files that we were going to delete:
-            deleter.clearPendingFiles();
-
-            // Remove possibly partially written next
-            // segments file:
-            deleter.deleteFile(nextSegmentsFileName);
-
             // Recompute deletable files & remove them (so
             // partially written .del files, etc, are
             // removed):
-            deleter.findDeletableFiles();
-            deleter.deleteFiles();
+            deleter.refresh();
           }
         }
 
-        // Attempt to delete all files we just obsoleted:
-        deleter.deleteFile(oldInfoFileName);
-        deleter.commitPendingFiles();
+        // Have the deleter remove any now unreferenced
+        // files due to this commit:
+        deleter.checkpoint(segmentInfos, true);
 
         if (writeLock != null) {
           writeLock.release();  // release write lock
@@ -777,13 +781,6 @@ public abstract class IndexReader {
         doCommit();
     }
     hasChanges = false;
-  }
-
-  protected void setDeleter(IndexFileDeleter deleter) {
-    this.deleter = deleter;
-  }
-  protected IndexFileDeleter getDeleter() {
-    return deleter;
   }
 
   /** Implements commit. */

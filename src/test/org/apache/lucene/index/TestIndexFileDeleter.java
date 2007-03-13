@@ -173,6 +173,8 @@ public class TestIndexFileDeleter extends TestCase
       out.writeBytes(b, len);
       remainder -= len;
     }
+    in.close();
+    out.close();
   }
 
   private void addDoc(IndexWriter writer, int id) throws IOException

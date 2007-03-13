@@ -29,48 +29,100 @@ import org.apache.lucene.store.RAMDirectory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Vector;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
 /**
-  An IndexWriter creates and maintains an index.
+  An <code>IndexWriter</code> creates and maintains an index.
 
-  <p>The third argument (<code>create</code>) to the 
+  <p>The <code>create</code> argument to the 
   <a href="#IndexWriter(org.apache.lucene.store.Directory, org.apache.lucene.analysis.Analyzer, boolean)"><b>constructor</b></a>
   determines whether a new index is created, or whether an existing index is
-  opened for the addition of new documents.  Note that you
-  can open an index with create=true even while readers are
+  opened.  Note that you
+  can open an index with <code>create=true</code> even while readers are
   using the index.  The old readers will continue to search
   the "point in time" snapshot they had opened, and won't
-  see the newly created index until they re-open.</p>
+  see the newly created index until they re-open.  There are
+  also <a href="#IndexWriter(org.apache.lucene.store.Directory, org.apache.lucene.analysis.Analyzer)"><b>constructors</b></a>
+  with no <code>create</code> argument which
+  will create a new index if there is not already an index at the
+  provided path and otherwise open the existing index.</p>
 
-  <p>In either case, documents are added with the <a
-  href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a> method.  
-  When finished adding documents, <a href="#close()"><b>close</b></a> should be called.</p>
+  <p>In either case, documents are added with <a
+  href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a>
+  and removed with <a
+  href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments</b></a>.
+  A document can be updated with <a href="#updateDocument(org.apache.lucene.index.Term, org.apache.lucene.document.Document)"><b>updateDocument</b></a> 
+  (which just deletes and then adds). When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
 
+  <p>These changes are buffered in memory and periodically
+  flushed to the {@link Directory} (during the above method calls).  A flush is triggered when there are
+  enough buffered deletes (see {@link
+  #setMaxBufferedDeleteTerms}) or enough added documents
+  (see {@link #setMaxBufferedDocs}) since the last flush,
+  whichever is sooner.  When a flush occurs, both pending
+  deletes and added documents are flushed to the index.  A
+  flush may also trigger one or more segment merges.</p>
+
+  <a name="autoCommit"></a>
+  <p>The optional <code>autoCommit</code> argument to the
+  <a href="#IndexWriter(org.apache.lucene.store.Directory, boolean, org.apache.lucene.analysis.Analyzer)"><b>constructors</b></a>
+  controls visibility of the changes to {@link IndexReader} instances reading the same index.
+  When this is <code>false</code>, changes are not
+  visible until {@link #close()} is called.
+  Note that changes will still be flushed to the
+  {@link org.apache.lucene.store.Directory} as new files,
+  but are not committed (no new <code>segments_N</code> file
+  is written referencing the new files) until {@link #close} is
+  called.  If something goes terribly wrong (for example the
+  JVM crashes) before {@link #close()}, then
+  the index will reflect none of the changes made (it will
+  remain in its starting state).
+  You can also call {@link #abort()}, which closes the writer without committing any
+  changes, and removes any index
+  files that had been flushed but are now unreferenced.
+  This mode is useful for preventing readers from refreshing
+  at a bad time (for example after you've done all your
+  deletes but before you've done your adds).
+  It can also be used to implement simple single-writer
+  transactional semantics ("all or none").</p>
+
+  <p>When <code>autoCommit</code> is <code>true</code> then
+  every flush is also a commit ({@link IndexReader}
+  instances will see each flush as changes to the index).
+  This is the default, to match the behavior before 2.2.
+  When running in this mode, be careful not to refresh your
+  readers while optimize or segment merges are taking place
+  as this can tie up substantial disk space.</p>
+  
   <p>If an index will not have more documents added for a while and optimal search
   performance is desired, then the <a href="#optimize()"><b>optimize</b></a>
   method should be called before the index is closed.</p>
-  
-  <p>Opening an IndexWriter creates a lock file for the directory in use. Trying to open
-  another IndexWriter on the same directory will lead to a
+
+  <p>Opening an <code>IndexWriter</code> creates a lock file for the directory in use. Trying to open
+  another <code>IndexWriter</code> on the same directory will lead to a
   {@link LockObtainFailedException}. The {@link LockObtainFailedException}
   is also thrown if an IndexReader on the same directory is used to delete documents
   from the index.</p>
   
-  <p>As of <b>2.1</b>, IndexWriter can now delete documents
-  by {@link Term} (see {@link #deleteDocuments} ) and update
-  (delete then add) documents (see {@link #updateDocument}).
-  Deletes are buffered until {@link
-  #setMaxBufferedDeleteTerms} <code>Terms</code> at which
-  point they are flushed to the index.  Note that a flush
-  occurs when there are enough buffered deletes or enough
-  added documents, whichever is sooner.  When a flush
-  occurs, both pending deletes and added documents are
-  flushed to the index.</p>
+  <a name="deletionPolicy"></a>
+  <p>Expert: <code>IndexWriter</code> allows an optional
+  {@link IndexDeletionPolicy} implementation to be
+  specified.  You can use this to control when prior commits
+  are deleted from the index.  The default policy is {@link
+  KeepOnlyLastCommitDeletionPolicy} which removes all prior
+  commits as soon as a new commit is done (this matches
+  behavior before 2.2).  Creating your own policy can allow
+  you to explicitly keep previous "point in time" commits
+  alive in the index for some time, to allow readers to
+  refresh to the new commit without having the old commit
+  deleted out from under them.  This is necessary on
+  filesystems like NFS that do not support "delete on last
+  close" semantics, which Lucene's "point in time" search
+  normally relies on. </p>
   */
 
 public class IndexWriter {
@@ -83,6 +135,9 @@ public class IndexWriter {
 
   private long writeLockTimeout = WRITE_LOCK_TIMEOUT;
 
+  /**
+   * Name of the write lock in the index.
+   */
   public static final String WRITE_LOCK_NAME = "write.lock";
 
   /**
@@ -120,10 +175,12 @@ public class IndexWriter {
 
   private Similarity similarity = Similarity.getDefault(); // how to normalize
 
-  private boolean inTransaction = false; // true iff we are in a transaction
   private boolean commitPending; // true if segmentInfos has changes not yet committed
-  private HashSet protectedSegments; // segment names that should not be deleted until commit
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
+
+  private SegmentInfos localRollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
+  private boolean localAutoCommit;                // saved autoCommit during local transaction
+  private boolean autoCommit = true;              // false if we should commit only on close
 
   SegmentInfos segmentInfos = new SegmentInfos();       // the segments
   SegmentInfos ramSegmentInfos = new SegmentInfos();    // the segments in ramDirectory
@@ -238,7 +295,7 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(path, a, create);
+    init(FSDirectory.getDirectory(path), a, create, true, null, true);
   }
 
   /**
@@ -263,7 +320,7 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(path, a, create);
+    init(FSDirectory.getDirectory(path), a, create, true, null, true);
   }
 
   /**
@@ -288,14 +345,14 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a, boolean create)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, false);
+    init(d, a, create, false, null, true);
   }
 
   /**
    * Constructs an IndexWriter for the index in
-   * <code>path</code>, creating it first if it does not
-   * already exist, otherwise appending to the existing
-   * index.  Text will be analyzed with <code>a</code>.
+   * <code>path</code>, first creating it if it does not
+   * already exist.  Text will be analyzed with
+   * <code>a</code>.
    *
    * @param path the path to the index directory
    * @param a the analyzer to use
@@ -309,18 +366,13 @@ public class IndexWriter {
    */
   public IndexWriter(String path, Analyzer a) 
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    if (IndexReader.indexExists(path)) {
-      init(path, a, false);
-    } else {
-      init(path, a, true);
-    }
+    init(FSDirectory.getDirectory(path), a, true, null, true);
   }
 
   /**
    * Constructs an IndexWriter for the index in
-   * <code>path</code>, creating it first if it does not
-   * already exist, otherwise appending to the existing
-   * index.  Text will be analyzed with
+   * <code>path</code>, first creating it if it does not
+   * already exist.  Text will be analyzed with
    * <code>a</code>.
    *
    * @param path the path to the index directory
@@ -335,18 +387,14 @@ public class IndexWriter {
    */
   public IndexWriter(File path, Analyzer a) 
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    if (IndexReader.indexExists(path)) {
-      init(path, a, false);
-    } else {
-      init(path, a, true);
-    }
+    init(FSDirectory.getDirectory(path), a, true, null, true);
   }
 
   /**
    * Constructs an IndexWriter for the index in
-   * <code>d</code>, creating it first if it does not
-   * already exist, otherwise appending to the existing
-   * index.  Text will be analyzed with <code>a</code>.
+   * <code>d</code>, first creating it if it does not
+   * already exist.  Text will be analyzed with
+   * <code>a</code>.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -360,28 +408,124 @@ public class IndexWriter {
    */
   public IndexWriter(Directory d, Analyzer a) 
     throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, false, null, true);
+  }
+
+  /**
+   * Constructs an IndexWriter for the index in
+   * <code>d</code>, first creating it if it does not
+   * already exist.  Text will be analyzed with
+   * <code>a</code>.
+   *
+   * @param d the index directory
+   * @param autoCommit see <a href="#autoCommit">above</a>
+   * @param a the analyzer to use
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be
+   *  read/written to or if there is any other low-level
+   *  IO error
+   */
+  public IndexWriter(Directory d, boolean autoCommit, Analyzer a) 
+    throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, false, null, autoCommit);
+  }
+
+  /**
+   * Constructs an IndexWriter for the index in <code>d</code>.
+   * Text will be analyzed with <code>a</code>.  If <code>create</code>
+   * is true, then a new, empty index will be created in
+   * <code>d</code>, replacing the index already there, if any.
+   *
+   * @param d the index directory
+   * @param autoCommit see <a href="#autoCommit">above</a>
+   * @param a the analyzer to use
+   * @param create <code>true</code> to create the index or overwrite
+   *  the existing one; <code>false</code> to append to the existing
+   *  index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be read/written to, or
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
+   */
+  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create)
+       throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, create, false, null, autoCommit);
+  }
+
+  /**
+   * Expert: constructs an IndexWriter with a custom {@link
+   * IndexDeletionPolicy}, for the index in <code>d</code>,
+   * first creating it if it does not already exist.  Text
+   * will be analyzed with <code>a</code>.
+   *
+   * @param d the index directory
+   * @param autoCommit see <a href="#autoCommit">above</a>
+   * @param a the analyzer to use
+   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be
+   *  read/written to or if there is any other low-level
+   *  IO error
+   */
+  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy) 
+    throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, false, deletionPolicy, autoCommit);
+  }
+
+  /**
+   * Expert: constructs an IndexWriter with a custom {@link
+   * IndexDeletionPolicy}, for the index in <code>d</code>.
+   * Text will be analyzed with <code>a</code>.  If
+   * <code>create</code> is true, then a new, empty index
+   * will be created in <code>d</code>, replacing the index
+   * already there, if any.
+   *
+   * @param d the index directory
+   * @param autoCommit see <a href="#autoCommit">above</a>
+   * @param a the analyzer to use
+   * @param create <code>true</code> to create the index or overwrite
+   *  the existing one; <code>false</code> to append to the existing
+   *  index
+   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be read/written to, or
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
+   */
+  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy)
+       throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, create, false, deletionPolicy, autoCommit);
+  }
+
+  private void init(Directory d, Analyzer a, boolean closeDir, IndexDeletionPolicy deletionPolicy, boolean autoCommit)
+    throws CorruptIndexException, LockObtainFailedException, IOException {
     if (IndexReader.indexExists(d)) {
-      init(d, a, false, false);
+      init(d, a, false, closeDir, deletionPolicy, autoCommit);
     } else {
-      init(d, a, true, false);
+      init(d, a, true, closeDir, deletionPolicy, autoCommit);
     }
   }
 
-  private void init(String path, Analyzer a, final boolean create)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true);
-  }
-
-  private void init(File path, Analyzer a, final boolean create)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(FSDirectory.getDirectory(path), a, create, true);
-  }
-
-  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir)
+  private void init(Directory d, Analyzer a, final boolean create, boolean closeDir, IndexDeletionPolicy deletionPolicy, boolean autoCommit)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     this.closeDir = closeDir;
     directory = d;
     analyzer = a;
+    this.infoStream = defaultInfoStream;
 
     if (create) {
       // Clear the write lock in case it's leftover:
@@ -410,12 +554,16 @@ public class IndexWriter {
         segmentInfos.read(directory);
       }
 
-      // Create a deleter to keep track of which files can
-      // be deleted:
-      deleter = new IndexFileDeleter(segmentInfos, directory);
-      deleter.setInfoStream(infoStream);
-      deleter.findDeletableFiles();
-      deleter.deleteFiles();
+      this.autoCommit = autoCommit;
+      if (!autoCommit) {
+        rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
+      }
+
+      // Default deleter (for backwards compatibility) is
+      // KeepOnlyLastCommitDeleter:
+      deleter = new IndexFileDeleter(directory,
+                                     deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
+                                     segmentInfos, infoStream);
 
     } catch (IOException e) {
       this.writeLock.release();
@@ -533,11 +681,28 @@ public class IndexWriter {
     return mergeFactor;
   }
 
-  /** If non-null, information about merges and a message when
-   * maxFieldLength is reached will be printed to this.
+  /** If non-null, this will be the default infoStream used
+   * by a newly instantiated IndexWriter.
+   * @see #setInfoStream
+   */
+  public static void setDefaultInfoStream(PrintStream infoStream) {
+    IndexWriter.defaultInfoStream = infoStream;
+  }
+
+  /**
+   * @see #setDefaultInfoStream
+   */
+  public static PrintStream getDefaultInfoStream() {
+    return IndexWriter.defaultInfoStream;
+  }
+
+  /** If non-null, information about merges, deletes and a
+   * message when maxFieldLength is reached will be printed
+   * to this.
    */
   public void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;
+    deleter.setInfoStream(infoStream);
   }
 
   /**
@@ -613,6 +778,14 @@ public class IndexWriter {
    */
   public synchronized void close() throws CorruptIndexException, IOException {
     flushRamSegments();
+
+    if (commitPending) {
+      segmentInfos.write(directory);         // now commit changes
+      deleter.checkpoint(segmentInfos, true);
+      commitPending = false;
+      rollbackSegmentInfos = null;
+    }
+
     ramDirectory.close();
     if (writeLock != null) {
       writeLock.release();                          // release write lock
@@ -737,7 +910,9 @@ public class IndexWriter {
     dw.setInfoStream(infoStream);
     String segmentName = newRamSegmentName();
     dw.addDocument(segmentName, doc);
-    return new SegmentInfo(segmentName, 1, ramDirectory, false, false);
+    SegmentInfo si = new SegmentInfo(segmentName, 1, ramDirectory, false, false);
+    si.setNumFields(dw.getNumFields());
+    return si;
   }
 
   /**
@@ -871,6 +1046,7 @@ public class IndexWriter {
 
    */
   private PrintStream infoStream = null;
+  private static PrintStream defaultInfoStream = null;
 
   /** Merges all segments together into a single segment,
    * optimizing an index for search.
@@ -949,21 +1125,18 @@ public class IndexWriter {
    * merges that happen (or ram segments flushed) will not
    * write a new segments file and will not remove any files
    * that were present at the start of the transaction.  You
-   * must make a matched (try/finall) call to
+   * must make a matched (try/finally) call to
    * commitTransaction() or rollbackTransaction() to finish
    * the transaction.
    */
   private void startTransaction() throws IOException {
-    if (inTransaction) {
-      throw new IOException("transaction is already in process");
+    localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
+    localAutoCommit = autoCommit;
+    if (localAutoCommit) {
+      flushRamSegments();
+      // Turn off auto-commit during our local transaction:
+      autoCommit = false;
     }
-    rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
-    protectedSegments = new HashSet();
-    for(int i=0;i<segmentInfos.size();i++) {
-      SegmentInfo si = (SegmentInfo) segmentInfos.elementAt(i);
-      protectedSegments.add(si.name);
-    }
-    inTransaction = true;
   }
 
   /*
@@ -972,20 +1145,21 @@ public class IndexWriter {
    */
   private void rollbackTransaction() throws IOException {
 
+    // First restore autoCommit in case we hit an exception below:
+    autoCommit = localAutoCommit;
+
     // Keep the same segmentInfos instance but replace all
     // of its SegmentInfo instances.  This is so the next
     // attempt to commit using this instance of IndexWriter
     // will always write to a new generation ("write once").
     segmentInfos.clear();
-    segmentInfos.addAll(rollbackSegmentInfos);
+    segmentInfos.addAll(localRollbackSegmentInfos);
+    localRollbackSegmentInfos = null;
 
-    // Ask deleter to locate unreferenced files & remove
-    // them:
-    deleter.clearPendingFiles();
-    deleter.findDeletableFiles();
-    deleter.deleteFiles();
-
-    clearTransaction();
+    // Ask deleter to locate unreferenced files we had
+    // created & remove them:
+    deleter.checkpoint(segmentInfos, false);
+    deleter.refresh();
   }
 
   /*
@@ -994,34 +1168,78 @@ public class IndexWriter {
    * accumulated during the transaction
    */
   private void commitTransaction() throws IOException {
-    if (commitPending) {
-      boolean success = false;
-      try {
-        // If we hit eg disk full during this write we have
-        // to rollback.:
-        segmentInfos.write(directory);         // commit changes
-        success = true;
-      } finally {
-        if (!success) {
-          rollbackTransaction();
-        }
+
+    // First restore autoCommit in case we hit an exception below:
+    autoCommit = localAutoCommit;
+
+    boolean success = false;
+    try {
+      checkpoint();
+      success = true;
+    } finally {
+      if (!success) {
+        rollbackTransaction();
       }
-      deleter.commitPendingFiles();
-      commitPending = false;
     }
+    localRollbackSegmentInfos = null;
 
-    clearTransaction();
+    // Give deleter a chance to remove files now:
+    deleter.checkpoint(segmentInfos, autoCommit);
   }
 
-  /* Should only be called by rollbackTransaction &
-   * commitTransaction */
-  private void clearTransaction() {
-    protectedSegments = null;
-    rollbackSegmentInfos = null;
-    inTransaction = false;
+  /**
+   * Close the <code>IndexWriter</code> without committing
+   * any of the changes that have occurred since it was
+   * opened. This removes any temporary files that had been
+   * created, after which the state of the index will be the
+   * same as it was when this writer was first opened.  This
+   * can only be called when this IndexWriter was opened
+   * with <code>autoCommit=false</code>.
+   * @throws IllegalStateException if this is called when
+   *  the writer was opened with <code>autoCommit=true</code>.
+   * @throws IOException if there is a low-level IO error
+   */
+  public void abort() throws IOException {
+    if (!autoCommit) {
+
+      // Keep the same segmentInfos instance but replace all
+      // of its SegmentInfo instances.  This is so the next
+      // attempt to commit using this instance of IndexWriter
+      // will always write to a new generation ("write once").
+      segmentInfos.clear();
+      segmentInfos.addAll(rollbackSegmentInfos);
+
+      // Ask deleter to locate unreferenced files & remove
+      // them:
+      deleter.checkpoint(segmentInfos, false);
+      deleter.refresh();
+
+      ramSegmentInfos = new SegmentInfos();
+      bufferedDeleteTerms.clear();
+      numBufferedDeleteTerms = 0;
+
+      commitPending = false;
+      close();
+
+    } else {
+      throw new IllegalStateException("abort() can only be called when IndexWriter was opened with autoCommit=false");
+    }
   }
-
-
+ 
+  /*
+   * Called whenever the SegmentInfos has been updated and
+   * the index files referenced exist (correctly) in the
+   * index directory.  If we are in autoCommit mode, we
+   * commit the change immediately.  Else, we mark
+   * commitPending.
+   */
+  private void checkpoint() throws IOException {
+    if (autoCommit) {
+      segmentInfos.write(directory);
+    } else {
+      commitPending = true;
+    }
+  }
 
   /** Merges all segments from an array of indexes into this index.
    *
@@ -1266,16 +1484,13 @@ public class IndexWriter {
     final String mergedName = newSegmentName();
     SegmentMerger merger = new SegmentMerger(this, mergedName);
 
-    final Vector segmentsToDelete = new Vector();
     SegmentInfo info;
-    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
 
     IndexReader sReader = null;
     try {
       if (segmentInfos.size() == 1){ // add existing index, if any
         sReader = SegmentReader.get(segmentInfos.info(0));
         merger.add(sReader);
-        segmentsToDelete.addElement(sReader);   // queue segment for deletion
       }
 
       for (int i = 0; i < readers.length; i++)      // add new indexes
@@ -1288,15 +1503,14 @@ public class IndexWriter {
       try {
         int docCount = merger.merge();                // merge 'em
 
-        segmentInfos.setSize(0);                      // pop old infos & add new
-        info = new SegmentInfo(mergedName, docCount, directory, false, true);
-        segmentInfos.addElement(info);
-        commitPending = true;
-
         if(sReader != null) {
           sReader.close();
           sReader = null;
         }
+
+        segmentInfos.setSize(0);                      // pop old infos & add new
+        info = new SegmentInfo(mergedName, docCount, directory, false, true);
+        segmentInfos.addElement(info);
 
         success = true;
 
@@ -1312,26 +1526,16 @@ public class IndexWriter {
         sReader.close();
       }
     }
-
-    deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
-    deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
-
+    
     if (useCompoundFile) {
-      boolean success = false;
 
-      segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
-      Vector filesToDelete;
+      boolean success = false;
 
       startTransaction();
 
       try {
-
-        filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
-
+        merger.createCompoundFile(mergedName + ".cfs");
         info.setUseCompoundFile(true);
-        commitPending = true;
-        success = true;
-
       } finally {
         if (!success) {
           rollbackTransaction();
@@ -1339,9 +1543,6 @@ public class IndexWriter {
           commitTransaction();
         }
       }
-
-      deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
-      deleter.deleteFiles(filesToDelete); // delete now unused files of segment 
     }
   }
 
@@ -1500,14 +1701,12 @@ public class IndexWriter {
     final String mergedName = newSegmentName();
     SegmentMerger merger = null;
 
-    final Vector segmentsToDelete = new Vector();
-
-    String segmentsInfosFileName = segmentInfos.getCurrentSegmentFileName();
-    String nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
+    final List ramSegmentsToDelete = new ArrayList();
 
     SegmentInfo newSegment = null;
 
     int mergedDocCount = 0;
+    boolean anyDeletes = (bufferedDeleteTerms.size() != 0);
 
     // This is try/finally to make sure merger's readers are closed:
     try {
@@ -1522,9 +1721,9 @@ public class IndexWriter {
             infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
           IndexReader reader = SegmentReader.get(si); // no need to set deleter (yet)
           merger.add(reader);
-          if ((reader.directory() == this.directory) || // if we own the directory
-              (reader.directory() == this.ramDirectory))
-            segmentsToDelete.addElement(reader);   // queue segment for deletion
+          if (reader.directory() == this.ramDirectory) {
+            ramSegmentsToDelete.add(si);
+          }
         }
       }
 
@@ -1545,9 +1744,8 @@ public class IndexWriter {
           newSegment = new SegmentInfo(mergedName, mergedDocCount,
                                        directory, false, true);
         }
-
-        if (!inTransaction
-            && (sourceSegments != ramSegmentInfos || bufferedDeleteTerms.size() > 0)) {
+        
+        if (sourceSegments != ramSegmentInfos || anyDeletes) {
           // Now save the SegmentInfo instances that
           // we are replacing:
           rollback = (SegmentInfos) segmentInfos.clone();
@@ -1565,18 +1763,11 @@ public class IndexWriter {
         }
 
         if (sourceSegments == ramSegmentInfos) {
-          // Should not be necessary: no prior commit should
-          // have left pending files, so just defensive:
-          deleter.clearPendingFiles();
           maybeApplyDeletes(doMerge);
           doAfterFlush();
         }
-
-        if (!inTransaction) {
-          segmentInfos.write(directory);     // commit before deleting
-        } else {
-          commitPending = true;
-        }
+        
+        checkpoint();
 
         success = true;
 
@@ -1589,11 +1780,10 @@ public class IndexWriter {
           if (sourceSegments == ramSegmentInfos) {
             ramSegmentInfos.removeAllElements();
           }
-        } else if (!inTransaction) {  
+        } else {
 
           // Must rollback so our state matches index:
-
-          if (sourceSegments == ramSegmentInfos && 0 == bufferedDeleteTerms.size()) {
+          if (sourceSegments == ramSegmentInfos && !anyDeletes) {
             // Simple case: newSegment may or may not have
             // been added to the end of our segment infos,
             // so just check & remove if so:
@@ -1611,14 +1801,8 @@ public class IndexWriter {
             segmentInfos.addAll(rollback);
           }
 
-          // Erase any pending files that we were going to delete:
-          // i.e. old del files added by SegmentReader.doCommit() 
-          deleter.clearPendingFiles();
-
-          // Delete any partially created files:
-          deleter.deleteFile(nextSegmentsFileName);
-          deleter.findDeletableFiles();
-          deleter.deleteFiles();
+          // Delete any partially created and now unreferenced files:
+          deleter.refresh();
         }
       }
     } finally {
@@ -1626,53 +1810,33 @@ public class IndexWriter {
       if (doMerge) merger.closeReaders();
     }
 
-    if (!inTransaction) {
-      // Attempt to delete all files we just obsoleted:
-      deleter.deleteFile(segmentsInfosFileName);    // delete old segments_N file
-      deleter.deleteSegments(segmentsToDelete);     // delete now-unused segments
-      // Includes the old del files
-      deleter.commitPendingFiles();
-    } else {
-      deleter.addPendingFile(segmentsInfosFileName);    // delete old segments_N file
-      deleter.deleteSegments(segmentsToDelete, protectedSegments);     // delete now-unused segments
-    }
+    // Delete the RAM segments
+    deleter.deleteDirect(ramDirectory, ramSegmentsToDelete);
+
+    // Give deleter a chance to remove files now.
+    deleter.checkpoint(segmentInfos, autoCommit);
 
     if (useCompoundFile && doMerge) {
-
-      segmentsInfosFileName = nextSegmentsFileName;
-      nextSegmentsFileName = segmentInfos.getNextSegmentFileName();
-
-      Vector filesToDelete;
 
       boolean success = false;
 
       try {
 
-        filesToDelete = merger.createCompoundFile(mergedName + ".cfs");
+        merger.createCompoundFile(mergedName + ".cfs");
         newSegment.setUseCompoundFile(true);
-        if (!inTransaction) {
-          segmentInfos.write(directory);     // commit again so readers know we've switched this segment to a compound file
-        }
+        checkpoint();
         success = true;
 
       } finally {
-        if (!success && !inTransaction) {  
+        if (!success) {  
           // Must rollback:
           newSegment.setUseCompoundFile(false);
-          deleter.deleteFile(mergedName + ".cfs");
-          deleter.deleteFile(nextSegmentsFileName);
+          deleter.refresh();
         }
       }
-
-      if (!inTransaction) {
-        deleter.deleteFile(segmentsInfosFileName);  // delete old segments_N file
-      }
-
-      // We can delete these segments whether or not we are
-      // in a transaction because we had just written them
-      // above so they can't need protection by the
-      // transaction:
-      deleter.deleteFiles(filesToDelete);  // delete now-unused segments
+      
+      // Give deleter a chance to remove files now.
+      deleter.checkpoint(segmentInfos, autoCommit);
     }
 
     return mergedDocCount;
@@ -1692,7 +1856,6 @@ public class IndexWriter {
         IndexReader reader = null;
         try {
           reader = SegmentReader.get(segmentInfos.info(segmentInfos.size() - 1));
-          reader.setDeleter(deleter);
 
           // Apply delete terms to the segment just flushed from ram
           // apply appropriately so that a delete term is only applied to
@@ -1718,7 +1881,6 @@ public class IndexWriter {
         IndexReader reader = null;
         try {
           reader = SegmentReader.get(segmentInfos.info(i));
-          reader.setDeleter(deleter);
 
           // Apply delete terms to disk segments
           // except the one just flushed from ram.
@@ -1769,7 +1931,7 @@ public class IndexWriter {
   }
 
   // Number of ram segments a delete term applies to.
-  private class Num {
+  private static class Num {
     private int num;
 
     Num(int num) {

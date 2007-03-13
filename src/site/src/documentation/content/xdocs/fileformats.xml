@@ -771,7 +771,9 @@
                     generation is the active one (when older
                     segments_N files are present it's because they
                     temporarily cannot be deleted, or, a writer is in
-                    the process of committing). This file lists each
+                    the process of committing, or a custom
+                    <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/index/IndexDeletionPolicy.html">IndexDeletionPolicy</a>
+		    is in use). This file lists each
                     segment by name, has details about the separate
                     norms and deletion files, and also contains the
                     size of each segment.

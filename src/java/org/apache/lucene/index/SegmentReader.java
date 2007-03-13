@@ -77,15 +77,6 @@ class SegmentReader extends IndexReader {
 
     private void reWrite(SegmentInfo si) throws IOException {
       // NOTE: norms are re-written in regular directory, not cfs
-
-      String oldFileName = si.getNormFileName(this.number);
-      if (oldFileName != null && !oldFileName.endsWith("." + IndexFileNames.NORMS_EXTENSION)) {
-        // Mark this file for deletion.  Note that we don't
-        // actually try to delete it until the new segments files is
-        // successfully written:
-        deleter.addPendingFile(oldFileName);
-      }
-
       si.advanceNormGen(this.number);
       IndexOutput out = directory().createOutput(si.getNormFileName(this.number));
       try {
@@ -227,14 +218,6 @@ class SegmentReader extends IndexReader {
 
   protected void doCommit() throws IOException {
     if (deletedDocsDirty) {               // re-write deleted
-      String oldDelFileName = si.getDelFileName();
-      if (oldDelFileName != null) {
-        // Mark this file for deletion.  Note that we don't
-        // actually try to delete it until the new segments files is
-        // successfully written:
-        deleter.addPendingFile(oldDelFileName);
-      }
-
       si.advanceDelGen();
 
       // We can write directly to the actual name (vs to a
@@ -243,13 +226,6 @@ class SegmentReader extends IndexReader {
       deletedDocs.write(directory(), si.getDelFileName());
     }
     if (undeleteAll && si.hasDeletions()) {
-      String oldDelFileName = si.getDelFileName();
-      if (oldDelFileName != null) {
-        // Mark this file for deletion.  Note that we don't
-        // actually try to delete it until the new segments files is
-        // successfully written:
-        deleter.addPendingFile(oldDelFileName);
-      }
       si.clearDelGen();
     }
     if (normsDirty) {               // re-write norms
@@ -320,37 +296,7 @@ class SegmentReader extends IndexReader {
   }
 
   Vector files() throws IOException {
-    Vector files = new Vector(16);
-
-    if (si.getUseCompoundFile()) {
-      String name = segment + ".cfs";
-      if (directory().fileExists(name)) {
-        files.addElement(name);
-      }
-    } else {
-      for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
-        String name = segment + "." + IndexFileNames.INDEX_EXTENSIONS[i];
-        if (directory().fileExists(name))
-          files.addElement(name);
-      }
-    }
-
-    if (si.hasDeletions()) {
-      files.addElement(si.getDelFileName());
-    }
-
-    boolean addedNrm = false;
-    for (int i = 0; i < fieldInfos.size(); i++) {
-      String name = si.getNormFileName(i);
-      if (name != null && directory().fileExists(name)) {
-        if (name.endsWith("." + IndexFileNames.NORMS_EXTENSION)) {
-          if (addedNrm) continue; // add .nrm just once
-          addedNrm = true;
-        }
-        files.addElement(name);
-      }
-    }
-    return files;
+    return new Vector(si.files());
   }
 
   public TermEnum terms() {

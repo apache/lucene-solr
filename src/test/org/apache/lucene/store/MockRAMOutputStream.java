@@ -68,7 +68,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
-      throw new IOException("fake disk full at " + dir.sizeInBytes() + " bytes");
+      throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes");
     } else {
       super.flushBuffer(src, len);
     }
