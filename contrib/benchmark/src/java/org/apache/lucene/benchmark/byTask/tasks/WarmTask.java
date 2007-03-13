@@ -22,6 +22,9 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 
 /**
  * Warm reader task.
+ * 
+ * <p>Note: This task reuses the reader if it is already open. 
+ * Otherwise a reader is opened at start and closed at the end.
  */
 public class WarmTask extends ReadTask {
 

@@ -205,8 +205,7 @@ public class TaskSequence extends PerfTask {
   }
 
   /**
-   * Execute child tasks in a way that they do not reprt their time separately.
-   * Current implementation if child tasks has child tasks of their own, those are not affected by this call. 
+   * Execute child tasks in a way that they do not report their time separately.
    */
   public void setNoChildReport() {
     letChildReport  = false;

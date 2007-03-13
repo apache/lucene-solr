@@ -32,7 +32,11 @@ import org.apache.lucene.store.Directory;
  * Read index (abstract) task.
  * Sub classes implement withSearch(), withWarm(), withTraverse() and withRetrieve()
  * methods to configure the actual action.
- * Other side effects: none.
+ * 
+ * <p>Note: All ReadTasks reuse the reader if it is already open. 
+ * Otherwise a reader is opened at start and closed at the end.
+ *  
+ * <p>Other side effects: none.
  */
 public abstract class ReadTask extends PerfTask {
 

@@ -22,6 +22,9 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 
 /**
  * Search and Travrese and Retrieve docs task.
+ * 
+ * <p>Note: This task reuses the reader if it is already open. 
+ * Otherwise a reader is opened at start and closed at the end.
  */
 public class SearchTravRetTask extends ReadTask {
 
