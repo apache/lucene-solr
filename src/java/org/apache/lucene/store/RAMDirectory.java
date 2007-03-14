@@ -97,6 +97,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Returns an array of strings, one for each file in the directory. */
   public synchronized final String[] list() {
+    ensureOpen();
     Set fileNames = fileMap.keySet();
     String[] result = new String[fileNames.size()];
     int i = 0;
@@ -108,6 +109,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Returns true iff the named file exists in this directory. */
   public final boolean fileExists(String name) {
+    ensureOpen();
     RAMFile file;
     synchronized (this) {
       file = (RAMFile)fileMap.get(name);
@@ -119,6 +121,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @throws IOException if the file does not exist
    */
   public final long fileModified(String name) throws IOException {
+    ensureOpen();
     RAMFile file;
     synchronized (this) {
       file = (RAMFile)fileMap.get(name);
@@ -132,6 +135,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @throws IOException if the file does not exist
    */
   public void touchFile(String name) throws IOException {
+    ensureOpen();
     RAMFile file;
     synchronized (this) {
       file = (RAMFile)fileMap.get(name);
@@ -154,6 +158,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @throws IOException if the file does not exist
    */
   public final long fileLength(String name) throws IOException {
+    ensureOpen();
     RAMFile file;
     synchronized (this) {
       file = (RAMFile)fileMap.get(name);
@@ -167,6 +172,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * directory.  This is currently quantized to
    * BufferedIndexOutput.BUFFER_SIZE. */
   public synchronized final long sizeInBytes() {
+    ensureOpen();
     return sizeInBytes;
   }
   
@@ -174,6 +180,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @throws IOException if the file does not exist
    */
   public synchronized void deleteFile(String name) throws IOException {
+    ensureOpen();
     RAMFile file = (RAMFile)fileMap.get(name);
     if (file!=null) {
         fileMap.remove(name);
@@ -188,6 +195,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @deprecated
    */
   public synchronized final void renameFile(String from, String to) throws IOException {
+    ensureOpen();
     RAMFile fromFile = (RAMFile)fileMap.get(from);
     if (fromFile==null)
       throw new FileNotFoundException(from);
@@ -202,6 +210,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
   public IndexOutput createOutput(String name) {
+    ensureOpen();
     RAMFile file = new RAMFile(this);
     synchronized (this) {
       RAMFile existing = (RAMFile)fileMap.get(name);
@@ -216,6 +225,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   /** Returns a stream reading an existing file. */
   public IndexInput openInput(String name) throws IOException {
+    ensureOpen();
     RAMFile file;
     synchronized (this) {
       file = (RAMFile)fileMap.get(name);
@@ -230,4 +240,12 @@ public class RAMDirectory extends Directory implements Serializable {
     fileMap = null;
   }
 
+  /**
+   * @throws AlreadyClosedException if this IndexReader is closed
+   */
+  protected final void ensureOpen() throws AlreadyClosedException {
+    if (fileMap == null) {
+      throw new AlreadyClosedException("this RAMDirectory is closed");
+    }
+  }
 }

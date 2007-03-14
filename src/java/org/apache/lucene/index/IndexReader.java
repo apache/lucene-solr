@@ -25,6 +25,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.AlreadyClosedException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -115,7 +116,16 @@ public abstract class IndexReader {
   private boolean directoryOwner;
   private boolean closeDirectory;
   private IndexDeletionPolicy deletionPolicy;
-  private boolean isClosed;
+  private boolean closed;
+
+  /**
+   * @throws AlreadyClosedException if this IndexReader is closed
+   */
+  protected final void ensureOpen() throws AlreadyClosedException {
+    if (closed) {
+      throw new AlreadyClosedException("this IndexReader is closed");
+    }
+  }
 
   private SegmentInfos segmentInfos;
   private Lock writeLock;
@@ -208,8 +218,12 @@ public abstract class IndexReader {
     }.run();
   }
 
-  /** Returns the directory this index resides in. */
-  public Directory directory() { return directory; }
+  /** Returns the directory this index resides in.
+   */
+  public Directory directory() {
+    ensureOpen();
+    return directory;
+  }
 
   /**
    * Returns the time the index in the named directory was last modified.
@@ -301,6 +315,7 @@ public abstract class IndexReader {
    * Version number when this IndexReader was opened.
    */
   public long getVersion() {
+    ensureOpen();
     return segmentInfos.getVersion();
   }
 
@@ -313,6 +328,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public boolean isCurrent() throws CorruptIndexException, IOException {
+    ensureOpen();
     return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
   }
 
@@ -321,7 +337,8 @@ public abstract class IndexReader {
    * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
    */
   public boolean isOptimized() {
-      return segmentInfos.size() == 1 && hasDeletions() == false;
+    ensureOpen();
+    return segmentInfos.size() == 1 && hasDeletions() == false;
   }
 
   /**
@@ -407,6 +424,7 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public Document document(int n) throws CorruptIndexException, IOException {
+    ensureOpen();
     return document(n, null);
   }
 
@@ -445,6 +463,7 @@ public abstract class IndexReader {
   public boolean hasNorms(String field) throws IOException {
     // backward compatible implementation.
     // SegmentReader has an efficient implementation.
+    ensureOpen();
     return norms(field) != null;
   }
 
@@ -477,11 +496,11 @@ public abstract class IndexReader {
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
-   * @throws IOException if this reader was closed already
-   *  or there is a low-level IO error
+   * @throws IOException if there is a low-level IO error
    */
   public final synchronized  void setNorm(int doc, String field, byte value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+    ensureOpen();
     if(directoryOwner)
       acquireWriteLock();
     hasChanges = true;
@@ -504,27 +523,31 @@ public abstract class IndexReader {
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
-   * @throws IOException if this reader was closed already
-   *  or there is a low-level IO error
+   * @throws IOException if there is a low-level IO error
    */
   public void setNorm(int doc, String field, float value)
           throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+    ensureOpen();
     setNorm(doc, field, Similarity.encodeNorm(value));
   }
 
   /** Returns an enumeration of all the terms in the index.
    * The enumeration is ordered by Term.compareTo().  Each term
    * is greater than all that precede it in the enumeration.
+   * @throws IOException if there is a low-level IO error
    */
   public abstract TermEnum terms() throws IOException;
 
   /** Returns an enumeration of all terms after a given term.
    * The enumeration is ordered by Term.compareTo().  Each term
    * is greater than all that precede it in the enumeration.
+   * @throws IOException if there is a low-level IO error
    */
   public abstract TermEnum terms(Term t) throws IOException;
 
-  /** Returns the number of documents containing the term <code>t</code>. */
+  /** Returns the number of documents containing the term <code>t</code>.
+   * @throws IOException if there is a low-level IO error
+   */
   public abstract int docFreq(Term t) throws IOException;
 
   /** Returns an enumeration of all the documents which contain
@@ -536,14 +559,18 @@ public abstract class IndexReader {
    * </ul>
    * <p>The enumeration is ordered by document number.  Each document number
    * is greater than all that precede it in the enumeration.
+   * @throws IOException if there is a low-level IO error
    */
   public TermDocs termDocs(Term term) throws IOException {
+    ensureOpen();
     TermDocs termDocs = termDocs();
     termDocs.seek(term);
     return termDocs;
   }
 
-  /** Returns an unpositioned {@link TermDocs} enumerator. */
+  /** Returns an unpositioned {@link TermDocs} enumerator.
+   * @throws IOException if there is a low-level IO error
+   */
   public abstract TermDocs termDocs() throws IOException;
 
   /** Returns an enumeration of all the documents which contain
@@ -561,14 +588,18 @@ public abstract class IndexReader {
    * <p> This positional information faciliates phrase and proximity searching.
    * <p>The enumeration is ordered by document number.  Each document number is
    * greater than all that precede it in the enumeration.
+   * @throws IOException if there is a low-level IO error
    */
   public TermPositions termPositions(Term term) throws IOException {
+    ensureOpen();
     TermPositions termPositions = termPositions();
     termPositions.seek(term);
     return termPositions;
   }
 
-  /** Returns an unpositioned {@link TermPositions} enumerator. */
+  /** Returns an unpositioned {@link TermPositions} enumerator.
+   * @throws IOException if there is a low-level IO error
+   */
   public abstract TermPositions termPositions() throws IOException;
 
   /**
@@ -584,10 +615,9 @@ public abstract class IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   private void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+    ensureOpen();
     if (stale)
       throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
-    if (isClosed)
-      throw new IOException("this reader is closed");
 
     if (writeLock == null) {
       Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
@@ -620,10 +650,10 @@ public abstract class IndexReader {
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
-   * @throws IOException if this reader was closed already
-   *  or there is a low-level IO error
+   * @throws IOException if there is a low-level IO error
    */
   public final synchronized void deleteDocument(int docNum) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+    ensureOpen();
     if(directoryOwner)
       acquireWriteLock();
     hasChanges = true;
@@ -652,10 +682,10 @@ public abstract class IndexReader {
    * @throws LockObtainFailedException if another writer
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
-   * @throws IOException if this reader was closed already
-   *  or there is a low-level IO error
+   * @throws IOException if there is a low-level IO error
    */
   public final int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+    ensureOpen();
     TermDocs docs = termDocs(term);
     if (docs == null) return 0;
     int n = 0;
@@ -678,10 +708,10 @@ public abstract class IndexReader {
    *  has this index open (<code>write.lock</code> could not
    *  be obtained)
    * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if this reader was closed already
-   *  or there is a low-level IO error
+   * @throws IOException if there is a low-level IO error
    */
   public final synchronized void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+    ensureOpen();
     if(directoryOwner)
       acquireWriteLock();
     hasChanges = true;
@@ -790,19 +820,16 @@ public abstract class IndexReader {
    * Closes files associated with this index.
    * Also saves any new deletions to disk.
    * No other methods should be called after this has been called.
-   * @throws IOException if this reader was closed already
-   *  or there is a low-level IO error
+   * @throws IOException if there is a low-level IO error
    */
   public final synchronized void close() throws IOException {
-    if (directoryOwner && isClosed) {
-      throw new IOException("this reader is already closed");
-    }
-    commit();
-    doClose();
-    if(closeDirectory)
-      directory.close();
-    if (directoryOwner) {
-      isClosed = true;
+    if (!closed) {
+      commit();
+      doClose();
+      if (directoryOwner)
+        closed = true;
+      if(closeDirectory)
+        directory.close();
     }
   }
 

@@ -23,6 +23,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util._TestUtil;
 
 import java.io.File;
@@ -130,6 +131,36 @@ public class TestFieldsReader extends TestCase {
     for (int i = 0; i < bytes.length; i++) {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
+    }
+  }
+
+  public void testLazyFieldsAfterClose() throws Exception {
+    assertTrue(dir != null);
+    assertTrue(fieldInfos != null);
+    FieldsReader reader = new FieldsReader(dir, "test", fieldInfos);
+    assertTrue(reader != null);
+    assertTrue(reader.size() == 1);
+    Set loadFieldNames = new HashSet();
+    loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
+    loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
+    Set lazyFieldNames = new HashSet();
+    lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
+    lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
+    lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
+    lazyFieldNames.add(DocHelper.TEXT_FIELD_UTF2_KEY);
+    lazyFieldNames.add(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY);
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
+    Document doc = reader.doc(0, fieldSelector);
+    assertTrue("doc is null and it shouldn't be", doc != null);
+    Fieldable field = doc.getFieldable(DocHelper.LAZY_FIELD_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("field is not lazy and it should be", field.isLazy());
+    reader.close();
+    try {
+      String value = field.stringValue();
+      fail("did not hit AlreadyClosedException as expected");
+    } catch (AlreadyClosedException e) {
+      // expected
     }
   }
 

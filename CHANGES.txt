@@ -29,6 +29,11 @@ API Changes
     share an index over NFS by customizing when prior commits are
     deleted. (Mike McCandless)
 
+ 4. LUCENE-818: changed most public methods of IndexWriter,
+    IndexReader (and its subclasses), FieldsReader and RAMDirectory to
+    throw AlreadyClosedException if they are accessed after being
+    closed.  (Mike McCandless)
+
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)

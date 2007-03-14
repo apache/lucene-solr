@@ -72,24 +72,21 @@ public class MultiReader extends IndexReader {
   }
 
 
-  /** Return an array of term frequency vectors for the specified document.
-   *  The array contains a vector for each vectorized field in the document.
-   *  Each vector vector contains term numbers and frequencies for all terms
-   *  in a given vectorized field.
-   *  If no such fields existed, the method returns null.
-   */
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
+    ensureOpen();
     int i = readerIndex(n);        // find segment num
     return subReaders[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
   }
 
   public TermFreqVector getTermFreqVector(int n, String field)
       throws IOException {
+    ensureOpen();
     int i = readerIndex(n);        // find segment num
     return subReaders[i].getTermFreqVector(n - starts[i], field);
   }
 
   public synchronized int numDocs() {
+    // Don't call ensureOpen() here (it could affect performance)
     if (numDocs == -1) {        // check cache
       int n = 0;                // cache miss--recompute
       for (int i = 0; i < subReaders.length; i++)
@@ -100,21 +97,27 @@ public class MultiReader extends IndexReader {
   }
 
   public int maxDoc() {
+    // Don't call ensureOpen() here (it could affect performance)
     return maxDoc;
   }
 
   // inherit javadoc
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+    ensureOpen();
     int i = readerIndex(n);                          // find segment num
     return subReaders[i].document(n - starts[i], fieldSelector);    // dispatch to segment reader
   }
 
   public boolean isDeleted(int n) {
+    // Don't call ensureOpen() here (it could affect performance)
     int i = readerIndex(n);                           // find segment num
     return subReaders[i].isDeleted(n - starts[i]);    // dispatch to segment reader
   }
 
-  public boolean hasDeletions() { return hasDeletions; }
+  public boolean hasDeletions() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return hasDeletions;
+  }
 
   protected void doDelete(int n) throws CorruptIndexException, IOException {
     numDocs = -1;                             // invalidate cache
@@ -153,6 +156,7 @@ public class MultiReader extends IndexReader {
   }
 
   public boolean hasNorms(String field) throws IOException {
+    ensureOpen();
     for (int i = 0; i < subReaders.length; i++) {
       if (subReaders[i].hasNorms(field)) return true;
     }
@@ -166,6 +170,7 @@ public class MultiReader extends IndexReader {
   }
 
   public synchronized byte[] norms(String field) throws IOException {
+    ensureOpen();
     byte[] bytes = (byte[])normsCache.get(field);
     if (bytes != null)
       return bytes;          // cache hit
@@ -181,6 +186,7 @@ public class MultiReader extends IndexReader {
 
   public synchronized void norms(String field, byte[] result, int offset)
     throws IOException {
+    ensureOpen();
     byte[] bytes = (byte[])normsCache.get(field);
     if (bytes==null && !hasNorms(field)) bytes=fakeNorms();
     if (bytes != null)                            // cache hit
@@ -198,14 +204,17 @@ public class MultiReader extends IndexReader {
   }
 
   public TermEnum terms() throws IOException {
+    ensureOpen();
     return new MultiTermEnum(subReaders, starts, null);
   }
 
   public TermEnum terms(Term term) throws IOException {
+    ensureOpen();
     return new MultiTermEnum(subReaders, starts, term);
   }
 
   public int docFreq(Term t) throws IOException {
+    ensureOpen();
     int total = 0;          // sum freqs in segments
     for (int i = 0; i < subReaders.length; i++)
       total += subReaders[i].docFreq(t);
@@ -213,10 +222,12 @@ public class MultiReader extends IndexReader {
   }
 
   public TermDocs termDocs() throws IOException {
+    ensureOpen();
     return new MultiTermDocs(subReaders, starts);
   }
 
   public TermPositions termPositions() throws IOException {
+    ensureOpen();
     return new MultiTermPositions(subReaders, starts);
   }
 
@@ -244,11 +255,9 @@ public class MultiReader extends IndexReader {
       subReaders[i].close();
   }
 
-  /**
-   * @see IndexReader#getFieldNames(IndexReader.FieldOption)
-   */
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
     // maintain a unique set of field names
+    ensureOpen();
     Set fieldSet = new HashSet();
     for (int i = 0; i < subReaders.length; i++) {
       IndexReader reader = subReaders[i];

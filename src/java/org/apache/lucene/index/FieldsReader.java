@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.AlreadyClosedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,6 +47,7 @@ final class FieldsReader {
 
   private final IndexInput indexStream;
   private int size;
+  private boolean closed;
 
   private ThreadLocal fieldsStreamTL = new ThreadLocal();
 
@@ -59,19 +61,31 @@ final class FieldsReader {
   }
 
   /**
+   * @throws AlreadyClosedException if this FieldsReader is closed
+   */
+  protected final void ensureOpen() throws AlreadyClosedException {
+    if (closed) {
+      throw new AlreadyClosedException("this FieldsReader is closed");
+    }
+  }
+
+  /**
    * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams, including any ones associated with a
    * lazy implementation of a Field.  This means that the Fields values will not be accessible.
    *
    * @throws IOException
    */
   final void close() throws IOException {
-    fieldsStream.close();
-    cloneableFieldsStream.close();
-    indexStream.close();
-    IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
-    if (localFieldsStream != null) {
-      localFieldsStream.close();
-      fieldsStreamTL.set(null);
+    if (!closed) {
+      fieldsStream.close();
+      cloneableFieldsStream.close();
+      indexStream.close();
+      IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
+      if (localFieldsStream != null) {
+        localFieldsStream.close();
+        fieldsStreamTL.set(null);
+      }
+      closed = true;
     }
   }
 
@@ -323,6 +337,7 @@ final class FieldsReader {
      * binaryValue() must be set.
      */
     public byte[] binaryValue() {
+      ensureOpen();
       if (fieldsData == null) {
         final byte[] b = new byte[toRead];
         IndexInput localFieldsStream = getFieldStream();
@@ -349,6 +364,7 @@ final class FieldsReader {
      * and binaryValue() must be set.
      */
     public Reader readerValue() {
+      ensureOpen();
       return fieldsData instanceof Reader ? (Reader) fieldsData : null;
     }
 
@@ -358,6 +374,7 @@ final class FieldsReader {
      * binaryValue() must be set.
      */
     public String stringValue() {
+      ensureOpen();
       if (fieldsData == null) {
         IndexInput localFieldsStream = getFieldStream();
         try {
@@ -380,18 +397,22 @@ final class FieldsReader {
     }
 
     public long getPointer() {
+      ensureOpen();
       return pointer;
     }
 
     public void setPointer(long pointer) {
+      ensureOpen();
       this.pointer = pointer;
     }
 
     public int getToRead() {
+      ensureOpen();
       return toRead;
     }
 
     public void setToRead(int toRead) {
+      ensureOpen();
       this.toRead = toRead;
     }
   }

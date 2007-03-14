@@ -266,10 +266,12 @@ class SegmentReader extends IndexReader {
   }
 
   static boolean hasDeletions(SegmentInfo si) throws IOException {
+    // Don't call ensureOpen() here (it could affect performance)
     return si.hasDeletions();
   }
 
   public boolean hasDeletions() {
+    // Don't call ensureOpen() here (it could affect performance)
     return deletedDocs != null;
   }
 
@@ -300,10 +302,12 @@ class SegmentReader extends IndexReader {
   }
 
   public TermEnum terms() {
+    ensureOpen();
     return tis.terms();
   }
 
   public TermEnum terms(Term t) throws IOException {
+    ensureOpen();
     return tis.terms(t);
   }
 
@@ -312,6 +316,7 @@ class SegmentReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public synchronized Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+    ensureOpen();
     if (isDeleted(n))
       throw new IllegalArgumentException
               ("attempt to access a deleted document");
@@ -323,14 +328,17 @@ class SegmentReader extends IndexReader {
   }
 
   public TermDocs termDocs() throws IOException {
+    ensureOpen();
     return new SegmentTermDocs(this);
   }
 
   public TermPositions termPositions() throws IOException {
+    ensureOpen();
     return new SegmentTermPositions(this);
   }
 
   public int docFreq(Term t) throws IOException {
+    ensureOpen();
     TermInfo ti = tis.get(t);
     if (ti != null)
       return ti.docFreq;
@@ -339,6 +347,7 @@ class SegmentReader extends IndexReader {
   }
 
   public int numDocs() {
+    // Don't call ensureOpen() here (it could affect performance)
     int n = maxDoc();
     if (deletedDocs != null)
       n -= deletedDocs.count();
@@ -346,6 +355,7 @@ class SegmentReader extends IndexReader {
   }
 
   public int maxDoc() {
+    // Don't call ensureOpen() here (it could affect performance)
     return si.docCount;
   }
 
@@ -353,6 +363,7 @@ class SegmentReader extends IndexReader {
    * @see IndexReader#getFieldNames(IndexReader.FieldOption fldOption)
    */
   public Collection getFieldNames(IndexReader.FieldOption fieldOption) {
+    ensureOpen();
 
     Set fieldSet = new HashSet();
     for (int i = 0; i < fieldInfos.size(); i++) {
@@ -394,6 +405,7 @@ class SegmentReader extends IndexReader {
 
 
   public synchronized boolean hasNorms(String field) {
+    ensureOpen();
     return norms.containsKey(field);
   }
 
@@ -426,6 +438,7 @@ class SegmentReader extends IndexReader {
 
   // returns fake norms if norms aren't available
   public synchronized byte[] norms(String field) throws IOException {
+    ensureOpen();
     byte[] bytes = getNorms(field);
     if (bytes==null) bytes=fakeNorms();
     return bytes;
@@ -447,6 +460,7 @@ class SegmentReader extends IndexReader {
   public synchronized void norms(String field, byte[] bytes, int offset)
     throws IOException {
 
+    ensureOpen();
     Norm norm = (Norm) norms.get(field);
     if (norm == null) {
       System.arraycopy(fakeNorms(), 0, bytes, offset, maxDoc());
@@ -537,6 +551,7 @@ class SegmentReader extends IndexReader {
    */
   public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     // Check if this field is invalid or has no stored term vector
+    ensureOpen();
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null || !fi.storeTermVector || termVectorsReaderOrig == null) 
       return null;
@@ -557,6 +572,7 @@ class SegmentReader extends IndexReader {
    * @throws IOException
    */
   public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
+    ensureOpen();
     if (termVectorsReaderOrig == null)
       return null;
     

@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
@@ -208,6 +209,16 @@ public class IndexWriter {
   private boolean useCompoundFile = true;
 
   private boolean closeDir;
+  private boolean closed;
+
+  /**
+   * @throws AlreadyClosedException if this IndexWriter is closed
+   */
+  protected final void ensureOpen() throws AlreadyClosedException {
+    if (closed) {
+      throw new AlreadyClosedException("this IndexWriter is closed");
+    }
+  }
 
   /** Get the current setting of whether to use the compound file format.
    *  Note that this just returns the value you set with setUseCompoundFile(boolean)
@@ -215,6 +226,7 @@ public class IndexWriter {
    *  @see #setUseCompoundFile(boolean)
    */
   public boolean getUseCompoundFile() {
+    ensureOpen();
     return useCompoundFile;
   }
 
@@ -223,6 +235,7 @@ public class IndexWriter {
    *  is finished. This is done regardless of what directory is in use.
    */
   public void setUseCompoundFile(boolean value) {
+    ensureOpen();
     useCompoundFile = value;
   }
 
@@ -231,6 +244,7 @@ public class IndexWriter {
    * @see Similarity#setDefault(Similarity)
    */
   public void setSimilarity(Similarity similarity) {
+    ensureOpen();
     this.similarity = similarity;
   }
 
@@ -239,6 +253,7 @@ public class IndexWriter {
    * <p>This defaults to the current value of {@link Similarity#getDefault()}.
    */
   public Similarity getSimilarity() {
+    ensureOpen();
     return this.similarity;
   }
 
@@ -264,6 +279,7 @@ public class IndexWriter {
    * @see #DEFAULT_TERM_INDEX_INTERVAL
    */
   public void setTermIndexInterval(int interval) {
+    ensureOpen();
     this.termIndexInterval = interval;
   }
 
@@ -271,7 +287,10 @@ public class IndexWriter {
    *
    * @see #setTermIndexInterval(int)
    */
-  public int getTermIndexInterval() { return termIndexInterval; }
+  public int getTermIndexInterval() {
+    ensureOpen();
+    return termIndexInterval;
+  }
 
   /**
    * Constructs an IndexWriter for the index in <code>path</code>.
@@ -580,6 +599,7 @@ public class IndexWriter {
    * <p>The default value is {@link Integer#MAX_VALUE}.
    */
   public void setMaxMergeDocs(int maxMergeDocs) {
+    ensureOpen();
     this.maxMergeDocs = maxMergeDocs;
   }
 
@@ -587,6 +607,7 @@ public class IndexWriter {
    * @see #setMaxMergeDocs
    */
   public int getMaxMergeDocs() {
+    ensureOpen();
     return maxMergeDocs;
   }
 
@@ -603,6 +624,7 @@ public class IndexWriter {
    * By default, no more than 10,000 terms will be indexed for a field.
    */
   public void setMaxFieldLength(int maxFieldLength) {
+    ensureOpen();
     this.maxFieldLength = maxFieldLength;
   }
 
@@ -610,6 +632,7 @@ public class IndexWriter {
    * @see #setMaxFieldLength
    */
   public int getMaxFieldLength() {
+    ensureOpen();
     return maxFieldLength;
   }
 
@@ -624,6 +647,7 @@ public class IndexWriter {
    * @throws IllegalArgumentException if maxBufferedDocs is smaller than 2
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
+    ensureOpen();
     if (maxBufferedDocs < 2)
       throw new IllegalArgumentException("maxBufferedDocs must at least be 2");
     this.minMergeDocs = maxBufferedDocs;
@@ -633,6 +657,7 @@ public class IndexWriter {
    * @see #setMaxBufferedDocs
    */
   public int getMaxBufferedDocs() {
+    ensureOpen();
     return minMergeDocs;
   }
 
@@ -646,6 +671,7 @@ public class IndexWriter {
    * @throws IllegalArgumentException if maxBufferedDeleteTerms is smaller than 1</p>
    */
   public void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
+    ensureOpen();
     if (maxBufferedDeleteTerms < 1)
       throw new IllegalArgumentException("maxBufferedDeleteTerms must at least be 1");
     this.maxBufferedDeleteTerms = maxBufferedDeleteTerms;
@@ -655,6 +681,7 @@ public class IndexWriter {
    * @see #setMaxBufferedDeleteTerms
    */
   public int getMaxBufferedDeleteTerms() {
+    ensureOpen();
     return maxBufferedDeleteTerms;
   }
 
@@ -669,6 +696,7 @@ public class IndexWriter {
    * <p>This must never be less than 2.  The default value is 10.
    */
   public void setMergeFactor(int mergeFactor) {
+    ensureOpen();
     if (mergeFactor < 2)
       throw new IllegalArgumentException("mergeFactor cannot be less than 2");
     this.mergeFactor = mergeFactor;
@@ -678,6 +706,7 @@ public class IndexWriter {
    * @see #setMergeFactor
    */
   public int getMergeFactor() {
+    ensureOpen();
     return mergeFactor;
   }
 
@@ -701,6 +730,7 @@ public class IndexWriter {
    * to this.
    */
   public void setInfoStream(PrintStream infoStream) {
+    ensureOpen();
     this.infoStream = infoStream;
     deleter.setInfoStream(infoStream);
   }
@@ -709,6 +739,7 @@ public class IndexWriter {
    * @see #setInfoStream
    */
   public PrintStream getInfoStream() {
+    ensureOpen();
     return infoStream;
   }
 
@@ -717,6 +748,7 @@ public class IndexWriter {
    * @see #setDefaultWriteLockTimeout to change the default value for all instances of IndexWriter.
    */
   public void setWriteLockTimeout(long writeLockTimeout) {
+    ensureOpen();
     this.writeLockTimeout = writeLockTimeout;
   }
 
@@ -724,6 +756,7 @@ public class IndexWriter {
    * @see #setWriteLockTimeout
    */
   public long getWriteLockTimeout() {
+    ensureOpen();
     return writeLockTimeout;
   }
 
@@ -777,22 +810,26 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public synchronized void close() throws CorruptIndexException, IOException {
-    flushRamSegments();
+    if (!closed) {
+      flushRamSegments();
 
-    if (commitPending) {
-      segmentInfos.write(directory);         // now commit changes
-      deleter.checkpoint(segmentInfos, true);
-      commitPending = false;
-      rollbackSegmentInfos = null;
-    }
+      if (commitPending) {
+        segmentInfos.write(directory);         // now commit changes
+        deleter.checkpoint(segmentInfos, true);
+        commitPending = false;
+        rollbackSegmentInfos = null;
+      }
 
-    ramDirectory.close();
-    if (writeLock != null) {
-      writeLock.release();                          // release write lock
-      writeLock = null;
+      ramDirectory.close();
+      if (writeLock != null) {
+        writeLock.release();                          // release write lock
+        writeLock = null;
+      }
+      closed = true;
+
+      if(closeDir)
+        directory.close();
     }
-    if(closeDir)
-      directory.close();
   }
 
   /** Release the write lock, if needed. */
@@ -809,17 +846,20 @@ public class IndexWriter {
 
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {
-      return directory;
+    ensureOpen();
+    return directory;
   }
 
   /** Returns the analyzer used by this index. */
   public Analyzer getAnalyzer() {
-      return analyzer;
+    ensureOpen();
+    return analyzer;
   }
 
 
   /** Returns the number of documents currently in this index. */
   public synchronized int docCount() {
+    ensureOpen();
     int count = ramSegmentInfos.size();
     for (int i = 0; i < segmentInfos.size(); i++) {
       SegmentInfo si = segmentInfos.info(i);
@@ -897,6 +937,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public void addDocument(Document doc, Analyzer analyzer) throws CorruptIndexException, IOException {
+    ensureOpen();
     SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
     synchronized (this) {
       ramSegmentInfos.addElement(newSegmentInfo);
@@ -922,6 +963,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public synchronized void deleteDocuments(Term term) throws CorruptIndexException, IOException {
+    ensureOpen();
     bufferDeleteTerm(term);
     maybeFlushRamSegments();
   }
@@ -935,6 +977,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public synchronized void deleteDocuments(Term[] terms) throws CorruptIndexException, IOException {
+    ensureOpen();
     for (int i = 0; i < terms.length; i++) {
       bufferDeleteTerm(terms[i]);
     }
@@ -954,6 +997,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public void updateDocument(Term term, Document doc) throws CorruptIndexException, IOException {
+    ensureOpen();
     updateDocument(term, doc, getAnalyzer());
   }
 
@@ -972,6 +1016,7 @@ public class IndexWriter {
    */
   public void updateDocument(Term term, Document doc, Analyzer analyzer)
       throws CorruptIndexException, IOException {
+    ensureOpen();
     SegmentInfo newSegmentInfo = buildSingleDocSegment(doc, analyzer);
     synchronized (this) {
       bufferDeleteTerm(term);
@@ -1107,6 +1152,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
   */
   public synchronized void optimize() throws CorruptIndexException, IOException {
+    ensureOpen();
     flushRamSegments();
     while (segmentInfos.size() > 1 ||
            (segmentInfos.size() == 1 &&
@@ -1200,6 +1246,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public void abort() throws IOException {
+    ensureOpen();
     if (!autoCommit) {
 
       // Keep the same segmentInfos instance but replace all
@@ -1290,6 +1337,7 @@ public class IndexWriter {
   public synchronized void addIndexes(Directory[] dirs)
     throws CorruptIndexException, IOException {
 
+    ensureOpen();
     optimize();					  // start with zero or 1 seg
 
     int start = segmentInfos.size();
@@ -1375,6 +1423,7 @@ public class IndexWriter {
 
     // 1 flush ram segments
 
+    ensureOpen();
     flushRamSegments();
 
     // 2 copy segment infos and find the highest level from dirs
@@ -1479,6 +1528,7 @@ public class IndexWriter {
   public synchronized void addIndexes(IndexReader[] readers)
     throws CorruptIndexException, IOException {
 
+    ensureOpen();
     optimize();					  // start with zero or 1 seg
 
     final String mergedName = newSegmentName();
@@ -1610,6 +1660,7 @@ public class IndexWriter {
    * @throws IOException if there is a low-level IO error
    */
   public final synchronized void flush() throws CorruptIndexException, IOException {
+    ensureOpen();
     flushRamSegments();
   }
 
@@ -1617,6 +1668,7 @@ public class IndexWriter {
    * Useful for size management with flushRamDocs()
    */
   public final long ramSizeInBytes() {
+    ensureOpen();
     return ramDirectory.sizeInBytes();
   }
 
@@ -1624,6 +1676,7 @@ public class IndexWriter {
    * Useful when calling flushRamSegments()
    */
   public final synchronized int numRamDocs() {
+    ensureOpen();
     return ramSegmentInfos.size();
   }
   

@@ -66,8 +66,11 @@ public class ParallelReader extends IndexReader {
  /** Construct a ParallelReader. */
   public ParallelReader() throws IOException { super(null); }
 
- /** Add an IndexReader. */
+ /** Add an IndexReader.
+  * @throws IOException if there is a low-level IO error
+  */
   public void add(IndexReader reader) throws IOException {
+    ensureOpen();
     add(reader, false);
   }
 
@@ -79,10 +82,12 @@ public class ParallelReader extends IndexReader {
   *     of documents
   * @throws IllegalArgumentException if not all indexes have the same value
   *     of {@link IndexReader#maxDoc()}
+  * @throws IOException if there is a low-level IO error
   */
   public void add(IndexReader reader, boolean ignoreStoredFields)
     throws IOException {
 
+    ensureOpen();
     if (readers.size() == 0) {
       this.maxDoc = reader.maxDoc();
       this.numDocs = reader.numDocs();
@@ -110,14 +115,24 @@ public class ParallelReader extends IndexReader {
     readers.add(reader);
   }
 
-  public int numDocs() { return numDocs; }
+  public int numDocs() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return numDocs;
+  }
 
-  public int maxDoc() { return maxDoc; }
+  public int maxDoc() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return maxDoc;
+  }
 
-  public boolean hasDeletions() { return hasDeletions; }
+  public boolean hasDeletions() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return hasDeletions;
+  }
 
   // check first reader
   public boolean isDeleted(int n) {
+    // Don't call ensureOpen() here (it could affect performance)
     if (readers.size() > 0)
       return ((IndexReader)readers.get(0)).isDeleted(n);
     return false;
@@ -141,6 +156,7 @@ public class ParallelReader extends IndexReader {
 
   // append fields from storedFieldReaders
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+    ensureOpen();
     Document result = new Document();
     for (int i = 0; i < storedFieldReaders.size(); i++) {
       IndexReader reader = (IndexReader)storedFieldReaders.get(i);
@@ -166,6 +182,7 @@ public class ParallelReader extends IndexReader {
 
   // get all vectors
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
+    ensureOpen();
     ArrayList results = new ArrayList();
     Iterator i = fieldToReader.entrySet().iterator();
     while (i.hasNext()) {
@@ -182,22 +199,26 @@ public class ParallelReader extends IndexReader {
 
   public TermFreqVector getTermFreqVector(int n, String field)
     throws IOException {
+    ensureOpen();
     IndexReader reader = ((IndexReader)fieldToReader.get(field));
     return reader==null ? null : reader.getTermFreqVector(n, field);
   }
 
   public boolean hasNorms(String field) throws IOException {
+    ensureOpen();
     IndexReader reader = ((IndexReader)fieldToReader.get(field));
     return reader==null ? false : reader.hasNorms(field);
   }
 
   public byte[] norms(String field) throws IOException {
+    ensureOpen();
     IndexReader reader = ((IndexReader)fieldToReader.get(field));
     return reader==null ? null : reader.norms(field);
   }
 
   public void norms(String field, byte[] result, int offset)
     throws IOException {
+    ensureOpen();
     IndexReader reader = ((IndexReader)fieldToReader.get(field));
     if (reader!=null)
       reader.norms(field, result, offset);
@@ -211,31 +232,38 @@ public class ParallelReader extends IndexReader {
   }
 
   public TermEnum terms() throws IOException {
+    ensureOpen();
     return new ParallelTermEnum();
   }
 
   public TermEnum terms(Term term) throws IOException {
+    ensureOpen();
     return new ParallelTermEnum(term);
   }
 
   public int docFreq(Term term) throws IOException {
+    ensureOpen();
     IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
     return reader==null ? 0 : reader.docFreq(term);
   }
 
   public TermDocs termDocs(Term term) throws IOException {
+    ensureOpen();
     return new ParallelTermDocs(term);
   }
 
   public TermDocs termDocs() throws IOException {
+    ensureOpen();
     return new ParallelTermDocs();
   }
 
   public TermPositions termPositions(Term term) throws IOException {
+    ensureOpen();
     return new ParallelTermPositions(term);
   }
 
   public TermPositions termPositions() throws IOException {
+    ensureOpen();
     return new ParallelTermPositions();
   }
 
@@ -251,6 +279,7 @@ public class ParallelReader extends IndexReader {
 
 
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
+    ensureOpen();
     Set fieldSet = new HashSet();
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = ((IndexReader)readers.get(i));

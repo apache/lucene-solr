@@ -92,43 +92,84 @@ public class FilterIndexReader extends IndexReader {
 
   public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException {
+    ensureOpen();
     return in.getTermFreqVectors(docNumber);
   }
 
   public TermFreqVector getTermFreqVector(int docNumber, String field)
           throws IOException {
+    ensureOpen();
     return in.getTermFreqVector(docNumber, field);
   }
 
-  public int numDocs() { return in.numDocs(); }
-  public int maxDoc() { return in.maxDoc(); }
+  public int numDocs() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.numDocs();
+  }
 
-  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException { return in.document(n, fieldSelector); }
+  public int maxDoc() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.maxDoc();
+  }
 
-  public boolean isDeleted(int n) { return in.isDeleted(n); }
-  public boolean hasDeletions() { return in.hasDeletions(); }
+  public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
+    ensureOpen();
+    return in.document(n, fieldSelector);
+  }
+
+  public boolean isDeleted(int n) {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.isDeleted(n);
+  }
+
+  public boolean hasDeletions() {
+    // Don't call ensureOpen() here (it could affect performance)
+    return in.hasDeletions();
+  }
+
   protected void doUndeleteAll() throws CorruptIndexException, IOException {in.undeleteAll();}
 
   public boolean hasNorms(String field) throws IOException {
+    ensureOpen();
     return in.hasNorms(field);
   }
 
-  public byte[] norms(String f) throws IOException { return in.norms(f); }
+  public byte[] norms(String f) throws IOException {
+    ensureOpen();
+    return in.norms(f);
+  }
+
   public void norms(String f, byte[] bytes, int offset) throws IOException {
+    ensureOpen();
     in.norms(f, bytes, offset);
   }
+
   protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
     in.setNorm(d, f, b);
   }
 
-  public TermEnum terms() throws IOException { return in.terms(); }
-  public TermEnum terms(Term t) throws IOException { return in.terms(t); }
+  public TermEnum terms() throws IOException {
+    ensureOpen();
+    return in.terms();
+  }
 
-  public int docFreq(Term t) throws IOException { return in.docFreq(t); }
+  public TermEnum terms(Term t) throws IOException {
+    ensureOpen();
+    return in.terms(t);
+  }
 
-  public TermDocs termDocs() throws IOException { return in.termDocs(); }
+  public int docFreq(Term t) throws IOException {
+    ensureOpen();
+    return in.docFreq(t);
+  }
+
+  public TermDocs termDocs() throws IOException {
+    ensureOpen();
+    return in.termDocs();
+  }
 
   public TermPositions termPositions() throws IOException {
+    ensureOpen();
     return in.termPositions();
   }
 
@@ -138,9 +179,17 @@ public class FilterIndexReader extends IndexReader {
 
 
   public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
+    ensureOpen();
     return in.getFieldNames(fieldNames);
   }
 
-  public long getVersion() { return in.getVersion(); }
-  public boolean isCurrent() throws CorruptIndexException, IOException { return in.isCurrent(); }
+  public long getVersion() {
+    ensureOpen();
+    return in.getVersion();
+  }
+
+  public boolean isCurrent() throws CorruptIndexException, IOException {
+    ensureOpen();
+    return in.isCurrent();
+  }
 }

@@ -19,6 +19,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.AlreadyClosedException;
 
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.LockFactory;
@@ -723,6 +724,25 @@ public class TestIndexWriter extends TestCase
           reader.close();
         }
     }
+
+    public void testChangesAfterClose() throws IOException {
+        Directory dir = new RAMDirectory();
+
+        IndexWriter writer = null;
+
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        addDoc(writer);
+
+        // close
+        writer.close();
+        try {
+          addDoc(writer);
+          fail("did not hit AlreadyClosedException");
+        } catch (AlreadyClosedException e) {
+          // expected
+        }
+    }
+  
 
     // Simulate a corrupt index by removing one of the cfs
     // files and make sure we get an IOException trying to

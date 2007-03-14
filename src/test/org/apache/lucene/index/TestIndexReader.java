@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -279,21 +280,21 @@ public class TestIndexReader extends TestCase
         try {
           reader.deleteDocument(4);
           fail("deleteDocument after close failed to throw IOException");
-        } catch (IOException e) {
+        } catch (AlreadyClosedException e) {
           // expected
         }
 
         try {
           reader.setNorm(5, "aaa", 2.0f);
           fail("setNorm after close failed to throw IOException");
-        } catch (IOException e) {
+        } catch (AlreadyClosedException e) {
           // expected
         }
 
         try {
           reader.undeleteAll();
           fail("undeleteAll after close failed to throw IOException");
-        } catch (IOException e) {
+        } catch (AlreadyClosedException e) {
           // expected
         }
     }
