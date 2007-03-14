@@ -257,6 +257,8 @@ public class TestBackwardsCompatibility extends TestCase
 
   public void createIndex(String dirName, boolean doCFS) throws IOException {
 
+    rmDir(dirName);
+
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.getDirectory(dirName);
@@ -287,6 +289,7 @@ public class TestBackwardsCompatibility extends TestCase
     for(int pass=0;pass<2;pass++) {
 
       String outputDir = "lucene.backwardscompat0.index";
+      rmDir(outputDir);
 
       try {
         Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
