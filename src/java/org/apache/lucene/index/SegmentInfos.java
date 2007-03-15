@@ -29,6 +29,7 @@ import java.util.Vector;
 
 final class SegmentInfos extends Vector {
   
+  
   /** The file format version, a negative number. */
   /* Works since counter, the old 1st entry, is always >= 0 */
   public static final int FORMAT = -1;
@@ -44,13 +45,15 @@ final class SegmentInfos extends Vector {
    */
   public static final int FORMAT_LOCKLESS = -2;
 
-  /** This is the current file format written.  It adds a
-   * "hasSingleNormFile" flag into each segment info.
+  /** This format adds a "hasSingleNormFile" flag into each segment info.
    * See <a href="http://issues.apache.org/jira/browse/LUCENE-756">LUCENE-756</a>
    * for details.
    */
   public static final int FORMAT_SINGLE_NORM_FILE = -3;
 
+  /* This must always point to the most recent file format. */
+  private static final int CURRENT_FORMAT = FORMAT_SINGLE_NORM_FILE;
+  
   public int counter = 0;    // used to name new segments
   /**
    * counts how often the index has been changed by adding or deleting docs.
@@ -84,7 +87,6 @@ final class SegmentInfos extends Vector {
       return -1;
     }
     long max = -1;
-    int prefixLen = IndexFileNames.SEGMENTS.length()+1;
     for (int i = 0; i < files.length; i++) {
       String file = files[i];
       if (file.startsWith(IndexFileNames.SEGMENTS) && !file.equals(IndexFileNames.SEGMENTS_GEN)) {
@@ -198,7 +200,7 @@ final class SegmentInfos extends Vector {
       int format = input.readInt();
       if(format < 0){     // file contains explicit format info
         // check that it is a format we can understand
-        if (format < FORMAT_SINGLE_NORM_FILE)
+        if (format < CURRENT_FORMAT)
           throw new CorruptIndexException("Unknown format version: " + format);
         version = input.readLong(); // read version
         counter = input.readInt(); // read counter
@@ -263,7 +265,7 @@ final class SegmentInfos extends Vector {
     boolean success = false;
 
     try {
-      output.writeInt(FORMAT_SINGLE_NORM_FILE); // write FORMAT
+      output.writeInt(CURRENT_FORMAT); // write FORMAT
       output.writeLong(++version); // every write changes
                                    // the index
       output.writeInt(counter); // write counter
@@ -343,7 +345,7 @@ final class SegmentInfos extends Vector {
           try {
             format = input.readInt();
             if(format < 0){
-              if (format < FORMAT_SINGLE_NORM_FILE)
+              if (format < CURRENT_FORMAT)
                 throw new CorruptIndexException("Unknown format version: " + format);
               version = input.readLong(); // read version
             }
