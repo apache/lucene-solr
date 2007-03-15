@@ -126,6 +126,30 @@ import java.util.Map.Entry;
   normally relies on. </p>
   */
 
+/*
+ * Clarification: Check Points (and commits)
+ * Being able to set autoCommit=false allows IndexWriter to flush and 
+ * write new index files to the directory without writing a new segments_N
+ * file which references these new files. It also means that the state of 
+ * the in memory SegmentInfos object is different than the most recent
+ * segments_N file written to the directory.
+ * 
+ * Each time the SegmentInfos is changed, and matches the (possibly 
+ * modified) directory files, we have a new "check point". 
+ * If the modified/new SegmentInfos is written to disk - as a new 
+ * (generation of) segments_N file - this check point is also an 
+ * IndexCommitPoint.
+ * 
+ * With autoCommit=true, every checkPoint is also a CommitPoint.
+ * With autoCommit=false, some checkPoints may not be commits.
+ * 
+ * A new checkpoint always replaces the previous checkpoint and 
+ * becomes the new "front" of the index. This allows the IndexFileDeleter 
+ * to delete files that are referenced only by stale checkpoints.
+ * (files that were created since the last commit, but are no longer
+ * referenced by the "front" of the index). For this, IndexFileDeleter 
+ * keeps track of the last non commit checkpoint.
+ */
 public class IndexWriter {
 
   /**
@@ -1427,7 +1451,6 @@ public class IndexWriter {
     flushRamSegments();
 
     // 2 copy segment infos and find the highest level from dirs
-    int start = segmentInfos.size();
     int startUpperBound = minMergeDocs;
 
     boolean success = false;
@@ -1655,7 +1678,9 @@ public class IndexWriter {
 
   /**
    * Flush all in-memory buffered updates (adds and deletes)
-   * to the Directory.
+   * to the Directory. 
+   * <p>Note: if <code>autoCommit=false</code>, flushed data would still 
+   * not be visible to readers, until {@link #close} is called.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */

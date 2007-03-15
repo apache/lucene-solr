@@ -33,19 +33,30 @@ import java.util.Collections;
 
 /*
  * This class keeps track of each SegmentInfos instance that
- * is still "live", either because it corresponds to a
- * segments_N in the Directory (a real commit) or because
- * it's the in-memory SegmentInfos that a writer is actively
- * updating but has not yet committed (currently this only
- * applies when autoCommit=false in IndexWriter).  This
- * class uses simple reference counting to map the live
- * SegmentInfos instances to individual files in the
- * Directory.
+ * is still "live", either because it corresponds to a 
+ * segments_N file in the Directory (a "commit", i.e. a 
+ * committed SegmentInfos) or because it's the in-memory SegmentInfos 
+ * that a writer is actively updating but has not yet committed 
+ * (currently this only applies when autoCommit=false in IndexWriter).
+ * This class uses simple reference counting to map the live
+ * SegmentInfos instances to individual files in the Directory. 
+ * 
+ * The same directory file may be referenced by more than
+ * one IndexCommitPoints, i.e. more than one SegmentInfos.
+ * Therefore we count how many commits reference each file.
+ * When all the commits referencing a certain file have been
+ * deleted, the refcount for that file becomes zero, and the
+ * file is deleted.
  *
  * A separate deletion policy interface
  * (IndexDeletionPolicy) is consulted on creation (onInit)
  * and once per commit (onCommit), to decide when a commit
  * should be removed.
+ * 
+ * It is the business of the IndexDeletionPolicy to choose
+ * when to delete commit points.  The actual mechanics of
+ * file deletion, retrying, etc, derived from the deletion
+ * of commit points is the business of the IndexFileDeleter.
  * 
  * The current default deletion policy is {@link
  * KeepOnlyLastCommitDeletionPolicy}, which removes all
@@ -64,8 +75,9 @@ final class IndexFileDeleter {
    * so we will retry them again later: */
   private List deletable;
 
-  /* Reference count for all files in the index.  Maps
-   * String to RefCount (class below) instances: */
+  /* Reference count for all files in the index.  
+   * Counts how many existing commits reference a file.
+   * Maps String to RefCount (class below) instances: */
   private Map refCounts = new HashMap();
 
   /* Holds all commits (segments_N) currently in the index.
@@ -79,8 +91,10 @@ final class IndexFileDeleter {
    * non-commit checkpoint: */
   private List lastFiles = new ArrayList();
 
+  /* Commits that the IndexDeletionPolicy have decided to delete: */ 
+  private List commitsToDelete = new ArrayList();
+
   private PrintStream infoStream;
-  private List toDelete = new ArrayList();
   private Directory directory;
   private IndexDeletionPolicy policy;
 
@@ -188,19 +202,19 @@ final class IndexFileDeleter {
   }
 
   /**
-   * Remove the CommitPoints in the toDelete List by
+   * Remove the CommitPoints in the commitsToDelete List by
    * DecRef'ing all files from each SegmentInfos.
    */
   private void deleteCommits() throws IOException {
 
-    int size = toDelete.size();
+    int size = commitsToDelete.size();
 
     if (size > 0) {
 
       // First decref all files that had been referred to by
       // the now-deleted commits:
       for(int i=0;i<size;i++) {
-        CommitPoint commit = (CommitPoint) toDelete.get(i);
+        CommitPoint commit = (CommitPoint) commitsToDelete.get(i);
         if (infoStream != null) {
           message("deleteCommits: now remove commit \"" + commit.getSegmentsFileName() + "\"");
         }
@@ -210,9 +224,9 @@ final class IndexFileDeleter {
         }
         decRef(commit.getSegmentsFileName());
       }
-      toDelete.clear();
+      commitsToDelete.clear();
 
-      // Now compact commits to remove deleted ones:
+      // Now compact commits to remove deleted ones (preserving the sort):
       size = commits.size();
       int readFrom = 0;
       int writeTo = 0;
@@ -258,6 +272,9 @@ final class IndexFileDeleter {
   }
 
   /**
+   * For definition of "check point" see IndexWriter comments:
+   * "Clarification: Check Points (and commits)".
+   * 
    * Writer calls this when it has made a "consistent
    * change" to the index, meaning new files are written to
    * the index and the in-memory SegmentInfos have been
@@ -422,10 +439,10 @@ final class IndexFileDeleter {
   public void deleteDirect(Directory otherDir, List segments) throws IOException {
     int size = segments.size();
     for(int i=0;i<size;i++) {
-      List toDelete = ((SegmentInfo) segments.get(i)).files();
-      int size2 = toDelete.size();
+      List filestoDelete = ((SegmentInfo) segments.get(i)).files();
+      int size2 = filestoDelete.size();
       for(int j=0;j<size2;j++) {
-        otherDir.deleteFile((String) toDelete.get(j));
+        otherDir.deleteFile((String) filestoDelete.get(j));
       }
     }
   }
@@ -487,7 +504,7 @@ final class IndexFileDeleter {
     public void delete() {
       if (!deleted) {
         deleted = true;
-        toDelete.add(this);
+        commitsToDelete.add(this);
       }
     }
 

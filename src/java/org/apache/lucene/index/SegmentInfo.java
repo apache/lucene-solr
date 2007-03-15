@@ -25,6 +25,12 @@ import java.util.List;
 import java.util.ArrayList;
 
 final class SegmentInfo {
+
+  static final int NO = -1;          // e.g. no norms; no deletes;
+  static final int YES = 1;          // e.g. have norms; have deletes;
+  static final int CHECK_DIR = 0;    // e.g. must check dir to see if there are norms/deletions
+  static final int WITHOUT_GEN = 0;  // a file name that has no GEN in it. 
+
   public String name;				  // unique name in dir
   public int docCount;				  // number of docs in seg
   public Directory dir;				  // where segment resides
@@ -32,17 +38,21 @@ final class SegmentInfo {
   private boolean preLockless;                    // true if this is a segments file written before
                                                   // lock-less commits (2.1)
 
-  private long delGen;                            // current generation of del file; -1 if there
-                                                  // are no deletes; 0 if it's a pre-2.1 segment
-                                                  // (and we must check filesystem); 1 or higher if
+  private long delGen;                            // current generation of del file; NO if there
+                                                  // are no deletes; CHECK_DIR if it's a pre-2.1 segment
+                                                  // (and we must check filesystem); YES or higher if
                                                   // there are deletes at generation N
    
-  private long[] normGen;                         // current generations of each field's norm file.
-                                                  // If this array is null, we must check filesystem
-                                                  // when preLockLess is true.  Else,
-                                                  // there are no separate norms
+  private long[] normGen;                         // current generation of each field's norm file.
+                                                  // If this array is null, for lockLess this means no 
+                                                  // separate norms.  For preLockLess this means we must 
+                                                  // check filesystem. If this array is not null, its 
+                                                  // values mean: NO says this field has no separate  
+                                                  // norms; CHECK_DIR says it is a preLockLess segment and    
+                                                  // filesystem must be checked; >= YES says this field  
+                                                  // has separate norms with the specified generation
 
-  private byte isCompoundFile;                    // -1 if it is not; 1 if it is; 0 if it's
+  private byte isCompoundFile;                    // NO if it is not; YES if it is; CHECK_DIR if it's
                                                   // pre-2.1 (ie, must check file system to see
                                                   // if <name>.cfs and <name>.nrm exist)         
 
@@ -59,15 +69,15 @@ final class SegmentInfo {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
-    delGen = -1;
-    isCompoundFile = 0;
+    delGen = NO;
+    isCompoundFile = CHECK_DIR;
     preLockless = true;
     hasSingleNormFile = false;
   }
 
   public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasSingleNormFile) { 
     this(name, docCount, dir);
-    this.isCompoundFile = (byte) (isCompoundFile ? 1 : -1);
+    this.isCompoundFile = (byte) (isCompoundFile ? YES : NO);
     this.hasSingleNormFile = hasSingleNormFile;
     preLockless = false;
   }
@@ -112,7 +122,7 @@ final class SegmentInfo {
         hasSingleNormFile = false;
       }
       int numNormGen = input.readInt();
-      if (numNormGen == -1) {
+      if (numNormGen == NO) {
         normGen = null;
       } else {
         normGen = new long[numNormGen];
@@ -121,11 +131,11 @@ final class SegmentInfo {
         }
       }
       isCompoundFile = input.readByte();
-      preLockless = isCompoundFile == 0;
+      preLockless = (isCompoundFile == CHECK_DIR);
     } else {
-      delGen = 0;
+      delGen = CHECK_DIR;
       normGen = null;
-      isCompoundFile = 0;
+      isCompoundFile = CHECK_DIR;
       preLockless = true;
       hasSingleNormFile = false;
     }
@@ -138,11 +148,15 @@ final class SegmentInfo {
       // norms set against it yet:
       normGen = new long[numFields];
 
-      if (!preLockless) {
+      if (preLockless) {
+        // Do nothing: thus leaving normGen[k]==CHECK_DIR (==0), so that later we know  
+        // we have to check filesystem for norm files, because this is prelockless.
+        
+      } else {
         // This is a FORMAT_LOCKLESS segment, which means
         // there are no separate norms:
         for(int i=0;i<numFields;i++) {
-          normGen[i] = -1;
+          normGen[i] = NO;
         }
       }
     }
@@ -152,21 +166,21 @@ final class SegmentInfo {
     throws IOException {
     // Cases:
     //
-    //   delGen == -1: this means this segment was written
+    //   delGen == NO: this means this segment was written
     //     by the LOCKLESS code and for certain does not have
     //     deletions yet
     //
-    //   delGen == 0: this means this segment was written by
+    //   delGen == CHECK_DIR: this means this segment was written by
     //     pre-LOCKLESS code which means we must check
     //     directory to see if .del file exists
     //
-    //   delGen > 0: this means this segment was written by
+    //   delGen >= YES: this means this segment was written by
     //     the LOCKLESS code and for certain has
     //     deletions
     //
-    if (delGen == -1) {
+    if (delGen == NO) {
       return false;
-    } else if (delGen > 0) {
+    } else if (delGen >= YES) {
       return true;
     } else {
       return dir.fileExists(getDelFileName());
@@ -175,8 +189,8 @@ final class SegmentInfo {
 
   void advanceDelGen() {
     // delGen 0 is reserved for pre-LOCKLESS format
-    if (delGen == -1) {
-      delGen = 1;
+    if (delGen == NO) {
+      delGen = YES;
     } else {
       delGen++;
     }
@@ -184,7 +198,7 @@ final class SegmentInfo {
   }
 
   void clearDelGen() {
-    delGen = -1;
+    delGen = NO;
     files = null;
   }
 
@@ -201,13 +215,13 @@ final class SegmentInfo {
   }
 
   String getDelFileName() {
-    if (delGen == -1) {
+    if (delGen == NO) {
       // In this case we know there is no deletion filename
       // against this segment
       return null;
     } else {
-      // If delGen is 0, it's the pre-lockless-commit file format
-      return IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen);
+      // If delGen is CHECK_DIR, it's the pre-lockless-commit file format
+      return IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen); 
     }
   }
 
@@ -218,11 +232,11 @@ final class SegmentInfo {
    */
   boolean hasSeparateNorms(int fieldNumber)
     throws IOException {
-    if ((normGen == null && preLockless) || (normGen != null && normGen[fieldNumber] == 0)) {
+    if ((normGen == null && preLockless) || (normGen != null && normGen[fieldNumber] == CHECK_DIR)) {
       // Must fallback to directory file exists check:
       String fileName = name + ".s" + fieldNumber;
       return dir.fileExists(fileName);
-    } else if (normGen == null || normGen[fieldNumber] == -1) {
+    } else if (normGen == null || normGen[fieldNumber] == NO) {
       return false;
     } else {
       return true;
@@ -258,17 +272,17 @@ final class SegmentInfo {
       }
     } else {
       // This means this segment was saved with LOCKLESS
-      // code so we first check whether any normGen's are >
-      // 0 (meaning they definitely have separate norms):
+      // code so we first check whether any normGen's are >= 1
+      // (meaning they definitely have separate norms):
       for(int i=0;i<normGen.length;i++) {
-        if (normGen[i] > 0) {
+        if (normGen[i] >= YES) {
           return true;
         }
       }
       // Next we look for any == 0.  These cases were
       // pre-LOCKLESS and must be checked in directory:
       for(int i=0;i<normGen.length;i++) {
-        if (normGen[i] == 0) {
+        if (normGen[i] == CHECK_DIR) {
           if (hasSeparateNorms(i)) {
             return true;
           }
@@ -286,8 +300,8 @@ final class SegmentInfo {
    * @param fieldIndex field whose norm file will be rewritten
    */
   void advanceNormGen(int fieldIndex) {
-    if (normGen[fieldIndex] == -1) {
-      normGen[fieldIndex] = 1;
+    if (normGen[fieldIndex] == NO) {
+      normGen[fieldIndex] = YES;
     } else {
       normGen[fieldIndex]++;
     }
@@ -304,7 +318,7 @@ final class SegmentInfo {
 
     long gen;
     if (normGen == null) {
-      gen = 0;
+      gen = CHECK_DIR;
     } else {
       gen = normGen[number];
     }
@@ -318,12 +332,12 @@ final class SegmentInfo {
     if (hasSingleNormFile) {
       // case 2: lockless (or nrm file exists) - single file for all norms 
       prefix = "." + IndexFileNames.NORMS_EXTENSION;
-      return IndexFileNames.fileNameFromGeneration(name, prefix, 0);
+      return IndexFileNames.fileNameFromGeneration(name, prefix, WITHOUT_GEN);
     }
       
     // case 3: norm file for each field
     prefix = ".f";
-    return IndexFileNames.fileNameFromGeneration(name, prefix + number, 0);
+    return IndexFileNames.fileNameFromGeneration(name, prefix + number, WITHOUT_GEN);
   }
 
   /**
@@ -334,9 +348,9 @@ final class SegmentInfo {
    */
   void setUseCompoundFile(boolean isCompoundFile) {
     if (isCompoundFile) {
-      this.isCompoundFile = 1;
+      this.isCompoundFile = YES;
     } else {
-      this.isCompoundFile = -1;
+      this.isCompoundFile = NO;
     }
     files = null;
   }
@@ -346,9 +360,9 @@ final class SegmentInfo {
    * file; else, false.
    */
   boolean getUseCompoundFile() throws IOException {
-    if (isCompoundFile == -1) {
+    if (isCompoundFile == NO) {
       return false;
-    } else if (isCompoundFile == 1) {
+    } else if (isCompoundFile == YES) {
       return true;
     } else {
       return dir.fileExists(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
@@ -365,7 +379,7 @@ final class SegmentInfo {
     output.writeLong(delGen);
     output.writeByte((byte) (hasSingleNormFile ? 1:0));
     if (normGen == null) {
-      output.writeInt(-1);
+      output.writeInt(NO);
     } else {
       output.writeInt(normGen.length);
       for(int j = 0; j < normGen.length; j++) {
@@ -405,33 +419,33 @@ final class SegmentInfo {
     }
 
     String delFileName = IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen);
-    if (delFileName != null && (delGen > 0 || dir.fileExists(delFileName))) {
+    if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       files.add(delFileName);
     }
 
-    // Careful logic for norms files:
+    // Careful logic for norms files    
     if (normGen != null) {
       for(int i=0;i<normGen.length;i++) {
         long gen = normGen[i];
-        if (gen > 0) {
+        if (gen >= YES) {
           // Definitely a separate norm file, with generation:
           files.add(IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.SEPARATE_NORMS_EXTENSION + i, gen));
-        } else if (-1 == gen) {
-          // No separate norms but maybe non-separate norms
+        } else if (NO == gen) {
+          // No separate norms but maybe plain norms
           // in the non compound file case:
           if (!hasSingleNormFile && !useCompoundFile) {
-            String fileName = name + "." + IndexFileNames.SINGLE_NORMS_EXTENSION + i;
+            String fileName = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION + i;
             if (dir.fileExists(fileName)) {
               files.add(fileName);
             }
           }
-        } else if (0 == gen) {
+        } else if (CHECK_DIR == gen) {
           // Pre-2.1: we have to check file existence
           String fileName = null;
           if (useCompoundFile) {
             fileName = name + "." + IndexFileNames.SEPARATE_NORMS_EXTENSION + i;
           } else if (!hasSingleNormFile) {
-            fileName = name + "." + IndexFileNames.SINGLE_NORMS_EXTENSION + i;
+            fileName = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION + i;
           }
           if (fileName != null && dir.fileExists(fileName)) {
             files.add(fileName);
@@ -445,7 +459,7 @@ final class SegmentInfo {
       if (useCompoundFile)
         prefix = name + "." + IndexFileNames.SEPARATE_NORMS_EXTENSION;
       else
-        prefix = name + "." + IndexFileNames.SINGLE_NORMS_EXTENSION;
+        prefix = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION;
       int prefixLength = prefix.length();
       String[] allFiles = dir.list();
       if (allFiles == null)

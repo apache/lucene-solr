@@ -44,8 +44,8 @@ final class IndexFileNames {
   /** Extension of deletes */
   static final String DELETES_EXTENSION = "del";
 
-  /** Extension of single norms */
-  static final String SINGLE_NORMS_EXTENSION = "f";
+  /** Extension of plain norms */
+  static final String PLAIN_NORMS_EXTENSION = "f";
 
   /** Extension of separate norms */
   static final String SEPARATE_NORMS_EXTENSION = "s";
@@ -91,9 +91,9 @@ final class IndexFileNames {
    * @param gen -- generation
    */
   static final String fileNameFromGeneration(String base, String extension, long gen) {
-    if (gen == -1) {
+    if (gen == SegmentInfo.NO) {
       return null;
-    } else if (gen == 0) {
+    } else if (gen == SegmentInfo.WITHOUT_GEN) {
       return base + extension;
     } else {
       return base + "_" + Long.toString(gen, Character.MAX_RADIX) + extension;
