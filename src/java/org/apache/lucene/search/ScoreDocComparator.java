@@ -64,8 +64,8 @@ public interface ScoreDocComparator {
 	 * sort order.
 	 * @param i First ScoreDoc
 	 * @param j Second ScoreDoc
-	 * @return <code>-1</code> if <code>i</code> should come before <code>j</code><br>
-     *         <code>1</code> if <code>i</code> should come after <code>j</code><br>
+	 * @return a negative integer if <code>i</code> should come before <code>j</code><br>
+     *         a positive integer if <code>i</code> should come after <code>j</code><br>
      *         <code>0</code> if they are equal
 	 * @see java.util.Comparator
 	 */

@@ -98,6 +98,12 @@ Optimizations
 
 Documentation:
  1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to http://wiki.apache.org/lucene-java/   Updated the links in the docs and wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
+
+ 2. Fixed the javadoc for ScoreDocComparator.compare() to be consistent with 
+    java.util.Comparator.compare(): Any integer is allowed to be returned
+    instead of only -1/0/1.
+    (Paul Cowan via Michael Busch)
+
 ======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior
