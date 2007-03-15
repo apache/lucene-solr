@@ -184,6 +184,11 @@ Bug Fixes
 
  8. SOLR-167: The SynonymFilter sometimes generated incorrect offsets when
     multi token synonyms were mached in the source text. (yonik) 
+
+ 9. SOLR-188: bin scripts do not support non-default webapp names.  Added "-U"
+    option to specify a full path to the update url, overriding the
+    "-h" (hostname), "-p" (port) and "-w" (webapp name) parameters.
+    (Jeff Rodenburg via billa)
  
 Other Changes
  1. Updated to Lucene 2.1

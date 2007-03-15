@@ -22,8 +22,9 @@ orig_dir=$(pwd)
 cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
+curl_url=""
 
-unset solr_hostname solr_port data_dir webapp_name user verbose debug
+unset solr_hostname solr_port data_dir webapp_name user verbose debug solr_url
 . ${solr_root}/bin/scripts-util
 
 # set up variables
@@ -32,18 +33,19 @@ log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog [-h hostname] [-p port] [-d dir] [-w webapp_name] [-u username] [-v]
-       -h          specify Solr hostname
+usage: $prog [-h hostname] [-p port] [-d dir] [-w webapp_name] [-u username] [-U url] [-v] [-V]
+       -h          specify Solr hostname (defaults to localhost)
        -p          specify Solr port number
-       -d          specify directory holding index data
        -w          specify name of Solr webapp (defaults to solr)
        -u          specify user to sudo to before running script
+       -U          specify full update url (overrides -h,-p,-w parameters)
+       -d          specify directory holding index data (defaults to data)
        -v          increase verbosity
        -V          output debugging info
 "
 
 # parse args
-while getopts h:p:d:w:u:vV OPTION
+while getopts h:p:d:w:u:U:vV OPTION
 do
     case $OPTION in
     h)
@@ -61,6 +63,9 @@ do
     u)
         user="$OPTARG"
         ;;
+    U)
+        solr_url="$OPTARG"
+        ;;
     v)
         verbose="v"
         ;;
@@ -75,13 +80,6 @@ done
 
 [[ -n $debug ]] && set -x
 
-if [[ -z ${solr_port} ]]
-then
-    echo "Solr port number missing in $confFile or command line."
-    echo "$USAGE"
-    exit 1
-fi
-
 # use default value for data_dir if not specified
 # relative path starts at ${solr_root}
 if [[ -z ${data_dir} ]]
@@ -92,16 +90,29 @@ then
     data_dir=${solr_root}/${data_dir}
 fi
 
-# use default hostname if not specified
-if [[ -z ${solr_hostname} ]]
+if [[ -n ${solr_url} ]]
 then
-    solr_hostname=localhost
-fi
+  curl_url=${solr_url}
+else
+  if [[ -z ${solr_port} ]]
+  then
+    echo "Solr port number missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+  fi
 
-# use default webapp name if not specified
-if [[ -z ${webapp_name} ]]
-then
+  # use default hostname if not specified
+  if [[ -z ${solr_hostname} ]]
+  then
+    solr_hostname=localhost
+  fi
+
+  # use default webapp name if not specified
+  if [[ -z ${webapp_name} ]]
+  then
     webapp_name=solr
+  fi
+  curl_url=http://${solr_hostname}:${solr_port}/${webapp_name}/update
 fi
 
 fixUser "$@"
@@ -111,11 +122,11 @@ start=`date +"%s"`
 logMessage started by $oldwhoami
 logMessage command: $0 $@
 
-logMessage sending optimize to Solr server at port ${solr_port}
-rs=`curl http://${solr_hostname}:${solr_port}/solr/update -s -d "<optimize/>"`
+logMessage sending optimize to Solr server at ${curl_url}
+rs=`curl ${curl_url} -s -d "<optimize/>"`
 if [[ $? != 0 ]]
 then
-  logMessage failed to connect to Solr server at port ${solr_port}
+  logMessage failed to connect to Solr server at ${curl_url}
   logMessage optimize failed
   logExit failed 1
 fi
@@ -124,7 +135,7 @@ fi
 echo $rs | grep '<result.*status="0"' > /dev/null 2>&1
 if [[ $? != 0 ]]
 then
-  logMessage optimize request to Solr at port ${solr_port} failed:
+  logMessage optimize request to Solr at ${curl_url} failed:
   logMessage $rs
   logExit failed 2
 fi
@@ -134,7 +145,7 @@ lastsnap=`ls -drt1 ${data_dir}/snapshot.* | tail -1 `
 
 if [[ $lastsnap == "" ]]
 then
-  logMessage commit did not create snapshot at port ${solr_port}, backup failed:
+  logMessage commit did not create snapshot at ${curl_url}, backup failed:
   logExit failed 3
 fi
 
