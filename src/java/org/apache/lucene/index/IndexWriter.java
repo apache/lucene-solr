@@ -1269,7 +1269,7 @@ public class IndexWriter {
    *  the writer was opened with <code>autoCommit=true</code>.
    * @throws IOException if there is a low-level IO error
    */
-  public void abort() throws IOException {
+  public synchronized void abort() throws IOException {
     ensureOpen();
     if (!autoCommit) {
 
