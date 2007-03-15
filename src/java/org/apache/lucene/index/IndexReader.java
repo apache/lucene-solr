@@ -67,6 +67,8 @@ public abstract class IndexReader {
     public static final FieldOption ALL = new FieldOption ("ALL");
     // all indexed fields
     public static final FieldOption INDEXED = new FieldOption ("INDEXED");
+    // all fields that store payloads
+    public static final FieldOption STORES_PAYLOADS = new FieldOption ("STORES_PAYLOADS");
     // all fields which are not indexed
     public static final FieldOption UNINDEXED = new FieldOption ("UNINDEXED");
     // all fields which are indexed with termvectors enables

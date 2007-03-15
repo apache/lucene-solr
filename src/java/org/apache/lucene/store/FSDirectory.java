@@ -588,8 +588,8 @@ class FSIndexOutput extends BufferedIndexOutput {
   }
 
   /** output methods: */
-  public void flushBuffer(byte[] b, int size) throws IOException {
-    file.write(b, 0, size);
+  public void flushBuffer(byte[] b, int offset, int size) throws IOException {
+    file.write(b, offset, size);
   }
   public void close() throws IOException {
     // only close the file if it has not been closed yet

@@ -191,5 +191,23 @@ public class MultipleTermPositions implements TermPositions {
   public int read(int[] arg0, int[] arg1) throws IOException {
     throw new UnsupportedOperationException();
   }
+  
+  
+  /**
+   * Not implemented.
+   * @throws UnsupportedOperationException
+   */
+  public int getPayloadLength() {
+    throw new UnsupportedOperationException();
+  }
+   
+  /**
+   * Not implemented.
+   * @throws UnsupportedOperationException
+   */
+  public byte[] getPayload(byte[] data, int offset) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
 
 }

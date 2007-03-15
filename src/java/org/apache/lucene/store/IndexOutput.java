@@ -36,7 +36,17 @@ public abstract class IndexOutput {
    * @param length the number of bytes to write
    * @see IndexInput#readBytes(byte[],int,int)
    */
-  public abstract void writeBytes(byte[] b, int length) throws IOException;
+  public void writeBytes(byte[] b, int length) throws IOException {
+    writeBytes(b, 0, length);
+  }
+
+  /** Writes an array of bytes.
+   * @param b the bytes to write
+   * @param offset the offset in the byte array
+   * @param length the number of bytes to write
+   * @see IndexInput#readBytes(byte[],int,int)
+   */
+  public abstract void writeBytes(byte[] b, int offset, int length) throws IOException;
 
   /** Writes an int as four bytes.
    * @see IndexInput#readInt()

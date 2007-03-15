@@ -48,7 +48,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
     }
   }
 
-  public void flushBuffer(byte[] src, int len) throws IOException {
+  public void flushBuffer(byte[] src, int offset, int len) throws IOException {
     long freeSpace = dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
@@ -63,14 +63,14 @@ public class MockRAMOutputStream extends RAMOutputStream {
     if (dir.maxSize != 0 && freeSpace <= len) {
       if (freeSpace > 0 && freeSpace < len) {
         realUsage += freeSpace;
-        super.flushBuffer(src, (int) freeSpace);
+        super.flushBuffer(src, offset, (int) freeSpace);
       }
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
       throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes");
     } else {
-      super.flushBuffer(src, len);
+      super.flushBuffer(src, offset, len);
     }
 
     if (first) {

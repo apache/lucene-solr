@@ -32,10 +32,53 @@ public interface TermPositions
     extends TermDocs
 {
     /** Returns next position in the current document.  It is an error to call
-	this more than {@link #freq()} times
-	without calling {@link #next()}<p> This is
-	invalid until {@link #next()} is called for
-	the first time.
+    this more than {@link #freq()} times
+    without calling {@link #next()}<p> This is
+    invalid until {@link #next()} is called for
+    the first time.
     */
     int nextPosition() throws IOException;
+    
+    /** 
+     * Returns the length of the payload at the current term position.
+     * This is invalid until {@link #nextPosition()} is called for
+     * the first time.<br>
+     * <br>
+     * <b>
+     * Warning: The status of the Payloads feature is experimental. The APIs
+     * introduced here might change in the future and will not be supported anymore
+     * in such a case. If you want to use this feature in a production environment
+     * you should wait for an official release.
+     * </b> 
+     * @return length of the current payload in number of bytes
+     */
+    // TODO: Remove warning after API has been finalized
+    int getPayloadLength();
+    
+    /** 
+     * Returns the payload data at the current term position.
+     * This is invalid until {@link #nextPosition()} is called for
+     * the first time.
+     * This method must not be called more than once after each call
+     * of {@link #nextPosition()}. However, payloads are loaded lazily,
+     * so if the payload data for the current position is not needed,
+     * this method may not be called at all for performance reasons.<br>
+     * <br>
+     * <b>
+     * Warning: The status of the Payloads feature is experimental. The APIs
+     * introduced here might change in the future and will not be supported anymore
+     * in such a case. If you want to use this feature in a production environment
+     * you should wait for an official release.
+     * </b>
+     * 
+     * @param data the array into which the data of this payload is to be
+     *             stored, if it is big enough; otherwise, a new byte[] array
+     *             is allocated for this purpose. 
+     * @param offset the offset in the array into which the data of this payload
+     *               is to be stored.
+     * @return a byte[] array containing the data of this payload
+     * @throws IOException
+     */
+    // TODO: Remove warning after API has been finalized
+    byte[] getPayload(byte[] data, int offset) throws IOException;
 }

@@ -419,7 +419,15 @@ public class ParallelReader extends IndexReader {
       return ((TermPositions)termDocs).nextPosition();
     }
 
+    public int getPayloadLength() {
+      return ((TermPositions)termDocs).getPayloadLength();
+    }
+
+    public byte[] getPayload(byte[] data, int offset) throws IOException {
+      return ((TermPositions)termDocs).getPayload(data, offset);
+    }
   }
 
 }
+
 

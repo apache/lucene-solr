@@ -31,6 +31,7 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -69,9 +70,30 @@ final class DocumentWriter {
 
   final void addDocument(String segment, Document doc)
           throws CorruptIndexException, IOException {
-    // write field names
+    // create field infos
     fieldInfos = new FieldInfos();
     fieldInfos.add(doc);
+    
+    // invert doc into postingTable
+    postingTable.clear();			  // clear postingTable
+    fieldLengths = new int[fieldInfos.size()];    // init fieldLengths
+    fieldPositions = new int[fieldInfos.size()];  // init fieldPositions
+    fieldOffsets = new int[fieldInfos.size()];    // init fieldOffsets
+    fieldStoresPayloads = new BitSet(fieldInfos.size());
+    
+    fieldBoosts = new float[fieldInfos.size()];	  // init fieldBoosts
+    Arrays.fill(fieldBoosts, doc.getBoost());
+
+    // Before we write the FieldInfos we invert the Document. The reason is that
+    // during invertion the TokenStreams of tokenized fields are being processed 
+    // and we might encounter tokens that have payloads associated with them. In 
+    // this case we have to update the FieldInfo of the particular field.
+    invertDocument(doc);
+
+    // sort postingTable into an array
+    Posting[] postings = sortPostingTable();
+    
+    // write field infos 
     fieldInfos.write(directory, segment + ".fnm");
 
     // write field values
@@ -82,21 +104,7 @@ final class DocumentWriter {
     } finally {
       fieldsWriter.close();
     }
-
-    // invert doc into postingTable
-    postingTable.clear();			  // clear postingTable
-    fieldLengths = new int[fieldInfos.size()];    // init fieldLengths
-    fieldPositions = new int[fieldInfos.size()];  // init fieldPositions
-    fieldOffsets = new int[fieldInfos.size()];    // init fieldOffsets
-
-    fieldBoosts = new float[fieldInfos.size()];	  // init fieldBoosts
-    Arrays.fill(fieldBoosts, doc.getBoost());
-
-    invertDocument(doc);
-
-    // sort postingTable into an array
-    Posting[] postings = sortPostingTable();
-
+    
     /*
     for (int i = 0; i < postings.length; i++) {
       Posting posting = postings[i];
@@ -125,6 +133,10 @@ final class DocumentWriter {
   private int[] fieldPositions;
   private int[] fieldOffsets;
   private float[] fieldBoosts;
+  
+  // If any of the tokens of a paticular field carry a payload
+  // then we enable payloads for that field. 
+  private BitSet fieldStoresPayloads;
 
   // Tokenizes the fields of a document into Postings.
   private final void invertDocument(Document doc)
@@ -144,9 +156,9 @@ final class DocumentWriter {
         if (!field.isTokenized()) {		  // un-tokenized field
           String stringValue = field.stringValue();
           if(field.isStoreOffsetWithTermVector())
-            addPosition(fieldName, stringValue, position++, new TermVectorOffsetInfo(offset, offset + stringValue.length()));
+            addPosition(fieldName, stringValue, position++, null, new TermVectorOffsetInfo(offset, offset + stringValue.length()));
           else
-            addPosition(fieldName, stringValue, position++, null);
+            addPosition(fieldName, stringValue, position++, null, null);
           offset += stringValue.length();
           length++;
         } else 
@@ -167,10 +179,19 @@ final class DocumentWriter {
             for (Token t = stream.next(); t != null; t = stream.next()) {
               position += (t.getPositionIncrement() - 1);
               
-              if(field.isStoreOffsetWithTermVector())
-                addPosition(fieldName, t.termText(), position++, new TermVectorOffsetInfo(offset + t.startOffset(), offset + t.endOffset()));
-              else
-                addPosition(fieldName, t.termText(), position++, null);
+              Payload payload = t.getPayload();
+              if (payload != null) {
+                // enable payloads for this field
+              	fieldStoresPayloads.set(fieldNumber);
+              }
+              
+              TermVectorOffsetInfo termVectorOffsetInfo;
+              if (field.isStoreOffsetWithTermVector()) {
+                termVectorOffsetInfo = new TermVectorOffsetInfo(offset + t.startOffset(), offset + t.endOffset());
+              } else {
+                termVectorOffsetInfo = null;
+              }
+              addPosition(fieldName, t.termText(), position++, payload, termVectorOffsetInfo);
               
               lastToken = t;
               if (++length >= maxFieldLength) {
@@ -194,11 +215,16 @@ final class DocumentWriter {
         fieldOffsets[fieldNumber] = offset;
       }
     }
+    
+    // update fieldInfos for all fields that have one or more tokens with payloads
+    for (int i = fieldStoresPayloads.nextSetBit(0); i >= 0; i = fieldStoresPayloads.nextSetBit(i+1)) { 
+    	fieldInfos.fieldInfo(i).storePayloads = true;
+    }
   }
 
   private final Term termBuffer = new Term("", ""); // avoid consing
 
-  private final void addPosition(String field, String text, int position, TermVectorOffsetInfo offset) {
+  private final void addPosition(String field, String text, int position, Payload payload, TermVectorOffsetInfo offset) {
     termBuffer.set(field, text);
     //System.out.println("Offset: " + offset);
     Posting ti = (Posting) postingTable.get(termBuffer);
@@ -209,9 +235,25 @@ final class DocumentWriter {
         int[] positions = ti.positions;
         System.arraycopy(positions, 0, newPositions, 0, freq);
         ti.positions = newPositions;
+        
+        if (ti.payloads != null) {
+          // the current field stores payloads
+          Payload[] newPayloads = new Payload[freq * 2];  // grow payloads array
+          Payload[] payloads = ti.payloads;
+          System.arraycopy(payloads, 0, newPayloads, 0, payloads.length);
+          ti.payloads = newPayloads;
+        }
       }
       ti.positions[freq] = position;		  // add new position
 
+      if (payload != null) {
+        if (ti.payloads == null) {
+          // lazily allocate payload array
+          ti.payloads = new Payload[ti.positions.length];
+        }
+        ti.payloads[freq] = payload;
+      }
+      
       if (offset != null) {
         if (ti.offsets.length == freq){
           TermVectorOffsetInfo [] newOffsets = new TermVectorOffsetInfo[freq*2];
@@ -224,7 +266,7 @@ final class DocumentWriter {
       ti.freq = freq + 1;			  // update frequency
     } else {					  // word not seen before
       Term term = new Term(field, text, false);
-      postingTable.put(term, new Posting(term, position, offset));
+      postingTable.put(term, new Posting(term, position, payload, offset));
     }
   }
 
@@ -307,10 +349,31 @@ final class DocumentWriter {
                                 termIndexInterval);
       TermInfo ti = new TermInfo();
       String currentField = null;
-
+      boolean currentFieldHasPayloads = false;
+      
       for (int i = 0; i < postings.length; i++) {
         Posting posting = postings[i];
 
+        // check to see if we switched to a new field
+        String termField = posting.term.field();
+        if (currentField != termField) {
+          // changing field - see if there is something to save
+          currentField = termField;
+          FieldInfo fi = fieldInfos.fieldInfo(currentField);
+          currentFieldHasPayloads = fi.storePayloads;
+          if (fi.storeTermVector) {
+            if (termVectorWriter == null) {
+              termVectorWriter =
+                new TermVectorsWriter(directory, segment, fieldInfos);
+              termVectorWriter.openDocument();
+            }
+            termVectorWriter.openField(currentField);
+
+          } else if (termVectorWriter != null) {
+            termVectorWriter.closeField();
+          }
+        }
+        
         // add an entry to the dictionary with pointers to prox and freq files
         ti.set(1, freq.getFilePointer(), prox.getFilePointer(), -1);
         tis.add(posting.term, ti);
@@ -326,28 +389,62 @@ final class DocumentWriter {
 
         int lastPosition = 0;			  // write positions
         int[] positions = posting.positions;
+        Payload[] payloads = posting.payloads;
+        int lastPayloadLength = -1;
+        
+        
+        // The following encoding is being used for positions and payloads:
+        // Case 1: current field does not store payloads
+        //           Positions     -> <PositionDelta>^freq
+        //           PositionDelta -> VInt
+        //         The PositionDelta is the difference between the current
+        //         and the previous position
+        // Case 2: current field stores payloads
+        //           Positions     -> <PositionDelta, Payload>^freq
+        //           Payload       ->  <PayloadLength?, PayloadData>
+        //           PositionDelta -> VInt
+        //           PayloadLength -> VInt
+        //           PayloadData   -> byte^PayloadLength
+        //         In this case PositionDelta/2 is the difference between
+        //         the current and the previous position. If PositionDelta
+        //         is odd, then a PayloadLength encoded as VInt follows,
+        //         if PositionDelta is even, then it is assumed that the
+        //         length of the current Payload equals the length of the
+        //         previous Payload.        
         for (int j = 0; j < postingFreq; j++) {		  // use delta-encoding
           int position = positions[j];
-          prox.writeVInt(position - lastPosition);
-          lastPosition = position;
-        }
-        // check to see if we switched to a new field
-        String termField = posting.term.field();
-        if (currentField != termField) {
-          // changing field - see if there is something to save
-          currentField = termField;
-          FieldInfo fi = fieldInfos.fieldInfo(currentField);
-          if (fi.storeTermVector) {
-            if (termVectorWriter == null) {
-              termVectorWriter =
-                new TermVectorsWriter(directory, segment, fieldInfos);
-              termVectorWriter.openDocument();
+          int delta = position - lastPosition;
+          if (currentFieldHasPayloads) {
+            int payloadLength = 0;
+            Payload payload = null;
+            if (payloads != null) {
+              payload = payloads[j];
+              if (payload != null) {
+                payloadLength = payload.length;
+              }
             }
-            termVectorWriter.openField(currentField);
-
-          } else if (termVectorWriter != null) {
-            termVectorWriter.closeField();
+            if (payloadLength == lastPayloadLength) {
+            	// the length of the current payload equals the length
+            	// of the previous one. So we do not have to store the length
+            	// again and we only shift the position delta by one bit
+              prox.writeVInt(delta * 2);
+            } else {
+            	// the length of the current payload is different from the
+            	// previous one. We shift the position delta, set the lowest
+            	// bit and store the current payload length as VInt.
+              prox.writeVInt(delta * 2 + 1);
+              prox.writeVInt(payloadLength);
+              lastPayloadLength = payloadLength;
+            }
+            if (payloadLength > 0) {
+            	// write current payload
+              prox.writeBytes(payload.data, payload.offset, payload.length);
+            }
+          } else {
+          	// field does not store payloads, just write position delta as VInt
+            prox.writeVInt(delta);
           }
+          lastPosition = position;
         }
         if (termVectorWriter != null && termVectorWriter.isFieldOpen()) {
             termVectorWriter.addTerm(posting.term.text(), postingFreq, posting.positions, posting.offsets);
@@ -397,18 +494,27 @@ final class Posting {				  // info about a Term in a doc
   Term term;					  // the Term
   int freq;					  // its frequency in doc
   int[] positions;				  // positions it occurs at
+  Payload[] payloads; // the payloads of the terms
   TermVectorOffsetInfo [] offsets;
+  
 
-  Posting(Term t, int position, TermVectorOffsetInfo offset) {
+  Posting(Term t, int position, Payload payload, TermVectorOffsetInfo offset) {
     term = t;
     freq = 1;
     positions = new int[1];
     positions[0] = position;
+    
+    if (payload != null) {
+      payloads = new Payload[1];
+      payloads[0] = payload;
+    } else 
+      payloads = null;    
+    
+
     if(offset != null){
-    offsets = new TermVectorOffsetInfo[1];
-    offsets[0] = offset;
-    }
-    else
+      offsets = new TermVectorOffsetInfo[1];
+      offsets[0] = offset;
+    } else
       offsets = null;
   }
 }

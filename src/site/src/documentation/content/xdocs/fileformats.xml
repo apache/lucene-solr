@@ -1013,6 +1013,7 @@
                         <li>If the third lowest-order bit is set (0x04), term positions are stored with the term vectors.</li>
                         <li>If the fourth lowest-order bit is set (0x08), term offsets are stored with the term vectors.</li>
                         <li>If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field.</li>
+                        <li>If the sixth lowest-order bit is set (0x20), payloads are stored for the indexed field.</li>
                     </ul>
                 </p>
 
@@ -1298,9 +1299,9 @@
                     <sup>DocFreq/SkipInterval</sup>
                 </p>
                 <p>SkipDatum --&gt;
-                    DocSkip,FreqSkip,ProxSkip
+                    DocSkip,PayloadLength?,FreqSkip,ProxSkip
                 </p>
-                <p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip --&gt;
+                <p>DocDelta,Freq,DocSkip,PayloadLength,FreqSkip,ProxSkip --&gt;
                     VInt
                 </p>
                 <p>TermFreqs
@@ -1328,9 +1329,17 @@
                     SkipInterval
                     <sup>th</sup>
                     document in TermFreqs.
-                    Document numbers are represented as differences
-                    from the previous value in the sequence. FreqSkip
-                    and ProxSkip record the position of every
+                    If payloads are disabled for the term's field,
+                    then DocSkip represents the difference from the
+                    previous value in the sequence.
+                    If payloads are enabled for the term's field, 
+                    then DocSkip/2 represents the difference from the
+                    previous value in the sequence. If payloads are enabled
+                    and DocSkip is odd,
+                    then PayloadLength is stored indicating the length 
+                    of the last payload before the SkipInterval<sup>th</sup>
+                    document in TermPositions.
+					FreqSkip and ProxSkip record the position of every
                     SkipInterval
                     <sup>th</sup>
                     entry in FreqFile and
@@ -1379,11 +1388,20 @@
                     <sup>DocFreq</sup>
                 </p>
                 <p>Positions --&gt;
-                    &lt;PositionDelta&gt;
+                    &lt;PositionDelta,Payload?&gt;
                     <sup>Freq</sup>
+                </p>
+                <p>Payload --&gt;
+                    &lt;PayloadLength?,PayloadData&gt;
                 </p>
                 <p>PositionDelta --&gt;
                     VInt
+                </p>
+                <p>PayloadLength --&gt;
+                    VInt
+                </p>
+                <p>PayloadData --&gt;
+                    byte<sup>PayloadLength</sup>
                 </p>
                 <p>TermPositions
                     are ordered by term (the term is implicit, from the .tis file).
@@ -1393,18 +1411,29 @@
                     number is implicit from the .frq file).
                 </p>
                 <p>PositionDelta
-                    is the difference between the position of the current occurrence in
+                    is, if payloads are disabled for the term's field, the difference 
+                    between the position of the current occurrence in
                     the document and the previous occurrence (or zero, if this is the
                     first occurrence in this document).
+                    If payloads are enabled for the term's field, then PositionDelta/2
+                    is the difference between the current and the previous position. If
+                    payloads are enabled and PositionDelta is odd, then PayloadLength is 
+                    stored, indicating the length of the payload at the current term position.
                 </p>
                 <p>
                     For example, the TermPositions for a
                     term which occurs as the fourth term in one document, and as the
                     fifth and ninth term in a subsequent document, would be the following
-                    sequence of VInts:
+                    sequence of VInts (payloads disabled):
                 </p>
                 <p>4,
                     5, 4
+                </p>
+                <p>PayloadData
+                    is metadata associated with the current term position. If PayloadLength
+                    is stored at the current position, then it indicates the length of this 
+                    Payload. If PayloadLength is not stored, then this Payload has the same
+                    length as the Payload at the previous position.
                 </p>
             </section>
             <section id="Normalization Factors"><title>Normalization Factors</title>

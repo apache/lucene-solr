@@ -374,6 +374,9 @@ class SegmentReader extends IndexReader {
       else if (!fi.isIndexed && fieldOption == IndexReader.FieldOption.UNINDEXED) {
         fieldSet.add(fi.name);
       }
+      else if (fi.storePayloads && fieldOption == IndexReader.FieldOption.STORES_PAYLOADS) {
+        fieldSet.add(fi.name);
+      }
       else if (fi.isIndexed && fieldOption == IndexReader.FieldOption.INDEXED) {
         fieldSet.add(fi.name);
       }
@@ -582,7 +585,12 @@ class SegmentReader extends IndexReader {
     
     return termVectorsReader.get(docNumber);
   }
-
+  
+  /** Returns the field infos of this segment */
+  FieldInfos fieldInfos() {
+    return fieldInfos;
+  }
+  
   /**
    * Return the name of the segment this reader is reading.
    */

@@ -1,5 +1,8 @@
 package org.apache.lucene.analysis;
 
+import org.apache.lucene.index.Payload;
+import org.apache.lucene.index.TermPositions;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,23 +23,40 @@ package org.apache.lucene.analysis;
 /** A Token is an occurence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
-
+  <p>
   The start and end offsets permit applications to re-associate a token with
   its source text, e.g., to display highlighted query terms in a document
   browser, or to show matching text fragments in a KWIC (KeyWord In Context)
   display, etc.
-
+  <p>
   The type is an interned string, assigned by a lexical analyzer
   (a.k.a. tokenizer), naming the lexical or syntactic class that the token
   belongs to.  For example an end of sentence marker token might be implemented
-  with type "eos".  The default token type is "word".  */
+  with type "eos".  The default token type is "word".  
+  <p>
+  A Token can optionally have metadata (a.k.a. Payload) in the form of a variable
+  length byte array. Use {@link TermPositions#getPayloadLength()} and 
+  {@link TermPositions#getPayload(byte[], int)} to retrieve the payloads from the index.
+  
+  <br><br>
+  <b>
+  Warning: The status of the Payloads feature is experimental. The APIs
+  introduced here might change in the future and will not be supported anymore
+  in such a case. If you want to use this feature in a production environment
+  you should wait for an official release.
+  </b> 
 
+  @see org.apache.lucene.index.Payload
+  */
+  // TODO: Remove warning after API has been finalized
 public class Token implements Cloneable {
   String termText;				  // the text of the term
   int startOffset;				  // start in source text
   int endOffset;				  // end in source text
   String type = "word";				  // lexical type
-
+  
+  Payload payload;
+  
   private int positionIncrement = 1;
 
   /** Constructs a Token with the given term text, and start & end offsets.
@@ -114,6 +134,36 @@ public class Token implements Cloneable {
 
   /** Returns this Token's lexical type.  Defaults to "word". */
   public final String type() { return type; }
+
+  /** 
+   * Sets this Token's payload.<br>
+   * <br>
+   * <b>
+   * Warning: The status of the Payloads feature is experimental. The APIs
+   * introduced here might change in the future and will not be supported anymore
+   * in such a case. If you want to use this feature in a production environment
+   * you should wait for an official release.
+   * </b>  
+   */
+  // TODO: Remove warning after API has been finalized
+  public void setPayload(Payload payload) {
+    this.payload = payload;
+  }
+  
+  /** 
+   * Returns this Token's payload.<br> 
+   * <br>
+   * <b>
+   * Warning: The status of the Payloads feature is experimental. The APIs
+   * introduced here might change in the future and will not be supported anymore
+   * in such a case. If you want to use this feature in a production environment
+   * you should wait for an official release.
+   * </b>   
+   */
+  // TODO: Remove warning after API has been finalized
+  public Payload getPayload() {
+    return this.payload;
+  }
 
   public String toString() {
     StringBuffer sb = new StringBuffer();

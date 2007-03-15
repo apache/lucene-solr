@@ -157,11 +157,11 @@ final class SegmentMerger {
   }
 
   private void addIndexed(IndexReader reader, FieldInfos fieldInfos, Collection names, boolean storeTermVectors, boolean storePositionWithTermVector,
-                         boolean storeOffsetWithTermVector) throws IOException {
+                         boolean storeOffsetWithTermVector, boolean storePayloads) throws IOException {
     Iterator i = names.iterator();
     while (i.hasNext()) {
       String field = (String)i.next();
-      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field));
+      fieldInfos.add(field, true, storeTermVectors, storePositionWithTermVector, storeOffsetWithTermVector, !reader.hasNorms(field), storePayloads);
     }
   }
 
@@ -176,11 +176,12 @@ final class SegmentMerger {
     int docCount = 0;
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = (IndexReader) readers.elementAt(i);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false);
-      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET), true, true, true, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_POSITION), true, true, false, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR_WITH_OFFSET), true, false, true, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.TERMVECTOR), true, false, false, false);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.STORES_PAYLOADS), false, false, false, true);
+      addIndexed(reader, fieldInfos, reader.getFieldNames(IndexReader.FieldOption.INDEXED), false, false, false, false);
       fieldInfos.add(reader.getFieldNames(IndexReader.FieldOption.UNINDEXED), false);
     }
     fieldInfos.write(directory, segment + ".fnm");
@@ -326,6 +327,8 @@ final class SegmentMerger {
       termInfosWriter.add(smis[0].term, termInfo);
     }
   }
+  
+  private byte[] payloadBuffer = null;
 
   /** Process postings from multiple segments all positioned on the
    *  same term. Writes out merged entries into freqOutput and
@@ -342,6 +345,8 @@ final class SegmentMerger {
     int lastDoc = 0;
     int df = 0;					  // number of docs w/ term
     resetSkip();
+    boolean storePayloads = fieldInfos.fieldInfo(smis[0].term.field).storePayloads;
+    int lastPayloadLength = -1;   // ensures that we write the first length
     for (int i = 0; i < n; i++) {
       SegmentMergeInfo smi = smis[i];
       TermPositions postings = smi.getPositions();
@@ -361,7 +366,7 @@ final class SegmentMerger {
         df++;
 
         if ((df % skipInterval) == 0) {
-          bufferSkip(lastDoc);
+          bufferSkip(lastDoc, storePayloads, lastPayloadLength);
         }
 
         int docCode = (doc - lastDoc) << 1;	  // use low bit to flag freq=1
@@ -374,11 +379,33 @@ final class SegmentMerger {
           freqOutput.writeVInt(docCode);	  // write doc
           freqOutput.writeVInt(freq);		  // write frequency in doc
         }
-
+        
+        /** See {@link DocumentWriter#writePostings(Posting[], String) for 
+         *  documentation about the encoding of positions and payloads
+         */
         int lastPosition = 0;			  // write position deltas
         for (int j = 0; j < freq; j++) {
           int position = postings.nextPosition();
-          proxOutput.writeVInt(position - lastPosition);
+          int delta = position - lastPosition;
+          if (storePayloads) {
+            int payloadLength = postings.getPayloadLength();
+            if (payloadLength == lastPayloadLength) {
+              proxOutput.writeVInt(delta * 2);
+            } else {
+              proxOutput.writeVInt(delta * 2 + 1);
+              proxOutput.writeVInt(payloadLength);
+              lastPayloadLength = payloadLength;
+            }
+            if (payloadLength > 0) {
+              if (payloadBuffer == null || payloadBuffer.length < payloadLength) {
+                payloadBuffer = new byte[payloadLength];
+              }
+              postings.getPayload(payloadBuffer, 0);
+              proxOutput.writeBytes(payloadBuffer, 0, payloadLength);
+            }
+          } else {
+            proxOutput.writeVInt(delta);
+          }
           lastPosition = position;
         }
       }
@@ -388,21 +415,59 @@ final class SegmentMerger {
 
   private RAMOutputStream skipBuffer = new RAMOutputStream();
   private int lastSkipDoc;
+  private int lastSkipPayloadLength;
   private long lastSkipFreqPointer;
   private long lastSkipProxPointer;
 
   private void resetSkip() {
     skipBuffer.reset();
     lastSkipDoc = 0;
+    lastSkipPayloadLength = -1;  // we don't have to write the first length in the skip list
     lastSkipFreqPointer = freqOutput.getFilePointer();
     lastSkipProxPointer = proxOutput.getFilePointer();
   }
 
-  private void bufferSkip(int doc) throws IOException {
+  private void bufferSkip(int doc, boolean storePayloads, int payloadLength) throws IOException {
     long freqPointer = freqOutput.getFilePointer();
     long proxPointer = proxOutput.getFilePointer();
 
-    skipBuffer.writeVInt(doc - lastSkipDoc);
+    // To efficiently store payloads in the posting lists we do not store the length of
+    // every payload. Instead we omit the length for a payload if the previous payload had
+    // the same length.
+    // However, in order to support skipping the payload length at every skip point must be known.
+    // So we use the same length encoding that we use for the posting lists for the skip data as well:
+    // Case 1: current field does not store payloads
+    //           SkipDatum                 --> DocSkip, FreqSkip, ProxSkip
+    //           DocSkip,FreqSkip,ProxSkip --> VInt
+    //           DocSkip records the document number before every SkipInterval th  document in TermFreqs. 
+    //           Document numbers are represented as differences from the previous value in the sequence.
+    // Case 2: current field stores payloads
+    //           SkipDatum                 --> DocSkip, PayloadLength?, FreqSkip,ProxSkip
+    //           DocSkip,FreqSkip,ProxSkip --> VInt
+    //           PayloadLength             --> VInt    
+    //         In this case DocSkip/2 is the difference between
+    //         the current and the previous value. If DocSkip
+    //         is odd, then a PayloadLength encoded as VInt follows,
+    //         if DocSkip is even, then it is assumed that the
+    //         current payload length equals the length at the previous
+    //         skip point
+    if (storePayloads) {
+      int delta = doc - lastSkipDoc;
+      if (payloadLength == lastSkipPayloadLength) {
+        // the current payload length equals the length at the previous skip point,
+        // so we don't store the length again
+        skipBuffer.writeVInt(delta * 2);
+      } else {
+        // the payload length is different from the previous one. We shift the DocSkip, 
+        // set the lowest bit and store the current payload length as VInt.
+        skipBuffer.writeVInt(delta * 2 + 1);
+        skipBuffer.writeVInt(payloadLength);
+        lastSkipPayloadLength = payloadLength;
+      }
+    } else {
+      // current field does not store payloads
+      skipBuffer.writeVInt(doc - lastSkipDoc);
+    }
     skipBuffer.writeVInt((int) (freqPointer - lastSkipFreqPointer));
     skipBuffer.writeVInt((int) (proxPointer - lastSkipProxPointer));
 

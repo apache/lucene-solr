@@ -455,5 +455,12 @@ class MultiTermPositions extends MultiTermDocs implements TermPositions {
   public int nextPosition() throws IOException {
     return ((TermPositions)current).nextPosition();
   }
-
+  
+  public int getPayloadLength() {
+    return ((TermPositions)current).getPayloadLength();
+  }
+   
+  public byte[] getPayload(byte[] data, int offset) throws IOException {
+    return ((TermPositions)current).getPayload(data, offset);
+  }
 }

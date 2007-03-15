@@ -82,6 +82,13 @@ New features
 
  2. LUCENE-822: Added FieldSelector capabilities to Searchable for use with RemoteSearcher, and other Searchable implementations. (Mark Miller, Grant Ingersoll)
 
+ 3. LUCENE-755: Added the ability to store arbitrary binary metadata in the posting list.
+    These metadata are called Payloads. For every position of a Token one Payload in the form
+    of a variable length byte array can be stored in the prox file.
+    Remark: The APIs introduced with this feature are in experimental state and thus
+            contain appropriate warnings in the javadocs.
+    (Michael Busch)
+
 Optimizations
 
  1. LUCENE-761: The proxStream is now cloned lazily in SegmentTermPositions

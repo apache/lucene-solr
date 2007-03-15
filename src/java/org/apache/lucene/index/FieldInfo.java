@@ -28,9 +28,12 @@ final class FieldInfo {
   boolean storePositionWithTermVector;
 
   boolean omitNorms; // omit norms associated with indexed fields
+  
+  boolean storePayloads; // whether this field stores payloads together with term positions
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
-            boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, boolean omitNorms) {
+            boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 
+            boolean omitNorms, boolean storePayloads) {
     name = na;
     isIndexed = tk;
     number = nu;
@@ -38,5 +41,6 @@ final class FieldInfo {
     this.storeOffsetWithTermVector = storeOffsetWithTermVector;
     this.storePositionWithTermVector = storePositionWithTermVector;
     this.omitNorms = omitNorms;
+    this.storePayloads = storePayloads;
   }
 }

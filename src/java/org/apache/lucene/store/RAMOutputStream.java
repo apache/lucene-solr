@@ -66,7 +66,7 @@ public class RAMOutputStream extends BufferedIndexOutput {
     file.setLength(0);
   }
 
-  public void flushBuffer(byte[] src, int len) throws IOException {
+  public void flushBuffer(byte[] src, int offset, int len) throws IOException {
     byte[] buffer;
     int bufferPos = 0;
     while (bufferPos != len) {
@@ -81,7 +81,7 @@ public class RAMOutputStream extends BufferedIndexOutput {
       else
         buffer = (byte[]) file.buffers.get(bufferNumber);
 
-      System.arraycopy(src, bufferPos, buffer, bufferOffset, bytesToCopy);
+      System.arraycopy(src, offset + bufferPos, buffer, bufferOffset, bytesToCopy);
       bufferPos += bytesToCopy;
       pointer += bytesToCopy;
     }

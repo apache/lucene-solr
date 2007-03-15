@@ -62,6 +62,14 @@ public class FilterIndexReader extends IndexReader {
     public int nextPosition() throws IOException {
       return ((TermPositions) this.in).nextPosition();
     }
+    
+    public int getPayloadLength() {
+      return ((TermPositions) this.in).getPayloadLength();
+    }
+
+    public byte[] getPayload(byte[] data, int offset) throws IOException {
+      return ((TermPositions) this.in).getPayload(data, offset);
+    }
   }
 
   /** Base class for filtering {@link TermEnum} implementations. */

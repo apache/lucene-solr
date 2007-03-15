@@ -27,6 +27,12 @@ extends SegmentTermDocs implements TermPositions {
   private int proxCount;
   private int position;
   
+  // the current payload length
+  private int payloadLength;
+  // indicates whether the payload of the currend position has
+  // been read from the proxStream yet
+  private boolean needToLoadPayload;
+  
   // these variables are being used to remember information
   // for a lazy skip
   private long lazySkipPointer = 0;
@@ -37,13 +43,15 @@ extends SegmentTermDocs implements TermPositions {
     this.proxStream = null;  // the proxStream will be cloned lazily when nextPosition() is called for the first time
   }
 
-  final void seek(TermInfo ti) throws IOException {
-    super.seek(ti);
+  final void seek(TermInfo ti, Term term) throws IOException {
+    super.seek(ti, term);
     if (ti != null)
       lazySkipPointer = ti.proxPointer;
     
     lazySkipProxCount = 0;
     proxCount = 0;
+    payloadLength = 0;
+    needToLoadPayload = false;
   }
 
   public final void close() throws IOException {
@@ -55,9 +63,28 @@ extends SegmentTermDocs implements TermPositions {
     // perform lazy skips if neccessary
     lazySkip();
     proxCount--;
-    return position += proxStream.readVInt();
+    return position += readDeltaPosition();
   }
 
+  private final int readDeltaPosition() throws IOException {
+    int delta = proxStream.readVInt();
+    if (currentFieldStoresPayloads) {
+      // if the current field stores payloads then
+      // the position delta is shifted one bit to the left.
+      // if the LSB is set, then we have to read the current
+      // payload length
+      if ((delta & 1) != 0) {
+        payloadLength = proxStream.readVInt();
+      } 
+      delta >>>= 1;
+      needToLoadPayload = true;
+    } else {
+      payloadLength = 0;
+      needToLoadPayload = false;
+    }
+    return delta;
+  }
+  
   protected final void skippingDoc() throws IOException {
     // we remember to skip a document lazily
     lazySkipProxCount += freq;
@@ -82,16 +109,27 @@ extends SegmentTermDocs implements TermPositions {
 
 
   /** Called by super.skipTo(). */
-  protected void skipProx(long proxPointer) throws IOException {
+  protected void skipProx(long proxPointer, int payloadLength) throws IOException {
     // we save the pointer, we might have to skip there lazily
     lazySkipPointer = proxPointer;
     lazySkipProxCount = 0;
     proxCount = 0;
+    this.payloadLength = payloadLength;
+    needToLoadPayload = false;
   }
 
   private void skipPositions(int n) throws IOException {
-    for (int f = n; f > 0; f--)         // skip unread positions
-      proxStream.readVInt();
+    for (int f = n; f > 0; f--) {        // skip unread positions
+      readDeltaPosition();
+      skipPayload();
+    }      
+  }
+  
+  private void skipPayload() throws IOException {
+    if (needToLoadPayload && payloadLength > 0) {
+      proxStream.seek(proxStream.getFilePointer() + payloadLength);
+    }
+    needToLoadPayload = false;
   }
 
   // It is not always neccessary to move the prox pointer
@@ -109,6 +147,10 @@ extends SegmentTermDocs implements TermPositions {
       // clone lazily
       proxStream = (IndexInput)parent.proxStream.clone();
     }
+    
+    // we might have to skip the current payload
+    // if it was not read yet
+    skipPayload();
       
     if (lazySkipPointer != 0) {
       proxStream.seek(lazySkipPointer);
@@ -119,6 +161,32 @@ extends SegmentTermDocs implements TermPositions {
       skipPositions(lazySkipProxCount);
       lazySkipProxCount = 0;
     }
+  }
+  
+  public int getPayloadLength() {
+    return payloadLength;
+  }
+
+  public byte[] getPayload(byte[] data, int offset) throws IOException {
+    if (!needToLoadPayload) {
+      throw new IOException("Payload cannot be loaded more than once for the same term position.");
+    }
+
+    // read payloads lazily
+    byte[] retArray;
+    int retOffset;
+    if (data == null || data.length - offset < payloadLength) {
+      // the array is too small to store the payload data,
+      // so we allocate a new one
+      retArray = new byte[payloadLength];
+      retOffset = 0;
+    } else {
+      retArray = data;
+      retOffset = offset;
+    }
+    proxStream.readBytes(retArray, retOffset, payloadLength);
+    needToLoadPayload = false;
+    return retArray;
   }
 
 }

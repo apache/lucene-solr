@@ -39,6 +39,9 @@ class SegmentTermDocs implements TermDocs {
   private long proxPointer;
   private long skipPointer;
   private boolean haveSkipped;
+  
+  private int payloadLengthAtLastSkip;
+  protected boolean currentFieldStoresPayloads;
 
   protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
@@ -49,23 +52,31 @@ class SegmentTermDocs implements TermDocs {
 
   public void seek(Term term) throws IOException {
     TermInfo ti = parent.tis.get(term);
-    seek(ti);
+    seek(ti, term);
   }
 
   public void seek(TermEnum termEnum) throws IOException {
     TermInfo ti;
+    Term term;
     
     // use comparison of fieldinfos to verify that termEnum belongs to the same segment as this SegmentTermDocs
-    if (termEnum instanceof SegmentTermEnum && ((SegmentTermEnum) termEnum).fieldInfos == parent.fieldInfos)          // optimized case
-      ti = ((SegmentTermEnum) termEnum).termInfo();
-    else                                          // punt case
-      ti = parent.tis.get(termEnum.term());
-      
-    seek(ti);
+    if (termEnum instanceof SegmentTermEnum && ((SegmentTermEnum) termEnum).fieldInfos == parent.fieldInfos) {        // optimized case
+      SegmentTermEnum segmentTermEnum = ((SegmentTermEnum) termEnum);
+      term = segmentTermEnum.term();
+      ti = segmentTermEnum.termInfo();
+    } else  {                                         // punt case
+      term = termEnum.term();
+      ti = parent.tis.get(term);        
+    }
+    
+    seek(ti, term);
   }
 
-  void seek(TermInfo ti) throws IOException {
+  void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
+    payloadLengthAtLastSkip = 0;
+    FieldInfo fi = parent.fieldInfos.fieldInfo(term.field);
+    currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
       df = 0;
     } else {
@@ -141,7 +152,7 @@ class SegmentTermDocs implements TermDocs {
   }
 
   /** Overridden by SegmentTermPositions to skip in prox stream. */
-  protected void skipProx(long proxPointer) throws IOException {}
+  protected void skipProx(long proxPointer, int payloadLength) throws IOException {}
 
   /** Optimized implementation. */
   public boolean skipTo(int target) throws IOException {
@@ -157,6 +168,7 @@ class SegmentTermDocs implements TermDocs {
 
       // scan skip data
       int lastSkipDoc = skipDoc;
+      int lastPayloadLength = 0;
       long lastFreqPointer = freqStream.getFilePointer();
       long lastProxPointer = -1;
       int numSkipped = -1 - (count % skipInterval);
@@ -165,6 +177,7 @@ class SegmentTermDocs implements TermDocs {
         lastSkipDoc = skipDoc;
         lastFreqPointer = freqPointer;
         lastProxPointer = proxPointer;
+        lastPayloadLength = payloadLengthAtLastSkip;
         
         if (skipDoc != 0 && skipDoc >= doc)
           numSkipped += skipInterval;
@@ -172,7 +185,21 @@ class SegmentTermDocs implements TermDocs {
         if(skipCount >= numSkips)
           break;
 
-        skipDoc += skipStream.readVInt();
+        if (currentFieldStoresPayloads) {
+          // the current field stores payloads.
+          // if the doc delta is odd then we have
+          // to read the current payload length
+          // because it differs from the length of the
+          // previous payload
+          int delta = skipStream.readVInt();
+          if ((delta & 1) != 0) {
+            payloadLengthAtLastSkip = skipStream.readVInt();
+          }
+          delta >>>= 1;
+          skipDoc += delta;
+        } else {
+          skipDoc += skipStream.readVInt();
+        }
         freqPointer += skipStream.readVInt();
         proxPointer += skipStream.readVInt();
 
@@ -182,7 +209,7 @@ class SegmentTermDocs implements TermDocs {
       // if we found something to skip, then skip it
       if (lastFreqPointer > freqStream.getFilePointer()) {
         freqStream.seek(lastFreqPointer);
-        skipProx(lastProxPointer);
+        skipProx(lastProxPointer, lastPayloadLength);
 
         doc = lastSkipDoc;
         count += numSkipped;
