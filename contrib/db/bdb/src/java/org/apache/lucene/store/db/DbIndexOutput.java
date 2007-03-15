@@ -91,11 +91,10 @@ public class DbIndexOutput extends IndexOutput {
             length = position;
     }
 
-    public void writeBytes(byte[] b, int len)
+    public void writeBytes(byte[] b, int offset, int len)
         throws IOException
     {
         int blockPos = (int) (position & BLOCK_MASK);
-        int offset = 0;
 
         while (blockPos + len >= BLOCK_LEN) {
             int blockLen = BLOCK_LEN - blockPos;

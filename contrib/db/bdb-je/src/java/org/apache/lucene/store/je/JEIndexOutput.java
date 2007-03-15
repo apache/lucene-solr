@@ -90,9 +90,8 @@ public class JEIndexOutput extends IndexOutput {
             length = position;
     }
 
-    public void writeBytes(byte[] b, int len) throws IOException {
+    public void writeBytes(byte[] b, int offset, int len) throws IOException {
         int blockPos = (int) (position & BLOCK_MASK);
-        int offset = 0;
 
         while (blockPos + len >= BLOCK_LEN) {
             int blockLen = BLOCK_LEN - blockPos;

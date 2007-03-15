@@ -894,6 +894,23 @@ public class MemoryIndex {
           if (DEBUG) System.err.println(".nextPosition: " + pos);
           return pos;
         }
+        
+        /**
+         * Not implemented.
+         * @throws UnsupportedOperationException
+         */
+        public int getPayloadLength() {
+          throw new UnsupportedOperationException();
+        }
+         
+        /**
+         * Not implemented.
+         * @throws UnsupportedOperationException
+         */
+        public byte[] getPayload(byte[] data, int offset) throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
       };
     }
   
