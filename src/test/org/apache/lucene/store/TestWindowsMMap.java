@@ -43,7 +43,8 @@ public class TestWindowsMMap extends TestCase {
 		return fb.toString();
 	}
 	
-	private final static String storePathname = "testLuceneMmap";
+	private final static String storePathname = 
+    new File(System.getProperty("tempDir"),"testLuceneMmap").getAbsolutePath();
 
 	public void testMmapIndex() throws Exception {
 		FSDirectory storeDirectory;
