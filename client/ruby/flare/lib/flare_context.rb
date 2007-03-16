@@ -16,27 +16,29 @@ class FlareContext
   attr_reader :facet_fields, :text_fields
 
   def initialize(solr_config)
-    @connection = Solr::Connection.new(solr_config[:solr_url])
+    @solr_config = solr_config
+    @connection = Solr::Connection.new(@solr_config[:solr_url])
 
     clear
     @facet_queries = {}  # name => {:queries => [], :filters => []}
     
-    puts "initialize\n-------","#{solr_config.inspect}"
     @index_info = @connection.send(Solr::Request::IndexInfo.new)
+    
+    excluded =  @solr_config[:facets_exclude] ? @solr_config[:facets_exclude].collect {|e| e.to_s} : []
+    @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded
 
-    @facet_fields = @index_info.field_names.find_all {|v| v =~ /_facet$/}
     @text_fields = @index_info.field_names.find_all {|v| v =~ /_text$/}
   end
   
   def clear
-    puts "clear\n-------"
     @queries = []
     @filters = []
     @applied_facet_queries = []
 
     # this is cleared for development purposes - allowing flare to stay running but different Solr datasets swapping
     @index_info = @connection.send(Solr::Request::IndexInfo.new)
-    @facet_fields = @index_info.field_names.find_all {|v| v =~ /_facet$/}
+    excluded =  @solr_config[:facets_exclude] ? @solr_config[:facets_exclude].collect {|e| e.to_s} : []
+    @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded
     @text_fields = @index_info.field_names.find_all {|v| v =~ /_text$/}
     
     # facet_queries not cleared as their lifetime is different than constraints

@@ -15,7 +15,8 @@ xml.data do
     xml.event(doc['title_text'],
       :start => doc[SOLR_CONFIG[:timeline_dates].to_s],
       :end => doc[SOLR_CONFIG[:timeline_dates].to_s],
-      :title => doc['title_text'])
+      :title => doc['title_text'],
+      :image => SOLR_CONFIG[:image_proc] ? SOLR_CONFIG[:image_proc].call(doc) : nil)
   end
 end
 

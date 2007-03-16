@@ -67,9 +67,8 @@ solr_environments = {
   },
 
   :delicious => {
-#    :image_url => Proc.new {|d| "http://images.amazon.com/images/P/#{d[:asin_text]}.01.MZZZZZZZ"},
     :timeline_dates => :published_year_facet,
-    :exhibit_facets => ".medium_facet, .country_facet, .signed_facet, .rating_facet, .language_facet, .genre_facet, .publisher_facet, .published_year_facet"
+    :image_proc => Proc.new {|doc| "http://images.amazon.com/images/P/#{doc['asin_text']}.01.MZZZZZZZ"}
   },
 
   :tang => {
@@ -77,12 +76,12 @@ solr_environments = {
   
   :marc => {
     :timeline_dates => :year_facet,
-    :exhibit_facets => ".subject_genre_facet, .subject_era_facet, .subject_topic_facet, .subject_geographic_facet, .year_facet"
   },
   
   # TODO: :uva could inherit :marc settings, only overriding the template for VIRGO links
   :uva => {
-    :timeline_dates => :year_facet
+    :timeline_dates => :year_facet,
+    :facets_exclude => [:filename_facet]
   },
 }
 SOLR_ENV = ENV["SOLR_ENV"] || "development"

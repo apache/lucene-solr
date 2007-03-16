@@ -7,6 +7,7 @@
 	</div>
 <!-- <h2>browse facets</h2> -->
 
+<% if @flare.facet_queries.size > 0%>
 <h4>
   saved searches
 </h4>
@@ -22,10 +23,10 @@
 </li>
 <% end %>
 </ul>
-
+<% end %>
 <% @flare.facet_fields.each do |field|%>
   <h4> 
-<%=h field%> <%=link_to "[browse]", :action => 'facet', :field => field%> 
+<%= facet_label(field)%> <%=link_to "[browse]", :action => 'facet', :field => field%> 
 <!-- <%=link_to field, :action => 'facet', :field => field%> -->
 </h4> 
 

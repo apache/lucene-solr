@@ -16,7 +16,7 @@
                 <div id="exhibit-view-panel"></div>
             </td>
             <td width="25%">
-                <div id="exhibit-browse-panel" ex:facets="<%= SOLR_CONFIG[:exhibit_facets] -%>"></div>
+                <div id="exhibit-browse-panel" ex:facets="<%= @flare.facet_fields.collect {|f| ".#{f}"}.join(',') -%>"></div>
             </td>
         </tr>
     </table>
