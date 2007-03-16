@@ -74,6 +74,8 @@ Bug fixes
  9. LUCENE-814: javacc build targets now fix line-end-style of generated files.
     Now also deleting all javacc generated files before calling javacc.
     (Steven Parkes, Doron Cohen)
+    
+10. LUCENE-829: close readers in contrib/benchmark. (Karl Wettin, Doron Cohen)
 
 New features
 
