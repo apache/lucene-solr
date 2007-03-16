@@ -67,7 +67,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     public void init(NamedList args) {
         super.init(args);
         SolrParams p = SolrParams.toSolrParams(args);
-        restrictToField = p.get("termSourceField");
+        termSourceField = p.get("termSourceField");
         spellcheckerIndexDir = p.get("spellcheckerIndexDir");
         try {
             spellChecker = new SpellChecker(FSDirectory.getDirectory(spellcheckerIndexDir));
