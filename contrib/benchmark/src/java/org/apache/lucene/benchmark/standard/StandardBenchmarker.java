@@ -275,6 +275,8 @@ public class StandardBenchmarker extends AbstractBenchmarker implements Benchmar
         {
             body.append(line).append(' ');
         }
+        reader.close();
+        
         Date date = format.parse(dateStr.trim());
 
         doc.add(new Field("date", DateTools.dateToString(date, DateTools.Resolution.SECOND), Field.Store.YES, Field.Index.UN_TOKENIZED));

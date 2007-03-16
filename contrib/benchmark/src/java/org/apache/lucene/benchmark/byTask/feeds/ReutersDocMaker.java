@@ -79,6 +79,7 @@ public class ReutersDocMaker extends BasicDocMaker {
     while ((line = reader.readLine()) != null) {
       bodyBuf.append(line).append(' ');
     }
+    reader.close();
     
     addBytes(f.length());
 

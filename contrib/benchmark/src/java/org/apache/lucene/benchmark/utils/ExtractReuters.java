@@ -135,6 +135,7 @@ public class ExtractReuters
                     buffer.setLength(0);
                 }
             }
+            reader.close();
         }
 
         catch (

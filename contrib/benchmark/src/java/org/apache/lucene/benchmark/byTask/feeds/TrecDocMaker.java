@@ -26,8 +26,10 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.zip.GZIPInputStream;
@@ -159,7 +161,8 @@ public class TrecDocMaker extends BasicDocMaker {
     read("</DOCHDR>",null,false,false); 
     // 6. collect until end of doc
     sb = read("</DOC>",null,false,true);
-    // this is the next document, so parse it  
+    // this is the next document, so parse it 
+    // TODO use a more robust html parser (current one aborts parsing quite easily). 
     HTMLParser p = new HTMLParser(new StringReader(sb.toString()));
     // title
     String title = p.getTitle();
@@ -175,11 +178,18 @@ public class TrecDocMaker extends BasicDocMaker {
         bodyBuf.append(c,0,n);
       }
     }
+    r.close();
     addBytes(bodyBuf.length());
     
     DocData dd = new DocData();
-    
-    dd.date = dateFormat.parse(dateStr.trim());
+
+    try {
+      dd.date = dateFormat.parse(dateStr.trim());
+    } catch (ParseException e) {
+      // do not fail test just because a date could not be parsed
+      System.out.println("ignoring date parse exception (assigning 'now') for: "+dateStr);
+      dd.date = new Date(); // now 
+    }
     dd.name = name;
     dd.title = title;
     dd.body = bodyBuf.toString();
