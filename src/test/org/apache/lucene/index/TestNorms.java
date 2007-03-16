@@ -18,7 +18,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 /**
- * Test that norms info is preserved during index life - incluidng seprate norms, addDocument, addIndexes, optimize.
+ * Test that norms info is preserved during index life - including
+ * separate norms, addDocument, addIndexes, optimize.
  */
 public class TestNorms extends TestCase {
 
