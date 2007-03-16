@@ -23,7 +23,6 @@ import java.io.IOException;
   <p>
   This is an abstract class.
   */
-
 public abstract class TokenFilter extends TokenStream {
   /** The source of tokens for this filter. */
   protected TokenStream input;
@@ -39,4 +38,3 @@ public abstract class TokenFilter extends TokenStream {
   }
 
 }
-
