@@ -18,6 +18,8 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.search.spell.LuceneDictionary;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.core.SolrCore;
@@ -38,7 +40,7 @@ import java.util.Arrays;
  */
 public class SpellCheckerRequestHandler extends RequestHandlerBase {
 
-    private static SpellChecker spellChecker;
+    private SpellChecker spellChecker;
 
     /*
      * From http://wiki.apache.org/jakarta-lucene/SpellChecker
@@ -58,10 +60,15 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     private boolean onlyMorePopular = false;
 
     private String spellcheckerIndexDir;
-
+    private String termSourceField;
+    private static final float DEFAULT_ACCURACY = 0.5f;
+    private static final int DEFAULT_NUM_SUGGESTIONS = 1;
+    
     public void init(NamedList args) {
-        super.init( args );
-        spellcheckerIndexDir = invariants.get("spellcheckerIndexDir");
+        super.init(args);
+        SolrParams p = SolrParams.toSolrParams(args);
+        restrictToField = p.get("termSourceField");
+        spellcheckerIndexDir = p.get("spellcheckerIndexDir");
         try {
             spellChecker = new SpellChecker(FSDirectory.getDirectory(spellcheckerIndexDir));
         } catch (IOException e) {
@@ -73,13 +80,38 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
             throws Exception {
         SolrParams p = req.getParams();
         String words = p.get("q");
+        String cmd = p.get("cmd");
+        if (cmd != null && cmd.equals("rebuild"))
+            rebuild(req);
 
-        System.out.println(getDescription());
-        int numSug = 5;
+        Float accuracy;
+        int numSug;
+        try {
+            accuracy = p.getFloat("accuracy", DEFAULT_ACCURACY);
+            spellChecker.setAccuracy(accuracy);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Accuracy must be a valid positive float", e);
+        }
+        try {
+            numSug = p.getInt("suggestionCount", DEFAULT_NUM_SUGGESTIONS);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Spelling suggestion count must be a valid positive integer", e);
+        }
+
         String[] suggestions = spellChecker.suggestSimilar(words, numSug,
                 reader, restrictToField, onlyMorePopular);
 
         rsp.add("suggestions", Arrays.asList(suggestions));
+    }
+
+    /** Rebuilds the SpellChecker index using values from the <code>termSourceField</code> from the
+     * index pointed to by the current {@link IndexSearcher}.
+     */
+    private void rebuild(SolrQueryRequest req) throws IOException {
+        IndexReader indexReader = req.getSearcher().getReader();
+        Dictionary dictionary = new LuceneDictionary(indexReader, termSourceField);
+        spellChecker.indexDictionary(dictionary);
+        spellChecker.setSpellIndex(FSDirectory.getDirectory(spellcheckerIndexDir));
     }
 
     //////////////////////// SolrInfoMBeans methods //////////////////////
