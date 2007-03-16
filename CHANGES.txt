@@ -120,7 +120,11 @@ New Features
     allows for specifying the amount of default slop to use when parsing
     explicit phrase queries from the user.
     (Adam Hiatt via hossman)
-    
+
+16. SOLR-81: SpellCheckerRequestHandler that uses the SpellChecker from
+    the Lucene contrib.
+    (Otis Gospodnetic and Adam Hiatt)    
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

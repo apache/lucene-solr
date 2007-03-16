@@ -341,7 +341,24 @@
         2&lt;-1 5&lt;-2 6&lt;90%
      </str>
   </requestHandler>
-  
+
+
+  <!-- SpellCheckerRequestHandler takes in a word (or several words) as the
+       value of the "q" parameter and returns a list of alternative spelling
+       suggestions.  If invoked with a ...&cmd=rebuild, it will rebuild the
+       spellchecker index.
+  -->
+  <requestHandler name="spellchecker" class="solr.SpellCheckerRequestHandler">
+    <!-- default values for query parameters -->
+     <lst name="defaults">
+       <int name="suggestionCount">1</int>
+       <str name="version">1.0</str>
+     </lst>
+     <!-- main init params for handler --> 
+     <str name="spellcheckerIndexDir">/home/otis/dev/repos/lucene/solr/trunk/example/solr/data/index</str>
+     <str name="termSourceField">word</str>
+   </requestHandler>
+
   
   <!-- Standard update plugin.  If we put this on /update, it will get all the new goodness  -->
   <requestHandler name="/update/xml" class="solr.XmlUpdateRequestHandler" >

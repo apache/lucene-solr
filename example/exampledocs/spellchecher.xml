@@ -1,0 +1,42 @@
+<add>
+       <doc>
+               <field name="id">1</field>
+               <field name="word">ipod</field>
+       </doc>
+       <doc>
+               <field name="id">2</field>
+               <field name="word">ipod nano</field>
+       </doc>
+       <doc>
+               <field name="id">3</field>
+               <field name="word">ipod video</field>
+       </doc>
+       <doc>
+               <field name="id">4</field>
+               <field name="word">ipod shuffle</field>
+       </doc>
+       <doc>
+               <field name="id">5</field>
+               <field name="word">wii</field>
+       </doc>
+       <doc>
+               <field name="id">6</field>
+               <field name="word">blackberry</field>
+       </doc>
+       <doc>
+               <field name="id">7</field>
+               <field name="word">blackjack</field>
+       </doc>
+       <doc>
+               <field name="id">8</field>
+               <field name="word">creative</field>
+       </doc>
+       <doc>
+               <field name="id">9</field>
+               <field name="word">creative labs</field>
+       </doc>
+       <doc>
+               <field name="id">10</field>
+               <field name="word">creative zen</field>
+       </doc>
+</add>
