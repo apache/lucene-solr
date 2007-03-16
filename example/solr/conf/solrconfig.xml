@@ -352,6 +352,7 @@
     <!-- default values for query parameters -->
      <lst name="defaults">
        <int name="suggestionCount">1</int>
+       <float name="accuracy">0.5</float>
        <str name="version">1.0</str>
      </lst>
      <!-- main init params for handler --> 
