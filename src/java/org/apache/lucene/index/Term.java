@@ -63,7 +63,11 @@ public final class Term implements Comparable, java.io.Serializable {
   /** Compares two terms, returning true iff they have the same
       field and text. */
   public final boolean equals(Object o) {
+    if (o == this)
+      return true;
     if (o == null)
+      return false;
+    if (!(o instanceof Term))
       return false;
     Term other = (Term)o;
     return field == other.field && text.equals(other.text);

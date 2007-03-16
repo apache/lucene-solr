@@ -77,6 +77,9 @@ Bug fixes
     
 10. LUCENE-829: close readers in contrib/benchmark. (Karl Wettin, Doron Cohen)
 
+11. LUCENE-828: Minor fix for Term's equal().
+    (Paul Cowan via Otis Gospodnetic)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
