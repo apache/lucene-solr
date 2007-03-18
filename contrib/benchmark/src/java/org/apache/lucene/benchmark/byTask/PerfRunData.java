@@ -69,11 +69,11 @@ public class PerfRunData {
         "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance();
     // doc maker
     docMaker = (DocMaker) Class.forName(config.get("doc.maker",
-        "org.apache.lucene.benchmark.byTask.utils.SimpleDocMaker")).newInstance();
+        "org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker")).newInstance();
     docMaker.setConfig(config);
     // query makers
     // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
-    Class qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.utils.SimpleQueryMaker"));
+    Class qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"));
     searchQueryMaker = (QueryMaker) qmkrClass.newInstance();
     searchQueryMaker.setConfig(config);
     searchTravQueryMaker = (QueryMaker) qmkrClass.newInstance();

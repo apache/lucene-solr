@@ -48,7 +48,7 @@ public class SimpleQueryMaker implements QueryMaker {
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr= (Analyzer) Class.forName(config.get("analyzer",
-        "org.apache.lucene.analysis.StandardAnalyzer")).newInstance(); 
+        "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance(); 
     
     QueryParser qp = new QueryParser("body",anlzr);
     ArrayList qq = new ArrayList();

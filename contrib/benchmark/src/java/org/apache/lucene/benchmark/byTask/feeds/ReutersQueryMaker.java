@@ -109,7 +109,7 @@ public class ReutersQueryMaker implements QueryMaker {
   private void prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr= (Analyzer) Class.forName(config.get("analyzer",
-    "org.apache.lucene.analysis.StandardAnalyzer")).newInstance(); 
+    "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance(); 
     
     List queryList = new ArrayList(20);
     queryList.addAll(Arrays.asList(STANDARD_QUERIES));
