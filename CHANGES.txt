@@ -147,6 +147,10 @@ Changes in runtime behavior
  5. Query are re-written before highlighting is performed.  This enables
     proper highlighting of prefix and wildcard queries (klaas).
 
+ 6. A meaningful exception is raised when attempting to add a doc missing 
+    a unique id if it is declared in the schema and allowDups=false.
+    (ryan via klaas)
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new

@@ -214,6 +214,13 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     addCommands.incrementAndGet();
     addCommandsCumulative.incrementAndGet();
     int rc=-1;
+    
+    // if there is no ID field, use allowDups
+    if( idField == null ) {
+      cmd.allowDups = true;
+      cmd.overwriteCommitted = false;
+      cmd.overwritePending = false;
+    }
 
     iwAccess.lock();
     try {

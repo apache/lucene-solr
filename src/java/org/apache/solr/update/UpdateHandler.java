@@ -21,6 +21,7 @@ package org.apache.solr.update;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.HitCollector;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
@@ -127,13 +128,18 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   protected final String getIndexedId(Document doc) {
-    if (idField == null) throw new SolrException(400,"Operation requires schema to have a unique key field");
+    if (idField == null) 
+      throw new SolrException(400,"Operation requires schema to have a unique key field");
+    
     // Right now, single valued fields that require value transformation from external to internal (indexed)
     // form have that transformation already performed and stored as the field value.
-    // This means
-    String id = idFieldType.storedToIndexed(doc.getField(idField.getName()));
-    if (id == null) throw new SolrException(400,"Document is missing uniqueKey field " + idField.getName());
-    return id;
+    Fieldable[] id = doc.getFieldables( idField.getName() );
+    if (id == null || id.length < 1) 
+      throw new SolrException(400,"Document is missing uniqueKey field " + idField.getName());
+    if( id.length > 1 ) 
+      throw new SolrException(400,"Document specifies multiple unique ids! " + idField.getName());
+    
+    return idFieldType.storedToIndexed( id[0] );
   }
 
   protected final String getIndexedIdOptional(Document doc) {

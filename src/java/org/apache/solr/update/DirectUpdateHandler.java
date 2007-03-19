@@ -310,6 +310,14 @@ public class DirectUpdateHandler extends UpdateHandler {
 
 
   public int addDoc(AddUpdateCommand cmd) throws IOException {
+
+    // if there is no ID field, use allowDups
+    if( idField == null ) {
+      cmd.allowDups = true;
+      cmd.overwriteCommitted = false;
+      cmd.overwritePending = false;
+    }
+    
     if (!cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
       return addNoOverwriteNoDups(cmd);
     } else if (!cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {

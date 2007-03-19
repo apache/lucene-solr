@@ -732,47 +732,47 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     // test sorting  with some docs missing the sort field
 
     assertU("<delete><query>id_i:[1000 TO 1010]</query></delete>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1000</field><field name=\"a_i\">1</field><field name=\"nullfirst\">Z</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1001</field><field name=\"a_i\">10</field><field name=\"nullfirst\">A</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1002</field><field name=\"a_i\">1</field><field name=\"b_i\">100</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1003</field><field name=\"a_i\">-1</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1004</field><field name=\"a_i\">15</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1005</field><field name=\"a_i\">1</field><field name=\"b_i\">50</field></doc></add>");
-    assertU("<add allowDups=\"true\"><doc><field name=\"id_i\">1006</field><field name=\"a_i\">0</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1000</field><field name=\"a_i\">1</field><field name=\"nullfirst\">Z</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1001</field><field name=\"a_i\">10</field><field name=\"nullfirst\">A</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1002</field><field name=\"a_i\">1</field><field name=\"b_i\">100</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1003</field><field name=\"a_i\">-1</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1004</field><field name=\"a_i\">15</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1005</field><field name=\"a_i\">1</field><field name=\"b_i\">50</field></doc></add>");
+    assertU("<add allowDups=\"true\"><doc><field name=\"id\">1006</field><field name=\"a_i\">0</field></doc></add>");
     assertU("<commit/>");
-    assertQ(req("id_i:[1000 TO 1010]")
+    assertQ(req("id:[1000 TO 1010]")
             ,"*[count(//doc)=7]"
             );
-    assertQ(req("id_i:[1000 TO 1010]; b_i asc")
+    assertQ(req("id:[1000 TO 1010]; b_i asc")
             ,"*[count(//doc)=7] "
             ,"//doc[1]/int[.='50'] "
             ,"//doc[2]/int[.='100']"
             );
-    assertQ(req("id_i:[1000 TO 1010]; b_i desc")
+    assertQ(req("id:[1000 TO 1010]; b_i desc")
             ,"*[count(//doc)=7] "
             ,"//doc[1]/int[.='100'] "
             ,"//doc[2]/int[.='50']"
             );
-    assertQ(req("id_i:[1000 TO 1010]; a_i asc,b_i desc")
+    assertQ(req("id:[1000 TO 1010]; a_i asc,b_i desc")
             ,"*[count(//doc)=7] "
             ,"//doc[3]/int[.='100'] "
             ,"//doc[4]/int[.='50']  "
             ,"//doc[5]/int[.='1000']"
             );
-    assertQ(req("id_i:[1000 TO 1010]; a_i asc,b_i asc")
+    assertQ(req("id:[1000 TO 1010]; a_i asc,b_i asc")
             ,"*[count(//doc)=7] "
             ,"//doc[3]/int[.='50'] "
             ,"//doc[4]/int[.='100']  "
             ,"//doc[5]/int[.='1000']"
             );
     // nullfirst tests
-    assertQ(req("id_i:[1000 TO 1002]; nullfirst asc")
+    assertQ(req("id:[1000 TO 1002]; nullfirst asc")
             ,"*[count(//doc)=3] "
             ,"//doc[1]/int[.='1002']"
             ,"//doc[2]/int[.='1001']  "
             ,"//doc[3]/int[.='1000']"
             );
-    assertQ(req("id_i:[1000 TO 1002]; nullfirst desc")
+    assertQ(req("id:[1000 TO 1002]; nullfirst desc")
             ,"*[count(//doc)=3] "
             ,"//doc[1]/int[.='1002']"
             ,"//doc[2]/int[.='1000']  "
@@ -781,16 +781,16 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     
     // Sort parsing exception tests.  (SOLR-6, SOLR-99)
     assertQEx( "can not sort unindexed fields",
-        req( "id_i:1000; shouldbeunindexed asc" ), 400 );
+        req( "id:1000; shouldbeunindexed asc" ), 400 );
     
     assertQEx( "invalid query format",
-        req( "id_i:1000; nullfirst" ), 400 );
+        req( "id:1000; nullfirst" ), 400 );
 
     assertQEx( "unknown sort field",
-        req( "id_i:1000; abcde12345 asc" ), 1 ); 
+        req( "id:1000; abcde12345 asc" ), 1 ); 
 
     assertQEx( "unknown sort order",
-        req( "id_i:1000; nullfirst aaa" ), 400 ); 
+        req( "id:1000; nullfirst aaa" ), 400 ); 
         
     // test prefix query
 
