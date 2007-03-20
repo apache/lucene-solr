@@ -195,6 +195,7 @@
    <dynamicField name="*_facet"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_zh_text"   type="text_zh"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_text"   type="text"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_display"   type="text"    indexed="false"  stored="true" multiValued="true"/>   
  </fields>
 
  <!-- field to use to determine and enforce document uniqueness. -->
@@ -210,6 +211,7 @@
         is added to the index.  It's used either to index the same field differently,
         or to add multiple fields to the same field for easier/faster searching.  -->
  <copyField source="*_text" dest="text"/>
+ <copyField source="*_facet" dest="text"/>
 
  <!-- Similarity is the scoring routine for each document vs. a query.
       A custom similarity may be specified here, but the default is fine
