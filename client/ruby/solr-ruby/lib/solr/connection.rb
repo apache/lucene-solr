@@ -89,8 +89,8 @@ class Solr::Connection
   end
 
   # sends a commit message to the server
-  def commit
-    response = send(Solr::Request::Commit.new)
+  def commit(options={})
+    response = send(Solr::Request::Commit.new(options))
     return response.ok?
   end
 
