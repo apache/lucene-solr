@@ -24,7 +24,7 @@ private
   def flare_before
     session[:page] ||= 1
   
-    session[:flare_context] ||= FlareContext.new(SOLR_CONFIG)
+    session[:flare_context] ||= Flare::Context.new(SOLR_CONFIG)
     
     @flare = session[:flare_context]
   end
