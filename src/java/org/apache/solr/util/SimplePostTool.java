@@ -17,22 +17,23 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.File;
-import java.io.Reader;
-import java.io.FileReader;
-import java.io.StringReader;
-import java.io.InputStreamReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.io.OutputStreamWriter;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.URL;
-import java.net.ProtocolException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 
 /**
  * A simple utility class for posting raw updates to a Solr server, 
@@ -147,11 +148,14 @@ public class SimplePostTool {
   /**
    * Opens the file and posts it's contents to the solrUrl,
    * writes to response to output.
+   * @throws UnsupportedEncodingException 
    */
   public void postFile(File file, Writer output) 
-    throws FileNotFoundException {
+    throws FileNotFoundException, UnsupportedEncodingException {
 
-    FileReader reader = new FileReader(file);
+    // FIXME; use a real XML parser to read files, so as to support various encodings
+    // (and we can only post well-formed XML anyway)
+    Reader reader = new InputStreamReader(new FileInputStream(file),POST_ENCODING);
     try {
       postData(reader, output);
     } finally {
