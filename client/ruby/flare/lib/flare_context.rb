@@ -43,6 +43,10 @@ class FlareContext
     
     # facet_queries not cleared as their lifetime is different than constraints
   end
+  
+  def empty_constraints?
+    @queries.empty? && @filters.empty? && @applied_facet_queries.empty?
+  end
     
   def search(start, max)
     facet_queries = @facet_queries.collect do |k,v|
