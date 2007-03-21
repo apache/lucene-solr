@@ -64,7 +64,8 @@ Contained packages:
         <li><a href="#algorithm">Benchmark "algorithm"</a></li>
         <li><a href="#tasks">Supported tasks/commands</a></li>
         <li><a href="#properties">Benchmark properties</a></li>
-        <li><a href="#example">Example input algorithm and the result benchmark report.</a></li>
+        <li><a href="#example">Example input algorithm and the result benchmark
+                    report.</a></li>
     </ol>
 </p>
 <a name="concept"></a>
@@ -74,9 +75,12 @@ Benchmark Lucene using task primitives.
 </p>
 
 <p>
-A benchmark is composed of some predefined tasks, allowing for creating an index, adding documents,
-optimizing, searching, generating reports, and more. A benchmark run takes an "algorithm" file
-that contains a description of the sequence of tasks making up the run, and some properties defining a few
+A benchmark is composed of some predefined tasks, allowing for creating an
+index, adding documents,
+optimizing, searching, generating reports, and more. A benchmark run takes an
+"algorithm" file
+that contains a description of the sequence of tasks making up the run, and some
+properties defining a few
 additional characteristics of the benchmark run.
 </p>
 
@@ -95,28 +99,30 @@ Easiest way to run a benchmarks is using the predefined ant task:
      <br>- would run <code>your perf test</code> "algorithm".
  </li>
  <li>java org.apache.lucene.benchmark.byTask.programmatic.Sample
-     <br>- would run a performance test programmatically - without using an alg file.
-     This is less readable, and less convinient, but possible.
+     <br>- would run a performance test programmatically - without using an alg
+     file. This is less readable, and less convinient, but possible.
  </li>
 </ul>
 </p>
 
 <p>
-You may find existing tasks sufficient for defining the benchmark <i>you</i> need,
-otherwise, you can extend the framework to meet your needs, as explained herein.
+You may find existing tasks sufficient for defining the benchmark <i>you</i>
+need, otherwise, you can extend the framework to meet your needs, as explained
+herein.
 </p>
 
 <p>
-Each benchmark run has a DocMaker and a QueryMaker. These two should usually match, so
-that "meaningful" queries are used for a certain collection.
-Properties set at the header of the alg file define which "makers" should be used.
-You can also specify your own makers, implementing the DocMaker and QureyMaker interfaces.
+Each benchmark run has a DocMaker and a QueryMaker. These two should usually
+match, so that "meaningful" queries are used for a certain collection.
+Properties set at the header of the alg file define which "makers" should be
+used. You can also specify your own makers, implementing the DocMaker and
+QureyMaker interfaces.
 </p>
 
 <p>
-Benchmark .alg file contains the benchmark "algorithm". The syntax is described below.
-Within the algorithm, you can specify groups of commands, assign them names,
-specify commands that should be repeated,
+Benchmark .alg file contains the benchmark "algorithm". The syntax is described
+below. Within the algorithm, you can specify groups of commands, assign them
+names, specify commands that should be repeated,
 do commands in serial or in parallel,
 and also control the speed of "firing" the commands.
 </p>
@@ -151,8 +157,10 @@ The following is an informal description of the supported syntax.
 
 <ol>
  <li>
- <b>Measuring</b>: When a command is executed, statistics for the elapsed execution time and memory consumption are collected.
- At any time, those statistics can be printed, using one of the available ReportTasks.
+ <b>Measuring</b>: When a command is executed, statistics for the elapsed
+ execution time and memory consumption are collected.
+ At any time, those statistics can be printed, using one of the
+ available ReportTasks.
  </li>
  <li>
  <b>Comments</b> start with '<font color="#FF0066">#</font>'.
@@ -161,58 +169,98 @@ The following is an informal description of the supported syntax.
  <b>Serial</b> sequences are enclosed within '<font color="#FF0066">{ }</font>'.
  </li>
  <li>
- <b>Parallel</b> sequences are enclosed within '<font color="#FF0066">[ ]</font>'
+ <b>Parallel</b> sequences are enclosed within
+ '<font color="#FF0066">[ ]</font>'
  </li>
  <li>
- <b>Sequence naming:</b> To name a sequence, put '<font color="#FF0066">"name"</font>' just after '<font color="#FF0066">{</font>' or '<font color="#FF0066">[</font>'.
- <br>Example - <font color="#FF0066">{ "ManyAdds" AddDoc } : 1000000</font> - would
- name the sequence of 1M add docs "ManyAdds", and this name would later appear in statistic reports.
- If you don't specify a name for a sequence, it is given one: you can see it as the
- algorithm is printed just before benchmark execution starts.
+ <b>Sequence naming:</b> To name a sequence, put
+ '<font color="#FF0066">"name"</font>' just after
+ '<font color="#FF0066">{</font>' or '<font color="#FF0066">[</font>'.
+ <br>Example - <font color="#FF0066">{ "ManyAdds" AddDoc } : 1000000</font> -
+ would
+ name the sequence of 1M add docs "ManyAdds", and this name would later appear
+ in statistic reports.
+ If you don't specify a name for a sequence, it is given one: you can see it as
+ the  algorithm is printed just before benchmark execution starts.
  </li>
  <li>
  <b>Repeating</b>:
- To repeat sequence tasks N times, add '<font color="#FF0066">: N</font>' just after the
- sequence closing tag - '<font color="#FF0066">}</font>' or '<font color="#FF0066">]</font>' or '<font color="#FF0066">></font>'.
- <br>Example -  <font color="#FF0066">[ AddDoc ] : 4</font>  - would do 4 addDoc in parallel, spawning 4 threads at once.
- <br>Example -  <font color="#FF0066">[ AddDoc AddDoc ] : 4</font>  - would do 8 addDoc in parallel, spawning 8 threads at once.
- <br>Example -  <font color="#FF0066">{ AddDoc } : 30</font> - would do addDoc 30 times in a row.
- <br>Example -  <font color="#FF0066">{ AddDoc AddDoc } : 30</font> - would do addDoc 60 times in a row.
+ To repeat sequence tasks N times, add '<font color="#FF0066">: N</font>' just
+ after the
+ sequence closing tag - '<font color="#FF0066">}</font>' or
+ '<font color="#FF0066">]</font>' or '<font color="#FF0066">></font>'.
+ <br>Example -  <font color="#FF0066">[ AddDoc ] : 4</font>  - would do 4 addDoc
+ in parallel, spawning 4 threads at once.
+ <br>Example -  <font color="#FF0066">[ AddDoc AddDoc ] : 4</font>  - would do
+ 8 addDoc in parallel, spawning 8 threads at once.
+ <br>Example -  <font color="#FF0066">{ AddDoc } : 30</font> - would do addDoc
+ 30 times in a row.
+ <br>Example -  <font color="#FF0066">{ AddDoc AddDoc } : 30</font> - would do
+ addDoc 60 times in a row.
  </li>
  <li>
  <b>Command parameter</b>: a command can take a single parameter.
- If the certain command does not support a parameter, or if the parameter is of the wrong type,
+ If the certain command does not support a parameter, or if the parameter is of
+ the wrong type,
  reading the algorithm will fail with an exception and the test would not start.
- Currently only AddDoc supports a (numeric) parameter, which indicates the required size of added document.
- If the DocMaker implementation used in the test does not support makeDoc(size), an exception would be thrown and the test would fail.
- <br>Example - <font color="#FF0066">AddDoc(2000)</font> - would add a document of size 2000 (~bytes).
- <br>See conf/task-sample.alg for how this can be used, for instance, to check which is faster, adding
+ Currently the following tasks take parameters:
+ <ul>
+   <li><b>AddDoc</b> takes a numeric parameter, indicating the required size of 
+       added document. Note: if the DocMaker implementation used in the test 
+       does not support makeDoc(size), an exception would be thrown and the test
+       would fail.
+   </li>
+   <li><b>DeleteDoc</b> takes numeric parameter, indicating the docid to be 
+       deleted. The latter is not very useful for loops, since the docid is 
+       fixed, so for deletion in loops it is better to use the 
+       <code>doc.delete.step</code> property. 
+   </li>
+   <li><b>SetProp</b> takes a "name,value" param, ',' used as a separator.
+   </li>
+   <li><b>SearchTravRetTask</b> and <b>SearchTravTask</b> take a numeric 
+   	   parameter, indicating the required traversal size.
+   </li>
+ </ul>
+ <br>Example - <font color="#FF0066">AddDoc(2000)</font> - would add a document
+ of size 2000 (~bytes).
+ <br>See conf/task-sample.alg for how this can be used, for instance, to check
+ which is faster, adding
  many smaller documents, or few larger documents.
- Next candidates for supporting a parameter may be the Search tasks, for controlling the qurey size.
+ Next candidates for supporting a parameter may be the Search tasks,
+ for controlling the qurey size.
  </li>
  <li>
- <b>Statistic recording elimination</b>: - a sequence can also end with '<font color="#FF0066">></font>',
+ <b>Statistic recording elimination</b>: - a sequence can also end with
+ '<font color="#FF0066">></font>',
  in which case child tasks would not store their statistics.
  This can be useful to avoid exploding stats data, for adding say 1M docs.
  <br>Example - <font color="#FF0066">{ "ManyAdds" AddDoc > : 1000000</font> -
  would add million docs, measure that total, but not save stats for each addDoc.
- <br>Notice that the granularity of System.currentTimeMillis() (which is used here) is system dependant,
- and in some systems an operation that takes 5 ms to complete may show 0 ms latency time in performance measurements.
- Therefore it is sometimes more accurate to look at the elapsed time of a larger sequence, as demonstrated here.
+ <br>Notice that the granularity of System.currentTimeMillis() (which is used
+ here) is system dependant,
+ and in some systems an operation that takes 5 ms to complete may show 0 ms
+ latency time in performance measurements.
+ Therefore it is sometimes more accurate to look at the elapsed time of a larger
+ sequence, as demonstrated here.
  </li>
  <li>
  <b>Rate</b>:
- To set a rate (ops/sec or ops/min) for a sequence, add '<font color="#FF0066">: N : R</font>' just after sequence closing tag.
+ To set a rate (ops/sec or ops/min) for a sequence, add
+ '<font color="#FF0066">: N : R</font>' just after sequence closing tag.
  This would specify repetition of N with rate of R operations/sec.
- Use '<font color="#FF0066">R/sec</font>' or '<font color="#FF0066">R/min</font>'
+ Use '<font color="#FF0066">R/sec</font>' or
+ '<font color="#FF0066">R/min</font>'
  to explicitely specify that the rate is per second or per minute.
  The default is per second,
- <br>Example -  <font color="#FF0066">[ AddDoc ] : 400 : 3</font> - would do 400 addDoc in parallel, starting up to 3 threads per second.
- <br>Example -  <font color="#FF0066">{ AddDoc } : 100 : 200/min</font> - would do 100 addDoc serially,
+ <br>Example -  <font color="#FF0066">[ AddDoc ] : 400 : 3</font> - would do 400
+ addDoc in parallel, starting up to 3 threads per second.
+ <br>Example -  <font color="#FF0066">{ AddDoc } : 100 : 200/min</font> - would
+ do 100 addDoc serially,
  waiting before starting next add, if otherwise rate would exceed 200 adds/min.
  </li>
  <li>
- <b>Command names</b>: Each class "AnyNameTask" in the package org.apache.lucene.benchmark.byTask.tasks,
+ <b>Command names</b>: Each class "AnyNameTask" in the
+ package org.apache.lucene.benchmark.byTask.tasks,
  that extends PerfTask, is supported as command "AnyName" that can be
  used in the benchmark "algorithm" description.
  This allows to add new commands by just adding such classes.
@@ -239,59 +287,85 @@ regular index/search work tasks, report tasks, and control tasks.
             <font color="#FF0066">RepAll</font> - all (completed) task runs.
             </li>
             <li>
-            <font color="#FF0066">RepSumByName</font> - all statistics, aggregated by name. So, if AddDoc was executed 2000 times,
-            only 1 report line would be created for it, aggregating all those 2000 statistic records.
+            <font color="#FF0066">RepSumByName</font> - all statistics,
+            aggregated by name. So, if AddDoc was executed 2000 times,
+            only 1 report line would be created for it, aggregating all those
+            2000 statistic records.
             </li>
             <li>
-            <font color="#FF0066">RepSelectByPref &nbsp; prefixWord</font> - all records for tasks whose name start with <font color="#FF0066">prefixWord</font>.
+            <font color="#FF0066">RepSelectByPref &nbsp; prefixWord</font> - all
+            records for tasks whose name start with
+            <font color="#FF0066">prefixWord</font>.
             </li>
             <li>
-            <font color="#FF0066">RepSumByPref &nbsp; prefixWord</font> - all records for tasks whose name start with <font color="#FF0066">prefixWord</font>,
+            <font color="#FF0066">RepSumByPref &nbsp; prefixWord</font> - all
+            records for tasks whose name start with
+            <font color="#FF0066">prefixWord</font>,
             aggregated by their full task name.
             </li>
             <li>
-            <font color="#FF0066">RepSumByNameRound</font> - all statistics, aggregated by name and by <font color="#FF0066">Round</font>.
-            So, if AddDoc was executed 2000 times in each of 3 <font color="#FF0066">rounds</font>, 3 report lines would be created for it,
-            aggregating all those 2000 statistic records in each round. See more about rounds in the <font color="#FF0066">NewRound</font> command description below.
+            <font color="#FF0066">RepSumByNameRound</font> - all statistics,
+            aggregated by name and by <font color="#FF0066">Round</font>.
+            So, if AddDoc was executed 2000 times in each of 3
+            <font color="#FF0066">rounds</font>, 3 report lines would be
+            created for it,
+            aggregating all those 2000 statistic records in each round.
+            See more about rounds in the <font color="#FF0066">NewRound</font>
+            command description below.
             </li>
             <li>
-            <font color="#FF0066">RepSumByPrefRound &nbsp; prefixWord</font> - similar to <font color="#FF0066">RepSumByNameRound</font>,
-            just that only tasks whose name starts with <font color="#FF0066">prefixWord</font> are included.
+            <font color="#FF0066">RepSumByPrefRound &nbsp; prefixWord</font> -
+            similar to <font color="#FF0066">RepSumByNameRound</font>,
+            just that only tasks whose name starts with
+            <font color="#FF0066">prefixWord</font> are included.
             </li>
  </ul>
- If needed, additional reports can be added by extending the abstract class ReportTask, and by
+ If needed, additional reports can be added by extending the abstract class
+ ReportTask, and by
  manipulating the statistics data in Points and TaskStats.
  </li>
 
- <li><b>Control tasks</b>: Few of the tasks control the benchmark algorithm all over:
+ <li><b>Control tasks</b>: Few of the tasks control the benchmark algorithm
+ all over:
  <ul>
      <li>
      <font color="#FF0066">ClearStats</font> - clears the entire statistics.
-     Further reports would only include task runs that would start after this call.
+     Further reports would only include task runs that would start after this
+     call.
      </li>
      <li>
-     <font color="#FF0066">NewRound</font> - virtually start a new round of performance test.
-     Although this command can be placed anywhere, it mostly makes sense at the end of an outermost sequence.
-     <br>This increments a global "round counter". All task runs that would start now would
-     record the new, updated round counter as their round number. This would appear in reports.
+     <font color="#FF0066">NewRound</font> - virtually start a new round of
+     performance test.
+     Although this command can be placed anywhere, it mostly makes sense at
+     the end of an outermost sequence.
+     <br>This increments a global "round counter". All task runs that
+     would start now would
+     record the new, updated round counter as their round number.
+     This would appear in reports.
      In particular, see <font color="#FF0066">RepSumByNameRound</font> above.
-     <br>An additional effect of NewRound, is that numeric and boolean properties defined (at the head 
-     of the .alg file) as a sequence of values, e.g. <font color="#FF0066">merge.factor=mrg:10:100:10:100</font> would
+     <br>An additional effect of NewRound, is that numeric and boolean
+     properties defined (at the head
+     of the .alg file) as a sequence of values, e.g. <font color="#FF0066">
+     merge.factor=mrg:10:100:10:100</font> would
      increment (cyclic) to the next value.
-     Note: this would also be reflected in the reports, in this case under a column that would be named "mrg".
+     Note: this would also be reflected in the reports, in this case under a
+     column that would be named "mrg".
      </li>
      <li>
-     <font color="#FF0066">ResetInputs</font> - DocMaker and the various QueryMakers
+     <font color="#FF0066">ResetInputs</font> - DocMaker and the
+     various QueryMakers
      would reset their counters to start.
      The way these Maker interfaces work, each call for makeDocument()
      or makeQuery() creates the next document or query
      that it "knows" to create.
-     If that pool is "exhausted", the "maker" start over again. The resetInpus command
+     If that pool is "exhausted", the "maker" start over again.
+     The resetInpus command
      therefore allows to make the rounds comparable.
      It is therefore useful to invoke ResetInputs together with NewRound.
      </li>
      <li>
-     <font color="#FF0066">ResetSystemErase</font> - reset all index and input data and call gc.
+     <font color="#FF0066">ResetSystemErase</font> - reset all index
+     and input data and call gc.
      Does NOT reset statistics. This contains ResetInputs.
      All writers/readers are nullified, deleted, closed.
      Index is erased.
@@ -299,34 +373,48 @@ regular index/search work tasks, report tasks, and control tasks.
      You would have to call CreateIndex once this was called...
      </li>
      <li>
-     <font color="#FF0066">ResetSystemSoft</font> -  reset all index and input data and call gc.
+     <font color="#FF0066">ResetSystemSoft</font> -  reset all
+     index and input data and call gc.
      Does NOT reset statistics. This contains ResetInputs.
      All writers/readers are nullified, closed.
      Index is NOT erased.
      Directory is NOT erased.
-     This is useful for testing performance on an existing index, for instance if the construction of a large index
-     took a very long time and now you would to test its search or update performance.
+     This is useful for testing performance on an existing index,
+     for instance if the construction of a large index
+     took a very long time and now you would to test
+     its search or update performance.
      </li>
  </ul>
  </li>
 
  <li>
- Other existing tasks are quite straightforward and would just be briefly described here.
+ Other existing tasks are quite straightforward and would
+ just be briefly described here.
  <ul>
      <li>
-     <font color="#FF0066">CreateIndex</font> and <font color="#FF0066">OpenIndex</font> both leave the index open for later update operations.
+     <font color="#FF0066">CreateIndex</font> and
+     <font color="#FF0066">OpenIndex</font> both leave the
+     index open for later update operations.
      <font color="#FF0066">CloseIndex</font> would close it.
      </li>
      <li>
-     <font color="#FF0066">OpenReader</font>, similarly, would leave an index reader open for later search operations.
+     <font color="#FF0066">OpenReader</font>, similarly, would
+     leave an index reader open for later search operations.
      But this have further semantics.
-     If a Read operation is performed, and an open reader exists, it would be used.
-     Otherwise, the read operation would open its own reader and close it when the read operation is done.
-     This allows testing various scenarios - sharing a reader, searching with "cold" reader, with "warmed" reader, etc.
-     The read operations affected by this are: <font color="#FF0066">Warm</font>,
-     <font color="#FF0066">Search</font>, <font color="#FF0066">SearchTrav</font> (search and traverse),
-     and <font color="#FF0066">SearchTravRet</font> (search and traverse and retrieve).
-     Notice that each of the 3 search task types maintains its own queryMaker instance.
+     If a Read operation is performed, and an open reader exists,
+     it would be used.
+     Otherwise, the read operation would open its own reader
+     and close it when the read operation is done.
+     This allows testing various scenarios - sharing a reader,
+     searching with "cold" reader, with "warmed" reader, etc.
+     The read operations affected by this are:
+     <font color="#FF0066">Warm</font>,
+     <font color="#FF0066">Search</font>,
+     <font color="#FF0066">SearchTrav</font> (search and traverse),
+     and <font color="#FF0066">SearchTravRet</font> (search
+     and traverse and retrieve).
+     Notice that each of the 3 search task types maintains
+     its own queryMaker instance.
      </li>
  </ul
  </li>
@@ -341,8 +429,10 @@ define several parameters of the performance test.
 As mentioned above for the <font color="#FF0066">NewRound</font> task,
 numeric and boolean properties that are defined as a sequence
 of values, e.g. <font color="#FF0066">merge.factor=mrg:10:100:10:100</font>
-would increment (cyclic) to the next value, when NewRound is called, and would also
-appear as a named column in the reports (column name would be "mrg" in this example).
+would increment (cyclic) to the next value,
+when NewRound is called, and would also
+appear as a named column in the reports (column
+name would be "mrg" in this example).
 </p>
 
 <p>
@@ -351,12 +441,13 @@ Some of the currently defined properties are:
 
 <ol>
     <li>
-    <font color="#FF0066">analyzer</font> - full class name for the analyzer to use.
+    <font color="#FF0066">analyzer</font> - full
+    class name for the analyzer to use.
     Same analyzer would be used in the entire test.
     </li>
 
     <li>
-    <font color="#FF0066">directory</font> - valid values are FSDirectory and RAMDirectory.
+    <font color="#FF0066">directory</font> - valid values are
     This tells which directory to use for the performance test.
     </li>
 
@@ -384,7 +475,48 @@ Some of the currently defined properties are:
 </ol>
 
 <p>
-For additional defined properties see the *.alg files under conf.
+Here is a list of currently defined properties:
+</p>
+<ol>
+
+  <li><b>Docs and queries creation:</b></li>
+    <ul><li>analyzer
+    </li><li>doc.maker
+    </li><li>doc.stored
+    </li><li>doc.tokenized
+    </li><li>doc.term.vector
+    </li><li>docs.dir
+    </li><li>query.maker
+    </li><li>file.query.maker.file
+    </li><li>file.query.maker.default.field
+    </li></ul>
+  </li>
+  
+  <li><b>Logging</b>:
+    <ul><li>doc.add.log.step
+    </li><li>doc.delete.log.step
+    </li><li>log.queries 
+    </li><li>task.max.depth.log
+    </li></ul>
+  </li>
+  
+  <li><b>Index writing</b>:
+    <ul><li>compound
+    </li><li>merge.factor
+    </li><li>max.buffered
+    </li><li>directory
+    </li></ul>
+  </li>
+  
+  <li><b>Doc deletion</b>:
+    <ul><li>doc.delete.step
+    </li></ul>
+  </li>
+
+</ol>
+
+<p>
+For sample use of these properties see the *.alg files under conf.
 </p>
 
 <a name="example"></a>

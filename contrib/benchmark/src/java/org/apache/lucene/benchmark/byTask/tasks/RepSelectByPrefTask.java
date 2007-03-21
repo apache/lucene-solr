@@ -17,12 +17,16 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Report;
+import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 
 /**
  * Report by-name-prefix statistics with no aggregations.
- * Other side effects: None.
+ * <br>Other side effects: None.
  */
 public class RepSelectByPrefTask extends RepSumByPrefTask {
 
@@ -31,7 +35,7 @@ public class RepSelectByPrefTask extends RepSumByPrefTask {
   }
 
   public int doLogic() throws Exception {
-    Report rp = getRunData().getPoints().reportSelectByPrefix(prefix);
+    Report rp = reportSelectByPrefix(getRunData().getPoints().taskStats());
     
     System.out.println();
     System.out.println("------------> Report Select By Prefix ("+prefix+") ("+
@@ -41,4 +45,31 @@ public class RepSelectByPrefTask extends RepSumByPrefTask {
 
     return 0;
   }
+  
+  protected Report reportSelectByPrefix(List taskStats) {
+    String longestOp = longestOp(taskStats.iterator());
+    boolean first = true;
+    StringBuffer sb = new StringBuffer();
+    sb.append(tableTitle(longestOp));
+    sb.append(newline);
+    int reported = 0;
+    for (Iterator it = taskStats.iterator(); it.hasNext();) {
+      TaskStats stat = (TaskStats) it.next();
+      if (stat.getElapsed()>=0 && stat.getTask().getName().startsWith(prefix)) { // only ended tasks with proper name
+        reported++;
+        if (!first) {
+          sb.append(newline);
+        }
+        first = false;
+        String line = taskReportLine(longestOp,stat);
+        if (taskStats.size()>2 && reported%2==0) {
+          line = line.replaceAll("   "," - ");
+        }
+        sb.append(line);
+      }
+    }
+    String reptxt = (reported==0 ? "No Matching Entries Were Found!" : sb.toString());
+    return new Report(reptxt,reported,reported, taskStats.size());
+  }
+
 }

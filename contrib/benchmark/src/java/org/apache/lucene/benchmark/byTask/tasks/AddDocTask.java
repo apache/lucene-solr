@@ -23,10 +23,18 @@ import org.apache.lucene.document.Document;
 
 
 /**
- * Add a document, optionally with of a cetrain size.
- * Other side effects: none.
+ * Add a document, optionally with of a certain size.
+ * <br>Other side effects: none.
+ * <br>Relevant properties: <code>doc.add.log.step</code>.
+ * <br>Takes optional param: document size. 
  */
 public class AddDocTask extends PerfTask {
+
+  /**
+   * Default value for property <code>doc.add.log.step<code> - indicating how often 
+   * an "added N docs" message should be logged.  
+   */
+  public static final int DEFAULT_ADD_DOC_LOG_STEP = 500;
 
   public AddDocTask(PerfRunData runData) {
     super(runData);
@@ -70,10 +78,10 @@ public class AddDocTask extends PerfTask {
   private void log (int count) {
     if (logStep<0) {
       // avoid sync although race possible here
-      logStep = getRunData().getConfig().get("doc.add.log.step",500);
+      logStep = getRunData().getConfig().get("doc.add.log.step",DEFAULT_ADD_DOC_LOG_STEP);
     }
     if (logStep>0 && (count%logStep)==0) {
-      System.out.println("--> processed "+count+" docs");
+      System.out.println("--> processed (add) "+count+" docs");
     }
   }
 
@@ -85,4 +93,12 @@ public class AddDocTask extends PerfTask {
     super.setParams(params);
     docSize = (int) Float.parseFloat(params); 
   }
+
+  /* (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
+   */
+  public boolean supportsParams() {
+    return true;
+  }
+  
 }

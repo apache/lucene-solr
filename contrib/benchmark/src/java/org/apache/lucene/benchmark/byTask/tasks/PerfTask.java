@@ -30,6 +30,8 @@ import org.apache.lucene.benchmark.byTask.utils.Format;
  * <br>
  * Tasks performing some work that should be measured for the task, can overide setup() and/or tearDown() and 
  * placed that work there. 
+ * <br>
+ * Relevant properties: <code>task.max.depth.log</code>.
  */
 public abstract class PerfTask implements Cloneable {
 
@@ -39,7 +41,7 @@ public abstract class PerfTask implements Cloneable {
   private String name;
   private int depth = 0;
   private int maxDepthLogStart = 0;
-  protected String params = null;
+  private String params = null;
   
   protected static final String NEW_LINE = System.getProperty("line.separator");
 
@@ -200,13 +202,24 @@ public abstract class PerfTask implements Cloneable {
   }
 
   /**
+   * Sub classes that supports parameters must overide this method to return true.
+   * @return true iff this task supports command line params.
+   */
+  public boolean supportsParams () {
+    return false;
+  }
+  
+  /**
    * Set the params of this task.
-   * Sub classes that supports parameters may overide this method for fetching/processing the params.
+   * @exception UnsupportedOperationException for tasks supporting command line parameters.
    */
   public void setParams(String params) {
+    if (!supportsParams()) {
+      throw new UnsupportedOperationException(getName()+" does not support command line parameters.");
+    }
     this.params = params;
   }
-
+  
   /**
    * @return Returns the Params.
    */

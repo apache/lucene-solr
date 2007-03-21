@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexWriter;
 
 /**
  * Close index writer.
- * Other side effects: index writer object in perfRunData is nullified.
+ * <br>Other side effects: index writer object in perfRunData is nullified.
  */
 public class CloseIndexTask extends PerfTask {
 

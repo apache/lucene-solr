@@ -24,8 +24,8 @@ import org.apache.lucene.index.IndexReader;
 
 /**
  * Close index reader.
- * Other side effects: index reader in perfRunData is nullified.
- * This would cause read related tasks to reopen their own reader. 
+ * <br>Other side effects: index reader in perfRunData is nullified.
+ * <br>This would cause read related tasks to reopen their own reader. 
  */
 public class CloseReaderTask extends PerfTask {
 

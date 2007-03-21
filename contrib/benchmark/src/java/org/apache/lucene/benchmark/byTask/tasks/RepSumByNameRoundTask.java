@@ -17,12 +17,17 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Report;
+import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 
 /**
  * Report all statistics grouped/aggregated by name and round.
- * Other side effects: None.
+ * <br>Other side effects: None.
  */
 public class RepSumByNameRoundTask extends ReportTask {
 
@@ -31,7 +36,7 @@ public class RepSumByNameRoundTask extends ReportTask {
   }
 
   public int doLogic() throws Exception {
-    Report rp = getRunData().getPoints().reportSumByNameRound();
+    Report rp = reportSumByNameRound(getRunData().getPoints().taskStats());
 
     System.out.println();
     System.out.println("------------> Report Sum By (any) Name and Round ("+
@@ -40,6 +45,37 @@ public class RepSumByNameRoundTask extends ReportTask {
     System.out.println();
     
     return 0;
+  }
+
+  /**
+   * Report statistics as a string, aggregate for tasks named the same, and from the same round.
+   * @return the report
+   */
+  protected Report reportSumByNameRound(List taskStats) {
+    // aggregate by task name and round
+    LinkedHashMap p2 = new LinkedHashMap();
+    int reported = 0;
+    for (Iterator it = taskStats.iterator(); it.hasNext();) {
+      TaskStats stat1 = (TaskStats) it.next();
+      if (stat1.getElapsed()>=0) { // consider only tasks that ended
+        reported++;
+        String name = stat1.getTask().getName();
+        String rname = stat1.getRound()+"."+name; // group by round
+        TaskStats stat2 = (TaskStats) p2.get(rname);
+        if (stat2 == null) {
+          try {
+            stat2 = (TaskStats) stat1.clone();
+          } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+          }
+          p2.put(rname,stat2);
+        } else {
+          stat2.add(stat1);
+        }
+      }
+    }
+    // now generate report from secondary list p2    
+    return genPartialReport(reported, p2, taskStats.size());
   }
 
 }

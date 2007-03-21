@@ -25,7 +25,7 @@ import org.apache.lucene.store.Directory;
 
 /**
  * Open an index reader.
- * Other side effects: index redaer object in perfRunData is set.
+ * <br>Other side effects: index redaer object in perfRunData is set.
  */
 public class OpenReaderTask extends PerfTask {
 

@@ -64,9 +64,9 @@ log.queries=true
                 
     { "SrchNewRdr" Search > : 500
                 
-    { "SrchTrvNewRdr" SearchTrav > : 300
+    { "SrchTrvNewRdr" SearchTrav(1000) > : 300
                 
-    { "SrchTrvRetNewRdr" SearchTravRet > : 100
+    { "SrchTrvRetNewRdr" SearchTravRet(2000) > : 100
                 
     NewRound
 

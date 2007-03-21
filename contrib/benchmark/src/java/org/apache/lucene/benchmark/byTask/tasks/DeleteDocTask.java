@@ -21,10 +21,24 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 
 /**
  * Delete a document by docid.
- * Other side effects: none.
+ * <br>Other side effects: none.
+ * <br>Relevant properties: <code>doc.delete.log.step , doc.delete.step</code>.
+ * <br>If no docid param is supplied, deletes doc with <code>id = last-deleted-doc + doc.delete.step</code>. 
+ * <br>Takes optional param: document id. 
  */
 public class DeleteDocTask extends PerfTask {
 
+  /**
+   * Gap between ids of deleted docs, applies when no docid param is provided.
+   */
+  public static final int DEFAULT_DOC_DELETE_STEP = 8;
+  
+  /**
+   * Default value for property <code>doc.delete.log.step<code> - indicating how often 
+   * an "deleted N docs" message should be logged.  
+   */
+  public static final int DEFAULT_DELETE_DOC_LOG_STEP = 500;
+  
   public DeleteDocTask(PerfRunData runData) {
     super(runData);
   }
@@ -50,10 +64,10 @@ public class DeleteDocTask extends PerfTask {
     super.setup();
     // one time static initializations
     if (logStep<0) {
-      logStep = getRunData().getConfig().get("doc.delete.log.step",500);
+      logStep = getRunData().getConfig().get("doc.delete.log.step",DEFAULT_DELETE_DOC_LOG_STEP);
     }
     if (deleteStep<0) {
-      deleteStep = getRunData().getConfig().get("doc.delete.step",8);
+      deleteStep = getRunData().getConfig().get("doc.delete.step",DEFAULT_DOC_DELETE_STEP);
     }
     // set the docid to be deleted
     docid = (byStep ? lastDeleted + deleteStep : docid);
@@ -69,7 +83,7 @@ public class DeleteDocTask extends PerfTask {
 
   private void log (int count) {
     if (logStep>0 && (count%logStep)==0) {
-      System.out.println("--> processed "+count+" docs, last deleted: "+lastDeleted);
+      System.out.println("--> processed (delete) "+count+" docs, last deleted: "+lastDeleted);
     }
   }
   
@@ -81,6 +95,13 @@ public class DeleteDocTask extends PerfTask {
     super.setParams(params);
     docid = (int) Float.parseFloat(params);
     byStep = (docid < 0);
+  }
+  
+  /* (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
+   */
+  public boolean supportsParams() {
+    return true;
   }
 
 }

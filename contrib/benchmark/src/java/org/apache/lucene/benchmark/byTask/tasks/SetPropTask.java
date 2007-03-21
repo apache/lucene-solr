@@ -24,7 +24,8 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
  * A property may have a single value, or a sequence of values, seprated by ":". 
  * If a sequence of values is specified, each time a new round starts, 
  * the next (cyclic) value is taken.  
- * Other side effects: none.
+ * <br>Other side effects: none.
+ * <br>Takes mandatory param: "name,value" pair. 
  * @see org.apache.lucene.benchmark.byTask.tasks.NewRoundTask
  */
 public class SetPropTask extends PerfTask {
@@ -53,6 +54,13 @@ public class SetPropTask extends PerfTask {
     int k = params.indexOf(",");
     name = params.substring(0,k).trim();
     value = params.substring(k+1).trim();
+  }
+
+  /* (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
+   */
+  public boolean supportsParams() {
+    return true;
   }
 
 }

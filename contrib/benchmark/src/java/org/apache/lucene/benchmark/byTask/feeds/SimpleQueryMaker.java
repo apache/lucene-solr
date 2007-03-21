@@ -17,28 +17,23 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.Format;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
+
+import java.util.ArrayList;
 
 /**
  * A QueryMaker that makes queries for a collection created 
  * using {@link org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker}.
  */
-public class SimpleQueryMaker implements QueryMaker {
+public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
 
-  private int qnum = 0;
-  private Query queries[];
-  private Config config;
-  
+
   /**
    * Prepare the queries for this test.
    * Extending classes can overide this method for preparing different queries. 
@@ -68,46 +63,6 @@ public class SimpleQueryMaker implements QueryMaker {
     qq.add(qp.parse("zoom*"));
     qq.add(qp.parse("synth*"));
     return (Query []) qq.toArray(new Query[0]);
-  }
-
-  public Query makeQuery() throws Exception {
-    return queries[nextQnum()];
-  }
-
-  public void setConfig(Config config) throws Exception {
-    this.config = config;
-    queries = prepareQueries();
-  }
-
-  public void resetInputs() {
-    qnum = 0;
-  }
-
-  // return next qnum
-  private synchronized int nextQnum() {
-    int res = qnum;
-    qnum = (qnum+1) % queries.length;
-    return res;
-  }
-
-  public String printQueries() {
-    String newline = System.getProperty("line.separator");
-    StringBuffer sb = new StringBuffer();
-    if (queries != null) {
-      for (int i = 0; i < queries.length; i++) {
-        sb.append(i+". "+Format.simpleName(queries[i].getClass())+" - "+queries[i].toString());
-        sb.append(newline);
-      }
-    }
-    return sb.toString();
-  }
-
-  /*
-   *  (non-Javadoc)
-   * @see org.apache.lucene.benchmark.byTask.feeds.QueryMaker#makeQuery(int)
-   */
-  public Query makeQuery(int size) throws Exception {
-    throw new Exception(this+".makeQuery(int size) is not supported!");
   }
 
 }

@@ -27,7 +27,7 @@ public class Report {
   private int outOf;
   private int reported;
 
-  Report (String text, int size, int reported, int outOf) {
+  public Report (String text, int size, int reported, int outOf) {
     this.text = text;
     this.size = size;
     this.reported = reported;

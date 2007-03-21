@@ -21,7 +21,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 
 /**
  * Clear statistics data.
- * Other side effects: None.
+ * <br>Other side effects: None.
  */
 public class ClearStatsTask extends PerfTask {
 

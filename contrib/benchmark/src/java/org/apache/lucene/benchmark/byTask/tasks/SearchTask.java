@@ -49,7 +49,7 @@ public class SearchTask extends ReadTask {
   }
 
   public QueryMaker getQueryMaker() {
-    return getRunData().getSearchQueryMaker();
+    return getRunData().getQueryMaker(this);
   }
 
 

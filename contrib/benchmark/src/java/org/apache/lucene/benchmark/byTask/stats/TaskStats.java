@@ -178,14 +178,14 @@ public class TaskStats implements Cloneable {
   /* (non-Javadoc)
    * @see java.lang.Object#clone()
    */
-  protected Object clone() throws CloneNotSupportedException {
+  public Object clone() throws CloneNotSupportedException {
     return super.clone();
   }
 
   /**
    * @return the round number.
    */
-  int getRound() {
+  public int getRound() {
     return round;
   }
   

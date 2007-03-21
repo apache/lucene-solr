@@ -28,7 +28,8 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
  * Create an index.
- * Other side effects: index writer object in perfRunData is set.
+ * <br>Other side effects: index writer object in perfRunData is set.
+ * <br>Relevant properties: <code>merge.factor , max.buffered</code>.
  */
 public class CreateIndexTask extends PerfTask {
 
@@ -45,8 +46,8 @@ public class CreateIndexTask extends PerfTask {
     Config config = getRunData().getConfig();
     
     boolean cmpnd = config.get("compound",true);
-    int mrgf = config.get("merge.factor",10);
-    int mxbf = config.get("max.buffered",10);
+    int mrgf = config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR);
+    int mxbf = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
 
     iw.setUseCompoundFile(cmpnd);
     iw.setMergeFactor(mrgf);

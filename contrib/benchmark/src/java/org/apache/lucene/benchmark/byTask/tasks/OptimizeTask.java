@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexWriter;
 
 /**
  * Optimize the index.
- * Other side effects: none.
+ * <br>Other side effects: none.
  */
 public class OptimizeTask extends PerfTask {
 

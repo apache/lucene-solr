@@ -18,15 +18,16 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 
 /**
  * Search and Travrese and Retrieve docs task.
  * 
  * <p>Note: This task reuses the reader if it is already open. 
  * Otherwise a reader is opened at start and closed at the end.
+ * 
+ * Takes optional param: traversal size (otherwise all results are traversed).
  */
-public class SearchTravRetTask extends ReadTask {
+public class SearchTravRetTask extends SearchTravTask {
 
   public SearchTravRetTask(PerfRunData runData) {
     super(runData);
@@ -35,22 +36,5 @@ public class SearchTravRetTask extends ReadTask {
   public boolean withRetrieve() {
     return true;
   }
-
-  public boolean withSearch() {
-    return true;
-  }
-
-  public boolean withTraverse() {
-    return true;
-  }
-
-  public boolean withWarm() {
-    return false;
-  }
-
-  public QueryMaker getQueryMaker() {
-    return getRunData().getSearchTravQueryMaker();
-  }
-
 
 }

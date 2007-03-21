@@ -19,10 +19,15 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Report;
+import org.apache.lucene.benchmark.byTask.stats.TaskStats;
+
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Report by-name-prefix statistics aggregated by name.
- * Other side effects: None.
+ * <br>Other side effects: None.
  */
 public class RepSumByPrefTask extends ReportTask {
 
@@ -33,7 +38,7 @@ public class RepSumByPrefTask extends ReportTask {
   protected String prefix;
 
   public int doLogic() throws Exception {
-    Report rp = getRunData().getPoints().reportSumByPrefix(prefix);
+    Report rp = reportSumByPrefix(getRunData().getPoints().taskStats());
     
     System.out.println();
     System.out.println("------------> Report Sum By Prefix ("+prefix+") ("+
@@ -43,6 +48,33 @@ public class RepSumByPrefTask extends ReportTask {
 
     return 0;
   }
+
+  protected Report reportSumByPrefix (List taskStats) {
+    // aggregate by task name
+    int reported = 0;
+    LinkedHashMap p2 = new LinkedHashMap();
+    for (Iterator it = taskStats.iterator(); it.hasNext();) {
+      TaskStats stat1 = (TaskStats) it.next();
+      if (stat1.getElapsed()>=0 && stat1.getTask().getName().startsWith(prefix)) { // only ended tasks with proper name
+        reported++;
+        String name = stat1.getTask().getName();
+        TaskStats stat2 = (TaskStats) p2.get(name);
+        if (stat2 == null) {
+          try {
+            stat2 = (TaskStats) stat1.clone();
+          } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+          }
+          p2.put(name,stat2);
+        } else {
+          stat2.add(stat1);
+        }
+      }
+    }
+    // now generate report from secondary list p2    
+    return genPartialReport(reported, p2, taskStats.size());
+  }
+  
 
   public void setPrefix(String prefix) {
     this.prefix = prefix;

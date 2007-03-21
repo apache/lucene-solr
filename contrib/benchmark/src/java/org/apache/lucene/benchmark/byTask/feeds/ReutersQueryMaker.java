@@ -17,10 +17,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
@@ -30,20 +26,18 @@ import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.Format;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
  * A QueryMaker that makes queries devised manually (by Grant Ingersoll) for
  * searching in the Reuters collection.
  */
-public class ReutersQueryMaker implements QueryMaker {
-  
-  private int qnum = 0;
-  private Query queries[];
-  private Config config;
-  
+public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker {
+
   private static String [] STANDARD_QUERIES = {
     //Start with some short queries
     "Salomon", "Comex", "night trading", "Japan Sony",
@@ -106,7 +100,7 @@ public class ReutersQueryMaker implements QueryMaker {
     return (Query[]) queries.toArray(new Query[0]);
   }
   
-  private void prepareQueries() throws Exception {
+  protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr= (Analyzer) Class.forName(config.get("analyzer",
     "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance(); 
@@ -114,47 +108,10 @@ public class ReutersQueryMaker implements QueryMaker {
     List queryList = new ArrayList(20);
     queryList.addAll(Arrays.asList(STANDARD_QUERIES));
     queryList.addAll(Arrays.asList(getPrebuiltQueries("body")));
-    queries = createQueries(queryList, anlzr);
+    return createQueries(queryList, anlzr);
   }
+
+
   
-  public Query makeQuery() throws Exception {
-    return queries[nextQnum()];
-  }
-  
-  public void setConfig(Config config) throws Exception {
-    this.config = config;
-    prepareQueries();
-  }
-  
-  public void resetInputs() {
-    qnum = 0;
-  }
-  
-  // return next qnum
-  private synchronized int nextQnum() {
-    int res = qnum;
-    qnum = (qnum+1) % queries.length;
-    return res;
-  }
-  
-  public String printQueries() {
-    String newline = System.getProperty("line.separator");
-    StringBuffer sb = new StringBuffer();
-    if (queries != null) {
-      for (int i = 0; i < queries.length; i++) {
-        sb.append(i+". "+Format.simpleName(queries[i].getClass())+" - "+queries[i].toString());
-        sb.append(newline);
-      }
-    }
-    return sb.toString();
-  }
-  
-  /*
-   *  (non-Javadoc)
-   * @see org.apache.lucene.benchmark.byTask.feeds.QueryMaker#makeQuery(int)
-   */
-  public Query makeQuery(int size) throws Exception {
-    throw new Exception(this+".makeQuery(int size) is not supported!");
-  }
 
 }

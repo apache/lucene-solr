@@ -18,10 +18,15 @@ package org.apache.lucene.benchmark.byTask;
  */
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Iterator;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
+import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
+import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
@@ -53,9 +58,10 @@ public class PerfRunData {
   private Directory directory;
   private Analyzer analyzer;
   private DocMaker docMaker;
-  private QueryMaker searchQueryMaker;
-  private QueryMaker searchTravQueryMaker;
-  private QueryMaker searchTravRetQueryMaker;
+  
+  // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
+  private HashMap readTaskQueryMaker;
+  private Class qmkrClass;
 
   private IndexReader indexReader;
   private IndexWriter indexWriter;
@@ -72,14 +78,9 @@ public class PerfRunData {
         "org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker")).newInstance();
     docMaker.setConfig(config);
     // query makers
-    // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
-    Class qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"));
-    searchQueryMaker = (QueryMaker) qmkrClass.newInstance();
-    searchQueryMaker.setConfig(config);
-    searchTravQueryMaker = (QueryMaker) qmkrClass.newInstance();
-    searchTravQueryMaker.setConfig(config);
-    searchTravRetQueryMaker = (QueryMaker) qmkrClass.newInstance();
-    searchTravRetQueryMaker.setConfig(config);
+    readTaskQueryMaker = new HashMap();
+    qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"));
+
     // index stuff
     reinit(false);
     
@@ -88,7 +89,7 @@ public class PerfRunData {
     
     if (Boolean.valueOf(config.get("log.queries","false")).booleanValue()) {
       System.out.println("------------> queries:");
-      System.out.println(getSearchQueryMaker().printQueries());
+      System.out.println(getQueryMaker(new SearchTask(this)).printQueries());
     }
 
   }
@@ -117,7 +118,7 @@ public class PerfRunData {
         FileUtils.fullyDelete(indexDir);
       }
       indexDir.mkdirs();
-      directory = FSDirectory.getDirectory(indexDir, eraseIndex);
+      directory = FSDirectory.getDirectory(indexDir);
     } else {
       directory = new RAMDirectory();
     }
@@ -202,24 +203,30 @@ public class PerfRunData {
 
   public void resetInputs() {
     docMaker.resetInputs();
-    searchQueryMaker.resetInputs();
-    searchTravQueryMaker.resetInputs();
-    searchTravRetQueryMaker.resetInputs();
+    Iterator it = readTaskQueryMaker.values().iterator();
+    while (it.hasNext()) {
+      ((QueryMaker) it.next()).resetInputs();
+    }
   }
 
   /**
-   * @return Returns the searchQueryMaker.
+   * @return Returns the queryMaker by read task type (class)
    */
-  public QueryMaker getSearchQueryMaker() {
-    return searchQueryMaker;
-  }
-
-  public QueryMaker getSearchTravQueryMaker() {
-    return searchTravQueryMaker;
-  }
-
-  public QueryMaker getSearchTravRetQueryMaker() {
-    return searchTravRetQueryMaker;
+  public QueryMaker getQueryMaker(ReadTask readTask) {
+    // mapping the query maker by task class allows extending/adding new search/read tasks
+    // without needing to modify this class.
+    Class readTaskClass = readTask.getClass();
+    QueryMaker qm = (QueryMaker) readTaskQueryMaker.get(readTaskClass);
+    if (qm == null) {
+      try {
+        qm = (QueryMaker) qmkrClass.newInstance();
+        qm.setConfig(config);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      readTaskQueryMaker.put(readTaskClass,qm);
+    }
+    return qm;
   }
 
 }

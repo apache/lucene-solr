@@ -28,9 +28,13 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
  * Open an index writer.
- * Other side effects: index writer object in perfRunData is set.
+ * <br>Other side effects: index writer object in perfRunData is set.
+ * <br>Relevant properties: <code>merge.factor , max.buffered</code>.
  */
 public class OpenIndexTask extends PerfTask {
+
+  public static final int DEFAULT_MAX_BUFFERED = 10;
+  public static final int DEFAULT_MERGE_PFACTOR = 10;
 
   public OpenIndexTask(PerfRunData runData) {
     super(runData);
@@ -44,8 +48,8 @@ public class OpenIndexTask extends PerfTask {
     Config config = getRunData().getConfig();
     
     boolean cmpnd = config.get("compound",true);
-    int mrgf = config.get("merge.factor",10);
-    int mxbf = config.get("max.buffered",10);
+    int mrgf = config.get("merge.factor",DEFAULT_MERGE_PFACTOR);
+    int mxbf = config.get("max.buffered",DEFAULT_MAX_BUFFERED);
 
     // must update params for newly opened writer
     writer.setMaxBufferedDocs(mxbf);

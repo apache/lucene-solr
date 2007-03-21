@@ -36,7 +36,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
           q.setSlop(slop);
           int wind = wd;
           for (int i=0; i<qlen; i++) {
-            q.add(new Term(SimpleDocMaker.BODY_FIELD,words[wind++]));
+            q.add(new Term(BasicDocMaker.BODY_FIELD,words[wind++]));
             if (remainedSlop>0) {
               remainedSlop--;
               wind++;
@@ -49,7 +49,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
           q.setSlop(slop+2*qlen);
           wind = wd+qlen+remainedSlop-1;
           for (int i=0; i<qlen; i++) {
-            q.add(new Term(SimpleDocMaker.BODY_FIELD,words[wind--]));
+            q.add(new Term(BasicDocMaker.BODY_FIELD,words[wind--]));
             if (remainedSlop>0) {
               remainedSlop--;
               wind--;

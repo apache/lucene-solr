@@ -4,6 +4,16 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+3/19/07
+
+1. Introduced an AbstractQueryMaker to hold common QueryMaker code. (GSI)
+2. Added traversalSize parameter to SearchTravRetTask and SearchTravTask.  Changed SearchTravRetTask to extend SearchTravTask. (GSI)
+3. Added FileBasedQueryMaker to run queries from a File or resource. (GSI)
+4. Modified query-maker generation for read related tasks to make further read tasks addition simpler and safer. (DC)
+5. Changed Taks' setParams() to throw UnsupportedOperationException if that task does not suppot command line param. (DC)
+6. Improved javadoc to specify all properties command line params currently supported. (DC)
+7. Refactored ReportTasks so that it is easy/possible now to create new report tasks. (DC)
+
 01/09/07
 
 1. Committed Doron Cohen's benchmarking contribution, which provides an easily expandable task based approach to benchmarking.  See the javadocs for information. (Doron Cohen via Grant Ingersoll)

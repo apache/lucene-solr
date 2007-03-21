@@ -76,9 +76,10 @@ public abstract class ReadTask extends PerfTask {
       Hits hits = searcher.search(q);
       //System.out.println("searched: "+q);
       
-      if (withTraverse()) {
+      if (withTraverse() && hits!=null) {
         Document doc = null;
-        if (hits != null && hits.length() > 0) {
+        int traversalSize = Math.min(hits.length(), traversalSize());
+        if (traversalSize > 0) {
           for (int m = 0; m < hits.length(); m++) {
             int id = hits.id(m);
             res++;
@@ -119,6 +120,18 @@ public abstract class ReadTask extends PerfTask {
    * Return true if, with search, results should be traversed.
    */
   public abstract boolean withTraverse ();
+
+  /**
+   * Specify the number of hits to traverse.  Tasks should override this if they want to restrict the number
+   * of hits that are traversed when {@link #withTraverse()} is true. Must be greater than 0.
+   *
+   * Read task calculates the traversal as: Math.min(hits.length(), traversalSize())
+   * @return Integer.MAX_VALUE
+   */
+  public int traversalSize()
+  {
+    return Integer.MAX_VALUE;
+  }
 
   /**
    * Return true if, with search & results traversing, docs should be retrieved.
