@@ -117,7 +117,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     //////////////////////// SolrInfoMBeans methods //////////////////////
 
     public String getVersion() {
-        return SolrCore.version;
+        return "$Revision$";
     }
 
     public String getDescription() {
