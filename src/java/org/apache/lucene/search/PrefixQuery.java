@@ -47,7 +47,8 @@ public class PrefixQuery extends Query {
         Term term = enumerator.term();
         if (term != null &&
             term.text().startsWith(prefixText) &&
-            term.field() == prefixField) {
+            term.field() == prefixField) // interned comparison 
+        {
           TermQuery tq = new TermQuery(term);	  // found a match
           tq.setBoost(getBoost());                // set the boost
           query.add(tq, BooleanClause.Occur.SHOULD);		  // add to query

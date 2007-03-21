@@ -91,7 +91,7 @@ public class RangeQuery extends Query
 
             do {
                 Term term = enumerator.term();
-                if (term != null && term.field() == testField) {
+                if (term != null && term.field() == testField) { // interned comparison
                     if (!checkLower || term.text().compareTo(lowerTerm.text()) > 0) {
                         checkLower = false;
                         if (upperTerm != null) {

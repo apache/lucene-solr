@@ -70,7 +70,7 @@ abstract class PrefixGenerator implements IdGenerator {
         Term term = enumerator.term();
         if (term != null &&
             term.text().startsWith(prefixText) &&
-            term.field() == prefixField)
+            term.field() == prefixField) // interned comparison
         {
           termDocs.seek(term);
           while (termDocs.next()) {
