@@ -10,10 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; end
-require 'solr/exception'
-require 'solr/request'
-require 'solr/connection'
-require 'solr/response'
-require 'solr/util'
-require 'solr/xml'
+class Solr::Util
+  # paired_array_each([key1,value1,key2,value2]) yields twice:
+  #     |key1,value1|  and |key2,value2|
+  def self.paired_array_each(a, &block)
+    0.upto(a.size / 2 - 1) do |i|
+      n = i * 2
+      yield(a[n], a[n+1])
+    end
+  end
+
+  # paired_array_to_hash([key1,value1,key2,value2]) => {key1 => value1, key2, value2}
+  def self.paired_array_to_hash(a)
+    h = {}
+    
+    paired_array_each(a) do |key,value|
+      h[key] = value
+    end
+    
+    h
+  end
+  
+end

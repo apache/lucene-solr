@@ -39,9 +39,8 @@ class Solr::Response::Standard < Solr::Response::Ruby
   def field_facets(field)
     facets = []
     values = @data['facet_counts']['facet_fields'][field]
-    0.upto(values.size / 2 - 1) do |i|
-      n = i * 2
-      facets << FacetValue.new(values[n], values[n+1])
+    Solr::Util.paired_array_each(values) do |key, value|
+      facets << FacetValue.new(key, value)
     end
     
     facets

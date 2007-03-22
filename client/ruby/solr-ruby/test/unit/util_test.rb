@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; end
-require 'solr/exception'
-require 'solr/request'
-require 'solr/connection'
-require 'solr/response'
-require 'solr/util'
-require 'solr/xml'
+require 'solr'
+require 'test/unit'
+
+class UtilTest < Test::Unit::TestCase
+
+  def test_paired_array_to_hash
+    assert_equal({:key1 => :value1, :key2 => :value2}, Solr::Util.paired_array_to_hash([:key1, :value1, :key2, :value2]))
+  end
+
+end
