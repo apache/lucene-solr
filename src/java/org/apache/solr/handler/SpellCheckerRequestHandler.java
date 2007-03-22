@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.handler;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.LuceneDictionary;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.NamedList;
 
 import java.io.IOException;
