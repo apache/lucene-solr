@@ -4,6 +4,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+3/21/07
+
+Tests (for benchmarking code correctness) were added - LUCENE-840.
+To be invoked by "ant test" from contrib/benchmark. (Doron Cohen)
+
 3/19/07
 
 1. Introduced an AbstractQueryMaker to hold common QueryMaker code. (GSI)

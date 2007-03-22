@@ -18,6 +18,8 @@ package org.apache.lucene.benchmark.byTask;
  */
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.Reader;
 
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -37,11 +39,38 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  * <li>TODO - perf report adequate to include in Lucene nightly build site? (so we can easily track performance changes.)</li>
  * <li>TODO - add overall time control for repeated execution (vs. current by-count only).</li>
  * <li>TODO - query maker that is based on index statistics.</li>
- * <li>TODO - prpoerties documentation - each task should document the properties it relies on.</li> 
  * </ol>
  */
 public class Benchmark {
 
+  private PerfRunData runData;
+  private Algorithm algorithm;
+  private boolean executed;
+  
+  public Benchmark (Reader algReader) throws Exception {
+    // prepare run data
+    try {
+      runData = new PerfRunData(new Config(algReader));
+    } catch (Exception e) {
+      throw new Exception("Error: cannot init PerfRunData!",e);
+    }
+    
+    // parse algorithm
+    try {
+      algorithm = new Algorithm(runData);
+    } catch (Exception e) {
+      throw new Exception("Error: cannot understand algorithm!",e);
+    }
+  }
+  
+  public synchronized void  execute() throws Exception {
+    if (executed) {
+      throw new Exception("Benchmark was already executed");
+    }
+    executed = true;
+    algorithm.execute();
+  }
+  
   /**
    * Run the benchmark algorithm.
    * @param args benchmark config and algorithm files
@@ -60,32 +89,22 @@ public class Benchmark {
       System.exit(1);
     }
     
-    // last preparations
-    PerfRunData runData = null;
-    try {
-      runData = new PerfRunData(new Config(algFile));
-    } catch (Exception e) {
-      System.err.println("Error: cannot init PerfRunData: "+e.getMessage());
-      e.printStackTrace();
-      System.exit(1);
-    }
+    System.out.println("Running algorithm from: "+algFile.getAbsolutePath());
     
-    // parse algorithm
-    Algorithm algorithm = null;
+    Benchmark benchmark = null;
     try {
-      algorithm = new Algorithm(runData);
+      benchmark = new Benchmark(new FileReader(algFile));
     } catch (Exception e) {
-      System.err.println("Error: cannot understand algorithm from file: "+algFile.getAbsolutePath());
       e.printStackTrace();
       System.exit(1);
     }
 
     System.out.println("------------> algorithm:");
-    System.out.println(algorithm.toString());
+    System.out.println(benchmark.getAlgorithm().toString());
 
     // execute
     try {
-      algorithm.execute();
+      benchmark.execute();
     } catch (Exception e) {
       System.err.println("Error: cannot execute the algorithm! "+e.getMessage());
       e.printStackTrace();
@@ -95,6 +114,20 @@ public class Benchmark {
     System.out.println("###  D O N E !!! ###");
     System.out.println("####################");
 
+  }
+
+  /**
+   * @return Returns the algorithm.
+   */
+  public Algorithm getAlgorithm() {
+    return algorithm;
+  }
+
+  /**
+   * @return Returns the runData.
+   */
+  public PerfRunData getRunData() {
+    return runData;
   }
 
 }

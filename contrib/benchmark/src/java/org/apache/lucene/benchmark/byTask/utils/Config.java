@@ -19,9 +19,8 @@ package org.apache.lucene.benchmark.byTask.utils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,10 +48,10 @@ public class Config {
    * @param algFile file containing both algorithm and config properties.
    * @throws IOException
    */
-  public Config (File algFile) throws IOException {
+  public Config (Reader algReader) throws IOException {
     // read alg file to array of lines
     ArrayList lines = new ArrayList();
-    BufferedReader r = new BufferedReader(new FileReader(algFile));
+    BufferedReader r = new BufferedReader(algReader);
     int lastConfigLine=0;
     for (String line = r.readLine(); line!=null; line=r.readLine()) {
       lines.add(line);

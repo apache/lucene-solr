@@ -223,7 +223,32 @@ public class Algorithm {
   public void execute() throws Exception {
     sequence.doLogic();
   }
-  
+
+  /**
+   * Expert: for test purposes, return all tasks participating in this algorithm.
+   * @return all tasks participating in this algorithm.
+   */
+  public ArrayList extractTasks() {
+    ArrayList res = new ArrayList();
+    extractTasks(res, sequence);
+    return res;
+  }
+  private void extractTasks (ArrayList extrct, TaskSequence seq) {
+    if (seq==null) 
+      return;
+    extrct.add(seq);
+    ArrayList t = sequence.getTasks();
+    if (t==null) 
+      return;
+    for (int i = 0; i < t.size(); i++) {
+      PerfTask p = (PerfTask) t.get(0);
+      if (p instanceof TaskSequence) {
+        extractTasks(extrct, (TaskSequence)p);
+      } else {
+        extrct.add(p);
+      }
+    }
+  }
   
 }
 

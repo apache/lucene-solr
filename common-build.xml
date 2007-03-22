@@ -194,6 +194,9 @@
       <sysproperty key="docs.dir" file="src/test"/>
       <sysproperty key="index.dir" file="${build.dir}/test/index"/>
 
+      <!-- contrib/benchmark uses this system property to locate defined tasks -->
+      <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
+
       <formatter type="xml"/>
       <formatter type="brief" usefile="false"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
