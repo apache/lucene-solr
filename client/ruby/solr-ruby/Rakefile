@@ -95,7 +95,8 @@ namespace :rails do
   desc "Install the Rails plugin version into the vendor/plugins dir. Need to set PLUGINS_DIR environment variable."
   task :install_solr_ruby => :package do
     plugins_dir = ENV["PLUGINS_DIR"] or raise "You must set PLUGINS_DIR"
-    File.cp_r(File.join("pkg","rails", "solr-ruby-rails-#{SOLR_RUBY_VERSION}/"), File.join(plugins_dir, "solr-ruby-rails-#{SOLR_RUBY_VERSION}/"))
+    mkdir File.join(plugins_dir, "solr-ruby-rails-#{SOLR_RUBY_VERSION}/") rescue nil
+    File.cp_r(File.join("pkg","rails", "solr-ruby-rails-#{SOLR_RUBY_VERSION}/"), plugins_dir)
   end
 end
 
@@ -160,10 +161,10 @@ def egrep(pattern)
     count = 0
     open(fn) do |f|
       while line = f.gets
-	count += 1
-	if line =~ pattern
-	  puts "#{fn}:#{count}:#{line}"
-	end
+        count += 1
+        if line =~ pattern
+          puts "#{fn}:#{count}:#{line}"
+        end
       end
     end
   end
