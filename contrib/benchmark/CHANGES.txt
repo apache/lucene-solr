@@ -4,6 +4,12 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+3/22/07
+
+-Moved withRetrieve() call out of the loop in ReadTask
+-Added SearchTravRetLoadFieldSelectorTask to help benchmark some of the FieldSelector capabilities
+-Added options to store content bytes on the Reuters Doc (and others, but Reuters is the only one w/ it enabled)
+
 3/21/07
 
 Tests (for benchmarking code correctness) were added - LUCENE-840.

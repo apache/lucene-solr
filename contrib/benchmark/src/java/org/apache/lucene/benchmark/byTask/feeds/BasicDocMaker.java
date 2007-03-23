@@ -17,17 +17,17 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.benchmark.byTask.utils.Format;
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
-
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.Format;
 
 
 /**
@@ -44,6 +44,7 @@ public abstract class BasicDocMaker implements DocMaker {
     Date date;
     String title;
     String body;
+    byte [] bytes;
     Properties props;
   }
   
@@ -122,6 +123,10 @@ public abstract class BasicDocMaker implements DocMaker {
         docData.body = docData.body.substring(size); // some left
       }
       doc.add(new Field(BODY_FIELD, bdy, storeVal, indexVal, termVecVal));
+    }
+    if (docData.bytes != null && docData.bytes.length != 0)
+    {
+      doc.add(new Field("bytes", docData.bytes, Field.Store.YES));
     }
     if (docData.props!=null) {
       for (Iterator it = docData.props.keySet().iterator(); it.hasNext(); ) {

@@ -26,6 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 
+import java.io.IOException;
 
 
 /**
@@ -77,16 +78,14 @@ public abstract class ReadTask extends PerfTask {
       //System.out.println("searched: "+q);
       
       if (withTraverse() && hits!=null) {
-        Document doc = null;
         int traversalSize = Math.min(hits.length(), traversalSize());
         if (traversalSize > 0) {
+          boolean retrieve = withRetrieve();
           for (int m = 0; m < hits.length(); m++) {
             int id = hits.id(m);
             res++;
-
-            if (withRetrieve()) {
-              doc = ir.document(id);
-              res += (doc==null ? 0 : 1);
+            if (retrieve) {
+              res += retrieveDoc(ir, id);
             }
           }
         }
@@ -99,6 +98,10 @@ public abstract class ReadTask extends PerfTask {
       ir.close();
     }
     return res;
+  }
+
+  protected int retrieveDoc(IndexReader ir, int id) throws IOException {
+    return (ir.document(id) == null ? 0 : 1);
   }
 
   /**
