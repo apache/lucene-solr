@@ -44,8 +44,8 @@ public class Config {
   private String algorithmText;
 
   /**
-   * Read config from file containing both algorithm and config properties.
-   * @param algFile file containing both algorithm and config properties.
+   * Read both algorithm and config properties.
+   * @param algReader from where to read algorithm and config properties.
    * @throws IOException
    */
   public Config (Reader algReader) throws IOException {

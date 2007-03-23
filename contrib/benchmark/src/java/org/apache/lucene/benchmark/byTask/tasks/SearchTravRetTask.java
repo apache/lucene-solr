@@ -24,8 +24,12 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
  * 
  * <p>Note: This task reuses the reader if it is already open. 
  * Otherwise a reader is opened at start and closed at the end.
+ * </p>
  * 
- * Takes optional param: traversal size (otherwise all results are traversed).
+ * <p>Takes optional param: traversal size (otherwise all results are traversed).</p>
+ * 
+ * <p>Other side effects: counts additional 1 (record) for each traversed hit, 
+ * and 1 more for each retrieved (non null) document.</p>
  */
 public class SearchTravRetTask extends SearchTravTask {
 

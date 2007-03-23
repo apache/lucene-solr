@@ -41,7 +41,7 @@ import java.util.Properties;
  * doc.stored=true|FALSE<br/>
  * doc.tokenized=TRUE|false<br/>
  * doc.term.vector=true|FALSE<br/>
- * doc.store.bytes=true|FALSE //Store the body contents raw UTF-8 bytes as a field<br/>
+ * doc.store.body.bytes=true|FALSE //Store the body contents raw UTF-8 bytes as a field<br/>
  */
 public abstract class BasicDocMaker implements DocMaker {
   

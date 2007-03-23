@@ -65,7 +65,7 @@ public class Benchmark {
   
   public synchronized void  execute() throws Exception {
     if (executed) {
-      throw new Exception("Benchmark was already executed");
+      throw new IllegalStateException("Benchmark was already executed");
     }
     executed = true;
     algorithm.execute();

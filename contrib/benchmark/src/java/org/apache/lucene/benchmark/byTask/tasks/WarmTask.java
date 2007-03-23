@@ -21,10 +21,14 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 
 /**
- * Warm reader task.
+ * Warm reader task: retrieve all reader documents.
  * 
  * <p>Note: This task reuses the reader if it is already open. 
  * Otherwise a reader is opened at start and closed at the end.
+ * </p>
+ * 
+ * <p>Other side effects: counts additional 1 (record) for each 
+ * retrieved (non null) document.</p>
  */
 public class WarmTask extends ReadTask {
 

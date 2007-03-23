@@ -66,6 +66,7 @@ Contained packages:
         <li><a href="#properties">Benchmark properties</a></li>
         <li><a href="#example">Example input algorithm and the result benchmark
                     report.</a></li>
+        <li><a href="#recsCounting">Results record counting clarified</a></li>
     </ol>
 </p>
 <a name="concept"></a>
@@ -199,26 +200,30 @@ The following is an informal description of the supported syntax.
  addDoc 60 times in a row.
  </li>
  <li>
- <b>Command parameter</b>: a command can take a single parameter.
+ <b>Command parameter</b>: a command can optionally take a single parameter.
  If the certain command does not support a parameter, or if the parameter is of
  the wrong type,
  reading the algorithm will fail with an exception and the test would not start.
- Currently the following tasks take parameters:
+ Currently the following tasks take optional parameters:
  <ul>
-   <li><b>AddDoc</b> takes a numeric parameter, indicating the required size of 
-       added document. Note: if the DocMaker implementation used in the test 
+   <li><b>AddDoc</b> takes a numeric parameter, indicating the required size of
+       added document. Note: if the DocMaker implementation used in the test
        does not support makeDoc(size), an exception would be thrown and the test
        would fail.
    </li>
-   <li><b>DeleteDoc</b> takes numeric parameter, indicating the docid to be 
-       deleted. The latter is not very useful for loops, since the docid is 
-       fixed, so for deletion in loops it is better to use the 
-       <code>doc.delete.step</code> property. 
+   <li><b>DeleteDoc</b> takes numeric parameter, indicating the docid to be
+       deleted. The latter is not very useful for loops, since the docid is
+       fixed, so for deletion in loops it is better to use the
+       <code>doc.delete.step</code> property.
    </li>
-   <li><b>SetProp</b> takes a "name,value" param, ',' used as a separator.
+   <li><b>SetProp</b> takes a <code>name,value<code> mandatory param,
+       ',' used as a separator.
    </li>
-   <li><b>SearchTravRetTask</b> and <b>SearchTravTask</b> take a numeric 
-   	   parameter, indicating the required traversal size.
+   <li><b>SearchTravRetTask</b> and <b>SearchTravTask</b> take a numeric
+              parameter, indicating the required traversal size.
+   </li>
+   <li><b>SearchTravRetLoadFieldSelectorTask</b> takes a string
+              parameter: a comma separated list of Fields to load.
    </li>
  </ul>
  <br>Example - <font color="#FF0066">AddDoc(2000)</font> - would add a document
@@ -485,21 +490,22 @@ Here is a list of currently defined properties:
     </li><li>doc.stored
     </li><li>doc.tokenized
     </li><li>doc.term.vector
+    </li><li>doc.store.body.bytes
     </li><li>docs.dir
     </li><li>query.maker
     </li><li>file.query.maker.file
     </li><li>file.query.maker.default.field
     </li></ul>
   </li>
-  
+
   <li><b>Logging</b>:
     <ul><li>doc.add.log.step
     </li><li>doc.delete.log.step
-    </li><li>log.queries 
+    </li><li>log.queries
     </li><li>task.max.depth.log
     </li></ul>
   </li>
-  
+
   <li><b>Index writing</b>:
     <ul><li>compound
     </li><li>merge.factor
@@ -507,7 +513,7 @@ Here is a list of currently defined properties:
     </li><li>directory
     </li></ul>
   </li>
-  
+
   <li><b>Doc deletion</b>:
     <ul><li>doc.delete.step
     </li></ul>
@@ -535,7 +541,7 @@ The following example is in conf/sample.alg:
 # The comparison is done twice.
 #
 # --------------------------------------------------------
-
+</font>
 <font color="#990066"># -------------------------------------------------------------------------------------
 # multi val params are iterated by NewRound's, added to reports, start with column name.
 merge.factor=mrg:10:20
@@ -606,6 +612,33 @@ PopulateShort     1  20 1000        1        20003        143.5      139.39    6
 PopulateLong -  - 1  20 1000 -  -   1 -  -   10003 -  -  - 77.0 -  - 129.92 -  87,309,608 -  100,831,232
 </pre>
 </p>
+
+<a name="recsCounting"></a>
+<h2>Results record counting clarified</h2>
+<p>
+Two columns in the results table indicate records counts: records-per-run and
+records-per-second. What does it mean?
+</p><p>
+Almost every task gets 1 in this count just for being executed.
+Task sequences aggregate the counts of their child tasks,
+plus their own count of 1.
+So, a task sequence containing 5 other task sequences, each running a single
+other task 10 times, would have a count of 1 + 5 * (1 + 10) = 56.
+</p><p>
+The traverse and retrieve tasks "count" more: a traverse task
+would add 1 for each traversed result (hit), and a retrieve task would
+additionally add 1 for each retrieved doc. So, regular Search would
+count 1, SearchTrav that traverses 10 hits would count 11, and a
+SearchTravRet task that retrieves (and traverses) 10, would count 21.
+</p><p>
+Confusing? this might help: always examine the <code>elapsedSec</code> column,
+and always compare "apples to apples", .i.e. it is interesting to check how the
+<code>rec/s</code> changed for the same task (or sequence) between two
+different runs, but it is not very useful to know how the <code>rec/s</code>
+differs between <code>Search</code> and <code>SearchTrav</code> tasks. For
+the latter, <code>elapsedSec</code> would bring more insight.
+</p>
+
 </DIV>
 <DIV>&nbsp;</DIV>
 </BODY>

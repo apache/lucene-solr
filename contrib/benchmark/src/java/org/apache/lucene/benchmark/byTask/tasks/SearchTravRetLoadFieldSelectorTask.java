@@ -33,7 +33,10 @@ import java.io.IOException;
  * <p>Note: This task reuses the reader if it is already open.
  * Otherwise a reader is opened at start and closed at the end.
  *
- * Takes optional param: comma separated list of Fields to load.
+ * <p>Takes optional param: comma separated list of Fields to load.</p>
+ * 
+ * <p>Other side effects: counts additional 1 (record) for each traversed hit, 
+ * and 1 more for each retrieved (non null) document.</p>
  */
 public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
 
@@ -53,7 +56,7 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
   }
 
   public void setParams(String params) {
-    this.params = params;
+    this.params = params; // cannot just call super.setParams(), b/c it's params differ.
     Set fieldsToLoad = new HashSet();
     for (StringTokenizer tokenizer = new StringTokenizer(params, ","); tokenizer.hasMoreTokens();) {
       String s = tokenizer.nextToken();
