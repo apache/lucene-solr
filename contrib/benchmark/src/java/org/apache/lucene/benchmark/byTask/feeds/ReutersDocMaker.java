@@ -33,7 +33,7 @@ import java.util.Locale;
  *
  * Config properties:
  * docs.dir=&lt;path to the docs dir| Default: reuters-out&gt;
- * reuters.doc.maker.store.bytes=true|false Default: false
+
  *
  */
 public class ReutersDocMaker extends BasicDocMaker {
@@ -43,7 +43,7 @@ public class ReutersDocMaker extends BasicDocMaker {
   private ArrayList inputFiles = new ArrayList();
   private int nextFile = 0;
   private int iteration=0;
-  private boolean storeBytes = false;
+  
   /* (non-Javadoc)
    * @see SimpleDocMaker#setConfig(java.util.Properties)
    */
@@ -51,7 +51,7 @@ public class ReutersDocMaker extends BasicDocMaker {
     super.setConfig(config);
     String d = config.get("docs.dir","reuters-out");
     dataDir = new File(new File("work"),d);
-    storeBytes = config.get("reuters.doc.maker.store.bytes", false);
+
 
     collectFiles(dataDir,inputFiles);
     if (inputFiles.size()==0) {
@@ -96,10 +96,6 @@ public class ReutersDocMaker extends BasicDocMaker {
     dd.name = name;
     dd.title = title;
     dd.body = bodyBuf.toString();
-    if (storeBytes == true)
-    {
-      dd.bytes = dd.body.getBytes("UTF-8");
-    }
     return dd;
   }
 

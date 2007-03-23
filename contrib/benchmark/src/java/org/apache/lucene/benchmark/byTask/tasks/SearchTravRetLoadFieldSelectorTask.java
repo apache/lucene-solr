@@ -53,11 +53,20 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
   }
 
   public void setParams(String params) {
+    this.params = params;
     Set fieldsToLoad = new HashSet();
     for (StringTokenizer tokenizer = new StringTokenizer(params, ","); tokenizer.hasMoreTokens();) {
       String s = tokenizer.nextToken();
       fieldsToLoad.add(s);
     }
     fieldSelector = new SetBasedFieldSelector(fieldsToLoad, Collections.EMPTY_SET);
+  }
+
+
+  /* (non-Javadoc)
+  * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
+  */
+  public boolean supportsParams() {
+    return true;
   }
 }

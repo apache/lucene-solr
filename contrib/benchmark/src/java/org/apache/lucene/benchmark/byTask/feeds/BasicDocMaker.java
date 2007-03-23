@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -34,17 +35,24 @@ import java.util.Properties;
  * Create documents for the test.
  * Maintains counters of chars etc. so that sub-classes just need to 
  * provide textual content, and the create-by-size is handled here.
+ *
+ * <p/>
+ * Config Params (default is in caps):
+ * doc.stored=true|FALSE<br/>
+ * doc.tokenized=TRUE|false<br/>
+ * doc.term.vector=true|FALSE<br/>
+ * doc.store.bytes=true|FALSE //Store the body contents raw UTF-8 bytes as a field<br/>
  */
 public abstract class BasicDocMaker implements DocMaker {
   
   private int numDocsCreated = 0;
-  
+  private boolean storeBytes = false;
+
   static class DocData {
     String name;
     Date date;
     String title;
     String body;
-    byte [] bytes;
     Properties props;
   }
   
@@ -91,7 +99,7 @@ public abstract class BasicDocMaker implements DocMaker {
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
-  private Document createDocument(DocData docData, int size, int cnt) {
+  private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
     int docid = incrNumDocsCreated();
     Document doc = new Document();
     doc.add(new Field("docid", "doc"+docid, storeVal, indexVal, termVecVal));
@@ -123,11 +131,11 @@ public abstract class BasicDocMaker implements DocMaker {
         docData.body = docData.body.substring(size); // some left
       }
       doc.add(new Field(BODY_FIELD, bdy, storeVal, indexVal, termVecVal));
+      if (storeBytes == true) {
+        doc.add(new Field("bytes", bdy.getBytes("UTF-8"), Field.Store.YES));
+      }
     }
-    if (docData.bytes != null && docData.bytes.length != 0)
-    {
-      doc.add(new Field("bytes", docData.bytes, Field.Store.YES));
-    }
+
     if (docData.props!=null) {
       for (Iterator it = docData.props.keySet().iterator(); it.hasNext(); ) {
         String key = (String) it.next();
@@ -186,6 +194,7 @@ public abstract class BasicDocMaker implements DocMaker {
     storeVal = (stored ? Field.Store.YES : Field.Store.NO);
     indexVal = (tokenized ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED);
     termVecVal = (termVec ? Field.TermVector.YES : Field.TermVector.NO);
+    storeBytes = config.get("doc.store.body.bytes", false);
   }
 
   /*

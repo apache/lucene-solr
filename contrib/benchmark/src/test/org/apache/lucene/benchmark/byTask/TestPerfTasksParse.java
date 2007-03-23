@@ -17,17 +17,16 @@
 
 package org.apache.lucene.benchmark.byTask;
 
+import junit.framework.TestCase;
+import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
+import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
+import org.apache.lucene.benchmark.byTask.utils.Algorithm;
+
 import java.io.File;
 import java.io.StringReader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Iterator;
-
-import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
-import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
-import org.apache.lucene.benchmark.byTask.utils.Algorithm;
-
-import junit.framework.TestCase;
 
 /**
  * Test very simply that perf tasks are parses as expected.
@@ -96,6 +95,8 @@ public class TestPerfTasksParse extends TestCase {
     tsks.add(  " SetProp                  "  );
     tsks.add(  " SetProp(name,value)      "  );
     tsks.add(  " Warm                     "  );
+    tsks.add(  "SearchTravRetLoadFieldSelector");
+    tsks.add("SearchTravRetLoadFieldSelector(body,title)");
     
     // if tasks.dir property is defined, look for additional tasks.
     // this somewhat covers tasks that would be added in the future, in case

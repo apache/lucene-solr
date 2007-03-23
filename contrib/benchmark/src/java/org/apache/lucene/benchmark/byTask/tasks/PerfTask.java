@@ -41,7 +41,7 @@ public abstract class PerfTask implements Cloneable {
   private String name;
   private int depth = 0;
   private int maxDepthLogStart = 0;
-  private String params = null;
+  protected String params = null;
   
   protected static final String NEW_LINE = System.getProperty("line.separator");
 
