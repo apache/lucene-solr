@@ -151,6 +151,11 @@ Changes in runtime behavior
     a unique id if it is declared in the schema and allowDups=false.
     (ryan via klaas)
 
+17. SOLR-183: Exceptions with error code 400 are raised when
+    numeric argument parsing fails.  RequiredSolrParams class added
+    to facilitate checking for parameters that must be present.
+    (Ryan McKinley, J.J. Larrea via yonik)
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new

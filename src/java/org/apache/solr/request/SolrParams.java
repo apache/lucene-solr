@@ -17,18 +17,13 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.StrUtils;
-import org.apache.solr.util.SimpleOrderedMap;
-
-import javax.servlet.ServletRequest;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
-import java.io.IOException;
+
+import org.apache.solr.core.SolrException;
+import org.apache.solr.util.NamedList;
+import org.apache.solr.util.SimpleOrderedMap;
 
 /**  SolrParams hold request parameters.
  *
@@ -142,6 +137,13 @@ public abstract class SolrParams {
     return val==null ? def : val;
   }
   
+  /** returns a RequiredSolrParams wrapping this */
+  public RequiredSolrParams required()
+  {
+    // TODO? should we want to stash a reference?
+    return new RequiredSolrParams(this);
+  }
+  
   protected String fpname(String field, String param) {
     return "f."+field+'.'+param;
   }
@@ -183,47 +185,85 @@ public abstract class SolrParams {
   /** Returns the Integer value of the param, or null if not set */
   public Integer getInt(String param) {
     String val = get(param);
-    return val==null ? null : Integer.parseInt(val);
+    try {
+      return val==null ? null : Integer.valueOf(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
   }
 
   /** Returns the int value of the param, or def if not set */
   public int getInt(String param, int def) {
     String val = get(param);
-    return val==null ? def : Integer.parseInt(val);
+    try {
+      return val==null ? def : Integer.parseInt(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
   }
-
+  
   /** Returns the int value of the field param,
   or the value for param, or def if neither is set. */
   public Integer getFieldInt(String field, String param) {
     String val = getFieldParam(field, param);
-    return val==null ? null : Integer.parseInt(val);
+    try {
+      return val==null ? null : Integer.valueOf(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
   }
   
   /** Returns the int value of the field param, 
   or the value for param, or def if neither is set. */
   public int getFieldInt(String field, String param, int def) {
     String val = getFieldParam(field, param);
-    return val==null ? def : Integer.parseInt(val);
+    try {
+      return val==null ? def : Integer.parseInt(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
   }
 
 
   /** Returns the Float value of the param, or null if not set */
   public Float getFloat(String param) {
     String val = get(param);
-    return val==null ? null : Float.parseFloat(val);
+    try {
+      return val==null ? null : Float.valueOf(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
   }
 
   /** Returns the float value of the param, or def if not set */
   public float getFloat(String param, float def) {
     String val = get(param);
-    return val==null ? def : Float.parseFloat(val);
+    try {
+      return val==null ? def : Float.parseFloat(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
   }
 
   /** how to transform a String into a boolean... more flexible than
    * Boolean.parseBoolean() to enable easier integration with html forms.
    */
   protected boolean parseBool(String s) {
-    return s.startsWith("true") || s.startsWith("on") || s.startsWith("yes");
+    if( s != null ) {
+      if( s.startsWith("true") || s.startsWith("on") || s.startsWith("yes") ) {
+        return true;
+      }
+      if( s.startsWith("false") || s.startsWith("off") || s.equals("no") ) {
+        return false;
+      }
+    }
+    throw new SolrException( 400, "invalid boolean value: "+s );
   }
 
   /** Create a Map<String,String> from a NamedList given no keys are repeated */
@@ -258,8 +298,8 @@ public abstract class SolrParams {
   }
   
   /** Convert this to a NamedList */
-  public NamedList toNamedList() {
-    final SimpleOrderedMap result = new SimpleOrderedMap();
+  public NamedList<Object> toNamedList() {
+    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<Object>();
     
     for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();
