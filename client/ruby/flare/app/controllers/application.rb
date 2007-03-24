@@ -16,16 +16,4 @@
 class ApplicationController < ActionController::Base
   # Pick a unique cookie name to distinguish our session data from others'
   session :session_key => '_flare_session_id'
-  
-  before_filter :flare_before
-  
-
-private
-  def flare_before
-    session[:page] ||= 1
-  
-    session[:flare_context] ||= Flare::Context.new(SOLR_CONFIG)
-    
-    @flare = session[:flare_context]
-  end
 end

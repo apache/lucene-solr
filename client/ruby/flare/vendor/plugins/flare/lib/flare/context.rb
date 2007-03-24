@@ -11,11 +11,12 @@
 # limitations under the License.
 
 class Flare::Context
-  attr_accessor :queries, :filters, :facet_queries, :applied_facet_queries
+  attr_accessor :queries, :filters, :facet_queries, :applied_facet_queries, :page
   attr_reader :facet_fields, :text_fields
 
-  def initialize(solr_config)
+  def initialize(solr_config={})
     @solr_config = solr_config
+    
     @connection = Solr::Connection.new(@solr_config[:solr_url])
 
     clear
@@ -27,12 +28,16 @@ class Flare::Context
     @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded
 
     @text_fields = @index_info.field_names.find_all {|v| v =~ /_text$/}
+    
+    @page = 1
   end
 
   def clear
+    #TODO unify initialize and clear
     @queries = []
     @filters = []
     @applied_facet_queries = []
+    @page = 1
 
     # this is cleared for development purposes - allowing flare to stay running but different Solr datasets swapping
     @index_info = @connection.send(Solr::Request::IndexInfo.new)

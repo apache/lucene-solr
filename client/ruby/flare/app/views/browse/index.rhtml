@@ -102,6 +102,6 @@ click click click
 </table>
 </div>
 
-<div class="resultsheader"><%=link_to_if session[:page] != 1,  "<<", :page => session[:page] - 1%> Results <strong><%=[@start + 1,@response.total_hits].min%>-<%=[@response.total_hits,@results_per_page + @start].min%></strong> of <strong><%=@response.total_hits%></strong><%=link_to_if session[:page] < (@response.total_hits.to_f / @results_per_page).ceil, ">>", :page => session[:page] + 1%></div>
+<div class="resultsheader"><%=link_to_if @flare.page != 1,  "<<", :page => @flare.page - 1%> Results <strong><%=[@start + 1,@response.total_hits].min%>-<%=[@response.total_hits,@results_per_page + @start].min%></strong> of <strong><%=@response.total_hits%></strong><%=link_to_if @flare.page < (@response.total_hits.to_f / @results_per_page).ceil, ">>", :page => @flare.page + 1%></div>
 
 <% end %>
