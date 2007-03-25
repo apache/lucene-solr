@@ -199,8 +199,6 @@ public class TestIndexWriter extends TestCase
           methodName = "addIndexesNoOptimize(Directory[])";
         }
 
-        String testName = "disk full test for method " + methodName + " with disk full at " + diskFree + " bytes with autoCommit = " + autoCommit;
-
         int cycleCount = 0;
 
         while(!done) {
@@ -222,6 +220,8 @@ public class TestIndexWriter extends TestCase
             double diskRatio = ((double) diskFree)/diskUsage;
             long thisDiskFree;
 
+            String testName = null;
+
             if (0 == x) {
               thisDiskFree = diskFree;
               if (diskRatio >= 2.0) {
@@ -233,16 +233,17 @@ public class TestIndexWriter extends TestCase
               if (diskRatio >= 6.0) {
                 rate = 0.0;
               }
-              if (debug) {
-                System.out.println("\ncycle: " + methodName + ": " + diskFree + " bytes");
-              }
+              if (debug)
+                testName = "disk full test " + methodName + " with disk full at " + diskFree + " bytes autoCommit=" + autoCommit;
             } else {
               thisDiskFree = 0;
               rate = 0.0;
-              if (debug) {
-                System.out.println("\ncycle: " + methodName + ", same writer: unlimited disk space");
-              }
+              if (debug)
+                testName = "disk full test " + methodName + " with unlimited disk space autoCommit=" + autoCommit;
             }
+
+            if (debug)
+              System.out.println("\ncycle: " + testName);
 
             dir.setMaxSizeInBytes(thisDiskFree);
             dir.setRandomIOExceptionRate(rate, diskFree);
@@ -281,10 +282,11 @@ public class TestIndexWriter extends TestCase
               err = e;
               if (debug) {
                 System.out.println("  hit IOException: " + e);
+                // e.printStackTrace(System.out);
               }
 
               if (1 == x) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
                 fail(methodName + " hit IOException after disk space was freed up");
               }
             }
@@ -323,7 +325,7 @@ public class TestIndexWriter extends TestCase
             try {
               reader = IndexReader.open(dir);
             } catch (IOException e) {
-              e.printStackTrace();
+              e.printStackTrace(System.out);
               fail(testName + ": exception when creating IndexReader: " + e);
             }
             int result = reader.docFreq(searchTerm);
@@ -337,7 +339,7 @@ public class TestIndexWriter extends TestCase
               // On hitting exception we still may have added
               // all docs:
               if (result != START_COUNT && result != END_COUNT) {
-                err.printStackTrace();
+                err.printStackTrace(System.out);
                 fail(testName + ": method did throw exception but docFreq('aaa') is " + result + " instead of expected " + START_COUNT + " or " + END_COUNT);
               }
             }
@@ -346,7 +348,7 @@ public class TestIndexWriter extends TestCase
             try {
               hits = searcher.search(new TermQuery(searchTerm));
             } catch (IOException e) {
-              e.printStackTrace();
+              e.printStackTrace(System.out);
               fail(testName + ": exception when searching: " + e);
             }
             int result2 = hits.length();
@@ -358,7 +360,7 @@ public class TestIndexWriter extends TestCase
               // On hitting exception we still may have added
               // all docs:
               if (result2 != result) {
-                err.printStackTrace();
+                err.printStackTrace(System.out);
                 fail(testName + ": method did throw exception but hits.length for search on term 'aaa' is " + result2 + " instead of expected " + result);
               }
             }

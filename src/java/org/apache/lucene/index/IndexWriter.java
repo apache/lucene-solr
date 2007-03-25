@@ -1206,7 +1206,10 @@ public class IndexWriter {
       flushRamSegments();
       // Turn off auto-commit during our local transaction:
       autoCommit = false;
-    }
+    } else
+      // We must "protect" our files at this point from
+      // deletion in case we need to rollback:
+      deleter.incRef(segmentInfos, false);
   }
 
   /*
@@ -1229,6 +1232,11 @@ public class IndexWriter {
     // Ask deleter to locate unreferenced files we had
     // created & remove them:
     deleter.checkpoint(segmentInfos, false);
+
+    if (!autoCommit)
+      // Remove the incRef we did in startTransaction:
+      deleter.decRef(segmentInfos);
+
     deleter.refresh();
   }
 
@@ -1251,6 +1259,11 @@ public class IndexWriter {
         rollbackTransaction();
       }
     }
+
+    if (!autoCommit)
+      // Remove the incRef we did in startTransaction.
+      deleter.decRef(localRollbackSegmentInfos);
+
     localRollbackSegmentInfos = null;
 
     // Give deleter a chance to remove files now:

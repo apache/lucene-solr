@@ -80,6 +80,13 @@ Bug fixes
 11. LUCENE-828: Minor fix for Term's equal().
     (Paul Cowan via Otis Gospodnetic)
 
+12. LUCENE-846: Fixed: if IndexWriter is opened with autoCommit=false,
+    and you call addIndexes, and hit an exception (eg disk full) then
+    when IndexWriter rolls back its internal state this could corrupt
+    the instance of IndexWriter (but, not the index itself) by
+    referencing already deleted segments.  This bug was only present
+    in 2.2 (trunk), ie was never released.  (Mike McCandless)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.

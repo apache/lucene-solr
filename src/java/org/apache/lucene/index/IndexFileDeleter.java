@@ -343,7 +343,7 @@ final class IndexFileDeleter {
     }
   }
 
-  private void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
+  void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
     int size = segmentInfos.size();
     for(int i=0;i<size;i++) {
       SegmentInfo segmentInfo = segmentInfos.info(i);
@@ -388,6 +388,16 @@ final class IndexFileDeleter {
       // commit points nor by the in-memory SegmentInfos:
       deleteFile(fileName);
       refCounts.remove(fileName);
+    }
+  }
+
+  void decRef(SegmentInfos segmentInfos) throws IOException {
+    final int size = segmentInfos.size();
+    for(int i=0;i<size;i++) {
+      SegmentInfo segmentInfo = segmentInfos.info(i);
+      if (segmentInfo.dir == directory) {
+        decRef(segmentInfo.files());
+      }
     }
   }
 
