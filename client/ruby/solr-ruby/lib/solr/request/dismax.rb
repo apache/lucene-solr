@@ -16,9 +16,11 @@ class Solr::Request::Dismax < Solr::Request::Standard
                                        :boost_query, :boost_functions])
 
   def initialize(params)
+    @alternate_query = params.delete(:alternate_query)
+    @sort_values = params.delete(:sort)
+    
     super(params)
-    @sort_values = @params[:sort]
-    @params.delete(:sort)
+    
     @query_type = "dismax"
   end
   
@@ -31,6 +33,7 @@ class Solr::Request::Dismax < Solr::Request::Standard
     hash[:ps]  = @params[:phrase_slop]
     hash[:bq]  = @params[:boost_query]
     hash[:bf]  = @params[:boost_functions]
+    hash["q.alt"] = @alternate_query
     # FIXME: 2007-02-13 <coda.hale@gmail.com> --  This code is duplicated in
     # Solr::Request::Standard. It should be refactored into a single location.
     hash[:sort] = @sort_values.collect do |sort|
