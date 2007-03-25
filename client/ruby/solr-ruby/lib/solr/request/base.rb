@@ -11,6 +11,9 @@
 # limitations under the License.
 
 class Solr::Request::Base
+  
+  
+  #TODO : Add base support for the debugQuery flag, and such that the response provides debug output easily
 
   # returns either :xml or :ruby depending on what the
   # response type is for a given request
