@@ -10,12 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; end
-require 'solr/exception'
-require 'solr/request'
-require 'solr/connection'
-require 'solr/response'
-require 'solr/util'
-require 'solr/xml'
-require 'solr/importer'
-require 'solr/indexer'
+require 'solr'
+require 'test/unit'
+
+class TabDelimitedFileSourceTest < Test::Unit::TestCase
+
+  def test_load
+    filename = File.expand_path(File.dirname(__FILE__)) + "/tab_delimited.txt"
+    
+    source = Solr::Importer::TabDelimitedFileSource.new(filename)
+    assert_equal source.to_a.size, 1
+    
+    source.each do |data|
+       assert_equal data[:asin], '0865681740'
+    end
+  end
+
+end

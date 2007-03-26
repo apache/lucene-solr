@@ -10,12 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; end
-require 'solr/exception'
-require 'solr/request'
-require 'solr/connection'
-require 'solr/response'
-require 'solr/util'
-require 'solr/xml'
-require 'solr/importer'
-require 'solr/indexer'
+module Solr; module Importer; end; end
+require 'solr/importer/mapper'
+require 'solr/importer/tab_delimited_file_source'
