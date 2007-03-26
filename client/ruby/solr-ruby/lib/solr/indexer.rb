@@ -18,8 +18,7 @@ class Solr::Indexer
     data_source.each do |record|
       document = mapper.map(record)
       
-      # yield(document) if block_given?  # TODO: does yielding add value here?  possibly to allow the caller
-      #                                          to manipulate the document outside of mappings just before indexing?
+      yield(record, document) if block_given?
       
       solr.add(document) unless options[:debug]
       puts document.inspect if options[:debug]
