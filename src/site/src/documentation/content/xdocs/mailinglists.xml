@@ -9,7 +9,8 @@
        <section id="Java User List"><title>Java User List</title>
             <p>
               This list is for users of Java Lucene to ask questions, share knowledge,
-              and discuss issues.
+              and discuss issues. Do send mail to this list with usage and configuration questions and problems.  Also, please
+              send questions to this list to verify your problem before filing issues in JIRA.
             </p>
             <ul>
               <li><a href="mailto:java-user-subscribe@lucene.apache.org">Subscribe</a></li>
@@ -30,7 +31,8 @@
           <p>
           	Discussion list:
             <ul>
-            <li><a href="mailto:java-dev-subscribe@lucene.apache.org">Subscribe</a></li>
+            <li><a href="mailto:java-dev-subscribe@lucene.apache.org">Subscribe</a> -- <b>Do not send mail to this list
+              with usage questions or configuration questions and problems.</b></li>
             <li><a href="mailto:java-dev-unsubscribe@lucene.apache.org">Unsubscribe</a></li>
             <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-java-dev/">Archive</a>
             (<a href="http://mail-archives.apache.org/mod_mbox/jakarta-lucene-dev/">old archive</a>)</li>
