@@ -22,15 +22,21 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.LuceneDictionary;
 import org.apache.lucene.search.spell.SpellChecker;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrException;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 /**
  * Takes a string (e.g. a query string) as the value of the "q" parameter
@@ -42,8 +48,10 @@ import java.util.Arrays;
  */
 public class SpellCheckerRequestHandler extends RequestHandlerBase {
 
+  private static Logger log = Logger.getLogger(SpellCheckerRequestHandler.class.getName());
+  
     private SpellChecker spellChecker;
-
+  
     /*
      * From http://wiki.apache.org/jakarta-lucene/SpellChecker
      * If reader and restrictToField are both not null:
@@ -57,11 +65,12 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
      * return only the words more frequent than this.
      * 
      */
-    private static IndexReader reader = null;
+    private static IndexReader nullReader = null;
     private String restrictToField = null;
     private boolean onlyMorePopular = false;
 
-    private String spellcheckerIndexDir;
+    private Directory spellcheckerIndexDir = new RAMDirectory();
+    private String dirDescription = "(ramdir)";
     private String termSourceField;
     private static final float DEFAULT_ACCURACY = 0.5f;
     private static final int DEFAULT_NUM_SUGGESTIONS = 1;
@@ -70,11 +79,23 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
         super.init(args);
         SolrParams p = SolrParams.toSolrParams(args);
         termSourceField = p.get("termSourceField");
-        spellcheckerIndexDir = p.get("spellcheckerIndexDir");
+
         try {
-            spellChecker = new SpellChecker(FSDirectory.getDirectory(spellcheckerIndexDir));
+          String dir = p.get("spellcheckerIndexDir");
+          if (null != dir) {
+            File f = new File(dir);
+            if ( ! f.isAbsolute() ) {
+              f = new File(SolrCore.getSolrCore().getDataDir(), dir);
+            }
+            dirDescription = f.getAbsolutePath();
+            log.info("using spell directory: " + dirDescription);
+            spellcheckerIndexDir = FSDirectory.getDirectory(f);
+          } else {
+            log.info("using RAM based spell directory");
+          }
+          spellChecker = new SpellChecker(spellcheckerIndexDir);
         } catch (IOException e) {
-            throw new RuntimeException("Cannot open SpellChecker index", e);
+          throw new RuntimeException("Cannot open SpellChecker index", e);
         }
     }
 
@@ -83,8 +104,18 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
         SolrParams p = req.getParams();
         String words = p.get("q");
         String cmd = p.get("cmd");
-        if (cmd != null && cmd.equals("rebuild"))
+        if (cmd != null) {
+          cmd = cmd.trim();
+          if (cmd.equals("rebuild")) {
             rebuild(req);
+            rsp.add("cmdExecuted","rebuild");
+          } else if (cmd.equals("reopen")) {
+            reopen();
+            rsp.add("cmdExecuted","reopen");
+          } else {
+            throw new SolrException(400, "Unrecognized Command: " + cmd);
+          }
+        }
 
         Float accuracy;
         int numSug;
@@ -100,20 +131,38 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
             throw new RuntimeException("Spelling suggestion count must be a valid positive integer", e);
         }
 
-        String[] suggestions = spellChecker.suggestSimilar(words, numSug,
-                reader, restrictToField, onlyMorePopular);
-
-        rsp.add("suggestions", Arrays.asList(suggestions));
+        if (null != words && !"".equals(words.trim())) {
+          String[] suggestions =
+            spellChecker.suggestSimilar(words, numSug,
+                                        nullReader, restrictToField,
+                                        onlyMorePopular);
+          
+          rsp.add("suggestions", Arrays.asList(suggestions));
+        }
     }
 
     /** Rebuilds the SpellChecker index using values from the <code>termSourceField</code> from the
      * index pointed to by the current {@link IndexSearcher}.
      */
-    private void rebuild(SolrQueryRequest req) throws IOException {
+    private void rebuild(SolrQueryRequest req) throws IOException, SolrException {
+      if (null == termSourceField) {
+        throw new SolrException
+          (500, "can't rebuild spellchecker index without termSourceField configured");
+      }
+      
         IndexReader indexReader = req.getSearcher().getReader();
         Dictionary dictionary = new LuceneDictionary(indexReader, termSourceField);
         spellChecker.indexDictionary(dictionary);
-        spellChecker.setSpellIndex(FSDirectory.getDirectory(spellcheckerIndexDir));
+        reopen();
+    }
+  
+    /**
+     * Reopens the SpellChecker index directory.
+     * Useful if an external process is responsible for building
+     * the spell checker index.
+     */
+    private void reopen() throws IOException {
+        spellChecker.setSpellIndex(spellcheckerIndexDir);
     }
 
     //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -123,7 +172,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
     }
 
     public String getDescription() {
-        return "The SpellChecker Solr request handler for SpellChecker index: " + spellcheckerIndexDir;
+      return "The SpellChecker Solr request handler for SpellChecker index: " + dirDescription;
     }
 
     public String getSourceId() {

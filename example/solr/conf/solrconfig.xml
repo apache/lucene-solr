@@ -353,11 +353,20 @@
      <lst name="defaults">
        <int name="suggestionCount">1</int>
        <float name="accuracy">0.5</float>
-       <str name="version">1.0</str>
      </lst>
-     <!-- main init params for handler --> 
-     <str name="spellcheckerIndexDir">/home/otis/dev/repos/lucene/solr/trunk/example/solr/data/index</str>
+     
+     <!-- Main init params for handler -->
+     
+     <!-- The directory where your SpellChecker Index should live.   -->
+     <!-- May by absolute, or relative to the Solr "dataDir" directory. -->
+     <!-- If this option is not specified, a ram directory will be used -->
+     <str name="spellcheckerIndexDir">spell</str>
+     
+     <!-- the field in your schema that you want to be able to build -->
+     <!-- your spell index on. This should be a field that uses a very -->
+     <!-- simple FieldType without a lot of Analysis (ie: string) -->
      <str name="termSourceField">word</str>
+     
    </requestHandler>
 
   

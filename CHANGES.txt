@@ -128,6 +128,10 @@ New Features
 17. SOLR-182: allow lazy loading of request handlers on first request.
     (Ryan McKinley via yonik)
 
+18. SOLR-81: More SpellCheckerRequestHandler enhancements, inlcluding
+    support for relative or absolute directory path configurations, as
+    well as RAM based directory. (hossman)   
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

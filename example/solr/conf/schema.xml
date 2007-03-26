@@ -252,6 +252,14 @@
    <field name="popularity" type="sint" indexed="true" stored="true" default="0"/>
    <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
+   <!-- Some sample docs exists solely to demonstrate the spellchecker
+        functionality, this is the only field they container.
+        Typically you might build the spellchecker of "catchall" type field
+        containing all of the text in each document
+     -->
+   <field name="word" type="string" indexed="true" stored="true"/>
+
+   
    <!-- catchall field, containing all other searchable text fields (implemented
         via copyField further on in this schema  -->
    <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
