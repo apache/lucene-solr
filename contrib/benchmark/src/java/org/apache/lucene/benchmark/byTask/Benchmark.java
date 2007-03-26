@@ -52,6 +52,7 @@ public class Benchmark {
     try {
       runData = new PerfRunData(new Config(algReader));
     } catch (Exception e) {
+      e.printStackTrace();
       throw new Exception("Error: cannot init PerfRunData!",e);
     }
     

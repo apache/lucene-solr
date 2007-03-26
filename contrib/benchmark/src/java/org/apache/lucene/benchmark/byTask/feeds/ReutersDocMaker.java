@@ -25,6 +25,7 @@ import java.io.FileReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 
 
@@ -66,13 +67,16 @@ public class ReutersDocMaker extends BasicDocMaker {
     File f = null;
     String name = null;
     synchronized (this) {
-      f = (File) inputFiles.get(nextFile++);
-      name = f.getCanonicalPath()+"_"+iteration;
       if (nextFile >= inputFiles.size()) { 
-        // exhausted files, start a new round
+        // exhausted files, start a new round, unless forever set to false.
+        if (!forever) {
+          throw new NoMoreDataException();
+        }
         nextFile = 0;
         iteration++;
       }
+      f = (File) inputFiles.get(nextFile++);
+      name = f.getCanonicalPath()+"_"+iteration;
     }
     
     BufferedReader reader = new BufferedReader(new FileReader(f));
@@ -90,13 +94,9 @@ public class ReutersDocMaker extends BasicDocMaker {
     
     addBytes(f.length());
 
-    DocData dd = new DocData();
     
-    dd.date = dateFormat.parse(dateStr.trim());
-    dd.name = name;
-    dd.title = title;
-    dd.body = bodyBuf.toString();
-    return dd;
+    Date date = dateFormat.parse(dateStr.trim()); 
+    return new DocData(name, bodyBuf.toString(), title, null, date);
   }
 
 

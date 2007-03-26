@@ -81,6 +81,49 @@ public class TestPerfTasksLogic extends TestCase {
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
   }
 
+  /**
+   * Test Exhasting Doc Maker logic
+   */
+  public void testExhaustDocMaker() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker",
+        "doc.add.log.step=1",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=RAMDirectory",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "# ----- alg ",
+        "CreateIndex",
+        "{ AddDoc } : * ",
+        "Optimize",
+        "CloseIndex",
+        "OpenReader",
+        "{ CountingSearchTest } : 100",
+        "CloseReader",
+        "[ CountingSearchTest > : 30",
+        "[ CountingSearchTest > : 9",
+    };
+    
+    // 2. we test this value later
+    CountingSearchTestTask.numSearches = 0;
+    
+    // 3. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 4. test specific checks after the benchmark run completed.
+    assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
+    assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
+    // now we should be able to open the index for write. 
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false);
+    iw.close();
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
+  }
+
+  
   // create the benchmark and execute it. 
   private Benchmark execBenchmark(String[] algLines) throws Exception {
     String algText = algLinesToText(algLines);

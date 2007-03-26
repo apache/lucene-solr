@@ -149,6 +149,19 @@ Assume you added the class "WonderfulTask" - doing so also enables the
 command "Wonderful" to be used in the algorithm.
 </p>
 
+<p>
+<u>External classes</u>: It is sometimes useful to invoke the benchmark
+package with your external alg file that configures the use of your own
+doc/query maker and or html parser. You can work this out without
+modifying the benchmark package code, by passing your class path
+with the benchmark.ext.classpath property:
+<ul>
+  <li>ant run-task -Dtask.alg=[full-path-to-your-alg-file]
+      <font color="#FF0000">-Dbenchmark.ext.classpath=/mydir/classes
+      </font> -Dtask.mem=512M</li>
+</ul>
+</p>
+
 <a name="algorithm"></a>
 <h2>Benchmark "algorithm"</h2>
 
@@ -198,6 +211,14 @@ The following is an informal description of the supported syntax.
  30 times in a row.
  <br>Example -  <font color="#FF0066">{ AddDoc AddDoc } : 30</font> - would do
  addDoc 60 times in a row.
+ <br><b>Exhaustive repeating</b>: use <font color="#FF0066">*</font> instead of
+ a number to repeat forever.
+ This is sometimes useful, for adding as many files as a doc maker can create,
+ without iterating over the same files again, but in the case that the exact
+ number of files is not known in advance. For insance, TREC files extracted
+ from a zip file.
+ <br>Example -  <font color="#FF0066">{ AddDoc } : *</font>  - would add docs
+ until the doc maker is "exhausted".
  </li>
  <li>
  <b>Command parameter</b>: a command can optionally take a single parameter.
@@ -487,6 +508,8 @@ Here is a list of currently defined properties:
   <li><b>Docs and queries creation:</b></li>
     <ul><li>analyzer
     </li><li>doc.maker
+    </li><li>doc.maker.forever
+    </li><li>html.parser
     </li><li>doc.stored
     </li><li>doc.tokenized
     </li><li>doc.term.vector

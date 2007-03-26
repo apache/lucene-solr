@@ -61,4 +61,11 @@ public interface DocMaker {
 
   /** Print some statistics on docs available/added/etc. */ 
   public void printDocStatistics();
+
+  /** Set the html parser to use, when appropriate */
+  public void setHTMLParser(HTMLParser htmlParser);
+  
+  /** Returns the htmlParser. */
+  public HTMLParser getHtmlParser();
+
 }

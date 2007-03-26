@@ -97,6 +97,7 @@
     <path id="run.classpath">
         <path refid="classpath"/>
         <pathelement location="${build.dir}/classes/java"/>
+        <pathelement location="${benchmark.ext.classpath}"/>
     </path>
 
     <target name="run-standard" depends="compile,check-files,get-files" description="Run the standard baseline">

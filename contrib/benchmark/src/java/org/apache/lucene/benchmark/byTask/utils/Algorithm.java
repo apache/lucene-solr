@@ -117,8 +117,12 @@ public class Algorithm {
               colonOk = false;
               // get repetitions number
               stok.nextToken();
-              if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expexted repetitions number: - "+stok.toString());
-              ((TaskSequence)prevTask).setRepetitions((int)stok.nval); 
+              if ((char)stok.ttype == '*') {
+                ((TaskSequence)prevTask).setRepetitions(TaskSequence.REPEAT_EXHAUST);
+              } else {
+                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expexted repetitions number: - "+stok.toString());
+                ((TaskSequence)prevTask).setRepetitions((int)stok.nval);
+              }
               // check for rate specification (ops/min)
               stok.nextToken();
               if (stok.ttype!=':') {

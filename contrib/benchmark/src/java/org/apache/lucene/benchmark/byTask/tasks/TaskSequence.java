@@ -21,11 +21,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 
 /**
  * Sequence of parallel or sequential tasks.
  */
 public class TaskSequence extends PerfTask {
+  public static int REPEAT_EXHAUST = -2; 
   private ArrayList tasks;
   private int repetitions = 1;
   private boolean parallel;
@@ -61,9 +63,13 @@ public class TaskSequence extends PerfTask {
 
   /**
    * @param repetitions The repetitions to set.
+   * @throws Exception 
    */
-  public void setRepetitions(int repetitions) {
+  public void setRepetitions(int repetitions) throws Exception {
     this.repetitions = repetitions;
+    if (repetitions==REPEAT_EXHAUST && isParallel()) {
+      throw new Exception("REPEAT_EXHAUST is not allowed for parallel tasks");
+    }
     setSequenceName();
   }
 
@@ -88,10 +94,15 @@ public class TaskSequence extends PerfTask {
     }
     
     int count = 0;
-    for (int k=0; k<repetitions; k++) {
+    boolean exhausted = false;
+    for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
       for (Iterator it = tasks.iterator(); it.hasNext();) {
         PerfTask task = (PerfTask) it.next();
-        count += task.runAndMaybeStats(letChildReport);
+        try {
+          count += task.runAndMaybeStats(letChildReport);
+        } catch (NoMoreDataException e) {
+          exhausted = true;
+        }
       }
     }
     return count;
@@ -101,7 +112,8 @@ public class TaskSequence extends PerfTask {
     long delayStep = (perMin ? 60000 : 1000) /rate;
     long nextStartTime = System.currentTimeMillis();
     int count = 0;
-    for (int k=0; k<repetitions; k++) {
+    boolean exhausted = false;
+    for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
       for (Iterator it = tasks.iterator(); it.hasNext();) {
         PerfTask task = (PerfTask) it.next();
         long waitMore = nextStartTime - System.currentTimeMillis();
@@ -110,7 +122,11 @@ public class TaskSequence extends PerfTask {
           Thread.sleep(waitMore);
         }
         nextStartTime += delayStep; // this aims at avarage rate. 
-        count += task.runAndMaybeStats(letChildReport);
+        try {
+          count += task.runAndMaybeStats(letChildReport);
+        } catch (NoMoreDataException e) {
+          exhausted = true;
+        }
       }
     }
     return count;
@@ -198,6 +214,9 @@ public class TaskSequence extends PerfTask {
     if (repetitions>1) {
       sb.append(" * " + repetitions);
     }
+    if (repetitions==REPEAT_EXHAUST) {
+      sb.append(" * EXHAUST");
+    }
     if (rate>0) {
       sb.append(",  rate: " + rate+"/"+(perMin?"min":"sec"));
     }
@@ -237,7 +256,9 @@ public class TaskSequence extends PerfTask {
 
   private void setSequenceName() {
     seqName = super.getName();
-    if (repetitions>1) {
+    if (repetitions==REPEAT_EXHAUST) {
+      seqName += "_Exhaust";
+    } else if (repetitions>1) {
       seqName += "_"+repetitions;
     }
     if (rate>0) {

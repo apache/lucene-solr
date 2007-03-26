@@ -18,7 +18,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 /**
- * Create documents for the test
+ * Create documents for the test.
  */
 public class SimpleDocMaker extends BasicDocMaker {
   
@@ -58,12 +58,12 @@ public class SimpleDocMaker extends BasicDocMaker {
     return 0; // not applicable
   }
 
-  protected DocData getNextDocData() {
-    DocData dd = new DocData();
-    dd.body = DOC_TEXT;
-    dd.name = "doc"+newdocid();
+  protected DocData getNextDocData() throws NoMoreDataException {
+    if (docID>0 && !forever) {
+      throw new NoMoreDataException();
+    }
     addBytes(DOC_TEXT.length());
-    return dd;
+    return new DocData("doc"+newdocid(),DOC_TEXT, null, null, null);
   }
 
 }

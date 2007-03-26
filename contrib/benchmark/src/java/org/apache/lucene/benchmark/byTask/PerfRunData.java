@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.HTMLParser;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
@@ -58,6 +59,7 @@ public class PerfRunData {
   private Directory directory;
   private Analyzer analyzer;
   private DocMaker docMaker;
+  private HTMLParser htmlParser;
   
   // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
   private HashMap readTaskQueryMaker;
@@ -80,6 +82,9 @@ public class PerfRunData {
     // query makers
     readTaskQueryMaker = new HashMap();
     qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"));
+    // html parser, used for some doc makers
+    htmlParser = (HTMLParser) Class.forName(config.get("html.parser","org.apache.lucene.benchmark.byTask.feeds.DemoHTMLParser")).newInstance();
+    docMaker.setHTMLParser(htmlParser);
 
     // index stuff
     reinit(false);
@@ -227,6 +232,13 @@ public class PerfRunData {
       readTaskQueryMaker.put(readTaskClass,qm);
     }
     return qm;
+  }
+
+  /**
+   * @return Returns the htmlParser.
+   */
+  public HTMLParser getHtmlParser() {
+    return htmlParser;
   }
 
 }

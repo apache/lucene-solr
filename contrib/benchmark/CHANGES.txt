@@ -4,6 +4,13 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+3/25/07
+
+LUCENE-849: 
+1. which HTML Parser is used is configurable with html.parser property.
+2. External classes added to classpath with -Dbenchmark.ext.classpath=path.
+3. '*' as repeating number now means "exhaust doc maker - no repetitions".
+
 3/22/07
 
 -Moved withRetrieve() call out of the loop in ReadTask

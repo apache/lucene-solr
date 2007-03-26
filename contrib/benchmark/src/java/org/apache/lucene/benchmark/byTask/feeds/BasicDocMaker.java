@@ -26,9 +26,7 @@ import org.apache.lucene.document.Field;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
-import java.util.Properties;
 
 
 /**
@@ -47,15 +45,8 @@ public abstract class BasicDocMaker implements DocMaker {
   
   private int numDocsCreated = 0;
   private boolean storeBytes = false;
+  protected boolean forever;
 
-  static class DocData {
-    String name;
-    Date date;
-    String title;
-    String body;
-    Properties props;
-  }
-  
   private static class LeftOver {
     private DocData docdata;
     private int cnt;
@@ -80,10 +71,14 @@ public abstract class BasicDocMaker implements DocMaker {
 
   /**
    * Return the data of the next document.
+   * All current implementations can create docs forever. 
+   * When the input data is exhausted, input files are iterated.
+   * This re-iteration can be avoided by setting doc.maker.forever to false (default is true).
    * @return data of the next document.
    * @exception if cannot create the next doc data
+   * @exception NoMoreDataException if data is exhausted (and 'forever' set to false).
    */
-  protected abstract DocData getNextDocData() throws Exception;
+  protected abstract DocData getNextDocData() throws NoMoreDataException, Exception;
 
   /*
    *  (non-Javadoc)
@@ -103,32 +98,32 @@ public abstract class BasicDocMaker implements DocMaker {
     int docid = incrNumDocsCreated();
     Document doc = new Document();
     doc.add(new Field("docid", "doc"+docid, storeVal, indexVal, termVecVal));
-    if (docData.name!=null) {
-      String name = (cnt<0 ? docData.name : docData.name+"_"+cnt);
+    if (docData.getName()!=null) {
+      String name = (cnt<0 ? docData.getName() : docData.getName()+"_"+cnt);
       doc.add(new Field("docname", name, storeVal, indexVal, termVecVal));
     }
-    if (docData.date!=null) {
-      String dateStr = DateTools.dateToString(docData.date, DateTools.Resolution.SECOND);
+    if (docData.getDate()!=null) {
+      String dateStr = DateTools.dateToString(docData.getDate(), DateTools.Resolution.SECOND);
       doc.add(new Field("docdate", dateStr, storeVal, indexVal, termVecVal));
     }
-    if (docData.title!=null) {
-      doc.add(new Field("doctitle", docData.title, storeVal, indexVal, termVecVal));
+    if (docData.getTitle()!=null) {
+      doc.add(new Field("doctitle", docData.getTitle(), storeVal, indexVal, termVecVal));
     }
-    if (docData.body!=null && docData.body.length()>0) {
+    if (docData.getBody()!=null && docData.getBody().length()>0) {
       String bdy;
-      if (size<=0 || size>=docData.body.length()) {
-        bdy = docData.body; // use all
-        docData.body = "";  // nothing left
+      if (size<=0 || size>=docData.getBody().length()) {
+        bdy = docData.getBody(); // use all
+        docData.setBody("");  // nothing left
       } else {
         // attempt not to break words - if whitespace found within next 20 chars...
-        for (int n=size-1; n<size+20 && n<docData.body.length(); n++) {
-          if (Character.isWhitespace(docData.body.charAt(n))) {
+        for (int n=size-1; n<size+20 && n<docData.getBody().length(); n++) {
+          if (Character.isWhitespace(docData.getBody().charAt(n))) {
             size = n;
             break;
           }
         }
-        bdy = docData.body.substring(0,size); // use part
-        docData.body = docData.body.substring(size); // some left
+        bdy = docData.getBody().substring(0,size); // use part
+        docData.setBody(docData.getBody().substring(size)); // some left
       }
       doc.add(new Field(BODY_FIELD, bdy, storeVal, indexVal, termVecVal));
       if (storeBytes == true) {
@@ -136,13 +131,13 @@ public abstract class BasicDocMaker implements DocMaker {
       }
     }
 
-    if (docData.props!=null) {
-      for (Iterator it = docData.props.keySet().iterator(); it.hasNext(); ) {
+    if (docData.getProps()!=null) {
+      for (Iterator it = docData.getProps().keySet().iterator(); it.hasNext(); ) {
         String key = (String) it.next();
-        String val = (String) docData.props.get(key);
+        String val = (String) docData.getProps().get(key);
         doc.add(new Field(key, val, storeVal, indexVal, termVecVal));
       }
-      docData.props = null;
+      docData.setProps(null);
     }
     //System.out.println("============== Created doc "+numDocsCreated+" :\n"+doc+"\n==========");
     return doc;
@@ -154,19 +149,19 @@ public abstract class BasicDocMaker implements DocMaker {
    */
   public Document makeDocument(int size) throws Exception {
     LeftOver lvr = (LeftOver) leftovr.get();
-    if (lvr==null || lvr.docdata==null || lvr.docdata.body==null || lvr.docdata.body.length()==0) {
+    if (lvr==null || lvr.docdata==null || lvr.docdata.getBody()==null || lvr.docdata.getBody().length()==0) {
       resetLeftovers();
     }
     DocData dd = (lvr==null ? getNextDocData() : lvr.docdata);
     int cnt = (lvr==null ? 0 : lvr.cnt);
-    while (dd.body==null || dd.body.length()<size) {
+    while (dd.getBody()==null || dd.getBody().length()<size) {
       DocData dd2 = dd;
       dd = getNextDocData();
       cnt = 0;
-      dd.body = dd2.body + dd.body;
+      dd.setBody(dd2.getBody() + dd.getBody());
     }
     Document doc = createDocument(dd,size,cnt);
-    if (dd.body==null || dd.body.length()==0) {
+    if (dd.getBody()==null || dd.getBody().length()==0) {
       resetLeftovers();
     } else {
       if (lvr == null) {
@@ -195,6 +190,7 @@ public abstract class BasicDocMaker implements DocMaker {
     indexVal = (tokenized ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED);
     termVecVal = (termVec ? Field.TermVector.YES : Field.TermVector.NO);
     storeBytes = config.get("doc.store.body.bytes", false);
+    forever = config.get("doc.maker.forever",true);
   }
 
   /*
@@ -247,6 +243,8 @@ public abstract class BasicDocMaker implements DocMaker {
   private int lastPrintedNumUniqueTexts = 0;
   private long lastPrintedNumUniqueBytes = 0;
   private int printNum = 0;
+  private HTMLParser htmlParser;
+  
   public void printDocStatistics() {
     boolean print = false;
     String col = "                  ";
@@ -277,6 +275,7 @@ public abstract class BasicDocMaker implements DocMaker {
   }
 
   protected void collectFiles(File f, ArrayList inputFiles) {
+    //System.out.println("Collect: "+f.getAbsolutePath());
     if (!f.canRead()) {
       return;
     }
@@ -289,6 +288,21 @@ public abstract class BasicDocMaker implements DocMaker {
     }
     inputFiles.add(f);
     addUniqueBytes(f.length());
+  }
+
+  /* (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.feeds.DocMaker#setHTMLParser(org.apache.lucene.benchmark.byTask.feeds.HTMLParser)
+   */
+  public void setHTMLParser(HTMLParser htmlParser) {
+    this.htmlParser = htmlParser;
+  }
+
+  /*
+   *  (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.feeds.DocMaker#getHtmlParser()
+   */
+  public HTMLParser getHtmlParser() {
+    return htmlParser;
   }
 
 

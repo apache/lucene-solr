@@ -23,19 +23,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Properties;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.demo.html.HTMLParser;
 
 
 /**
@@ -45,13 +41,20 @@ public class TrecDocMaker extends BasicDocMaker {
 
   private static final String newline = System.getProperty("line.separator");
   
-  private DateFormat dateFormat;
+  private DateFormat dateFormat [];
   private File dataDir = null;
   private ArrayList inputFiles = new ArrayList();
   private int nextFile = 0;
   private int iteration=0;
   private BufferedReader reader;
   private GZIPInputStream zis;
+  
+  private static final String DATE_FORMATS [] = {
+    "EEE, dd MMM yyyy kk:mm:ss z", //Tue, 09 Dec 2003 22:39:08 GMT
+    "EEE MMM dd kk:mm:ss yyyy z",  //Tue Dec 09 16:45:08 2003 EST
+    "EEE, dd-MMM-':'y kk:mm:ss z", //Tue, 09 Dec 2003 22:39:08 GMT
+    "EEE, dd-MMM-yyy kk:mm:ss z", //Tue, 09 Dec 2003 22:39:08 GMT
+  };
   
   /* (non-Javadoc)
    * @see SimpleDocMaker#setConfig(java.util.Properties)
@@ -65,34 +68,44 @@ public class TrecDocMaker extends BasicDocMaker {
       throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());
     }
     // date format: 30-MAR-1987 14:22:36.87
-    dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy kk:mm:ss ",Locale.US);  //Tue, 09 Dec 2003 22:39:08 GMT
-    dateFormat.setLenient(true);
-  }
+    dateFormat = new SimpleDateFormat[DATE_FORMATS.length];
+    for (int i = 0; i < dateFormat.length; i++) {
+      dateFormat[i] = new SimpleDateFormat(DATE_FORMATS[i],Locale.US);
+      dateFormat[i].setLenient(true);
+    }
+ }
 
-  private void openNextFile() throws Exception {
+  private void openNextFile() throws NoMoreDataException, Exception {
     closeInputs();
     int retries = 0;
-    while (retries<20) {
+    while (true) {
       File f = null;
       synchronized (this) {
-        f = (File) inputFiles.get(nextFile++);
         if (nextFile >= inputFiles.size()) { 
-          // exhausted files, start a new round
+          // exhausted files, start a new round, unless forever set to false.
+          if (!forever) {
+            throw new NoMoreDataException();
+          }
           nextFile = 0;
           iteration++;
         }
+        f = (File) inputFiles.get(nextFile++);
       }
       System.out.println("opening: "+f+" length: "+f.length());
       try {
         zis = new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)));
-        break;
+        reader = new BufferedReader(new InputStreamReader(zis));
+        return;
       } catch (Exception e) {
         retries++;
-        System.out.println("Skipping 'bad' file "+f.getAbsolutePath()+"  #retries="+retries);
-        continue;
+        if (retries<20) {
+          System.out.println("Skipping 'bad' file "+f.getAbsolutePath()+"  #retries="+retries);
+          continue;
+        } else {
+          throw new NoMoreDataException();
+        }
       }
     }
-    reader = new BufferedReader(new InputStreamReader(zis));
   }
 
   private void closeInputs() {
@@ -142,7 +155,7 @@ public class TrecDocMaker extends BasicDocMaker {
     return sb;
   }
   
-  protected DocData getNextDocData() throws Exception {
+  protected DocData getNextDocData() throws NoMoreDataException, Exception {
     if (reader==null) {
       openNextFile();
     }
@@ -162,39 +175,27 @@ public class TrecDocMaker extends BasicDocMaker {
     // 6. collect until end of doc
     sb = read("</DOC>",null,false,true);
     // this is the next document, so parse it 
-    // TODO use a more robust html parser (current one aborts parsing quite easily). 
-    HTMLParser p = new HTMLParser(new StringReader(sb.toString()));
-    // title
-    String title = p.getTitle();
-    // properties 
-    Properties props = p.getMetaTags(); 
-    // body
-    Reader r = p.getReader();
-    char c[] = new char[1024];
-    StringBuffer bodyBuf = new StringBuffer();
-    int n;
-    while ((n = r.read(c)) >= 0) {
-      if (n>0) {
-        bodyBuf.append(c,0,n);
+    Date date = parseDate(dateStr);
+    HTMLParser p = getHtmlParser();
+    DocData docData = p.parse(name, date, sb, dateFormat[0]);
+    addBytes(sb.length()); // count char length of parsed html text (larger than the plain doc body text). 
+    
+    return docData;
+  }
+
+  private Date parseDate(String dateStr) {
+    Date date = null;
+    for (int i=0; i<dateFormat.length; i++) {
+      try {
+        date = dateFormat[i].parse(dateStr.trim());
+        return date;
+      } catch (ParseException e) {
       }
     }
-    r.close();
-    addBytes(bodyBuf.length());
-    
-    DocData dd = new DocData();
-
-    try {
-      dd.date = dateFormat.parse(dateStr.trim());
-    } catch (ParseException e) {
-      // do not fail test just because a date could not be parsed
-      System.out.println("ignoring date parse exception (assigning 'now') for: "+dateStr);
-      dd.date = new Date(); // now 
-    }
-    dd.name = name;
-    dd.title = title;
-    dd.body = bodyBuf.toString();
-    dd.props = props;
-    return dd;
+    // do not fail test just because a date could not be parsed
+    System.out.println("ignoring date parse exception (assigning 'now') for: "+dateStr);
+    date = new Date(); // now 
+    return date;
   }
 
 
