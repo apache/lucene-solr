@@ -109,7 +109,7 @@ module Flare
       end
 
       def clear
-        @flare.clear
+        session[:flare_context] = nil
         redirect_to :action => 'index'
       end
 

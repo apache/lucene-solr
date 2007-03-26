@@ -25,7 +25,7 @@ class Flare::Context
     @index_info = @connection.send(Solr::Request::IndexInfo.new)
 
     excluded =  @solr_config[:facets_exclude] ? @solr_config[:facets_exclude].collect {|e| e.to_s} : []
-    @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded
+    @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded  # TODO: is facets_excluded working?  where are the tests?!  :)
 
     @text_fields = @index_info.field_names.find_all {|v| v =~ /_text$/}
     
@@ -63,15 +63,27 @@ class Flare::Context
 
     qa = applied_facet_queries.collect {|map| q = @facet_queries[map[:name]][:real_query]; map[:negative] ? "-(#{q})" : q}
     qa << build_boolean_query(@queries)
-    request = Solr::Request::Standard.new(:query => qa.join(" AND "),
-                                          :filter_queries => filter_queries(@filters),
-                                          :start => start,
-                                          :rows => max,
-                                          :facets => {
-                                            :fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count,
-                                            :queries => facet_queries
-                                          },
-                                          :highlighting => {:field_list => @text_fields})
+    
+    query_type = @solr_config[:solr_query_type] || :dismax
+    query_config = @solr_config["#{query_type.to_s}_query_params".to_sym] || {}
+    solr_params = query_config.merge(:query => qa.join(" AND "),
+                                     :filter_queries => filter_queries(@filters),
+                                     :start => start,
+                                     :rows => max,
+                                     :facets => {
+                                       :fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count,
+                                       :queries => facet_queries
+                                     },
+                                     :highlighting => {:field_list => @text_fields})
+    if query_type == :dismax
+      solr_params[:phrase_fields] ||= @text_fields
+      if solr_params[:query] == "*:*"
+        solr_params[:query] = ""
+      end
+      request = Solr::Request::Dismax.new(solr_params)  # TODO rename to DisMax
+    else
+      request = Solr::Request::Standard.new(solr_params)
+    end
 
     #TODO: call response.field_facets(??) - maybe field_facets should be return a higher level? 
 #    logger.info({:query => query, :filter_queries => filters}.inspect)
