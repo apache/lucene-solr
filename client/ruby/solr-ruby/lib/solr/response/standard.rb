@@ -47,7 +47,7 @@ class Solr::Response::Standard < Solr::Response::Ruby
   end
   
   def highlighted(id, field)
-    @data['highlighting'][id.to_s][field.to_s]
+    @data['highlighting'][id.to_s][field.to_s] rescue nil
   end
   
   # supports enumeration of hits
