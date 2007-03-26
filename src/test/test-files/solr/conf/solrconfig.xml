@@ -253,6 +253,15 @@
       <str name="hl.fl">text,name,subject,title,whitetok</str>
     </lst>
   </requestHandler>
+  
+  <!-- test query parameter defaults --> 
+  <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
+    <lst name="defaults">
+      <int name="rows">4</int>
+      <bool name="hl">true</bool>
+      <str name="hl.fl">text,name,subject,title,whitetok</str>
+    </lst>
+  </requestHandler>
 
   <!-- enable streaming for testing... -->
   <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />

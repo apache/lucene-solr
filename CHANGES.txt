@@ -125,6 +125,9 @@ New Features
     the Lucene contrib.
     (Otis Gospodnetic and Adam Hiatt)    
 
+17. SOLR-182: allow lazy loading of request handlers on first request.
+    (Ryan McKinley via yonik)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

@@ -17,38 +17,45 @@
 
 package org.apache.solr.core;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.solr.handler.XmlUpdateRequestHandler;
-import org.apache.solr.request.*;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.*;
-import org.apache.solr.util.*;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
-import javax.xml.xpath.XPathConstants;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
+
+import javax.xml.xpath.XPathConstants;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.request.JSONResponseWriter;
+import org.apache.solr.request.PythonResponseWriter;
+import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.request.RubyResponseWriter;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.DirectUpdateHandler;
+import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.NamedList;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.SimpleOrderedMap;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 
 /**
@@ -67,6 +74,7 @@ public final class SolrCore {
   private final String index_path;
   private final UpdateHandler updateHandler;
   private static final long startTime = System.currentTimeMillis();
+  private final RequestHandlers reqHandlers = new RequestHandlers();
 
   public long getStartTime() { return startTime; }
 
@@ -104,13 +112,6 @@ public final class SolrCore {
   public IndexSchema getSchema() { return schema; }
   public String getDataDir() { return dataDir; }
   public String getIndexDir() { return index_path; }
-
-  private final RequestHandlers reqHandlers = new RequestHandlers(SolrConfig.config);
-
-  public SolrRequestHandler getRequestHandler(String handlerName) {
-    return reqHandlers.get(handlerName);
-  }
-
 
   // gets a non-caching searcher
   public SolrIndexSearcher newSearcher(String name) throws IOException {
@@ -202,6 +203,8 @@ public final class SolrCore {
       initIndex();
       
       initWriters();
+      
+      reqHandlers.initHandlersFromConfig( SolrConfig.config );
 
       try {
         // Open the searcher *before* the handler so we don't end up opening
@@ -217,7 +220,6 @@ public final class SolrCore {
       }
     }
   }
-
 
   public void close() {
     log.info("CLOSING SolrCore!");
@@ -241,6 +243,50 @@ public final class SolrCore {
 
   void finalizer() { close(); }
 
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // Request Handler
+  ////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * Get the request handler registered to a given name.  
+   * 
+   * This function is thread safe.
+   */
+  public SolrRequestHandler getRequestHandler(String handlerName) {
+    return reqHandlers.get(handlerName);
+  }
+  
+  /**
+   * Returns an unmodifieable Map containing the registered handlers
+   */
+  public Map<String,SolrRequestHandler> getRequestHandlers() {
+    return reqHandlers.getRequestHandlers();
+  }
+
+  /**
+   * Registers a handler at the specified location.  If one exists there, it will be replaced.
+   * To remove a handler, register <code>null</code> at its path
+   * 
+   * Once registered the handler can be accessed through:
+   * <pre>
+   *   http://${host}:${port}/${context}/${handlerName}
+   * or:  
+   *   http://${host}:${port}/${context}/select?qt=${handlerName}
+   * </pre>  
+   * 
+   * Handlers <em>must</em> be initalized before getting registered.  Registered
+   * handlers can immediatly accept requests.
+   * 
+   * This call is thread safe.
+   *  
+   * @return the previous <code>SolrRequestHandler</code> registered to this name <code>null</code> if none.
+   */
+  public SolrRequestHandler registerRequestHandler(String handlerName, SolrRequestHandler handler) {
+    return reqHandlers.register(handlerName,handler);
+  }
+  
+  
   ////////////////////////////////////////////////////////////////////////////////
   // Update Handler
   ////////////////////////////////////////////////////////////////////////////////
@@ -251,7 +297,7 @@ public final class SolrCore {
    */
   public UpdateHandler getUpdateHandler()
   {
-	  return updateHandler;
+    return updateHandler;
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -610,7 +656,7 @@ public final class SolrCore {
 
     log.info(req.getContext().get("path") + " "
             + req.getParamString()+ " 0 "+
-	     (int)(rsp.getEndTime() - req.getStartTime()));
+       (int)(rsp.getEndTime() - req.getStartTime()));
   }
 
   @Deprecated
@@ -714,6 +760,10 @@ public final class SolrCore {
     return getQueryResponseWriter(request.getParam("wt")); 
   }
 }
+
+
+
+
 
 
 
