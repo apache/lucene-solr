@@ -52,7 +52,7 @@ class Flare::Context
     @queries.empty? && @filters.empty? && @applied_facet_queries.empty?
   end
 
-  def search(start, max)
+  def search(start=0, max=25)
     facet_queries = @facet_queries.collect do |k,v|
       clauses = filter_queries(v[:filters])
       clauses << build_boolean_query(v[:queries])
@@ -85,9 +85,14 @@ class Flare::Context
       request = Solr::Request::Standard.new(solr_params)
     end
 
-    #TODO: call response.field_facets(??) - maybe field_facets should be return a higher level? 
+    #TODO: call response.field_facets(??) - maybe field_facets should be higher level? 
 #    logger.info({:query => query, :filter_queries => filters}.inspect)
     @connection.send(request)
+  end
+  
+  def document_by_id(id)
+    request = Solr::Request::Standard.new(:query => "id:\"#{id}\"")
+    @connection.send(request).hits[0]
   end
 
   def retrieve_field_facets(field, limit=-1, prefix=nil)
