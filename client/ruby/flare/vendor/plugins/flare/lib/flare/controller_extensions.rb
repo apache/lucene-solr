@@ -109,8 +109,16 @@ module Flare
       end
 
       def clear
-        session[:flare_context] = nil
+        @flare.clear
         redirect_to :action => 'index'
+      end
+      
+      def edit_saved_search
+        @flare.clear
+        saved = @flare.facet_queries[params[:name]]
+        @flare.filters = saved[:filters].clone
+        @flare.queries = saved[:queries].clone
+        redirect_to :action => 'index'      
       end
 
       def show_saved
@@ -126,10 +134,8 @@ module Flare
       end
 
       def remove_saved_search
-        puts "---- BEFORE", @flare.to_s
         @flare.facet_queries.delete(params[:name])
         @flare.applied_facet_queries.delete_if {|f| params[:name] == f[:name]}
-        puts "---- AFTER", @flare.to_s
         @flare.page = 1 # TODO: let the context adjust this automatically when its state changes
         redirect_to :action => 'index'
       end
