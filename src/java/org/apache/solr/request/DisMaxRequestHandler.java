@@ -395,7 +395,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
 	@Override
 	public String getDescription() {
 	    return "DisjunctionMax Request Handler: Does relevancy based queries "
-	       + "accross a variety of fields using configured boosts";
+	       + "across a variety of fields using configured boosts";
 	}
 
 	@Override
