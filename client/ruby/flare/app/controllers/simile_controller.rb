@@ -12,6 +12,8 @@
 
 
 class SimileController < ApplicationController
+  before_filter :flare_before
+  
   def exhibit
     @data = @flare.search(0, 10)
                                           
@@ -32,4 +34,14 @@ class SimileController < ApplicationController
       format.xml # renders timeline.rxml
     end                                         
   end
+  
+  #TODO: this is duplicated from flare's 
+  private
+    def flare_before
+      # TODO: allow source of context to be configurable.
+      session[:flare_context] ||= Flare::Context.new(SOLR_CONFIG)
+
+      @flare = session[:flare_context]
+    end
+  
 end
