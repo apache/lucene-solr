@@ -1218,7 +1218,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     generation is the active one (when older
                     segments_N files are present it's because they
                     temporarily cannot be deleted, or, a writer is in
-                    the process of committing). This file lists each
+                    the process of committing, or a custom
+                    <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/index/IndexDeletionPolicy.html">IndexDeletionPolicy</a>
+		    is in use). This file lists each
                     segment by name, has details about the separate
                     norms and deletion files, and also contains the
                     size of each segment.
@@ -1321,7 +1323,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     are stored as separate <tt>.fN</tt> files.  See
                     "Normalization Factors" below for details.
                 </p>
-<a name="N104A5"></a><a name="Lock File"></a>
+<a name="N104A9"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     A write lock is used to indicate that another
@@ -1347,7 +1349,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     Note that prior to version 2.1, Lucene also used a
                     commit lock. This was removed in 2.1.
                 </p>
-<a name="N104B4"></a><a name="Deletable File"></a>
+<a name="N104B8"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     Prior to Lucene 2.1 there was a file "deletable"
@@ -1356,7 +1358,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N104BD"></a><a name="Compound Files"></a>
+<a name="N104C1"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1376,14 +1378,14 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N104DF"></a><a name="Per-Segment Files"></a>
+<a name="N104E3"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N104E7"></a><a name="Fields"></a>
+<a name="N104EB"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1440,6 +1442,8 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <li>If the fourth lowest-order bit is set (0x08), term offsets are stored with the term vectors.</li>
                         
 <li>If the fifth lowest-order bit is set (0x10), norms are omitted for the indexed field.</li>
+                        
+<li>If the sixth lowest-order bit is set (0x20), payloads are stored for the indexed field.</li>
                     
 </ul>
                 
@@ -1600,7 +1604,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1059F"></a><a name="Term Dictionary"></a>
+<a name="N105A6"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -1777,7 +1781,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10619"></a><a name="Frequencies"></a>
+<a name="N10620"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -1803,9 +1807,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                 
 </p>
 <p>SkipDatum --&gt;
-                    DocSkip,FreqSkip,ProxSkip
+                    DocSkip,PayloadLength?,FreqSkip,ProxSkip
                 </p>
-<p>DocDelta,Freq,DocSkip,FreqSkip,ProxSkip --&gt;
+<p>DocDelta,Freq,DocSkip,PayloadLength,FreqSkip,ProxSkip --&gt;
                     VInt
                 </p>
 <p>TermFreqs
@@ -1833,9 +1837,17 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     SkipInterval
                     <sup>th</sup>
                     document in TermFreqs.
-                    Document numbers are represented as differences
-                    from the previous value in the sequence. FreqSkip
-                    and ProxSkip record the position of every
+                    If payloads are disabled for the term's field,
+                    then DocSkip represents the difference from the
+                    previous value in the sequence.
+                    If payloads are enabled for the term's field, 
+                    then DocSkip/2 represents the difference from the
+                    previous value in the sequence. If payloads are enabled
+                    and DocSkip is odd,
+                    then PayloadLength is stored indicating the length 
+                    of the last payload before the SkipInterval<sup>th</sup>
+                    document in TermPositions.
+					FreqSkip and ProxSkip record the position of every
                     SkipInterval
                     <sup>th</sup>
                     entry in FreqFile and
@@ -1867,7 +1879,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <sup>nd</sup>
                     starts.
                 </p>
-<a name="N1066A"></a><a name="Positions"></a>
+<a name="N10674"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -1884,13 +1896,23 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                 
 </p>
 <p>Positions --&gt;
-                    &lt;PositionDelta&gt;
+                    &lt;PositionDelta,Payload?&gt;
                     <sup>Freq</sup>
                 
 </p>
+<p>Payload --&gt;
+                    &lt;PayloadLength?,PayloadData&gt;
+                </p>
 <p>PositionDelta --&gt;
                     VInt
                 </p>
+<p>PayloadLength --&gt;
+                    VInt
+                </p>
+<p>PayloadData --&gt;
+                    byte<sup>PayloadLength</sup>
+                
+</p>
 <p>TermPositions
                     are ordered by term (the term is implicit, from the .tis file).
                 </p>
@@ -1899,20 +1921,31 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     number is implicit from the .frq file).
                 </p>
 <p>PositionDelta
-                    is the difference between the position of the current occurrence in
+                    is, if payloads are disabled for the term's field, the difference 
+                    between the position of the current occurrence in
                     the document and the previous occurrence (or zero, if this is the
                     first occurrence in this document).
+                    If payloads are enabled for the term's field, then PositionDelta/2
+                    is the difference between the current and the previous position. If
+                    payloads are enabled and PositionDelta is odd, then PayloadLength is 
+                    stored, indicating the length of the payload at the current term position.
                 </p>
 <p>
                     For example, the TermPositions for a
                     term which occurs as the fourth term in one document, and as the
                     fifth and ninth term in a subsequent document, would be the following
-                    sequence of VInts:
+                    sequence of VInts (payloads disabled):
                 </p>
 <p>4,
                     5, 4
                 </p>
-<a name="N10697"></a><a name="Normalization Factors"></a>
+<p>PayloadData
+                    is metadata associated with the current term position. If PayloadLength
+                    is stored at the current position, then it indicates the length of this 
+                    Payload. If PayloadLength is not stored, then this Payload has the same
+                    length as the Payload at the previous position.
+                </p>
+<a name="N106B0"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>
                     
@@ -2016,7 +2049,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <b>2.1 and above:</b>
                     Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10700"></a><a name="Term Vectors"></a>
+<a name="N10719"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <ol>
                     
@@ -2142,7 +2175,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10793"></a><a name="Deleted Documents"></a>
+<a name="N107AC"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2214,7 +2247,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N107D6"></a><a name="Limitations"></a>
+<a name="N107EF"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There
