@@ -78,7 +78,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * </li>
  * <li> mm - (Minimum Match) this supports a wide variety of
  *           complex expressions.
- *           read {@link SolrPluginUtils#setMinShouldMatch SolrPluginUtils.setMinShouldMatch} for full details.
+ *           read {@link SolrPluginUtils#setMinShouldMatch SolrPluginUtils.setMinShouldMatch} and <a href="http://lucene.apache.org/solr/api/org/apache/solr/util/doc-files/min-should-match.html">mm expression format</a> for details.
  * </li>
  * <li> pf - (Phrase Fields) fields/boosts to make phrase queries out
  *           of, to boost the users query for exact matches on the specified fields.
@@ -89,7 +89,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * <li> ps - (Phrase Slop) amount of slop on phrase queries built for pf
  *           fields.
  * </li>
- * <li> ps - (Query Slop) amount of slop on phrase queries explicitly
+ * <li> qs - (Query Slop) amount of slop on phrase queries explicitly
  *           specified in the "q" for qf fields.
  * </li>
  * <li> bq - (Boost Query) a raw lucene query that will be included in the 
