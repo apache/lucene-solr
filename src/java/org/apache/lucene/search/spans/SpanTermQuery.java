@@ -17,20 +17,18 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.util.ToStringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
 
 /** Matches spans containing a term. */
 public class SpanTermQuery extends SpanQuery {
-  private Term term;
+  protected Term term;
 
   /** Construct a SpanTermQuery matching the named term's spans. */
   public SpanTermQuery(Term term) { this.term = term; }
@@ -78,60 +76,7 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   public Spans getSpans(final IndexReader reader) throws IOException {
-    return new Spans() {
-        private TermPositions positions = reader.termPositions(term);
-
-        private int doc = -1;
-        private int freq;
-        private int count;
-        private int position;
-
-        public boolean next() throws IOException {
-          if (count == freq) {
-            if (!positions.next()) {
-              doc = Integer.MAX_VALUE;
-              return false;
-            }
-            doc = positions.doc();
-            freq = positions.freq();
-            count = 0;
-          }
-          position = positions.nextPosition();
-          count++;
-          return true;
-        }
-
-        public boolean skipTo(int target) throws IOException {
-          // are we already at the correct position?
-          if (doc >= target) {
-            return true;
-          }
-
-          if (!positions.skipTo(target)) {
-            doc = Integer.MAX_VALUE;
-            return false;
-          }
-
-          doc = positions.doc();
-          freq = positions.freq();
-          count = 0;
-
-          position = positions.nextPosition();
-          count++;
-
-          return true;
-        }
-
-        public int doc() { return doc; }
-        public int start() { return position; }
-        public int end() { return position + 1; }
-
-        public String toString() {
-          return "spans(" + SpanTermQuery.this.toString() + ")@"+
-            (doc==-1?"START":(doc==Integer.MAX_VALUE)?"END":doc+"-"+position);
-        }
-
-      };
+    return new TermSpans(reader.termPositions(term), term);
   }
 
 }

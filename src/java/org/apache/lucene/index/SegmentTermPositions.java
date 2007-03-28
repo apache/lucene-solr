@@ -17,9 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.store.IndexInput;
+
+import java.io.IOException;
 
 final class SegmentTermPositions
 extends SegmentTermDocs implements TermPositions {
@@ -187,6 +187,11 @@ extends SegmentTermDocs implements TermPositions {
     proxStream.readBytes(retArray, retOffset, payloadLength);
     needToLoadPayload = false;
     return retArray;
+  }
+
+  // TODO: Remove warning after API has been finalized
+  public boolean isPayloadAvailable() {
+    return needToLoadPayload && payloadLength > 0;
   }
 
 }

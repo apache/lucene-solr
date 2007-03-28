@@ -463,4 +463,10 @@ class MultiTermPositions extends MultiTermDocs implements TermPositions {
   public byte[] getPayload(byte[] data, int offset) throws IOException {
     return ((TermPositions)current).getPayload(data, offset);
   }
+
+
+  // TODO: Remove warning after API has been finalized
+  public boolean isPayloadAvailable() {
+    return ((TermPositions) current).isPayloadAvailable();
+  }
 }

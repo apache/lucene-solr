@@ -17,32 +17,27 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.*;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
+/**
+ * Expert-only.  Public for use by other weight implementations
+ */
+public class SpanWeight implements Weight {
+  protected Similarity similarity;
+  protected float value;
+  protected float idf;
+  protected float queryNorm;
+  protected float queryWeight;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.ComplexExplanation;
-import org.apache.lucene.search.Similarity;
-
-class SpanWeight implements Weight {
-  private Similarity similarity;
-  private float value;
-  private float idf;
-  private float queryNorm;
-  private float queryWeight;
-
-  private Set terms;
-  private SpanQuery query;
+  protected Set terms;
+  protected SpanQuery query;
 
   public SpanWeight(SpanQuery query, Searcher searcher)
     throws IOException {

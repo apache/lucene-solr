@@ -18,22 +18,12 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.Fieldable;
 
 import java.io.IOException;
-import java.util.SortedMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Enumeration;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
 
 /** An IndexReader which reads multiple, parallel indexes.  Each index added
@@ -425,6 +415,12 @@ public class ParallelReader extends IndexReader {
 
     public byte[] getPayload(byte[] data, int offset) throws IOException {
       return ((TermPositions)termDocs).getPayload(data, offset);
+    }
+
+
+    // TODO: Remove warning after API has been finalized
+    public boolean isPayloadAvailable() {
+      return ((TermPositions) termDocs).isPayloadAvailable();
     }
   }
 

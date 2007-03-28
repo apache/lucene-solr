@@ -34,6 +34,9 @@ API Changes
     throw AlreadyClosedException if they are accessed after being
     closed.  (Mike McCandless)
 
+ 5. LUCENE-834: Changed some access levels for certain Span classes to allow them to be overridden.  They have
+    been marked expert only and not for public consumption. (Grant Ingersoll) 
+
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)
@@ -100,6 +103,12 @@ New features
     Remark: The APIs introduced with this feature are in experimental state and thus
             contain appropriate warnings in the javadocs.
     (Michael Busch)
+
+ 4. LUCENE-834: Added BoostingTermQuery which can boost scores based on the values of a payload (see #3 above.) (Grant Ingersoll)
+ 5. LUCENE-834: Similarity has a new method for scoring payloads called scorePayloads that can be overridden to take advantage
+    of payload storage (see #3 above)
+ 6. LUCENE-834: Added isPayloadAvailable() onto TermPositions interface and implemented it in the appropriate places (Grant Ingersoll)
+
 
 Optimizations
 

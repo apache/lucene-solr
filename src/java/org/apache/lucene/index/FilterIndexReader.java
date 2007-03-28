@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 
-
 import java.io.IOException;
 import java.util.Collection;
 
@@ -69,6 +68,12 @@ public class FilterIndexReader extends IndexReader {
 
     public byte[] getPayload(byte[] data, int offset) throws IOException {
       return ((TermPositions) this.in).getPayload(data, offset);
+    }
+
+
+    // TODO: Remove warning after API has been finalized
+    public boolean isPayloadAvailable() {
+      return ((TermPositions)this.in).isPayloadAvailable();
     }
   }
 

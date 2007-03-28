@@ -17,15 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Iterator;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.SmallFloat;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Iterator;
 
 /** Expert: Scoring API.
  * <p>Subclasses implement search scoring.
@@ -503,4 +503,28 @@ public abstract class Similarity implements Serializable {
    * @return a score factor based on term overlap with the query
    */
   public abstract float coord(int overlap, int maxOverlap);
+
+
+  /**
+   * Calculate a scoring factor based on the data in the payload.  Overriding implementations
+   * are responsible for interpreting what is in the payload.  Lucene makes no assumptions about
+   * what is in the byte array.
+   * <p>
+   * The default implementation returns 1.
+   *
+   * @param payload The payload byte array to be scored
+   * @return An implementation dependent float to be used as a scoring factor 
+   *  <b>
+   *  Warning: The status of the Payloads feature is experimental. The APIs
+   *  introduced here might change in the future and will not be supported anymore
+   *  in such a case. If you want to use this feature in a production environment
+   *  you should wait for an official release.
+   *  </b>
+   */
+  // TODO: Remove warning after API has been finalized
+  public float scorePayload(byte [] payload, int offset, int length)
+  {
+    //Do nothing
+    return 1;
+  }
 }

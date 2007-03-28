@@ -17,27 +17,29 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Weight;
+
 import java.io.IOException;
 
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Similarity;
+/**
+ * Public for extension only.
+ */
+public class SpanScorer extends Scorer {
+  protected Spans spans;
+  protected Weight weight;
+  protected byte[] norms;
+  protected float value;
 
+  protected boolean firstTime = true;
+  protected boolean more = true;
 
-class SpanScorer extends Scorer {
-  private Spans spans;
-  private Weight weight;
-  private byte[] norms;
-  private float value;
+  protected int doc;
+  protected float freq;
 
-  private boolean firstTime = true;
-  private boolean more = true;
-
-  private int doc;
-  private float freq;
-
-  SpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
+  protected SpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
     throws IOException {
     super(similarity);
     this.spans = spans;
