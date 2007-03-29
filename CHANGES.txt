@@ -209,6 +209,9 @@ Bug Fixes
     option to specify a full path to the update url, overriding the
     "-h" (hostname), "-p" (port) and "-w" (webapp name) parameters.
     (Jeff Rodenburg via billa)
+
+10. SOLR-198: RunExecutableListener always waited for the process to
+    finish, even when wait="false" was set. (Koji Sekiguchi via yonik)
  
 Other Changes
  1. Updated to Lucene 2.1

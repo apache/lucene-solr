@@ -56,7 +56,7 @@ class RunExecutableListener extends AbstractSolrEventListener {
       dir = new File(str);
     }
 
-    if ("false".equals(args.get("wait"))) wait=false;
+    if ("false".equals(args.get("wait")) || Boolean.FALSE.equals(args.get("wait"))) wait=false;
   }
 
   protected int exec(String callback) {
