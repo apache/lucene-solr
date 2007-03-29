@@ -115,13 +115,22 @@ public abstract class SolrParams {
    */
   public static final String FACET_PREFIX = "facet.prefix";
 
-  /** If the content stream should come from a URL */
+  /** If the content stream should come from a URL (using URLConnection) */
   public static final String STREAM_URL = "stream.url";
 
+  /** If the content stream should come from a File (using FileReader) */
+  public static final String STREAM_FILE = "stream.file";
+  
   /** If the content stream should come directly from a field */
   public static final String STREAM_BODY = "stream.body";
   
-  
+  /** 
+   * Explicity set the content type for the input stream
+   * If multiple streams are specified, the explicit contentType
+   * will be used for all of them.  
+   */
+  public static final String STREAM_CONTENTTYPE = "stream.contentType";
+    
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
 

@@ -31,7 +31,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.ContentStream;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.request.MapSolrParams;
 import org.apache.solr.request.MultiMapSolrParams;
 import org.apache.solr.request.SolrParams;
@@ -84,6 +84,15 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     Collections.sort( input );
     Collections.sort( output );
     assertEquals( input.toString(), output.toString() );
+    
+    // set the contentType and make sure tat gets set
+    String ctype = "text/xxx";
+    streams = new ArrayList<ContentStream>();
+    args.put( SolrParams.STREAM_CONTENTTYPE, new String[] {ctype} );
+    parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
+    for( ContentStream s : streams ) {
+      assertEquals( ctype, s.getContentType() );
+    }
   }
   
 

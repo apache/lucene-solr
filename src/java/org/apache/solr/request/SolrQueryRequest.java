@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 
 import java.util.Map;
@@ -120,6 +121,7 @@ public interface SolrQueryRequest {
   public long getElapsedTime();
   ******/
 }
+
 
 
 

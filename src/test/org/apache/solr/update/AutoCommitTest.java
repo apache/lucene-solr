@@ -17,20 +17,18 @@
 
 package org.apache.solr.update;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
-import org.apache.solr.request.ContentStream;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.request.MapSolrParams;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.ContentStreamBase;
 
 /**
  * 
@@ -43,25 +41,18 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   public String getSolrConfigFile() { return "solrconfig.xml"; }
   
   /**
-	 * Take a string and make it an iterable ContentStream
-	 * 
-	 * This should be moved to a helper class. (it is useful for the client too!)
-	 */
-	public static Collection<ContentStream> toContentStreams( final String str, final String contentType )
-	{
-		ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
-		streams.add( new ContentStream() {
-			public String getContentType() { return contentType; }
-			public Long getSize() { return Long.valueOf( str.length() ); }
-			public String getName() { return null; }
-      public String getSourceInfo() { return null; }
-	
-			public InputStream getStream() throws IOException {
-				return new ByteArrayInputStream( str.getBytes() );
-			}
-		});
-		return streams;
-	}
+   * Take a string and make it an iterable ContentStream
+   * 
+   * This should be moved to a helper class. (it is useful for the client too!)
+   */
+  public static Collection<ContentStream> toContentStreams( final String str, final String contentType )
+  {
+    ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
+    ContentStreamBase stream = new ContentStreamBase.StringStream( str );
+    stream.setContentType( contentType );
+    streams.add( stream );
+    return streams;
+  }
 
   public void testMaxDocs() throws Exception {
     

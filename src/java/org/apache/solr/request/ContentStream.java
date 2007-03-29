@@ -17,13 +17,11 @@
 
 package org.apache.solr.request;
 
-import java.io.IOException;
-import java.io.InputStream;
 
-public interface ContentStream {
-  String getName();
-  String getSourceInfo();
-  String getContentType();
-  Long getSize(); // size if we know it, otherwise null
-  InputStream getStream() throws IOException;
+@Deprecated
+public interface ContentStream extends org.apache.solr.util.ContentStream {
+  // The contentstream should go in util because it is needed for
+  // SOLR-20 and does not need any lucene specific libraries.
+  // it is new since solr 1.1 so I think we can move it without the 
+  // deprication...
 }

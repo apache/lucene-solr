@@ -17,11 +17,11 @@
 
 package org.apache.solr.servlet;
 
-import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,12 +39,13 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
-import org.apache.solr.request.ContentStream;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.request.MultiMapSolrParams;
 import org.apache.solr.request.ServletSolrParams;
 import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.util.ContentStreamBase;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -117,6 +118,9 @@ public class SolrRequestParsers
   
   SolrQueryRequest buildRequestFrom( SolrParams params, List<ContentStream> streams ) throws Exception
   {
+    // The content type will be applied to all streaming content
+    String contentType = params.get( SolrParams.STREAM_CONTENTTYPE );
+      
     // Handle anything with a remoteURL
     String[] strs = params.getParams( SolrParams.STREAM_URL );
     if( strs != null ) {
@@ -124,18 +128,26 @@ public class SolrRequestParsers
         throw new SolrException( 400, "Remote Streaming is disabled." );
       }
       for( final String url : strs ) {
-        final URLConnection conn = new URL(url).openConnection();
-        streams.add( new ContentStream() {
-          public String getContentType() { return conn.getContentType(); } 
-          public String getName() { return url; }
-          public Long getSize() { return new Long( conn.getContentLength() ); }
-          public String getSourceInfo() {
-            return SolrParams.STREAM_URL;
-          }
-          public InputStream getStream() throws IOException {
-            return conn.getInputStream();
-          }
-        });
+        ContentStreamBase stream = new ContentStreamBase.URLStream( new URL(url) );
+        if( contentType != null ) {
+          stream.setContentType( contentType );
+        }
+        streams.add( stream );
+      }
+    }
+    
+    // Handle streaming files
+    strs = params.getParams( SolrParams.STREAM_FILE );
+    if( strs != null ) {
+      if( !enableRemoteStreams ) {
+        throw new SolrException( 400, "Remote Streaming is disabled." );
+      }
+      for( final String file : strs ) {
+        ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
+        if( contentType != null ) {
+          stream.setContentType( contentType );
+        }
+        streams.add( stream );
       }
     }
     
@@ -143,17 +155,11 @@ public class SolrRequestParsers
     strs = params.getParams( SolrParams.STREAM_BODY );
     if( strs != null ) {
       for( final String body : strs ) {
-        streams.add( new ContentStream() {
-          public String getContentType() { return null; } // Is there anything meaningful?
-          public String getName() { return null; }
-          public Long getSize() { return null; }
-          public String getSourceInfo() {
-            return SolrParams.STREAM_BODY;
-          }
-          public InputStream getStream() throws IOException {
-            return new ByteArrayInputStream( body.getBytes() );
-          }
-        });
+        ContentStreamBase stream = new ContentStreamBase.StringStream( body );
+        if( contentType != null ) {
+          stream.setContentType( contentType );
+        }
+        streams.add( stream );
       }
     }
     
@@ -161,7 +167,6 @@ public class SolrRequestParsers
     if( streams != null && streams.size() > 0 ) {
       q.setContentStreams( streams );
     }
-    
     return q;
   }
   
@@ -169,7 +174,7 @@ public class SolrRequestParsers
   /**
    * Given a standard query string map it into solr params
    */
-    public static MultiMapSolrParams parseQueryString(String queryString) 
+  public static MultiMapSolrParams parseQueryString(String queryString) 
   {
     Map<String,String[]> map = new HashMap<String, String[]>();
     if( queryString != null && queryString.length() > 0 ) {
@@ -245,6 +250,9 @@ class RawRequestParser implements SolrRequestParser
       public InputStream getStream() throws IOException {
         return req.getInputStream();
       }
+      public Reader getReader() throws IOException {
+        return req.getReader();
+      }
     });
     return SolrRequestParsers.parseQueryString( req.getQueryString() );
   }
@@ -307,7 +315,7 @@ class MultipartRequestParser implements SolrRequestParser
   /**
    * Wrap a FileItem as a ContentStream
    */
-  private static class FileItemContentStream implements ContentStream
+  private static class FileItemContentStream extends ContentStreamBase
   {
     FileItem item;
     
@@ -376,6 +384,7 @@ class StandardRequestParser implements SolrRequestParser
     throw new SolrException( 400, "Unsuported method: "+method );
   }
 }
+
 
 
 

@@ -25,9 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
-import org.apache.solr.request.ContentStream;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -65,19 +66,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
        throw new RuntimeException(e);
     }
   }
-  
-  // TODO - this should be a general utility in another class
-  public static String getCharsetFromContentType( String contentType )
-  {
-    if( contentType != null ) {
-      int idx = contentType.toLowerCase().indexOf( "charset=" );
-      if( idx > 0 ) {
-        return contentType.substring( idx + "charset=".length() ).trim();
-      }
-    }
-    return null;
-  }
-  
+    
   
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
@@ -87,21 +76,15 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       throw new SolrException( 400, "missing content stream" );
     }
 
-    
     // Cycle through each stream
     for( ContentStream stream : req.getContentStreams() ) {
-      String charset = getCharsetFromContentType( stream.getContentType() );
-      Reader reader = null;
-      if( charset == null ) {
-        reader = new InputStreamReader( stream.getStream() );
+      Reader reader = stream.getReader();
+      try {
+        rsp.add( "update", this.update( reader ) );
       }
-      else {
-        reader = new InputStreamReader( stream.getStream(), charset );
+      finally {
+        IOUtils.closeQuietly(reader);
       }
-      rsp.add( "update", this.update( reader ) );
-      
-      // Make sure its closed
-      try { reader.close(); } catch( Exception ex ){}
     }
   }
 

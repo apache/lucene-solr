@@ -131,6 +131,10 @@ New Features
 18. SOLR-81: More SpellCheckerRequestHandler enhancements, inlcluding
     support for relative or absolute directory path configurations, as
     well as RAM based directory. (hossman)   
+
+19. SOLR-197: New parameters for input: stream.contentType for specifying
+    or overriding the content type of input, and stream.file for reading
+    local files. (Ryan McKinley via yonik)
     
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
