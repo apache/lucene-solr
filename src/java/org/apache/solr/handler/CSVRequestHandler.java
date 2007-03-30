@@ -229,6 +229,8 @@ abstract class CSVLoader {
 
     Boolean hasHeader = params.getBool(HEADER);
 
+    skipLines = params.getInt(SKIP,0);
+
     if (fieldnames==null) {
       if (null == hasHeader) {
         // assume the file has the headers if they aren't supplied in the args
@@ -239,7 +241,7 @@ abstract class CSVLoader {
     } else {
       // if the fieldnames were supplied and the file has a header, we need to
       // skip over that header.
-      if (hasHeader!=null && hasHeader) skipLines=1;
+      if (hasHeader!=null && hasHeader) skipLines++;
 
       prepareFields();
     }
