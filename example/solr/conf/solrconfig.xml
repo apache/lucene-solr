@@ -384,6 +384,11 @@
   <!-- NOTE, /update is mapped to a servlet, we can have the filter handle requests off that! -->
   <requestHandler name="/update/commit" class="solr.CommitRequestHandler" />
 
+
+  <!-- CSV update handler, loaded on demand -->
+  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
+  </requestHandler>
+
   
   <!-- queryResponseWriter plugins... query responses will be written using the
     writer specified by the 'wt' request parameter matching the name of a registered

@@ -197,19 +197,32 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(SolrQueryRequest req) throws IOException, Exception {
+    return query(req.getQueryType(), req);
+  }
 
+  /**
+   * Processes a "query" using a user constructed SolrQueryRequest
+   *
+   * @param handler the name of the request handler to process the request
+   * @param req the Query to process, will be closed.
+   * @return The XML response to the query
+   * @exception Exception any exception in the response.
+   * @exception IOException if there is a problem writing the XML
+   * @see LocalSolrQueryRequest
+   */
+  public String query(String handler, SolrQueryRequest req) throws IOException, Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
-    core.execute(req,rsp);
+    core.execute(core.getRequestHandler(handler),req,rsp);
     if (rsp.getException() != null) {
       throw rsp.getException();
     }
-                
+
     StringWriter sw = new StringWriter(32000);
     QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
     responseWriter.write(sw,req,rsp);
 
     req.close();
-    
+
     return sw.toString();
   }
 

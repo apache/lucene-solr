@@ -165,6 +165,14 @@ public abstract class SolrParams {
     return val!=null ? val : get(param);
   }
 
+  /** returns the String values of the field parameter, "f.field.param", or
+   *  the values for "param" if that is not set.
+   */
+  public String[] getFieldParams(String field, String param) {
+    String[] val = getParams(fpname(field,param));
+    return val!=null ? val : getParams(param);
+  }
+
   /** Returns the Boolean value of the param, or null if not set */
   public Boolean getBool(String param) {
     String val = get(param);
