@@ -49,7 +49,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <!-- keep in submenu items alpha order -->
   <docs label="Documentation">
 
-      <apidocs label="API Docs" href="api/"/>
+      <apidocs label="API Docs" href="ext:javadocs"/>
       <benchmarks label="Benchmarks" href="benchmarks.html"/>
       <contributions label="Contributions" href="contributions.html"/>
       <faq         label="FAQ"              href="ext:faq" />
@@ -98,6 +98,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   -->
 
   <external-refs>
+    <java-docs href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/javadoc/"/>
     <forrest href="http://forrest.apache.org/">
       <linking href="docs/linking.html"/>
       <validation href="docs/validation.html"/>
