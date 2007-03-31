@@ -88,6 +88,7 @@ abstract class CSVLoader {
   static String FIELDNAMES="fieldnames";
   static String HEADER="header";
   static String SKIP="skip";
+  static String SKIPLINES="skipLines";
   static String MAP="map";
   static String TRIM="trim";
   static String EMPTY="keepEmpty";
@@ -229,7 +230,7 @@ abstract class CSVLoader {
 
     Boolean hasHeader = params.getBool(HEADER);
 
-    skipLines = params.getInt(SKIP,0);
+    skipLines = params.getInt(SKIPLINES,0);
 
     if (fieldnames==null) {
       if (null == hasHeader) {
@@ -345,7 +346,7 @@ abstract class CSVLoader {
       addDoc(line,vals);
     }
 
-    if (params.getBool(COMMIT,true)) {
+    if (params.getBool(COMMIT,false)) {
       handler.commit(new CommitUpdateCommand(false));
     }
   }

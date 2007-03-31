@@ -86,8 +86,9 @@ public class TestCSVLoader extends AbstractSolrTestCase {
   public void testCSVLoad() throws Exception {
     makeFile("id\n100\n101\n102");
     loadLocal("stream.file",filename);
-    // csv loader currently defaults to committing
-    // assertU(commit());
+    // check default commit of false
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='0']");
+    assertU(commit());
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='3']");
   }
 
@@ -185,9 +186,25 @@ public class TestCSVLoader extends AbstractSolrTestCase {
     // test that header in file was skipped
     assertQ(req("id:id"),"//*[@numFound='0']");
 
+    // test skipping a field via the "skip" parameter
+    loadLocal("stream.file",filename,"commit","true","keepEmpty","true","skip","str_s");
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='4']");
+    assertQ(req("id:[100 TO 110]"),"count(//str[@name='str_s'])=0");
+
+    // test skipping a field by specifying an empty name
+    loadLocal("stream.file",filename,"commit","true","keepEmpty","true","fieldnames","id,");
+    assertQ(req("id:[100 TO 110]"),"//*[@numFound='4']");
+    assertQ(req("id:[100 TO 110]"),"count(//str[@name='str_s'])=0");
+
     // test loading file as if it didn't have a header
     loadLocal("stream.file",filename, "commit","true",
              "fieldnames","id,my_s", "header","false");
+    assertQ(req("id:id"),"//*[@numFound='1']");
+    assertQ(req("id:100"),"//str[@name='my_s'][.='quoted']");
+
+    // test skipLines
+    loadLocal("stream.file",filename, "commit","true",
+             "fieldnames","id,my_s", "header","false", "skipLines","1");
     assertQ(req("id:id"),"//*[@numFound='1']");
     assertQ(req("id:100"),"//str[@name='my_s'][.='quoted']");
 
@@ -232,6 +249,8 @@ public class TestCSVLoader extends AbstractSolrTestCase {
     assertQ(req("id:101"),"//arr[@name='str_s']/str[3][.='c']");
     assertQ(req("id:102"),"//arr[@name='str_s']/str[2][.='EMPTY']");
     assertQ(req("id:103"),"//str[@name='str_s'][.='EMPTY']");
+
+
   }
 
   
