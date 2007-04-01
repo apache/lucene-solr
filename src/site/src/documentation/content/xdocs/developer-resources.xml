@@ -23,10 +23,12 @@
             for the nightly build.
         </p>
     </section>
-    <section id="Hudson">
+    <section id="Hudson"><title>Hudson</title>
+      <p>
       <a href="http://hudson.dev.java.net/">Hudson</a> is providing continuous integration capabilities to the Lucene
       project.   It is responsible for running nightly builds, code coverage reports as well as building the nightly version
       of the website.
+      </p>
     </section>
     <section id="Nightly">
         <title>Nightly Build Download</title>

@@ -73,7 +73,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <div onclick="SwitchMenu('menu_1.2', 'skin/')" id="menu_1.2Title" class="menutitle">Documentation</div>
 <div id="menu_1.2" class="menuitemgroup">
 <div class="menuitem">
-<a href="api/">API Docs</a>
+<a href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/javadoc/">API Docs</a>
 </div>
 <div class="menuitem">
 <a href="benchmarks.html">Benchmarks</a>
@@ -189,6 +189,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <a href="#Clover">Clover Test Coverage Reports</a>
 </li>
 <li>
+<a href="#Hudson">Hudson</a>
+</li>
+<li>
 <a href="#Nightly">Nightly Build Download</a>
 </li>
 <li>
@@ -216,19 +219,26 @@ document.write("<text>Last Published:</text> " + document.lastModified);
             
 <a href="http://www.cenqua.com/clover/">Clover</a>
             test coverage results are available
-            <a href="http://lucene.apache.org/java/docs/clover/index.html">here</a>
+            <a href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/lastSuccessfulBuild/artifact/trunk/build/test/clover/reports/index.html">here</a>
             for the nightly build.
         </p>
-<a name="N1003D"></a><a name="Nightly"></a>
+<a name="N1003D"></a><a name="Hudson"></a>
+<h3 class="boxed">Hudson</h3>
+<p>
+      
+<a href="http://hudson.dev.java.net/">Hudson</a> is providing continuous integration capabilities to the Lucene
+      project.   It is responsible for running nightly builds, code coverage reports as well as building the nightly version
+      of the website.
+      </p>
+<a name="N1004A"></a><a name="Nightly"></a>
 <h3 class="boxed">Nightly Build Download</h3>
 <p>Nightly builds are based on the trunk version of the code checked into
             <a href="https://svn.apache.org/repos/asf/lucene/java/trunk">SVN</a>
         
 </p>
-<a href="http://people.apache.org/dist/lucene/java/nightly/">Download</a><a name="N1004F"></a><a name="source"></a>
+<a href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/">Download via Hudson</a><a name="N1005C"></a><a name="source"></a>
 <h3 class="boxed">Source Code</h3>
-<p>Subversion
-            The sourcefiles are now stored using Subversion (see http://subversion.tigris.org/ and http://svnbook.red-bean.com/)
+<p>The source files are now stored using Subversion (see http://subversion.tigris.org/ and http://svnbook.red-bean.com/)
         </p>
 <p>
             

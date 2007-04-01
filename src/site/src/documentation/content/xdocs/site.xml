@@ -98,7 +98,7 @@ See http://forrest.apache.org/docs/linking.html for more info
   -->
 
   <external-refs>
-    <java-docs href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/javadoc/"/>
+    <javadocs href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/javadoc/"/>
     <forrest href="http://forrest.apache.org/">
       <linking href="docs/linking.html"/>
       <validation href="docs/validation.html"/>
