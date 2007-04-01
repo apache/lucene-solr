@@ -17,7 +17,6 @@
 
 package org.apache.solr.servlet;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,20 +24,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequestWrapper;
-
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.ContentStream;
-import org.apache.solr.request.MapSolrParams;
 import org.apache.solr.request.MultiMapSolrParams;
 import org.apache.solr.request.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
-
-import junit.framework.TestCase;
+import org.apache.solr.util.ContentStream;
 
 public class SolrRequestParserTest extends AbstractSolrTestCase {
 
@@ -118,5 +110,21 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     parser.buildRequestFrom( new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
     assertEquals( txt, IOUtils.toString( streams.get(0).getStream() ) );
+  }
+  
+  public void testUrlParamParsing()
+  {
+    String[][] teststr = new String[][] {
+      { "this is simple", "this%20is%20simple" },
+      { "this is simple", "this+is+simple" },
+      { "\u00FC", "%C3%BC" },   // lower-case "u" with diaeresis/umlaut
+      { "\u0026", "%26" },      // &
+      { "\u20AC", "%E2%82%AC" } // euro
+    };
+    
+    for( String[] tst : teststr ) {
+      MultiMapSolrParams params = SolrRequestParsers.parseQueryString( "val="+tst[1] );
+      assertEquals( tst[0], params.get( "val" ) );
+    }
   }
 }

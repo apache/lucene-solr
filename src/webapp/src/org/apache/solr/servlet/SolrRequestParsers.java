@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -178,17 +179,22 @@ public class SolrRequestParsers
   {
     Map<String,String[]> map = new HashMap<String, String[]>();
     if( queryString != null && queryString.length() > 0 ) {
-      for( String kv : queryString.split( "&" ) ) {
-        int idx = kv.indexOf( '=' );
-        if( idx > 0 ) {
-          String name = URLDecoder.decode( kv.substring( 0, idx ));
-          String value = URLDecoder.decode( kv.substring( idx+1 ));
-          MultiMapSolrParams.addParam( name, value, map );
+      try {
+        for( String kv : queryString.split( "&" ) ) {
+          int idx = kv.indexOf( '=' );
+          if( idx > 0 ) {
+            String name = URLDecoder.decode( kv.substring( 0, idx ), "UTF-8");
+            String value = URLDecoder.decode( kv.substring( idx+1 ), "UTF-8");
+            MultiMapSolrParams.addParam( name, value, map );
+          }
+          else {
+            String name = URLDecoder.decode( kv, "UTF-8" );
+            MultiMapSolrParams.addParam( name, "", map );
+          }
         }
-        else {
-          String name = URLDecoder.decode( kv );
-          MultiMapSolrParams.addParam( name, "", map );
-        }
+      }
+      catch( UnsupportedEncodingException uex ) {
+        throw new SolrException( 500, uex );
       }
     }
     return new MultiMapSolrParams( map );
