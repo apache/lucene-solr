@@ -46,7 +46,10 @@ public class CSVRequestHandler extends RequestHandlerBase {
 
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams == null) {
-      throw new SolrException(400, "missing content stream");
+      if(!RequestHandlerUtils.handleCommit(req, rsp, false)) {
+        throw new SolrException( 400, "missing content stream" );
+      }
+      return;
     }
 
     for(ContentStream stream : streams) {
@@ -58,6 +61,9 @@ public class CSVRequestHandler extends RequestHandlerBase {
         IOUtils.closeQuietly(reader);
       }
     }
+
+    // perhaps commit when we are done
+    RequestHandlerUtils.handleCommit(req, rsp, false);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -68,11 +74,11 @@ public class CSVRequestHandler extends RequestHandlerBase {
 
   @Override
   public String getVersion() {
-      return "$Revision:$";
- }
+    return "$Revision:$";
+  }
 
- @Override
- public String getSourceId() {
+  @Override
+  public String getSourceId() {
     return "$Id:$";
   }
 
@@ -94,7 +100,6 @@ abstract class CSVLoader {
   static String EMPTY="keepEmpty";
   static String SPLIT="split";
   static String ENCAPSULATOR="encapsulator";
-  static String COMMIT="commit";
   static String OVERWRITE="overwrite";
 
   private static Pattern colonSplit = Pattern.compile(":");
@@ -344,10 +349,6 @@ abstract class CSVLoader {
       }
 
       addDoc(line,vals);
-    }
-
-    if (params.getBool(COMMIT,false)) {
-      handler.commit(new CommitUpdateCommand(false));
     }
   }
 

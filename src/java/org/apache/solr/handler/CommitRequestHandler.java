@@ -25,26 +25,21 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
 
+/**
+ * This handler could be replace with the standard XmlUpdateHandler with
+ * a default parameter set to commit=true
+ * 
+ * TODO? -- Delete it now, while it is not in mainstream use yet...
+ * 
+ */
+@Deprecated
 public class CommitRequestHandler extends RequestHandlerBase
 {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
-    SolrParams params = req.getParams();
-        
-    boolean optimize = params.getBool( UpdateParams.OPTIMIZE, false );
-    CommitUpdateCommand cmd = new CommitUpdateCommand( optimize );
-    cmd.waitFlush = params.getBool( UpdateParams.WAIT_FLUSH, cmd.waitFlush );
-    cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
-
-    SolrCore.getSolrCore().getUpdateHandler().commit( cmd );
-    
-    if( optimize ) {
-      rsp.add( "optimize", "true" );
-    }
-    else {
-      rsp.add( "commit", "true" );
-    }
+    // common parameters
+    RequestHandlerUtils.handleCommit(req, rsp, true);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -56,16 +51,16 @@ public class CommitRequestHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
-      return "$Revision:$";
+      return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 }

@@ -73,7 +73,10 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   {
     Iterable<ContentStream> streams = req.getContentStreams();
     if( streams == null ) {
-      throw new SolrException( 400, "missing content stream" );
+      if( !RequestHandlerUtils.handleCommit(req, rsp, false) ) {
+        throw new SolrException( 400, "missing content stream" );
+      }
+      return;
     }
 
     // Cycle through each stream
@@ -86,6 +89,9 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         IOUtils.closeQuietly(reader);
       }
     }
+    
+    // perhaps commit when we are done
+    RequestHandlerUtils.handleCommit(req, rsp, false);
   }
 
 
