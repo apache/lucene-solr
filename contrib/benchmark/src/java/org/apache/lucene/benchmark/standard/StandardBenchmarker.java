@@ -92,7 +92,7 @@ public class StandardBenchmarker extends AbstractBenchmarker implements Benchmar
             try
             {
                 reset(indexDir);
-                params[i].setDirectory(FSDirectory.getDirectory(indexDir, true));
+                params[i].setDirectory(FSDirectory.getDirectory(indexDir));
                 params[i].setQueries(qds);
                 System.out.println(params[i]);
                 runBenchmark(params[i], options);
