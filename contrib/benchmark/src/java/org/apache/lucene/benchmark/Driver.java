@@ -27,7 +27,7 @@ import org.xml.sax.SAXException;
 
 
 /**
- *  Sets up the
+ *  Sets up the benchmark driver.
  *
  **/
 public class Driver

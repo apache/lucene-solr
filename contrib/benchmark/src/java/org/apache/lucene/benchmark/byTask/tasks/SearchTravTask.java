@@ -21,7 +21,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 
 /**
- * Search and Travrese task.
+ * Search and Traverse task.
  * 
  * <p>Note: This task reuses the reader if it is already open. 
  * Otherwise a reader is opened at start and closed at the end.

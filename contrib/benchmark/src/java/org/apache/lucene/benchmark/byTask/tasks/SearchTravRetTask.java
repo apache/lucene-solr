@@ -20,7 +20,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 
 /**
- * Search and Travrese and Retrieve docs task.
+ * Search and Traverse and Retrieve docs task.
  * 
  * <p>Note: This task reuses the reader if it is already open. 
  * Otherwise a reader is opened at start and closed at the end.

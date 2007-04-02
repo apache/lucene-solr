@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.io.IOException;
 
 /**
- * Search and Travrese and Retrieve docs task using a SetBasedFieldSelector.
+ * Search and Traverse and Retrieve docs task using a SetBasedFieldSelector.
  *
  * <p>Note: This task reuses the reader if it is already open.
  * Otherwise a reader is opened at start and closed at the end.
