@@ -17,7 +17,7 @@
 
 # --------------------------------------------------------
 # Compound: what is the cost of compound format in indexing?
-# It does twice as much IO, is iyt twice slower? (no)
+# It does twice as much IO, is it twice slower? (no)
 # --------------------------------------------------------
 
 # -------------------------------------------------------------------------------------

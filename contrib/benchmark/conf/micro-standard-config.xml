@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Configuration file for use with Driver(InputSource) constructor.  Uses Digester to load.  Set
+Configuration file for use with Driver(InputSource) constructor.  Uses Digester to load.
 
 Class is the fully qualified name of the Benchmarker to load.  It must have a no argument constructor.  All attributes invoke the appropriate bean accessor on the Benchmarker -->
 <benchmark >
