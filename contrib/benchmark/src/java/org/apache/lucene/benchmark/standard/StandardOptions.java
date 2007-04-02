@@ -1,9 +1,7 @@
 package org.apache.lucene.benchmark.standard;
 
-import java.io.File;
-
-import org.apache.lucene.benchmark.Constants;
 import org.apache.lucene.benchmark.BenchmarkOptions;
+import org.apache.lucene.benchmark.Constants;
 /**
  * Copyright 2005 The Apache Software Foundation
  *
