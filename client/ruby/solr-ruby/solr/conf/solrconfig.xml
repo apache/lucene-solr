@@ -222,6 +222,11 @@
      The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
+
+  <!--Make sure your system has some authentication before enabling remote streaming!  -->
+  <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+
+
   <requestHandler name="indexinfo" class="solr.IndexInfoRequestHandler"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler">
     <!-- default values for query parameters -->
@@ -258,6 +263,26 @@
      <int name="ps">100</int>
     </lst>
   </requestHandler>
+  
+  <!-- Standard update plugin.  If we put this on /update, it will get all the new goodness  -->
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" >
+    <!--
+    <lst name="defaults">
+     <str name="name">value</str>
+    </lst>
+    -->
+  </requestHandler>
+
+  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" />
+  
+  <!-- NOTE, /update is mapped to a servlet, we can have the filter handle requests off that! -->
+  <requestHandler name="/update/commit" class="solr.CommitRequestHandler" />
+
+
+  <!-- CSV update handler, loaded on demand -->
+  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
+  </requestHandler>
+  
 
   <!-- queryResponseWriter plugins... query responses will be written using the
     writer specified by the 'wt' request parameter matching the name of a registered
