@@ -11,6 +11,7 @@
 # limitations under the License.
 
 # a parent class for all requests that go through the solr update handler
+# TODO: Use new xml update handler for better error responses
 class Solr::Request::Update < Solr::Request::Base
   def response_format
     :xml
