@@ -10,39 +10,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# For files with the first line containing field names
 class Solr::Importer::Mapper
   def initialize(mapping)
     @mapping = mapping
   end
   
   def field_data(orig_data, field_name)
-    case field_name
+    orig_data[field_name]
+  end
+  
+  def mapped_field_value(orig_data, field_mapping)
+    case field_mapping
+      when String
+        field_mapping
+      when Proc
+        field_mapping.call(orig_data)
       when Symbol
-        orig_data[field_name]
+        field_data(orig_data, field_mapping)
+      when Enumerable
+        field_mapping.collect {|orig_field_name| mapped_field_value(orig_data, orig_field_name)}.flatten
       else
-        field_name
+        raise "Unknown mapping for #{field_mapping}"
     end
   end
   
   def map(orig_data)
     mapped_data = {}
     @mapping.each do |solr_name, field_mapping|
-      value = case field_mapping
-        when Proc
-          field_mapping.call(orig_data)
-        when String, Symbol
-          field_data(orig_data, field_mapping)
-        when Enumerable
-          field_mapping.collect {|orig_field_name| field_data(orig_data, orig_field_name)}.flatten
-        else
-          raise "Unknown mapping for #{solr_name}: #{field_mapping}"
-      end
+      value = mapped_field_value(orig_data, field_mapping)
       mapped_data[solr_name] = value if value
     end
     
     mapped_data
   end
+  
+  
   
   
 end
