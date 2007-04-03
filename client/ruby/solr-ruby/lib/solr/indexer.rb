@@ -14,7 +14,7 @@ class Solr::Indexer
   def self.index(data_source, mapper, options={})
     solr_url = options[:solr_url] || ENV["SOLR_URL"] || "http://localhost:8983/solr"
     
-    solr = Solr::Connection.new(solr_url)
+    solr = Solr::Connection.new(solr_url, options) #TODO - these options contain the solr_url and debug keys also, so tidy up what gets passed
     data_source.each do |record|
       document = mapper.map(record)
       
