@@ -1,0 +1,6 @@
+<root>
+  <parent>
+    <child attribute="attribute1">text1</child>
+    <child attribute="attribute2">text2</child>
+  </parent>
+</root>

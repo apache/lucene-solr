@@ -10,7 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Solr; module Importer; end; end
-require 'solr/importer/mapper'
-require 'solr/importer/tab_delimited_file_source'
-require 'solr/importer/xpath_mapper'
+require 'xml/libxml'
+
+# For files with the first line containing field names
+class Solr::Importer::XPathMapper < Solr::Importer::Mapper
+  def field_data(doc, xpath)
+    doc.find(xpath.to_s).collect do |node|
+      case node
+        when XML::Attr
+          node.value
+        when XML::Node
+          node.content
+      end
+    end
+  end
+end
