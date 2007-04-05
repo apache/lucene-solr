@@ -21,7 +21,7 @@ import java.io.IOException;
 
 final class BooleanScorer extends Scorer {
   private SubScorer scorers = null;
-  private BucketTable bucketTable = new BucketTable(this);
+  private BucketTable bucketTable = new BucketTable();
 
   private int maxCoord = 1;
   private float[] coordFactors = null;
@@ -201,11 +201,7 @@ final class BooleanScorer extends Scorer {
     final Bucket[] buckets = new Bucket[SIZE];
     Bucket first = null;                          // head of valid list
   
-    private BooleanScorer scorer;
-
-    public BucketTable(BooleanScorer scorer) {
-      this.scorer = scorer;
-    }
+    public BucketTable() {}
 
     public final int size() { return SIZE; }
 
