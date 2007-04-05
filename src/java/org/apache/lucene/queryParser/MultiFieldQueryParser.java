@@ -35,9 +35,8 @@ import java.util.Map;
  */
 public class MultiFieldQueryParser extends QueryParser
 {
-  
-  private String[] fields;
-  private Map      boosts;
+  protected String[] fields;
+  protected Map      boosts;
 
   /**
    * Creates a MultiFieldQueryParser. 
@@ -100,7 +99,7 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
-        Query q = super.getFieldQuery(fields[i], queryText);
+        Query q = getFieldQuery(fields[i], queryText);
         if (q != null) {
           //If the user passes a map of boosts
           if (boosts != null) {
@@ -137,7 +136,7 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
-        clauses.add(new BooleanClause(super.getFuzzyQuery(fields[i], termStr, minSimilarity),
+        clauses.add(new BooleanClause(getFuzzyQuery(fields[i], termStr, minSimilarity),
             BooleanClause.Occur.SHOULD));
       }
       return getBooleanQuery(clauses, true);
@@ -150,7 +149,7 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
-        clauses.add(new BooleanClause(super.getPrefixQuery(fields[i], termStr),
+        clauses.add(new BooleanClause(getPrefixQuery(fields[i], termStr),
             BooleanClause.Occur.SHOULD));
       }
       return getBooleanQuery(clauses, true);
@@ -162,7 +161,7 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
-        clauses.add(new BooleanClause(super.getWildcardQuery(fields[i], termStr),
+        clauses.add(new BooleanClause(getWildcardQuery(fields[i], termStr),
             BooleanClause.Occur.SHOULD));
       }
       return getBooleanQuery(clauses, true);
@@ -175,16 +174,13 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       Vector clauses = new Vector();
       for (int i = 0; i < fields.length; i++) {
-        clauses.add(new BooleanClause(super.getRangeQuery(fields[i], part1, part2, inclusive),
+        clauses.add(new BooleanClause(getRangeQuery(fields[i], part1, part2, inclusive),
             BooleanClause.Occur.SHOULD));
       }
       return getBooleanQuery(clauses, true);
     }
     return super.getRangeQuery(field, part1, part2, inclusive);
   }
- 
-
-
 
   /**
    * Parses a query which searches on the fields specified.
@@ -216,7 +212,6 @@ public class MultiFieldQueryParser extends QueryParser
     }
     return bQuery;
   }
-
 
   /**
    * Parses a query, searching on the fields specified.
@@ -261,7 +256,6 @@ public class MultiFieldQueryParser extends QueryParser
     return bQuery;
   }
 
-  
   /**
    * Parses a query, searching on the fields specified.
    * Use this if you need to specify certain fields as required,
