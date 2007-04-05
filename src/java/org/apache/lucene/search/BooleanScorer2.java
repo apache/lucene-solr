@@ -195,7 +195,6 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) { // non counting. 
-    final int requiredNrMatchers = requiredScorers.size();
     ConjunctionScorer cs = new ConjunctionScorer(defaultSimilarity);
     // All scorers match, so defaultSimilarity super.score() always has 1 as
     // the coordination factor.
