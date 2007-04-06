@@ -22,10 +22,8 @@ to check if the results are what we expect):</p>
 <font color="#ffffff"></font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Store&nbsp;the&nbsp;index&nbsp;in&nbsp;memory:</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Directory&nbsp;directory&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">RAMDirectory</font><font color="#000000">()</font><font color="#000000">;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;To&nbsp;store&nbsp;an&nbsp;index&nbsp;on&nbsp;disk,&nbsp;use&nbsp;this&nbsp;instead&nbsp;(note&nbsp;that&nbsp;the&nbsp;</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;parameter&nbsp;true&nbsp;will&nbsp;overwrite&nbsp;the&nbsp;index&nbsp;in&nbsp;that&nbsp;directory</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;if&nbsp;one&nbsp;exists):</font><br />
-<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//Directory&nbsp;directory&nbsp;=&nbsp;FSDirectory.getDirectory(&#34;/tmp/testindex&#34;,&nbsp;true);</font><br />
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;To&nbsp;store&nbsp;an&nbsp;index&nbsp;on&nbsp;disk,&nbsp;use&nbsp;this&nbsp;instead:</font><br />
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//Directory&nbsp;directory&nbsp;=&nbsp;FSDirectory.getDirectory(&#34;/tmp/testindex&#34;);</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">IndexWriter&nbsp;iwriter&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">IndexWriter</font><font color="#000000">(</font><font color="#000000">directory,&nbsp;analyzer,&nbsp;</font><font color="#7f0055"><b>true</b></font><font color="#000000">)</font><font color="#000000">;</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.setMaxFieldLength</font><font color="#000000">(</font><font color="#990000">25000</font><font color="#000000">)</font><font color="#000000">;</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Document&nbsp;doc&nbsp;=&nbsp;</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Document</font><font color="#000000">()</font><font color="#000000">;</font><br />
@@ -33,6 +31,7 @@ to check if the results are what we expect):</p>
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">doc.add</font><font color="#000000">(</font><font color="#7f0055"><b>new&nbsp;</b></font><font color="#000000">Field</font><font color="#000000">(</font><font color="#2a00ff">&#34;fieldname&#34;</font><font color="#000000">,&nbsp;text,&nbsp;Field.Store.YES,</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">Field.Index.TOKENIZED</font><font color="#000000">))</font><font color="#000000">;</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.addDocument</font><font color="#000000">(</font><font color="#000000">doc</font><font color="#000000">)</font><font color="#000000">;</font><br />
+<font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.optimize</font><font color="#000000">()</font><font color="#000000">;</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#000000">iwriter.close</font><font color="#000000">()</font><font color="#000000">;</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><br />
 <font color="#ffffff">&nbsp;&nbsp;&nbsp;&nbsp;</font><font color="#3f7f5f">//&nbsp;Now&nbsp;search&nbsp;the&nbsp;index:</font><br />
