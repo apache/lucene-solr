@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexWriter;   // for javadoc
 import org.apache.lucene.util.Parameter;
 
 import java.io.Reader;
@@ -237,7 +238,9 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
 
   /**
    * Create a tokenized and indexed field that is not stored. Term vectors will
-   * not be stored.  The Reader is read only when the Document is added to the index.
+   * not be stored.  The Reader is read only when the Document is added to the index,
+   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
+   * has been called.
    * 
    * @param name The name of the field
    * @param reader The reader with the content
@@ -249,7 +252,9 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
 
   /**
    * Create a tokenized and indexed field that is not stored, optionally with 
-   * storing term vectors.  The Reader is read only when the Document is added to the index.
+   * storing term vectors.  The Reader is read only when the Document is added to the index,
+   * i.e. you may not close the Reader until {@link IndexWriter#addDocument(Document)}
+   * has been called.
    * 
    * @param name The name of the field
    * @param reader The reader with the content
