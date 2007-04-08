@@ -24,7 +24,14 @@ import java.util.Iterator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 
-/** A ranked list of documents, used to hold search results. */
+/** A ranked list of documents, used to hold search results.
+ * <p>
+ * <b>Caution:</b> Iterate only over the hits needed.  Iterating over all
+ * hits is generally not desirable and may be the source of
+ * performance issues. If you need to iterate over many or all hits, consider
+ * using the search method that takes a {@link HitCollector}.
+ * </p>
+ */
 public final class Hits {
   private Weight weight;
   private Searcher searcher;
@@ -111,12 +118,15 @@ public final class Hits {
     return hitDoc.doc;
   }
 
-  /** Returns the score for the nth document in this set. */
+  /** Returns the score for the n<sup>th</sup> document in this set. */
   public final float score(int n) throws IOException {
     return hitDoc(n).score;
   }
 
-  /** Returns the id for the nth document in this set. */
+  /** Returns the id for the n<sup>th</sup> document in this set.
+   * Note that ids may change when the index changes, so you cannot
+   * rely on the id to be stable.
+   */
   public final int id(int n) throws IOException {
     return hitDoc(n).id;
   }
@@ -127,7 +137,8 @@ public final class Hits {
    * <p>
    * <b>Caution:</b> Iterate only over the hits needed.  Iterating over all
    * hits is generally not desirable and may be the source of
-   * performance issues.
+   * performance issues. If you need to iterate over many or all hits, consider
+   * using a search method that takes a {@link HitCollector}.
    * </p>
    */
   public Iterator iterator() {
