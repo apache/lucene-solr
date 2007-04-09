@@ -346,8 +346,8 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
   }
 
   /**
-   * A Convinince method for getting back a simple XML string indicating
-   * successs of failure from an XML formated Update (from the Reader)
+   * A Convenience method for getting back a simple XML string indicating
+   * successs or failure from an XML formated Update (from the Reader)
    */
   public void doLegacyUpdate(Reader input, Writer output) {
     
