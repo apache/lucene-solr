@@ -109,10 +109,14 @@ New features
     (Michael Busch)
 
  4. LUCENE-834: Added BoostingTermQuery which can boost scores based on the values of a payload (see #3 above.) (Grant Ingersoll)
+
  5. LUCENE-834: Similarity has a new method for scoring payloads called scorePayloads that can be overridden to take advantage
     of payload storage (see #3 above)
+
  6. LUCENE-834: Added isPayloadAvailable() onto TermPositions interface and implemented it in the appropriate places (Grant Ingersoll)
 
+ 7. LUCENE-853: Added RemoteCachingWrapperFilter to enable caching of Filters on the remote side of the RMI connection.
+    (Matt Ericson via Otis Gospodnetic)
 
 Optimizations
 

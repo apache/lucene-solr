@@ -17,41 +17,44 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
 import java.util.BitSet;
 import java.util.WeakHashMap;
-import java.util.Map;
-import java.io.IOException;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.index.IndexReader;
 
 /**
- * Wraps another filter's result and caches it.  The caching
- * behavior is like {@link QueryFilter}.  The purpose is to allow
- * filters to simply filter, and then wrap with this class to add
- * caching, keeping the two concerns decoupled yet composable.
+ * A unit test helper class to test when the filter is getting cached and when it is not.
  */
-public class CachingWrapperFilter extends Filter {
-  protected Filter filter;
-
-  /**
-   * @todo What about serialization in RemoteSearchable?  Caching won't work.
-   *       Should transient be removed?
-   */
-  protected transient Map cache;
+public class CachingWrapperFilterHelper extends CachingWrapperFilter {
+  
+  private boolean shouldHaveCache = false;
 
   /**
    * @param filter Filter to cache results of
    */
-  public CachingWrapperFilter(Filter filter) {
-    this.filter = filter;
+  public CachingWrapperFilterHelper(Filter filter) {
+    super(filter);
   }
-
+  
+  public void setShouldHaveCache(boolean shouldHaveCache) {
+    this.shouldHaveCache = shouldHaveCache;
+  }
+  
   public BitSet bits(IndexReader reader) throws IOException {
     if (cache == null) {
       cache = new WeakHashMap();
     }
-
+    
     synchronized (cache) {  // check cache
       BitSet cached = (BitSet) cache.get(reader);
+      if (shouldHaveCache) {
+        TestCase.assertNotNull("Cache should have data ", cached);
+      } else {
+        TestCase.assertNull("Cache should be null " + cached , cached);
+      }
       if (cached != null) {
         return cached;
       }
@@ -67,15 +70,11 @@ public class CachingWrapperFilter extends Filter {
   }
 
   public String toString() {
-    return "CachingWrapperFilter("+filter+")";
+    return "CachingWrapperFilterHelper("+filter+")";
   }
 
   public boolean equals(Object o) {
-    if (!(o instanceof CachingWrapperFilter)) return false;
-    return this.filter.equals(((CachingWrapperFilter)o).filter);
-  }
-
-  public int hashCode() {
-    return filter.hashCode() ^ 0x1117BF25;  
+    if (!(o instanceof CachingWrapperFilterHelper)) return false;
+    return this.filter.equals((CachingWrapperFilterHelper)o);
   }
 }
