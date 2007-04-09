@@ -39,10 +39,12 @@ import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.request.PythonResponseWriter;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.RubyResponseWriter;
+import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.request.SolrParams.EchoParamStyle;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler;
@@ -649,10 +651,10 @@ public final class SolrCore {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header and handle request
-    final NamedList responseHeader = new SimpleOrderedMap();
+    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
     rsp.add("responseHeader", responseHeader);
     handler.handleRequest(req,rsp);
-    setResponseHeaderValues(responseHeader,req,rsp);
+    setResponseHeaderValues(handler,responseHeader,req,rsp);
 
     log.info(req.getContext().get("path") + " "
             + req.getParamString()+ " 0 "+
@@ -669,24 +671,34 @@ public final class SolrCore {
     execute(handler, req, rsp);
   }
   
-  protected void setResponseHeaderValues(NamedList responseHeader,SolrQueryRequest req, SolrQueryResponse rsp) {
+  protected void setResponseHeaderValues(SolrRequestHandler handler, NamedList<Object> responseHeader,SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     
     final int qtime=(int)(rsp.getEndTime() - req.getStartTime());
     responseHeader.add("status",rsp.getException()==null ? 0 : 500);
     responseHeader.add("QTime",qtime);
+        
+    SolrParams params = req.getParams();
+    if( params.getBool(SolrParams.HEADER_ECHO_HANDLER, false) ) {
+      responseHeader.add("handler", handler.getName() );
+    }
     
     // Values for echoParams... false/true/all or false/explicit/all ???
-    final String EP_PARAM = "echoParams";
-    final String EXPLICIT = "explicit";
-    final String epValue = req.getParams().get(EP_PARAM); 
-    if (EXPLICIT.equals(epValue)) {
+    String ep = params.get( SolrParams.HEADER_ECHO_PARAMS, null );
+    if( ep != null ) {
+      EchoParamStyle echoParams = EchoParamStyle.get( ep );
+      if( echoParams == null ) {
+        throw new SolrException(400,"Invalid value '" + ep + "' for " + SolrParams.HEADER_ECHO_PARAMS 
+            + " parameter, use '" + EchoParamStyle.EXPLICIT + "' or '" + EchoParamStyle.ALL + "'" );
+      }
+      if( echoParams == EchoParamStyle.EXPLICIT ) {
         responseHeader.add("params", req.getOriginalParams().toNamedList());
-    } else if(epValue!=null) {
-      throw new SolrException(400,"Invalid value '" + epValue + "' for " + EP_PARAM + " parameter, use '" + EXPLICIT + "'");
+      }
+      else if( echoParams == EchoParamStyle.ALL ) {
+        responseHeader.add("params", req.getParams().toNamedList());
+      }
     }
   }
-
 
 
   final public static void log(Throwable e) {
@@ -760,12 +772,4 @@ public final class SolrCore {
     return getQueryResponseWriter(request.getParam("wt")); 
   }
 }
-
-
-
-
-
-
-
-
 

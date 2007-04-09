@@ -131,6 +131,35 @@ public abstract class SolrParams {
    */
   public static final String STREAM_CONTENTTYPE = "stream.contentType";
     
+  /** 'true' if the header should include the handler name */
+  public static final String HEADER_ECHO_HANDLER = "echoHandler";
+  
+  /** include the parameters in the header **/
+  public static final String HEADER_ECHO_PARAMS = "echoParams";
+  
+  /** valid values for: <code>echoParams</code> */
+  public enum EchoParamStyle {
+    EXPLICIT,
+    ALL,
+    NONE;
+    
+    public static EchoParamStyle get( String v ) {
+      if( v != null ) {
+        v = v.toUpperCase();
+        if( v.equals( "EXPLICIT" ) ) {
+          return EXPLICIT;
+        }
+        if( v.equals( "ALL") ) {
+          return ALL;
+        }
+        if( v.equals( "NONE") ) {  // the same as nothing...
+          return NONE;
+        }
+      }
+      return null;
+    }
+  };
+  
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
 
@@ -331,5 +360,7 @@ public abstract class SolrParams {
     return result;
   }
 }
+
+
 
 

@@ -51,4 +51,17 @@ public class EchoParamsTest extends AbstractSolrTestCase {
     assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
   }
 
+  public void testAllEchoParams() {
+    lrf = h.getRequestFactory
+      ("crazy_custom_qt", 0, 20,
+       "version","2.2",
+       "wt","xml",
+       "echoParams", "all",
+       "echoHandler","true"
+       );
+
+    assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='fl'][.='implicit']");
+    assertQ(req("foo"),HEADER_XPATH + "/str[@name='handler'][.='org.apache.solr.request.StandardRequestHandler']");
+  }
+
 }

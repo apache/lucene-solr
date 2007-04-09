@@ -379,7 +379,12 @@
     -->
   </requestHandler>
 
-  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" />
+  <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >
+    <lst name="defaults">
+     <str name="echoParams">explicit</str> <!-- for all params (including the default etc) 'all' -->
+     <str name="echoHandler">true</str>
+    </lst>
+  </requestHandler>
   
   <!-- NOTE, /update is mapped to a servlet, we can have the filter handle requests off that! -->
   <requestHandler name="/update/commit" class="solr.CommitRequestHandler" />

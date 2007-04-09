@@ -424,7 +424,7 @@ public class TestHarness {
     }
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
-      return new LocalSolrQueryRequest(TestHarness.this.getCore(),
+        return new LocalSolrQueryRequest(TestHarness.this.getCore(),
                                        q[0], qtype, start, limit, args);
       }
 
