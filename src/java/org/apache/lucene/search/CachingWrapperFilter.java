@@ -33,8 +33,8 @@ public class CachingWrapperFilter extends Filter {
   protected Filter filter;
 
   /**
-   * @todo What about serialization in RemoteSearchable?  Caching won't work.
-   *       Should transient be removed?
+   * A transient Filter cache.  To cache Filters even when using {@link RemoteSearchable} use
+   * {@link RemoteCachingWrapperFilter} instead.
    */
   protected transient Map cache;
 
