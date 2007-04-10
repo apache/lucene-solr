@@ -191,7 +191,11 @@ public class TestDeletionPolicy extends TestCase
     writer.setUseCompoundFile(useCompoundFile);
     writer.close();
 
+    long lastDeleteTime = 0;
     for(int i=0;i<7;i++) {
+      // Record last time when writer performed deletes of
+      // past commits
+      lastDeleteTime = System.currentTimeMillis();
       writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
       writer.setUseCompoundFile(useCompoundFile);
       for(int j=0;j<17;j++) {
@@ -216,8 +220,6 @@ public class TestDeletionPolicy extends TestCase
     String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                             "",
                                                             gen);
-    long newestModTime = dir.fileModified(fileName);
-      
     while(gen > 0) {
       try {
         IndexReader reader = IndexReader.open(dir);
@@ -226,7 +228,7 @@ public class TestDeletionPolicy extends TestCase
                                                          "",
                                                          gen);
         long modTime = dir.fileModified(fileName);
-        assertTrue("commit point was older than " + SECONDS + " seconds but did not get deleted", newestModTime - modTime < (SECONDS*1000));
+        assertTrue("commit point was older than " + SECONDS + " seconds but did not get deleted", lastDeleteTime - modTime < (SECONDS*1000));
       } catch (IOException e) {
         // OK
         break;
