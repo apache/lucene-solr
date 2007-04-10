@@ -24,10 +24,8 @@ import java.util.Map;
 import java.io.IOException;
 
 /**
- * Wraps another filter's result and caches it.  The caching
- * behavior is like {@link QueryFilter}.  The purpose is to allow
- * filters to simply filter, and then wrap with this class to add
- * caching, keeping the two concerns decoupled yet composable.
+ * Wraps another filter's result and caches it.  The purpose is to allow
+ * filters to simply filter, and then wrap with this class to add caching.
  */
 public class CachingWrapperFilter extends Filter {
   protected Filter filter;

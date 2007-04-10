@@ -41,6 +41,11 @@ API Changes
     MultiFieldQueryParser, in order to allow sub-classes to override them.
     (Steven Parkes via Otis Gospodnetic)
 
+ 7. LUCENE-857: Removed caching from QueryFilter and deprecated QueryFilter
+    in favour of QueryWrapperFilter or QueryWrapperFilter + CachingWrapperFilter
+    combination when caching is desired.
+    (Chris Hostetter, Otis Gospodnetic)
+
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)
