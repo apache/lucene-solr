@@ -41,7 +41,7 @@
     <!-- field type definitions. The "name" attribute is
        just a label to be used by field definitions.  The "class"
        attribute and any other attributes determine the real
-       behavior of the fieldtype.
+       behavior of the fieldType.
          Class names starting with "solr" refer to java classes in the
        org.apache.solr.analysis package.
     -->
@@ -51,10 +51,10 @@
        limits compression (if enabled in the derived fields) to values which
        exceed a certain size (in characters).
     -->
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- boolean type: "true" or "false" -->
-    <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
          currently supported on types that are sorted internally as strings.
@@ -73,20 +73,20 @@
     <!-- numeric field types that store and index the text
          value verbatim (and hence don't support range queries, since the
          lexicographic ordering isn't equal to the numeric ordering) -->
-    <fieldtype name="integer" class="solr.IntField" omitNorms="true"/>
-    <fieldtype name="long" class="solr.LongField" omitNorms="true"/>
-    <fieldtype name="float" class="solr.FloatField" omitNorms="true"/>
-    <fieldtype name="double" class="solr.DoubleField" omitNorms="true"/>
+    <fieldType name="integer" class="solr.IntField" omitNorms="true"/>
+    <fieldType name="long" class="solr.LongField" omitNorms="true"/>
+    <fieldType name="float" class="solr.FloatField" omitNorms="true"/>
+    <fieldType name="double" class="solr.DoubleField" omitNorms="true"/>
 
 
     <!-- Numeric field types that manipulate the value into
          a string value that isn't human-readable in its internal form,
          but with a lexicographic ordering the same as the numeric ordering,
          so that range queries work correctly. -->
-    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
-    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
-    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
-    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
 
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
@@ -109,7 +109,7 @@
                       
          Consult the DateField javadocs for more information.
       -->
-    <fieldtype name="date" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="date" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- solr.TextField allows the specification of custom text analyzers
          specified as a tokenizer and a list of token filters. Different
@@ -125,17 +125,17 @@
 
     <!-- One can also specify an existing Analyzer class that has a
          default constructor via the class attribute on the analyzer element
-    <fieldtype name="text_greek" class="solr.TextField">
+    <fieldType name="text_greek" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.el.GreekAnalyzer"/>
     </fieldType>
     -->
 
     <!-- A text field that only splits on whitespace for exact matching of words -->
-    <fieldtype name="text_ws" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text_ws" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
     <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
         words on case-change, alpha numeric boundaries, and non-alphanumeric chars,
@@ -144,7 +144,7 @@
         Duplicate tokens at the same position (which may result from Stemmed Synonyms or
         WordDelim parts) are removed.
         -->
-    <fieldtype name="text" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
       <analyzer type="index">
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <!-- in this example, we will only use synonyms at query time
@@ -165,12 +165,12 @@
         <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
 
     <!-- Less flexible matching, but less false matches.  Probably not ideal for product names,
          but may be good for SKUs.  Can insert dashes in the wrong place and still match. -->
-    <fieldtype name="textTight" class="solr.TextField" positionIncrementGap="100" >
+    <fieldType name="textTight" class="solr.TextField" positionIncrementGap="100" >
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
@@ -180,13 +180,13 @@
         <filter class="solr.EnglishPorterFilterFactory" protected="protwords.txt"/>
         <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
     <!-- This is an example of using the KeywordTokenizer along
          With various TokenFilterFactories to produce a sortable field
          that does not include some properties of the source text
       -->
-    <fieldtype name="alphaOnlySort" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+    <fieldType name="alphaOnlySort" class="solr.TextField" sortMissingLast="true" omitNorms="true">
       <analyzer>
         <!-- KeywordTokenizer does no actual tokenizing, so the entire
              input string is preserved as a single token
@@ -213,7 +213,7 @@
                 pattern="([^a-z])" replacement="" replace="all"
         />
       </analyzer>
-    </fieldtype>
+    </fieldType>
 
  </types>
 

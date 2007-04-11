@@ -300,7 +300,7 @@ public final class IndexSchema {
 
       version = config.getFloat("/schema/@version", 1.0f);
 
-      String expression = "/schema/types/fieldtype";
+      String expression = "/schema/types/fieldtype | /schema/types/fieldType";
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
 
 

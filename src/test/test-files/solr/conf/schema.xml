@@ -42,10 +42,10 @@
          These are provided more for backward compatability, allowing one
          to create a schema that matches an existing lucene index.
     -->
-    <fieldtype name="integer" class="solr.IntField"/>
-    <fieldtype name="long" class="solr.LongField"/>
+    <fieldType name="integer" class="solr.IntField"/>
+    <fieldType name="long" class="solr.LongField"/>
     <fieldtype name="float" class="solr.FloatField"/>
-    <fieldtype name="double" class="solr.DoubleField"/>
+    <fieldType name="double" class="solr.DoubleField"/>
 
     <!-- numeric field types that manipulate the value into
        a string value that isn't human readable in it's internal form,
