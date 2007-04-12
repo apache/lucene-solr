@@ -1119,7 +1119,13 @@ public class IndexWriter {
 
   /** Merges all segments together into a single segment,
    * optimizing an index for search.
+   *
+   * <p>It is recommended that this method be called upon completion of indexing.  In
+   * environments with frequent updates, optimize is best done during low volume times, if at all. 
    * 
+   * </p>
+   * <p>See http://www.gossamer-threads.com/lists/lucene/java-dev/47895 for more discussion. </p>
+   *
    * <p>Note that this requires substantial temporary free
    * space in the Directory (see <a target="_top"
    * href="http://issues.apache.org/jira/browse/LUCENE-764">LUCENE-764</a>
