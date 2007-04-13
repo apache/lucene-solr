@@ -75,15 +75,15 @@ class Flare::Context
                                        :queries => facet_queries
                                      },
                                      :highlighting => {:field_list => @text_fields})
-    if query_type == :dismax
-      solr_params[:phrase_fields] ||= @text_fields
-      if solr_params[:query] == "*:*"
-        solr_params[:query] = ""
-      end
-      request = Solr::Request::Dismax.new(solr_params)  # TODO rename to DisMax
-    else
+#    if query_type == :dismax
+#      solr_params[:phrase_fields] ||= @text_fields
+#      if solr_params[:query] == "*:*"
+#        solr_params[:query] = ""
+#      end
+#      request = Solr::Request::Dismax.new(solr_params)  # TODO rename to DisMax
+#    else
       request = Solr::Request::Standard.new(solr_params)
-    end
+#    end
 
     #TODO: call response.field_facets(??) - maybe field_facets should be higher level? 
 #    logger.info({:query => query, :filter_queries => filters}.inspect)
