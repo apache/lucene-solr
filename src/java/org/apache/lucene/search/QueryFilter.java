@@ -25,13 +25,13 @@ package org.apache.lucene.search;
  * @version $Id$
  * @deprecated use a CachingWrapperFilter with QueryWrapperFilter
  */
-public class QueryFilter extends QueryWrapperFilter {
+public class QueryFilter extends CachingWrapperFilter {
 
   /** Constructs a filter which only matches documents matching
    * <code>query</code>.
    */
   public QueryFilter(Query query) {
-    super(query);
+    super(new QueryWrapperFilter(query));
   }
 
   public boolean equals(Object o) {
