@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'solr'
+
 class Flare::Context
-  attr_accessor :queries, :filters, :facet_queries, :applied_facet_queries, :page
+  attr_accessor :queries, :filters, :facet_queries, :applied_facet_queries, :page, :sort
   attr_reader :facet_fields, :text_fields
 
   def initialize(solr_config={})
@@ -74,7 +76,8 @@ class Flare::Context
                                        :fields => @facet_fields, :limit => 20 , :mincount => 1, :sort => :count,
                                        :queries => facet_queries
                                      },
-                                     :highlighting => {:field_list => @text_fields})
+                                     :highlighting => {:field_list => @text_fields},
+                                     :sort => @sort)
 #    if query_type == :dismax
 #      solr_params[:phrase_fields] ||= @text_fields
 #      if solr_params[:query] == "*:*"
