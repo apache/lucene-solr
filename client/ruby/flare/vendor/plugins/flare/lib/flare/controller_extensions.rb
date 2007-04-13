@@ -51,8 +51,11 @@ module Flare
 
 
       def add_query
-        @flare.queries << {:query => params[:search][:query]}
-        @flare.page = 1
+        query = params[:search][:query].strip
+        if query.size > 0
+          @flare.queries << {:query => query}
+          @flare.page = 1
+        end
         redirect_to :action => 'index'
       end
 
@@ -61,7 +64,7 @@ module Flare
         @flare.queries[params[:index].to_i][:query] = params[:value]
         @flare.page = 1 # TODO: let the context adjust this automatically when its state changes
         render :update do |page|
-          page.redirect_to '/browse'
+          page.redirect_to :action => 'index'
         end
       end
 
