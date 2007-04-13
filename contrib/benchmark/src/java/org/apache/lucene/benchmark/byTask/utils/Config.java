@@ -195,9 +195,11 @@ public class Config {
   public int newRound () {
     roundNumber++;
     
+    StringBuffer sb = new StringBuffer("--> Round ").append(roundNumber-1).append("-->").append(roundNumber);
+
     // log changes in values
     if (valByRound.size()>0) {
-      StringBuffer sb = new StringBuffer("--> Round ").append(roundNumber-1).append("-->").append(roundNumber).append(": ");
+      sb.append(": ");
       for (Iterator iter = valByRound.keySet().iterator(); iter.hasNext();) {
         String name = (String) iter.next();
         Object a = valByRound.get(name);
@@ -213,10 +215,11 @@ public class Config {
           sb.append("  ").append(name).append(":").append(ab[n1]).append("-->").append(ab[n2]);
         }
       }
-      System.out.println();
-      System.out.println(sb.toString());
-      System.out.println();
     }
+
+    System.out.println();
+    System.out.println(sb.toString());
+    System.out.println();
     
     return roundNumber;
   }

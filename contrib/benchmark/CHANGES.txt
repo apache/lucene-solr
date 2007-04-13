@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+4/13/07
+
+Better error handling and javadocs around "exhaustive" doc making.
+
 3/25/07
 
 LUCENE-849: 

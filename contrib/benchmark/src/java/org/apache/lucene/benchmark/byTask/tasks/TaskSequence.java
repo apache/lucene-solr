@@ -67,8 +67,13 @@ public class TaskSequence extends PerfTask {
    */
   public void setRepetitions(int repetitions) throws Exception {
     this.repetitions = repetitions;
-    if (repetitions==REPEAT_EXHAUST && isParallel()) {
-      throw new Exception("REPEAT_EXHAUST is not allowed for parallel tasks");
+    if (repetitions==REPEAT_EXHAUST) {
+      if (isParallel()) {
+        throw new Exception("REPEAT_EXHAUST is not allowed for parallel tasks");
+      }
+      if (getRunData().getConfig().get("doc.maker.forever",true)) {
+        throw new Exception("REPEAT_EXHAUST requires setting doc.maker.forever=false");
+      }
     }
     setSequenceName();
   }

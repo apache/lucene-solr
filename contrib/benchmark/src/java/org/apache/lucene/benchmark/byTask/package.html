@@ -212,11 +212,12 @@ The following is an informal description of the supported syntax.
  <br>Example -  <font color="#FF0066">{ AddDoc AddDoc } : 30</font> - would do
  addDoc 60 times in a row.
  <br><b>Exhaustive repeating</b>: use <font color="#FF0066">*</font> instead of
- a number to repeat forever.
+ a number to repeat exhaustively.
  This is sometimes useful, for adding as many files as a doc maker can create,
- without iterating over the same files again, but in the case that the exact
- number of files is not known in advance. For insance, TREC files extracted
- from a zip file.
+ without iterating over the same file again, especially when the exact
+ number of documents is not known in advance. For insance, TREC files extracted
+ from a zip file. Note: when using this, you must also set
+ <font color="#FF0066">doc.maker.forever</font> to false.
  <br>Example -  <font color="#FF0066">{ AddDoc } : *</font>  - would add docs
  until the doc maker is "exhausted".
  </li>
