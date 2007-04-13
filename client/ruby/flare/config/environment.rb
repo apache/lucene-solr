@@ -5,7 +5,7 @@
 # ENV['RAILS_ENV'] ||= 'production'
 
 # Specifies gem version of Rails to use when vendor/rails is not present
-RAILS_GEM_VERSION = '1.2.2' unless defined? RAILS_GEM_VERSION
+RAILS_GEM_VERSION = '1.2.3' unless defined? RAILS_GEM_VERSION
 
 # Bootstrap the Rails environment, frameworks, and default configuration
 require File.join(File.dirname(__FILE__), 'boot')
@@ -64,14 +64,16 @@ solr_environments = {
   # timeline: default, no timeline support without knowing the field(s) to use
   
   :development => {
+    :solr_query_type => :standard,
   },
 
   :delicious => {
     :timeline_dates => :published_year_facet,
-    :image_proc => Proc.new {|doc| "http://images.amazon.com/images/P/#{doc['asin_text']}.01.MZZZZZZZ"}
+    :image_proc => Proc.new {|doc| "http://images.amazon.com/images/P/#{doc['asin_text']}.01.MZZZZZZZ"},
   },
 
   :tang => {
+    :solr_query_type => :standard,
   },
   
   :marc => {

@@ -9,4 +9,4 @@ require 'rake/rdoctask'
 
 require 'tasks/rails'
 
-require 'solr/solrtasks'
+#require 'solr/solrtasks'
