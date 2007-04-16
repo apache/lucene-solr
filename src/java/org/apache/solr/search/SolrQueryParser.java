@@ -59,7 +59,7 @@ public class SolrQueryParser extends QueryParser {
    * 
    * @param schema Used for default search field name if defaultField is null and field information is used for analysis
    * @param defaultField default field used for unspecified search terms.  if null, the schema default field is used
-   * @see IndexSchema.getSolrQueryParser
+   * @see IndexSchema#getSolrQueryParser(String defaultField)
    */
   public SolrQueryParser(IndexSchema schema, String defaultField) {
     super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
@@ -93,14 +93,14 @@ public class SolrQueryParser extends QueryParser {
     }
 
     // TODO: toInternal() won't necessarily work on partial
-    // values, so it looks like i need a getPrefix() function
+    // values, so it looks like we need a getPrefix() function
     // on fieldtype?  Or at the minimum, a method on fieldType
     // that can tell me if I should lowercase or not...
     // Schema could tell if lowercase filter is in the chain,
     // but a more sure way would be to run something through
     // the first time and check if it got lowercased.
 
-    // TODO: throw exception of field type doesn't support prefixes?
+    // TODO: throw exception if field type doesn't support prefixes?
     // (sortable numeric types don't do prefixes, but can do range queries)
     Term t = new Term(field, termStr);
     return new ConstantScorePrefixQuery(t);

@@ -225,7 +225,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     iwAccess.lock();
     try {
 
-      // We can't using iwCommit to protect internal data here, since it would
+      // We can't use iwCommit to protect internal data here, since it would
       // block other addDoc calls.  Hence, we synchronize to protect internal
       // state.  This is safe as all other state-changing operations are
       // protected with iwCommit (which iwAccess excludes from this block).
