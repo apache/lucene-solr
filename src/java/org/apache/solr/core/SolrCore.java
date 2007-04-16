@@ -242,8 +242,8 @@ public final class SolrCore {
     }
   }
 
-
-  void finalizer() { close(); }
+  @Override
+  protected void finalize() { close(); }
 
 
   ////////////////////////////////////////////////////////////////////////////////

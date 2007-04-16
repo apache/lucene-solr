@@ -101,7 +101,8 @@ public class SolrIndexWriter extends IndexWriter {
     super.close();
   }
 
-  void finalizer() {
+  @Override
+  protected void finalize() {
     try {super.close();} catch (IOException e) {}
   }
 
