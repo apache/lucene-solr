@@ -132,7 +132,14 @@ public class HighlighterTest extends TestCase implements Formatter
 	}
 	public void testGetRangeFragments() throws Exception
 	{
-		doSearching(FIELD_NAME + ":[kannedy TO kznnedy]"); //bug?needs lower case
+		String queryString=FIELD_NAME + ":[kannedy TO kznnedy]"; 
+		
+		//Need to explicitly set the QueryParser property to use RangeQuery rather than RangeFilters
+		QueryParser parser=new QueryParser(FIELD_NAME, new StandardAnalyzer());
+		parser.setUseOldRangeQuery(true);
+		query = parser.parse(queryString);
+		doSearching(query);
+		
 		doStandardHighlights();
 		assertTrue("Failed to find correct number of highlights " + numHighlights + " found", numHighlights == 5);
 	}
