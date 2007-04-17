@@ -30,10 +30,17 @@ final class BooleanScorer extends Scorer {
   private int prohibitedMask = 0;
   private int nextMask = 1;
 
-  BooleanScorer(Similarity similarity) {
-    super(similarity);
-  }
+  private final int minNrShouldMatch;
 
+  BooleanScorer(Similarity similarity) {
+    this(similarity, 1);
+  }
+  
+  BooleanScorer(Similarity similarity, int minNrShouldMatch) {
+    super(similarity);
+    this.minNrShouldMatch = minNrShouldMatch;
+  }
+  
   static final class SubScorer {
     public Scorer scorer;
     public boolean done;
@@ -116,13 +123,15 @@ final class BooleanScorer extends Scorer {
             continue;
           }
           
-          hc.collect(current.doc, current.score * coordFactors[current.coord]);
+          if (current.coord >= minNrShouldMatch) {
+            hc.collect(current.doc, current.score * coordFactors[current.coord]);
+          }
         }
         
         current = current.next;         // pop the queue
       }
       
-      if( bucketTable.first != null){
+      if (bucketTable.first != null){
         current = bucketTable.first;
         bucketTable.first = current.next;
         return true;
@@ -154,9 +163,10 @@ final class BooleanScorer extends Scorer {
         current = bucketTable.first;
         bucketTable.first = current.next;         // pop the queue
 
-        // check prohibited & required
-        if ((current.bits & prohibitedMask) == 0 && 
-            (current.bits & requiredMask) == requiredMask) {
+        // check prohibited & required, and minNrShouldMatch
+        if ((current.bits & prohibitedMask) == 0 &&
+            (current.bits & requiredMask) == requiredMask &&
+            current.coord >= minNrShouldMatch) {
           return true;
         }
       }
@@ -258,6 +268,5 @@ final class BooleanScorer extends Scorer {
     buffer.append(")");
     return buffer.toString();
   }
-
 
 }

@@ -134,6 +134,11 @@ Optimizations
     IndexOutput directly now. This avoids further buffering and thus avoids 
     unneccessary array copies. (Michael Busch)
 
+ 3. LUCENE-730: Updated BooleanScorer2 to make use of BooleanScorer in some cases and possibly improve
+    scoring performance.  N.B. A bit of code had to be disabled in QueryUtils in order for TestBoolean2
+    test to keep passing.
+    (Paul Elschot via Otis Gospodnetic)
+
 Documentation:
  1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to http://wiki.apache.org/lucene-java/   Updated the links in the docs and wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
 

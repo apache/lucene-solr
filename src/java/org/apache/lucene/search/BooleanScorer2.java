@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
 
-/** An alternative to BooleanScorer.
- * <br>Uses ConjunctionScorer, DisjunctionScorer, ReqOptScorer and ReqExclScorer.
+/** An alternative to BooleanScorer that also allows a minimum number
+ * of optional scorers that should match.
  * <br>Implements skipTo(), and has no limitations on the numbers of added scorers.
+ * <br>Uses ConjunctionScorer, DisjunctionScorer, ReqOptScorer and ReqExclScorer.
  */
 class BooleanScorer2 extends Scorer {
   private ArrayList requiredScorers = new ArrayList();
@@ -151,11 +152,11 @@ class BooleanScorer2 extends Scorer {
     }
   }
 
-  private Scorer countingDisjunctionSumScorer(List scorers,
-                                              int minMrShouldMatch)
+  private Scorer countingDisjunctionSumScorer(final List scorers,
+                                              int minNrShouldMatch)
   // each scorer from the list counted as a single matcher
   {
-    return new DisjunctionSumScorer(scorers, minMrShouldMatch) {
+    return new DisjunctionSumScorer(scorers, minNrShouldMatch) {
       private int lastScoredDoc = -1;
       public float score() throws IOException {
         if (this.doc() > lastScoredDoc) {
@@ -196,7 +197,7 @@ class BooleanScorer2 extends Scorer {
 
   private Scorer dualConjunctionSumScorer(Scorer req1, Scorer req2) { // non counting. 
     ConjunctionScorer cs = new ConjunctionScorer(defaultSimilarity);
-    // All scorers match, so defaultSimilarity super.score() always has 1 as
+    // All scorers match, so defaultSimilarity always has 1 as
     // the coordination factor.
     // Therefore the sum of the scores of two scorers
     // is used as score.
@@ -230,7 +231,7 @@ class BooleanScorer2 extends Scorer {
               (optionalScorers.size() == 1)
               ? new SingleMatchScorer((Scorer) optionalScorers.get(0))
               : countingConjunctionSumScorer(optionalScorers);
-        return addProhibitedScorers( requiredCountingSumScorer);
+        return addProhibitedScorers(requiredCountingSumScorer);
       }
     }
   }
@@ -241,7 +242,7 @@ class BooleanScorer2 extends Scorer {
     } else if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
       ArrayList allReq = new ArrayList(requiredScorers);
       allReq.addAll(optionalScorers);
-      return addProhibitedScorers( countingConjunctionSumScorer(allReq));
+      return addProhibitedScorers(countingConjunctionSumScorer(allReq));
     } else { // optionalScorers.size() > minNrShouldMatch, and at least one required scorer
       Scorer requiredCountingSumScorer =
             (requiredScorers.size() == 1)
@@ -284,11 +285,26 @@ class BooleanScorer2 extends Scorer {
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   public void score(HitCollector hc) throws IOException {
-    if (countingSumScorer == null) {
-      initCountingSumScorer();
-    }
-    while (countingSumScorer.next()) {
-      hc.collect(countingSumScorer.doc(), score());
+    if ((requiredScorers.size() == 0) &&
+        prohibitedScorers.size() < 32) {
+      // fall back to BooleanScorer, scores documents somewhat out of order
+      BooleanScorer bs = new BooleanScorer(getSimilarity(), minNrShouldMatch);
+      Iterator si = optionalScorers.iterator();
+      while (si.hasNext()) {
+        bs.add((Scorer) si.next(), false /* required */, false /* prohibited */);
+      }
+      si = prohibitedScorers.iterator();
+      while (si.hasNext()) {
+        bs.add((Scorer) si.next(), false /* required */, true /* prohibited */);
+      }
+      bs.score(hc);
+    } else {
+      if (countingSumScorer == null) {
+        initCountingSumScorer();
+      }
+      while (countingSumScorer.next()) {
+        hc.collect(countingSumScorer.doc(), score());
+      }
     }
   }
 
