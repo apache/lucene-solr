@@ -589,7 +589,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     
     // state
     long docsSinceCommit;    
-    int autoCommitCount= 0;
+    int autoCommitCount = 0;
     long lastAddedTime = -1;
     
     public CommitTracker() {
@@ -599,7 +599,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       docsUpperBound = SolrConfig.config.getInt("updateHandler/autoCommit/maxDocs", -1);
       timeUpperBound = SolrConfig.config.getInt("updateHandler/autoCommit/maxTime", -1);
 
-      SolrCore.log.info("CommitTracker: " + this);
+      SolrCore.log.info("AutoCommit: " + this);
     }
 
     /** Indicate that documents have been added
@@ -655,6 +655,17 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         }
       }
     }
+
+    public String toString() {
+      if(timeUpperBound > 0 || docsUpperBound > 0) {
+        return 
+          (timeUpperBound > 0 ? ("if uncommited for " + timeUpperBound + "ms; ") : "") +
+          (docsUpperBound > 0 ? ("if " + docsUpperBound + " uncommited docs ") : "");
+
+      } else {
+        return "disabled";
+      }
+    }
   }
       
   
@@ -693,6 +704,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());
+    if (tracker.docsUpperBound > 0) {
+      lst.add("autocommit maxDocs", tracker.docsUpperBound);
+    }
+    if (tracker.timeUpperBound > 0) {
+      lst.add("autocommit maxTime", "" + tracker.timeUpperBound + "ms");
+    }
     lst.add("autocommits", tracker.autoCommitCount);
     lst.add("optimizes", optimizeCommands.get());
     lst.add("docsPending", numDocsPending.get());
