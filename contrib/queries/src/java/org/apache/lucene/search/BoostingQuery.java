@@ -32,7 +32,7 @@ public class BoostingQuery extends Query {
       this.context = (Query)context.clone();        // clone before boost
       this.boost = boost;
 
-      context.setBoost(0.0f);                      // ignore context-only matches
+      this.context.setBoost(0.0f);                      // ignore context-only matches
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
