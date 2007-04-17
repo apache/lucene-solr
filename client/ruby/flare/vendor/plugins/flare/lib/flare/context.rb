@@ -24,7 +24,7 @@ class Flare::Context
     clear
     @facet_queries = {}  # name => {:queries => [], :filters => []}
 
-    @index_info = @connection.send(Solr::Request::IndexInfo.new)
+    @index_info = index_info
 
     excluded =  @solr_config[:facets_exclude] ? @solr_config[:facets_exclude].collect {|e| e.to_s} : []
     @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded  # TODO: is facets_excluded working?  where are the tests?!  :)
@@ -42,7 +42,7 @@ class Flare::Context
     @page = 1
 
     # this is cleared for development purposes - allowing flare to stay running but different Solr datasets swapping
-    @index_info = @connection.send(Solr::Request::IndexInfo.new)
+    @index_info = index_info
     excluded =  @solr_config[:facets_exclude] ? @solr_config[:facets_exclude].collect {|e| e.to_s} : []
     @facet_fields =  @index_info.field_names.find_all {|v| v =~ /_facet$/} - excluded
     @text_fields = @index_info.field_names.find_all {|v| v =~ /_text$/}
@@ -142,5 +142,9 @@ class Flare::Context
       end
       "#{filter[:negative] ? '-' : ''}#{filter[:field]}:#{value}"
     end
+  end
+  
+  def index_info
+    @connection.send(Solr::Request::IndexInfo.new)
   end
 end
