@@ -49,7 +49,7 @@ import java.util.*;
  *
  * @see org.apache.lucene.benchmark.standard.StandardBenchmarker#benchmark(java.io.File, org.apache.lucene.benchmark.BenchmarkOptions)
  *
- *
+ * @deprecated use the byTask code instead. See http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/javadoc/org/apache/lucene/benchmark/byTask/package-summary.html .
  **/
 public class StandardBenchmarker extends AbstractBenchmarker implements Benchmarker
 {

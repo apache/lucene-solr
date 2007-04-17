@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+4/17/07
+- LUCENE-863: Deprecated StandardBenchmarker in favour of byTask code.
+  (Otis Gospodnetic)
+
 4/13/07
 
 Better error handling and javadocs around "exhaustive" doc making.
