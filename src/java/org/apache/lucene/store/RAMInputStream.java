@@ -1,5 +1,7 @@
 package org.apache.lucene.store;
 
+import java.io.IOException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,46 +21,90 @@ package org.apache.lucene.store;
 
 /**
  * A memory-resident {@link IndexInput} implementation.
- *
+ * 
  * @version $Id$
  */
 
-class RAMInputStream extends BufferedIndexInput implements Cloneable {
+class RAMInputStream extends IndexInput implements Cloneable {
+  static final int BUFFER_SIZE = BufferedIndexOutput.BUFFER_SIZE;
+
   private RAMFile file;
-  private long pointer = 0;
   private long length;
+
+  private byte[] currentBuffer;
+  private int currentBufferIndex;
+  
+  private int bufferPosition;
+  private long bufferStart;
+  private int bufferLength;
 
   public RAMInputStream(RAMFile f) {
     file = f;
     length = file.length;
-  }
 
-  public void readInternal(byte[] dest, int destOffset, int len) {
-    int remainder = len;
-    long start = pointer;
-    while (remainder != 0) {
-      int bufferNumber = (int)(start/BUFFER_SIZE);
-      int bufferOffset = (int)(start%BUFFER_SIZE);
-      int bytesInBuffer = BUFFER_SIZE - bufferOffset;
-      int bytesToCopy = bytesInBuffer >= remainder ? remainder : bytesInBuffer;
-      byte[] buffer = (byte[])file.buffers.get(bufferNumber);
-      System.arraycopy(buffer, bufferOffset, dest, destOffset, bytesToCopy);
-      destOffset += bytesToCopy;
-      start += bytesToCopy;
-      remainder -= bytesToCopy;
-    }
-    pointer += len;
+    // make sure that we switch to the
+    // first needed buffer lazily
+    currentBufferIndex = -1;
+    currentBuffer = null;
   }
 
   public void close() {
-  }
-
-  public void seekInternal(long pos) {
-    pointer = pos;
+    // nothing to do here
   }
 
   public long length() {
     return length;
   }
 
+  public byte readByte() throws IOException {
+    if (bufferPosition >= bufferLength) {
+      currentBufferIndex++;
+      switchCurrentBuffer();
+    }
+    return currentBuffer[bufferPosition++];
+  }
+
+  public void readBytes(byte[] b, int offset, int len) throws IOException {
+    while (len > 0) {
+      if (bufferPosition >= bufferLength) {
+        currentBufferIndex++;
+        switchCurrentBuffer();
+      }
+
+      int remainInBuffer = bufferLength - bufferPosition;
+      int bytesToCopy = len < remainInBuffer ? len : remainInBuffer;
+      System.arraycopy(currentBuffer, bufferPosition, b, offset, bytesToCopy);
+      offset += bytesToCopy;
+      len -= bytesToCopy;
+      bufferPosition += bytesToCopy;
+    }
+  }
+
+  private final void switchCurrentBuffer() throws IOException {
+    if (currentBufferIndex >= file.buffers.size()) {
+      // end of file reached, no more buffers left
+      throw new IOException("Read past EOF");
+    } else {
+      currentBuffer = (byte[]) file.buffers.get(currentBufferIndex);
+      bufferPosition = 0;
+      bufferStart = BUFFER_SIZE * currentBufferIndex;
+      bufferLength = (int) (length - bufferStart);
+      if (bufferLength > BUFFER_SIZE) {
+        bufferLength = BUFFER_SIZE;
+      }
+    }
+  }
+
+  public long getFilePointer() {
+    return currentBufferIndex < 0 ? 0 : bufferStart + bufferPosition;
+  }
+
+  public void seek(long pos) throws IOException {
+    long bufferStart = currentBufferIndex * BUFFER_SIZE;
+    if (pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
+      currentBufferIndex = (int) (pos / BUFFER_SIZE);
+      switchCurrentBuffer();
+    }
+    bufferPosition = (int) (pos % BUFFER_SIZE);
+  }
 }

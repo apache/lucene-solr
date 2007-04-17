@@ -21,13 +21,21 @@ import java.io.IOException;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
- *
+ * 
  * @version $Id$
  */
 
-public class RAMOutputStream extends BufferedIndexOutput {
+public class RAMOutputStream extends IndexOutput {
+  static final int BUFFER_SIZE = BufferedIndexOutput.BUFFER_SIZE;
+
   private RAMFile file;
-  private long pointer = 0;
+
+  private byte[] currentBuffer;
+  private int currentBufferIndex;
+  
+  private int bufferPosition;
+  private long bufferStart;
+  private int bufferLength;
 
   /** Construct an empty output buffer. */
   public RAMOutputStream() {
@@ -36,6 +44,11 @@ public class RAMOutputStream extends BufferedIndexOutput {
 
   RAMOutputStream(RAMFile f) {
     file = f;
+
+    // make sure that we switch to the
+    // first needed buffer lazily
+    currentBufferIndex = -1;
+    currentBuffer = null;
   }
 
   /** Copy the current contents of this buffer to the named output. */
@@ -66,41 +79,74 @@ public class RAMOutputStream extends BufferedIndexOutput {
     file.setLength(0);
   }
 
-  public void flushBuffer(byte[] src, int offset, int len) throws IOException {
-    byte[] buffer;
-    int bufferPos = 0;
-    while (bufferPos != len) {
-      int bufferNumber = (int)(pointer/BUFFER_SIZE);
-      int bufferOffset = (int)(pointer%BUFFER_SIZE);
-      int bytesInBuffer = BUFFER_SIZE - bufferOffset;
-      int remainInSrcBuffer = len - bufferPos;
-      int bytesToCopy = bytesInBuffer >= remainInSrcBuffer ? remainInSrcBuffer : bytesInBuffer;
-
-      if (bufferNumber == file.buffers.size())
-        buffer = file.addBuffer(BUFFER_SIZE);
-      else
-        buffer = (byte[]) file.buffers.get(bufferNumber);
-
-      System.arraycopy(src, offset + bufferPos, buffer, bufferOffset, bytesToCopy);
-      bufferPos += bytesToCopy;
-      pointer += bytesToCopy;
-    }
-
-    if (pointer > file.length)
-      file.setLength(pointer);
-
-    file.setLastModified(System.currentTimeMillis());
-  }
-
   public void close() throws IOException {
-    super.close();
+    flush();
   }
 
   public void seek(long pos) throws IOException {
-    super.seek(pos);
-    pointer = pos;
+    // set the file length in case we seek back
+    // and flush() has not been called yet
+    setFileLength();
+    if (pos < bufferStart || pos >= bufferStart + bufferLength) {
+      currentBufferIndex = (int) (pos / BUFFER_SIZE);
+      switchCurrentBuffer();
+    }
+
+    bufferPosition = (int) (pos % BUFFER_SIZE);
   }
+
   public long length() {
     return file.length;
+  }
+
+  public void writeByte(byte b) throws IOException {
+    if (bufferPosition == bufferLength) {
+      currentBufferIndex++;
+      switchCurrentBuffer();
+    }
+    currentBuffer[bufferPosition++] = b;
+  }
+
+  public void writeBytes(byte[] b, int offset, int len) throws IOException {
+    while (len > 0) {
+      if (bufferPosition ==  bufferLength) {
+        currentBufferIndex++;
+        switchCurrentBuffer();
+      }
+
+      int remainInBuffer = currentBuffer.length - bufferPosition;
+      int bytesToCopy = len < remainInBuffer ? len : remainInBuffer;
+      System.arraycopy(b, offset, currentBuffer, bufferPosition, bytesToCopy);
+      offset += bytesToCopy;
+      len -= bytesToCopy;
+      bufferPosition += bytesToCopy;
+    }
+  }
+
+  private final void switchCurrentBuffer() throws IOException {
+    if (currentBufferIndex == file.buffers.size()) {
+      currentBuffer = file.addBuffer(BUFFER_SIZE);
+    } else {
+      currentBuffer = (byte[]) file.buffers.get(currentBufferIndex);
+    }
+    bufferPosition = 0;
+    bufferStart = BUFFER_SIZE * currentBufferIndex;
+    bufferLength = currentBuffer.length;
+  }
+
+  private void setFileLength() {
+    long pointer = bufferStart + bufferPosition;
+    if (pointer > file.length) {
+      file.setLength(pointer);
+    }
+  }
+
+  public void flush() throws IOException {
+    file.setLastModified(System.currentTimeMillis());
+    setFileLength();
+  }
+
+  public long getFilePointer() {
+    return currentBufferIndex < 0 ? 0 : bufferStart + bufferPosition;
   }
 }

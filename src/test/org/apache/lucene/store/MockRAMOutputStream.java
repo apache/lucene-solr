@@ -30,6 +30,8 @@ import java.util.Iterator;
 public class MockRAMOutputStream extends RAMOutputStream {
   private MockRAMDirectory dir;
   private boolean first=true;
+  
+  byte[] singleByte = new byte[1];
 
   /** Construct an empty output buffer. */
   public MockRAMOutputStream(MockRAMDirectory dir, RAMFile f) {
@@ -48,7 +50,12 @@ public class MockRAMOutputStream extends RAMOutputStream {
     }
   }
 
-  public void flushBuffer(byte[] src, int offset, int len) throws IOException {
+  public void writeByte(byte b) throws IOException {
+    singleByte[0] = b;
+    writeBytes(singleByte, 0, 1);
+  }
+  
+    public void writeBytes(byte[] b, int offset, int len) throws IOException {
     long freeSpace = dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
@@ -63,14 +70,14 @@ public class MockRAMOutputStream extends RAMOutputStream {
     if (dir.maxSize != 0 && freeSpace <= len) {
       if (freeSpace > 0 && freeSpace < len) {
         realUsage += freeSpace;
-        super.flushBuffer(src, offset, (int) freeSpace);
+        super.writeBytes(b, offset, (int) freeSpace);
       }
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
       throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes");
     } else {
-      super.flushBuffer(src, offset, len);
+      super.writeBytes(b, offset, len);
     }
 
     if (first) {

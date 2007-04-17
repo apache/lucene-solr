@@ -130,6 +130,10 @@ Optimizations
     of SegmentTermPositions instead of SegmentTermDocs without additional costs.
     (Michael Busch)
 
+ 2. LUCENE-431: RAMInputStream and RAMOutputStream extend IndexInput and
+    IndexOutput directly now. This avoids further buffering and thus avoids 
+    unneccessary array copies. (Michael Busch)
+
 Documentation:
  1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to http://wiki.apache.org/lucene-java/   Updated the links in the docs and wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
 
