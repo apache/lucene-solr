@@ -111,8 +111,16 @@ trap 'echo "caught INT/TERM, exiting now but partial cleanup may have already oc
 
 if [[ -n ${days} ]]
 then
+    #is maxdepth supported?
+    find ${data_dir} -maxdepth 0 -name foobar >/dev/null 2>&1
+    if [ $? = 0 ]; then
+      maxdepth="-maxdepth 1"
+    else
+      unset maxdepth
+    fi
+
     logMessage cleaning up snapshots more than ${days} days old
-    for i in `find ${data_dir} -name "snapshot.*" -maxdepth 1 -mtime +${days} -print`
+    for i in `find ${data_dir} ${maxdepth} -name 'snapshot.*' -mtime +${days} -print`
     do
         remove $i
     done

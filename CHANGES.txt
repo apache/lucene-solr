@@ -218,6 +218,11 @@ Bug Fixes
 
 10. SOLR-198: RunExecutableListener always waited for the process to
     finish, even when wait="false" was set. (Koji Sekiguchi via yonik)
+
+11. SOLR-207: Changed distribution scripts to remove recursive find
+    and avoid use of "find -maxdepth" on platforms where it is not
+    supported. (yonik)
+
  
 Other Changes
  1. Updated to Lucene 2.1
