@@ -137,6 +137,9 @@ New Features
     local files. (Ryan McKinley via yonik)
 
 20. SOLR-66: CSV data format for document additions and updates. (yonik)
+
+21. SOLR-184: add echoHandler=true to responseHeader, support echoParams=all
+    (Ryan McKinley via ehatcher)
     
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
