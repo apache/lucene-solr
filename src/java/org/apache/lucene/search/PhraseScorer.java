@@ -21,6 +21,16 @@ import java.io.IOException;
 
 import org.apache.lucene.index.*;
 
+/** Expert: Scoring functionality for phrase queries.
+ * <br>A document is considered matching if it contains the phrase-query terms  
+ * at "valid" positons. What "valid positions" are
+ * depends on the type of the phrase query: for an exact phrase query terms are required 
+ * to appear in adjacent locations, while for a sloppy phrase query some distance between 
+ * the terms is allowed. The abstract method {@link #phraseFreq()} of extending classes
+ * is invoked for each document containing all the phrase query terms, in order to 
+ * compute the frequency of the phrase query in that document. A non zero frequency
+ * means a match. 
+ */
 abstract class PhraseScorer extends Scorer {
   private Weight weight;
   protected byte[] norms;
@@ -31,19 +41,23 @@ abstract class PhraseScorer extends Scorer {
   protected PhraseQueue pq;
   protected PhrasePositions first, last;
 
-  private float freq;
+  private float freq; //prhase frequency in current doc as computed by phraseFreq().
 
 
-  PhraseScorer(Weight weight, TermPositions[] tps, int[] positions, Similarity similarity,
+  PhraseScorer(Weight weight, TermPositions[] tps, int[] offsets, Similarity similarity,
                byte[] norms) {
     super(similarity);
     this.norms = norms;
     this.weight = weight;
     this.value = weight.getValue();
 
-    // convert tps to a list
+    // convert tps to a list of phrase positions.
+    // note: phrase-position differs from term-position in that its position
+    // reflects the phrase offset: pp.pos = tp.pos - offset.
+    // this allows to easily identify a matching (exact) phrase 
+    // when all PhrasePositions have exactly the same position.
     for (int i = 0; i < tps.length; i++) {
-      PhrasePositions pp = new PhrasePositions(tps[i], positions[i]);
+      PhrasePositions pp = new PhrasePositions(tps[i], offsets[i]);
       if (last != null) {			  // add next to end of list
         last.next = pp;
       } else
@@ -94,6 +108,7 @@ abstract class PhraseScorer extends Scorer {
   }
 
   public boolean skipTo(int target) throws IOException {
+    firstTime = false;
     for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
       more = pp.skipTo(target);
     }
@@ -102,6 +117,13 @@ abstract class PhraseScorer extends Scorer {
     return doNext();
   }
 
+  /**
+   * For a document containing all the phrase query terms, compute the
+   * frequency of the phrase in that document. 
+   * A non zero frequency means a match.
+   * <br>Note, that containing all phrase terms does not guarantee a match - they have to be found in matching locations.  
+   * @return frequency of the phrase in current doc, 0 if not found. 
+   */
   protected abstract float phraseFreq() throws IOException;
 
   private void init() throws IOException {

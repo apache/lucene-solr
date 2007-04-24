@@ -98,6 +98,10 @@ Bug fixes
     the instance of IndexWriter (but, not the index itself) by
     referencing already deleted segments.  This bug was only present
     in 2.2 (trunk), ie was never released.  (Mike McCandless)
+    
+13. LUCENE-736: Sloppy phrase query with repeating terms matches wrong docs.
+    For example query "B C B"~2 matches the doc "A B C D E". (Doron Cohen)
+    
 
 New features
 

@@ -35,6 +35,10 @@ import java.io.Reader;
  * @author Erik Hatcher
  */
 public class TestPhraseQuery extends TestCase {
+
+  /** threshold for comparing floats */
+  public static final float SCORE_COMP_THRESH = 1e-6f;
+  
   private IndexSearcher searcher;
   private PhraseQuery query;
   private RAMDirectory directory;
@@ -57,8 +61,17 @@ public class TestPhraseQuery extends TestCase {
     doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.TOKENIZED));
     Fieldable repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.TOKENIZED);
     doc.add(repeatedField);
+    doc.add(new Field("palindrome", "one two three two one", Field.Store.YES, Field.Index.TOKENIZED));
     writer.addDocument(doc);
     
+    doc = new Document();
+    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.TOKENIZED));
+    writer.addDocument(doc);
+
     writer.optimize();
     writer.close();
 
@@ -341,12 +354,188 @@ public class TestPhraseQuery extends TestCase {
     query.add(new Term("repeated", "part"));
     query.add(new Term("repeated", "second"));
     query.add(new Term("repeated", "part"));
-    query.setSlop(99);
+    query.setSlop(100);
 
     Hits hits = searcher.search(query);
-    assertEquals(0, hits.length());
+    assertEquals("slop of 100 just right", 1, hits.length());
+    QueryUtils.check(query,searcher);
+
+    query.setSlop(99);
+
+    hits = searcher.search(query);
+    assertEquals("slop of 99 not enough", 0, hits.length());
+    QueryUtils.check(query,searcher);
+  }
+
+  // work on two docs like this: "phrase exist notexist exist found"
+  public void testNonExistingPhrase() throws IOException {
+    // phrase without repetitions that exists in 2 docs
+    query.add(new Term("nonexist", "phrase"));
+    query.add(new Term("nonexist", "notexist"));
+    query.add(new Term("nonexist", "found"));
+    query.setSlop(2); // would be found this way
+
+    Hits hits = searcher.search(query);
+    assertEquals("phrase without repetitions exists in 2 docs", 2, hits.length());
+    QueryUtils.check(query,searcher);
+
+    // phrase with repetitions that exists in 2 docs
+    query = new PhraseQuery();
+    query.add(new Term("nonexist", "phrase"));
+    query.add(new Term("nonexist", "exist"));
+    query.add(new Term("nonexist", "exist"));
+    query.setSlop(1); // would be found 
+
+    hits = searcher.search(query);
+    assertEquals("phrase with repetitions exists in two docs", 2, hits.length());
+    QueryUtils.check(query,searcher);
+
+    // phrase I with repetitions that does not exist in any doc
+    query = new PhraseQuery();
+    query.add(new Term("nonexist", "phrase"));
+    query.add(new Term("nonexist", "notexist"));
+    query.add(new Term("nonexist", "phrase"));
+    query.setSlop(1000); // would not be found no matter how high the slop is
+
+    hits = searcher.search(query);
+    assertEquals("nonexisting phrase with repetitions does not exist in any doc", 0, hits.length());
+    QueryUtils.check(query,searcher);
+
+    // phrase II with repetitions that does not exist in any doc
+    query = new PhraseQuery();
+    query.add(new Term("nonexist", "phrase"));
+    query.add(new Term("nonexist", "exist"));
+    query.add(new Term("nonexist", "exist"));
+    query.add(new Term("nonexist", "exist"));
+    query.setSlop(1000); // would not be found no matter how high the slop is
+
+    hits = searcher.search(query);
+    assertEquals("nonexisting phrase with repetitions does not exist in any doc", 0, hits.length());
     QueryUtils.check(query,searcher);
 
   }
 
+  /**
+   * Working on a 2 fields like this:
+   *    Field("field", "one two three four five")
+   *    Field("palindrome", "one two three two one")
+   * Phrase of size 2 occuriong twice, once in order and once in reverse, 
+   * because doc is a palyndrome, is counted twice. 
+   * Also, in this case order in query does not matter. 
+   * Also, when an exact match is found, both sloppy scorer and exact scorer scores the same.   
+   */
+  public void testPalyndrome2() throws Exception {
+    
+    // search on non palyndrome, find phrase with no slop, using exact phrase scorer
+    query.setSlop(0); // to use exact phrase scorer
+    query.add(new Term("field", "two"));
+    query.add(new Term("field", "three"));
+    Hits hits = searcher.search(query);
+    assertEquals("phrase found with exact phrase scorer", 1, hits.length());
+    float score0 = hits.score(0);
+    //System.out.println("(exact) field: two three: "+score0);
+    QueryUtils.check(query,searcher);
+
+    // search on non palyndrome, find phrase with slop 2, though no slop required here.
+    query.setSlop(2); // to use sloppy scorer 
+    hits = searcher.search(query);
+    assertEquals("just sloppy enough", 1, hits.length());
+    float score1 = hits.score(0);
+    //System.out.println("(sloppy) field: two three: "+score1);
+    assertEquals("exact scorer and sloppy scorer score the same when slop does not matter",score0, score1, SCORE_COMP_THRESH);
+    QueryUtils.check(query,searcher);
+
+    // search ordered in palyndrome, find it twice
+    query = new PhraseQuery();
+    query.setSlop(2); // must be at least two for both ordered and reversed to match
+    query.add(new Term("palindrome", "two"));
+    query.add(new Term("palindrome", "three"));
+    hits = searcher.search(query);
+    assertEquals("just sloppy enough", 1, hits.length());
+    float score2 = hits.score(0);
+    //System.out.println("palindrome: two three: "+score2);
+    QueryUtils.check(query,searcher);
+    
+    //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
+    //assertTrue("ordered scores higher in palindrome",score1+SCORE_COMP_THRESH<score2);
+
+    // search reveresed in palyndrome, find it twice
+    query = new PhraseQuery();
+    query.setSlop(2); // must be at least two for both ordered and reversed to match
+    query.add(new Term("palindrome", "three"));
+    query.add(new Term("palindrome", "two"));
+    hits = searcher.search(query);
+    assertEquals("just sloppy enough", 1, hits.length());
+    float score3 = hits.score(0);
+    //System.out.println("palindrome: three two: "+score3);
+    QueryUtils.check(query,searcher);
+
+    //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
+    //assertTrue("reversed scores higher in palindrome",score1+SCORE_COMP_THRESH<score3);
+    //assertEquals("ordered or reversed does not matter",score2, score3, SCORE_COMP_THRESH);
+  }
+
+  /**
+   * Working on a 2 fields like this:
+   *    Field("field", "one two three four five")
+   *    Field("palindrome", "one two three two one")
+   * Phrase of size 3 occuriong twice, once in order and once in reverse, 
+   * because doc is a palyndrome, is counted twice. 
+   * Also, in this case order in query does not matter. 
+   * Also, when an exact match is found, both sloppy scorer and exact scorer scores the same.   
+   */
+  public void testPalyndrome3() throws Exception {
+    
+    // search on non palyndrome, find phrase with no slop, using exact phrase scorer
+    query.setSlop(0); // to use exact phrase scorer
+    query.add(new Term("field", "one"));
+    query.add(new Term("field", "two"));
+    query.add(new Term("field", "three"));
+    Hits hits = searcher.search(query);
+    assertEquals("phrase found with exact phrase scorer", 1, hits.length());
+    float score0 = hits.score(0);
+    //System.out.println("(exact) field: one two three: "+score0);
+    QueryUtils.check(query,searcher);
+
+    // search on non palyndrome, find phrase with slop 3, though no slop required here.
+    query.setSlop(4); // to use sloppy scorer 
+    hits = searcher.search(query);
+    assertEquals("just sloppy enough", 1, hits.length());
+    float score1 = hits.score(0);
+    //System.out.println("(sloppy) field: one two three: "+score1);
+    assertEquals("exact scorer and sloppy scorer score the same when slop does not matter",score0, score1, SCORE_COMP_THRESH);
+    QueryUtils.check(query,searcher);
+
+    // search ordered in palyndrome, find it twice
+    query = new PhraseQuery();
+    query.setSlop(4); // must be at least four for both ordered and reversed to match
+    query.add(new Term("palindrome", "one"));
+    query.add(new Term("palindrome", "two"));
+    query.add(new Term("palindrome", "three"));
+    hits = searcher.search(query);
+    assertEquals("just sloppy enough", 1, hits.length());
+    float score2 = hits.score(0);
+    //System.out.println("palindrome: one two three: "+score2);
+    QueryUtils.check(query,searcher);
+    
+    //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
+    //assertTrue("ordered scores higher in palindrome",score1+SCORE_COMP_THRESH<score2);
+
+    // search reveresed in palyndrome, find it twice
+    query = new PhraseQuery();
+    query.setSlop(4); // must be at least four for both ordered and reversed to match
+    query.add(new Term("palindrome", "three"));
+    query.add(new Term("palindrome", "two"));
+    query.add(new Term("palindrome", "one"));
+    hits = searcher.search(query);
+    assertEquals("just sloppy enough", 1, hits.length());
+    float score3 = hits.score(0);
+    //System.out.println("palindrome: three two one: "+score3);
+    QueryUtils.check(query,searcher);
+
+    //commented out for sloppy-phrase efficiency (issue 736) - see SloppyPhraseScorer.phraseFreq(). 
+    //assertTrue("reversed scores higher in palindrome",score1+SCORE_COMP_THRESH<score3);
+    //assertEquals("ordered or reversed does not matter",score2, score3, SCORE_COMP_THRESH);
+  }
+  
 }

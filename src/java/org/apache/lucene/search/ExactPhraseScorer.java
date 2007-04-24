@@ -22,27 +22,30 @@ import org.apache.lucene.index.*;
 
 final class ExactPhraseScorer extends PhraseScorer {
 
-  ExactPhraseScorer(Weight weight, TermPositions[] tps, int[] positions, Similarity similarity,
+  ExactPhraseScorer(Weight weight, TermPositions[] tps, int[] offsets, Similarity similarity,
                     byte[] norms) {
-    super(weight, tps, positions, similarity, norms);
+    super(weight, tps, offsets, similarity, norms);
   }
 
   protected final float phraseFreq() throws IOException {
     // sort list with pq
+    pq.clear();
     for (PhrasePositions pp = first; pp != null; pp = pp.next) {
       pp.firstPosition();
       pq.put(pp);				  // build pq from list
     }
     pqToList();					  // rebuild list from pq
 
+    // for counting how many times the exact phrase is found in current document,
+    // just count how many times all PhrasePosition's have exactly the same position.   
     int freq = 0;
     do {					  // find position w/ all terms
       while (first.position < last.position) {	  // scan forward in first
-	do {
-	  if (!first.nextPosition())
-	    return (float)freq;
-	} while (first.position < last.position);
-	firstToLast();
+	    do {
+	      if (!first.nextPosition())
+	        return (float)freq;
+	    } while (first.position < last.position);
+	      firstToLast();
       }
       freq++;					  // all equal: a match
     } while (last.nextPosition());

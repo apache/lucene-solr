@@ -68,18 +68,15 @@ public class QueryUtils {
 
   /** various query sanity checks on a searcher */
   public static void check(Query q1, Searcher s) {
-// Disabled because this started failing after LUCENE-730 patch was applied
-//     try {
+    try {
       check(q1);
-/* disabled for use of BooleanScorer in BooleanScorer2.
       if (s!=null && s instanceof IndexSearcher) {
         IndexSearcher is = (IndexSearcher)s;
-//         checkSkipTo(q1,is);
+        checkSkipTo(q1,is);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
- */
   }
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc
@@ -87,42 +84,71 @@ public class QueryUtils {
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-    final Weight w = q.weight(s);
-    final Scorer scorer = w.scorer(s.getIndexReader());
-
-    // FUTURE: ensure scorer.doc()==-1
-    
+   
     if (BooleanQuery.getUseScorer14()) return;  // 1.4 doesn't support skipTo
 
-    final int[] which = new int[1];
-    final int[] sdoc = new int[] {-1};
-    final float maxDiff = 1e-5f;
-    s.search(q,new HitCollector() {
-      public void collect(int doc, float score) {
-        try {
-          boolean more = (which[0]++&0x02)==0 ? scorer.skipTo(sdoc[0]+1) : scorer.next();
-          sdoc[0] = scorer.doc();
-          float scorerScore = scorer.score();
-          float scoreDiff = Math.abs(score-scorerScore);
-          scoreDiff=0; // TODO: remove this go get LUCENE-697 failures 
-          if (more==false || doc != sdoc[0] || scoreDiff>maxDiff) {
-            throw new RuntimeException("ERROR matching docs:"
-                    +"\n\tscorer.more=" + more + " doc="+sdoc[0] + " scorerScore="+scorerScore
-                    +" scoreDiff="+scoreDiff + " maxDiff="+maxDiff
-                    +"\n\thitCollector.doc=" + doc + " score="+score
-                    +"\n\t Scorer=" + scorer
-                    +"\n\t Query=" + q
-                    +"\n\t Searcher=" + s
-            );
-          }
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    });
+    final int skip_op = 0;
+    final int next_op = 1;
+    final int orders [][] = {
+        {skip_op},
+        {next_op},
+        {skip_op, next_op},
+        {next_op, skip_op},
+        {skip_op, skip_op, next_op, next_op},
+        {next_op, next_op, skip_op, skip_op},
+        {skip_op, skip_op, skip_op, next_op, next_op},
+    };
+    for (int k = 0; k < orders.length; k++) {
+      final int order[] = orders[k];
+      //System.out.print("Order:");for (int i = 0; i < order.length; i++) System.out.print(order[i]==skip_op ? " skip()":" next()"); System.out.println();
+      final int opidx[] = {0};
 
-    // make sure next call to scorer is false.
-    TestCase.assertFalse((which[0]++&0x02)==0 ? scorer.skipTo(sdoc[0]+1) : scorer.next());
+      final Weight w = q.weight(s);
+      final Scorer scorer = w.scorer(s.getIndexReader());
+      
+      if (scorer instanceof BooleanScorer || scorer instanceof BooleanScorer2) {
+        return; // TODO change this if BooleanScorers would once again guarantee docs in order. 
+      }
+
+      // FUTURE: ensure scorer.doc()==-1
+
+      final int[] sdoc = new int[] {-1};
+      final float maxDiff = 1e-5f;
+      s.search(q,new HitCollector() {
+        public void collect(int doc, float score) {
+          try {
+            int op = order[(opidx[0]++)%order.length];
+            //System.out.println(op==skip_op ? "skip("+(sdoc[0]+1)+")":"next()");
+            boolean more = op==skip_op ? scorer.skipTo(sdoc[0]+1) : scorer.next();
+            sdoc[0] = scorer.doc();
+            float scorerScore = scorer.score();
+            float scoreDiff = Math.abs(score-scorerScore);
+            if (more==false || doc != sdoc[0] || scoreDiff>maxDiff) {
+              StringBuffer sbord = new StringBuffer();
+              for (int i = 0; i < order.length; i++) 
+                sbord.append(order[i]==skip_op ? " skip()":" next()");
+              throw new RuntimeException("ERROR matching docs:"
+                  +"\n\tscorer.more=" + more + " doc="+sdoc[0] + " scorerScore="+scorerScore
+                  +" scoreDiff="+scoreDiff + " maxDiff="+maxDiff
+                  +"\n\thitCollector.doc=" + doc + " score="+score
+                  +"\n\t Scorer=" + scorer
+                  +"\n\t Query=" + q
+                  +"\n\t Searcher=" + s
+                  +"\n\t Order=" + sbord
+              );
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      });
+      
+      // make sure next call to scorer is false.
+      int op = order[(opidx[0]++)%order.length];
+      //System.out.println(op==skip_op ? "last: skip()":"last: next()");
+      boolean more = op==skip_op ? scorer.skipTo(sdoc[0]+1) : scorer.next();
+      TestCase.assertFalse(more);
+    }
   }
 
 }

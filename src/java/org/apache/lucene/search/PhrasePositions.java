@@ -20,6 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import org.apache.lucene.index.*;
 
+/**
+ * Position of a term in a document that takes into account the term offset within the phrase. 
+ */
 final class PhrasePositions {
   int doc;					  // current doc
   int position;					  // position in doc
@@ -27,6 +30,7 @@ final class PhrasePositions {
   int offset;					  // position in phrase
   TermPositions tp;				  // stream of positions
   PhrasePositions next;				  // used to make lists
+  boolean repeats;       // there's other pp for same term (e.g. query="1st word 2nd word"~1) 
 
   PhrasePositions(TermPositions t, int o) {
     tp = t;
@@ -61,6 +65,12 @@ final class PhrasePositions {
     nextPosition();
   }
 
+  /**
+   * Go to next location of this term current document, and set 
+   * <code>position</code> as <code>location - offset</code>, so that a 
+   * matching exact phrase is easily identified when all PhrasePositions 
+   * have exactly the same <code>position</code>.
+   */
   final boolean nextPosition() throws IOException {
     if (count-- > 0) {				  // read subsequent pos's
       position = tp.nextPosition() - offset;
