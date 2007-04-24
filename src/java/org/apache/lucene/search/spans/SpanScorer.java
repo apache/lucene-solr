@@ -71,7 +71,7 @@ public class SpanScorer extends Scorer {
     return setFreqCurrentDoc();
   }
 
-  private boolean setFreqCurrentDoc() throws IOException {
+  protected boolean setFreqCurrentDoc() throws IOException {
     if (! more) {
       return false;
     }

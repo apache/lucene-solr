@@ -34,6 +34,8 @@ import java.io.IOException;
  * <p>
  * In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(byte[],int,int)}
  * which returns 1 by default.
+ * <p>
+ * Payload scores are averaged across term occurrences in the document.  
  * 
  *
  * @see org.apache.lucene.search.Similarity#scorePayload(byte[], int, int)
@@ -50,7 +52,7 @@ public class BoostingTermQuery extends SpanTermQuery{
     return new BoostingTermWeight(this, searcher);
   }
 
-  private class BoostingTermWeight extends SpanWeight implements Weight {
+  protected class BoostingTermWeight extends SpanWeight implements Weight {
 
 
     public BoostingTermWeight(BoostingTermQuery query, Searcher searcher) throws IOException {
@@ -70,7 +72,8 @@ public class BoostingTermQuery extends SpanTermQuery{
       //TODO: is this the best way to allocate this?
       byte[] payload = new byte[256];
       private TermPositions positions;
-
+      protected float payloadScore;
+      private int payloadsSeen;
 
       public BoostingSpanScorer(TermSpans spans, Weight weight,
                                 Similarity similarity, byte[] norms) throws IOException {
@@ -79,12 +82,17 @@ public class BoostingTermQuery extends SpanTermQuery{
 
       }
 
-      public boolean next() throws IOException {
+      /**
+       * Go to the next document
+       * 
+       */
+      /*public boolean next() throws IOException {
 
         boolean result = super.next();
         //set the payload.  super.next() properly increments the term positions
         if (result) {
-          loadPayload();
+          //Load the payloads for all 
+          processPayload();
         }
 
         return result;
@@ -94,15 +102,38 @@ public class BoostingTermQuery extends SpanTermQuery{
         boolean result = super.skipTo(target);
 
         if (result) {
-          loadPayload();
+          processPayload();
         }
 
         return result;
+      }*/
+
+      protected boolean setFreqCurrentDoc() throws IOException {
+        if (!more) {
+          return false;
+        }
+        doc = spans.doc();
+        freq = 0.0f;
+        payloadScore = 0;
+        payloadsSeen = 0;
+        Similarity similarity1 = getSimilarity();
+        while (more && doc == spans.doc()) {
+          int matchLength = spans.end() - spans.start();
+
+          freq += similarity1.sloppyFreq(matchLength);
+          processPayload(similarity1);
+
+          more = spans.next();//this moves positions to the next match in this document
+        }
+        return more || (freq != 0);
       }
 
-      private void loadPayload() throws IOException {
+
+      protected void processPayload(Similarity similarity) throws IOException {
         if (positions.isPayloadAvailable()) {
           payload = positions.getPayload(payload, 0);
+          payloadScore += similarity.scorePayload(payload, 0, positions.getPayloadLength());
+          payloadsSeen++;
 
         } else {
           //zero out the payload?
@@ -112,8 +143,7 @@ public class BoostingTermQuery extends SpanTermQuery{
 
       public float score() throws IOException {
 
-        int payLength = positions.getPayloadLength();
-        return super.score() * (payLength > 0 ? getSimilarity().scorePayload(payload, 0, payLength) : 1);
+        return super.score() * (payloadsSeen > 0 ? (payloadScore / payloadsSeen) : 1);
       }
 
 
@@ -127,14 +157,15 @@ public class BoostingTermQuery extends SpanTermQuery{
         result.addDetail(payloadBoost);
 /*
         if (skipTo(doc) == true) {
-          loadPayload();
+          processPayload();
         }
 */
-        float payloadScore = getSimilarity().scorePayload(payload, 0, positions.getPayloadLength());
-        payloadBoost.setValue(payloadScore);
+
+        float avgPayloadScore = payloadScore / payloadsSeen;
+        payloadBoost.setValue(avgPayloadScore);
         //GSI: I suppose we could toString the payload, but I don't think that would be a good idea 
         payloadBoost.setDescription("scorePayload(...)");
-        result.setValue(nonPayloadExpl.getValue() * payloadScore);
+        result.setValue(nonPayloadExpl.getValue() * avgPayloadScore);
         result.setDescription("btq");
         return result;
       }

@@ -35,6 +35,9 @@ import java.io.Reader;
 public class TestBoostingTermQuery extends TestCase {
   private IndexSearcher searcher;
   private BoostingSimilarity similarity = new BoostingSimilarity();
+  private byte[] payloadField = new byte[]{1};
+  private byte[] payloadMultiField1 = new byte[]{2};
+  private byte[] payloadMultiField2 = new byte[]{4};
 
   public TestBoostingTermQuery(String s) {
     super(s);
@@ -43,24 +46,43 @@ public class TestBoostingTermQuery extends TestCase {
   private class PayloadAnalyzer extends Analyzer {
 
 
+
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
-      result = new PayloadFilter(result);
+      result = new PayloadFilter(result, fieldName);
       return result;
     }
   }
 
   private class PayloadFilter extends TokenFilter {
+    String fieldName;
+    int numSeen = 0;
 
-
-    public PayloadFilter(TokenStream input) {
+    public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
+      this.fieldName = fieldName;
     }
 
     public Token next() throws IOException {
       Token result = input.next();
       if (result != null) {
-        result.setPayload(new Payload(encodePayload(result.termText()), 0, 4));
+        if (fieldName.equals("field"))
+        {
+          result.setPayload(new Payload(payloadField));
+        }
+        else if (fieldName.equals("multiField"))
+        {
+          if (numSeen  % 2 == 0)
+          {
+            result.setPayload(new Payload(payloadMultiField1));
+          }
+          else
+          {
+            result.setPayload(new Payload(payloadMultiField2));
+          }
+          numSeen++;
+        }
+
       }
       return result;
     }
@@ -76,6 +98,7 @@ public class TestBoostingTermQuery extends TestCase {
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
       doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.TOKENIZED));
       writer.addDocument(doc);
     }
     //writer.optimize();
@@ -85,29 +108,9 @@ public class TestBoostingTermQuery extends TestCase {
     searcher.setSimilarity(similarity);
   }
 
-  private byte[] encodePayload(String englishInt)
-  {
-    int i = englishInt.hashCode();
-    byte[] bytes = new byte[4];
-    bytes[0] = (byte) (i >>> 24);
-    bytes[1] = (byte) (i >>> 16);
-    bytes[2] = (byte) (i >>> 8);
-    bytes[3] = (byte) i;
-    return bytes;
-  }
 
-  private int decodePayload(byte[] payload, int size)
-  {
-    //This should be equal to the hash code of the String representing the English int from English.intToEnglish
-    int result = (payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | (payload[3]);
-    
-    /*assertEquals((byte) (size >>> 24), payload[0]);
-    assertEquals((byte) (size >>> 16), payload[1]);
-    assertEquals((byte) (size >>> 8), payload[2]);
-    assertEquals((byte) size, payload[3]);*/
 
-    return result;
-  }
+
 
   protected void tearDown() {
 
@@ -121,12 +124,11 @@ public class TestBoostingTermQuery extends TestCase {
 
     //they should all have the exact same score, because they all contain seventy once, and we set
     //all the other similarity factors to be 1
-    //This score should be 1, since we normalize scores
-    int seventyHash = "seventy".hashCode();
-    assertTrue("score " + hits.getMaxScore() + " does not equal 'seventy' hashcode: " + seventyHash, hits.getMaxScore() == seventyHash);
+
+    assertTrue(hits.getMaxScore() + " does not equal: " + 1, hits.getMaxScore() == 1);
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       ScoreDoc doc = hits.scoreDocs[i];
-      assertTrue("score " + doc.score + " does not equal 'seventy' hashcode: " + seventyHash, doc.score == seventyHash);
+      assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
     CheckHits.checkExplanations(query, "field", searcher);
     Spans spans = query.getSpans(searcher.getIndexReader());
@@ -138,6 +140,48 @@ public class TestBoostingTermQuery extends TestCase {
       assertTrue("scores are not equal and they should be", score == hits.score(i));
     }*/
 
+  }
+
+  public void testMultipleMatchesPerDoc() throws Exception {
+    BoostingTermQuery query = new BoostingTermQuery(new Term("multiField", "seventy"));
+    TopDocs hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
+
+
+    //they should all have the exact same score, because they all contain seventy once, and we set
+    //all the other similarity factors to be 1
+
+    //System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
+    assertTrue(hits.getMaxScore() + " does not equal: " + 3, hits.getMaxScore() == 3);
+    //there should be exactly 10 items that score a 3, all the rest should score a 2
+    //The 10 items are: 70 + i*100 where i in [0-9]
+    int numTens = 0;
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      ScoreDoc doc = hits.scoreDocs[i];
+      if (doc.doc % 10 == 0)
+      {
+        numTens++;
+        assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
+      }
+      else
+      {
+        assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
+      }
+    }
+    assertTrue(numTens + " does not equal: " + 10, numTens == 10);
+    CheckHits.checkExplanations(query, "field", searcher);
+    Spans spans = query.getSpans(searcher.getIndexReader());
+    assertTrue("spans is null and it shouldn't be", spans != null);
+    assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
+    //should be two matches per document
+    int count = 0;
+    //100 hits times 2 matches per hit, we should have 200 in count
+    while (spans.next())
+    {
+      count++;
+    }
+    assertTrue(count + " does not equal: " + 200, count == 200);
   }
 
   public void testNoMatch() throws Exception {
@@ -155,7 +199,7 @@ public class TestBoostingTermQuery extends TestCase {
     // TODO: Remove warning after API has been finalized
     public float scorePayload(byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
-      return decodePayload(payload,4);
+      return payload[0];
     }
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -513,6 +513,8 @@ public abstract class Similarity implements Serializable {
    * The default implementation returns 1.
    *
    * @param payload The payload byte array to be scored
+   * @param offset The offset into the payload array
+   * @param length The length in the array
    * @return An implementation dependent float to be used as a scoring factor 
    *  <b>
    *  Warning: The status of the Payloads feature is experimental. The APIs
