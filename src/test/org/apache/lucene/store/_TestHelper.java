@@ -2,6 +2,8 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.FSDirectory.FSIndexInput;
+
 /** This class provides access to package-level features defined in the
  *  store package. It is used for testing only.
  */

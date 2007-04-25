@@ -46,6 +46,9 @@ API Changes
     combination when caching is desired.
     (Chris Hostetter, Otis Gospodnetic)
 
+ 8. LUCENE-869: Changed FSIndexInput and FSIndexOutput to inner classes of FSDirectory
+    to enable extensibility of these classes.
+
 Bug fixes
 
  1. LUCENE-804: Fixed build.xml to pack a fully compilable src dist.  (Doron Cohen)
