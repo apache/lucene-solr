@@ -33,8 +33,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
 
-import com.sun.org.apache.xerces.internal.util.URI.MalformedURIException;
-
 import static org.apache.solr.request.SolrParams.*;
 
 /**
