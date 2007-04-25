@@ -43,9 +43,10 @@ public class MultiSearcher extends Searcher {
     private Map dfMap; // Map from Terms to corresponding doc freqs
     private int maxDoc; // document count
 
-    public CachedDfSource(Map dfMap, int maxDoc) {
+    public CachedDfSource(Map dfMap, int maxDoc, Similarity similarity) {
       this.dfMap = dfMap;
       this.maxDoc = maxDoc;
+      setSimilarity(similarity);
     }
 
     public int docFreq(Term term) {
@@ -106,7 +107,7 @@ public class MultiSearcher extends Searcher {
     public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) {
       throw new UnsupportedOperationException();
     }
-  };
+  }
 
 
   private Searchable[] searchables;
@@ -320,7 +321,7 @@ public class MultiSearcher extends Searcher {
 
     // step4
     int numDocs = maxDoc();
-    CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs);
+    CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs, getSimilarity());
 
     return rewrittenQuery.weight(cacheSim);
   }

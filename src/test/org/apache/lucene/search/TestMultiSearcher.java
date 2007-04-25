@@ -354,4 +354,42 @@ public class TestMultiSearcher extends TestCase
         ramDirectory1.close();
         ramDirectory2.close();
     }
+    
+    /**
+     * test that custom similarity is in effect when using MultiSearcher (LUCENE-789).
+     * @throws IOException 
+     */
+    public void testCustomSimilarity () throws IOException {
+        RAMDirectory dir = new RAMDirectory();
+        initIndex(dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+        IndexSearcher srchr = new IndexSearcher(dir);
+        MultiSearcher msrchr = getMultiSearcherInstance(new Searcher[]{srchr});
+        
+        Similarity customSimilarity = new DefaultSimilarity() {
+            // overide all
+            public float idf(int docFreq, int numDocs) { return 100.0f; }
+            public float coord(int overlap, int maxOverlap) { return 1.0f; }
+            public float lengthNorm(String fieldName, int numTokens) { return 1.0f; }
+            public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
+            public float sloppyFreq(int distance) { return 1.0f; }
+            public float tf(float freq) { return 1.0f; }
+        };
+        
+        srchr.setSimilarity(customSimilarity);
+        msrchr.setSimilarity(customSimilarity);
+  
+        Query query=new TermQuery(new Term("contents", "doc0"));
+  
+        // Get a score from IndexSearcher
+        TopDocs topDocs = srchr.search(query, null, 1);
+        float score1 = topDocs.getMaxScore();
+        
+        // Get the score from MultiSearcher
+        topDocs = msrchr.search(query, null, 1);
+        float scoreN = topDocs.getMaxScore();
+        
+        // The scores from the IndexSearcher and Multisearcher should be the same
+        // if the same similarity is used.
+        assertEquals("MultiSearcher score must be equal to single esrcher score!", score1, scoreN, 1e-6);
+    }
 }

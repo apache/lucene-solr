@@ -105,6 +105,11 @@ Bug fixes
 13. LUCENE-736: Sloppy phrase query with repeating terms matches wrong docs.
     For example query "B C B"~2 matches the doc "A B C D E". (Doron Cohen)
     
+14. LUCENE-789: Fixed: custom similarity is ignored when using MultiSearcher (problem reported 
+    by Alexey Lef). Now the similarity applied by MultiSearcer.setSimilarity(sim) is being used. 
+    Note that as before this fix, creating a multiSearcher from Searchers for whom custom similarity 
+    was set has no effect - it is masked by the similarity of the MultiSearcher. This is as 
+    designed, because MultiSearcher operates on Searchables (not Searchers). (Doron Cohen)
 
 New features
 
