@@ -141,6 +141,9 @@ New Features
 21. SOLR-184: add echoHandler=true to responseHeader, support echoParams=all
     (Ryan McKinley via ehatcher)
     
+22. SOLR-211: Added a regex PatternTokenizerFactory.  This extracts tokens 
+    from the input string using a regex Pattern. (Ryan McKinley)
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
