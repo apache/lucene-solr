@@ -11,8 +11,9 @@
 # limitations under the License.
 
 class Solr::Importer::Mapper
-  def initialize(mapping)
+  def initialize(mapping, options={})
     @mapping = mapping
+    @options = options
   end
   
   def field_data(orig_data, field_name)
@@ -26,7 +27,7 @@ class Solr::Importer::Mapper
       when Proc
         field_mapping.call(orig_data)
       when Symbol
-        field_data(orig_data, field_mapping)
+        field_data(orig_data, @options[:stringify_symbols] ? field_mapping.to_s : field_mapping)
       when Enumerable
         field_mapping.collect {|orig_field_name| mapped_field_value(orig_data, orig_field_name)}.flatten
       else
