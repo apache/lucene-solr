@@ -11,19 +11,44 @@
 # limitations under the License.
 
 class Solr::Indexer
+  # deprecated, use Indexer.new(ds,mapping).index instead
   def self.index(data_source, mapper_or_mapping, options={})
-    mapper = mapper_or_mapping.is_a?(Hash) ? Solr::Importer::Mapper.new(mapper_or_mapping) : mapper_or_mapping
+    indexer = Solr::Indexer.new(data_source, mapper_or_mapping, options={})
+    indexer.index
+  end
+  
+  def initialize(data_source, mapper_or_mapping, options={})
     solr_url = options[:solr_url] || ENV["SOLR_URL"] || "http://localhost:8983/solr"
-    
-    solr = Solr::Connection.new(solr_url, options) #TODO - these options contain the solr_url and debug keys also, so tidy up what gets passed
-    data_source.each do |record|
-      document = mapper.map(record)
+    @solr = Solr::Connection.new(solr_url, options) #TODO - these options contain the solr_url and debug keys also, so tidy up what gets passed
+
+    @data_source = data_source
+    @mapper = mapper_or_mapping.is_a?(Hash) ? Solr::Importer::Mapper.new(mapper_or_mapping) : mapper_or_mapping
+
+    @buffer_docs = options[:buffer_docs]
+    @debug = options[:debug]
+  end
+
+  def index
+    buffer = []
+    @data_source.each do |record|
+      document = @mapper.map(record)
       
       yield(record, document) if block_given?
       
-      solr.add(document) unless options[:debug]
-      puts document.inspect if options[:debug]
+      buffer << document
+      
+      if !@buffer_docs || buffer.size == @buffer_docs
+        add_docs(buffer)
+        buffer.clear
+      end
     end
-    solr.commit unless options[:debug]
+    add_docs(buffer) if !buffer.empty?
+    
+    @solr.commit unless @debug
+  end
+  
+  def add_docs(documents)
+    @solr.add(documents) unless @debug
+    puts documents.inspect if @debug
   end
 end
