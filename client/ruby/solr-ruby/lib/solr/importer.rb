@@ -12,5 +12,6 @@
 
 module Solr; module Importer; end; end
 require 'solr/importer/mapper'
-require 'solr/importer/tab_delimited_file_source'
+require 'solr/importer/delimited_file_source'
 require 'solr/importer/xpath_mapper'
+require 'solr/importer/solr_source'
