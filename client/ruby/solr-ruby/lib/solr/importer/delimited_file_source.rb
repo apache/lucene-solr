@@ -13,19 +13,20 @@
 # For files with the first line containing field names
 # Currently not designed for enormous files, as all lines are
 # read into an array
-class Solr::Importer::TabDelimitedFileSource
+class Solr::Importer::DelimitedFileSource
   include Enumerable
   
-  def initialize(filename)
+  def initialize(filename, splitter=/\t/)
     @filename = filename
+    @splitter = splitter
   end
 
   def each
     lines = IO.readlines(@filename)
-    headers = lines[0].split("\t").collect{|h| h.chomp}
+    headers = lines[0].split(@splitter).collect{|h| h.chomp}
     
     lines[1..-1].each do |line|
-      data = headers.zip(line.split("\t").collect{|s| s.chomp})
+      data = headers.zip(line.split(@splitter).collect{|s| s.chomp})
       def data.[](key)
         self.assoc(key.to_s)[1]
       end

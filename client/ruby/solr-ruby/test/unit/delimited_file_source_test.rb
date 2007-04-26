@@ -13,12 +13,12 @@
 require 'solr'
 require 'test/unit'
 
-class TabDelimitedFileSourceTest < Test::Unit::TestCase
+class DelimitedFileSourceTest < Test::Unit::TestCase
 
   def test_load
     filename = File.expand_path(File.dirname(__FILE__)) + "/tab_delimited.txt"
     
-    source = Solr::Importer::TabDelimitedFileSource.new(filename)
+    source = Solr::Importer::DelimitedFileSource.new(filename,/\t/)
     assert_equal source.to_a.size, 1
     
     source.each do |data|
