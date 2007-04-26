@@ -386,10 +386,7 @@
     </lst>
   </requestHandler>
   
-  <!-- NOTE, /update is mapped to a servlet, we can have the filter handle requests off that! -->
-  <requestHandler name="/update/commit" class="solr.CommitRequestHandler" />
-
-
+  
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
   </requestHandler>

@@ -31,11 +31,11 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
-import org.apache.solr.request.ContentStream;
 import org.apache.solr.request.MapSolrParams;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.ContentStream;
 
 /**
  * 
