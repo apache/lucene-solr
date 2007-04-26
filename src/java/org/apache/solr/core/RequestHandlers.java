@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import java.net.URL;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -145,7 +144,7 @@ final class RequestHandlers {
           names.put( name, args );
         } 
         catch (Exception e) {
-          // TODO: SOLR-179
+          SolrConfig.severeErrors.add( e );
           SolrException.logOnce(log,null,e);
         }
       }
@@ -156,7 +155,7 @@ final class RequestHandlers {
           handlers.get( reg.getKey() ).init( reg.getValue() );
         }
         catch( Exception e ) {
-          // TODO: SOLR-179
+          SolrConfig.severeErrors.add( e );
           SolrException.logOnce(log,null,e);
         }
       }
@@ -304,6 +303,7 @@ final class RequestHandlers {
     }
   }
 }
+
 
 
 

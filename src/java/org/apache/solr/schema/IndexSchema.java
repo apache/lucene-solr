@@ -24,6 +24,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.core.Config;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -467,9 +468,11 @@ public final class IndexSchema {
       dynamicCopyFields = (DynamicCopy[])dCopies.toArray(new DynamicCopy[dCopies.size()]);
 
     } catch (SolrException e) {
+      SolrConfig.severeErrors.add( e );
       throw e;
     } catch(Exception e) {
       // unexpected exception...
+      SolrConfig.severeErrors.add( e );
       throw new SolrException(1,"Schema Parsing Failed",e,false);
     }
 
@@ -819,4 +822,5 @@ public final class IndexSchema {
   }
 
 }
+
 

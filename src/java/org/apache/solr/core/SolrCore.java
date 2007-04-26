@@ -728,6 +728,7 @@ public final class SolrCore {
         writer.init(DOMUtil.childNodesToNamedList(elm));
         responseWriters.put(name, writer);
       } catch (Exception ex) {
+        SolrConfig.severeErrors.add( ex );
         SolrException.logOnce(log,null, ex);
         // if a writer can't be created, skip it and continue
       }
@@ -772,4 +773,5 @@ public final class SolrCore {
     return getQueryResponseWriter(request.getParam("wt")); 
   }
 }
+
 

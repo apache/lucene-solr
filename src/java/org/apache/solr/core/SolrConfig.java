@@ -25,6 +25,8 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.StringTokenizer;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +48,11 @@ public class SolrConfig {
    * Singleton containing all configuration.
    */
   public static Config config;
+
+  /**
+   * Singleton keeping track of configuration errors
+   */
+  public static final Collection<Throwable> severeErrors = new HashSet<Throwable>();
 
   /**
    * (Re)loads the static configation information from the specified file.
@@ -79,6 +86,7 @@ public class SolrConfig {
     try {
       initConfig(DEFAULT_CONF_FILE);
     } catch (Exception ee) {
+      severeErrors.add( ee );
       throw new RuntimeException("Error in " + DEFAULT_CONF_FILE, ee);
     }
   }

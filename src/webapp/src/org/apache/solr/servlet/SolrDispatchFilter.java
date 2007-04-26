@@ -51,18 +51,52 @@ public class SolrDispatchFilter implements Filter
   protected SolrRequestParsers parsers;
   protected boolean handleSelect = false;
   protected String pathPrefix = null; // strip this from the begging of a path
+  protected String abortErrorMessage = null;
   
   public void init(FilterConfig config) throws ServletException 
   {
     log.info("SolrDispatchFilter.init()");
-        
-    // web.xml configuration
-    this.pathPrefix = config.getInitParameter( "path-prefix" );
-    this.handleSelect = "true".equals( config.getInitParameter( "handle-select" ) );
     
-    log.info("user.dir=" + System.getProperty("user.dir"));
-    core = SolrCore.getSolrCore();
-    parsers = new SolrRequestParsers( core, SolrConfig.config );
+    try {
+      // web.xml configuration
+      this.pathPrefix = config.getInitParameter( "path-prefix" );
+      this.handleSelect = "true".equals( config.getInitParameter( "handle-select" ) );
+      
+      log.info("user.dir=" + System.getProperty("user.dir"));
+      core = SolrCore.getSolrCore();
+      parsers = new SolrRequestParsers( core, SolrConfig.config );
+    }
+    catch( Throwable t ) {
+      // catch this so our filter still works
+      SolrConfig.severeErrors.add( t );
+      SolrCore.log( t );
+    }
+    
+    // Optionally abort if we found a sever error
+    boolean abortOnConfigurationError = SolrConfig.config.getBool("abortOnConfigurationError",true);
+    if( abortOnConfigurationError && SolrConfig.severeErrors.size() > 0 ) {
+      StringWriter sw = new StringWriter();
+      PrintWriter out = new PrintWriter( sw );
+      out.println( "Severe errors in solr configuration.\n" );
+      out.println( "Check your log files for more detailed infomation on what may be wrong.\n" );
+      out.println( "If you want solr to continue after configuration errors, change: \n");
+      out.println( " <abortOnConfigurationError>false</abortOnConfigurationError>\n" );
+      out.println( "in solrconfig.xml\n" );
+      
+      for( Throwable t : SolrConfig.severeErrors ) {
+        out.println( "-------------------------------------------------------------" );
+        t.printStackTrace( out );
+      }
+      out.flush();
+      
+      // Servlet containers behave slightly differntly if you throw an exception durring 
+      // initalization.  Resin will display that error for every page, jetty prints it in
+      // the logs, but continues normally.  (We will see a 404 rather then the real error)
+      // rather then leave the behavior undefined, lets cache the error and spit it out 
+      // for every request.
+      abortErrorMessage = sw.toString();
+      //throw new ServletException( abortErrorMessage );
+    }
     
     log.info("SolrDispatchFilter.init() done");
   }
@@ -73,6 +107,11 @@ public class SolrDispatchFilter implements Filter
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException 
   {
+    if( abortErrorMessage != null ) {
+      ((HttpServletResponse)response).sendError( 500, abortErrorMessage );
+      return;
+    }
+    
     if( request instanceof HttpServletRequest) {
       SolrQueryRequest solrReq = null;
       HttpServletRequest req = (HttpServletRequest)request;
