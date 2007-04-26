@@ -11,7 +11,8 @@
 # limitations under the License.
 
 class Solr::Indexer
-  def self.index(data_source, mapper, options={})
+  def self.index(data_source, mapper_or_mapping, options={})
+    mapper = mapper_or_mapping.is_a?(Hash) ? Solr::Importer::Mapper.new(mapper_or_mapping) : mapper_or_mapping
     solr_url = options[:solr_url] || ENV["SOLR_URL"] || "http://localhost:8983/solr"
     
     solr = Solr::Connection.new(solr_url, options) #TODO - these options contain the solr_url and debug keys also, so tidy up what gets passed
