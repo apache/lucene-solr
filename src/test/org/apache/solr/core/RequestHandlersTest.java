@@ -62,4 +62,18 @@ public class RequestHandlersTest extends AbstractSolrTestCase {
             "//lst[@name='highlighting']"
             );
   }
+  
+  public void testPathNormalization()
+  {
+    SolrCore core = SolrCore.getSolrCore();
+    SolrRequestHandler h1 = core.getRequestHandler("/update/csv" );
+    assertNotNull( h1 );
+
+    SolrRequestHandler h2 = core.getRequestHandler("/update/csv/" );
+    assertNotNull( h2 );
+    
+    assertEquals( h1, h2 ); // the same object
+    
+    assertNull( core.getRequestHandler("/update/csv/asdgadsgas" ) ); // prefix
+  }
 }

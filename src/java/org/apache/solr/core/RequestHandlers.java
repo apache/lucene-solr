@@ -50,10 +50,27 @@ final class RequestHandlers {
       new HashMap<String,SolrRequestHandler>() );
 
   /**
+   * Trim the trailing '/' if its there.
+   * 
+   * we want:
+   *  /update/csv
+   *  /update/csv/
+   * to map to the same handler 
+   * 
+   */
+  private static String normalize( String p )
+  {
+    if( p != null && p.endsWith( "/" ) )
+      return p.substring( 0, p.length()-1 );
+    
+    return p;
+  }
+  
+  /**
    * @return the RequestHandler registered at the given name 
    */
   public SolrRequestHandler get(String handlerName) {
-    return handlers.get(handlerName);
+    return handlers.get(normalize(handlerName));
   }
 
   /**
@@ -65,10 +82,11 @@ final class RequestHandlers {
    * @return the previous handler at the given path or null
    */
   public SolrRequestHandler register( String handlerName, SolrRequestHandler handler ) {
+    String norm = normalize( handlerName );
     if( handler == null ) {
-      return handlers.remove( handlerName );
+      return handlers.remove( norm );
     }
-    SolrRequestHandler old = handlers.put(handlerName, handler);
+    SolrRequestHandler old = handlers.put(norm, handler);
     if (handlerName != null && handlerName != "") {
       if (handler instanceof SolrInfoMBean) {
         SolrInfoRegistry.getRegistry().put(handlerName, (SolrInfoMBean)handler);
