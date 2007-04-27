@@ -29,7 +29,7 @@ import java.util.List;
  */
 public final class QueryResultKey {
   final Query query;
-  final Sort sort; // change to normal Sort after Lucene 1.4.3
+  final Sort sort;
   final SortField[] sfields;
   final List<Query> filters;
   final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
