@@ -62,13 +62,13 @@ public interface SolrCache extends SolrInfoMBean {
   // change to NamedList when other plugins do?
 
   /**
-   * Name the Cache can be refrenced with by SolrRequestHandlers.
+   * Name the Cache can be referenced with by SolrRequestHandlers.
    *
    * This method must return the identifier that the Cache instance 
    * expects SolrRequestHandlers to use when requesting access to it 
    * from the SolrIndexSearcher.  It is <strong>strongly</strong> 
-   * recommended thta this method return the value of the "name" 
-   * paramater from the init args.
+   * recommended that this method return the value of the "name" 
+   * parameter from the init args.
    *
    * :TODO: verify this.
    */
@@ -134,4 +134,3 @@ public interface SolrCache extends SolrInfoMBean {
   public void close();
 
 }
-
