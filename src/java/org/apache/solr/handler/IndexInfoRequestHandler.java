@@ -32,6 +32,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 
+/**
+ * TODO? delete me? This is now a subset of LukeRequestHandler.  
+ * Since it was not released in 1.1 should it be deleted before 1.2?
+ */
+@Deprecated
 public class IndexInfoRequestHandler extends RequestHandlerBase {
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
@@ -98,4 +103,5 @@ public class IndexInfoRequestHandler extends RequestHandlerBase {
     return "$URL: https://svn.apache.org/repos/asf/lucene/solr/trunk/src/java/org/apache/solr/request/IndexInfoRequestHandler.java $";
   }
 }
+
 
