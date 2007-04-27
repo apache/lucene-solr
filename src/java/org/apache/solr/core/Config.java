@@ -240,7 +240,7 @@ public class Config {
   }
 
   public static String getInstanceDir() {
-    if ( ! isInstanceDirInitalized() ) {
+    if ( ! isInstanceDirInitialized() ) {
       String home = null;
       // Try JNDI
       try {
@@ -276,7 +276,7 @@ public class Config {
     return instanceDir;
   }
   
-  public static boolean isInstanceDirInitalized()
+  public static boolean isInstanceDirInitialized()
   {
     return instanceDir != null;
   }
