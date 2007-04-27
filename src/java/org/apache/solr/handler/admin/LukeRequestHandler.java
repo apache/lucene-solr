@@ -361,17 +361,17 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
-    return "$Revision: 501512 $";
+    return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id: IndexInfoRequestHandler.java 487199 2006-12-14 13:03:40Z bdelacretaz $";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL: https://svn.apache.org/repos/asf/lucene/solr/trunk/src/java/org/apache/solr/request/IndexInfoRequestHandler.java $";
+    return "$URL$";
   }
 
   @Override

@@ -58,16 +58,16 @@ public class PropertiesRequestHandler extends RequestHandlerBase
 
   @Override
   public String getVersion() {
-      return "$Revision: 501512 $";
+      return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id: DumpRequestHandler.java 501512 2007-01-30 18:36:32Z yonik $";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL: http://svn.apache.org/repos/asf/lucene/solr/trunk/src/java/org/apache/solr/handler/DumpRequestHandler.java $";
+    return "$URL$";
   }
 }
