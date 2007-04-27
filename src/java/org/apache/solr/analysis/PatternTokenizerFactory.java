@@ -39,18 +39,18 @@ import java.util.regex.Pattern;
  * "pattern" is the regular expression.  
  * "group" says which group to extract into tokens.
  * 
- * group=-1 (the default) is equuivolent to "split".  In this case, the tokes will
- * be equivolent to the output from:
+ * group=-1 (the default) is equivalent to "split".  In this case, the tokens will
+ * be equivalent to the output from:
  * 
  * http://java.sun.com/j2se/1.4.2/docs/api/java/lang/String.html#split(java.lang.String)
  * 
- * Using group >= 0 selects the matching group as the token.  For example, it you have:
+ * Using group >= 0 selects the matching group as the token.  For example, if you have:
  *  
  *  pattern = \'([^\']+)\'
  *  group = 0
  *  input = aaa 'bbb' 'ccc'
  * 
- * the output will be two tokens: 'bbb' and 'ccc'  (including the ' marks).  With the same input
+ * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks).  With the same input
  * but using group=1, the output would be: bbb and ccc (no ' marks)
  * 
  * 
