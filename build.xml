@@ -272,7 +272,7 @@
     <!-- no description so it doesn't show up in -projecthelp -->  
     <mkdir dir="${junit.output.dir}"/>
 
-    <junit printsummary="withOutAndErr"
+    <junit printsummary="on"
            haltonfailure="no"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
