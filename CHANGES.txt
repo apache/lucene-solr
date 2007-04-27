@@ -144,6 +144,10 @@ New Features
 22. SOLR-211: Added a regex PatternTokenizerFactory.  This extracts tokens 
     from the input string using a regex Pattern. (Ryan McKinley)
     
+23. SOLR-162: Added a "Luke" request handler and other admin helpers.
+    This exposes the system status through the standard requestHandler
+    framework. (ryan)
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
