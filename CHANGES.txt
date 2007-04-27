@@ -170,10 +170,15 @@ Changes in runtime behavior
     a unique id if it is declared in the schema and allowDups=false.
     (ryan via klaas)
 
-17. SOLR-183: Exceptions with error code 400 are raised when
+ 7. SOLR-183: Exceptions with error code 400 are raised when
     numeric argument parsing fails.  RequiredSolrParams class added
     to facilitate checking for parameters that must be present.
     (Ryan McKinley, J.J. Larrea via yonik)
+
+ 8. SOLR-179: By default, solr will abort after any severe initalization
+    errors.  This behavior can be disabled by setting:
+    <abortOnConfigurationError>false</abortOnConfigurationError>
+    in solrconfig.xml (ryan)
 
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
