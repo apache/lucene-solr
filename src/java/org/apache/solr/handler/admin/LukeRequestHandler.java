@@ -78,7 +78,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static Logger log = Logger.getLogger(LukeRequestHandler.class.getName());
   
   public static final String NUMTERMS = "numTerms";
-  public static final String DOC_ID = "docID";
+  public static final String DOC_ID = "docId";
   public static final String ID = "id";
   public static final int DEFAULT_COUNT = 10;
   
@@ -95,33 +95,33 @@ public class LukeRequestHandler extends RequestHandlerBase
     // Always show the core lucene info
     rsp.add("index", getIndexInfo(reader) );
 
-    Integer docID = params.getInt( DOC_ID );
-    if( docID == null && params.get( ID ) != null ) {
+    Integer docId = params.getInt( DOC_ID );
+    if( docId == null && params.get( ID ) != null ) {
       // Look for somethign with a given solr ID
       SchemaField uniqueKey = schema.getUniqueKeyField();
       String v = uniqueKey.getType().toInternal( params.get(ID) );
       Term t = new Term( uniqueKey.getName(), v );
-      docID = searcher.getFirstMatch( t );
-      if( docID < 0 ) {
+      docId = searcher.getFirstMatch( t );
+      if( docId < 0 ) {
         throw new SolrException( 404, "Can't find document: "+params.get( ID ) );
       }
     }
         
     // Read the document from the index
-    if( docID != null ) {
+    if( docId != null ) {
       Document doc = null;
       try {
-        doc = reader.document( docID );
+        doc = reader.document( docId );
       }
       catch( Exception ex ) {}
       if( doc == null ) {
-        throw new SolrException( 404, "Can't find document: "+docID );
+        throw new SolrException( 404, "Can't find document: "+docId );
       }
       
-      SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docID, reader, schema );
+      SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docId, reader, schema );
       
       SimpleOrderedMap<Object> docinfo = new SimpleOrderedMap<Object>();
-      docinfo.add( "docID", docID );
+      docinfo.add( "docId", docId );
       docinfo.add( "lucene", info );
       docinfo.add( "solr", doc );
       rsp.add( "doc", docinfo );
@@ -213,7 +213,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return key;
   }
   
-  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docID, IndexReader reader, IndexSchema schema ) throws IOException
+  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader, IndexSchema schema ) throws IOException
   { 
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     for( Object o : doc.getFields() ) {
@@ -244,7 +244,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       // If we have a term vector, return that
       if( fieldable.isTermVectorStored() ) {
         try {
-          TermFreqVector v = reader.getTermFreqVector( docID, fieldable.name() );
+          TermFreqVector v = reader.getTermFreqVector( docId, fieldable.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
             for( int i=0; i<v.size(); i++ ) {
