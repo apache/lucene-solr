@@ -184,6 +184,13 @@ Changes in runtime behavior
     <abortOnConfigurationError>false</abortOnConfigurationError>
     in solrconfig.xml (ryan)
 
+ 9. The example solrconfig.xml maps /update to XmlUpdateRequestHandler using 
+    the new request dispatcher (SOLR-104).  This requires posted content to 
+    have a valid contentType: curl -H 'Content-type:text/xml; charset=utf-8' 
+    The response format matches that of /select and returns standard error 
+    codes.  To enable solr1.1 style /update, do not map "/update" to any 
+    handler in solrconfig.xml (ryan)
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new
