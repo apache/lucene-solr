@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.util;
 
 /**
- * A collection of params used by Update handlers
+ * A collection of standard params used by Update handlers
+ *
+ * @author ryan
+ * @version $Id$
+ * @since solr 1.2
  */
 public interface UpdateParams 
 {

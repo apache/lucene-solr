@@ -25,6 +25,7 @@ import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.UpdateParams;
 
 /**
  * Common helper functions for RequestHandlers
