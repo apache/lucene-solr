@@ -148,6 +148,10 @@ New Features
     This exposes the system status through the standard requestHandler
     framework. (ryan)
     
+24. SOLR-212: Added a DirectSolrConnection class.  This lets you access
+    solr using the standard request/response formats, but does not require
+    an HTTP connection.  It is designed for embedded applications. (ryan)    
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
