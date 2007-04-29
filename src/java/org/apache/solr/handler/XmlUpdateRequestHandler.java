@@ -51,6 +51,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
 
   private XmlPullParserFactory factory;
 
+  @Override
   public void init(NamedList args)
   {
     super.init( args );
@@ -80,7 +81,9 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     for( ContentStream stream : req.getContentStreams() ) {
       Reader reader = stream.getReader();
       try {
-        rsp.add( "update", this.update( reader ) );
+        NamedList out = this.update( reader );
+        // TODO -- return useful info.  
+        // rsp.add( "update", out );
       }
       finally {
         IOUtils.closeQuietly(reader);
