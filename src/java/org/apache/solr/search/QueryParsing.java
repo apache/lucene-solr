@@ -101,7 +101,7 @@ public class QueryParsing {
 
     } catch (ParseException e) {
       SolrCore.log(e);
-      throw new SolrException(400,"Error parsing Lucene query",e);
+      throw new SolrException(400,"Query parsing error: " + e.getMessage(),e);
     }
   }
 
