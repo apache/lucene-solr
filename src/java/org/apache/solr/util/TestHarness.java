@@ -138,9 +138,33 @@ public class TestHarness {
    * @return null if succesful, otherwise the XML response to the update
    */
   public String validateUpdate(String xml) throws SAXException {
+    return checkUpdateStatus(xml, "0");
+  }
+
+  /**
+   * Validates that an "update" (add, commit or optimize) results in success.
+   *
+   * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
+   * 
+   * @param xml The XML of the update
+   * @return null if succesful, otherwise the XML response to the update
+   */
+  public String validateErrorUpdate(String xml) throws SAXException {
+    return checkUpdateStatus(xml, "1");
+  }
+
+  /**
+   * Validates that an "update" (add, commit or optimize) results in success.
+   *
+   * :TODO: currently only deals with one add/doc at a time, this will need changed if/when SOLR-2 is resolved
+   * 
+   * @param xml The XML of the update
+   * @return null if succesful, otherwise the XML response to the update
+   */
+  public String checkUpdateStatus(String xml, String code) throws SAXException {
     try {
       String res = update(xml);
-      String valid = validateXPath(res, "//result[@status=0]" );
+      String valid = validateXPath(res, "//result[@status="+code+"]" );
       return (null == valid) ? null : res;
     } catch (XPathExpressionException e) {
       throw new RuntimeException
@@ -148,7 +172,6 @@ public class TestHarness {
     }
   }
 
-        
   /**
    * Validates that an add of a single document results in success.
    *

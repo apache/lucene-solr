@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
@@ -92,6 +91,7 @@ public final class IndexSchema {
   private final HashMap<String, SchemaField> fields = new HashMap<String,SchemaField>();
   private final HashMap<String, FieldType> fieldTypes = new HashMap<String,FieldType>();
   private final List<SchemaField> fieldsWithDefaultValue = new ArrayList<SchemaField>();
+  private final Collection<SchemaField> requiredFields = new HashSet<SchemaField>();
 
   /**
    * Provides direct access to the Map containing all explicit
@@ -117,6 +117,12 @@ public final class IndexSchema {
    * Provides direct access to the List containing all fields with a default value
    */
   public List<SchemaField> getFieldsWithDefaultValue() { return fieldsWithDefaultValue; }
+
+  /**
+   * Provides direct access to the List containing all required fields.  This
+   * list contains all fields with default values.
+   */
+  public Collection<SchemaField> getRequiredFields() { return requiredFields; }
 
   private Similarity similarity;
 
@@ -338,6 +344,8 @@ public final class IndexSchema {
       }
 
 
+      // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
+      Map<String,Boolean> explicitRequiredProp = new HashMap<String, Boolean>();
       ArrayList<DynamicField> dFields = new ArrayList<DynamicField>();
       expression = "/schema/fields/field | /schema/fields/dynamicField";
       nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
@@ -358,6 +366,9 @@ public final class IndexSchema {
         }
 
         Map<String,String> args = DOMUtil.toMapExcept(attrs, "name", "type");
+        if( args.get( "required" ) != null ) {
+          explicitRequiredProp.put( name, Boolean.valueOf( args.get( "required" ) ) );
+        }
 
         SchemaField f = SchemaField.create(name,ft,args);
 
@@ -366,7 +377,11 @@ public final class IndexSchema {
           log.fine("field defined: " + f);
           if( f.getDefaultValue() != null ) {
             log.fine(name+" contains default value: " + f.getDefaultValue());
-        	  fieldsWithDefaultValue.add( f );
+            fieldsWithDefaultValue.add( f );
+          }
+          if (f.isRequired()) {
+            log.fine(name+" is required in this schema");
+            requiredFields.add(f);
           }
         } else if (node.getNodeName().equals("dynamicField")) {
           dFields.add(new DynamicField(f));
@@ -376,6 +391,11 @@ public final class IndexSchema {
           throw new RuntimeException("Unknown field type");
         }
       }
+      
+    //fields with default values are by definition required
+    //add them to required fields, and we only have to loop once
+    // in DocumentBuilder.getDoc()
+    requiredFields.addAll(getFieldsWithDefaultValue());
 
     // OK, now sort the dynamic fields largest to smallest size so we don't get
     // any false matches.  We want to act like a compiler tool and try and match
@@ -423,6 +443,12 @@ public final class IndexSchema {
       uniqueKeyFieldName=uniqueKeyField.getName();
       uniqueKeyFieldType=uniqueKeyField.getType();
       log.info("unique key field: "+uniqueKeyFieldName);
+      
+      // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
+      if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {
+        uniqueKeyField.required = true;
+        requiredFields.add(uniqueKeyField);
+      }
     }
 
     /////////////// parse out copyField commands ///////////////
@@ -822,5 +848,6 @@ public final class IndexSchema {
   }
 
 }
+
 
 

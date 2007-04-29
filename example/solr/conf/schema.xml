@@ -234,7 +234,7 @@
        fields or fields that need an index-time boost need norms.
    -->
 
-   <field name="id" type="string" indexed="true" stored="true"/>
+   <field name="id" type="string" indexed="true" stored="true" required="true" /> 
    <field name="sku" type="textTight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text" indexed="true" stored="true"/>
    <field name="nameSort" type="string" indexed="true" stored="false"/>
@@ -291,7 +291,9 @@
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
  </fields>
 
- <!-- field to use to determine and enforce document uniqueness. -->
+ <!-- Field to use to determine and enforce document uniqueness. 
+      Unless this field is marked with required="false", it will be a required field
+   -->
  <uniqueKey>id</uniqueKey>
 
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->

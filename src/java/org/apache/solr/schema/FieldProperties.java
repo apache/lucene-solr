@@ -43,13 +43,15 @@ abstract class FieldProperties {
   final static int MULTIVALUED         = 0x00000200;
   final static int SORT_MISSING_FIRST  = 0x00000400;
   final static int SORT_MISSING_LAST   = 0x00000800;
-
+  
+  final static int REQUIRED            = 0x00001000;
+  
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
           "binary", "compressed", "omitNorms",
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
-          "sortMissingFirst","sortMissingLast"
+          "sortMissingFirst","sortMissingLast","required"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<String,Integer>();

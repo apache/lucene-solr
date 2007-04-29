@@ -161,6 +161,12 @@ New Features
 26. SOLR-170: StandardRequestHandler now supports a "sort" parameter.
     Using the ';' syntax is still supported, but it is recommended to 
     transition to the new syntax. (ryan)
+
+27. SOLR-181: The index schema now supports "required" fields.  Attempts
+    to add a document without a required field will fail, returning a
+    descriptive error message.  By default, the uniqueKey field is
+    a required field.  This can be disabled by setting required=false
+    in schema.xml.  (Greg Ludington via ryan)
     
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 

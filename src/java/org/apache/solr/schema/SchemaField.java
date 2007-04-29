@@ -37,6 +37,7 @@ public final class SchemaField extends FieldProperties {
   final FieldType type;
   final int properties;
   final String defaultValue;
+  boolean required = false;  // this can't be final since it may be changed dynamically
 
 
   /** Create a new SchemaField with the given name and type,
@@ -64,6 +65,9 @@ public final class SchemaField extends FieldProperties {
     this.type = type;
     this.properties = properties;
     this.defaultValue = defaultValue;
+    
+    // initalize with the required property flag
+    required = (properties & REQUIRED) !=0;
   }
 
   public String getName() { return name; }
@@ -80,6 +84,7 @@ public final class SchemaField extends FieldProperties {
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
   public boolean isCompressed() { return (properties & COMPRESSED)!=0; }
+  public boolean isRequired() { return required; } 
 
   // things that should be determined by field type, not set as options
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
@@ -89,10 +94,12 @@ public final class SchemaField extends FieldProperties {
     return type.createField(this,val,boost);
   }
 
+  @Override
   public String toString() {
     return name + "{type="+type.getTypeName()
       + ((defaultValue==null)?"":(",default="+defaultValue))
       + ",properties=" + propertiesToString(properties)
+      + ( required ? ", required=true" : "" )
       + "}";
   }
 
@@ -111,7 +118,7 @@ public final class SchemaField extends FieldProperties {
   }
 
 
-  static SchemaField create(String name, FieldType ft, Map props) {
+  static SchemaField create(String name, FieldType ft, Map<String,String> props) {
     int trueProps = parseProperties(props,true);
     int falseProps = parseProperties(props,false);
 
@@ -171,6 +178,8 @@ public final class SchemaField extends FieldProperties {
     return defaultValue;
   }
 }
+
+
 
 
 

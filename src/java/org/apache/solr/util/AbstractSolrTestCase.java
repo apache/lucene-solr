@@ -126,16 +126,36 @@ public abstract class AbstractSolrTestCase extends TestCase {
   public void assertU(String update) {
     assertU(null, update);
   }
-    
+
   /** Validates an update XML String is successful
    */
   public void assertU(String message, String update) {
+    checkUpdateU(message, update, true);
+  }
+
+  /** Validates an update XML String failed
+   */
+  public void assertFailedU(String update) {
+    assertFailedU(null, update);
+  }
+
+  /** Validates an update XML String failed
+   */
+  public void assertFailedU(String message, String update) {
+    checkUpdateU(message, update, false);
+  }
+
+  /** Checks the success or failure of an update message
+   */
+  private void checkUpdateU(String message, String update, boolean shouldSucceed) {
     try {
       String m = (null == message) ? "" : message + " ";
-
-      String res = h.validateUpdate(update);
-      if (null != res) {
-        fail(m + "update was not successful: " + res);
+      if (shouldSucceed) {
+           String res = h.validateUpdate(update);
+         if (res != null) fail(m + "update was not successful: " + res);
+      } else {
+           String res = h.validateErrorUpdate(update);
+         if (res != null) fail(m + "update succeeded, but should have failed: " + res);        
       }
     } catch (SAXException e) {
       throw new RuntimeException("Invalid XML", e);
@@ -284,6 +304,4 @@ public abstract class AbstractSolrTestCase extends TestCase {
     }
     return f.delete();
   }
-
-    
 }

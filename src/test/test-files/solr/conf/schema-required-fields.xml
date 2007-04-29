@@ -23,7 +23,7 @@
      kitchen sink thrown in. See example/solr/conf/schema.xml for a 
      more concise example.
 
-     $Id: schema.xml 382610 2006-03-03 01:43:03Z yonik $
+     $Id$
      $Source: /cvs/main/searching/solr-configs/test/WEB-INF/classes/schema.xml,v $
      $Name:  $
   -->
@@ -42,10 +42,10 @@
          These are provided more for backward compatability, allowing one
          to create a schema that matches an existing lucene index.
     -->
-    <fieldType name="integer" class="solr.IntField"/>
-    <fieldType name="long" class="solr.LongField"/>
+    <fieldtype name="integer" class="solr.IntField"/>
+    <fieldtype name="long" class="solr.LongField"/>
     <fieldtype name="float" class="solr.FloatField"/>
-    <fieldType name="double" class="solr.DoubleField"/>
+    <fieldtype name="double" class="solr.DoubleField"/>
 
     <!-- numeric field types that manipulate the value into
        a string value that isn't human readable in it's internal form,
@@ -298,10 +298,10 @@
 
 
  <fields>
-   <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
-   <field name="name" type="nametext" indexed="true" stored="true"/>
+   <field name="id" type="integer" indexed="true" stored="true"/> <!-- the uniqueKey is required by default -->
+   <field name="name" type="nametext" indexed="true" stored="true" required="true"/>
    <field name="text" type="text" indexed="true" stored="false"/>
-   <field name="subject" type="text" indexed="true" stored="true"/>
+   <field name="subject" type="text" indexed="true" stored="true" required="true" default="Stuff"/>
    <field name="title" type="nametext" indexed="true" stored="true"/>
    <field name="weight" type="float" indexed="true" stored="true"/>
    <field name="bday" type="date" indexed="true" stored="true"/>

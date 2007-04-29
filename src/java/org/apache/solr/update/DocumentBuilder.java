@@ -17,13 +17,15 @@
 
 package org.apache.solr.update;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.solr.core.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.core.SolrException;
-
-import java.util.HashMap;
 
 /**
  * @author yonik
@@ -104,15 +106,37 @@ public class DocumentBuilder {
   }
 
   // specific to this type of document builder
-  public Document getDoc() {
-	  
-    // Check for default fields in our schema...
-    for( SchemaField field : schema.getFieldsWithDefaultValue() ) {
-      if( doc.getField( field.getName() ) == null ) {
-        doc.add( field.createField( field.getDefaultValue(), 1.0f ) );
+  public Document getDoc() throws IllegalArgumentException {
+    
+    // Check for all required fields -- Note, all fields with a
+    // default value are defacto 'required' fields.  
+    List<String> missingFields = new ArrayList<String>( schema.getRequiredFields().size() );
+    for (SchemaField field : schema.getRequiredFields()) {
+      if (doc.getField(field.getName() ) == null) {
+        if (field.getDefaultValue() != null) {
+          doc.add( field.createField( field.getDefaultValue(), 1.0f ) );
+        } else {
+          missingFields.add(field.getName());
+        }
       }
     }
-	  
+  
+    if (missingFields.size() > 0) {
+      StringBuilder builder = new StringBuilder();
+      // add the uniqueKey if possible
+      if( schema.getUniqueKeyField() != null ) {
+        String n = schema.getUniqueKeyField().getName();
+        String v = doc.get( n );
+        builder.append( "Document ["+n+"="+v+"] " );
+      }
+      builder.append("missing required fields: " );
+      for (String field : missingFields) {
+        builder.append(field);
+        builder.append(" ");
+      }
+      throw new SolrException(400, builder.toString());
+    }
+    
     Document ret = doc; doc=null;
     return ret;
   }
