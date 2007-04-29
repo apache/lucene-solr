@@ -152,6 +152,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
       
     IndexReader indexReader = req.getSearcher().getReader();
     Dictionary dictionary = new LuceneDictionary(indexReader, termSourceField);
+    spellChecker.clearIndex();
     spellChecker.indexDictionary(dictionary);
     reopen();
   }
