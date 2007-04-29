@@ -157,6 +157,10 @@ New Features
     /select.  To enable this behavior, you must add:
       <requestDispatcher handleSelect="true" > to your solrconfig.xml
     See the example solrconfig.xml for details.  (ryan)
+
+26. SOLR-170: StandardRequestHandler now supports a "sort" parameter.
+    Using the ';' syntax is still supported, but it is recommended to 
+    transition to the new syntax. (ryan)
     
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 

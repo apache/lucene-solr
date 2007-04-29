@@ -37,6 +37,8 @@ public abstract class SolrParams {
   public static final String WT ="wt";
   /** query string */
   public static final String Q ="q";
+  /** sort order */
+  public static final String SORT ="sort";
   /** Lucene query string(s) for filtering the results without affecting scoring */
   public static final String FQ ="fq";
   /** zero based offset of matching documents to retrieve */
@@ -360,6 +362,8 @@ public abstract class SolrParams {
     return result;
   }
 }
+
+
 
 
 

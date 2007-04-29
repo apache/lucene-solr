@@ -67,7 +67,7 @@ public class StandardRequestHandler extends RequestHandlerBase {
   {
     
       SolrParams p = req.getParams();
-      String sreq = p.get(Q);
+      String qstr = p.required().get(Q);
 
       String defaultField = p.get(DF);
 
@@ -77,25 +77,37 @@ public class StandardRequestHandler extends RequestHandlerBase {
       if (fl != null) {
         flags |= U.setReturnFields(fl, rsp);
       }
-
-      if (sreq==null) throw new SolrException(400,"Missing queryString");
-      List<String> commands = StrUtils.splitSmart(sreq,';');
-
-      String qs = commands.size() >= 1 ? commands.get(0) : "";
-      Query query = QueryParsing.parseQuery(qs, defaultField, p, req.getSchema());
-
-      // If the first non-query, non-filter command is a simple sort on an indexed field, then
-      // we can use the Lucene sort ability.
-      Sort sort = null;
-      if (commands.size() >= 2) {
-        QueryParsing.SortSpec sortSpec = QueryParsing.parseSort(commands.get(1), req.getSchema());
-        if (sortSpec != null) {
-          sort = sortSpec.getSort();
-          // ignore the count for now... it's currently only controlled by start & limit on req
-          // count = sortSpec.getCount();
+      
+      String sortStr = p.get(SORT);
+      if( sortStr == null ) {  
+        // TODO? should we disable the ';' syntax with config?
+        // legacy mode, where sreq is query;sort
+        List<String> commands = StrUtils.splitSmart(qstr,';');
+        if( commands.size() == 2 ) {
+          // TODO? add a deprication warning to the response header
+          qstr = commands.get( 0 );
+          sortStr = commands.get( 1 );
+        }
+        else if( commands.size() == 1 ) {
+          // This is need to support the case where someone sends: "q=query;"
+          qstr = commands.get( 0 );
+        }
+        else if( commands.size() > 2 ) {
+          throw new SolrException( 400, "If you want to use multiple ';' in the query, use the 'sort' param." );
         }
       }
 
+      Sort sort = null;
+      if( sortStr != null ) {
+        QueryParsing.SortSpec sortSpec = QueryParsing.parseSort(sortStr, req.getSchema());
+        if (sortSpec != null) {
+          sort = sortSpec.getSort();
+        }
+      }
+
+      // parse the query from the 'q' parameter (sort has been striped)
+      Query query = QueryParsing.parseQuery(qstr, defaultField, p, req.getSchema());
+      
       DocListAndSet results = new DocListAndSet();
       NamedList facetInfo = null;
       List<Query> filters = U.parseFilterQueries(req);
@@ -120,7 +132,7 @@ public class StandardRequestHandler extends RequestHandlerBase {
       if (null != facetInfo) rsp.add("facet_counts", facetInfo);
 
       try {
-        NamedList dbg = U.doStandardDebug(req, qs, query, results.docList);
+        NamedList dbg = U.doStandardDebug(req, qstr, query, results.docList);
         if (null != dbg) {
           if (null != filters) {
             dbg.add("filter_queries",req.getParams().getParams(FQ));
@@ -187,4 +199,6 @@ public class StandardRequestHandler extends RequestHandlerBase {
     catch( MalformedURLException ex ) { return null; }
   }
 }
+
+
 

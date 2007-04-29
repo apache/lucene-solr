@@ -298,7 +298,7 @@
 
 
  <fields>
-   <field name="id" type="integer" indexed="true" stored="true"/>
+   <field name="id" type="integer" indexed="true" stored="true" multiValued="false"/>
    <field name="name" type="nametext" indexed="true" stored="true"/>
    <field name="text" type="text" indexed="true" stored="false"/>
    <field name="subject" type="text" indexed="true" stored="true"/>

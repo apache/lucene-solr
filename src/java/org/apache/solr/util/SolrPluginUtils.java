@@ -785,7 +785,7 @@ public class SolrPluginUtils {
    */
   public static Sort getSort(SolrQueryRequest req) {
 
-    String sort = req.getParam("sort");
+    String sort = req.getParam(SolrParams.SORT);
     if (null == sort || sort.equals("")) {
       return null;
     }
@@ -863,6 +863,8 @@ public class SolrPluginUtils {
   }
 
 }
+
+
 
 
 

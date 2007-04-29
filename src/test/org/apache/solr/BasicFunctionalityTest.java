@@ -583,7 +583,6 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                 ,"facet.mincount","0"
                 ,"facet.offset","0"
                 ,"facet.limit","3"
-                ,"sort","true"
                 )
             ,"*[count(//lst[@name='trait_s']/int)=3]"
             ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
