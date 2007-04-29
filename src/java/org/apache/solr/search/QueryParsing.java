@@ -199,7 +199,13 @@ public class QueryParsing {
       } 
       else {
         // getField could throw an exception if the name isn't found
-        SchemaField f = schema.getField(part);
+        SchemaField f = null;
+        try{
+          f = schema.getField(part);
+        }
+        catch( SolrException e ){
+          throw new SolrException( 400, "can not sort on undefined field: "+part, e );
+        }
         if (f == null || !f.indexed()){
           throw new SolrException( 400, "can not sort on unindexed field: "+part );
         }
