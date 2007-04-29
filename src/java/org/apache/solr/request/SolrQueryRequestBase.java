@@ -91,7 +91,10 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     return params.getParams(name);
   }
 
-
+  /**
+   * use getParams().required().getInt( name ) instead
+   */
+  @Deprecated
   public int getIntParam(String name) {
     String s = getParam(name);
     if (s==null) {
@@ -100,11 +103,19 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     return Integer.parseInt(s);
   }
 
+  /**
+   * use getParams().required().getInt( name ) instead
+   */
+  @Deprecated
   public int getIntParam(String name, int defval) {
     String s = getParam(name);
     return s==null ? defval : Integer.parseInt(s);
   }
 
+  /**
+   * use getParams().required().getParam( name ) instead
+   */
+  @Deprecated
   public String getStrParam(String name) {
     String s = getParam(name);
     if (s==null) {
@@ -113,6 +124,10 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     return s;
   }
 
+  /**
+   * use getParams().required().getParam( name ) instead
+   */
+  @Deprecated
   public String getStrParam(String name, String defval) {
     String s = getParam(name);
     return s==null ? defval : s;
