@@ -787,7 +787,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
         req( "id_i:1000; nullfirst" ), 400 );
 
     assertQEx( "unknown sort field",
-        req( "id_i:1000; abcde12345 asc" ), 1 ); 
+        req( "id_i:1000; abcde12345 asc" ), 400 ); 
 
     assertQEx( "unknown sort order",
         req( "id_i:1000; nullfirst aaa" ), 400 ); 
