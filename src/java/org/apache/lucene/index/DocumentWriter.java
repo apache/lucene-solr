@@ -162,18 +162,28 @@ final class DocumentWriter {
           offset += stringValue.length();
           length++;
         } else 
-        {
-          Reader reader;			  // find or make Reader
-          if (field.readerValue() != null)
-            reader = field.readerValue();
-          else if (field.stringValue() != null)
-            reader = new StringReader(field.stringValue());
-          else
-            throw new IllegalArgumentException
-                    ("field must have either String or Reader value");
-
-          // Tokenize field and add to postingTable
-          TokenStream stream = analyzer.tokenStream(fieldName, reader);
+        { // tokenized field
+          TokenStream stream = field.tokenStreamValue();
+          
+          // the field does not have a TokenStream,
+          // so we have to obtain one from the analyzer
+          if (stream == null) {
+            Reader reader;			  // find or make Reader
+            if (field.readerValue() != null)
+              reader = field.readerValue();
+            else if (field.stringValue() != null)
+              reader = new StringReader(field.stringValue());
+            else
+              throw new IllegalArgumentException
+                      ("field must have either String or Reader value");
+  
+            // Tokenize field and add to postingTable
+            stream = analyzer.tokenStream(fieldName, reader);
+          }
+          
+          // reset the TokenStream to the first token
+          stream.reset();
+          
           try {
             Token lastToken = null;
             for (Token t = stream.next(); t != null; t = stream.next()) {

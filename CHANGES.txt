@@ -47,7 +47,16 @@ API Changes
     (Chris Hostetter, Otis Gospodnetic)
 
  8. LUCENE-869: Changed FSIndexInput and FSIndexOutput to inner classes of FSDirectory
-    to enable extensibility of these classes.
+    to enable extensibility of these classes. (Michael Busch)
+
+ 9. LUCENE-580: Added the public method reset() to TokenStream. This method does
+    nothing by default, but may be overwritten by subclasses to support consuming
+    the TokenStream more than once. (Michael Busch)
+
+10. LUCENE-580: Added a new constructor to Field that takes a TokenStream as
+    argument, available as tokenStreamValue(). This is useful to avoid the need of 
+    "dummy analyzers" for pre-analyzed fields. (Karl Wettin, Michael Busch)
+
 
 Bug fixes
 

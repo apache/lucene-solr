@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexWriter;   // for javadoc
 import org.apache.lucene.util.Parameter;
 
@@ -134,20 +135,25 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   }
   
   
-  /** The value of the field as a String, or null.  If null, the Reader value
-   * or binary value is used.  Exactly one of stringValue(), readerValue(), and
-   * binaryValue() must be set. */
+  /** The value of the field as a String, or null.  If null, the Reader value,
+   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
   public String stringValue()   { return fieldsData instanceof String ? (String)fieldsData : null; }
   
-  /** The value of the field as a Reader, or null.  If null, the String value
-   * or binary value is  used.  Exactly one of stringValue(), readerValue(),
-   * and binaryValue() must be set. */
+  /** The value of the field as a Reader, or null.  If null, the String value,
+   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
   public Reader readerValue()   { return fieldsData instanceof Reader ? (Reader)fieldsData : null; }
   
-  /** The value of the field in Binary, or null.  If null, the Reader or
-   * String value is used.  Exactly one of stringValue(), readerValue() and
-   * binaryValue() must be set. */
+  /** The value of the field in Binary, or null.  If null, the Reader value,
+   * String value, or TokenStream value is used. Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
   public byte[] binaryValue()   { return fieldsData instanceof byte[] ? (byte[])fieldsData : null; }
+  
+  /** The value of the field as a TokesStream, or null.  If null, the Reader value,
+   * String value, or binary value is used. Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  public TokenStream tokenStreamValue()   { return fieldsData instanceof TokenStream ? (TokenStream)fieldsData : null; }
   
   /**
    * Create a field by specifying its name, value and how it will
@@ -280,6 +286,54 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     
     setStoreTermVector(termVector);
   }
+
+  /**
+   * Create a tokenized and indexed field that is not stored. Term vectors will
+   * not be stored. This is useful for pre-analyzed fields.
+   * The TokenStream is read only when the Document is added to the index,
+   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
+   * has been called.
+   * 
+   * @param name The name of the field
+   * @param tokenStream The TokenStream with the content
+   * @throws NullPointerException if name or tokenStream is <code>null</code>
+   */ 
+  public Field(String name, TokenStream tokenStream) {
+    this(name, tokenStream, TermVector.NO);
+  }
+  
+  /**
+   * Create a tokenized and indexed field that is not stored, optionally with 
+   * storing term vectors.  This is useful for pre-analyzed fields.
+   * The TokenStream is read only when the Document is added to the index,
+   * i.e. you may not close the TokenStream until {@link IndexWriter#addDocument(Document)}
+   * has been called.
+   * 
+   * @param name The name of the field
+   * @param tokenStream The TokenStream with the content
+   * @param termVector Whether term vector should be stored
+   * @throws NullPointerException if name or tokenStream is <code>null</code>
+   */ 
+  public Field(String name, TokenStream tokenStream, TermVector termVector) {
+    if (name == null)
+      throw new NullPointerException("name cannot be null");
+    if (tokenStream == null)
+      throw new NullPointerException("tokenStream cannot be null");
+    
+    this.name = name.intern();        // field names are interned
+    this.fieldsData = tokenStream;
+    
+    this.isStored = false;
+    this.isCompressed = false;
+    
+    this.isIndexed = true;
+    this.isTokenized = true;
+    
+    this.isBinary = false;
+    
+    setStoreTermVector(termVector);
+  }
+
   
   /**
    * Create a stored field with binary value. Optionally the value may be compressed.

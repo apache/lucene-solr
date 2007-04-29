@@ -19,6 +19,8 @@ package org.apache.lucene.document;
 import java.io.Reader;
 import java.io.Serializable;
 
+import org.apache.lucene.analysis.TokenStream;
+
 /**
  * Synonymous with {@link Field}.
  *
@@ -60,20 +62,25 @@ public interface Fieldable extends Serializable {
    */
   String name();
 
-  /** The value of the field as a String, or null.  If null, the Reader value
-   * or binary value is used.  Exactly one of stringValue(), readerValue(), and
-   * binaryValue() must be set. */
-  String stringValue();
-
-  /** The value of the field as a Reader, or null.  If null, the String value
-   * or binary value is  used.  Exactly one of stringValue(), readerValue(),
-   * and binaryValue() must be set. */
-  Reader readerValue();
-
-  /** The value of the field in Binary, or null.  If null, the Reader or
-   * String value is used.  Exactly one of stringValue(), readerValue() and
-   * binaryValue() must be set. */
-  byte[] binaryValue();
+  /** The value of the field as a String, or null.  If null, the Reader value,
+   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  public String stringValue();
+  
+  /** The value of the field as a Reader, or null.  If null, the String value,
+   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  public Reader readerValue();
+  
+  /** The value of the field in Binary, or null.  If null, the Reader value,
+   * String value, or TokenStream value is used. Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  public byte[] binaryValue();
+  
+  /** The value of the field as a TokesStream, or null.  If null, the Reader value,
+   * String value, or binary value is used. Exactly one of stringValue(), 
+   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  public TokenStream tokenStreamValue();
 
   /** True iff the value of the field is to be stored in the index for return
     with search hits.  It is an error for this to be true if a field is

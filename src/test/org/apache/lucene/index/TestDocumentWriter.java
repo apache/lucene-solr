@@ -19,10 +19,13 @@ package org.apache.lucene.index;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -123,5 +126,46 @@ public class TestDocumentWriter extends TestCase {
     assertEquals(2, freq);
     assertEquals(0, termPositions.nextPosition());
     assertEquals(502, termPositions.nextPosition());
+  }
+  
+  public void testPreAnalyzedField() throws IOException {
+    Similarity similarity = Similarity.getDefault();
+    DocumentWriter writer = new DocumentWriter(dir, new SimpleAnalyzer(), similarity, 50);
+    Document doc = new Document();
+    
+    doc.add(new Field("preanalyzed", new TokenStream() {
+      private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
+      private int index = 0;
+      
+      public Token next() throws IOException {
+        if (index == tokens.length) {
+          return null;
+        } else {
+          return new Token(tokens[index++], 0, 0);
+        }        
+      }
+      
+    }, TermVector.NO));
+    
+    String segName = "test";
+    writer.addDocument(segName, doc);
+    SegmentReader reader = SegmentReader.get(new SegmentInfo(segName, 1, dir));
+
+    TermPositions termPositions = reader.termPositions(new Term("preanalyzed", "term1"));
+    assertTrue(termPositions.next());
+    assertEquals(1, termPositions.freq());
+    assertEquals(0, termPositions.nextPosition());
+
+    termPositions.seek(new Term("preanalyzed", "term2"));
+    assertTrue(termPositions.next());
+    assertEquals(2, termPositions.freq());
+    assertEquals(1, termPositions.nextPosition());
+    assertEquals(3, termPositions.nextPosition());
+    
+    termPositions.seek(new Term("preanalyzed", "term3"));
+    assertTrue(termPositions.next());
+    assertEquals(1, termPositions.freq());
+    assertEquals(2, termPositions.nextPosition());
+
   }
 }

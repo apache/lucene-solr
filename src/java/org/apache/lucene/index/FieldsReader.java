@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -331,11 +332,9 @@ final class FieldsReader {
       return localFieldsStream;
     }
 
-    /**
-     * The value of the field in Binary, or null.  If null, the Reader or
-     * String value is used.  Exactly one of stringValue(), readerValue() and
-     * binaryValue() must be set.
-     */
+    /** The value of the field in Binary, or null.  If null, the Reader value,
+     * String value, or TokenStream value is used. Exactly one of stringValue(), 
+     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public byte[] binaryValue() {
       ensureOpen();
       if (fieldsData == null) {
@@ -358,21 +357,26 @@ final class FieldsReader {
       return fieldsData instanceof byte[] ? (byte[]) fieldsData : null;
     }
 
-    /**
-     * The value of the field as a Reader, or null.  If null, the String value
-     * or binary value is  used.  Exactly one of stringValue(), readerValue(),
-     * and binaryValue() must be set.
-     */
+    /** The value of the field as a Reader, or null.  If null, the String value,
+     * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
+     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public Reader readerValue() {
       ensureOpen();
       return fieldsData instanceof Reader ? (Reader) fieldsData : null;
     }
 
-    /**
-     * The value of the field as a String, or null.  If null, the Reader value
-     * or binary value is used.  Exactly one of stringValue(), readerValue(), and
-     * binaryValue() must be set.
-     */
+    /** The value of the field as a TokesStream, or null.  If null, the Reader value,
+     * String value, or binary value is used. Exactly one of stringValue(), 
+     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+    public TokenStream tokenStreamValue() {
+      ensureOpen();
+      return fieldsData instanceof TokenStream ? (TokenStream) fieldsData : null;
+    }
+
+    
+    /** The value of the field as a String, or null.  If null, the Reader value,
+     * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
+     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
     public String stringValue() {
       ensureOpen();
       if (fieldsData == null) {
@@ -461,6 +465,11 @@ final class FieldsReader {
 
     public byte[] binaryValue() {
       return (byte[]) this.fieldsData;
+    }
+
+    public TokenStream tokenStreamValue() {
+      // not needed for merge
+      return null;
     }
     
     public FieldForMerge(Object value, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) {
