@@ -18,7 +18,6 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -52,8 +51,6 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
 
   private XmlPullParserFactory factory;
 
-  // This must be called AFTER solrCore has initalized! 
-  // otherwise you get a big bad error loop
   public void init(NamedList args)
   {
     super.init( args );
