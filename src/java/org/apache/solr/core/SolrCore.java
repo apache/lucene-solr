@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 import javax.xml.xpath.XPathConstants;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -84,6 +85,7 @@ public final class SolrCore {
 
   static {
     BooleanQuery.setMaxClauseCount(SolrConfig.config.getInt("query/maxBooleanClauses",BooleanQuery.getMaxClauseCount()));
+    if (mainIndexConfig.writeLockTimeout != -1) IndexWriter.setDefaultWriteLockTimeout(mainIndexConfig.writeLockTimeout);
   }
 
 

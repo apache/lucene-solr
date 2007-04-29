@@ -245,6 +245,9 @@ Bug Fixes
     and avoid use of "find -maxdepth" on platforms where it is not
     supported. (yonik)
 
+12. SOLR-222: Changing writeLockTimeout in solrconfig.xml did not
+    change the effective timeout. (Koji Sekiguchi via yonik)
+
  
 Other Changes
  1. Updated to Lucene 2.1

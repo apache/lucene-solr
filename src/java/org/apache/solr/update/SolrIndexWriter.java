@@ -51,8 +51,7 @@ public class SolrIndexWriter extends IndexWriter {
       if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
       if (config.mergeFactor != -1)  setMergeFactor(config.mergeFactor);
       if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
-      if (config.writeLockTimeout != -1) setWriteLockTimeout(config.writeLockTimeout);
-      if (config.commitLockTimeout != -1) setWriteLockTimeout(config.commitLockTimeout);
+      //if (config.commitLockTimeout != -1) setWriteLockTimeout(config.commitLockTimeout);
     }
 
   }
