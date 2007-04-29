@@ -39,9 +39,9 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -51,6 +51,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.util.NamedList;
@@ -67,7 +68,7 @@ import org.apache.solr.util.SimpleOrderedMap;
  * </p>
  * 
  * For more documentation see:
- *  
+ *  http://wiki.apache.org/solr/LukeRequestHandler
  * 
  * @author ryan
  * @version $Id$
@@ -136,9 +137,14 @@ public class LukeRequestHandler extends RequestHandlerBase
           fields.add( f );
         }
       }
-      rsp.add( "key", getFieldFlagsKey() );
       rsp.add( "fields", getIndexedFieldsInfo( searcher, fields, numTerms ) ) ;
     }
+
+    // Add some generally helpful informaion
+    NamedList<Object> info = new SimpleOrderedMap<Object>();
+    info.add( "key", getFieldFlagsKey() );
+    info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." ); 
+    rsp.add( "info", info );
   }
   
   /**
@@ -231,16 +237,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       f.add( "value", (ftype==null)?null:ftype.toExternal( fieldable ) );
       f.add( "internal", fieldable.stringValue() );  // may be a binary number
       f.add( "boost", fieldable.getBoost() );
-      
-      // TODO? how can this ever be 0?!  it is in the document!
-      int freq = reader.docFreq( t );
-      if( freq > 0 ) {
-        f.add( "docFreq", reader.docFreq( t ) ); 
-      }
-      else {
-        f.add( "docFreq", "zero! How can that be?" ); 
-      }
-      
+      f.add( "docFreq", reader.docFreq( t ) ); // this can be 0 for non-indexed fields
+            
       // If we have a term vector, return that
       if( fieldable.isTermVectorStored() ) {
         try {
@@ -271,7 +269,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     Query matchAllDocs = new MatchAllDocsQuery();
     SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
-    int filterCacheSize = SolrConfig.config.getInt( "query/filterCache/@size", -1 );
     IndexReader reader = searcher.getReader();
     IndexSchema schema = searcher.getSchema();
     
@@ -281,7 +278,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
     for (String fieldName : fieldNames) {
       if( fields != null && !fields.contains( fieldName ) ) {
-        continue; // if a field is specified, only return one
+        continue; // if a field is specified, only them
       }
       
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
@@ -294,32 +291,36 @@ public class LukeRequestHandler extends RequestHandlerBase
       
       Query q = qp.parse( fieldName+":[* TO *]" ); 
       int docCount = searcher.numDocs( q, matchAllDocs );
-// TODO?  Is there a way to get the Fieldable infomation for this field?
-// The following approach works fine for stored fields, but does not work for non-stored fields
-//      if( docCount > 0 ) {
-//        // Find a document with this field
-//        DocList ds = searcher.getDocList( q, (Query)null, (Sort)null, 0, 1 );
-//        try {
-//          Document doc = searcher.doc( ds.iterator().next() );
-//          Fieldable fld = doc.getFieldable( fieldName );
-//          f.add( "index", getFieldFlags( fld ) );
-//        }
-//        catch( Exception ex ) {
-//          log.warning( "error reading field: "+fieldName );
-//        }
-//        // Find one document so we can get the fieldable
-//      }
+      if( docCount > 0 ) {
+        // Find a document with this field
+        DocList ds = searcher.getDocList( q, (Query)null, (Sort)null, 0, 1 );
+        try {
+          Document doc = searcher.doc( ds.iterator().next() );
+          Fieldable fld = doc.getFieldable( fieldName );
+          if( fld != null ) {
+            f.add( "index", getFieldFlags( fld ) );
+          }
+          else {
+            // it is a non-stored field...
+            f.add( "index", "(unstored field)" );
+          }
+        }
+        catch( Exception ex ) {
+          log.warning( "error reading field: "+fieldName );
+        }
+        // Find one document so we can get the fieldable
+      }
       f.add( "docs", docCount );
       
       TopTermQueue topTerms = ttinfo.get( fieldName );
       if( topTerms != null ) {
         f.add( "distinct", topTerms.distinctTerms );
         
-        // TODO? is this the correct logic?
-        f.add( "cacheableFaceting", topTerms.distinctTerms < filterCacheSize );
-        
-        // Only show them if we specify something
+        // Include top terms
         f.add( "topTerms", topTerms.toNamedList( searcher.getSchema() ) );
+
+        // Add a histogram
+        f.add( "histogram", topTerms.histogram.toNamedList() );
       }
       
       // Add the field
@@ -384,6 +385,48 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   ///////////////////////////////////////////////////////////////////////////////////////
   
+  private static class TermHistogram 
+  {
+    int maxBucket = -1;
+    public Map<Integer,Integer> hist = new HashMap<Integer, Integer>();
+    
+    private static final double LOG2 = Math.log( 2 );
+    public static int getPowerOfTwoBucket( int num )
+    {
+      int exp = (int)Math.ceil( (Math.log( num ) / LOG2 ) );
+      return (int) Math.pow( 2, exp );
+    }
+    
+    public void add( int df )
+    {
+      Integer bucket = getPowerOfTwoBucket( df );
+      if( bucket > maxBucket ) {
+        maxBucket = bucket;
+      }
+      Integer old = hist.get( bucket );
+      if( old == null ) {
+        hist.put( bucket, 1 );
+      }
+      else {
+        hist.put( bucket, old+1 );
+      }
+    }
+    
+    // TODO? should this be a list or a map?
+    public NamedList<Integer> toNamedList()
+    {
+      NamedList<Integer> nl = new NamedList<Integer>();
+      for( int bucket = 2; bucket <= maxBucket; bucket *= 2 ) {
+        Integer val = hist.get( bucket );
+        if( val == null ) {
+          val = 0;
+        }
+        nl.add( ""+bucket, val );
+      }
+      return nl;
+    }
+  }
+  
   /**
    * Private internal class that counts up frequent terms
    */
@@ -400,9 +443,11 @@ public class LukeRequestHandler extends RequestHandlerBase
     
     public int minFreq = 0;
     public int distinctTerms = 0;
+    public TermHistogram histogram;
     
     TopTermQueue(int size) {
       initialize(size);
+      histogram = new TermHistogram();
     }
     
     @Override
@@ -452,6 +497,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         info.put( field, tiq );
       }
       tiq.distinctTerms++;
+      tiq.histogram.add( terms.docFreq() );  // add the term to the histogram
       
       // Only save the distinct terms for fields we worry about
       if (fields != null && fields.size() > 0) {
@@ -474,6 +520,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return info;
   }
 }
+
 
 
 
