@@ -32,12 +32,12 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.xml.xpath.XPathConstants;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
 import org.apache.solr.util.ContentStream;
@@ -47,9 +47,6 @@ import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.ContentStreamBase;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 
 public class SolrRequestParsers 
@@ -71,21 +68,13 @@ public class SolrRequestParsers
   {
     this.core = core;
     
-    long uploadLimitKB = 2000; // 2MB default
-    NodeList nodes = (NodeList)config.evaluate("requestParsers", XPathConstants.NODESET);
-      if( nodes!=null && nodes.getLength()>0 ) {
-          // only look at the first node.  
-        NamedNodeMap attrs = nodes.item(0).getAttributes();
-        Node node = attrs.getNamedItem( "enableRemoteStreaming" );
-        if( node != null ) {
-          enableRemoteStreams = Boolean.parseBoolean( node.getTextContent() );
-        }
-        node = attrs.getNamedItem( "multipartUploadLimitInKB" );
-        if( node != null ) {
-          uploadLimitKB = Long.parseLong( node.getTextContent() );
-        }
-      }
+    // Read the configuration
+    long uploadLimitKB = SolrConfig.config.getInt( 
+        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2000 ); // 2MB default
     
+    this.enableRemoteStreams = SolrConfig.config.getBool( 
+        "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
+        
     MultipartRequestParser multi = new MultipartRequestParser( uploadLimitKB );
     RawRequestParser raw = new RawRequestParser();
     standard = new StandardRequestParser( multi, raw );
@@ -390,6 +379,8 @@ class StandardRequestParser implements SolrRequestParser
     throw new SolrException( 400, "Unsuported method: "+method );
   }
 }
+
+
 
 
 

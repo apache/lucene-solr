@@ -231,9 +231,17 @@
 
   </query>
 
-  <!--Make sure your system has some authentication before enabling remote streaming!  -->
-  <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
-    
+  <!-- 
+    Let the dispatch filter handler /select?qt=XXX
+    handleSelect=true will use consistent error handling for /select and /update
+    handleSelect=false will use solr1.1 style error formatting
+    -->
+  <requestDispatcher handleSelect="true" >
+    <!--Make sure your system has some authentication before enabling remote streaming!  -->
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+  </requestDispatcher>
+  
+      
   <!-- requestHandler plugins... incoming queries will be dispatched to the
      correct handler based on the qt (query type) param matching the
      name of registered handlers.

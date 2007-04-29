@@ -60,7 +60,10 @@ public class SolrDispatchFilter implements Filter
     try {
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
-      this.handleSelect = "true".equals( config.getInitParameter( "handle-select" ) );
+      
+      // Let this filter take care of /select?xxx format
+      this.handleSelect = 
+        SolrConfig.config.getBool( "requestDispatcher/@handleSelect", false ); 
       
       log.info("user.dir=" + System.getProperty("user.dir"));
       core = SolrCore.getSolrCore();

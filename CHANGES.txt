@@ -151,6 +151,12 @@ New Features
 24. SOLR-212: Added a DirectSolrConnection class.  This lets you access
     solr using the standard request/response formats, but does not require
     an HTTP connection.  It is designed for embedded applications. (ryan)    
+
+25. SOLR-204: The request dispatcher (added in SOLR-104) can handle
+    calls to /select.  This offers uniform error handling for /update and 
+    /select.  To enable this behavior, you must add:
+      <requestDispatcher handleSelect="true" > to your solrconfig.xml
+    See the example solrconfig.xml for details.  (ryan)
     
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 

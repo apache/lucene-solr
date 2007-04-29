@@ -267,7 +267,9 @@
   </requestHandler>
 
   <!-- enable streaming for testing... -->
-  <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestDispatcher handleSelect="true" >
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  </requestDispatcher>
 
   <admin>
     <defaultQuery>solr</defaultQuery>
