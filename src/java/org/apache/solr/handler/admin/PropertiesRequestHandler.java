@@ -18,10 +18,12 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.util.Properties;
 
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SimpleOrderedMap;
 
 /**
@@ -34,21 +36,29 @@ public class PropertiesRequestHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
-    SimpleOrderedMap<String> props = new SimpleOrderedMap<String>();
+    NamedList<String> props = null;
     String name = req.getParams().get( "name" );
     if( name != null ) {
+      props = new SimpleOrderedMap<String>();
       props.add( name, System.getProperty(name) );
     }
     else {
-      java.util.Enumeration e = System.getProperties().propertyNames();
-      while(e.hasMoreElements()) {
-        String prop = (String)e.nextElement();
-        props.add( prop, System.getProperty(prop) );
-      }
+      props = toNamedList( System.getProperties() );
     }
     rsp.add( "system.properties", props );
   }
 
+  public static NamedList<String> toNamedList( Properties p )
+  {
+    NamedList<String> props = new SimpleOrderedMap<String>();
+    java.util.Enumeration e = p.propertyNames();
+    while(e.hasMoreElements()) {
+      String prop = (String)e.nextElement();
+      props.add( prop, p.getProperty(prop) );
+    }
+    return props;
+  }
+  
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
