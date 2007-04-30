@@ -63,8 +63,8 @@ import org.apache.solr.util.SimpleOrderedMap;
  *   http://www.getopt.org/luke/
  * <p>
  * NOTE: the response format is still likely to change.  It should be designed so
- * that it works nicely with an XSLT transformation.  Untill we have a nice
- * XSLT frontend for /admin, the format is still open to change.
+ * that it works nicely with an XSLT transformation.  Until we have a nice
+ * XSLT front end for /admin, the format is still open to change.
  * </p>
  * 
  * For more documentation see:
@@ -98,7 +98,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     Integer docId = params.getInt( DOC_ID );
     if( docId == null && params.get( ID ) != null ) {
-      // Look for somethign with a given solr ID
+      // Look for something with a given solr ID
       SchemaField uniqueKey = schema.getUniqueKeyField();
       String v = uniqueKey.getType().toInternal( params.get(ID) );
       Term t = new Term( uniqueKey.getName(), v );
@@ -140,7 +140,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       rsp.add( "fields", getIndexedFieldsInfo( searcher, fields, numTerms ) ) ;
     }
 
-    // Add some generally helpful informaion
+    // Add some generally helpful information
     NamedList<Object> info = new SimpleOrderedMap<Object>();
     info.add( "key", getFieldFlagsKey() );
     info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." ); 

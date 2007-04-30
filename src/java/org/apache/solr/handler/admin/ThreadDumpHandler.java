@@ -33,8 +33,8 @@ import org.apache.solr.util.SimpleOrderedMap;
  * Copied from "admin/threaddump.jsp"
  * 
  * NOTE: the response format is still likely to change.  It should be designed so
- * that it works nicely with an XSLT transformation.  Untill we have a nice
- * XSLT frontend for /admin, the format is still open to change.
+ * that it works nicely with an XSLT transformation.  Until we have a nice
+ * XSLT front end for /admin, the format is still open to change.
  * 
  * @author ryan
  * @version $Id$
