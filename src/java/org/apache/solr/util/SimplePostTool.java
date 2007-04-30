@@ -44,7 +44,7 @@ public class SimplePostTool {
   public static final String DEFAULT_POST_URL = "http://localhost:8983/solr/update";
   public static final String POST_ENCODING = "UTF-8";
   public static final String VERSION_OF_THIS_TOOL = "1.0";
-  private static final String SOLR_OK_RESPONSE = "<result status=\"0\"></result>";
+  private static final String SOLR_OK_RESPONSE_EXCERPT = "<int name=\"status\">0</int>";
   protected URL solrUrl;
 
   private class PostException extends RuntimeException {
@@ -79,7 +79,7 @@ public class SimplePostTool {
         info("COMMITting Solr index changes..");
         final StringWriter sw = new StringWriter();
         t.commit(sw);
-        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE);
+        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
       }
       info(posted + " files POSTed to " + solrUrl);
     } catch(IOException ioe) {
@@ -98,7 +98,7 @@ public class SimplePostTool {
         info("POSTing file " + srcFile.getName());
         postFile(srcFile, sw);
         filesPosted++;
-        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE);
+        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
       } else {
         warn("Cannot read input file: " + srcFile);
       }
@@ -110,8 +110,8 @@ public class SimplePostTool {
    *  TODO: parse the response and check it XMLwise, here we just check it as an unparsed String  
    */
   static void warnIfNotExpectedResponse(String actual,String expected) {
-    if(!actual.equals(expected)) {
-      warn("Unexpected response from Solr: '" + actual + "', expected '" + expected + "'");
+    if(actual.indexOf(expected) < 0) {
+      warn("Unexpected response from Solr: '" + actual + "' does not contain '" + expected + "'");
     }
   }
   
