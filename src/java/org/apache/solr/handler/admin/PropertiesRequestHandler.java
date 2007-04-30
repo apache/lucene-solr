@@ -36,27 +36,17 @@ public class PropertiesRequestHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
-    NamedList<String> props = null;
+    Object props = null;
     String name = req.getParams().get( "name" );
     if( name != null ) {
-      props = new SimpleOrderedMap<String>();
-      props.add( name, System.getProperty(name) );
+      NamedList<String> p = new SimpleOrderedMap<String>();
+      p.add( name, System.getProperty(name) );
+      props = p;
     }
     else {
-      props = toNamedList( System.getProperties() );
+      props = System.getProperties();
     }
     rsp.add( "system.properties", props );
-  }
-
-  public static NamedList<String> toNamedList( Properties p )
-  {
-    NamedList<String> props = new SimpleOrderedMap<String>();
-    java.util.Enumeration e = p.propertyNames();
-    while(e.hasMoreElements()) {
-      String prop = (String)e.nextElement();
-      props.add( prop, p.getProperty(prop) );
-    }
-    return props;
   }
   
   //////////////////////// SolrInfoMBeans methods //////////////////////
