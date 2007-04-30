@@ -42,7 +42,7 @@ import java.util.Map;
  *      ...
  * </pre>
  * <p>
- * A single instance of any registered TokenizerFactory is created
+ * A single instance of any registered TokenFilterFactory is created
  * via the default constructor and is reused for each FieldType.
  * </p>
  * @author yonik

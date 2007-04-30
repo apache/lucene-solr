@@ -203,7 +203,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
                   tiebreaker, queryFields);
       up.setPhraseSlop(qslop);
       
-      /* for parsing slopy phrases using DisjunctionMaxQueries */
+      /* for parsing sloppy phrases using DisjunctionMaxQueries */
       U.DisjunctionMaxQueryParser pp =
         new U.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
       pp.addAlias(IMPOSSIBLE_FIELD_NAME,
