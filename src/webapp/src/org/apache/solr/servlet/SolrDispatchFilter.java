@@ -139,6 +139,9 @@ public class SolrDispatchFilter implements Filter
           if( "/select".equals( path ) || "/select/".equals( path ) ) {
             solrReq = parsers.parse( path, req );
             String qt = solrReq.getParams().get( SolrParams.QT );
+            if( qt != null && qt.startsWith( "/" ) ) {
+              throw new SolrException( 400, "Invalid query type.  Do not use /select to access: "+qt);
+            }
             handler = core.getRequestHandler( qt );
             if( handler == null ) {
               throw new SolrException( 400, "unknown handler: "+qt);
