@@ -47,7 +47,8 @@ public abstract class ContentStreamBase implements ContentStream
   /**
    * Construct a <code>ContentStream</code> from a <code>URL</code>
    * 
-   * This uses a {@Link URLConnection} to get the content stream
+   * This uses a <code>URLConnection</code> to get the content stream
+   * @see  URLConnection
    */
   public static class URLStream extends ContentStreamBase
   {
