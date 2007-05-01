@@ -126,7 +126,7 @@ public class DirectSolrConnection
    * For example:
    * 
    * String json = solr.request( "/select?qt=dismax&wt=json&q=...", null );
-   * String xml = solr.request( "/update", "<add><doc><field ..." );
+   * String xml = solr.request( "/update", "&lt;add><doc><field ..." );
    * 
    */
   public String request( String pathAndParams, String body ) throws Exception
