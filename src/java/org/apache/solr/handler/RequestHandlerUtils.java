@@ -63,12 +63,14 @@ public class RequestHandlerUtils
       cmd.waitFlush    = params.getBool( UpdateParams.WAIT_FLUSH,    cmd.waitFlush    );
       cmd.waitSearcher = params.getBool( UpdateParams.WAIT_SEARCHER, cmd.waitSearcher );
       req.getCore().getUpdateHandler().commit( cmd );
-      if( optimize ) {
-        rsp.add( "optimize", true );
-      }
-      else {
-        rsp.add( "commit", true );
-      }
+      
+      // Lets wait till after solr1.2 to define consistent output format
+      //if( optimize ) {
+      //  rsp.add( "optimize", true );
+      //}
+      //else {
+      //  rsp.add( "commit", true );
+      //}
       return true;
     }
     return false;
