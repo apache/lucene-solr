@@ -86,6 +86,20 @@ public class DirectSolrConnection
    */
   public DirectSolrConnection( String instanceDir, String dataDir, String loggingPath )
   {
+    // If a loggingPath is specified, try using that (this needs to happen first)
+    if( loggingPath != null ) {
+      File loggingConfig = new File( loggingPath );
+      if( !loggingConfig.exists() && instanceDir != null ) {
+        loggingConfig = new File( new File(instanceDir), loggingPath  );
+      }
+      if( loggingConfig.exists() ) {
+        System.setProperty("java.util.logging.config.file", loggingConfig.getAbsolutePath() ); 
+      }
+      else {
+        throw new SolrException( 500, "can not find logging file: "+loggingConfig );
+      }
+    }
+    
     // Set the instance directory
     if( instanceDir != null ) {
       if( Config.isInstanceDirInitialized() ) {
@@ -95,20 +109,6 @@ public class DirectSolrConnection
         }
       }
       Config.setInstanceDir( instanceDir );
-    }
-    
-    // If a loggingPath is specified, try using that
-    if( loggingPath != null ) {
-      File loggingConfig = new File( loggingPath );
-      if( !loggingConfig.exists() ) {
-        loggingConfig = new File( new File(Config.getInstanceDir()), loggingPath  );
-      }
-      if( loggingConfig.exists() ) {
-        System.setProperty("java.util.logging.config.file", loggingConfig.getAbsolutePath() ); 
-      }
-      else {
-        throw new SolrException( 500, "can not find logging file: "+loggingConfig );
-      }
     }
     
     // If the Data directory is specified, initalize SolrCore directly
