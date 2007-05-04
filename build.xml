@@ -200,6 +200,7 @@
       destdir="${build.javadoc}"
       author="true"
       version="true"
+      failonerror="true"
       use="true"
       encoding="utf8"
       access="${javadoc.access}"
