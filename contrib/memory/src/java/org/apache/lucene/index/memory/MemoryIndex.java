@@ -911,6 +911,11 @@ public class MemoryIndex {
           throw new UnsupportedOperationException();
         }
 
+        public boolean isPayloadAvailable() {
+          // unsuported
+          return false;
+        }
+
       };
     }
   
