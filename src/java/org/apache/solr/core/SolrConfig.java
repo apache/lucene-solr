@@ -33,7 +33,7 @@ import java.io.InputStream;
 
 
 /**
- * Provides a static refrence to a Config object modeling the main
+ * Provides a static reference to a Config object modeling the main
  * configuration data for a a Solr instance -- typically found in
  * "solrconfig.xml".
  *
@@ -55,7 +55,7 @@ public class SolrConfig {
   public static final Collection<Throwable> severeErrors = new HashSet<Throwable>();
 
   /**
-   * (Re)loads the static configation information from the specified file.
+   * (Re)loads the static configuration information from the specified file.
    *
    * <p>
    * This method is called implicitly on ClassLoad, but it may be
