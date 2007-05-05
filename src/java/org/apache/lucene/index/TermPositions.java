@@ -83,8 +83,11 @@ public interface TermPositions
     byte[] getPayload(byte[] data, int offset) throws IOException;
 
   /**
-   * Can we load the payload at this position?  Payloads can only be loaded once per call
-   * to {@link #nextPosition()}
+   * Checks if a payload can be loaded at this position.
+   * <p>
+   * Payloads can only be loaded once per call to 
+   * {@link #nextPosition()}.
+   * 
    * @return true if there is a payload available at this position that can be loaded
    *
    * * <b>

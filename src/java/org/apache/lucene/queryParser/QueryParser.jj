@@ -243,9 +243,14 @@ public class QueryParser {
 
 
   /**
-   * Set to <code>true</code> to allow <code>*</code> and <code>?</code> as the first character 
-   * of a PrefixQuery and WildcardQuery. Note that this can produce very slow
-   * queries on big indexes. Default: false.
+   * Set to <code>true</code> to allow leading wildcard characters.
+   * <p>
+   * When set, <code>*</code> or <code>?</code> are allowed as 
+   * the first character of a PrefixQuery and WildcardQuery.
+   * Note that this can produce very slow
+   * queries on big indexes. 
+   * <p>
+   * Default: false.
    */
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     this.allowLeadingWildcard = allowLeadingWildcard;

@@ -42,7 +42,6 @@ public class StandardOptions implements BenchmarkOptions
 
     /**
      * How often to print out log messages when in benchmark loops
-     * @return
      */
     public int getLogStep()
     {
@@ -56,7 +55,6 @@ public class StandardOptions implements BenchmarkOptions
 
     /**
      * The number of times to run the benchmark
-     * @return
      */
     public int getRunCount()
     {
@@ -68,10 +66,6 @@ public class StandardOptions implements BenchmarkOptions
         this.runCount = runCount;
     }
 
-    /**
-     *
-     * @return
-     */
     public int getScaleUp()
     {
         return scaleUp;

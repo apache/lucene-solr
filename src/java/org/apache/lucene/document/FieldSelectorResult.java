@@ -68,7 +68,7 @@ public final class FieldSelectorResult implements Serializable {
       */
   public transient static final FieldSelectorResult SIZE = new FieldSelectorResult(5);
 
-  /** Expert: Like {@link #SIZE} but immediately break from the field loading loop, i.e. stop loading further fields, after the size is loaded */         
+  /** Expert: Like {@link #SIZE} but immediately break from the field loading loop, i.e., stop loading further fields, after the size is loaded */         
   public transient static final FieldSelectorResult SIZE_AND_BREAK = new FieldSelectorResult(6);
 
 

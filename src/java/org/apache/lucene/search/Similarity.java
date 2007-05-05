@@ -284,7 +284,7 @@ import java.util.Iterator;
  * </ol>
  *
  * @see #setDefault(Similarity)
- * @see IndexWriter#setSimilarity(Similarity)
+ * @see org.apache.lucene.index.IndexWriter#setSimilarity(Similarity)
  * @see Searcher#setSimilarity(Similarity)
  */
 public abstract class Similarity implements Serializable {
@@ -295,7 +295,7 @@ public abstract class Similarity implements Serializable {
    * code.
    *
    * @see Searcher#setSimilarity(Similarity)
-   * @see IndexWriter#setSimilarity(Similarity)
+   * @see org.apache.lucene.index.IndexWriter#setSimilarity(Similarity)
    */
   public static void setDefault(Similarity similarity) {
     Similarity.defaultImpl = similarity;
@@ -307,7 +307,7 @@ public abstract class Similarity implements Serializable {
    * <p>This is initially an instance of {@link DefaultSimilarity}.
    *
    * @see Searcher#setSimilarity(Similarity)
-   * @see IndexWriter#setSimilarity(Similarity)
+   * @see org.apache.lucene.index.IndexWriter#setSimilarity(Similarity)
    */
   public static Similarity getDefault() {
     return Similarity.defaultImpl;
@@ -344,9 +344,11 @@ public abstract class Similarity implements Serializable {
    * method usually return smaller values when <code>numTokens</code> is large,
    * and larger values when <code>numTokens</code> is small.
    *
-   * <p>That these values are computed under {@link
-   * IndexWriter#addDocument(org.apache.lucene.document.Document)} and stored then using
-   * {@link #encodeNorm(float)}.  Thus they have limited precision, and documents
+   * <p>That these values are computed under 
+   * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
+   * and stored then using
+   * {@link #encodeNorm(float)}.  
+   * Thus they have limited precision, and documents
    * must be re-indexed if this method is altered.
    *
    * @param fieldName the name of the field
@@ -382,7 +384,7 @@ public abstract class Similarity implements Serializable {
    * value.
    *
    * @see org.apache.lucene.document.Field#setBoost(float)
-   * @see SmallFloat
+   * @see org.apache.lucene.util.SmallFloat
    */
   public static byte encodeNorm(float f) {
     return SmallFloat.floatToByte315(f);
@@ -445,7 +447,7 @@ public abstract class Similarity implements Serializable {
    * </pre>
    *
    * Note that {@link Searcher#maxDoc()} is used instead of
-   * {@link IndexReader#numDocs()} because it is proportional to
+   * {@link org.apache.lucene.index.IndexReader#numDocs()} because it is proportional to
    * {@link Searcher#docFreq(Term)} , i.e., when one is inaccurate,
    * so is the other, and in the same direction.
    *

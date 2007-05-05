@@ -25,8 +25,10 @@ import org.apache.lucene.store.FSDirectory;
 
 /**
  * Given a directory and a list of fields, updates the fieldNorms in place for every document.
+ * 
  * If Similarity class is specified, uses its lengthNorm method to set norms.
- * If -n command line argument is used, removed field norms, as if {@link Field.Index.NO_NORMS} was used.
+ * If -n command line argument is used, removed field norms, as if 
+ * {@link org.apache.lucene.document.Field.Index}.NO_NORMS was used.
  *
  * <p>
  * NOTE: This will overwrite any length normalization or field/document boosts.
@@ -36,9 +38,9 @@ import org.apache.lucene.store.FSDirectory;
  * @author Otis Gospodnetic
  */
 public class FieldNormModifier {
-  
+
   /**
-   * Command Line Execution method
+   * Command Line Execution method.
    *
    * <pre>
    * Usage: FieldNormModifier /path/index <package.SimilarityClassName | -n> field1 field2 ...

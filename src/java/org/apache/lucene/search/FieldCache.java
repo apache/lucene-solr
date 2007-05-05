@@ -54,16 +54,15 @@ public interface FieldCache {
   }
 
   /** Interface to parse ints from document fields.
-   * @see #getInts(IndexReader, String, IntParser)
+   * @see FieldCache#getInts(IndexReader, String, FieldCache.IntParser)
    */
   public interface IntParser {
     /** Return an integer representation of this field's value. */
     public int parseInt(String string);
   }
 
-
   /** Interface to parse floats from document fields.
-   * @see #getFloats(IndexReader, String, FloatParser)
+   * @see FieldCache#getFloats(IndexReader, String, FieldCache.FloatParser)
    */
   public interface FloatParser {
     /** Return an float representation of this field's value. */
@@ -72,7 +71,6 @@ public interface FieldCache {
 
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
-
 
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as integers and returns an array
@@ -175,4 +173,5 @@ public interface FieldCache {
    */
   public Comparable[] getCustom (IndexReader reader, String field, SortComparator comparator)
   throws IOException;
+  
 }

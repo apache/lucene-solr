@@ -123,7 +123,7 @@ public class TestRunData {
     return v;
   }
 
-  /** Get memory usage stats. for a given data type. */
+  /** Get memory usage stats for a given data type. */
   public MemUsage getMemUsage(String label) {
     Vector v = (Vector) data.get(label);
       if (v == null)

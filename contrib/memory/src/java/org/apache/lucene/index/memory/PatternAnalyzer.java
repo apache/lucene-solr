@@ -65,7 +65,7 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public class PatternAnalyzer extends Analyzer {
   
-  /** <code>"\\W+"</code>; Divides text at non-letters (!Character.isLetter(c)) */
+  /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
   public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");
   
   /** <code>"\\s+"</code>; Divides text at whitespaces (Character.isWhitespace(c)) */

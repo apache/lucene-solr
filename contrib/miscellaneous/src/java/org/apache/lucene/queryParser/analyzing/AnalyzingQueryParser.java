@@ -29,8 +29,8 @@ import org.apache.lucene.search.Query;
 
 /**
  * Overrides Lucene's default QueryParser so that Fuzzy-, Prefix-, Range-, and WildcardQuerys
- * are also passed through the given analyzer, but <code>?</code> and <code>*</code> don't get 
- * removed from the search terms.
+ * are also passed through the given analyzer, but wild card characters (like <code>*</code>) 
+ * don't get removed from the search terms.
  * 
  * <p><b>Warning:</b> This class should only be used with analyzers that do not use stopwords
  * or that add tokens. Also, several stemming analyzers are inappropriate: for example, GermanAnalyzer 
@@ -55,8 +55,11 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
   /**
    * Called when parser
    * parses an input term token that contains one or more wildcard
-   * characters (? and *), but is not a prefix term token (one
-   * that has just a single * character at the end)
+   * characters (like <code>*</code>), but is not a prefix term token (one
+   * that has just a single * character at the end).
+   * <p>
+   * Example: will be called for <code>H?user</code> or for <code>H*user</code> 
+   * but not for <code>*user</code>.
    * <p>
    * Depending on analyzer and settings, a wildcard term may (most probably will)
    * be lower-cased automatically. It <b>will</b> go through the default Analyzer.

@@ -17,6 +17,38 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
+  <!-- Javadoc classpath -->
+  <path id="javadoc.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${ant.home}/lib/ant.jar"/>
+    <pathelement location="contrib/lucli/lib/jline.jar"/>
+    <pathelement location="contrib/regex/lib/jakarta-regexp-1.4.jar"/>
+    <pathelement location="contrib/benchmark/commons-beanutils-1.7.0.jar"/>
+    <pathelement location="contrib/benchmark/lib/commons-collections-3.1.jar"/>
+    <pathelement location="contrib/benchmark/lib/commons-digester-1.7.jar"/>
+    <pathelement location="contrib/benchmark/lib/commons-logging-1.0.4.jar"/>
+    <pathelement location="contrib/ant/lib/Tidy.jar"/>
+    <!-- gdata jars only used with jdk 5 but include them even for lower jdk -->
+    <pathelement location="contrib/gdata-server/lib/commons-beanutils.jar"/>
+    <pathelement location="contrib/gdata-server/lib/commons-collections-3.2.jar"/>
+    <pathelement location="contrib/gdata-server/lib/commons-digester-1.7.jar"/>
+    <pathelement location="contrib/gdata-server/lib/commons-logging-1.1.jar"/>
+    <pathelement location="contrib/gdata-server/lib/gdata-client-1.0.jar"/>
+    <pathelement location="contrib/gdata-server/lib/log4j-1.2.13.jar"/>
+    <pathelement location="contrib/gdata-server/lib/nekohtml.jar"/>
+    <pathelement location="contrib/gdata-server/lib/servlet-api.jar"/>
+    <pathelement location="contrib/gdata-server/lib/xercesImpl.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/easymock-1.2_Java1.5.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/hessian-3.0.20.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/hivemind-1.1.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/hivemind-jmx-1.1.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/hivemind-lib-1.1.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/javassist-3.0.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/oro-2.0.6.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/stax-1.1.2-dev.jar"/>
+    <pathelement location="contrib/gdata-server/ext-lib/stax-api-1.0.1.jar"/>
+  </path>
+
   <path id="demo.classpath">
     <path refid="classpath"/>
     <pathelement location="${build.dir}/classes/demo"/>
@@ -366,7 +398,10 @@
         <include name="**" if="javadoc-1-5-contrib" />
       </dirset>
 
+      <record name="log_javadoc.txt" action="start" append="no"/>
+
       <javadoc
+          failonerror="true"
           overview="src/java/overview.html"
           packagenames="org.apache.lucene.*"
           destdir="@{destdir}"
@@ -413,7 +448,7 @@
 
         <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
         <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
-          <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
+        <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
         <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
         <group title="contrib: GData Server (Java1.5)" packages="org.apache.lucene.gdata.*"/>
         <group title="contrib: Lucli" packages="lucli*"/>
@@ -429,7 +464,33 @@
         <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
 
 
+        <classpath refid="javadoc.classpath"/>
+
       </javadoc>
+
+      <record name="log_javadoc.txt" action="stop"/>
+
+      <delete>
+        <fileset file="log_javadoc.txt">
+          <not>
+           <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*[\s]*warning"/>
+          </not>
+        </fileset>
+      </delete>
+
+      <fail message="Javadocs warnings were found!">
+        <condition>
+          <and>
+            <available file="log_javadoc.txt"/>
+            <not>  
+              <!-- TODO: once gdata javadocs are fixed, remove this part of the 'and' (and the 'and' itself...) -->
+              <isset property="javadoc-1-5-contrib"/>  
+            </not>
+          </and>
+        </condition>
+      </fail>
+
+
    </sequential>
   </macrodef>
 

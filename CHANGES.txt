@@ -169,6 +169,12 @@ Documentation:
     java.util.Comparator.compare(): Any integer is allowed to be returned
     instead of only -1/0/1.
     (Paul Cowan via Michael Busch)
+ 
+ 3. LUCENE-875: Solved javadoc warnings & errors under jdk1.4. 
+    Solved javadoc errors under jdk5 (jars in path for gdata).
+    Set javadoc target to fail if there are errors or warnings.
+    For now allow warnings under jdk5 (until gdata javadocs are fixed).
+    (Doron Cohen)
 
 ======================= Release 2.1.0 2007-02-14 =======================
 

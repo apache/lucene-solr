@@ -136,8 +136,8 @@ public class Token implements Cloneable {
   public final String type() { return type; }
 
   /** 
-   * Sets this Token's payload.<br>
-   * <br>
+   * Sets this Token's payload.
+   * <p>
    * <b>
    * Warning: The status of the Payloads feature is experimental. The APIs
    * introduced here might change in the future and will not be supported anymore
@@ -151,8 +151,8 @@ public class Token implements Cloneable {
   }
   
   /** 
-   * Returns this Token's payload.<br> 
-   * <br>
+   * Returns this Token's payload. 
+   * <p>
    * <b>
    * Warning: The status of the Payloads feature is experimental. The APIs
    * introduced here might change in the future and will not be supported anymore

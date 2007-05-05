@@ -25,7 +25,7 @@ import java.io.File;
  *  Allows a class to act as a Lucene document handler
  *
  *@author     Erik Hatcher
- *@created    October 27, 2001
+ *@since    October 27, 2001
  */
 public interface DocumentHandler {
 

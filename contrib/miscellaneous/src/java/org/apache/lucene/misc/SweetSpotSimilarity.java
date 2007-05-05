@@ -118,10 +118,10 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   }
     
   /**
-   * Implimented as:
+   * Implemented as:
    * <code>
    * 1/sqrt( steepness * (abs(x-min) + abs(x-max) - (max-min)) + 1 )
-   * </code>
+   * </code>.
    *
    * <p>
    * This degrades to <code>1/sqrt(x)</code> when min and max are both 1 and
@@ -173,9 +173,9 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   }
   
   /**
-   * Implimented as:
+   * Implemented as:
    * <code>
-   *  (x &lt;= min) ? base : sqrt(x+(base**2)-min)
+   *  (x &lt;= min) &#63; base : sqrt(x+(base**2)-min)
    * </code>
    * ...but with a special case check for 0.
    * <p>

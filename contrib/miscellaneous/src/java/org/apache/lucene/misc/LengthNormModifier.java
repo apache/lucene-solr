@@ -42,7 +42,7 @@ import java.util.Date;
 public class LengthNormModifier {
   
   /**
-   * Command Line Execution method
+   * Command Line Execution method.
    *
    * <pre>
    * Usage: LengthNormModifier /path/index package.SimilarityClassName field1 field2 ...

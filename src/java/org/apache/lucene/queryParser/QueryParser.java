@@ -219,9 +219,14 @@ public class QueryParser implements QueryParserConstants {
 
 
   /**
-   * Set to <code>true</code> to allow <code>*</code> and <code>?</code> as the first character 
-   * of a PrefixQuery and WildcardQuery. Note that this can produce very slow
-   * queries on big indexes. Default: false.
+   * Set to <code>true</code> to allow leading wildcard characters.
+   * <p>
+   * When set, <code>*</code> or <code>?</code> are allowed as 
+   * the first character of a PrefixQuery and WildcardQuery.
+   * Note that this can produce very slow
+   * queries on big indexes. 
+   * <p>
+   * Default: false.
    */
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     this.allowLeadingWildcard = allowLeadingWildcard;
@@ -1253,6 +1258,16 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
+  final private boolean jj_3_1() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_2()) {
+    jj_scanpos = xsp;
+    if (jj_3R_3()) return true;
+    }
+    return false;
+  }
+
   final private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1262,16 +1277,6 @@ public class QueryParser implements QueryParserConstants {
   final private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
-  final private boolean jj_3_1() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_2()) {
-    jj_scanpos = xsp;
-    if (jj_3R_3()) return true;
-    }
     return false;
   }
 
