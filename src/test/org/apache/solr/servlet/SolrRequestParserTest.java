@@ -17,12 +17,18 @@
 
 package org.apache.solr.servlet;
 
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.core.SolrConfig;
@@ -125,6 +131,37 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     for( String[] tst : teststr ) {
       MultiMapSolrParams params = SolrRequestParsers.parseQueryString( "val="+tst[1] );
       assertEquals( tst[0], params.get( "val" ) );
+    }
+  }
+  
+  public void testStandardParseParamsAndFillStreams() throws Exception
+  {
+    ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
+    Map<String,String[]> params = new HashMap<String, String[]>();
+    params.put( "q", new String[] { "hello" } );
+    
+    // Set up the expected behavior
+    String[] ct = new String[] {
+        "application/x-www-form-urlencoded",
+        "Application/x-www-form-urlencoded",
+        "application/x-www-form-urlencoded; charset=utf-8",
+        "application/x-www-form-urlencoded;"
+    };
+    
+    for( String contentType : ct ) {
+      HttpServletRequest request = createMock(HttpServletRequest.class);
+      expect(request.getMethod()).andReturn("POST").anyTimes();
+      expect(request.getContentType()).andReturn( contentType ).anyTimes();
+      expect(request.getParameterMap()).andReturn(params).anyTimes();
+      replay(request);
+      
+      MultipartRequestParser multipart = new MultipartRequestParser( 1000000 );
+      RawRequestParser raw = new RawRequestParser();
+      StandardRequestParser standard = new StandardRequestParser( multipart, raw );
+      
+      SolrParams p = standard.parseParamsAndFillStreams( request, streams );
+      
+      assertEquals( "contentType: "+contentType, "hello", p.get("q") );
     }
   }
 }

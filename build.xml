@@ -380,6 +380,7 @@
          manifest="${dest}/META-INF/MANIFEST.MF">
        <lib dir="${lib}">
          <exclude name="servlet-api*.jar" />
+         <exclude name="easymock.jar" />
        </lib>
        <lib dir="${dist}">
          <include name="${fullnamever}.jar" />
@@ -478,4 +479,5 @@
   </target>
 
 </project>
+
 

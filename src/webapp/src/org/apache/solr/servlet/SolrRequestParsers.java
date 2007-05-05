@@ -367,6 +367,10 @@ class StandardRequestParser implements SolrRequestParser
     if( "POST".equals( method ) ) {
       String contentType = req.getContentType();
       if( contentType != null ) {
+        int idx = contentType.indexOf( ';' );
+        if( idx > 0 ) { // remove the charset definition "; charset=utf-8"
+          contentType = contentType.substring( 0, idx );
+        }
         if( "application/x-www-form-urlencoded".equals( contentType.toLowerCase() ) ) {
           return new ServletSolrParams(req); // just get the params from parameterMap
         }
@@ -379,6 +383,7 @@ class StandardRequestParser implements SolrRequestParser
     throw new SolrException( 400, "Unsuported method: "+method );
   }
 }
+
 
 
 
