@@ -20,3 +20,6 @@ This product includes software developed by Dr Martin Porter,
 Copyright 2001 and and Richard Boulton (for the Java developments),
 Copyright 2002.
 (generated snowball stemmer code in the lucene-snowball jar)
+
+This product includes tests written with EasyMock Copyright 2001-2007
+Tammo Freese (http://www.easymock.org/)
