@@ -60,7 +60,7 @@ final class RequestHandlers {
    */
   private static String normalize( String p )
   {
-    if( p != null && p.endsWith( "/" ) )
+    if( p != null && p.endsWith( "/" ) && p.length() > 1 )
       return p.substring( 0, p.length()-1 );
     
     return p;
