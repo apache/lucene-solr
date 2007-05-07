@@ -134,7 +134,10 @@ public class SolrDispatchFilter implements Filter
           path = path.substring( 0, idx );
         }
         
-        SolrRequestHandler handler = core.getRequestHandler( path );
+        SolrRequestHandler handler = null;
+        if( path.length() > 1 ) { // don't match "" or "/" as valid path
+          handler = core.getRequestHandler( path );
+        }
         if( handler == null && handleSelect ) {
           if( "/select".equals( path ) || "/select/".equals( path ) ) {
             solrReq = parsers.parse( path, req );
