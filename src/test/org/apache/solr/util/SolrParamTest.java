@@ -82,7 +82,8 @@ public class SolrParamTest extends TestCase
     assertEquals( pstr   , params.getFieldParam( "fl", "str"  ) );
     assertEquals( pbool  , params.getFieldBool(  "fl", "bool" ) );
     assertEquals( pint   , params.getFieldInt(   "fl", "int"  ) );
-
+    assertEquals( pfloat , params.getFieldFloat( "fl", "float" ) );
+    
     // Test field defaulting (fall through to non-field-specific value)
     assertEquals( pint   , params.getFieldInt( "fff",  "int"      ) );
     
@@ -112,6 +113,8 @@ public class SolrParamTest extends TestCase
     assertEquals( pfloat.floatValue()   , params.getFloat(     "xxx", pfloat  ) );
     assertEquals( pbool.booleanValue()  , params.getFieldBool( "xxx", "bool", pbool ) );
     assertEquals( pint.intValue()       , params.getFieldInt(  "xxx", "int", pint  ) );
+    assertEquals( pfloat.floatValue()   , params.getFieldFloat("xxx", "float", pfloat  ) );
+    assertEquals( pstr                  , params.getFieldParam("xxx", "str", pstr  ) );
 
     // Required params testing uses decorator
     final SolrParams required = params.required();

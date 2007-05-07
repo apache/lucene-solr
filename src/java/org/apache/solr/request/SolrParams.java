@@ -196,6 +196,14 @@ public abstract class SolrParams {
     return val!=null ? val : get(param);
   }
 
+  /** returns the String value of the field parameter, "f.field.param", or
+   *  the value for "param" if that is not set.  If that is not set, def
+   */
+  public String getFieldParam(String field, String param, String def) {
+    String val = get(fpname(field,param));
+    return val!=null ? val : get(param, def);
+  }
+  
   /** returns the String values of the field parameter, "f.field.param", or
    *  the values for "param" if that is not set.
    */
@@ -299,6 +307,29 @@ public abstract class SolrParams {
     }
   }
 
+  /** Returns the float value of the field param. */
+  public Float getFieldFloat(String field, String param) {
+    String val = getFieldParam(field, param);
+    try {
+      return val==null ? null : Float.valueOf(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
+  }
+
+  /** Returns the float value of the field param,
+  or the value for param, or def if neither is set. */
+  public float getFieldFloat(String field, String param, float def) {
+    String val = getFieldParam(field, param);
+    try {
+      return val==null ? def : Float.parseFloat(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( 400, ex.getMessage(), ex );
+    }
+  }
+  
   /** how to transform a String into a boolean... more flexible than
    * Boolean.parseBoolean() to enable easier integration with html forms.
    */
@@ -362,6 +393,7 @@ public abstract class SolrParams {
     return result;
   }
 }
+
 
 
 

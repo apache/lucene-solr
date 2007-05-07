@@ -106,4 +106,14 @@ public class RequiredSolrParams extends SolrParams {
   public boolean getFieldBool(String field, String param, boolean def) {
     return params.getFieldBool(field, param, def);
   }
+
+  @Override
+  public float getFieldFloat(String field, String param, float def) {
+    return params.getFieldFloat(field, param, def);
+  }
+
+  @Override
+  public String getFieldParam(String field, String param, String def) {
+    return params.getFieldParam(field, param, def);
+  }
 }
