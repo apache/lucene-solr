@@ -20,7 +20,6 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -225,16 +224,27 @@ class RawRequestParser implements SolrRequestParser
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
-    streams.add( new ContentStream() {
+    // The javadocs for HttpServletRequest are clear that req.getReader() should take
+    // care of any character encoding issues.  BUT, there are problems while running on
+    // some servlet containers: including Tomcat 5 and resin.
+    //
+    // Rather than return req.getReader(), this uses the default ContentStreamBase method
+    // that checks for charset definitions in the ContentType.
+    
+    streams.add( new ContentStreamBase() {
+      @Override
       public String getContentType() {
         return req.getContentType();
       }
+      @Override
       public String getName() {
-        return null; // Is there any meaningfull name?
+        return null; // Is there any meaningful name?
       }
+      @Override
       public String getSourceInfo() {
-        return null; // Is there any meaningfull name?
+        return null; // Is there any meaningful source?
       }
+      @Override
       public Long getSize() { 
         String v = req.getHeader( "Content-Length" );
         if( v != null ) {
@@ -244,9 +254,6 @@ class RawRequestParser implements SolrRequestParser
       }
       public InputStream getStream() throws IOException {
         return req.getInputStream();
-      }
-      public Reader getReader() throws IOException {
-        return req.getReader();
       }
     });
     return SolrRequestParsers.parseQueryString( req.getQueryString() );

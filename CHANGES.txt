@@ -271,6 +271,13 @@ Bug Fixes
 13. Changed the SOLR-104 RequestDispatcher so that /select?qt=xxx can not 
     access handlers that start with "/".  This makes path based authentication
     possible for path based request handlers.  (ryan)
+
+14. SOLR-214: Some servlet containers (including Tomcat and Resin) do not
+    obey the specified charset.  Rather then letting the the container handle 
+    it solr now uses the charset from the header contentType to decode posted
+    content.  Using the contentType: "text/xml; charset=utf-8" will force
+    utf-8 encoding.  If you do not specify a contentType, it will use the 
+    platform default.  (Koji Sekiguchi via ryan)
  
 Other Changes
  1. Updated to Lucene 2.1
