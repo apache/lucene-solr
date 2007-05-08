@@ -20,6 +20,8 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -231,20 +233,16 @@ class RawRequestParser implements SolrRequestParser
     // Rather than return req.getReader(), this uses the default ContentStreamBase method
     // that checks for charset definitions in the ContentType.
     
-    streams.add( new ContentStreamBase() {
-      @Override
+    streams.add( new ContentStream() {
       public String getContentType() {
         return req.getContentType();
       }
-      @Override
       public String getName() {
         return null; // Is there any meaningful name?
       }
-      @Override
       public String getSourceInfo() {
         return null; // Is there any meaningful source?
       }
-      @Override
       public Long getSize() { 
         String v = req.getHeader( "Content-Length" );
         if( v != null ) {
@@ -254,6 +252,12 @@ class RawRequestParser implements SolrRequestParser
       }
       public InputStream getStream() throws IOException {
         return req.getInputStream();
+      }
+      public Reader getReader() throws IOException {
+        String charset = ContentStreamBase.getCharsetFromContentType( req.getContentType() );
+        return charset == null 
+          ? new InputStreamReader( getStream() )
+          : new InputStreamReader( getStream(), charset );
       }
     });
     return SolrRequestParsers.parseQueryString( req.getQueryString() );
