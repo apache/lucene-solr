@@ -215,6 +215,11 @@
       </analyzer>
     </fieldType>
 
+    <!-- since fields of this type are by default not stored or indexed, any data added to 
+         them will be ignored outright 
+     --> 
+    <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
+
  </types>
 
 
@@ -289,6 +294,13 @@
    <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+
+   <!-- uncomment the following to ignore any fields that don't already match an existing 
+        field name or dynamic field, rather than reporting them as an error. 
+        alternately, change the type="ignored" to some other type e.g. "text" if you want 
+        unknown fields indexed and/or stored by default --> 
+   <!--dynamicField name="*" type="ignored" /-->
+   
  </fields>
 
  <!-- Field to use to determine and enforce document uniqueness. 

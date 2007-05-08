@@ -406,7 +406,8 @@
    <dynamicField name="*aa"  type="string"  indexed="true" stored="true"/>
    <dynamicField name="*aaa" type="integer" indexed="false" stored="true"/>
 
-
+   <!-- ignored becuase not stored or indexed -->
+   <dynamicField name="*_ignored" type="text" indexed="false" stored="false"/>
 
  </fields>
 

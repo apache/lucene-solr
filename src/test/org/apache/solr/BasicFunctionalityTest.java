@@ -55,6 +55,21 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     super.tearDown();
 
   }
+  
+  public void testIgnoredFields() throws Exception {
+    lrf.args.put("version","2.0");
+    assertU("adding doc with ignored field",
+            adoc("id", "42", "foo_ignored", "blah blah"));
+    assertU("commit",
+            commit());
+    
+    // :TODO: the behavior of querying on an unindexed field should be better specified in the future.
+    assertQ("query with ignored field",
+            req("bar_ignored:yo id:42")
+            ,"//*[@numFound='1']"
+            ,"//int[@name='id'][.='42']"
+            );
+  }
 
   public void testSomeStuff() throws Exception {
     lrf.args.put("version","2.0");

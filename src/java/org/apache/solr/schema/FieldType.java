@@ -173,6 +173,11 @@ public abstract class FieldType extends FieldProperties {
       throw new SolrException(500, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
     }
     if (val==null) return null;
+    if (!field.indexed() && !field.stored()) {
+        log.finest("Ignoring unindexed/unstored field: " + field);
+        return null;
+    }
+
 
     Field f = new Field(field.getName(),
                         val,

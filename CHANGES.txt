@@ -167,7 +167,13 @@ New Features
     descriptive error message.  By default, the uniqueKey field is
     a required field.  This can be disabled by setting required=false
     in schema.xml.  (Greg Ludington via ryan)
-    
+
+28. SOLR-217: Fields configured in the schema to be neither indexed or
+    stored will now be quietly ignored by Solr when Documents are added.
+    The example schema has a comment explaining how this can be used to
+    ignore any "unknown" fields.
+    (Will Johnson via hossman)
+        
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
