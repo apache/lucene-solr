@@ -304,9 +304,8 @@ public class QueryParsing {
       if (needParens) {
         out.append('(');
       }
-      BooleanClause[] clauses = q.getClauses();
       boolean first=true;
-      for (BooleanClause c : clauses) {
+      for (BooleanClause c : (List<BooleanClause>)q.clauses()) {
         if (!first) {
           out.append(' ');
         } else {

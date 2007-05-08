@@ -281,7 +281,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                                       h.getCore().getSchema());
     assertTrue("not boolean?", q instanceof BooleanQuery);
     assertEquals("unexpected number of stemmed synonym tokens",
-                 2, ((BooleanQuery) q).getClauses().length);
+                 2, ((BooleanQuery) q).clauses().size());
   }
 
   

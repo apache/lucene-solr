@@ -24,6 +24,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.*;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 
@@ -64,9 +65,7 @@ class LuceneQueryOptimizer {
     BooleanQuery query = new BooleanQuery();
     BooleanQuery filterQuery = null;
 
-    BooleanClause[] clauses = original.getClauses();
-    for (int i = 0; i < clauses.length; i++) {
-      BooleanClause c = clauses[i];
+    for (BooleanClause c : (List<BooleanClause>)original.clauses()) {
 
 /***
 System.out.println("required="+c.required);

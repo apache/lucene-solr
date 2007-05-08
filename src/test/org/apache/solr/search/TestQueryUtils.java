@@ -8,6 +8,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.index.Term;
 import org.apache.solr.util.AbstractSolrTestCase;
 
+import java.util.List;
+
 /**
  * @author yonik
  * @version $Id$
@@ -27,9 +29,9 @@ public class TestQueryUtils extends AbstractSolrTestCase {
   public void positive(Query q) {
     assertFalse(QueryUtils.isNegative(q));
     assertTrue(QueryUtils.getAbs(q)==q);
-    BooleanClause[] clauses = (q instanceof BooleanQuery) ? ((BooleanQuery)q).getClauses() : null;
+    List<BooleanClause> clauses = (q instanceof BooleanQuery) ? ((BooleanQuery)q).clauses() : null;
     if (clauses != null) {
-      if (clauses.length != 0) {
+      if (clauses.size() != 0) {
         assertTrue(QueryUtils.makeQueryable(q)==q);
       }
     } else {

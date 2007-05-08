@@ -275,8 +275,8 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
             /* if the default boost was used, and we've got a BooleanQuery
              * extract the subqueries out and use them directly
              */
-            for (BooleanClause c : ((BooleanQuery)f).getClauses()) {
-              query.add(c);
+            for (Object c : ((BooleanQuery)f).clauses()) {
+              query.add((BooleanClause)c);
             }
           } else {
             query.add(f, BooleanClause.Occur.SHOULD);

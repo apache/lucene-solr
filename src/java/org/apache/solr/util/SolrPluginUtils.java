@@ -566,7 +566,7 @@ public class SolrPluginUtils {
   public static void setMinShouldMatch(BooleanQuery q, String spec) {
 
     int optionalClauses = 0;
-    for (BooleanClause c : q.getClauses()) {
+    for (BooleanClause c : (List<BooleanClause>)q.clauses()) {
       if (c.getOccur() == Occur.SHOULD) {
         optionalClauses++;
       }
@@ -633,21 +633,20 @@ public class SolrPluginUtils {
    */
   public static void flattenBooleanQuery(BooleanQuery to, BooleanQuery from) {
 
-    BooleanClause[] c = from.getClauses();
-    for (int i = 0; i < c.length; i++) {
+    for (BooleanClause clause : (List<BooleanClause>)from.clauses()) {
+      
+      Query cq = clause.getQuery();
+      cq.setBoost(cq.getBoost() * from.getBoost());
             
-      Query ci = c[i].getQuery();
-      ci.setBoost(ci.getBoost() * from.getBoost());
-            
-      if (ci instanceof BooleanQuery
-          && !c[i].isRequired()
-          && !c[i].isProhibited()) {
+      if (cq instanceof BooleanQuery
+          && !clause.isRequired()
+          && !clause.isProhibited()) {
                 
         /* we can recurse */
-        flattenBooleanQuery(to, (BooleanQuery)ci);
+        flattenBooleanQuery(to, (BooleanQuery)cq);
                 
       } else {
-        to.add(c[i]);
+        to.add(clause);
       }
     }
   }

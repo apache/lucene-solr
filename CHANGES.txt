@@ -221,7 +221,12 @@ Optimizations
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new
     hash algorithm speeds up exists() by 10% and intersectionSize() by 8%.
-   (yonik)
+    (yonik)
+   
+ 2. SOLR-115: Solr now uses BooleanQuery.clauses() instead of
+    BooleanQuery.getClauses() in any situation where there is no risk of
+    modifying the original query.
+    (hossman)
 
 Bug Fixes
  1. SOLR-87: Parsing of synonym files did not correctly handle escaped

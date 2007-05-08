@@ -18,12 +18,9 @@ public class QueryUtils {
   static boolean isNegative(Query q) {
     if (!(q instanceof BooleanQuery)) return false;
     BooleanQuery bq = (BooleanQuery)q;
-    // TODO: use after next lucene update
-    //for (BooleanClause clause: (List <BooleanClause>)bq.clauses()) {
-    // if (bq.getClauses().size()==0) return false;
-    BooleanClause[] clauses = bq.getClauses();
-    if (clauses.length==0) return false;
-    for (BooleanClause clause: clauses) {
+    List<BooleanClause> clauses = bq.clauses();
+    if (clauses.size()==0) return false;
+    for (BooleanClause clause : clauses) {
       if (!clause.isProhibited()) return false;
     }
     return true;
@@ -43,17 +40,17 @@ public class QueryUtils {
     if (!(q instanceof BooleanQuery)) return q;
     BooleanQuery bq = (BooleanQuery)q;
 
-    BooleanClause[] clauses = bq.getClauses();
-    if (clauses.length==0) return q;
+    List<BooleanClause> clauses = bq.clauses();
+    if (clauses.size()==0) return q;
 
 
-    for (BooleanClause clause: clauses) {
+    for (BooleanClause clause : clauses) {
       if (!clause.isProhibited()) return q;
     }
 
-    if (clauses.length==1) {
+    if (clauses.size()==1) {
       // if only one clause, dispense with the wrapping BooleanQuery
-      Query negClause = clauses[0].getQuery();
+      Query negClause = clauses.get(0).getQuery();
       // we shouldn't need to worry about adjusting the boosts since the negative
       // clause would have never been selected in a positive query, and hence would
       // not contribute to a score.
@@ -64,7 +61,7 @@ public class QueryUtils {
       // ignore minNrShouldMatch... it doesn't make sense for a negative query
 
       // the inverse of -a -b is a OR b
-      for (BooleanClause clause: clauses) {
+      for (BooleanClause clause : clauses) {
         newBq.add(clause.getQuery(), BooleanClause.Occur.SHOULD);
       }
       return newBq;
