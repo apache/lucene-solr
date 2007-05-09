@@ -173,7 +173,14 @@ New Features
     The example schema has a comment explaining how this can be used to
     ignore any "unknown" fields.
     (Will Johnson via hossman)
-        
+
+29. SOLR-227: If schema.xml defines multiple fieldTypes, fields, or 
+    dynamicFields with the same name, a severe error will be logged rather 
+    then quietly continuing. Depending on the <abortOnConfigurationError> 
+    settings, this may halt the server.  Likewise, if solrconfig.xml 
+    defines multiple RequestHandlers with the same name it will also add
+    an error.  (ryan)
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
