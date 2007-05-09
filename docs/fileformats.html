@@ -1326,30 +1326,22 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <a name="N104A9"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
-                    A write lock is used to indicate that another
-                    process is writing to the index. Note that this file is not
-                    stored in the index directory itself, but rather in the
-                    system's temporary directory, as indicated in the Java
-                    system property "java.io.tmpdir".
-                </p>
-<p>
                     The write lock, which is stored in the index
                     directory by default, is named "write.lock".  If
                     the lock directory is different from the index
                     directory then the write lock will be named
                     "XXXX-write.lock" where XXXX is a unique prefix
                     derived from the full path to the index directory.
-                    When this file is present, a process is currently
-                    adding documents to an index, or removing files
-                    from that index.  This lock file prevents several
-                    processes from attempting to modify an index at
-                    the same time.
+                    When this file is present, a writer is currently
+                    modifying the index (adding or removing
+                    documents).  This lock file ensures that only one
+                    writer is modifying the index at a time.
                 </p>
 <p>
                     Note that prior to version 2.1, Lucene also used a
                     commit lock. This was removed in 2.1.
                 </p>
-<a name="N104B8"></a><a name="Deletable File"></a>
+<a name="N104B5"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
                     Prior to Lucene 2.1 there was a file "deletable"
@@ -1358,7 +1350,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N104C1"></a><a name="Compound Files"></a>
+<a name="N104BE"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1378,14 +1370,14 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N104E3"></a><a name="Per-Segment Files"></a>
+<a name="N104E0"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N104EB"></a><a name="Fields"></a>
+<a name="N104E8"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1604,7 +1596,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N105A6"></a><a name="Term Dictionary"></a>
+<a name="N105A3"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -1781,7 +1773,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10620"></a><a name="Frequencies"></a>
+<a name="N1061D"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -1879,7 +1871,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <sup>nd</sup>
                     starts.
                 </p>
-<a name="N10674"></a><a name="Positions"></a>
+<a name="N10671"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -1945,7 +1937,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N106B0"></a><a name="Normalization Factors"></a>
+<a name="N106AD"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>
                     
@@ -2049,7 +2041,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <b>2.1 and above:</b>
                     Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10719"></a><a name="Term Vectors"></a>
+<a name="N10716"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <ol>
                     
@@ -2175,7 +2167,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N107AC"></a><a name="Deleted Documents"></a>
+<a name="N107A9"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2247,7 +2239,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N107EF"></a><a name="Limitations"></a>
+<a name="N107EC"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There
