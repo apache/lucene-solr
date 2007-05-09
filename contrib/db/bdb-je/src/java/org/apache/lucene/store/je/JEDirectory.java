@@ -99,7 +99,7 @@ public class JEDirectory extends Directory {
      * to commit the transaction without closing this DbDirectory instance
      * first.
      * 
-     * @see setTransaction
+     * @see #setTransaction
      */
     public void flush() throws IOException {
         Iterator iterator = openFiles.iterator();

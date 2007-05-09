@@ -34,7 +34,6 @@ public class MoreLikeThisQuery extends Query
     
     
     /**
-     * @param docId
      * @param moreLikeFields
      */
     public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer)

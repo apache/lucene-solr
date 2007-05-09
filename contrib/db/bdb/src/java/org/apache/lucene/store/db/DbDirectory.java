@@ -108,7 +108,7 @@ public class DbDirectory extends Directory {
      * Flush the currently open files. After they have been flushed it is
      * safe to commit the transaction without closing this DbDirectory
      * instance first.
-     * @see setTransaction
+     * @see #setTransaction
      */
     public void flush()
         throws IOException
