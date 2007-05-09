@@ -423,25 +423,41 @@
 
         <packageset dir="src/demo"/>
 
+        <!-- please keep this list up to date, and in alpha order...   -->
+        <!-- with the minor exception of gdata which is managed by ref -->
+        
+        <!-- ie: `find contrib/* -path \*src/java | grep -v gdata | sort` -->
+
+        <!-- if you make changes to the list of package sets, also -->
+        <!-- make sure the group list below is updated.            -->
+
         <packageset dir="contrib/analyzers/src/java"/>
         <packageset dir="contrib/ant/src/java"/>
+        <packageset dir="contrib/benchmark/src/java"/>
+        <packageset dir="contrib/db/bdb-je/src/java"/>
+        <packageset dir="contrib/db/bdb/src/java"/>
         <packageset dir="contrib/highlighter/src/java"/>
         <packageset dir="contrib/lucli/src/java"/>
         <packageset dir="contrib/memory/src/java"/>
         <packageset dir="contrib/miscellaneous/src/java"/>
-        <packageset dir="contrib/similarity/src/java"/>
+        <packageset dir="contrib/queries/src/java"/>
         <packageset dir="contrib/regex/src/java"/>
+        <packageset dir="contrib/similarity/src/java"/>
         <packageset dir="contrib/snowball/src/java"/>
         <packageset dir="contrib/spellchecker/src/java"/>
         <packageset dir="contrib/surround/src/java"/>
         <packageset dir="contrib/swing/src/java"/>
         <packageset dir="contrib/wordnet/src/java"/>
-          <packageset dir="contrib/benchmark/src/java"/>
-        
+        <packageset dir="contrib/xml-query-parser/src/java"/>
+        <!-- end alpha sort -->
         <packageset refid="gdata-server-core" />
         <packageset refid="gdata-server-gom" />
         <packageset refid="gdata-server-hivemind" />
 
+        <!-- If the main javadoc Group listing includes an "Other   -->
+        <!-- Packages" group after the ones listed here, then those -->
+        <!-- packages are not being matched by any of these rules   -->
+        
         <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
 
         <group title="Demo" packages="org.apache.lucene.demo*"/>
@@ -449,19 +465,23 @@
         <group title="contrib: Analysis" packages="org.apache.lucene.analysis.*"/>
         <group title="contrib: Ant" packages="org.apache.lucene.ant*"/>
         <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
+        <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
         <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
         <group title="contrib: GData Server (Java1.5)" packages="org.apache.lucene.gdata.*"/>
         <group title="contrib: Lucli" packages="lucli*"/>
         <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
         <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
-        <group title="contrib: MoreLikeThis" packages="org.apache.lucene.search.similar*"/>
+        <group title="contrib: Queries" packages="org.apache.lucene.search.similar*"/>
         <group title="contrib: RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
+        <!-- no group for similarity. -->
+        <!-- nothing in there at the moment, so no package structure -->
         <group title="contrib: Snowball" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
 
         <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
         <group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
         <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
         <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
+        <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
 
 
         <classpath refid="javadoc.classpath"/>
