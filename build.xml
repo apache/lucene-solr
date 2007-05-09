@@ -21,32 +21,11 @@
   <path id="javadoc.classpath">
     <path refid="classpath"/>
     <pathelement location="${ant.home}/lib/ant.jar"/>
-    <pathelement location="contrib/lucli/lib/jline.jar"/>
-    <pathelement location="contrib/regex/lib/jakarta-regexp-1.4.jar"/>
-    <pathelement location="contrib/benchmark/commons-beanutils-1.7.0.jar"/>
-    <pathelement location="contrib/benchmark/lib/commons-collections-3.1.jar"/>
-    <pathelement location="contrib/benchmark/lib/commons-digester-1.7.jar"/>
-    <pathelement location="contrib/benchmark/lib/commons-logging-1.0.4.jar"/>
-    <pathelement location="contrib/ant/lib/Tidy.jar"/>
-    <!-- gdata jars only used with jdk 5 but include them even for lower jdk -->
-    <pathelement location="contrib/gdata-server/lib/commons-beanutils.jar"/>
-    <pathelement location="contrib/gdata-server/lib/commons-collections-3.2.jar"/>
-    <pathelement location="contrib/gdata-server/lib/commons-digester-1.7.jar"/>
-    <pathelement location="contrib/gdata-server/lib/commons-logging-1.1.jar"/>
-    <pathelement location="contrib/gdata-server/lib/gdata-client-1.0.jar"/>
-    <pathelement location="contrib/gdata-server/lib/log4j-1.2.13.jar"/>
-    <pathelement location="contrib/gdata-server/lib/nekohtml.jar"/>
-    <pathelement location="contrib/gdata-server/lib/servlet-api.jar"/>
-    <pathelement location="contrib/gdata-server/lib/xercesImpl.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/easymock-1.2_Java1.5.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/hessian-3.0.20.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/hivemind-1.1.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/hivemind-jmx-1.1.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/hivemind-lib-1.1.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/javassist-3.0.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/oro-2.0.6.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/stax-1.1.2-dev.jar"/>
-    <pathelement location="contrib/gdata-server/ext-lib/stax-api-1.0.1.jar"/>
+
+    <!-- NOTE: gdata jars only used with jdk 5 but include them even for lower jdk -->
+    <fileset dir="contrib">
+        <include name="**/*.jar"/>
+    </fileset>
   </path>
 
   <path id="demo.classpath">
