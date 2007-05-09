@@ -339,7 +339,15 @@ public final class IndexSchema {
 
 
         ft.setArgs(this, DOMUtil.toMapExcept(attrs,"name","class"));
-        fieldTypes.put(ft.typeName,ft);
+        FieldType old = fieldTypes.put(ft.typeName,ft);
+        if( old != null ) {
+          String msg = "[schema.xml] Duplicate fieldType definition for '"
+            + ft.typeName + "' ignoring: "+old.toString();
+          
+          Throwable t = new SolrException( 500, msg );
+          SolrException.logOnce(log,null,t);
+          SolrConfig.severeErrors.add( t );
+        }
         log.finest("fieldtype defined: " + ft);
       }
 
@@ -373,7 +381,16 @@ public final class IndexSchema {
         SchemaField f = SchemaField.create(name,ft,args);
 
         if (node.getNodeName().equals("field")) {
-          fields.put(f.getName(),f);
+          SchemaField old = fields.put(f.getName(),f);
+          if( old != null ) {
+            String msg = "[schema.xml] Duplicate field definition for '"
+              + f.getName() + "' ignoring: "+old.toString();
+            
+            Throwable t = new SolrException( 500, msg );
+            SolrException.logOnce(log,null,t);
+            SolrConfig.severeErrors.add( t );
+          }
+          
           log.fine("field defined: " + f);
           if( f.getDefaultValue() != null ) {
             log.fine(name+" contains default value: " + f.getDefaultValue());
@@ -384,8 +401,24 @@ public final class IndexSchema {
             requiredFields.add(f);
           }
         } else if (node.getNodeName().equals("dynamicField")) {
-          dFields.add(new DynamicField(f));
-          log.fine("dynamic field defined: " + f);
+          // make sure nothing else has the same path
+          boolean dup = false;
+          for( DynamicField df : dFields ) {
+            if( df.regex.equals( f.name ) ) {
+              String msg = "[schema.xml] Duplicate DynamicField definition for '"
+                + f.getName() + "' ignoring: "+f.toString();
+              
+              Throwable t = new SolrException( 500, msg );
+              SolrException.logOnce(log,null,t);
+              SolrConfig.severeErrors.add( t );
+              dup = true;
+              break;
+            }
+          }
+          if( !dup ) {
+            dFields.add(new DynamicField(f));
+            log.fine("dynamic field defined: " + f);
+          }
         } else {
           // we should never get here
           throw new RuntimeException("Unknown field type");

@@ -156,8 +156,10 @@ final class RequestHandlers {
           
           SolrRequestHandler old = register( name, handler );
           if( old != null ) {
-            // TODO: SOLR-179?
-            log.warning( "multiple handlers registered on the same path! ignoring: "+old );
+            String msg = "multiple handlers registered on the same path! ignoring: "+old;
+            Throwable t = new SolrException( 500, msg );
+            SolrConfig.severeErrors.add( t );
+            SolrException.logOnce(log,null,t);
           }
           names.put( name, args );
         } 
