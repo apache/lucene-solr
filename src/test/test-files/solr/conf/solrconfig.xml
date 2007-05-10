@@ -191,7 +191,6 @@
      is not specified in the request.
   -->
   <requestHandler name="standard" class="solr.StandardRequestHandler"/>
-  <requestHandler name="indexinfo" class="solr.IndexInfoRequestHandler"/>
   <requestHandler name="dismaxOldStyleDefaults"
                   class="solr.DisMaxRequestHandler" >
      <!-- for historic reasons, DisMaxRequestHandler will use all of
