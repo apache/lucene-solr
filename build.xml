@@ -129,7 +129,7 @@
       <echo>DEPRECATED - Doing Nothing.  See http://wiki.apache.org/lucene-java/HowToUpdateTheWebsite</echo>
   </target>
 
-  <target name="javadocs" description="Generate javadoc">
+  <target name="javadocs" description="Generate javadoc" depends="build-contrib">
     <mkdir dir="${build.dir}/docs/api"/>
     <invoke-javadoc
       access="protected"
@@ -137,7 +137,7 @@
     />
   </target>
 
-  <target name="javadocs-internal">
+  <target name="javadocs-internal" depends="build-contrib">
     <mkdir dir="${build.dir}/docs/api-internal"/>
     <invoke-javadoc
       access="package"
@@ -377,10 +377,7 @@
         <include name="**" if="javadoc-1-5-contrib" />
       </dirset>
 
-      <record name="log_javadoc.txt" action="start" append="no"/>
-
       <javadoc
-          failonerror="true"
           overview="src/java/overview.html"
           packagenames="org.apache.lucene.*"
           destdir="@{destdir}"
@@ -466,29 +463,6 @@
         <classpath refid="javadoc.classpath"/>
 
       </javadoc>
-
-      <record name="log_javadoc.txt" action="stop"/>
-
-      <delete>
-        <fileset file="log_javadoc.txt">
-          <not>
-           <containsregexp expression="\[javadoc\]\s*[1-9][0-9]*[\s]*warning"/>
-          </not>
-        </fileset>
-      </delete>
-
-      <fail message="Javadocs warnings were found!">
-        <condition>
-          <and>
-            <available file="log_javadoc.txt"/>
-            <not>  
-              <!-- TODO: once gdata javadocs are fixed, remove this part of the 'and' (and the 'and' itself...) -->
-              <isset property="javadoc-1-5-contrib"/>  
-            </not>
-          </and>
-        </condition>
-      </fail>
-
 
    </sequential>
   </macrodef>
