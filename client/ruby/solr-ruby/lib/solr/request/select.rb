@@ -31,6 +31,10 @@ class Solr::Request::Select < Solr::Request::Base
   def handler
     'select'
   end
+  
+  def content_type
+    'application/x-www-form-urlencoded; charset=utf-8'
+  end
 
   def to_hash
     return {:qt => query_type, :wt => 'ruby'}

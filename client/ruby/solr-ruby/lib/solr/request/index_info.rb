@@ -11,7 +11,9 @@
 # limitations under the License.
 
 class Solr::Request::IndexInfo < Solr::Request::Select
-  def initialize
-    super('indexinfo')
+  
+  def handler
+    'admin/luke'
   end
+  
 end

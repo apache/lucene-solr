@@ -20,11 +20,16 @@ class Solr::Response::Xml < Solr::Response::Base
     super(xml)
     # parse the xml
     @doc = REXML::Document.new(xml)
+
     # look for the result code and string 
-    result = REXML::XPath.first(@doc, './result')
+    # <?xml version="1.0" encoding="UTF-8"?>
+    # <response>
+    # <lst name="responseHeader"><int name="status">0</int><int name="QTime">2</int></lst>
+    # </response>
+    result = REXML::XPath.first(@doc, './response/lst[@name="responseHeader"]/int[@name="status"]')
     if result
-      @status_code =  result.attributes['status']
-      @status_message = result.text
+      @status_code =  result.text
+      @status_message = result.text  # TODO: any need for a message?
     end
   rescue REXML::ParseException => e
     raise Solr::Exception.new("invalid response xml: #{e}")

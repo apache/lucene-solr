@@ -13,7 +13,7 @@
 class Solr::Indexer
   # deprecated, use Indexer.new(ds,mapping).index instead
   def self.index(data_source, mapper_or_mapping, options={})
-    indexer = Solr::Indexer.new(data_source, mapper_or_mapping, options={})
+    indexer = Solr::Indexer.new(data_source, mapper_or_mapping, options)
     indexer.index
   end
   
@@ -33,7 +33,7 @@ class Solr::Indexer
     @data_source.each do |record|
       document = @mapper.map(record)
       
-      yield(record, document) if block_given?
+      yield(record, document) if block_given? # TODO check return of block, if not true then don't index
       
       buffer << document
       

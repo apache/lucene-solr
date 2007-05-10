@@ -140,7 +140,7 @@ class Solr::Connection
   def post(request)
     response = @connection.post(@url.path + "/" + request.handler,
                                 request.to_s,
-                                { "Content-Type" => "application/x-www-form-urlencoded; charset=utf-8" })
+                                { "Content-Type" => request.content_type })
   
     case response
     when Net::HTTPSuccess then response.body

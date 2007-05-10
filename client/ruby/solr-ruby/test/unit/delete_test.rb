@@ -26,7 +26,7 @@ class DeleteTest <  SolrMockBaseTestCase
 
   def test_delete_response
     conn = Solr::Connection.new 'http://localhost:9999/solr'
-    set_post_return('<result status="0"></result>')
+    set_post_return('<?xml version="1.0" encoding="UTF-8"?><response><lst name="responseHeader"><int name="status">0</int><int name="QTime">2</int></lst></response>')
     response = conn.send(Solr::Request::Delete.new(:id => 123))
     assert_equal true, response.ok? 
   end

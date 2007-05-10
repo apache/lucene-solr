@@ -113,12 +113,12 @@ class ServerTest < Test::Unit::TestCase
   
   def test_commit
     response = @connection.send(Solr::Request::Commit.new)
-    assert_equal "<result status=\"0\"></result>", response.raw_response
+    assert response.ok?
   end
   
   def test_optimize
     response = @connection.send(Solr::Request::Optimize.new)
-    assert_equal "<result status=\"0\"></result>", response.raw_response
+    assert response.ok?
   end
   
 # TODO: add test_ping back... something seems to have changed with the response, so adjustments are needed.
@@ -168,14 +168,17 @@ class ServerTest < Test::Unit::TestCase
   def test_no_such_field
     doc = {:id => 999, :bogus => 'foo'}
     request = Solr::Request::AddDocument.new(doc)
-    response = @connection.send(request)
-    assert_equal false, response.ok? 
-    assert_match "ERROR:unknown field 'bogus'", response.status_message
+    assert_raise(Net::HTTPServerException) do
+      response = @connection.send(request)
+    end
+    # assert_equal false, response.ok? 
+    # assert_match "ERROR:unknown field 'bogus'", response.status_message
   end
   
   def test_index_info
     doc = {:id => 999, :test_index_facet => 'value'}
     @connection.add(doc)
+    ii = Solr::Request::IndexInfo.new
     info = @connection.send(Solr::Request::IndexInfo.new)
     assert info.field_names.include?("id") && info.field_names.include?("test_index_facet")
     assert_equal 1, info.num_docs
@@ -199,7 +202,7 @@ class ServerTest < Test::Unit::TestCase
 
   # wipe the index clean
   def clean
-    @connection.delete_by_query('[* TO *]')
+    @connection.delete_by_query('*:*')
   end
 
 end

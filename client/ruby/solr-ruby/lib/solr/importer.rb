@@ -12,6 +12,8 @@
 
 module Solr; module Importer; end; end
 require 'solr/importer/mapper'
+require 'solr/importer/array_mapper'
 require 'solr/importer/delimited_file_source'
+require 'solr/importer/hpricot_mapper'
 require 'solr/importer/xpath_mapper'
 require 'solr/importer/solr_source'

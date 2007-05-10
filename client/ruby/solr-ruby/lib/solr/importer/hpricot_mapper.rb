@@ -10,27 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class Solr::Request::Base
-  
-  
-  #TODO : Add base support for the debugQuery flag, and such that the response provides debug output easily
+require 'hpricot'
 
-  # returns either :xml or :ruby depending on what the
-  # response type is for a given request
-  
-  def response_format
-    raise "unknown request type: #{self.class}"
+# For files with the first line containing field names
+class Solr::Importer::HpricotMapper < Solr::Importer::Mapper
+  def field_data(doc, path)
+    doc.search(path.to_s).collect { |e| e.inner_html }
   end
-  
-  def content_type
-    'text/xml; charset=utf-8'
-  end
-
-  # returns the solr handler or url fragment that can 
-  # respond to this type of request
-  
-  def handler
-    raise "unkown request type: #{self.class}"
-  end
-
 end
