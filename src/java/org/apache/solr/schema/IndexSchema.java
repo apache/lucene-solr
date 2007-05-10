@@ -498,16 +498,37 @@ public final class IndexSchema {
         NamedNodeMap attrs = node.getAttributes();
 
         String source = DOMUtil.getAttr(attrs,"source","copyField definition");
+        String dest   = DOMUtil.getAttr(attrs,"dest",  "copyField definition");
 
         boolean sourceIsPattern = isWildCard(source);
+        boolean destIsPattern   = isWildCard(dest);
 
-        String dest = DOMUtil.getAttr(attrs,"dest","copyField definition");
         log.fine("copyField source='"+source+"' dest='"+dest+"'");
         SchemaField d = getField(dest);
 
         if(sourceIsPattern) {
-          dCopies.add(new DynamicCopy(source, d));
-        } else {
+          if( destIsPattern ) {
+            DynamicField df = null;
+            for( DynamicField dd : dynamicFields ) {
+              if( dd.regex.equals( dest ) ) {
+                df = dd;
+                break;
+              }
+            }
+            if( df == null ) {
+              throw new SolrException( 500, "copyField dynamic destination must match a dynamicField." );
+            }
+            dCopies.add(new DynamicDestCopy(source, df ));
+          }
+          else {
+            dCopies.add(new DynamicCopy(source, d));
+          }
+        } 
+        else if( destIsPattern ) {
+          String msg =  "copyField only supports a dynamic destination if the source is also dynamic" ;
+          throw new SolrException( 500, msg );
+        }
+        else {
           // retrieve the field to force an exception if it doesn't exist
           SchemaField f = getField(source);
 
@@ -682,25 +703,65 @@ public final class IndexSchema {
     }
   }
 
-
-  //
-  // Instead of storing a type, this could be implemented as a hierarchy
-  // with a virtual matches().
-  // Given how often a search will be done, however, speed is the overriding
-  // concern and I'm not sure which is faster.
-  //
-  final static class DynamicCopy extends DynamicReplacement {
+  static class DynamicCopy extends DynamicReplacement {
     final SchemaField targetField;
     DynamicCopy(String regex, SchemaField targetField) {
       super(regex);
       this.targetField = targetField;
     }
+    
+    public SchemaField getTargetField( String sourceField )
+    {
+      return targetField;
+    }
 
+    @Override
     public String toString() {
       return targetField.toString();
     }
   }
 
+  static class DynamicDestCopy extends DynamicCopy 
+  {
+    final DynamicField dynamic;
+    
+    final int dtype;
+    final String dstr;
+    
+    DynamicDestCopy(String source, DynamicField dynamic) {
+      super(source, dynamic.prototype );
+      this.dynamic = dynamic;
+      
+      String dest = dynamic.regex;
+      if (dest.startsWith("*")) {
+        dtype=ENDS_WITH;
+        dstr=dest.substring(1);
+      }
+      else if (dest.endsWith("*")) {
+        dtype=STARTS_WITH;
+        dstr=dest.substring(0,dest.length()-1);
+      }
+      else {
+        throw new RuntimeException("dynamic copyField destination name must start or end with *");
+      }
+    }
+    
+    @Override
+    public SchemaField getTargetField( String sourceField )
+    {
+      String dyn = ( type==STARTS_WITH ) 
+        ? sourceField.substring( str.length() )
+        : sourceField.substring( 0, sourceField.length()-str.length() );
+      
+      String name = (dtype==STARTS_WITH) ? (dstr+dyn) : (dyn+dstr);
+      return dynamic.makeSchemaField( name );
+    }
+
+    @Override
+    public String toString() {
+      return targetField.toString();
+    }
+  }
 
   private DynamicField[] dynamicFields;
 
@@ -849,7 +910,7 @@ public final class IndexSchema {
 
     for(DynamicCopy dynamicCopy : dynamicCopyFields) {
       if(dynamicCopy.matches(sourceField)) {
-        matchCopyFields.add(dynamicCopy.targetField);
+        matchCopyFields.add(dynamicCopy.getTargetField(sourceField));
       }
     }
 
@@ -881,6 +942,8 @@ public final class IndexSchema {
   }
 
 }
+
+
 
 
 

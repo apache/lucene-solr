@@ -400,8 +400,11 @@
    <dynamicField name="t_*"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="tv_*"  type="text" indexed="true"  stored="true" 
       termVectors="true" termPositions="true" termOffsets="true"/>
-   
 
+   <!-- special fields for dynamic copyField test -->
+   <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
+   <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
+  
    <!-- for testing to ensure that longer patterns are matched first -->
    <dynamicField name="*aa"  type="string"  indexed="true" stored="true"/>
    <dynamicField name="*aaa" type="integer" indexed="false" stored="true"/>
@@ -426,6 +429,9 @@
  
    <copyField source="*_t" dest="text"/>
    
+   <!-- dynamic destination -->
+   <copyField source="*_dynamic" dest="dynamic_*"/>
+    
  <!-- Similarity is the scoring routine for each document vs a query.
       A custom similarity may be specified here, but the default is fine
       for most applications.
