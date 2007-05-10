@@ -22,6 +22,8 @@ import java.net.URLConnection;
  */
 public abstract class ContentStreamBase implements ContentStream
 {
+  public static final String DEFAULT_CHARSET = "utf-8";
+  
   protected String name;
   protected String sourceInfo;
   protected String contentType;
@@ -137,12 +139,12 @@ public abstract class ContentStreamBase implements ContentStream
 
   /**
    * Base reader implementation.  If the contentType declares a 
-   * charset use it, otherwise use the system default.
+   * charset use it, otherwise use "utf-8".
    */
   public Reader getReader() throws IOException {
-    String charset = getCharsetFromContentType( contentType );
+    String charset = getCharsetFromContentType( getContentType() );
     return charset == null 
-      ? new InputStreamReader( getStream() )
+      ? new InputStreamReader( getStream(), DEFAULT_CHARSET )
       : new InputStreamReader( getStream(), charset );
   }
 

@@ -18,6 +18,7 @@
 package org.apache.solr.servlet;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -217,6 +218,52 @@ class SimpleRequestParser implements SolrRequestParser
   }
 }
 
+/**
+ * Wrap an HttpServletRequest as a ContentStream
+ */
+class HttpRequestContentStream extends ContentStreamBase
+{
+  private final HttpServletRequest req;
+  
+  public HttpRequestContentStream( HttpServletRequest req ) throws IOException {
+    this.req = req;
+    
+    contentType = req.getContentType();
+    // name = ???
+    // sourceInfo = ???
+    
+    String v = req.getHeader( "Content-Length" );
+    if( v != null ) {
+      size = Long.valueOf( v );
+    }
+  }
+
+  public InputStream getStream() throws IOException {
+    return req.getInputStream();
+  }
+}
+
+
+/**
+ * Wrap a FileItem as a ContentStream
+ */
+class FileItemContentStream extends ContentStreamBase
+{
+  private final FileItem item;
+  
+  public FileItemContentStream( FileItem f )
+  {
+    item = f;
+    contentType = item.getContentType();
+    name = item.getName();
+    sourceInfo = item.getFieldName();
+    size = item.getSize();
+  }
+    
+  public InputStream getStream() throws IOException {
+    return item.getInputStream();
+  }
+}
 
 /**
  * The simple parser just uses the params directly
@@ -233,33 +280,7 @@ class RawRequestParser implements SolrRequestParser
     // Rather than return req.getReader(), this uses the default ContentStreamBase method
     // that checks for charset definitions in the ContentType.
     
-    streams.add( new ContentStream() {
-      public String getContentType() {
-        return req.getContentType();
-      }
-      public String getName() {
-        return null; // Is there any meaningful name?
-      }
-      public String getSourceInfo() {
-        return null; // Is there any meaningful source?
-      }
-      public Long getSize() { 
-        String v = req.getHeader( "Content-Length" );
-        if( v != null ) {
-          return Long.valueOf( v );
-        }
-        return null; 
-      }
-      public InputStream getStream() throws IOException {
-        return req.getInputStream();
-      }
-      public Reader getReader() throws IOException {
-        String charset = ContentStreamBase.getCharsetFromContentType( req.getContentType() );
-        return charset == null 
-          ? new InputStreamReader( getStream() )
-          : new InputStreamReader( getStream(), charset );
-      }
-    });
+    streams.add( new HttpRequestContentStream( req ) );
     return SolrRequestParsers.parseQueryString( req.getQueryString() );
   }
 }
@@ -317,40 +338,6 @@ class MultipartRequestParser implements SolrRequestParser
     }
     return params;
   }
-  
-  /**
-   * Wrap a FileItem as a ContentStream
-   */
-  private static class FileItemContentStream extends ContentStreamBase
-  {
-    FileItem item;
-    
-    public FileItemContentStream( FileItem f )
-    {
-      item = f;
-    }
-    
-    public String getContentType() {
-      return item.getContentType();
-    }
-    
-    public String getName() {
-      return item.getName();
-    }
-    
-    public InputStream getStream() throws IOException {
-      return item.getInputStream();
-    }
-
-    public String getSourceInfo() {
-      return item.getFieldName();
-    }
-    
-    public Long getSize()
-    {
-      return item.getSize();
-    }
-  }
 }
 
 
@@ -394,6 +381,7 @@ class StandardRequestParser implements SolrRequestParser
     throw new SolrException( 400, "Unsuported method: "+method );
   }
 }
+
 
 
 

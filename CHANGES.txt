@@ -231,6 +231,9 @@ Changes in runtime behavior
     codes.  To enable solr1.1 style /update, do not map "/update" to any 
     handler in solrconfig.xml (ryan)
 
+10. SOLR-231: If a charset is not specified in the contentType, 
+    ContentStream.getReader() will use UTF-8 encoding.  (ryan)
+
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new
