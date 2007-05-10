@@ -260,8 +260,6 @@
      </lst>
   </requestHandler>
 
-  <requestHandler name="indexinfo" class="solr.IndexInfoRequestHandler"/>
-
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
        for simple user-entered phrases. 
        see http://wiki.apache.org/solr/DisMaxRequestHandler
@@ -374,8 +372,8 @@
      <!-- Main init params for handler -->
      
      <!-- The directory where your SpellChecker Index should live.   -->
-     <!-- May by absolute, or relative to the Solr "dataDir" directory. -->
-     <!-- If this option is not specified, a ram directory will be used -->
+     <!-- May be absolute, or relative to the Solr "dataDir" directory. -->
+     <!-- If this option is not specified, a RAM directory will be used -->
      <str name="spellcheckerIndexDir">spell</str>
      
      <!-- the field in your schema that you want to be able to build -->
