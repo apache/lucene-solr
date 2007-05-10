@@ -1,0 +1,118 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.analysis;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import junit.framework.TestCase;
+
+import org.apache.commons.codec.Encoder;
+import org.apache.commons.codec.language.DoubleMetaphone;
+import org.apache.commons.codec.language.Metaphone;
+import org.apache.commons.codec.language.RefinedSoundex;
+import org.apache.commons.codec.language.Soundex;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+
+
+/**
+ * @version $Id:$
+ */
+public class TestPhoneticFilter extends TestCase {
+  
+  public void testFactory()
+  {
+    Map<String,String> args = new HashMap<String, String>();
+    
+    PhoneticFilterFactory ff = new PhoneticFilterFactory();
+    try {
+      ff.init( args );
+      fail( "missing encoder parameter" );
+    }
+    catch( Exception ex ) {}
+    args.put( PhoneticFilterFactory.ENCODER, "XXX" );
+    try {
+      ff.init( args );
+      fail( "unknown encoder parameter" );
+    }
+    catch( Exception ex ) {}
+    
+    args.put( PhoneticFilterFactory.ENCODER, "Metaphone" );
+    ff.init( args );
+    assertTrue( ff.encoder instanceof Metaphone );
+    assertTrue( ff.inject ); // default
+
+    args.put( PhoneticFilterFactory.INJECT, "false" );
+    ff.init( args );
+    assertFalse( ff.inject );
+  }
+  
+  public void runner( Encoder enc, boolean inject ) throws Exception
+  {
+    String[] input = new String[] {
+       "aaa", "bbb", "ccc", "easgasg"
+    };
+
+    ArrayList<Token> stream = new ArrayList<Token>();
+    ArrayList<Token> output = new ArrayList<Token>();
+    for( String s : input ) {
+      stream.add( new Token( s, 0, s.length() ) );
+      if( inject ) {
+        output.add( new Token( s, 0, s.length() ) );
+      }
+      output.add( new Token( enc.encode(s).toString(), 0, s.length() ) );
+    }
+    
+    PhoneticFilter filter = new PhoneticFilter( 
+        new IterTokenStream(stream.iterator()), enc, "text", inject );
+    
+    for( Token t : output ) {
+      Token got = filter.next();
+      assertEquals( t.termText(), got.termText());
+    }
+    assertNull( filter.next() );  // no more tokens
+  }
+  
+  public void testEncodes() throws Exception {
+    runner( new DoubleMetaphone(), true );
+    runner( new Metaphone(), true );
+    runner( new Soundex(), true );
+    runner( new RefinedSoundex(), true );
+
+    runner( new DoubleMetaphone(), false );
+    runner( new Metaphone(), false );
+    runner( new Soundex(), false );
+    runner( new RefinedSoundex(), false );
+  }
+
+  public static class IterTokenStream extends TokenStream {
+    Iterator<Token> toks;
+    public IterTokenStream(Iterator<Token> toks) {
+      this.toks = toks;
+    }
+    public Token next() {
+      if (toks.hasNext()) {
+        return toks.next();
+      }
+      return null;
+    }
+  }
+}
