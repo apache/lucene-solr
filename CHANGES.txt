@@ -172,9 +172,9 @@ Documentation:
  
  3. LUCENE-875: Solved javadoc warnings & errors under jdk1.4. 
     Solved javadoc errors under jdk5 (jars in path for gdata).
-    Set javadoc target to fail if there are errors or warnings.
-    For now allow warnings under jdk5 (until gdata javadocs are fixed).
-    (Doron Cohen)
+    Made "javadocs" target depend on "build-contrib" for first downloading
+    contrib jars configured for dynamic downloaded. (Note: when running
+    behind firewall, a firewall prompt might pop up) (Doron Cohen)
 
 ======================= Release 2.1.0 2007-02-14 =======================
 
