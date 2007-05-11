@@ -134,4 +134,31 @@ public class BooleanFilter extends Filter
 			notFilters.add(filterClause.getFilter());
 		}
 	}
+
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if((obj == null) || (obj.getClass() != this.getClass()))
+				return false;
+		BooleanFilter test = (BooleanFilter)obj;
+		return (notFilters == test.notFilters|| 
+					 (notFilters!= null && notFilters.equals(test.notFilters)))
+				&&
+			   (mustFilters == test.mustFilters|| 
+					 (mustFilters!= null && mustFilters.equals(test.mustFilters)))				 
+					 &&
+			   (shouldFilters == test.shouldFilters|| 
+					 (shouldFilters!= null && shouldFilters.equals(test.shouldFilters)));
+	}
+
+	public int hashCode()
+	{
+		int hash=7;
+		hash = 31 * hash + (null == mustFilters ? 0 : mustFilters.hashCode());
+		hash = 31 * hash + (null == notFilters ? 0 : notFilters.hashCode());
+		hash = 31 * hash + (null == shouldFilters ? 0 : shouldFilters.hashCode());
+		return hash;
+	}
+	
 }
