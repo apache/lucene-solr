@@ -71,18 +71,20 @@ class Solr::Request::Standard < Solr::Request::Select
       hash["facet.missing"] = @params[:facets][:missing]
       hash["facet.mincount"] = @params[:facets][:mincount]
       hash["facet.prefix"] = @params[:facets][:prefix]
-      @params[:facets][:fields].each do |f|
-        if f.kind_of? Hash
-          key = f.keys[0]
-          value = f[key]
-          hash["facet.field"] << key
-          hash["f.#{key}.facet.sort"] = (value[:sort] == :count) if value[:sort]
-          hash["f.#{key}.facet.limit"] = value[:limit]
-          hash["f.#{key}.facet.missing"] = value[:missing]
-          hash["f.#{key}.facet.mincount"] = value[:mincount]
-          hash["f.#{key}.facet.prefix"] = value[:prefix]
-        else
-          hash["facet.field"] << f
+      if @params[:facets][:fields]  # facet fields are optional (could be facet.query only)
+        @params[:facets][:fields].each do |f|
+          if f.kind_of? Hash
+            key = f.keys[0]
+            value = f[key]
+            hash["facet.field"] << key
+            hash["f.#{key}.facet.sort"] = (value[:sort] == :count) if value[:sort]
+            hash["f.#{key}.facet.limit"] = value[:limit]
+            hash["f.#{key}.facet.missing"] = value[:missing]
+            hash["f.#{key}.facet.mincount"] = value[:mincount]
+            hash["f.#{key}.facet.prefix"] = value[:prefix]
+          else
+            hash["facet.field"] << f
+          end
         end
       end
     end

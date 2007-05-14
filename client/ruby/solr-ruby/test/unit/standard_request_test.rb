@@ -55,6 +55,17 @@ class StandardRequestTest < Test::Unit::TestCase
     assert_match /debugQuery/, request.to_s
   end
   
+  def test_only_facet_query
+    request = Solr::Request::Standard.new(:query => 'query',
+       :facets => {
+         :queries => ["q1", "q2"],
+        }
+    )
+    
+    hash = request.to_hash
+    assert_equal ["q1", "q2"], hash["facet.query"]
+  end
+  
   def test_facet_params_all
     request = Solr::Request::Standard.new(:query => 'query',
        :facets => {
