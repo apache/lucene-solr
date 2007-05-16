@@ -29,7 +29,7 @@
 # 
 #    rake SOLR_CONSOLE=true
 
-SOLR_RUBY_VERSION = '0.0.2'
+SOLR_RUBY_VERSION = '0.0.3'
 
 require 'rubygems'
 require 'rake'
