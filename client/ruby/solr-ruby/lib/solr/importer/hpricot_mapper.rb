@@ -10,11 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'hpricot'
+begin
+  require 'hpricot'
 
-# For files with the first line containing field names
-class Solr::Importer::HpricotMapper < Solr::Importer::Mapper
-  def field_data(doc, path)
-    doc.search(path.to_s).collect { |e| e.inner_html }
+  class Solr::Importer::HpricotMapper < Solr::Importer::Mapper
+    def field_data(doc, path)
+      doc.search(path.to_s).collect { |e| e.inner_html }
+    end
+  end
+rescue LoadError => e # If we can't load hpricot
+  class Solr::Importer::HpricotMapper
+    def initialize(mapping, options={})
+      raise "Hpricot not installed."
+    end
   end
 end
