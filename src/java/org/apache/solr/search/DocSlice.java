@@ -34,7 +34,7 @@ public class DocSlice extends DocSetBase implements DocList {
   final float maxScore;
 
   /**
-   * Primary constructer for a DocSlice instance.
+   * Primary constructor for a DocSlice instance.
    *
    * @param offset  starting offset for this range of docs
    * @param len     length of results

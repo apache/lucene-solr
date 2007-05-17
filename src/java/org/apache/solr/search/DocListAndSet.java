@@ -19,8 +19,8 @@ package org.apache.solr.search;
 
 
 /**
- * A struct who's only purpose is to hold both a DocList and a DocSet so that both
- * may be returned from a single method.
+ * A struct whose only purpose is to hold both a {@link DocList} and a {@link DocSet}
+ * so that both may be returned from a single method.
  * <p>
  * The DocList and DocSet returned should <b>not</b> be modified as they may
  * have been retrieved or inserted into a cache and should be considered shared.
