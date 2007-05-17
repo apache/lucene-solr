@@ -20,7 +20,9 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -319,10 +321,15 @@ public class TestPayloads extends TestCase {
         
     }
     
-    private byte[] generateRandomData(int n) {
-        Random rnd = new Random();
-        byte[] data = new byte[n];
+    private static Random rnd = new Random();
+    
+    private static void generateRandomData(byte[] data) {
         rnd.nextBytes(data);
+    }
+
+    private static byte[] generateRandomData(int n) {
+        byte[] data = new byte[n];
+        generateRandomData(data);
         return data;
     }
     
@@ -439,5 +446,107 @@ public class TestPayloads extends TestCase {
             
             return nextToken;
         }
-      }
+    }
+    
+    public void testThreadSafety() throws IOException {
+        final int numThreads = 5;
+        final int numDocs = 50;
+        final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
+        
+        Directory dir = new RAMDirectory();
+        final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer());
+        final String field = "test";
+        
+        Thread[] ingesters = new Thread[numThreads];
+        for (int i = 0; i < numThreads; i++) {
+            ingesters[i] = new Thread() {
+                public void run() {
+                    try {
+                        for (int j = 0; j < numDocs; j++) {
+                            Document d = new Document();
+                            d.add(new Field(field, new PoolingPayloadTokenStream(pool)));
+                            writer.addDocument(d);
+                        }
+                    } catch (IOException e) {
+                        fail(e.toString());
+                    }
+                }
+            };
+            ingesters[i].start();
+        }
+        
+        for (int i = 0; i < numThreads; i++) {
+            try {
+                ingesters[i].join();
+            } catch (InterruptedException e) {}
+        }
+        
+        writer.close();
+        IndexReader reader = IndexReader.open(dir);
+        TermEnum terms = reader.terms();
+        while (terms.next()) {
+            TermPositions tp = reader.termPositions(terms.term());
+            while(tp.next()) {
+                int freq = tp.freq();
+                for (int i = 0; i < freq; i++) {
+                    tp.nextPosition();
+                    String s = new String(tp.getPayload(new byte[5], 0));
+                    assertEquals(s, terms.term().text);
+                }
+            }
+            tp.close();
+        }
+        terms.close();
+        reader.close();
+        
+        assertEquals(pool.size(), numThreads);
+    }
+    
+    private static class PoolingPayloadTokenStream extends TokenStream {
+        private byte[] payload;
+        private boolean first;
+        private ByteArrayPool pool;
+        
+        PoolingPayloadTokenStream(ByteArrayPool pool) {
+            this.pool = pool;
+            payload = pool.get();
+            generateRandomData(payload);
+            first = true;
+        }
+        
+        public Token next() throws IOException {
+            if (!first) return null;            
+            Token t = new Token(new String(payload), 0, 0);
+            t.setPayload(new Payload(payload));
+            return t;        
+        }
+        
+        public void close() throws IOException {
+            pool.release(payload);
+        }
+        
+    }
+    
+    private static class ByteArrayPool {
+        private List pool;
+        
+        ByteArrayPool(int capacity, int size) {
+            pool = new ArrayList();
+            for (int i = 0; i < capacity; i++) {
+                pool.add(new byte[size]);
+            }
+        }
+        
+        synchronized byte[] get() {
+            return (byte[]) pool.remove(0);
+        }
+        
+        synchronized void release(byte[] b) {
+            pool.add(b);
+        }
+        
+        synchronized int size() {
+            return pool.size();
+        }
+    }
 }

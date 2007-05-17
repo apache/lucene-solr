@@ -35,6 +35,8 @@ import java.util.BitSet;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 final class DocumentWriter {
   private Analyzer analyzer;
@@ -84,46 +86,67 @@ final class DocumentWriter {
     fieldBoosts = new float[fieldInfos.size()];	  // init fieldBoosts
     Arrays.fill(fieldBoosts, doc.getBoost());
 
-    // Before we write the FieldInfos we invert the Document. The reason is that
-    // during invertion the TokenStreams of tokenized fields are being processed 
-    // and we might encounter tokens that have payloads associated with them. In 
-    // this case we have to update the FieldInfo of the particular field.
-    invertDocument(doc);
-
-    // sort postingTable into an array
-    Posting[] postings = sortPostingTable();
-    
-    // write field infos 
-    fieldInfos.write(directory, segment + ".fnm");
-
-    // write field values
-    FieldsWriter fieldsWriter =
-            new FieldsWriter(directory, segment, fieldInfos);
     try {
-      fieldsWriter.addDocument(doc);
-    } finally {
-      fieldsWriter.close();
-    }
     
-    /*
-    for (int i = 0; i < postings.length; i++) {
-      Posting posting = postings[i];
-      System.out.print(posting.term);
-      System.out.print(" freq=" + posting.freq);
-      System.out.print(" pos=");
-      System.out.print(posting.positions[0]);
-      for (int j = 1; j < posting.freq; j++)
-	System.out.print("," + posting.positions[j]);
-      System.out.println("");
+      // Before we write the FieldInfos we invert the Document. The reason is that
+      // during invertion the TokenStreams of tokenized fields are being processed 
+      // and we might encounter tokens that have payloads associated with them. In 
+      // this case we have to update the FieldInfo of the particular field.
+      invertDocument(doc);
+    
+      // sort postingTable into an array
+      Posting[] postings = sortPostingTable();
+    
+      // write field infos 
+      fieldInfos.write(directory, segment + ".fnm");
+
+      // write field values
+      FieldsWriter fieldsWriter =
+        new FieldsWriter(directory, segment, fieldInfos);
+      try {
+        fieldsWriter.addDocument(doc);
+      } finally {
+        fieldsWriter.close();
+      }
+    
+      /*
+      for (int i = 0; i < postings.length; i++) {
+        Posting posting = postings[i];
+        System.out.print(posting.term);
+        System.out.print(" freq=" + posting.freq);
+        System.out.print(" pos=");
+        System.out.print(posting.positions[0]);
+        for (int j = 1; j < posting.freq; j++)
+	  System.out.print("," + posting.positions[j]);
+        System.out.println("");
+      }
+       */
+
+      // write postings
+      writePostings(postings, segment);
+
+      // write norms of indexed fields
+      writeNorms(segment);
+    } finally {
+      // close TokenStreams
+      IOException ex = null;
+      
+      Iterator it = openTokenStreams.iterator();
+      while (it.hasNext()) {
+        try {
+          ((TokenStream) it.next()).close();
+        } catch (IOException e) {
+          if (ex != null) {
+            ex = e;
+          }
+        }
+      }
+      openTokenStreams.clear();
+      
+      if (ex != null) {
+        throw ex;
+      }
     }
-    */
-
-    // write postings
-    writePostings(postings, segment);
-
-    // write norms of indexed fields
-    writeNorms(segment);
-
   }
 
   // Keys are Terms, values are Postings.
@@ -137,6 +160,10 @@ final class DocumentWriter {
   // If any of the tokens of a paticular field carry a payload
   // then we enable payloads for that field. 
   private BitSet fieldStoresPayloads;
+  
+  // Keep references of the token streams. We must close them after
+  // the postings are written to the segment.
+  private List openTokenStreams = new LinkedList();
 
   // Tokenizes the fields of a document into Postings.
   private final void invertDocument(Document doc)
@@ -181,42 +208,41 @@ final class DocumentWriter {
             stream = analyzer.tokenStream(fieldName, reader);
           }
           
+          // remember this TokenStream, we must close it later
+          openTokenStreams.add(stream);
+          
           // reset the TokenStream to the first token
           stream.reset();
           
-          try {
-            Token lastToken = null;
-            for (Token t = stream.next(); t != null; t = stream.next()) {
-              position += (t.getPositionIncrement() - 1);
+
+          Token lastToken = null;
+          for (Token t = stream.next(); t != null; t = stream.next()) {
+            position += (t.getPositionIncrement() - 1);
               
-              Payload payload = t.getPayload();
-              if (payload != null) {
-                // enable payloads for this field
-              	fieldStoresPayloads.set(fieldNumber);
-              }
-              
-              TermVectorOffsetInfo termVectorOffsetInfo;
-              if (field.isStoreOffsetWithTermVector()) {
-                termVectorOffsetInfo = new TermVectorOffsetInfo(offset + t.startOffset(), offset + t.endOffset());
-              } else {
-                termVectorOffsetInfo = null;
-              }
-              addPosition(fieldName, t.termText(), position++, payload, termVectorOffsetInfo);
-              
-              lastToken = t;
-              if (++length >= maxFieldLength) {
-                if (infoStream != null)
-                  infoStream.println("maxFieldLength " +maxFieldLength+ " reached, ignoring following tokens");
-                break;
-              }
+            Payload payload = t.getPayload();
+            if (payload != null) {
+              // enable payloads for this field
+              fieldStoresPayloads.set(fieldNumber);
             }
-            
-            if(lastToken != null)
-              offset += lastToken.endOffset() + 1;
-            
-          } finally {
-            stream.close();
+              
+            TermVectorOffsetInfo termVectorOffsetInfo;
+            if (field.isStoreOffsetWithTermVector()) {
+              termVectorOffsetInfo = new TermVectorOffsetInfo(offset + t.startOffset(), offset + t.endOffset());
+            } else {
+              termVectorOffsetInfo = null;
+            }
+            addPosition(fieldName, t.termText(), position++, payload, termVectorOffsetInfo);
+              
+            lastToken = t;
+            if (++length >= maxFieldLength) {
+              if (infoStream != null)
+                infoStream.println("maxFieldLength " +maxFieldLength+ " reached, ignoring following tokens");
+              break;
+            }
           }
+            
+          if(lastToken != null)
+            offset += lastToken.endOffset() + 1;
         }
 
         fieldLengths[fieldNumber] = length;	  // save field length
