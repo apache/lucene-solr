@@ -306,7 +306,11 @@ Bug Fixes
     content.  Using the contentType: "text/xml; charset=utf-8" will force
     utf-8 encoding.  If you do not specify a contentType, it will use the 
     platform default.  (Koji Sekiguchi via ryan)
- 
+
+15. SOLR-241: Undefined system properties used in configuration files now
+    cause a clear message to be logged rather than an obscure exception thrown.
+    (Koji Sekiguchi via ehatcher) 
+
 Other Changes
  1. Updated to Lucene 2.1
 

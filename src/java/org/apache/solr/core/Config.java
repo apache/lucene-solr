@@ -64,7 +64,13 @@ public class Config {
     javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     doc = builder.parse(is);
 
-    DOMUtil.substituteSystemProperties(doc);
+    try{
+    	DOMUtil.substituteSystemProperties(doc);
+    }
+    catch( SolrException e ){
+    	SolrException.log(log,"Error in "+name,e);
+    	throw e;
+    }
   }
 
   public Document getDocument() {
