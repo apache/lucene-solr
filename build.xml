@@ -34,7 +34,7 @@
   <!-- Java Version we are compatible with -->
   <property name="java.compat.version" value="1.5" />
 
-  <!-- Solr Implimentation Version -->
+  <!-- Solr Implementation Version -->
   <!--
        This can be any string value that does not include spaces
        This will be used when creating build artifact file names.
