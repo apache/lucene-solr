@@ -325,7 +325,8 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <p>Lucene supports modifying query terms to provide a wide range of searching options.</p>
 <a name="N10076"></a><a name="Wildcard Searches"></a>
 <h3 class="boxed">Wildcard Searches</h3>
-<p>Lucene supports single and multiple character wildcard searches.</p>
+<p>Lucene supports single and multiple character wildcard searches within single terms
+        (not within phrase queries).</p>
 <p>To perform a single character wildcard search use the "?" symbol.</p>
 <p>To perform a multiple character wildcard search use the "*" symbol.</p>
 <p>The single character wildcard search looks for terms that match that with the single character replaced. For example, to search for "text" or "test" you can use the search:</p>

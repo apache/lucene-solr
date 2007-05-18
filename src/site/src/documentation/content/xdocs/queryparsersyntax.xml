@@ -82,7 +82,8 @@
 
         <section id="Wildcard Searches">
             <title>Wildcard Searches</title>
-        <p>Lucene supports single and multiple character wildcard searches.</p>
+        <p>Lucene supports single and multiple character wildcard searches within single terms
+        (not within phrase queries).</p>
         <p>To perform a single character wildcard search use the "?" symbol.</p>
         <p>To perform a multiple character wildcard search use the "*" symbol.</p>
         <p>The single character wildcard search looks for terms that match that with the single character replaced. For example, to search for "text" or "test" you can use the search:</p>
