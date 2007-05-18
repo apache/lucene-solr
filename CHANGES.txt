@@ -245,6 +245,14 @@ Optimizations
     modifying the original query.
     (hossman)
 
+ 3. SOLR-221: Speed up sorted faceting on multivalued fields by ~60%
+    when the base set consists of a relatively large portion of the
+    index. (yonik)
+
+ 4. SOLR-221: Added a facet.enum.cache.minDf parameter which avoids
+    using the filterCache for terms that match few documents, trading
+    decreased memory usage for increased query time. (yonik)
+
 Bug Fixes
  1. SOLR-87: Parsing of synonym files did not correctly handle escaped
     whitespace such as \r\n\t\b\f. (yonik)
