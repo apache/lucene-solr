@@ -117,6 +117,13 @@ public abstract class SolrParams {
    */
   public static final String FACET_PREFIX = "facet.prefix";
 
+ /**
+   * When faceting by enumerating the terms in a field,
+   * only use the filterCache for terms with a df >= to this parameter.
+   */
+  public static final String FACET_ENUM_CACHE_MINDF = "facet.enum.cache.minDf";
+
+
   /** If the content stream should come from a URL (using URLConnection) */
   public static final String STREAM_URL = "stream.url";
 

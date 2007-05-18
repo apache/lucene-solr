@@ -287,7 +287,23 @@ public abstract class AbstractSolrTestCase extends TestCase {
   public SolrQueryRequest req(String... q) {
     return lrf.makeRequest(q);
   }
-    
+
+  /**
+   * Generates a SolrQueryRequest using the LocalRequestFactory
+   * @see #lrf
+   */
+  public SolrQueryRequest req(String[] params, String... moreParams) {
+    String[] allParams = moreParams;
+    if (params.length!=0) {
+      int len = params.length + moreParams.length;
+      allParams = new String[len];
+      System.arraycopy(params,0,allParams,0,params.length);
+      System.arraycopy(moreParams,0,allParams,params.length,moreParams.length);
+    }
+
+    return lrf.makeRequest(allParams);
+  }
+
   /** Neccessary to make method signatures un-ambiguous */
   public static class Doc {
     public String xml;

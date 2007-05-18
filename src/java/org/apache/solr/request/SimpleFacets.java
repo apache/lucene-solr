@@ -20,10 +20,12 @@ package org.apache.solr.request;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
@@ -303,6 +305,7 @@ public class SimpleFacets {
     return res;
   }
 
+
   /**
    * Returns a list of terms in the specified field along with the 
    * corresponding count of documents in the set that match that constraint.
@@ -321,6 +324,9 @@ public class SimpleFacets {
     * don't enum if we get our max from them
     */
 
+    // Minimum term docFreq in order to use the filterCache for that term.
+    int minDfFilterCache = params.getFieldInt(field, SolrParams.FACET_ENUM_CACHE_MINDF, 0);
+
     IndexSchema schema = searcher.getSchema();
     IndexReader r = searcher.getReader();
     FieldType ft = schema.getFieldType(field);
@@ -335,6 +341,7 @@ public class SimpleFacets {
 
     String startTerm = prefix==null ? "" : ft.toInternal(prefix);
     TermEnum te = r.terms(new Term(field,startTerm));
+    TermDocs td = r.termDocs();
     do {
       Term t = te.term();
 
@@ -345,8 +352,23 @@ public class SimpleFacets {
 
       int df = te.docFreq();
 
-      if (df>0) { /* check df since all docs may be deleted */
-        int c = searcher.numDocs(new TermQuery(t), docs);
+      // If we are sorting, we can use df>min (rather than >=) since we
+      // are going in index order.  For certain term distributions this can
+      // make a large difference (for example, many terms with df=1).
+      if (df>0 && df>min) {
+        int c;
+
+        if (df >= minDfFilterCache) {
+          // use the filter cache
+          c = searcher.numDocs(new TermQuery(t), docs);
+        } else {
+          // iterate over TermDocs to calculate the intersection
+          td.seek(te);
+          c=0;
+          while (td.next()) {
+            if (docs.exists(td.doc())) c++;
+          }
+        }
 
         if (sort) {
           if (c>min) {
@@ -373,7 +395,10 @@ public class SimpleFacets {
     if (missing) {
       res.add(null, getFieldMissingCount(searcher,docs,field));
     }
-    
+
+    te.close();
+    td.close();    
+
     return res;
   }
 

@@ -610,13 +610,15 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   public void testFacetMultiValued() {
     doFacets("t_s");
+    doFacets("t_s", "facet.enum.cache.minDf", "2");
+    doFacets("t_s", "facet.enum.cache.minDf", "100");
   }
 
   public void testFacetSingleValued() {
     doFacets("t_s1");
   }
 
-  public void doFacets(String f) {
+  public void doFacets(String f, String... params) {
     String pre = "//lst[@name='"+f+"']";
     String notc = "id:[* TO *] -"+f+":C";
 
@@ -637,7 +639,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertU(commit());
 
     assertQ("check counts for unlimited facet",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"facet", "true"
                 ,"facet.field", f
                 )
@@ -654,7 +656,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
     assertQ("check counts for facet with generous limit",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"facet", "true"
                 ,"facet.limit", "100"
                 ,"facet.field", f
@@ -672,7 +674,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
     assertQ("check counts for limited facet",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"facet", "true"
                 ,"facet.limit", "2"
                 ,"facet.field", f
@@ -684,7 +686,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
    assertQ("check offset",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"facet", "true"
                 ,"facet.offset", "1"
                 ,"facet.limit", "1"
@@ -696,7 +698,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
     assertQ("test sorted facet paging with zero (don't count in limit)",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"fq",notc
                 ,"facet", "true"
                 ,"facet.field", f
@@ -714,7 +716,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
     assertQ("test sorted facet paging with zero (test offset correctness)",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"fq",notc
                 ,"facet", "true"
                 ,"facet.field", f
@@ -729,7 +731,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
    assertQ("test facet unsorted paging",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"fq",notc
                 ,"facet", "true"
                 ,"facet.field", f
@@ -748,7 +750,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
    assertQ("test facet unsorted paging",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"fq",notc
                 ,"facet", "true"
                 ,"facet.field", f
@@ -763,7 +765,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
 
     assertQ("test facet unsorted paging, mincount=2",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                 ,"fq",notc
                 ,"facet", "true"
                 ,"facet.field", f
@@ -780,14 +782,16 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
 
   public void testFacetPrefixMultiValued() {
-    doFacetPrefix("t_s");
+    doFacetPrefix("t_s");   
+    doFacetPrefix("t_s", "facet.enum.cache.minDf", "3");
+    doFacetPrefix("t_s", "facet.enum.cache.minDf", "100");
   }
 
   public void testFacetPrefixSingleValued() {
     doFacetPrefix("t_s1");
   }
 
-  public void doFacetPrefix(String f) {
+  public void doFacetPrefix(String f, String... params) {
     String indent="on";
     String pre = "//lst[@name='"+f+"']";
     String notc = "id:[* TO *] -"+f+":C";
@@ -807,7 +811,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertU(commit());
 
     assertQ("test facet.prefix middle, exact match first term",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -824,7 +828,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix middle, exact match first term, unsorted",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -842,7 +846,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
 
      assertQ("test facet.prefix middle, exact match first term, unsorted",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -860,7 +864,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
 
     assertQ("test facet.prefix middle, paging",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -876,7 +880,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix middle, paging",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -891,7 +895,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix middle, paging",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -906,7 +910,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix end, not exact match",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -922,7 +926,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix end, exact match",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -938,7 +942,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix past end",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -952,7 +956,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix past end",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -966,7 +970,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix at start, exact match",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -980,7 +984,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             ,pre+"/int[1][@name='AAA'][.='1']"
     );
     assertQ("test facet.prefix at Start, not exact match",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -994,7 +998,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             ,pre+"/int[1][@name='AAA'][.='1']"
     );
     assertQ("test facet.prefix at Start, not exact match",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -1008,7 +1012,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             ,pre+"/int[1][@name='AAA'][.='1']"
     );    
     assertQ("test facet.prefix before start",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
@@ -1022,7 +1026,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
 
     assertQ("test facet.prefix before start",
-            req("q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
                     ,"facet.field", f
