@@ -20,11 +20,7 @@ solr_url = ENV["SOLR_URL"] || "http://localhost:8983/solr"
 dl_filename = ARGV[0]
 debug = ARGV[1] == "-debug"
 
-solr = Solr::Connection.new(solr_url)
-
-lines = IO.readlines(dl_filename)
-headers = lines[0].split("\t").collect{|h| h.chomp}
-puts headers.join(','),"-----" if debug
+source = Solr::Importer::DelimitedFileSource.new(dl_filename)
 
 # Exported column names
 # medium,associatedURL,boxHeightInInches,boxLengthInInches,boxWeightInPounds,boxWidthInInches,
@@ -32,47 +28,28 @@ puts headers.join(','),"-----" if debug
 # genre,price,currentValue,language,netrating,description,owner,publisher,published,rare,purchaseDate,rating,
 # used,signed,hasExperienced,notes,location,paid,condition,notowned,author,illustrator,pages
 mapping = {
-  :id => :upc,
+  :id => Proc.new {|data| data[:upc].empty? ? data[:asin] : data[:upc]},
   :medium_facet => :medium,
   :country_facet => :country,
   :signed_facet => :signed,
   :rating_facet => :netrating,
   :language_facet => :language,
-  :genre_facet => Proc.new {|data| data.genre.split('/').map {|s| s.strip}},
+  :genre_facet => Proc.new {|data| data[:genre].split('/').map {|s| s.strip}},
   :title_text => :title,
   :full_title_text => :fullTitle,
-  :asin_text => :asin,  # TODO: schema needs a field for non-tokenized text which is not a facet
+  :asin_display => :asin,
   :notes_text => :notes,
   :publisher_facet => :publisher,
   :description_text => :description,
   :author_text => :author,
   :pages_text => :pages,
-  :published_year_facet => Proc.new {|data| data.published.scan(/\d\d\d\d/)[0]}
+  :published_year_facet => Proc.new {|data| data[:published].scan(/\d\d\d\d/)[0]}
 }
 
-lines[1..-1].each do |line|
-  data = headers.zip(line.split("\t").collect{|s| s.chomp})
-  def data.method_missing(key)
-    self.assoc(key.to_s)[1]
-  end
-  
-  # puts data.inspect if debug
-
-  doc = {}
-  mapping.each do |solr_name, data_column_or_proc|
-    if data_column_or_proc.is_a? Proc
-      value = data_column_or_proc.call(data)
-    else
-      value = data.send(data_column_or_proc)
-    end  
-    doc[solr_name] = value if value
-  end
-  
-  puts data.title
-  puts doc.inspect if debug
-  solr.add doc unless debug
-
+indexer = Solr::Indexer.new(source, mapping, :debug => debug)
+indexer.index do |record, solr_document|
+  # can modify solr_document before it is indexed here
 end
 
-solr.commit unless debug
-solr.optimize unless debug
+indexer.solr.commit unless debug
+indexer.solr.optimize unless debug
