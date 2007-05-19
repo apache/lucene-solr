@@ -349,14 +349,14 @@ public class SpellChecker {
       String end = null;
       for (int i = 0; i < len - ng + 1; i++) {
         String gram = text.substring(i, i + ng);
-        doc.add(new Field(key, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field(key, gram, Field.Store.NO, Field.Index.UN_TOKENIZED));
         if (i == 0) {
-          doc.add(new Field("start" + ng, gram, Field.Store.YES, Field.Index.UN_TOKENIZED));
+          doc.add(new Field("start" + ng, gram, Field.Store.NO, Field.Index.UN_TOKENIZED));
         }
         end = gram;
       }
       if (end != null) { // may not be present if len==ng1
-        doc.add(new Field("end" + ng, end, Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("end" + ng, end, Field.Store.NO, Field.Index.UN_TOKENIZED));
       }
     }
   }

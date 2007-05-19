@@ -166,7 +166,11 @@ Optimizations
     TestBoolean2 test to keep passing.
     (Paul Elschot via Otis Gospodnetic)
 
-Documentation:
+ 4. LUCENE-882: Spellchecker doesn't store the ngrams anymore but only indexes
+    them to keep the spell index small. (Daniel Naber)
+ 
+Documentation
+
  1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to http://wiki.apache.org/lucene-java/   Updated the links in the docs and wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
 
  2. Fixed the javadoc for ScoreDocComparator.compare() to be consistent with 
