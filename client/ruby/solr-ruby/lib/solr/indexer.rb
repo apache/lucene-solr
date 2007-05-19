@@ -11,12 +11,9 @@
 # limitations under the License.
 
 class Solr::Indexer
-  # deprecated, use Indexer.new(ds,mapping).index instead
-  def self.index(data_source, mapper_or_mapping, options={})
-    indexer = Solr::Indexer.new(data_source, mapper_or_mapping, options)
-    indexer.index
-  end
+  attr_reader :solr
   
+  # TODO: document options!
   def initialize(data_source, mapper_or_mapping, options={})
     solr_url = options[:solr_url] || ENV["SOLR_URL"] || "http://localhost:8983/solr"
     @solr = Solr::Connection.new(solr_url, options) #TODO - these options contain the solr_url and debug keys also, so tidy up what gets passed
@@ -33,7 +30,8 @@ class Solr::Indexer
     @data_source.each do |record|
       document = @mapper.map(record)
       
-      yield(record, document) if block_given? # TODO check return of block, if not true then don't index
+      # TODO: check arrity of block, if 3, pass counter as 3rd argument
+      yield(record, document) if block_given? # TODO check return of block, if not true then don't index, or perhaps if document.empty?
       
       buffer << document
       
