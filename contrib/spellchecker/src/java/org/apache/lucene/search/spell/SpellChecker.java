@@ -313,6 +313,16 @@ public class SpellChecker {
     // close writer
     writer.optimize();
     writer.close();
+    // close reader so it will be re-opened (and see the new content) when exist()
+    // is called the next time:
+    if (reader != null) {
+      reader.close();
+      reader = null;
+    }
+    // also re-open the spell index to see our own changes when the next suggestion
+    // is fetched:
+    searcher.close();
+    searcher = new IndexSearcher(this.spellIndex);
   }
 
   private int getMin(int l) {

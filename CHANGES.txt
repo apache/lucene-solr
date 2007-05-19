@@ -125,6 +125,9 @@ Bug fixes
     has written the postings. Then the resources associated with the 
     TokenStreams can safely be released. (Michael Busch)
 
+16. LUCENE-883: consecutive calls to Spellchecker.indexDictionary()
+    won't insert terms twice anymore. (Daniel Naber)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
