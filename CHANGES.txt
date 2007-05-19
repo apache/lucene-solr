@@ -34,8 +34,9 @@ API Changes
     throw AlreadyClosedException if they are accessed after being
     closed.  (Mike McCandless)
 
- 5. LUCENE-834: Changed some access levels for certain Span classes to allow them to be overridden.  They have
-    been marked expert only and not for public consumption. (Grant Ingersoll) 
+ 5. LUCENE-834: Changed some access levels for certain Span classes to allow them
+    to be overridden.  They have been marked expert only and not for public
+    consumption. (Grant Ingersoll) 
 
  6. LUCENE-796: Removed calls to super.* from various get*Query methods in
     MultiFieldQueryParser, in order to allow sub-classes to override them.
@@ -129,7 +130,8 @@ New features
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
     (Otis Gospodnetic)
 
- 2. LUCENE-822: Added FieldSelector capabilities to Searchable for use with RemoteSearcher, and other Searchable implementations. (Mark Miller, Grant Ingersoll)
+ 2. LUCENE-822: Added FieldSelector capabilities to Searchable for use with
+    RemoteSearcher, and other Searchable implementations. (Mark Miller, Grant Ingersoll)
 
  3. LUCENE-755: Added the ability to store arbitrary binary metadata in the posting list.
     These metadata are called Payloads. For every position of a Token one Payload in the form
@@ -138,14 +140,18 @@ New features
             contain appropriate warnings in the javadocs.
     (Michael Busch)
 
- 4. LUCENE-834: Added BoostingTermQuery which can boost scores based on the values of a payload (see #3 above.) (Grant Ingersoll)
+ 4. LUCENE-834: Added BoostingTermQuery which can boost scores based on the
+    values of a payload (see #3 above.) (Grant Ingersoll)
 
- 5. LUCENE-834: Similarity has a new method for scoring payloads called scorePayloads that can be overridden to take advantage
-    of payload storage (see #3 above)
+ 5. LUCENE-834: Similarity has a new method for scoring payloads called
+    scorePayloads that can be overridden to take advantage of payload
+    storage (see #3 above)
 
- 6. LUCENE-834: Added isPayloadAvailable() onto TermPositions interface and implemented it in the appropriate places (Grant Ingersoll)
+ 6. LUCENE-834: Added isPayloadAvailable() onto TermPositions interface and
+    implemented it in the appropriate places (Grant Ingersoll)
 
- 7. LUCENE-853: Added RemoteCachingWrapperFilter to enable caching of Filters on the remote side of the RMI connection.
+ 7. LUCENE-853: Added RemoteCachingWrapperFilter to enable caching of Filters
+    on the remote side of the RMI connection.
     (Matt Ericson via Otis Gospodnetic)
 
 Optimizations
@@ -171,7 +177,9 @@ Optimizations
  
 Documentation
 
- 1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to http://wiki.apache.org/lucene-java/   Updated the links in the docs and wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
+ 1. LUCENE 791 && INFRA-1173: Infrastructure moved the Wiki to
+    http://wiki.apache.org/lucene-java/   Updated the links in the docs and
+    wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
 
  2. Fixed the javadoc for ScoreDocComparator.compare() to be consistent with 
     java.util.Comparator.compare(): Any integer is allowed to be returned
@@ -292,10 +300,11 @@ New features
     the Directory.  (Ning Li via Mike McCandless)
 
 14. LUCENE-762: Added in SIZE and SIZE_AND_BREAK FieldSelectorResult options
-    which allow one to retrieve the size of a field without retrieving the actual field.
-    (Chuck Williams via Grant Ingersoll)
+    which allow one to retrieve the size of a field without retrieving the
+    actual field. (Chuck Williams via Grant Ingersoll)
 
-15. LUCENE-799: Properly handle lazy, compressed fields.  (Mike Klaas via Grant Ingersoll)
+15. LUCENE-799: Properly handle lazy, compressed fields.
+    (Mike Klaas via Grant Ingersoll)
 
 API Changes
 
@@ -609,9 +618,13 @@ Optimizations
      register a new finalizer. (Yonik Seeley)
 
 Test Cases
+
   1. Added TestTermScorer.java (Grant Ingersoll)
+
   2. Added TestWindowsMMap.java (Benson Margulies via Mike McCandless)
-  3. LUCENE-744 Append the user.name property onto the temporary directory that is created so it doesn't interfere with other users. (Grant Ingersoll)
+
+  3. LUCENE-744 Append the user.name property onto the temporary directory 
+     that is created so it doesn't interfere with other users. (Grant Ingersoll)
 
 Documentation
 
@@ -625,18 +638,26 @@ Documentation
 
   3. Added javadocs for FieldSelectorResult.java. (Grant Ingersoll)
 
-  4. Moved xdocs directory to src/site/src/documentation/content/xdocs per Issue 707.  Site now builds using Forrest, just like the other Lucene siblings.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite for info on updating the website. (Grant Ingersoll with help from Steve Rowe, Chris Hostetter, Doug Cutting, Otis Gospodnetic, Yonik Seeley)
+  4. Moved xdocs directory to src/site/src/documentation/content/xdocs per
+     Issue 707.  Site now builds using Forrest, just like the other Lucene
+     siblings.  See http://wiki.apache.org/jakarta-lucene/HowToUpdateTheWebsite
+     for info on updating the website. (Grant Ingersoll with help from Steve Rowe,
+     Chris Hostetter, Doug Cutting, Otis Gospodnetic, Yonik Seeley)
 
   5. Added in Developer and System Requriements sections under Resources (Grant Ingersoll)
 
-  6. LUCENE-713 Updated the Term Vector section of File Formats to include documentation on how Offset and Position info are stored in the TVF file. (Grant Ingersoll, Samir Abdou)
+  6. LUCENE-713 Updated the Term Vector section of File Formats to include
+     documentation on how Offset and Position info are stored in the TVF file.
+     (Grant Ingersoll, Samir Abdou)
 
-  7. Added in link to Clover Test Code Coverage Reports under the Develop section in Resources (Grant Ingersoll)
+  7. Added in link to Clover Test Code Coverage Reports under the Develop
+     section in Resources (Grant Ingersoll)
 
   8. LUCENE-748: Added details for semantics of IndexWriter.close on
      hitting an Exception.  (Jed Wesley-Smith via Mike McCandless)
 
-  9. Added some text about what is contained in releases.  (Eric Haszlakiewicz via Grant Ingersoll)
+  9. Added some text about what is contained in releases.
+     (Eric Haszlakiewicz via Grant Ingersoll)
 
   10. LUCENE-758: Fix javadoc to clarify that RAMDirectory(Directory)
       makes a full copy of the starting Directory.  (Mike McCandless)
@@ -647,13 +668,19 @@ Documentation
 
 Build
 
-  1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721  To enable clover code coverage, you must have clover.jar in the ANT classpath and specify -Drun.clover=true on the command line.(Michael Busch and Grant Ingersoll)
+  1. Added in clover test code coverage per http://issues.apache.org/jira/browse/LUCENE-721
+     To enable clover code coverage, you must have clover.jar in the ANT
+     classpath and specify -Drun.clover=true on the command line.
+     (Michael Busch and Grant Ingersoll)
 
-  2. Added a sysproperty in common-build.xml per Lucene 752 to map java.io.tmpdir to ${build.dir}/test just like the tempDir sysproperty.
+  2. Added a sysproperty in common-build.xml per Lucene 752 to map java.io.tmpdir to
+     ${build.dir}/test just like the tempDir sysproperty.
 
-  3. LUCENE-757 Added new target named init-dist that does setup for distribution of both binary and source distributions.  Called by package and package-*-src
+  3. LUCENE-757 Added new target named init-dist that does setup for
+     distribution of both binary and source distributions.  Called by package 
+     and package-*-src
 
-Release 2.0.0 2006-05-26
+======================= Release 2.0.0 2006-05-26 =======================
 
 API Changes
 
