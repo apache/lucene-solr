@@ -21,6 +21,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
@@ -334,8 +335,17 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
    * Retrieve the {@link Document} instance corresponding to the document id.
    */
   public Document doc(int i) throws IOException {
-    return doc(i, null);
+    return doc(i, (Set<String>)null);
   }
+
+  /** Retrieve a {@link Document} using a {@link org.apache.lucene.document.FieldSelector}
+   * This method does not currently use the Solr document cache.
+   * 
+   * @see Searchable#document(int, FieldSelector) */
+  public Document doc(int n, FieldSelector fieldSelector) throws IOException {
+    return searcher.getIndexReader().document(n, fieldSelector);
+  }
+
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
    *

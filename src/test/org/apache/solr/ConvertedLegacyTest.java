@@ -1035,7 +1035,7 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
     assertQ(req("id:42 AND subword:www.yahoo.com")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:http://www.yahoo.com")
+    assertQ(req("id:42 AND subword:http\\://www.yahoo.com")
             ,"*[count(//doc)=1]"
             );
 
