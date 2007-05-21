@@ -190,7 +190,10 @@ New Features
 31. SOLR-224: Adding a PhoneticFilterFactory that uses apache commons codec
     language encoders to build phonetically similar tokens.  This currently
     supports: DoubleMetaphone, Metaphone, Soundex, and RefinedSoundex (ryan)
-    
+
+32. SOLR-199: new n-gram tokenizers available via NGramTokenizerFactory 
+    and EdgeNGramTokenizerFactory. (Adam Hiatt via yonik)
+
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
