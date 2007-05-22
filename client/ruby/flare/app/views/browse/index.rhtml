@@ -82,15 +82,17 @@
 	<%=link_to '[clear constraints]', :action => 'clear'%>
 </div>
 
-<% form_tag(:action=>'save') do %>
-  <%= text_field_tag :name %>
-  <%=submit_tag "save"%>
+<% form_tag({:action=>'save'},{:id => 'savesearch', :style => "display:none;"}) do %>
+  <%= text_field_tag :name, "", {:size => 10, :id => "savesearch_name"} %>
+  <%= link_to_function "save", "document.forms['savesearch'].submit();" -%>
+  <%= link_to_function "cancel", "Element.toggle('savesearch'); Element.toggle('savesearch_link')" -%>
 <% end %>
+<%= link_to_function "[save these constraints]", "Element.toggle('savesearch'); Element.toggle('savesearch_link'); $('savesearch_name').focus()", {:id => "savesearch_link"} -%>
 
 </div>
 
 <% if @flare.empty_constraints? %>
-click click click
+  search or facet to see results
 <% else %>
 
 <div class="resultsheader">Results <strong><%=[@start + 1,@response.total_hits].min%>-<%=[@response.total_hits,@results_per_page + @start].min%></strong> of <strong><%=@response.total_hits%></strong></div>
