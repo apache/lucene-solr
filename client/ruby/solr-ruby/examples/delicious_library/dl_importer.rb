@@ -20,6 +20,11 @@ solr_url = ENV["SOLR_URL"] || "http://localhost:8983/solr"
 dl_filename = ARGV[0]
 debug = ARGV[1] == "-debug"
 
+if dl_filename == nil
+  puts "You must pass a filename as an option."
+  exit
+end
+
 source = Solr::Importer::DelimitedFileSource.new(dl_filename)
 
 # Exported column names
