@@ -39,8 +39,11 @@ public class BooleanClause implements java.io.Serializable {
     /** Use this operator for clauses that <i>must</i> appear in the matching documents. */
     public static final Occur MUST = new Occur("MUST");
     /** Use this operator for clauses that <i>should</i> appear in the 
-     * matching documents. For a BooleanQuery with two <code>SHOULD</code> 
-     * subqueries, at least one of the clauses must appear in the matching documents. */
+     * matching documents. For a BooleanQuery with no <code>MUST</code> 
+     * clauses one or more <code>SHOULD</code> clauses must match a document 
+     * for the BooleanQuery to match.
+     * @see BooleanQuery#setMinimumNumberShouldMatch
+     */
     public static final Occur SHOULD = new Occur("SHOULD");
     /** Use this operator for clauses that <i>must not</i> appear in the matching documents.
      * Note that it is not possible to search for queries that only consist
