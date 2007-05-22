@@ -12,6 +12,6 @@
 
 # Added this .rake file to keep Rake happy without a database.
 # Remove once a database is in the picture.
-["test:units", "test:functionals", "recent"].each do |name|
+["test:units", "test:functionals", "recent", "test:integration"].each do |name|
   Rake::Task[name].prerequisites.clear
 end
