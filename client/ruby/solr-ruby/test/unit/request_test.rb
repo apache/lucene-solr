@@ -22,7 +22,7 @@ class RequestTest < Test::Unit::TestCase
     request = Solr::Request::Commit.new
     assert_equal :xml, request.response_format
     assert_equal 'update', request.handler
-    assert_equal '<commit waitSearcher="true" waitFlush="true"/>', request.to_s
+    assert_match(/<commit waitSearcher=["']true["'] waitFlush=["'']true["'']\/>/, request.to_s)
   end
   
   def test_add_doc_request

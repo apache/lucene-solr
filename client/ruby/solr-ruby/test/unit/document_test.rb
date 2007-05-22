@@ -59,7 +59,7 @@ class DocumentTest < Test::Unit::TestCase
   def test_boost
     doc = Solr::Document.new :name => "McGrump"
     doc.boost = 300.28
-    assert_match(/<doc boost=['"]300.28['"]>[\s]+<field name=['"]name['"]>McGrump<\/field>[\s]+<\/doc>/, doc.to_xml.to_s)
+    assert_match(/<doc boost=['"]300.28['"]>[\s]*<field name=['"]name['"]>McGrump<\/field>[\s]*<\/doc>/, doc.to_xml.to_s)
   end
 
 end
