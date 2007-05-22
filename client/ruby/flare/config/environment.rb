@@ -69,7 +69,7 @@ solr_environments = {
 
   :delicious => {
     :timeline_dates => :published_year_facet,
-    :image_proc => Proc.new {|doc| "http://images.amazon.com/images/P/#{doc['asin_text']}.01.MZZZZZZZ"},
+    :image_proc => Proc.new {|doc| "http://images.amazon.com/images/P/#{doc['asin_display']}.01.MZZZZZZZ"},
   },
 
   :tang => {
