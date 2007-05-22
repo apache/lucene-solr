@@ -1,3 +1,0 @@
-v0.0.1  <real soon now>
-- initial release
-
