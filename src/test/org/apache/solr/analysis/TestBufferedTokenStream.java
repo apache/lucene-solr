@@ -26,9 +26,9 @@ import java.io.IOException;
 import java.io.StringReader;
 
 /**
- * Test that BufferedTokenStream behaves as advertized in subclasses.
+ * Test that BufferedTokenStream behaves as advertised in subclasses.
  */
-public class TestBufferedTokenStream extends TestCase {
+public class TestBufferedTokenStream extends BaseTokenTestCase {
 
   /** Example of a class implementing the rule "A" "B" => "Q" "B" */
   public static class AB_Q_Stream extends BufferedTokenStream {
@@ -52,20 +52,7 @@ public class TestBufferedTokenStream extends TestCase {
       return t;
     }
   }
-  
-  public static String tsToString(TokenStream in) throws IOException {
-    StringBuffer out = new StringBuffer();
-    Token t = in.next();
-    if (null != t)
-      out.append(t.termText());
     
-    for (t = in.next(); null != t; t = in.next()) {
-      out.append(" ").append(t.termText());
-    }
-    in.close();
-    return out.toString();
-  }
-  
   public void testABQ() throws Exception {
     final String input = "How now A B brown A cow B like A B thing?";
     final String expected = "How now Q B brown A cow B like Q B thing?";

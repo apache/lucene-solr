@@ -194,6 +194,10 @@ New Features
 32. SOLR-199: new n-gram tokenizers available via NGramTokenizerFactory 
     and EdgeNGramTokenizerFactory. (Adam Hiatt via yonik)
 
+33. SOLR-234: TrimFilter can update the Token's startOffset and endOffset 
+    if updateOffsets="true".  By default the Token offsets are unchanged.
+    (ryan)
+    
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).

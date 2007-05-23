@@ -29,17 +29,50 @@ import java.io.IOException;
  * @version $Id:$
  */
 public final class TrimFilter extends TokenFilter {
+  
+  final boolean updateOffsets;
 
-  public TrimFilter(TokenStream in) {
+  public TrimFilter(TokenStream in, boolean updateOffsets ) {
     super(in);
+    this.updateOffsets = updateOffsets;
   }
 
+  @Override
   public final Token next() throws IOException {
     Token t = input.next();
     if (null == t || null == t.termText())
       return t;
 
-    t.setTermText(t.termText().trim());
+    if( updateOffsets ) {
+      String txt = t.termText();
+      int start = 0;
+      int end = txt.length();
+      int endOff = 0;
+      
+      // eat the first characters
+      while ((start < end) && (txt.charAt(start) <= ' ')) {
+        start++;
+      }
+      
+      // eat the end characters
+      while ((start < end) && (txt.charAt(end-1) <= ' ')) {
+        end--;
+        endOff++;
+      }
+      
+      if( start > 0 || end < txt.length() ) {
+        int incr = t.getPositionIncrement();
+        t = new Token( t.termText().substring( start, end ),
+             t.startOffset()+start,
+             t.endOffset()-endOff,
+             t.type() );
+        
+        t.setPositionIncrement( incr ); //+ start ); TODO? what should happen with the offset
+      }
+    }
+    else {
+      t.setTermText( t.termText().trim() );
+    }
     return t;
   }
 }

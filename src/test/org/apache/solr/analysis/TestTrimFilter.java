@@ -18,8 +18,10 @@
 package org.apache.solr.analysis;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Arrays;
+import java.util.List;
 
 import junit.framework.TestCase;
 
@@ -30,32 +32,36 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * @version $Id:$
  */
-public class TestTrimFilter extends TestCase {
+public class TestTrimFilter extends BaseTokenTestCase {
   
   public void testTrim() throws Exception {
     TokenStream ts = new TrimFilter
       (new IterTokenStream(new Token(" a ", 1, 5),
                            new Token("b   ",6,10),
                            new Token("cCc",11,15),
-                           new Token("   ",16,20)));
+                           new Token("   ",16,20)), false );
 
     assertEquals("a", ts.next().termText());
     assertEquals("b", ts.next().termText());
     assertEquals("cCc", ts.next().termText());
     assertEquals("", ts.next().termText());
     assertNull(ts.next());
+    
+    ts = new TrimFilter( new IterTokenStream(
+           new Token(" a", 0,2),
+           new Token("b ", 0,2),
+           new Token(" c ",0,3),
+           new Token("   ",0,3)), true );
+    
+    List<Token> expect = tokens( "a,1,1,2 b,1,0,1 c,1,1,2 ,1,3,3" );
+    List<Token> real = getTokens(ts);
+    for( Token t : expect ) {
+      System.out.println( "TEST:" + t );
+    }
+    for( Token t : real ) {
+      System.out.println( "REAL:" + t );
+    }
+    assertTokEqualOff( expect, real );
   }
 
-  public static class IterTokenStream extends TokenStream {
-    Iterator<Token> toks;
-    public IterTokenStream(Token... toks) {
-      this.toks = Arrays.asList(toks).iterator();
-    }
-    public Token next() {
-      if (toks.hasNext()) {
-        return toks.next();
-      }
-      return null;
-    }
-  }
 }

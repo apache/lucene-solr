@@ -19,10 +19,7 @@ package org.apache.solr.analysis;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-
-import junit.framework.TestCase;
 
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.DoubleMetaphone;
@@ -30,13 +27,12 @@ import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
 
 
 /**
- * @version $Id:$
+ * @version $Id$
  */
-public class TestPhoneticFilter extends TestCase {
+public class TestPhoneticFilter extends BaseTokenTestCase {
   
   public void testFactory()
   {
@@ -101,18 +97,5 @@ public class TestPhoneticFilter extends TestCase {
     runner( new Metaphone(), false );
     runner( new Soundex(), false );
     runner( new RefinedSoundex(), false );
-  }
-
-  public static class IterTokenStream extends TokenStream {
-    Iterator<Token> toks;
-    public IterTokenStream(Iterator<Token> toks) {
-      this.toks = toks;
-    }
-    public Token next() {
-      if (toks.hasNext()) {
-        return toks.next();
-      }
-      return null;
-    }
   }
 }

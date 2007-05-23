@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 /**
  * HyphenatedWordsFilter test
  */
-public class TestHyphenatedWordsFilter extends TestCase {
+public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenatedWords() throws Exception {
 		String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on";
 		String outputAfterHyphenatedWordsFilter = "ecological develop comprehensive-hands-on";
@@ -39,17 +39,5 @@ public class TestHyphenatedWordsFilter extends TestCase {
 		String actual = tsToString(ts);
 		assertEquals("Testing HyphenatedWordsFilter",
 				outputAfterHyphenatedWordsFilter, actual);
-	}
-
-	public static String tsToString(TokenStream in) throws IOException {
-		StringBuffer out = new StringBuffer();
-		Token t = in.next();
-		if (null != t)
-			out.append(t.termText());
-
-		for (t = in.next(); null != t; t = in.next()) {
-			out.append(" ").append(t.termText());
-		}
-		return out.toString();
 	}
 }
