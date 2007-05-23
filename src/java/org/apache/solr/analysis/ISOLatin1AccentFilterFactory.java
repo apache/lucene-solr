@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.TokenStream;
 /** Factory for ISOLatin1AccentFilter
  *  $Id$ 
  */
-
 public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new ISOLatin1AccentFilter(input);
