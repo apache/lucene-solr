@@ -410,7 +410,7 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 <a href="http://localhost:8983/solr/select/?indent=on&q=video&fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;price desc&fl=name,id">q=video;price desc&amp;fl=name,id</a>  (add sort specification: sort by price descending) </li>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video;price desc&fl=name,id">q=video&amp;sort=price desc&amp;fl=name,id</a>  (add sort specification: sort by price descending) </li>
     
 </ul>
 <p>
@@ -420,20 +420,20 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 <a name="N10158"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
-      Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  After your search, add a semi-colon followed by a list of "field direction" pairs...
+      Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  Use the 'sort' parameter to specify "field direction" pairs...
     </p>
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;price+desc">video; price desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+desc">video; price desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;price+asc">video; price asc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+asc">video; price asc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;inStock+asc+price+desc">video; inStock asc, price desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc+price+desc">video; inStock asc, price desc</a>
 </li>
     
 </ul>
@@ -443,11 +443,11 @@ curl http://localhost:8983/solr/update --data-binary '&lt;commit/&gt;'
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;score+desc">video; score desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=score+desc">video; score desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;inStock+asc,score+desc">video; inStock asc, score desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc,score+desc">video; inStock asc, score desc</a>
 </li>
     
 </ul>
