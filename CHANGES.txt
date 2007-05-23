@@ -128,6 +128,9 @@ Bug fixes
 16. LUCENE-883: consecutive calls to Spellchecker.indexDictionary()
     won't insert terms twice anymore. (Daniel Naber)
 
+17. LUCENE-881: QueryParser.escape() now also escapes the characters
+    '|' and '&' which are part of the queryparser syntax. (Michael Busch)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.

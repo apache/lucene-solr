@@ -616,6 +616,10 @@ public class TestQueryParser extends TestCase {
     assertEscapedQueryEquals("[ a - TO a+ ]", null, "\\[ a \\- TO a\\+ \\]");
     assertEscapedQueryEquals("[ a : TO a~ ]", null, "\\[ a \\: TO a\\~ \\]");
     assertEscapedQueryEquals("[ a\\ TO a* ]", null, "\\[ a\\\\ TO a\\* \\]");
+    
+    // LUCENE-881
+    assertEscapedQueryEquals("|| abc ||", a, "\\|\\| abc \\|\\|");
+    assertEscapedQueryEquals("&& abc &&", a, "\\&\\& abc \\&\\&");
   }
   
   public void testTabNewlineCarriageReturn()
