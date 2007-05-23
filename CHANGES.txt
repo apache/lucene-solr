@@ -244,6 +244,11 @@ Changes in runtime behavior
 10. SOLR-231: If a charset is not specified in the contentType, 
     ContentStream.getReader() will use UTF-8 encoding.  (ryan)
 
+11. SOLR-230: More options for post.jar to support stdin, xml on the
+    commandline, and defering commits.  Tutorial modified to take
+    advantage of these options so there is no need for curl.
+    (hossman)
+    
 Optimizations 
  1. SOLR-114: HashDocSet specific implementations of union() and andNot()
     for a 20x performance improvement for those set operations, and a new

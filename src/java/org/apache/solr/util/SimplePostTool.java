@@ -30,6 +30,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.Set;
+import java.util.HashSet;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
@@ -43,8 +45,23 @@ import java.net.URL;
 public class SimplePostTool {
   public static final String DEFAULT_POST_URL = "http://localhost:8983/solr/update";
   public static final String POST_ENCODING = "UTF-8";
-  public static final String VERSION_OF_THIS_TOOL = "1.1";
+  public static final String VERSION_OF_THIS_TOOL = "1.2";
   private static final String SOLR_OK_RESPONSE_EXCERPT = "<int name=\"status\">0</int>";
+
+  private static final String DEFAULT_COMMIT = "yes";
+  
+  private static final String DATA_MODE_FILES = "files";
+  private static final String DATA_MODE_ARGS = "args";
+  private static final String DATA_MODE_STDIN = "stdin";
+  private static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
+
+  private static final Set<String> DATA_MODES = new HashSet<String>();
+  static {
+    DATA_MODES.add(DATA_MODE_FILES);
+    DATA_MODES.add(DATA_MODE_ARGS);
+    DATA_MODES.add(DATA_MODE_STDIN);
+  }
+  
   protected URL solrUrl;
 
   private class PostException extends RuntimeException {
@@ -55,33 +72,69 @@ public class SimplePostTool {
   
   public static void main(String[] args) {
     info("version " + VERSION_OF_THIS_TOOL);
-    
-    if (args.length < 2) {
-      fatal(
-         "This command requires at least two arguments:\n" +
-         "The destination url and the names of one or more XML files to POST to Solr." +
-         "\n\texample: " + DEFAULT_POST_URL + " somefile.xml otherfile.xml"
-        );
+
+    if (0 < args.length && "-help".equals(args[0])) {
+      System.out.println
+        ("This is a simple command line tool for POSTing raw XML to a Solr\n"+
+         "port.  XML data can be read from files specified as commandline\n"+
+         "args; as raw commandline arg strings; or via STDIN.\n"+
+         "Examples:\n"+
+         "  java -Ddata=files -jar post.jar *.xml\n"+
+         "  java -Ddata=args  -jar post.jar '<delete><id>42</id></delete>'\n"+
+         "  java -Ddata=stdin -jar post.jar < hd.xml\n"+
+         "Other options controlled by System Properties include the Solr\n"+
+         "URL to POST to, and whether a commit should be executed.  These\n"+
+         "are the defaults for all System Properties...\n"+
+         "  -Ddata=" + DEFAULT_DATA_MODE + "\n"+
+         "  -Durl=" + DEFAULT_POST_URL + "\n"+
+         "  -Dcommit=" + DEFAULT_COMMIT + "\n");
+      return;
     }
 
-    URL solrUrl = null;
-    try {
-      solrUrl = new URL(args[0]);
-    } catch (MalformedURLException e) {
-      fatal("First argument is not a valid URL: " + args[0]);
-    }
     
+    URL u = null;
     try {
-      final SimplePostTool t = new SimplePostTool(solrUrl);
-      info("POSTing files to " + solrUrl + "..");
-      final int posted = t.postFiles(args,1);
-      if(posted > 0) {
+      u = new URL(System.getProperty("url", DEFAULT_POST_URL));
+    } catch (MalformedURLException e) {
+      fatal("System Property 'url' is not a valid URL: " + u);
+    }
+    final SimplePostTool t = new SimplePostTool(u);
+
+    final String mode = System.getProperty("data", DEFAULT_DATA_MODE);
+    if (! DATA_MODES.contains(mode)) {
+      fatal("System Property 'data' is not valid for this tool: " + mode);
+    }
+
+    try {
+      if (DATA_MODE_FILES.equals(mode)) {
+        if (0 < args.length) {
+          info("POSTing files to " + u + "..");
+          final int posted = t.postFiles(args,0);
+        }
+        
+      } else if (DATA_MODE_ARGS.equals(mode)) {
+        if (0 < args.length) {
+          info("POSTing args to " + u + "..");
+          for (String a : args) {
+            final StringWriter sw = new StringWriter();
+            t.postData(new StringReader(a), sw);
+            warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
+          }
+        }
+        
+      } else if (DATA_MODE_STDIN.equals(mode)) {
+        info("POSTing stdin to " + u + "..");
+        final StringWriter sw = new StringWriter();
+        t.postData(new InputStreamReader(System.in,POST_ENCODING), sw);
+        warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
+      }
+      if ("yes".equals(System.getProperty("commit",DEFAULT_COMMIT))) {
         info("COMMITting Solr index changes..");
         final StringWriter sw = new StringWriter();
         t.commit(sw);
         warnIfNotExpectedResponse(sw.toString(),SOLR_OK_RESPONSE_EXCERPT);
       }
-      info(posted + " files POSTed to " + solrUrl);
+    
     } catch(IOException ioe) {
       fatal("Unexpected IOException " + ioe);
     }
@@ -90,7 +143,7 @@ public class SimplePostTool {
   /** Post all filenames provided in args, return the number of files posted*/
   int postFiles(String [] args,int startIndexInArgs) throws IOException {
     int filesPosted = 0;
-    for (int j = 1; j < args.length; j++) {
+    for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
       final StringWriter sw = new StringWriter();
       
