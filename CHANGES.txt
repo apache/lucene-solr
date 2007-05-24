@@ -180,6 +180,10 @@ Optimizations
 
  4. LUCENE-882: Spellchecker doesn't store the ngrams anymore but only indexes
     them to keep the spell index small. (Daniel Naber)
+
+ 5. LUCENE-430: Delay allocation of the buffer after a clone of BufferedIndexInput.
+    Together with LUCENE-888 this will allow to adjust the buffer size
+    dynamically. (Paul Elschot, Michael Busch)
  
 Documentation
 

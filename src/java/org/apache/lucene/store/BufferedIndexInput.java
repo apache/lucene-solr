@@ -88,8 +88,10 @@ public abstract class BufferedIndexInput extends IndexInput {
     if (bufferLength <= 0)
       throw new IOException("read past EOF");
 
-    if (buffer == null)
+    if (buffer == null) {
       buffer = new byte[BUFFER_SIZE];		  // allocate buffer lazily
+      seekInternal(bufferStart);
+    }
     readInternal(buffer, 0, bufferLength);
 
     bufferStart = start;
@@ -127,10 +129,10 @@ public abstract class BufferedIndexInput extends IndexInput {
   public Object clone() {
     BufferedIndexInput clone = (BufferedIndexInput)super.clone();
 
-    if (buffer != null) {
-      clone.buffer = new byte[BUFFER_SIZE];
-      System.arraycopy(buffer, 0, clone.buffer, 0, bufferLength);
-    }
+    clone.buffer = null;
+    clone.bufferLength = 0;
+    clone.bufferPosition = 0;
+    clone.bufferStart = getFilePointer();
 
     return clone;
   }
