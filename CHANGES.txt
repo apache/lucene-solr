@@ -197,7 +197,12 @@ New Features
 33. SOLR-234: TrimFilter can update the Token's startOffset and endOffset 
     if updateOffsets="true".  By default the Token offsets are unchanged.
     (ryan)
-    
+
+34. SOLR-208: new example_rss.xsl and example_atom.xsl to provide more
+    examples for people about the Solr XML response format and how they
+    can transform it to suit different needs.
+    (Brian Whitman via hossman)
+        
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
     user query, not boost or filter queries (klaas).
