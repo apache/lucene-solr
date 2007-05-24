@@ -92,9 +92,10 @@ public class LukeRequestHandler extends RequestHandlerBase
     SolrIndexSearcher searcher = req.getSearcher();
     IndexReader reader = searcher.getReader();
     SolrParams params = req.getParams();
+    int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
         
     // Always show the core lucene info
-    rsp.add("index", getIndexInfo(reader) );
+    rsp.add("index", getIndexInfo(reader, numTerms>0 ) );
 
     Integer docId = params.getInt( DOC_ID );
     if( docId == null && params.get( ID ) != null ) {
@@ -129,7 +130,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
     else {
       // If no doc is given, show all fields and top terms
-      int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
       Set<String> fields = null;
       if( params.get( SolrParams.FL ) != null ) {
         fields = new HashSet<String>();
@@ -272,8 +272,11 @@ public class LukeRequestHandler extends RequestHandlerBase
     IndexReader reader = searcher.getReader();
     IndexSchema schema = searcher.getSchema();
     
-    // Walk the term enum and keep a priority quey for each map in our set
-    Map<String,TopTermQueue> ttinfo = getTopTerms(reader, fields, numTerms, null );
+    // Walk the term enum and keep a priority queue for each map in our set
+    Map<String,TopTermQueue> ttinfo = null;
+    if( numTerms > 0 ) {
+      ttinfo = getTopTerms(reader, fields, numTerms, null );
+    }
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
     for (String fieldName : fieldNames) {
@@ -288,39 +291,42 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       f.add( "type", (ftype==null)?null:ftype.getTypeName() );
       f.add( "schema", getFieldFlags( sfield ) );
-      
-      Query q = qp.parse( fieldName+":[* TO *]" ); 
-      int docCount = searcher.numDocs( q, matchAllDocs );
-      if( docCount > 0 ) {
-        // Find a document with this field
-        DocList ds = searcher.getDocList( q, (Query)null, (Sort)null, 0, 1 );
-        try {
-          Document doc = searcher.doc( ds.iterator().next() );
-          Fieldable fld = doc.getFieldable( fieldName );
-          if( fld != null ) {
-            f.add( "index", getFieldFlags( fld ) );
-          }
-          else {
-            // it is a non-stored field...
-            f.add( "index", "(unstored field)" );
-          }
-        }
-        catch( Exception ex ) {
-          log.warning( "error reading field: "+fieldName );
-        }
-        // Find one document so we can get the fieldable
-      }
-      f.add( "docs", docCount );
-      
-      TopTermQueue topTerms = ttinfo.get( fieldName );
-      if( topTerms != null ) {
-        f.add( "distinct", topTerms.distinctTerms );
-        
-        // Include top terms
-        f.add( "topTerms", topTerms.toNamedList( searcher.getSchema() ) );
 
-        // Add a histogram
-        f.add( "histogram", topTerms.histogram.toNamedList() );
+      // If numTerms==0, the call is just asking for a quick field list
+      if( ttinfo != null ) {
+        Query q = qp.parse( fieldName+":[* TO *]" ); 
+        int docCount = searcher.numDocs( q, matchAllDocs );
+        if( docCount > 0 ) {
+          // Find a document with this field
+          DocList ds = searcher.getDocList( q, (Query)null, (Sort)null, 0, 1 );
+          try {
+            Document doc = searcher.doc( ds.iterator().next() );
+            Fieldable fld = doc.getFieldable( fieldName );
+            if( fld != null ) {
+              f.add( "index", getFieldFlags( fld ) );
+            }
+            else {
+              // it is a non-stored field...
+              f.add( "index", "(unstored field)" );
+            }
+          }
+          catch( Exception ex ) {
+            log.warning( "error reading field: "+fieldName );
+          }
+          // Find one document so we can get the fieldable
+        }
+        f.add( "docs", docCount );
+        
+        TopTermQueue topTerms = ttinfo.get( fieldName );
+        if( topTerms != null ) {
+          f.add( "distinct", topTerms.distinctTerms );
+          
+          // Include top terms
+          f.add( "topTerms", topTerms.toNamedList( searcher.getSchema() ) );
+  
+          // Add a histogram
+          f.add( "histogram", topTerms.histogram.toNamedList() );
+        }
       }
       
       // Add the field
@@ -330,20 +336,22 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
     
   
-  private static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader ) throws IOException
+  private static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException
   {
-    // Count the terms
-    TermEnum te = reader.terms();
-    int numTerms = 0;
-    while (te.next()) {
-      numTerms++;
-    }
-    
     Directory dir = reader.directory();
     SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<Object>();
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
-    indexInfo.add("numTerms", numTerms );
+    
+    if( countTerms ) {
+      TermEnum te = reader.terms();
+      int numTerms = 0;
+      while (te.next()) {
+        numTerms++;
+      }
+      indexInfo.add("numTerms", numTerms );
+    }
+
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("optimized", reader.isOptimized() );
     indexInfo.add("current", reader.isCurrent() );
@@ -511,7 +519,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       
       if( terms.docFreq() > tiq.minFreq ) {
         tiq.put(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
-        if (tiq.size() >= numTerms) { // if tiq overfull
+        if (tiq.size() >= numTerms) { // if tiq full
           tiq.pop(); // remove lowest in tiq
           tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
         }
@@ -520,6 +528,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return info;
   }
 }
+
 
 
 
