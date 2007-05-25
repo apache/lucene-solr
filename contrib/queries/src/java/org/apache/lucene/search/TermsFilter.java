@@ -48,4 +48,27 @@ public class TermsFilter extends Filter
 		}
 		return result;
 	}
+	
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if((obj == null) || (obj.getClass() != this.getClass()))
+				return false;
+		TermsFilter test = (TermsFilter)obj;
+		return (termsList == test.termsList|| 
+					 (termsList!= null && termsList.equals(test.termsList)));
+	}
+
+	public int hashCode()
+	{
+		int hash=9;
+		for (Iterator iter = termsList.iterator(); iter.hasNext();)
+		{
+			Term term = (Term) iter.next();
+			hash = 31 * hash + term.hashCode();			
+		}
+		return hash;
+	}
+	
 }
