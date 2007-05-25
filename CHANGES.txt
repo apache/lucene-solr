@@ -1,4 +1,4 @@
-                      Apache Solr Version 1.2-dev
+                      pache Solr Version 1.2-dev
                             Release Notes
 
 Introduction
@@ -49,6 +49,21 @@ in solrconfig.xml
 
 The Lucene based Solr query syntax is slightly more strict.
 A ':' in a field value must be escaped or the whole value must be quoted.
+
+The Solr "Request Handler" framework has been updated in two key ways:
+First, if a Request Handler is registered in solrconfig.xml with a name
+starting with "/" then it can be accessed using path-based URL, instead of
+using the legacy "/select?qt=name" URL structure.  Second, the Request
+Handler framework has been extended making it possible to write Request
+Handlers that process streams of data for doing updates, and there is a
+new-style Request Handler for XML updates given the name of "/update" in
+the example solrconfig.xml.  Existing installations without this "/update"
+handler will continue to use the old update servlet and should see no
+changes in behavior.  For new-style update handlers, errors are now
+reflected in the HTTP status code, Content-type checking is more strict,
+and the response format has changed and is controllable via the wt
+parameter.
+
 
 
 Detailed Change List
