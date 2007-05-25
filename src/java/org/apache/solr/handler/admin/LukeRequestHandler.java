@@ -293,7 +293,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       f.add( "schema", getFieldFlags( sfield ) );
 
       // If numTerms==0, the call is just asking for a quick field list
-      if( ttinfo != null ) {
+      if( ttinfo != null && sfield != null && sfield.indexed() ) {
         Query q = qp.parse( fieldName+":[* TO *]" ); 
         int docCount = searcher.numDocs( q, matchAllDocs );
         if( docCount > 0 ) {
