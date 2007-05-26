@@ -1,4 +1,5 @@
 package org.apache.lucene.search.spell;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,20 +17,31 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import java.util.Iterator;
+import java.io.IOException;
+import java.io.StringReader;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.store.RAMDirectory;
 
 /**
- * A simple interface representing a Dictionary. A Dictionary
- * here is just a list of words.
- * 
- * @author Nicolas Maisonneuve
- * @version 1.0
+ * Test case for PlainTextDictionary
+ *
+ * @author Daniel Naber
  */
-public interface Dictionary {
+public class TestPlainTextDictionary extends TestCase {
 
-  /**
-   * Return all words present in the dictionary
-   * @return Iterator
-   */
-  Iterator getWordsIterator();
+  public void testBuild() throws IOException {
+    final String LF = System.getProperty("line.separator");
+    String input = "oneword" + LF + "twoword" + LF + "threeword";
+    PlainTextDictionary ptd = new PlainTextDictionary(new StringReader(input));
+    RAMDirectory ramDir = new RAMDirectory();
+    SpellChecker spellChecker = new SpellChecker(ramDir);
+    spellChecker.indexDictionary(ptd);
+    String[] similar = spellChecker.suggestSimilar("treeword", 2);
+    assertEquals(2, similar.length);
+    assertEquals(similar[0], "threeword");
+    assertEquals(similar[1], "twoword");
+  }
+
 }

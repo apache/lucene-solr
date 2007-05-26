@@ -131,6 +131,10 @@ Bug fixes
 17. LUCENE-881: QueryParser.escape() now also escapes the characters
     '|' and '&' which are part of the queryparser syntax. (Michael Busch)
 
+18. LUCENE-886: Spellchecker clean up: exceptions aren't printed to STDERR
+    anymore and ignored, but re-thrown. Some javadoc improvements.
+    (Daniel Naber)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.

@@ -27,7 +27,8 @@ import org.apache.lucene.index.Term;
 import java.io.*;
 
 /**
- * Lucene Dictionary
+ * Lucene Dictionary: terms taken from the given field
+ * of a Lucene index.
  *
  * @author Nicolas Maisonneuve
  */
@@ -54,7 +55,7 @@ public class LuceneDictionary implements Dictionary {
       try {
         termEnum = reader.terms(new Term(field, ""));
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
 
@@ -86,8 +87,7 @@ public class LuceneDictionary implements Dictionary {
         }
         return true;
       } catch (IOException e) {
-        e.printStackTrace();
-        return false;
+        throw new RuntimeException(e);
       }
     }
 

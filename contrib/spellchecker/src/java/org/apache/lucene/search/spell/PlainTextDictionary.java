@@ -19,14 +19,11 @@ package org.apache.lucene.search.spell;
 
 
 import java.util.Iterator;
-import java.io.InputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.*;
 
 
 /**
- * Dictionary represented by a file text.
+ * Dictionary represented by a text file.
  * 
  * <p/>Format allowed: 1 word per line:<br/>
  * word1<br/>
@@ -49,6 +46,13 @@ public class PlainTextDictionary implements Dictionary {
     in = new BufferedReader(new InputStreamReader(dictFile));
   }
 
+  /**
+   * Create a dictionary based on a reader. Used by the test case.
+   */
+  protected PlainTextDictionary(Reader reader) {
+    in = new BufferedReader(reader);
+  }
+
   public Iterator getWordsIterator() {
     return new fileIterator();
   }
@@ -63,21 +67,19 @@ public class PlainTextDictionary implements Dictionary {
       return line;
     }
 
-
     public boolean hasNext() {
       hasNextCalled = true;
       try {
         line = in.readLine();
       } catch (IOException ex) {
-        ex.printStackTrace();
-        line = null;
-        return false;
+        throw new RuntimeException(ex);
       }
       return (line != null) ? true : false;
     }
 
 
     public void remove() {
+      throw new UnsupportedOperationException();
     }
   }
 
