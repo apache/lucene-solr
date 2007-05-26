@@ -341,7 +341,7 @@ public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   /** Retrieve a {@link Document} using a {@link org.apache.lucene.document.FieldSelector}
    * This method does not currently use the Solr document cache.
    * 
-   * @see Searchable#document(int, FieldSelector) */
+   * @see IndexReader#document(int, FieldSelector) */
   public Document doc(int n, FieldSelector fieldSelector) throws IOException {
     return searcher.getIndexReader().document(n, fieldSelector);
   }
