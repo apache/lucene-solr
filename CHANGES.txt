@@ -3,8 +3,6 @@
 $Id$
 
 ======================= Trunk (not yet released) =======================
-New features
-
 Changes in runtime behavior
 
 API Changes
@@ -195,9 +193,9 @@ Documentation
     http://wiki.apache.org/lucene-java/   Updated the links in the docs and
     wherever else I found references.  (Grant Ingersoll, Joe Schaefer)
 
- 2. Fixed the javadoc for ScoreDocComparator.compare() to be consistent with 
-    java.util.Comparator.compare(): Any integer is allowed to be returned
-    instead of only -1/0/1.
+ 2. LUCENE-807: Fixed the javadoc for ScoreDocComparator.compare() to be 
+    consistent with java.util.Comparator.compare(): Any integer is allowed to 
+    be returned instead of only -1/0/1.
     (Paul Cowan via Michael Busch)
  
  3. LUCENE-875: Solved javadoc warnings & errors under jdk1.4. 
