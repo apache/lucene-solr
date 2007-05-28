@@ -147,8 +147,12 @@
       autowarmCount="0"/>
 
     <!-- If true, stored fields that are not requested will be loaded lazily.
+
+    This can result in a significant speed improvement if the usual case is to
+    not load all stored fields, especially if the skipped fields are large compressed
+    text fields.
     -->
-    <enableLazyFieldLoading>false</enableLazyFieldLoading>
+    <enableLazyFieldLoading>true</enableLazyFieldLoading>
 
     <!-- Example of a generic cache.  These caches may be accessed by name
          through SolrIndexSearcher.getCache(),cacheLookup(), and cacheInsert().
