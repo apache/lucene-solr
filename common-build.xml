@@ -157,6 +157,10 @@
           <attribute name="Implementation-Vendor" value="Lucene"/>
         </section>
       </manifest>
+      <metainf dir=".">
+        <include name="LICENSE.txt"/>
+        <include name="NOTICE.txt"/>
+      </metainf>
     </jar>
   </target>
 
@@ -317,4 +321,5 @@
   </macrodef>
 
 </project>
+
 
