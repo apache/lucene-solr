@@ -56,6 +56,15 @@ API Changes
     argument, available as tokenStreamValue(). This is useful to avoid the need of 
     "dummy analyzers" for pre-analyzed fields. (Karl Wettin, Michael Busch)
 
+11. LUCENE-730: Added the new methods to BooleanQuery setAllowDocsOutOfOrder() and
+    getAllowDocsOutOfOrder(). Deprecated the methods setUseScorer14() and 
+    getUseScorer14(). The optimization patch LUCENE-730 (see Optimizations->3.) 
+    improves performance for certain queries but results in scoring out of docid 
+    order. This patch reverse this change, so now by default hit docs are scored
+    in docid order if not setAllowDocsOutOfOrder(true) is explicitly called.
+    This patch also enables the tests in QueryUtils again that check for docid
+    order. (Paul Elschot, Doron Cohen, Michael Busch)
+
 
 Bug fixes
 

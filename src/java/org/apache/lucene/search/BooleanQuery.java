@@ -219,39 +219,13 @@ public class BooleanQuery extends Query {
       }
     }
 
-    /** @return A good old 1.4 Scorer */
+    /** @return Returns BooleanScorer2 that uses and provides skipTo(),
+     *          and scores documents in document number order.
+     */
     public Scorer scorer(IndexReader reader) throws IOException {
-      // First see if the (faster) ConjunctionScorer will work.  This can be
-      // used when all clauses are required.  Also, at this point a
-      // BooleanScorer cannot be embedded in a ConjunctionScorer, as the hits
-      // from a BooleanScorer are not always sorted by document number (sigh)
-      // and hence BooleanScorer cannot implement skipTo() correctly, which is
-      // required by ConjunctionScorer.
-      boolean allRequired = true;
-      boolean noneBoolean = true;
-      for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
-        if (!c.isRequired())
-          allRequired = false;
-        if (c.getQuery() instanceof BooleanQuery)
-          noneBoolean = false;
-      }
-
-      if (allRequired && noneBoolean) {           // ConjunctionScorer is okay
-        ConjunctionScorer result =
-          new ConjunctionScorer(similarity);
-        for (int i = 0 ; i < weights.size(); i++) {
-          Weight w = (Weight)weights.elementAt(i);
-          Scorer subScorer = w.scorer(reader);
-          if (subScorer == null)
-            return null;
-          result.add(subScorer);
-        }
-        return result;
-      }
-
-      // Use good-old BooleanScorer instead.
-      BooleanScorer result = new BooleanScorer(similarity);
+      BooleanScorer2 result = new BooleanScorer2(similarity,
+                                                 minNrShouldMatch,
+                                                 allowDocsOutOfOrder);
 
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
@@ -335,54 +309,48 @@ public class BooleanQuery extends Query {
     }
   }
 
-  private class BooleanWeight2 extends BooleanWeight {
-    /* Merge into BooleanWeight in case the 1.4 BooleanScorer is dropped */
-    public BooleanWeight2(Searcher searcher)
-      throws IOException {
-        super(searcher);
-    }
+  /** Whether hit docs may be collected out of docid order. */
+  private static boolean allowDocsOutOfOrder = false;
 
-    /** @return An alternative Scorer that uses and provides skipTo(),
-     *          and scores documents in document number order.
-     */
-    public Scorer scorer(IndexReader reader) throws IOException {
-      BooleanScorer2 result = new BooleanScorer2(similarity,
-                                                 minNrShouldMatch);
+  /**
+   * Indicates whether hit docs may be collected out of docid
+   * order. In other words, with this setting, 
+   * {@link HitCollector#collect(int,float)} might be
+   * invoked first for docid N and only later for docid N-1.
+   * Being static, this setting is system wide.
+   * If docs out of order are allowed scoring might be faster
+   * for certain queries (disjunction queries with less than
+   * 32 prohibited terms). This setting has no effect for 
+   * other queries.
+   */
+  public static void setAllowDocsOutOfOrder(boolean allow) {
+    allowDocsOutOfOrder = allow;
+  }  
+  
+  /**
+   * Whether hit docs may be collected out of docid order.
+   * @see #setAllowDocsOutOfOrder(boolean)
+   */
+  public static boolean getAllowDocsOutOfOrder() {
+    return allowDocsOutOfOrder;
+  }  
 
-      for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.elementAt(i);
-        Scorer subScorer = w.scorer(reader);
-        if (subScorer != null)
-          result.add(subScorer, c.isRequired(), c.isProhibited());
-        else if (c.isRequired())
-          return null;
-      }
-
-      return result;
-    }
-  }
-
-  /** Indicates whether to use good old 1.4 BooleanScorer. */
-  private static boolean useScorer14 = false;
-
+  /**
+   * @deprecated Use {@link #setAllowDocsOutOfOrder(boolean)} instead.
+   */
   public static void setUseScorer14(boolean use14) {
-    useScorer14 = use14;
+    setAllowDocsOutOfOrder(use14);
   }
-
+  
+  /**
+   * @deprecated Use {@link #getAllowDocsOutOfOrder()} instead.
+   */
   public static boolean getUseScorer14() {
-    return useScorer14;
+    return getAllowDocsOutOfOrder();
   }
 
   protected Weight createWeight(Searcher searcher) throws IOException {
-
-    if (0 < minNrShouldMatch) {
-      // :TODO: should we throw an exception if getUseScorer14 ?
-      return new BooleanWeight2(searcher);
-    }
-
-    return getUseScorer14() ? (Weight) new BooleanWeight(searcher)
-                            : (Weight) new BooleanWeight2(searcher);
+    return new BooleanWeight(searcher);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

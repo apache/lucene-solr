@@ -32,7 +32,6 @@ class BooleanScorer2 extends Scorer {
   private ArrayList optionalScorers = new ArrayList();
   private ArrayList prohibitedScorers = new ArrayList();
 
-
   private class Coordinator {
     int maxCoord = 0; // to be increased for each non prohibited scorer
     
@@ -66,6 +65,12 @@ class BooleanScorer2 extends Scorer {
 
   /** The number of optionalScorers that need to match (if there are any) */
   private final int minNrShouldMatch;
+  
+  /** Whether it is allowed to return documents out of order.
+   *  This can accelerate the scoring of disjunction queries.  
+   */  
+  private boolean allowDocsOutOfOrder;
+
 
   /** Create a BooleanScorer2.
    * @param similarity The similarity to be used.
@@ -74,23 +79,40 @@ class BooleanScorer2 extends Scorer {
    *                         In case no required scorers are added,
    *                         at least one of the optional scorers will have to
    *                         match during the search.
+   * @param allowDocsOutOfOrder Whether it is allowed to return documents out of order.
+   *                            This can accelerate the scoring of disjunction queries.                         
    */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch) {
+  public BooleanScorer2(Similarity similarity, int minNrShouldMatch, boolean allowDocsOutOfOrder) {
     super(similarity);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
     coordinator = new Coordinator();
     this.minNrShouldMatch = minNrShouldMatch;
+    this.allowDocsOutOfOrder = allowDocsOutOfOrder;
   }
 
   /** Create a BooleanScorer2.
    *  In no required scorers are added,
    *  at least one of the optional scorers will have to match during the search.
    * @param similarity The similarity to be used.
+   * @param minNrShouldMatch The minimum number of optional added scorers
+   *                         that should match during the search.
+   *                         In case no required scorers are added,
+   *                         at least one of the optional scorers will have to
+   *                         match during the search.
+   */
+  public BooleanScorer2(Similarity similarity, int minNrShouldMatch) {
+    this(similarity, minNrShouldMatch, false);
+  }
+  
+  /** Create a BooleanScorer2.
+   *  In no required scorers are added,
+   *  at least one of the optional scorers will have to match during the search.
+   * @param similarity The similarity to be used.
    */
   public BooleanScorer2(Similarity similarity) {
-    this(similarity, 0);
+    this(similarity, 0, false);
   }
 
   public void add(final Scorer scorer, boolean required, boolean prohibited) {
@@ -285,8 +307,8 @@ class BooleanScorer2 extends Scorer {
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   public void score(HitCollector hc) throws IOException {
-    if ((requiredScorers.size() == 0) &&
-        prohibitedScorers.size() < 32) {
+    if (allowDocsOutOfOrder && requiredScorers.size() == 0
+            && prohibitedScorers.size() < 32) {
       // fall back to BooleanScorer, scores documents somewhat out of order
       BooleanScorer bs = new BooleanScorer(getSimilarity(), minNrShouldMatch);
       Iterator si = optionalScorers.iterator();
@@ -372,4 +394,5 @@ class BooleanScorer2 extends Scorer {
   */
   }
 }
+
 

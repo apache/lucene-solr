@@ -72,16 +72,16 @@ public class TestBoolean2 extends TestCase {
 //System.out.println("Query: " + queryText);
     try {
       Query query1 = makeQuery(queryText);
-      BooleanQuery.setUseScorer14(true);
+      BooleanQuery.setAllowDocsOutOfOrder(true);
       Hits hits1 = searcher.search(query1);
 
       Query query2 = makeQuery(queryText); // there should be no need to parse again...
-      BooleanQuery.setUseScorer14(false);
+      BooleanQuery.setAllowDocsOutOfOrder(false);
       Hits hits2 = searcher.search(query2);
 
       CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
     } finally { // even when a test fails.
-      BooleanQuery.setUseScorer14(false);
+      BooleanQuery.setAllowDocsOutOfOrder(false);
     }
   }
 
@@ -168,14 +168,14 @@ public class TestBoolean2 extends TestCase {
         // match up.
         Sort sort = Sort.INDEXORDER;
 
-        BooleanQuery.setUseScorer14(false);
+        BooleanQuery.setAllowDocsOutOfOrder(false);
 
         QueryUtils.check(q1,searcher);
 
         Hits hits1 = searcher.search(q1,sort);
         if (hits1.length()>0) hits1.id(hits1.length()-1);
 
-        BooleanQuery.setUseScorer14(true);
+        BooleanQuery.setAllowDocsOutOfOrder(true);
         Hits hits2 = searcher.search(q1,sort);
         if (hits2.length()>0) hits2.id(hits1.length()-1);
         tot+=hits2.length();
@@ -183,7 +183,7 @@ public class TestBoolean2 extends TestCase {
       }
 
     } finally { // even when a test fails.
-      BooleanQuery.setUseScorer14(false);
+      BooleanQuery.setAllowDocsOutOfOrder(false);
     }
 
     // System.out.println("Total hits:"+tot);

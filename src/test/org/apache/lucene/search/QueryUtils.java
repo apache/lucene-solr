@@ -85,7 +85,7 @@ public class QueryUtils {
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
    
-    if (BooleanQuery.getUseScorer14()) return;  // 1.4 doesn't support skipTo
+    if (BooleanQuery.getAllowDocsOutOfOrder()) return;  // 1.4 doesn't support skipTo
 
     final int skip_op = 0;
     final int next_op = 1;
@@ -106,10 +106,6 @@ public class QueryUtils {
       final Weight w = q.weight(s);
       final Scorer scorer = w.scorer(s.getIndexReader());
       
-      if (scorer instanceof BooleanScorer || scorer instanceof BooleanScorer2) {
-        return; // TODO change this if BooleanScorers would once again guarantee docs in order. 
-      }
-
       // FUTURE: ensure scorer.doc()==-1
 
       final int[] sdoc = new int[] {-1};
