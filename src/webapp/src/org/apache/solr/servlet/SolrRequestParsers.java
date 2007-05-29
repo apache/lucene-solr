@@ -117,7 +117,7 @@ public class SolrRequestParsers
     String[] strs = params.getParams( SolrParams.STREAM_URL );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( 400, "Remote Streaming is disabled." );
+        new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
       }
       for( final String url : strs ) {
         ContentStreamBase stream = new ContentStreamBase.URLStream( new URL(url) );
@@ -132,7 +132,7 @@ public class SolrRequestParsers
     strs = params.getParams( SolrParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( 400, "Remote Streaming is disabled." );
+        new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -185,7 +185,7 @@ public class SolrRequestParsers
         }
       }
       catch( UnsupportedEncodingException uex ) {
-        throw new SolrException( 500, uex );
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, uex );
       }
     }
     return new MultiMapSolrParams( map );
@@ -303,7 +303,7 @@ class MultipartRequestParser implements SolrRequestParser
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     if( !ServletFileUpload.isMultipartContent(req) ) {
-      throw new SolrException( 400, "Not multipart content! "+req.getContentType() );
+      new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
     }
     
     MultiMapSolrParams params = SolrRequestParsers.parseQueryString( req.getQueryString() );
@@ -378,9 +378,10 @@ class StandardRequestParser implements SolrRequestParser
       }
       return raw.parseParamsAndFillStreams(req, streams);
     }
-    throw new SolrException( 400, "Unsuported method: "+method );
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unsuported method: "+method );
   }
 }
+
 
 
 

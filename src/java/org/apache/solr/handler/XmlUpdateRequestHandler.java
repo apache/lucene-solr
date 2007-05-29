@@ -72,7 +72,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     Iterable<ContentStream> streams = req.getContentStreams();
     if( streams == null ) {
       if( !RequestHandlerUtils.handleCommit(req, rsp, false) ) {
-        throw new SolrException( 400, "missing content stream" );
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
       }
       return;
     }
@@ -262,7 +262,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
                    (System.currentTimeMillis()-startTime));
         } else {
           log.warning("unexpected XML tag /delete/"+currTag);
-          throw new SolrException(400,"unexpected XML tag /delete/"+currTag);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unexpected XML tag /delete/"+currTag);
         }
 
           res.add( "delete", "" );
@@ -303,7 +303,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
 
       if (!"field".equals(tname)) {
         log.warning("unexpected XML tag doc/"+tname);
-        throw new SolrException(400,"unexpected XML tag doc/"+tname);
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unexpected XML tag doc/"+tname);
       }
 
       //

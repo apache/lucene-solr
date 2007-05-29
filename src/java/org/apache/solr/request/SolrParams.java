@@ -252,7 +252,7 @@ public abstract class SolrParams {
       return val==null ? null : Integer.valueOf(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
 
@@ -263,7 +263,7 @@ public abstract class SolrParams {
       return val==null ? def : Integer.parseInt(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
   
@@ -275,7 +275,7 @@ public abstract class SolrParams {
       return val==null ? null : Integer.valueOf(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
   
@@ -287,7 +287,7 @@ public abstract class SolrParams {
       return val==null ? def : Integer.parseInt(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
 
@@ -299,7 +299,7 @@ public abstract class SolrParams {
       return val==null ? null : Float.valueOf(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
 
@@ -310,7 +310,7 @@ public abstract class SolrParams {
       return val==null ? def : Float.parseFloat(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
 
@@ -321,7 +321,7 @@ public abstract class SolrParams {
       return val==null ? null : Float.valueOf(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
 
@@ -333,7 +333,7 @@ public abstract class SolrParams {
       return val==null ? def : Float.parseFloat(val);
     }
     catch( Exception ex ) {
-      throw new SolrException( 400, ex.getMessage(), ex );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
   
@@ -349,7 +349,7 @@ public abstract class SolrParams {
         return false;
       }
     }
-    throw new SolrException( 400, "invalid boolean value: "+s );
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "invalid boolean value: "+s );
   }
 
   /** Create a Map<String,String> from a NamedList given no keys are repeated */
@@ -400,6 +400,7 @@ public abstract class SolrParams {
     return result;
   }
 }
+
 
 
 

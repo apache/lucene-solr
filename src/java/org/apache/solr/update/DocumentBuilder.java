@@ -59,7 +59,7 @@ public class DocumentBuilder {
       if (!sfield.multiValued()) {
         String oldValue = map.put(sfield.getName(), val);
         if (oldValue != null) {
-          throw new SolrException(400,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
                   + ": first='" + oldValue + "' second='" + val + "'");
         }
       }
@@ -94,7 +94,7 @@ public class DocumentBuilder {
 
     // error if this field name doesn't match anything
     if (sfield==null && (destArr==null || destArr.length==0)) {
-      throw new SolrException(400,"ERROR:unknown field '" + name + "'");
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" + name + "'");
     }
   }
 
@@ -134,7 +134,7 @@ public class DocumentBuilder {
         builder.append(field);
         builder.append(" ");
       }
-      throw new SolrException(400, builder.toString());
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, builder.toString());
     }
     
     Document ret = doc; doc=null;

@@ -105,7 +105,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       Term t = new Term( uniqueKey.getName(), v );
       docId = searcher.getFirstMatch( t );
       if( docId < 0 ) {
-        throw new SolrException( 404, "Can't find document: "+params.get( ID ) );
+        throw new SolrException( SolrException.ErrorCode.NOT_FOUND, "Can't find document: "+params.get( ID ) );
       }
     }
         
@@ -117,7 +117,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       }
       catch( Exception ex ) {}
       if( doc == null ) {
-        throw new SolrException( 404, "Can't find document: "+docId );
+        throw new SolrException( SolrException.ErrorCode.NOT_FOUND, "Can't find document: "+docId );
       }
       
       SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docId, reader, schema );
@@ -528,6 +528,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return info;
   }
 }
+
 
 
 

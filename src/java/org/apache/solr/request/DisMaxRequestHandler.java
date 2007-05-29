@@ -227,7 +227,7 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
           altUserQuery = p.parse(altQ);
           query.add( altUserQuery , Occur.MUST );
         } else {
-          throw new SolrException( 400, "missing query string" );
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing query string" );
         }
       }
       else {

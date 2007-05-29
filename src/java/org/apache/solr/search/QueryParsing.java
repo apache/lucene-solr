@@ -73,7 +73,7 @@ public class QueryParsing {
 
     } catch (ParseException e) {
       SolrCore.log(e);
-      throw new SolrException(400,"Error parsing Lucene query",e);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Error parsing Lucene query",e);
     }
   }
 
@@ -101,7 +101,7 @@ public class QueryParsing {
 
     } catch (ParseException e) {
       SolrCore.log(e);
-      throw new SolrException(400,"Query parsing error: " + e.getMessage(),e);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Query parsing error: " + e.getMessage(),e);
     }
   }
 
@@ -177,12 +177,12 @@ public class QueryParsing {
     	  top = false;
     	}
     	else {
-    	  throw new SolrException( 400, "Unknown sort order: "+order);
+    	  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: "+order);
     	}
     	part = part.substring( 0, idx ).trim();
       }
       else {
-		throw new SolrException( 400, "Missing sort order." );
+		throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing sort order." );
       }
     	
       if( "score".equals(part) ) {
@@ -204,10 +204,10 @@ public class QueryParsing {
           f = schema.getField(part);
         }
         catch( SolrException e ){
-          throw new SolrException( 400, "can not sort on undefined field: "+part, e );
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined field: "+part, e );
         }
         if (f == null || !f.indexed()){
-          throw new SolrException( 400, "can not sort on unindexed field: "+part );
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "can not sort on unindexed field: "+part );
         }
         lst[i] = f.getType().getSortField(f,top);
       }

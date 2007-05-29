@@ -47,7 +47,7 @@ public class RequiredSolrParams extends SolrParams {
   public String get(String param) {
     String val = params.get(param);
     if( val == null )  {
-      throw new SolrException( 400, "Missing required parameter: "+param );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: "+param );
     }
     return val;
   }
@@ -56,7 +56,7 @@ public class RequiredSolrParams extends SolrParams {
   public String[] getParams(String param) {
     String[] vals = params.getParams(param);
     if( vals == null || vals.length == 0 ) {
-      throw new SolrException( 400, "Missing required parameter: "+param );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: "+param );
     }
     return vals;
   }

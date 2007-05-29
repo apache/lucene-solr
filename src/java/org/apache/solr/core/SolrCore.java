@@ -164,7 +164,7 @@ public final class SolrCore {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(500,"Error Instantiating Update Handler "+className, e);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating Update Handler "+className, e);
     }
   }
 
@@ -411,7 +411,7 @@ public final class SolrCore {
         String msg="Error opening new searcher. exceeded limit of maxWarmingSearchers="+maxWarmingSearchers + ", try again later.";
         log.warning(msg);
         // HTTP 503==service unavailable, or 409==Conflict
-        throw new SolrException(503,msg,true);
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,msg,true);
       } else if (onDeckSearchers > 1) {
         log.info("PERFORMANCE WARNING: Overlapping onDeckSearchers=" + onDeckSearchers);
       }
@@ -668,7 +668,7 @@ public final class SolrCore {
     SolrRequestHandler handler = getRequestHandler(req.getQueryType());
     if (handler==null) {
       log.warning("Unknown Request Handler '" + req.getQueryType() +"' :" + req);
-      throw new SolrException(400,"Unknown Request Handler '" + req.getQueryType() + "'", true);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + req.getQueryType() + "'", true);
     }
     execute(handler, req, rsp);
   }
@@ -690,7 +690,7 @@ public final class SolrCore {
     if( ep != null ) {
       EchoParamStyle echoParams = EchoParamStyle.get( ep );
       if( echoParams == null ) {
-        throw new SolrException(400,"Invalid value '" + ep + "' for " + SolrParams.HEADER_ECHO_PARAMS 
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid value '" + ep + "' for " + SolrParams.HEADER_ECHO_PARAMS 
             + " parameter, use '" + EchoParamStyle.EXPLICIT + "' or '" + EchoParamStyle.ALL + "'" );
       }
       if( echoParams == EchoParamStyle.EXPLICIT ) {
@@ -775,5 +775,6 @@ public final class SolrCore {
     return getQueryResponseWriter(request.getParam("wt")); 
   }
 }
+
 
 

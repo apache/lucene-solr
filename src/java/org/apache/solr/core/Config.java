@@ -96,7 +96,7 @@ public class Config {
       return o;
 
     } catch (XPathExpressionException e) {
-      throw new SolrException(500,"Error in xpath:" + path +" for " + name,e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + path +" for " + name,e,false);
     }
   }
 
@@ -122,12 +122,12 @@ public class Config {
 
     } catch (XPathExpressionException e) {
       SolrException.log(log,"Error in xpath",e);
-      throw new SolrException(500,"Error in xpath:" + xstr + " for " + name,e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e,false);
     } catch (SolrException e) {
       throw(e);
     } catch (Throwable e) {
       SolrException.log(log,"Error in xpath",e);
-      throw new SolrException(500,"Error in xpath:" + xstr+ " for " + name,e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e,false);
     }
   }
 
@@ -217,7 +217,7 @@ public class Config {
         }
       }
 
-      throw new SolrException(500, "Error loading class '" + cname + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e, false);
     }
   }
 
@@ -226,7 +226,7 @@ public class Config {
     try {
       return clazz.newInstance();
     } catch (Exception e) {
-      throw new SolrException(500,"Error instantiating class " + clazz, e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error instantiating class " + clazz, e, false);
     }
   }
 

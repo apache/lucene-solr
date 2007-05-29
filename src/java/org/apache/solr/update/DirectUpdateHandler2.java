@@ -231,27 +231,27 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       // protected with iwCommit (which iwAccess excludes from this block).
       synchronized (this) {
         if (!cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
-          throw new SolrException(400,"unsupported param combo:" + cmd);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
           // this would need a reader to implement (to be able to check committed
           // before adding.)
           // return addNoOverwriteNoDups(cmd);
         } else if (!cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
           rc = addConditionally(cmd);
       } else if (!cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
-          throw new SolrException(400,"unsupported param combo:" + cmd);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
         } else if (!cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
           rc = overwriteBoth(cmd);
         } else if (cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
           rc = allowDups(cmd);
         } else if (cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
-          throw new SolrException(400,"unsupported param combo:" + cmd);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
         } else if (cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
-          throw new SolrException(400,"unsupported param combo:" + cmd);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
         } else if (cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
           rc = overwriteBoth(cmd);
         }
         if (rc == -1)
-          throw new SolrException(400,"unsupported param combo:" + cmd);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
         
         if (rc == 1) {
           // adding document -- prep writer
@@ -290,12 +290,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     if (!cmd.fromPending && !cmd.fromCommitted) {
       numErrors.incrementAndGet();
       numErrorsCumulative.incrementAndGet();
-      throw new SolrException(400,"meaningless command: " + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
     }
     if (!cmd.fromPending || !cmd.fromCommitted) {
       numErrors.incrementAndGet();
       numErrorsCumulative.incrementAndGet();
-      throw new SolrException(400,"operation not supported" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
     }
 
     iwCommit.lock();
@@ -315,12 +315,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      if (!cmd.fromPending && !cmd.fromCommitted) {
        numErrors.incrementAndGet();
        numErrorsCumulative.incrementAndGet();
-       throw new SolrException(400,"meaningless command: " + cmd);
+       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
      }
      if (!cmd.fromPending || !cmd.fromCommitted) {
        numErrors.incrementAndGet();
        numErrorsCumulative.incrementAndGet();
-       throw new SolrException(400,"operation not supported" + cmd);
+       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
      }
 
     boolean madeIt=false;

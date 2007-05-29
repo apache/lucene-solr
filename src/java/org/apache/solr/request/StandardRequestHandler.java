@@ -93,7 +93,7 @@ public class StandardRequestHandler extends RequestHandlerBase {
           qstr = commands.get( 0 );
         }
         else if( commands.size() > 2 ) {
-          throw new SolrException( 400, "If you want to use multiple ';' in the query, use the 'sort' param." );
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "If you want to use multiple ';' in the query, use the 'sort' param." );
         }
       }
 
@@ -199,6 +199,7 @@ public class StandardRequestHandler extends RequestHandlerBase {
     catch( MalformedURLException ex ) { return null; }
   }
 }
+
 
 
 

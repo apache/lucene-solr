@@ -102,10 +102,10 @@ public class DateField extends FieldType {
       try {
         return toInternal(p.parseMath(val.substring(3)));
       } catch (ParseException e) {
-        throw new SolrException(400,"Invalid Date Math String:'" +val+'\'',e);
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid Date Math String:'" +val+'\'',e);
       }
     }
-    throw new SolrException(400,"Invalid Date String:'" +val+'\'');
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid Date String:'" +val+'\'');
   }
   
   public String toInternal(Date val) {

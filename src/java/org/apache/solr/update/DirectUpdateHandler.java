@@ -109,7 +109,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
 
   protected boolean existsInIndex(String indexedId) throws IOException {
-    if (idField == null) throw new SolrException(400,"Operation requires schema to have a unique key field");
+    if (idField == null) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Operation requires schema to have a unique key field");
 
     closeWriter();
     openSearcher();
@@ -127,7 +127,7 @@ public class DirectUpdateHandler extends UpdateHandler {
 
 
   protected int deleteInIndex(String indexedId) throws IOException {
-    if (idField == null) throw new SolrException(400,"Operation requires schema to have a unique key field");
+    if (idField == null) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Operation requires schema to have a unique key field");
 
     closeWriter(); openSearcher();
     IndexReader ir = searcher.getReader();
@@ -173,9 +173,9 @@ public class DirectUpdateHandler extends UpdateHandler {
   // could return the number of docs deleted, but is that always possible to know???
   public void delete(DeleteUpdateCommand cmd) throws IOException {
     if (!cmd.fromPending && !cmd.fromCommitted)
-      throw new SolrException(400,"meaningless command: " + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
     if (!cmd.fromPending || !cmd.fromCommitted)
-      throw new SolrException(400,"operation not supported" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
     String indexedId = idFieldType.toInternal(cmd.id);
     synchronized(this) {
       deleteInIndex(indexedId);
@@ -187,9 +187,9 @@ public class DirectUpdateHandler extends UpdateHandler {
   // Depending on implementation, we may not be able to immediately determine num...
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     if (!cmd.fromPending && !cmd.fromCommitted)
-      throw new SolrException(400,"meaningless command: " + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"meaningless command: " + cmd);
     if (!cmd.fromPending || !cmd.fromCommitted)
-      throw new SolrException(400,"operation not supported" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"operation not supported" + cmd);
 
     Query q = QueryParsing.parseQuery(cmd.query, schema);
 
@@ -221,7 +221,7 @@ public class DirectUpdateHandler extends UpdateHandler {
       } catch (IOException e) {
         try { closeSearcher(); } catch (Exception ee) { SolrException.log(SolrCore.log,ee); }
         SolrException.log(SolrCore.log,e);
-        throw new SolrException(500,"Error deleting doc# "+doc,e);
+        throw new SolrException( SolrException.StatusCode.SERVER_ERROR,"Error deleting doc# "+doc,e);
       }
     }
   }
@@ -324,21 +324,21 @@ public class DirectUpdateHandler extends UpdateHandler {
       return addConditionally(cmd);
     } else if (!cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
       // return overwriteBoth(cmd);
-      throw new SolrException(400,"unsupported param combo:" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
     } else if (!cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
       return overwriteBoth(cmd);
     } else if (cmd.allowDups && !cmd.overwritePending && !cmd.overwriteCommitted) {
       return allowDups(cmd);
     } else if (cmd.allowDups && !cmd.overwritePending && cmd.overwriteCommitted) {
       // return overwriteBoth(cmd);
-      throw new SolrException(400,"unsupported param combo:" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
     } else if (cmd.allowDups && cmd.overwritePending && !cmd.overwriteCommitted) {
       // return overwriteBoth(cmd);
-      throw new SolrException(400,"unsupported param combo:" + cmd);
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
     } else if (cmd.allowDups && cmd.overwritePending && cmd.overwriteCommitted) {
       return overwriteBoth(cmd);
     }
-    throw new SolrException(400,"unsupported param combo:" + cmd);
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"unsupported param combo:" + cmd);
   }
 
   public void close() throws IOException {

@@ -113,7 +113,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
         reopen();
         rsp.add("cmdExecuted","reopen");
       } else {
-        throw new SolrException(400, "Unrecognized Command: " + cmd);
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unrecognized Command: " + cmd);
       }
     }
 
@@ -147,7 +147,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase {
   private void rebuild(SolrQueryRequest req) throws IOException, SolrException {
     if (null == termSourceField) {
       throw new SolrException
-        (500, "can't rebuild spellchecker index without termSourceField configured");
+        (SolrException.ErrorCode.SERVER_ERROR, "can't rebuild spellchecker index without termSourceField configured");
     }
       
     IndexReader indexReader = req.getSearcher().getReader();

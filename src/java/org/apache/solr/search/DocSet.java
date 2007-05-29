@@ -166,14 +166,14 @@ abstract class DocSetBase implements DocSet {
    * @throws SolrException Base implementation does not allow modifications
    */
   public void add(int doc) {
-    throw new SolrException(500,"Unsupported Operation");
+    throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Unsupported Operation");
   }
 
   /**
    * @throws SolrException Base implementation does not allow modifications
    */
   public void addUnique(int doc) {
-    throw new SolrException(500,"Unsupported Operation");
+    throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Unsupported Operation");
   }
 
   /**
@@ -234,6 +234,7 @@ abstract class DocSetBase implements DocSet {
     return this.size() - this.intersectionSize(other);
   }
 }
+
 
 
 

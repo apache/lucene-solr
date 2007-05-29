@@ -38,7 +38,7 @@ import org.apache.solr.core.SolrException;
  * 
  * "inject" (default=true) add tokens to the stream with the offset=0
  * 
- * @version $Id:$
+ * @version $Id$
  * @see PhoneticFilter
  */
 public class PhoneticFilterFactory extends BaseTokenFilterFactory 
@@ -69,19 +69,19 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     
     String name = args.get( ENCODER );
     if( name == null ) {
-      throw new SolrException( 500, "Missing required parameter: "+ENCODER
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Missing required parameter: "+ENCODER
           +" ["+registry.keySet()+"]" );
     }
     Class<? extends Encoder> clazz = registry.get(name.toUpperCase());
     if( clazz == null ) {
-      throw new SolrException( 500, "Unknown encoder: "+name +" ["+registry.keySet()+"]" );
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Unknown encoder: "+name +" ["+registry.keySet()+"]" );
     }
     
     try {
       encoder = clazz.newInstance();
     } 
     catch (Exception e) {
-      throw new SolrException( 500, "Error initializing: "+name + "/"+clazz, e );
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error initializing: "+name + "/"+clazz, e );
     }
   }
   

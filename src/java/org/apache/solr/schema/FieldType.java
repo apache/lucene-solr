@@ -170,7 +170,7 @@ public abstract class FieldType extends FieldProperties {
     try {
       val = toInternal(externalVal);
     } catch (NumberFormatException e) {
-      throw new SolrException(500, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
     }
     if (val==null) return null;
     if (!field.indexed() && !field.stored()) {

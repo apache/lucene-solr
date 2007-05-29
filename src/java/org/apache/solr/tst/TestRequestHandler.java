@@ -78,7 +78,7 @@ public class TestRequestHandler implements SolrRequestHandler {
     // we need to un-escape them before we pass to QueryParser
     try {
       String sreq = req.getQueryString();
-      if (sreq==null) throw new SolrException(400,"Missing queryString");
+      if (sreq==null) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Missing queryString");
       List<String> commands = StrUtils.splitSmart(sreq,';');
 
       String qs = commands.size() >= 1 ? commands.get(0) : "";
@@ -300,4 +300,5 @@ public class TestRequestHandler implements SolrRequestHandler {
 
 
 }
+
 

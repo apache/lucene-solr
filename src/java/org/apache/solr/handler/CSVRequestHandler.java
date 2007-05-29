@@ -47,7 +47,7 @@ public class CSVRequestHandler extends RequestHandlerBase {
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams == null) {
       if(!RequestHandlerUtils.handleCommit(req, rsp, false)) {
-        throw new SolrException( 400, "missing content stream" );
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing content stream" );
       }
       return;
     }
@@ -189,7 +189,7 @@ abstract class CSVLoader {
           base.add(builder,line,column,val);
         }
       } catch (IOException e) {
-        throw new SolrException(400,"");
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"");
       }
     }
   }
@@ -220,13 +220,13 @@ abstract class CSVLoader {
     strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, true,  false, true);
     String sep = params.get(SEPARATOR);
     if (sep!=null) {
-      if (sep.length()!=1) throw new SolrException(400,"Invalid separator:'"+sep+"'");
+      if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
       strategy.setDelimiter(sep.charAt(0));
     }
 
     String encapsulator = params.get(ENCAPSULATOR);
     if (encapsulator!=null) {
-      if (encapsulator.length()!=1) throw new SolrException(400,"Invalid encapsulator:'"+sep+"'");
+      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+sep+"'");
       strategy.setEncapsulator(encapsulator.charAt(0));
     }
 
@@ -242,7 +242,7 @@ abstract class CSVLoader {
         // assume the file has the headers if they aren't supplied in the args
         hasHeader=true;
       } else if (hasHeader) {
-        throw new SolrException(400,"CSVLoader: must specify fieldnames=<fields>* or header=true");
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"CSVLoader: must specify fieldnames=<fields>* or header=true");
       }
     } else {
       // if the fieldnames were supplied and the file has a header, we need to
@@ -285,7 +285,7 @@ abstract class CSVLoader {
         for (String mapRule : fmap) {
           String[] mapArgs = colonSplit.split(mapRule,-1);
           if (mapArgs.length!=2)
-            throw new SolrException(400, "Map rules must be of the form 'from:to' ,got '"+mapRule+"'");
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Map rules must be of the form 'from:to' ,got '"+mapRule+"'");
           adders[i] = new CSVLoader.FieldMapperSingle(mapArgs[0], mapArgs[1], adders[i]);
         }
       }
@@ -311,7 +311,7 @@ abstract class CSVLoader {
     sb.append(errHeader+", line="+lineno + ","+msg+"\n\tvalues={");
     for (String val: line) { sb.append("'"+val+"',"); }
     sb.append('}');
-    throw new SolrException(400,sb.toString());
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,sb.toString());
   }
 
   /** load the CSV input */
@@ -333,7 +333,7 @@ abstract class CSVLoader {
     if (fieldnames==null) {
       fieldnames = parser.getLine();
       if (fieldnames==null) {
-        throw new SolrException(400,"Expected fieldnames in CSV input");
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Expected fieldnames in CSV input");
       }
       prepareFields();
     }
@@ -387,4 +387,5 @@ class SingleThreadedCSVLoader extends CSVLoader {
     doAdd(line, vals, builder, templateAdd);
   }
 }
+
 

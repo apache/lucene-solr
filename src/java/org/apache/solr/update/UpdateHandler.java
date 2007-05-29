@@ -73,7 +73,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
           commitCallbacks.add(listener);
           log.info("added SolrEventListener for postCommit: " + listener);
         } catch (Exception e) {
-          throw new SolrException(500,"error parsing event listevers", e, false);
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"error parsing event listevers", e, false);
         }
       }
     }
@@ -88,7 +88,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
           optimizeCallbacks.add(listener);
           log.info("added SolarEventListener for postOptimize: " + listener);
         } catch (Exception e) {
-          throw new SolrException(500,"error parsing event listeners", e, false);
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"error parsing event listeners", e, false);
         }
       }
     }
@@ -129,15 +129,15 @@ public abstract class UpdateHandler implements SolrInfoMBean {
 
   protected final String getIndexedId(Document doc) {
     if (idField == null) 
-      throw new SolrException(400,"Operation requires schema to have a unique key field");
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Operation requires schema to have a unique key field");
     
     // Right now, single valued fields that require value transformation from external to internal (indexed)
     // form have that transformation already performed and stored as the field value.
     Fieldable[] id = doc.getFieldables( idField.getName() );
     if (id == null || id.length < 1) 
-      throw new SolrException(400,"Document is missing uniqueKey field " + idField.getName());
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing uniqueKey field " + idField.getName());
     if( id.length > 1 ) 
-      throw new SolrException(400,"Document specifies multiple unique ids! " + idField.getName());
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document specifies multiple unique ids! " + idField.getName());
     
     return idFieldType.storedToIndexed( id[0] );
   }
@@ -172,11 +172,12 @@ public abstract class UpdateHandler implements SolrInfoMBean {
       } catch (IOException e) {
         // don't try to close the searcher on failure for now...
         // try { closeSearcher(); } catch (Exception ee) { SolrException.log(log,ee); }
-        throw new SolrException(500,"Error deleting doc# "+doc,e,false);
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error deleting doc# "+doc,e,false);
       }
     }
   }
 
 }
+
 
 

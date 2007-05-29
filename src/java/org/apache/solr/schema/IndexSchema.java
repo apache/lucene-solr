@@ -344,7 +344,7 @@ public final class IndexSchema {
           String msg = "[schema.xml] Duplicate fieldType definition for '"
             + ft.typeName + "' ignoring: "+old.toString();
           
-          Throwable t = new SolrException( 500, msg );
+          Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
           SolrException.logOnce(log,null,t);
           SolrConfig.severeErrors.add( t );
         }
@@ -370,7 +370,7 @@ public final class IndexSchema {
 
         FieldType ft = fieldTypes.get(type);
         if (ft==null) {
-          throw new SolrException(400,"Unknown fieldtype '" + type + "'",false);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Unknown fieldtype '" + type + "'",false);
         }
 
         Map<String,String> args = DOMUtil.toMapExcept(attrs, "name", "type");
@@ -386,7 +386,7 @@ public final class IndexSchema {
             String msg = "[schema.xml] Duplicate field definition for '"
               + f.getName() + "' ignoring: "+old.toString();
             
-            Throwable t = new SolrException( 500, msg );
+            Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
             SolrException.logOnce(log,null,t);
             SolrConfig.severeErrors.add( t );
           }
@@ -408,7 +408,7 @@ public final class IndexSchema {
               String msg = "[schema.xml] Duplicate DynamicField definition for '"
                 + f.getName() + "' ignoring: "+f.toString();
               
-              Throwable t = new SolrException( 500, msg );
+              Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
               SolrException.logOnce(log,null,t);
               SolrConfig.severeErrors.add( t );
               dup = true;
@@ -516,7 +516,7 @@ public final class IndexSchema {
               }
             }
             if( df == null ) {
-              throw new SolrException( 500, "copyField dynamic destination must match a dynamicField." );
+              throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "copyField dynamic destination must match a dynamicField." );
             }
             dCopies.add(new DynamicDestCopy(source, df ));
           }
@@ -526,7 +526,7 @@ public final class IndexSchema {
         } 
         else if( destIsPattern ) {
           String msg =  "copyField only supports a dynamic destination if the source is also dynamic" ;
-          throw new SolrException( 500, msg );
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
         }
         else {
           // retrieve the field to force an exception if it doesn't exist
@@ -553,7 +553,7 @@ public final class IndexSchema {
     } catch(Exception e) {
       // unexpected exception...
       SolrConfig.severeErrors.add( e );
-      throw new SolrException(500,"Schema Parsing Failed",e,false);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Schema Parsing Failed",e,false);
     }
 
      analyzer = new SolrIndexAnalyzer();
@@ -588,7 +588,7 @@ public final class IndexSchema {
     NodeList nList = (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET);
 
     if (tokNode==null){
-      throw new SolrException(500,"analyzer without class or tokenizer & filter list");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"analyzer without class or tokenizer & filter list");
     }
     TokenizerFactory tfac = readTokenizerFactory(tokNode);
 
@@ -598,7 +598,7 @@ public final class IndexSchema {
     NodeList nList = node.getChildNodes();
     TokenizerFactory tfac = readTokenizerFactory(nList.item(0));
      if (tfac==null) {
-       throw new SolrException(500,"TokenizerFactory must be specified first in analyzer");
+       throw new SolrException( SolrException.StatusCode.SERVER_ERROR,"TokenizerFactory must be specified first in analyzer");
      }
     ******/
 
@@ -826,7 +826,7 @@ public final class IndexSchema {
     /***  REMOVED -YCS
     if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
     ***/
-    throw new SolrException(400,"undefined field "+fieldName);
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
   }
 
   /**
@@ -885,7 +885,7 @@ public final class IndexSchema {
      for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
     }
-    throw new SolrException(400,"undefined field "+fieldName);
+    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
   }
 
   private FieldType dynFieldType(String fieldName) {
@@ -942,6 +942,7 @@ public final class IndexSchema {
   }
 
 }
+
 
 
 

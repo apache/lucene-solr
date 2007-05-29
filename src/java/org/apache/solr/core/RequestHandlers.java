@@ -157,7 +157,7 @@ final class RequestHandlers {
           SolrRequestHandler old = register( name, handler );
           if( old != null ) {
             String msg = "multiple handlers registered on the same path! ignoring: "+old;
-            Throwable t = new SolrException( 500, msg );
+            Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
             SolrConfig.severeErrors.add( t );
             SolrException.logOnce(log,null,t);
           }
@@ -252,7 +252,7 @@ final class RequestHandlers {
           _handler.init( _args );
         }
         catch( Exception ex ) {
-          throw new SolrException( 500, "lazy loading error", ex );
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "lazy loading error", ex );
         }
       }
       return _handler; 
@@ -323,6 +323,7 @@ final class RequestHandlers {
     }
   }
 }
+
 
 
 

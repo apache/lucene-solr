@@ -25,31 +25,80 @@ import java.io.PrintWriter;
  * @author yonik
  * @version $Id$
  */
-
-
 public class SolrException extends RuntimeException {
+  
+  /**
+   * @since solr 1.2
+   */
+  public enum ErrorCode {
+    BAD_REQUEST( 400 ),
+    NOT_FOUND( 404 ),
+    SERVER_ERROR( 500 ),
+    SERVICE_UNAVAILABLE( 503 ); 
+    
+    final int code;
+    
+    private ErrorCode( int c )
+    {
+      code = c;
+    }
+  };
+  
   public boolean logged=false;
 
+  public SolrException(ErrorCode code, String msg) {
+    super(msg);
+    this.code=code.code;
+  }
+  
+  public SolrException(ErrorCode code, String msg, boolean alreadyLogged) {
+    super(msg);
+    this.code=code.code;
+    this.logged=alreadyLogged;
+  }
+
+  public SolrException(ErrorCode code, String msg, Throwable th, boolean alreadyLogged) {
+    super(msg,th);
+    this.code=code.code;
+    logged=alreadyLogged;
+  }
+
+  public SolrException(ErrorCode code, String msg, Throwable th) {
+    this(code,msg,th,true);
+  }
+
+  public SolrException(ErrorCode code, Throwable th) {
+    super(th);
+    this.code=code.code;
+    logged=true;
+  }
+  
+  @Deprecated
   public SolrException(int code, String msg) {
     super(msg);
     this.code=code;
   }
+  
+  @Deprecated
   public SolrException(int code, String msg, boolean alreadyLogged) {
     super(msg);
     this.code=code;
     this.logged=alreadyLogged;
   }
 
+  @Deprecated
   public SolrException(int code, String msg, Throwable th, boolean alreadyLogged) {
     super(msg,th);
     this.code=code;
     logged=alreadyLogged;
   }
 
+  @Deprecated
   public SolrException(int code, String msg, Throwable th) {
     this(code,msg,th,true);
   }
 
+  @Deprecated
   public SolrException(int code, Throwable th) {
     super(th);
     this.code=code;
@@ -87,6 +136,7 @@ public class SolrException extends RuntimeException {
 
 
   // public String toString() { return toStr(this); }  // oops, inf loop
+  @Override
   public String toString() { return super.toString(); }
 
   public static String toStr(Throwable e) {

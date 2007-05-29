@@ -296,7 +296,7 @@ public class DOMUtil {
         }
         fragment = System.getProperty(propertyName,defaultValue);
         if (fragment == null) {
-          throw new SolrException(500, "No system property or default value specified for " + propertyName);
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "No system property or default value specified for " + propertyName);
         }
       }
       sb.append(fragment);

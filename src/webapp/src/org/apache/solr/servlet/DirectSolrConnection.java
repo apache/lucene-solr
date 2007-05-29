@@ -96,7 +96,7 @@ public class DirectSolrConnection
         System.setProperty("java.util.logging.config.file", loggingConfig.getAbsolutePath() ); 
       }
       else {
-        throw new SolrException( 500, "can not find logging file: "+loggingConfig );
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "can not find logging file: "+loggingConfig );
       }
     }
     
@@ -105,7 +105,7 @@ public class DirectSolrConnection
       if( Config.isInstanceDirInitialized() ) {
         String dir = Config.getInstanceDir();
         if( !dir.equals( instanceDir ) ) {
-          throw new SolrException( 500, "already initalized: "+dir  );
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "already initalized: "+dir  );
         }
       }
       Config.setInstanceDir( instanceDir );
@@ -150,12 +150,12 @@ public class DirectSolrConnection
         String qt = params.get( SolrParams.QT );
         handler = core.getRequestHandler( qt );
         if( handler == null ) {
-          throw new SolrException( 400, "unknown handler: "+qt);
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
         }
       }
     }
     if( handler == null ) {
-      throw new SolrException( 400, "unknown handler: "+path );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+path );
     }
     
     // Make a stream for the 'body' content

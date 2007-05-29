@@ -98,7 +98,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   public int getIntParam(String name) {
     String s = getParam(name);
     if (s==null) {
-      throw new SolrException(500,"Missing required parameter '"+name+"' from " + this);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Missing required parameter '"+name+"' from " + this);
     }
     return Integer.parseInt(s);
   }
@@ -119,7 +119,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   public String getStrParam(String name) {
     String s = getParam(name);
     if (s==null) {
-      throw new SolrException(500,"Missing required parameter '"+name+"' from " + this);
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Missing required parameter '"+name+"' from " + this);
     }
     return s;
   }

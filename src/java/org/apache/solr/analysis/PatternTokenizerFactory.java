@@ -75,7 +75,7 @@ public class PatternTokenizerFactory implements TokenizerFactory
     this.args = args;
     String regex = args.get( PATTERN );
     if( regex == null ) {
-      throw new SolrException( 500, "missing required argument: "+PATTERN );
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "missing required argument: "+PATTERN );
     }
     int flags = 0; // TODO? -- read flags from config CASE_INSENSITIVE, etc
     pattern = Pattern.compile( regex, flags );
@@ -87,7 +87,7 @@ public class PatternTokenizerFactory implements TokenizerFactory
         group = Integer.parseInt( g );
       }
       catch( Exception ex ) {
-        throw new SolrException( 500, "invalid group argument: "+g );
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "invalid group argument: "+g );
       }
     }
   }
@@ -124,7 +124,7 @@ public class PatternTokenizerFactory implements TokenizerFactory
       };
     }
     catch( IOException ex ) {
-      throw new SolrException( 500, ex );
+      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, ex );
     }
   }
   

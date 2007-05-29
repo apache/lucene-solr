@@ -61,7 +61,7 @@ public class SolrServlet extends HttpServlet {
       SolrRequestHandler handler = core.getRequestHandler(solrReq.getQueryType());
       if (handler==null) {
         log.warning("Unknown Request Handler '" + solrReq.getQueryType() +"' :" + solrReq);
-        throw new SolrException(400,"Unknown Request Handler '" + solrReq.getQueryType() + "'", true);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Unknown Request Handler '" + solrReq.getQueryType() + "'", true);
       }
       core.execute(handler, solrReq, solrRsp );
       if (solrRsp.getException() == null) {
