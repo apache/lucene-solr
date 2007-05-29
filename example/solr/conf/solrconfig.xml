@@ -366,7 +366,7 @@
        suggestions.  If invoked with a ...&cmd=rebuild, it will rebuild the
        spellchecker index.
   -->
-  <requestHandler name="spellchecker" class="solr.SpellCheckerRequestHandler">
+  <requestHandler name="spellchecker" class="solr.SpellCheckerRequestHandler" startup="lazy">
     <!-- default values for query parameters -->
      <lst name="defaults">
        <int name="suggestionCount">1</int>
