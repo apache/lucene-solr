@@ -170,7 +170,7 @@ public class RAMDirectory extends Directory implements Serializable {
   
   /** Return total size in bytes of all files in this
    * directory.  This is currently quantized to
-   * BufferedIndexOutput.BUFFER_SIZE. */
+   * RAMOutputStream.BUFFER_SIZE. */
   public synchronized final long sizeInBytes() {
     ensureOpen();
     return sizeInBytes;

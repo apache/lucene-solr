@@ -88,6 +88,17 @@ public abstract class Directory {
   public abstract IndexInput openInput(String name)
     throws IOException;
 
+  /** Returns a stream reading an existing file, with the
+   * specified read buffer size.  The particular Directory
+   * implementation may ignore the buffer size.  Currently
+   * the only Directory implementations that respect this
+   * parameter are {@link FSDirectory} and {@link
+   * org.apache.lucene.index.CompoundFileReader}.
+  */
+  public IndexInput openInput(String name, int bufferSize) throws IOException {
+    return openInput(name);
+  }
+
   /** Construct a {@link Lock}.
    * @param name the name of the lock file
    */

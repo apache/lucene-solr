@@ -21,7 +21,7 @@ import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexOutput}. */
 public abstract class BufferedIndexOutput extends IndexOutput {
-  static final int BUFFER_SIZE = 1024;
+  static final int BUFFER_SIZE = 16384;
 
   private final byte[] buffer = new byte[BUFFER_SIZE];
   private long bufferStart = 0;           // position in file of buffer

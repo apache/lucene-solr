@@ -23,6 +23,7 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.BitVector;
 
 import java.io.IOException;
@@ -127,7 +128,15 @@ class SegmentReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(si.dir, si, null, false, false);
+    return get(si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE);
+  }
+
+  /**
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static SegmentReader get(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
+    return get(si.dir, si, null, false, false, readBufferSize);
   }
 
   /**
@@ -136,7 +145,7 @@ class SegmentReader extends IndexReader {
    */
   public static SegmentReader get(SegmentInfos sis, SegmentInfo si,
                                   boolean closeDir) throws CorruptIndexException, IOException {
-    return get(si.dir, si, sis, closeDir, true);
+    return get(si.dir, si, sis, closeDir, true, BufferedIndexInput.BUFFER_SIZE);
   }
 
   /**
@@ -145,7 +154,8 @@ class SegmentReader extends IndexReader {
    */
   public static SegmentReader get(Directory dir, SegmentInfo si,
                                   SegmentInfos sis,
-                                  boolean closeDir, boolean ownDir)
+                                  boolean closeDir, boolean ownDir,
+                                  int readBufferSize)
     throws CorruptIndexException, IOException {
     SegmentReader instance;
     try {
@@ -154,11 +164,11 @@ class SegmentReader extends IndexReader {
       throw new RuntimeException("cannot load SegmentReader class: " + e, e);
     }
     instance.init(dir, sis, closeDir, ownDir);
-    instance.initialize(si);
+    instance.initialize(si, readBufferSize);
     return instance;
   }
 
-  private void initialize(SegmentInfo si) throws CorruptIndexException, IOException {
+  private void initialize(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
     segment = si.name;
     this.si = si;
 
@@ -168,20 +178,20 @@ class SegmentReader extends IndexReader {
       // Use compound file directory for some files, if it exists
       Directory cfsDir = directory();
       if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileReader(directory(), segment + ".cfs");
+        cfsReader = new CompoundFileReader(directory(), segment + ".cfs", readBufferSize);
         cfsDir = cfsReader;
       }
 
       // No compound file exists - use the multi-file format
       fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
-      fieldsReader = new FieldsReader(cfsDir, segment, fieldInfos);
+      fieldsReader = new FieldsReader(cfsDir, segment, fieldInfos, readBufferSize);
 
       // Verify two sources of "maxDoc" agree:
       if (fieldsReader.size() != si.docCount) {
         throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReader.size() + " but segmentInfo shows " + si.docCount);
       }
 
-      tis = new TermInfosReader(cfsDir, segment, fieldInfos);
+      tis = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize);
       
       // NOTE: the bitvector is stored using the regular directory, not cfs
       if (hasDeletions(si)) {
@@ -195,12 +205,12 @@ class SegmentReader extends IndexReader {
 
       // make sure that all index files have been read or are kept open
       // so that if an index update removes them we'll still have them
-      freqStream = cfsDir.openInput(segment + ".frq");
-      proxStream = cfsDir.openInput(segment + ".prx");
-      openNorms(cfsDir);
+      freqStream = cfsDir.openInput(segment + ".frq", readBufferSize);
+      proxStream = cfsDir.openInput(segment + ".prx", readBufferSize);
+      openNorms(cfsDir, readBufferSize);
 
       if (fieldInfos.hasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = new TermVectorsReader(cfsDir, segment, fieldInfos);
+        termVectorsReaderOrig = new TermVectorsReader(cfsDir, segment, fieldInfos, readBufferSize);
       }
       success = true;
     } finally {
@@ -482,7 +492,7 @@ class SegmentReader extends IndexReader {
   }
 
 
-  private void openNorms(Directory cfsDir) throws IOException {
+  private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
     long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
     for (int i = 0; i < fieldInfos.size(); i++) {
@@ -502,7 +512,7 @@ class SegmentReader extends IndexReader {
         if (singleNormFile) {
           normSeek = nextNormSeek;
           if (singleNormStream==null) {
-            singleNormStream = d.openInput(fileName);
+            singleNormStream = d.openInput(fileName, readBufferSize);
           }
           // All norms in the .nrm file can share a single IndexInput since
           // they are only used in a synchronized context.

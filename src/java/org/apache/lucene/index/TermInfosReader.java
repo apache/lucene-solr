@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.BufferedIndexInput;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
@@ -42,16 +43,21 @@ final class TermInfosReader {
 
   TermInfosReader(Directory dir, String seg, FieldInfos fis)
        throws CorruptIndexException, IOException {
+    this(dir, seg, fis, BufferedIndexInput.BUFFER_SIZE);
+  }
+
+  TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize)
+       throws CorruptIndexException, IOException {
     directory = dir;
     segment = seg;
     fieldInfos = fis;
 
-    origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis"),
+    origEnum = new SegmentTermEnum(directory.openInput(segment + ".tis", readBufferSize),
                                    fieldInfos, false);
     size = origEnum.size;
 
     indexEnum =
-      new SegmentTermEnum(directory.openInput(segment + ".tii"),
+      new SegmentTermEnum(directory.openInput(segment + ".tii", readBufferSize),
 			  fieldInfos, true);
   }
 

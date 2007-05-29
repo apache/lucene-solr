@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.BufferedIndexInput;
 
 import java.io.IOException;
 
@@ -38,12 +39,17 @@ class TermVectorsReader implements Cloneable {
 
   TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos)
     throws CorruptIndexException, IOException {
+    this(d, segment, fieldInfos, BufferedIndexInput.BUFFER_SIZE);
+  }
+
+  TermVectorsReader(Directory d, String segment, FieldInfos fieldInfos, int readBufferSize)
+    throws CorruptIndexException, IOException {
     if (d.fileExists(segment + TermVectorsWriter.TVX_EXTENSION)) {
-      tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION);
+      tvx = d.openInput(segment + TermVectorsWriter.TVX_EXTENSION, readBufferSize);
       checkValidFormat(tvx);
-      tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION);
+      tvd = d.openInput(segment + TermVectorsWriter.TVD_EXTENSION, readBufferSize);
       tvdFormat = checkValidFormat(tvd);
-      tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION);
+      tvf = d.openInput(segment + TermVectorsWriter.TVF_EXTENSION, readBufferSize);
       tvfFormat = checkValidFormat(tvf);
       size = (int) tvx.length() / 8;
     }

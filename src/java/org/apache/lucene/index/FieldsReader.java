@@ -22,6 +22,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedIndexInput;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,11 +54,15 @@ final class FieldsReader {
   private ThreadLocal fieldsStreamTL = new ThreadLocal();
 
   FieldsReader(Directory d, String segment, FieldInfos fn) throws IOException {
+    this(d, segment, fn, BufferedIndexInput.BUFFER_SIZE);
+  }
+
+  FieldsReader(Directory d, String segment, FieldInfos fn, int readBufferSize) throws IOException {
     fieldInfos = fn;
 
-    cloneableFieldsStream = d.openInput(segment + ".fdt");
+    cloneableFieldsStream = d.openInput(segment + ".fdt", readBufferSize);
     fieldsStream = (IndexInput)cloneableFieldsStream.clone();
-    indexStream = d.openInput(segment + ".fdx");
+    indexStream = d.openInput(segment + ".fdx", readBufferSize);
     size = (int) (indexStream.length() / 8);
   }
 

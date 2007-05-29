@@ -190,7 +190,7 @@ public class MockRAMDirectory extends RAMDirectory {
   /** Like getRecomputedSizeInBytes(), but, uses actual file
    * lengths rather than buffer allocations (which are
    * quantized up to nearest
-   * BufferedIndexOutput.BUFFER_SIZE (now 1024) bytes.
+   * RAMOutputStream.BUFFER_SIZE (now 1024) bytes.
    */
 
   final long getRecomputedActualSizeInBytes() {

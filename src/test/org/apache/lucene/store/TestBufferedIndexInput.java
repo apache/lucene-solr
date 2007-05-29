@@ -1,6 +1,21 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
+import java.io.File;
+import java.util.List;
+import java.util.Random;
+import java.util.ArrayList;
+import java.util.Iterator;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util._TestUtil;
 
 import junit.framework.TestCase;
 
@@ -121,5 +136,134 @@ public class TestBufferedIndexInput extends TestCase {
 		public long length() {
 			return len;
 		}
+    }
+
+    public void testSetBufferSize() throws IOException {
+      File indexDir = new File(System.getProperty("tempDir"), "testSetBufferSize");
+      MockFSDirectory dir = new MockFSDirectory(indexDir);
+      try {
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true);
+        writer.setUseCompoundFile(false);
+        for(int i=0;i<37;i++) {
+          Document doc = new Document();
+          doc.add(new Field("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.TOKENIZED));
+          doc.add(new Field("id", "" + i, Field.Store.YES, Field.Index.TOKENIZED));
+          writer.addDocument(doc);
+        }
+        writer.close();
+
+        dir.allIndexInputs.clear();
+
+        IndexReader reader = IndexReader.open(dir);
+        Term aaa = new Term("content", "aaa");
+        Term bbb = new Term("content", "bbb");
+        Term ccc = new Term("content", "ccc");
+        assertEquals(reader.docFreq(ccc), 37);
+        reader.deleteDocument(0);
+        assertEquals(reader.docFreq(aaa), 37);
+        dir.tweakBufferSizes();
+        reader.deleteDocument(4);
+        assertEquals(reader.docFreq(bbb), 37);
+        dir.tweakBufferSizes();
+
+        IndexSearcher searcher = new IndexSearcher(reader);
+        Hits hits = searcher.search(new TermQuery(bbb));
+        dir.tweakBufferSizes();
+        assertEquals(35, hits.length());
+        dir.tweakBufferSizes();
+        hits = searcher.search(new TermQuery(new Term("id", "33")));
+        dir.tweakBufferSizes();
+        assertEquals(1, hits.length());
+        hits = searcher.search(new TermQuery(aaa));
+        dir.tweakBufferSizes();
+        assertEquals(35, hits.length());
+        searcher.close();
+        reader.close();
+      } finally {
+        _TestUtil.rmDir(indexDir);
+      }
+    }
+
+    private static class MockFSDirectory extends Directory {
+
+      List allIndexInputs = new ArrayList();
+
+      Random rand = new Random();
+
+      private Directory dir;
+
+      public MockFSDirectory(File path) throws IOException {
+        lockFactory = new NoLockFactory();
+        dir = FSDirectory.getDirectory(path);
+      }
+
+      public IndexInput openInput(String name) throws IOException {
+        return openInput(name, BufferedIndexInput.BUFFER_SIZE);
+      }
+
+      public void tweakBufferSizes() {
+        Iterator it = allIndexInputs.iterator();
+        int count = 0;
+        while(it.hasNext()) {
+          BufferedIndexInput bii = (BufferedIndexInput) it.next();
+          int bufferSize = 1024+(int) Math.abs(rand.nextInt() % 32768);
+          bii.setBufferSize(bufferSize);
+          count++;
+        }
+        //System.out.println("tweak'd " + count + " buffer sizes");
+      }
+      
+      public IndexInput openInput(String name, int bufferSize) throws IOException {
+        // Make random changes to buffer size
+        bufferSize = 1+(int) Math.abs(rand.nextInt() % 10);
+        IndexInput f = dir.openInput(name, bufferSize);
+        allIndexInputs.add(f);
+        return f;
+      }
+
+      public IndexOutput createOutput(String name) throws IOException {
+        return dir.createOutput(name);
+      }
+
+      public void close() throws IOException {
+        dir.close();
+      }
+
+      public void deleteFile(String name)
+        throws IOException
+      {
+        dir.deleteFile(name);
+      }
+      public void touchFile(String name)
+        throws IOException
+      {
+        dir.touchFile(name);
+      }
+      public long fileModified(String name)
+        throws IOException
+      {
+        return dir.fileModified(name);
+      }
+      public boolean fileExists(String name)
+        throws IOException
+      {
+        return dir.fileExists(name);
+      }
+      public String[] list()
+        throws IOException
+      {
+        return dir.list();
+      }
+
+      public long fileLength(String name) throws IOException {
+        return dir.fileLength(name);
+      }
+      public void renameFile(String from, String to)
+        throws IOException
+      {
+        dir.renameFile(from, to);
+      }
+
+
     }
 }

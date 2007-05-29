@@ -26,7 +26,7 @@ import java.io.IOException;
  */
 
 class RAMInputStream extends IndexInput implements Cloneable {
-  static final int BUFFER_SIZE = BufferedIndexOutput.BUFFER_SIZE;
+  static final int BUFFER_SIZE = RAMOutputStream.BUFFER_SIZE;
 
   private RAMFile file;
   private long length;

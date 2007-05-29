@@ -26,7 +26,7 @@ import java.io.IOException;
  */
 
 public class RAMOutputStream extends IndexOutput {
-  static final int BUFFER_SIZE = BufferedIndexOutput.BUFFER_SIZE;
+  static final int BUFFER_SIZE = 1024;
 
   private RAMFile file;
 

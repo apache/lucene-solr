@@ -37,6 +37,8 @@ import java.io.IOException;
  */
 class CompoundFileReader extends Directory {
 
+    private int readBufferSize;
+
     private static final class FileEntry {
         long offset;
         long length;
@@ -51,16 +53,21 @@ class CompoundFileReader extends Directory {
     private HashMap entries = new HashMap();
 
 
-    public CompoundFileReader(Directory dir, String name)
+  public CompoundFileReader(Directory dir, String name) throws IOException {
+    this(dir, name, BufferedIndexInput.BUFFER_SIZE);
+  }
+
+  public CompoundFileReader(Directory dir, String name, int readBufferSize)
     throws IOException
     {
         directory = dir;
         fileName = name;
+        this.readBufferSize = readBufferSize;
 
         boolean success = false;
 
         try {
-            stream = dir.openInput(name);
+            stream = dir.openInput(name, readBufferSize);
 
             // read the directory and init files
             int count = stream.readVInt();
@@ -115,6 +122,13 @@ class CompoundFileReader extends Directory {
     public synchronized IndexInput openInput(String id)
     throws IOException
     {
+      // Default to readBufferSize passed in when we were opened
+      return openInput(id, readBufferSize);
+    }
+
+    public synchronized IndexInput openInput(String id, int readBufferSize)
+    throws IOException
+    {
         if (stream == null)
             throw new IOException("Stream closed");
 
@@ -122,7 +136,7 @@ class CompoundFileReader extends Directory {
         if (entry == null)
             throw new IOException("No sub-file with id " + id + " found");
 
-        return new CSIndexInput(stream, entry.offset, entry.length);
+        return new CSIndexInput(stream, entry.offset, entry.length, readBufferSize);
     }
 
     /** Returns an array of strings, one for each file in the directory. */
@@ -198,6 +212,12 @@ class CompoundFileReader extends Directory {
 
         CSIndexInput(final IndexInput base, final long fileOffset, final long length)
         {
+            this(base, fileOffset, length, BufferedIndexInput.BUFFER_SIZE);
+        }
+
+        CSIndexInput(final IndexInput base, final long fileOffset, final long length, int readBufferSize)
+        {
+            super(readBufferSize);
             this.base = base;
             this.fileOffset = fileOffset;
             this.length = length;

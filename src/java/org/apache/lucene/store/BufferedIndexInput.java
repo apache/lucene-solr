@@ -21,7 +21,11 @@ import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput {
-  static final int BUFFER_SIZE = BufferedIndexOutput.BUFFER_SIZE;
+
+  /** Default buffer size */
+  public static final int BUFFER_SIZE = 1024;
+
+  private int bufferSize = BUFFER_SIZE;
 
   private byte[] buffer;
 
@@ -33,6 +37,50 @@ public abstract class BufferedIndexInput extends IndexInput {
     if (bufferPosition >= bufferLength)
       refill();
     return buffer[bufferPosition++];
+  }
+
+  public BufferedIndexInput() {}
+
+  /** Inits BufferedIndexInput with a specific bufferSize */
+  public BufferedIndexInput(int bufferSize) {
+    checkBufferSize(bufferSize);
+    this.bufferSize = bufferSize;
+  }
+
+  /** Change the buffer size used by this IndexInput */
+  public void setBufferSize(int newSize) {
+    assert bufferSize == buffer.length;
+    if (newSize != bufferSize) {
+      checkBufferSize(newSize);
+      bufferSize = newSize;
+      if (buffer != null) {
+        // Resize the existing buffer and carefully save as
+        // many bytes as possible starting from the current
+        // bufferPosition
+        byte[] newBuffer = new byte[newSize];
+        final int leftInBuffer = bufferLength-bufferPosition;
+        final int numToCopy;
+        if (leftInBuffer > newSize)
+          numToCopy = newSize;
+        else
+          numToCopy = leftInBuffer;
+        System.arraycopy(buffer, bufferPosition, newBuffer, 0, numToCopy);
+        bufferStart += bufferPosition;
+        bufferPosition = 0;
+        bufferLength = numToCopy;
+        buffer = newBuffer;
+      }
+    }
+  }
+
+  /** Returns buffer size.  @see #setBufferSize */
+  public int getBufferSize() {
+    return bufferSize;
+  }
+
+  private void checkBufferSize(int bufferSize) {
+    if (bufferSize <= 0)
+      throw new IllegalArgumentException("bufferSize must be greater than 0 (got " + bufferSize + ")");
   }
 
   public void readBytes(byte[] b, int offset, int len) throws IOException {
@@ -51,7 +99,7 @@ public abstract class BufferedIndexInput extends IndexInput {
         bufferPosition += available;
       }
       // and now, read the remaining 'len' bytes:
-      if(len<BUFFER_SIZE){
+      if(len<bufferSize){
         // If the amount left to read is small enough, do it in the usual
         // buffered way: fill the buffer and copy from it:
         refill();
@@ -81,7 +129,7 @@ public abstract class BufferedIndexInput extends IndexInput {
 
   private void refill() throws IOException {
     long start = bufferStart + bufferPosition;
-    long end = start + BUFFER_SIZE;
+    long end = start + bufferSize;
     if (end > length())				  // don't read past EOF
       end = length();
     bufferLength = (int)(end - start);
@@ -89,7 +137,7 @@ public abstract class BufferedIndexInput extends IndexInput {
       throw new IOException("read past EOF");
 
     if (buffer == null) {
-      buffer = new byte[BUFFER_SIZE];		  // allocate buffer lazily
+      buffer = new byte[bufferSize];		  // allocate buffer lazily
       seekInternal(bufferStart);
     }
     readInternal(buffer, 0, bufferLength);

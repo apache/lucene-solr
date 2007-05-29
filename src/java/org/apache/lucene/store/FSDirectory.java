@@ -435,9 +435,14 @@ public class FSDirectory extends Directory {
     return new FSIndexOutput(file);
   }
 
-  /** Returns a stream reading an existing file. */
+  // Inherit javadoc
   public IndexInput openInput(String name) throws IOException {
     return new FSIndexInput(new File(directory, name));
+  }
+
+  // Inherit javadoc
+  public IndexInput openInput(String name, int bufferSize) throws IOException {
+    return new FSIndexInput(new File(directory, name), bufferSize);
   }
 
   /**
@@ -523,6 +528,11 @@ public class FSDirectory extends Directory {
     boolean isClone;
   
     public FSIndexInput(File path) throws IOException {
+      this(path, BufferedIndexInput.BUFFER_SIZE);
+    }
+  
+    public FSIndexInput(File path, int bufferSize) throws IOException {
+      super(bufferSize);
       file = new Descriptor(path, "r");
     }
   

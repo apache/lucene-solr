@@ -65,6 +65,11 @@ API Changes
     This patch also enables the tests in QueryUtils again that check for docid
     order. (Paul Elschot, Doron Cohen, Michael Busch)
 
+12. LUCENE-888: Added Directory.openInput(File path, int bufferSize)
+    to optionally specify the size of the read buffer.  Also added
+    BufferedIndexInput.setBufferSize(int) to change the buffer size.
+    (Mike McCandless)
+
 
 Bug fixes
 
@@ -195,6 +200,12 @@ Optimizations
  5. LUCENE-430: Delay allocation of the buffer after a clone of BufferedIndexInput.
     Together with LUCENE-888 this will allow to adjust the buffer size
     dynamically. (Paul Elschot, Michael Busch)
+ 
+ 6. LUCENE-888: Increase buffer sizes inside CompoundFileWriter and
+    BufferedIndexOutput.  Also increase buffer size in
+    BufferedIndexInput, but only when used during merging.  Together,
+    these increases yield 10-18% overall performance gain vs the
+    previous 1K defaults.  (Mike McCandless)
  
 Documentation
 

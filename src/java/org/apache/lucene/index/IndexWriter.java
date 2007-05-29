@@ -203,6 +203,14 @@ public class IndexWriter {
    */
   public final static int DEFAULT_TERM_INDEX_INTERVAL = 128;
   
+  // The normal read buffer size defaults to 1024, but
+  // increasing this during merging seems to yield
+  // performance gains.  However we don't want to increase
+  // it too much because there are quite a few
+  // BufferedIndexInputs created during merging.  See
+  // LUCENE-888 for details.
+  private final static int MERGE_READ_BUFFER_SIZE = 4096;
+
   private Directory directory;  // where this index resides
   private Analyzer analyzer;    // how to analyze text
 
@@ -1824,7 +1832,7 @@ public class IndexWriter {
           SegmentInfo si = sourceSegments.info(i);
           if (infoStream != null)
             infoStream.print(" " + si.name + " (" + si.docCount + " docs)");
-          IndexReader reader = SegmentReader.get(si); // no need to set deleter (yet)
+          IndexReader reader = SegmentReader.get(si, MERGE_READ_BUFFER_SIZE); // no need to set deleter (yet)
           merger.add(reader);
           if (reader.directory() == this.ramDirectory) {
             ramSegmentsToDelete.add(si);

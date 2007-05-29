@@ -161,7 +161,7 @@ final class CompoundFileWriter {
 
             // Open the files and copy their data into the stream.
             // Remember the locations of each file's data section.
-            byte buffer[] = new byte[1024];
+            byte buffer[] = new byte[16384];
             it = entries.iterator();
             while(it.hasNext()) {
                 FileEntry fe = (FileEntry) it.next();
