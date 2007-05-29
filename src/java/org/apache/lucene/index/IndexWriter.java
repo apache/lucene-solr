@@ -57,14 +57,16 @@ import java.util.Map.Entry;
   and removed with <a
   href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments</b></a>.
   A document can be updated with <a href="#updateDocument(org.apache.lucene.index.Term, org.apache.lucene.document.Document)"><b>updateDocument</b></a> 
-  (which just deletes and then adds). When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
+  (which just deletes and then adds the entire document).
+  When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
 
   <p>These changes are buffered in memory and periodically
   flushed to the {@link Directory} (during the above method calls).  A flush is triggered when there are
   enough buffered deletes (see {@link
   #setMaxBufferedDeleteTerms}) or enough added documents
   (see {@link #setMaxBufferedDocs}) since the last flush,
-  whichever is sooner.  When a flush occurs, both pending
+  whichever is sooner.  You can also force a flush by
+  calling {@link #flush}.  When a flush occurs, both pending
   deletes and added documents are flushed to the index.  A
   flush may also trigger one or more segment merges.</p>
 
@@ -99,6 +101,12 @@ import java.util.Map.Entry;
   readers while optimize or segment merges are taking place
   as this can tie up substantial disk space.</p>
   
+  <p>Regardless of <code>autoCommit</code>, an {@link
+  IndexReader} or {@link org.apache.lucene.search.IndexSearcher} will only see the
+  index as of the "point in time" that it was opened.  Any
+  changes committed to the index after the reader was opened
+  are not visible until the reader is re-opened.</p>
+
   <p>If an index will not have more documents added for a while and optimal search
   performance is desired, then the <a href="#optimize()"><b>optimize</b></a>
   method should be called before the index is closed.</p>
