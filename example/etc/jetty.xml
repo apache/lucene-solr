@@ -43,7 +43,6 @@
 
     <!-- Use this connector for many frequently idle connections
          and for threadless continuations.
-    -->    
     <Call name="addConnector">
       <Arg>
           <New class="org.mortbay.jetty.nio.SelectChannelConnector">
@@ -54,19 +53,23 @@
           </New>
       </Arg>
     </Call>
-        
+   -->     
 
-    <!-- Use this connector if NIO is not available.
+    <!-- Use this connector if NIO is not available. -->
+    <!-- This connector is currently being used for Solr because the
+         nio.SelectChannelConnector showed poor performance under WindowsXP
+         from a single client with non-persistent connections (35s vs ~3min)
+         to complete 10,000 requests)
+    -->
     <Call name="addConnector">
       <Arg>
           <New class="org.mortbay.jetty.bio.SocketConnector">
-            <Set name="port">8081</Set>
+            <Set name="port">8983</Set>
             <Set name="maxIdleTime">50000</Set>
             <Set name="lowResourceMaxIdleTime">1500</Set>
           </New>
       </Arg>
     </Call>
-    -->
 
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     <!-- To add a HTTPS SSL listener                                     -->
