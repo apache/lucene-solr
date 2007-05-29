@@ -19,17 +19,41 @@ package org.apache.solr.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
+/** Keep track of a reference count on a resource and close it when
+ * the count hits zero.
+ *
+ * By itself, this class could have some race conditions
+ * since there is no synchronization between the refcount
+ * check and the close.  Solr's use in reference counting searchers
+ * is safe since the count can only hit zero if it's unregistered (and
+ * hence incref() will not be called again on it).
+ *
  * @author yonik
  * @version $Id$
  */
 
 public abstract class RefCounted<Type> {
   protected final Type resource;
-  protected final AtomicInteger refcount= new AtomicInteger();
-  public RefCounted(Type resource) { this.resource = resource; }
-  public final RefCounted<Type> incref() { refcount.incrementAndGet(); return this; }
-  public final Type get() { return resource; }
-  public void decref() { if (refcount.decrementAndGet()==0) close(); }
+  protected final AtomicInteger refcount = new AtomicInteger();
+
+  public RefCounted(Type resource) {
+    this.resource = resource;
+  }
+
+  public final RefCounted<Type> incref() {
+    refcount.incrementAndGet();
+    return this;
+  }
+
+  public final Type get() {
+    return resource;
+  }
+
+  public void decref() {
+    if (refcount.decrementAndGet() == 0) {
+      close();
+    }
+  }
+
   protected abstract void close();
 }
