@@ -29,7 +29,7 @@
   <xsl:template match='/'>
     <xsl:variable name="query" select="response/lst[@name='responseHeader']/lst[@name='params']/str[@name='q']"/>
     <feed xmlns="http://www.w3.org/2005/Atom">
-      <title>Example Solr Atom Feed</title>
+      <title>Example Solr Atom 1.0 Feed</title>
       <subtitle>
        This has been formatted by the sample "example_atom.xsl" transform -
        use your own XSLT to get a nicer Atom feed.
