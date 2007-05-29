@@ -49,7 +49,7 @@ public abstract class BufferedIndexInput extends IndexInput {
 
   /** Change the buffer size used by this IndexInput */
   public void setBufferSize(int newSize) {
-    assert bufferSize == buffer.length;
+    assert buffer == null || bufferSize == buffer.length;
     if (newSize != bufferSize) {
       checkBufferSize(newSize);
       bufferSize = newSize;
