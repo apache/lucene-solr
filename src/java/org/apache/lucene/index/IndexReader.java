@@ -322,9 +322,15 @@ public abstract class IndexReader {
   }
 
   /**
-   * Check whether this IndexReader still works on a current version of the index.
-   * If this is not the case you will need to re-open the IndexReader to
-   * make sure you see the latest changes made to the index.
+   * Check whether this IndexReader is still using the
+   * current (i.e., most recently committed) version of the
+   * index.  If a writer has committed any changes to the
+   * index since this reader was opened, this will return
+   * <code>false</code>, in which case you must open a new
+   * IndexReader in order to see the changes.  See the
+   * description of the <a href="IndexWriter.html#autoCommit"><code>autoCommit</code></a>
+   * flag which controls when the {@link IndexWriter}
+   * actually commits changes to the index.
    * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
