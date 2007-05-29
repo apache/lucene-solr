@@ -73,7 +73,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
           commitCallbacks.add(listener);
           log.info("added SolrEventListener for postCommit: " + listener);
         } catch (Exception e) {
-          throw new SolrException(1,"error parsing event listevers", e, false);
+          throw new SolrException(500,"error parsing event listevers", e, false);
         }
       }
     }
@@ -88,7 +88,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
           optimizeCallbacks.add(listener);
           log.info("added SolarEventListener for postOptimize: " + listener);
         } catch (Exception e) {
-          throw new SolrException(1,"error parsing event listeners", e, false);
+          throw new SolrException(500,"error parsing event listeners", e, false);
         }
       }
     }

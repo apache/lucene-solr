@@ -109,7 +109,7 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
 
   protected boolean existsInIndex(String indexedId) throws IOException {
-    if (idField == null) throw new SolrException(2,"Operation requires schema to have a unique key field");
+    if (idField == null) throw new SolrException(400,"Operation requires schema to have a unique key field");
 
     closeWriter();
     openSearcher();
@@ -127,7 +127,7 @@ public class DirectUpdateHandler extends UpdateHandler {
 
 
   protected int deleteInIndex(String indexedId) throws IOException {
-    if (idField == null) throw new SolrException(2,"Operation requires schema to have a unique key field");
+    if (idField == null) throw new SolrException(400,"Operation requires schema to have a unique key field");
 
     closeWriter(); openSearcher();
     IndexReader ir = searcher.getReader();

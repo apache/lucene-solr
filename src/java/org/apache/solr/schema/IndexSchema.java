@@ -553,7 +553,7 @@ public final class IndexSchema {
     } catch(Exception e) {
       // unexpected exception...
       SolrConfig.severeErrors.add( e );
-      throw new SolrException(1,"Schema Parsing Failed",e,false);
+      throw new SolrException(500,"Schema Parsing Failed",e,false);
     }
 
      analyzer = new SolrIndexAnalyzer();
@@ -588,7 +588,7 @@ public final class IndexSchema {
     NodeList nList = (NodeList)xpath.evaluate("./filter", node, XPathConstants.NODESET);
 
     if (tokNode==null){
-      throw new SolrException(1,"analyzer without class or tokenizer & filter list");
+      throw new SolrException(500,"analyzer without class or tokenizer & filter list");
     }
     TokenizerFactory tfac = readTokenizerFactory(tokNode);
 
@@ -598,7 +598,7 @@ public final class IndexSchema {
     NodeList nList = node.getChildNodes();
     TokenizerFactory tfac = readTokenizerFactory(nList.item(0));
      if (tfac==null) {
-       throw new SolrException(1,"TokenizerFactory must be specified first in analyzer");
+       throw new SolrException(500,"TokenizerFactory must be specified first in analyzer");
      }
     ******/
 
