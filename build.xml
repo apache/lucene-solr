@@ -143,6 +143,16 @@
     <delete dir="${dist}" />
   </target>
 
+  <!-- Prepares an entity file for use in Forrest documentation -->
+  <target name="init-forrest-entities">
+    <!-- no description, don't advertise -->
+
+    <mkdir dir="${dest}" />
+    <echo  file="${dest}/solr-specific-forrest-variables.ent" append="false">
+      &lt;!ENTITY solr.specversion "${specversion}"&gt;
+    </echo>
+  </target>
+
 
   <!-- ========================================================================= -->
   <!-- ===================== COMPILATION-RELATED TASKS ========================= -->
@@ -159,7 +169,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="checkJunitPresence">
+          depends="init-forrest-entities,checkJunitPresence">
 
     <mkdir dir="${dest}" />
 
@@ -267,7 +277,7 @@
   <!-- Run unit tests. -->
   <target name="test"
           description="Runs the unit tests."
-          depends="compileTests, junit" />
+          depends="init-forrest-entities, compileTests, junit" />
   
   <target name="junit" depends="compileTests">
     <!-- no description so it doesn't show up in -projecthelp -->  
@@ -319,7 +329,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-war, dist-jar" />
+          depends="init-forrest-entities, dist-war, dist-jar" />
 
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest" >
@@ -406,7 +416,7 @@
 
   <target name="example" 
           description="Creates a runnable example configuration."
-          depends="dist-war">
+          depends="init-forrest-entities,dist-war">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
