@@ -194,6 +194,12 @@
       <sysproperty key="tempDir" file="${build.dir}/test"/>
       <sysproperty key="java.io.tmpdir" file="${build.dir}/test"/>
 
+      <!-- set as a system property so contrib testss can have a fixed root
+           to reference file paths from, and "ant test" can work from
+           anywhere.
+       -->
+      <sysproperty key="lucene.common.dir" file="${common.dir}" />
+      
       <!-- contrib/ant IndexTaskTest needs these two system properties -->
       <sysproperty key="docs.dir" file="src/test"/>
       <sysproperty key="index.dir" file="${build.dir}/test/index"/>
@@ -210,8 +216,13 @@
         <fileset dir="src/test" includes="**/${testcase}.java"/>
       </batchtest>
     </junit>
-
+    <!-- create this file, then if we don't fail, delete it -->
+    <!-- this meme makes it easy to tell if contribs have failed later -->
+    <echo file="${build.dir}/test/junitfailed.flag">MAYBE</echo>
     <fail if="tests.failed">Tests failed!</fail>
+    <!-- life would be easier if echo had an 'if' attribute like fail -->
+    <delete file="${build.dir}/test/junitfailed.flag" />
+    
   </target>
 
     <!--
@@ -259,8 +270,11 @@
   <target name="generate-test-reports" description="Generates test reports">
     <mkdir dir="${junit.reports}"/>
     <junitreport todir="${junit.output.dir}">
-      <fileset dir="${junit.output.dir}">
-        <include name="TEST-*.xml"/>
+      <!-- this fileset let's the task work for individual contribs,
+           as well as the project as a whole
+       -->
+      <fileset dir="${build.dir}">
+        <include name="**/test/TEST-*.xml"/>
       </fileset>
       <report format="frames" todir="${junit.reports}"/>
     </junitreport>

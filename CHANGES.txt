@@ -229,6 +229,11 @@ Build
  1. LUCENE-802: Added LICENSE.TXT and NOTICE.TXT to Lucene jars.
     (Steven Parkes via Michael Busch)
 
+ 2. LUCENE-885: "ant test" now includes all contrib tests.  The new
+    "ant test-core" target can be used to run only the Core (non
+    contrib) tests. 
+    (Chris Hostetter)
+
 ======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior

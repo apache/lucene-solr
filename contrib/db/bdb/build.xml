@@ -28,6 +28,33 @@
          dest="lib/db-${db.version}.jar" />
   </target>
 
+  <target name="sanity-load-lib" depends="compile-test">
+    <java classname="org.apache.lucene.store.db.SanityLoadLibrary"
+          classpathref="junit.classpath"
+          fork="true"
+          failonerror="false"
+          logError="false"
+          outputproperty="sanity-load-lib-error"
+    />
+    <condition property="no-bdb-lib" value="true">
+      <and>
+       <isset property="sanity-load-lib-error"/>
+       <not>
+        <equals arg1="${sanity-load-lib-error}" arg2="" trim="true" />
+       </not>
+      </and>
+    </condition>
+  </target>
+
+  <target name="warn-no-lib" if="no-bdb-lib">
+    <echo>Unit Tests Skipped: Could not sanity check Native Library</echo>
+  </target>
+  <target name="test" depends="sanity-load-lib,warn-no-lib"
+                      unless="no-bdb-lib">
+    <antcall target="common.test" inheritAll="true" inheritRefs="true" />
+  </target>
+
   <target name="check-and-get-db-jar" depends="get-db-jar" />
   <target name="init" depends="common.init,check-and-get-db-jar" />
+
 </project>

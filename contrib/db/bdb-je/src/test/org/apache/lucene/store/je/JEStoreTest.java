@@ -48,7 +48,7 @@ import com.sleepycat.je.Transaction;
  * @author Aaron Donovan
  */
 public class JEStoreTest extends TestCase {
-    protected File dbHome = new File("index");
+    protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");
 
     protected Environment env;
 

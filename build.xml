@@ -71,6 +71,13 @@
     </rmic>
   </target>
 
+  <target name="test-core" depends="common.test"
+          description="Runs unit tests for the core Lucene code"
+  />
+  <target name="test" depends="test-core, test-contrib"
+          description="Runs all unit tests"
+  />
+  
   <!-- ================================================================== -->
   <!-- J A R                                                              -->
   <!-- ================================================================== -->
@@ -342,8 +349,9 @@
   
   <macrodef name="contrib-crawl">
     <attribute name="target" default=""/>
+    <attribute name="failonerror" default="true"/>
     <sequential>
-      <subant target="@{target}" failonerror="false">
+      <subant target="@{target}" failonerror="@{failonerror}">
         <fileset dir="."
                  includes="contrib/*/build.xml"
         />
@@ -356,7 +364,19 @@
   </target>
 
   <target name="test-contrib" depends="compile-test">
-    <contrib-crawl target="test"/>
+    <!-- don't fail on error, instead check for flag file so we run
+         all the tests possible and can "ant generate-test-reports"
+         for all of them
+     -->
+    <contrib-crawl target="test" failonerror="false"/>
+    <available property="contribs.failed" file="junitfailed.flag">
+      <filepath>
+        <dirset dir="${build.dir}/contrib/">
+          <include name="**/test/" />
+        </dirset>
+      </filepath>
+    </available>
+    <fail if="contribs.failed">Contrib tests failed!</fail>
   </target>
 
   <macrodef name="invoke-javadoc">

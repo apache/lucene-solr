@@ -39,8 +39,9 @@ import com.google.gdata.util.ParseException;
  * 
  */ 
 public class TestGDataEntityBuilder extends TestCase { 
-    private static File incomingFeed = new File("src/core/src/test/org/apache/lucene/gdata/server/registry/TestEntityBuilderIncomingFeed.xml"); 
-    private static File incomingEntry = new File("src/core/src/test/org/apache/lucene/gdata/server/registry/TestEntityBuilderIncomingEntry.xml"); 
+    private static String fileDir = System.getProperty("lucene.common.dir", null);
+    private static File incomingFeed = new File(fileDir, "contrib/gdata-server/src/core/src/test/org/apache/lucene/gdata/server/registry/TestEntityBuilderIncomingFeed.xml"); 
+    private static File incomingEntry = new File(fileDir, "contrib/gdata-server/src/core/src/test/org/apache/lucene/gdata/server/registry/TestEntityBuilderIncomingEntry.xml"); 
     private static String feedTitleFromXML = "Simon Willnauer"; 
     private static String entrySummaryFromXML = "When: 2006-12-23 to 2006-12-31 America/Los_Angeles"; 
     private static GDataServerRegistry reg = GDataServerRegistry.getRegistry(); 

@@ -57,7 +57,8 @@ public class TestAbstractFeedHandler extends TestCase {
     private AdminService adminService = null;
     private ServiceFactoryStub stub;
     private String serviceName = StorageStub.SERVICE_TYPE_RETURN;
-    private static File incomingFeed = new File("src/core/src/test/org/apache/lucene/gdata/server/registry/TestEntityBuilderIncomingFeed.xml");
+    private static String fileDir = System.getProperty("lucene.common.dir", null);
+    private static File incomingFeed = new File(fileDir, "contrib/gdata-server/src/core/src/test/org/apache/lucene/gdata/server/registry/TestEntityBuilderIncomingFeed.xml");
     BufferedReader reader;
     static{
         

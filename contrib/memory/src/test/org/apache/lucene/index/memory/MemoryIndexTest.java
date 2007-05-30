@@ -209,19 +209,24 @@ public class MemoryIndexTest extends TestCase {
     new MemoryIndexTest().run(args);    
   }
 
-//  public void setUp() {  }
+  /* all files will be open relative to this */
+  public String fileDir;
+  public void setUp() {
+    fileDir = System.getProperty("lucene.common.dir", null);
+  }
+  
 //  public void tearDown() {}
   
   public void testMany() throws Throwable {
     String[] files = listFiles(new String[] {
       "*.txt", "*.html", "*.xml", "xdocs/*.xml", 
       "src/java/test/org/apache/lucene/queryParser/*.java",
-      "src/java/org/apache/lucene/index/memory/*.java",
+      "contrib/memory/src/java/org/apache/lucene/index/memory/*.java",
     });
     System.out.println("files = " + java.util.Arrays.asList(files));
     String[] xargs = new String[] {
       "1", "1", "memram", 
-      "@src/test/org/apache/lucene/index/memory/testqueries.txt",
+      "@contrib/memory/src/test/org/apache/lucene/index/memory/testqueries.txt",
     };
     String[] args = new String[xargs.length + files.length];
     System.arraycopy(xargs, 0, args, 0, xargs.length);
@@ -247,7 +252,7 @@ public class MemoryIndexTest extends TestCase {
     if (args.length > ++k) {
       String arg = args[k];
       if (arg.startsWith("@")) 
-        queries = readLines(new File(arg.substring(1)));
+        queries = readLines(new File(fileDir, arg.substring(1)));
       else
         queries = new String[] { arg };
     }

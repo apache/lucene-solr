@@ -45,7 +45,7 @@ import org.apache.lucene.store.IndexOutput;
  * @author Andi Vajda
  */
 public class DbStoreTest extends TestCase {
-    protected File dbHome = new File("index");
+    protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");
     protected Environment env;
     protected Database index, blocks;
     
