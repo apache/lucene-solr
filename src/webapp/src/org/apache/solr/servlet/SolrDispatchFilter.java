@@ -143,11 +143,11 @@ public class SolrDispatchFilter implements Filter
             solrReq = parsers.parse( path, req );
             String qt = solrReq.getParams().get( SolrParams.QT );
             if( qt != null && qt.startsWith( "/" ) ) {
-              new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Invalid query type.  Do not use /select to access: "+qt);
             }
             handler = core.getRequestHandler( qt );
             if( handler == null ) {
-              new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
+              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+qt);
             }
           }
         }
