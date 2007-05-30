@@ -449,7 +449,7 @@
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/**"
-        excludes="**/data/ **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/" />
+        excludes="**/data/ **/logs/* **/classes/ **/*.sh **/bin/ src/scripts/ src/site/build/" />
       <tarfileset dir="."
         mode="755"
         prefix="${fullnamever}"
