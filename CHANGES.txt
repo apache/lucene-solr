@@ -1,4 +1,4 @@
-                      pache Solr Version 1.2-dev
+                       Apache Solr Version 1.2
                             Release Notes
 
 Introduction
@@ -21,7 +21,7 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-================== Release 1.2-dev, YYYYMMDD ==================
+================== Release 1.2, 20070602 ==================
 
 Upgrading from Solr 1.1
 -------------------------------------
