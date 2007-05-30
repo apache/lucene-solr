@@ -217,6 +217,10 @@ New Features
     examples for people about the Solr XML response format and how they
     can transform it to suit different needs.
     (Brian Whitman via hossman)
+
+35. SOLR-249: Deprecated SolrException( int, ... ) constructors in favor 
+    of constructors that takes an ErrorCode enum.  This will ensure that
+    all SolrExceptions use a valid HTTP status code. (ryan)
         
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 
