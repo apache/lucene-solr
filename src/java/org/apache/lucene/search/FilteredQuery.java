@@ -66,13 +66,20 @@ extends Query {
     final Weight weight = query.createWeight (searcher);
     final Similarity similarity = query.getSimilarity(searcher);
     return new Weight() {
-
+      private float value;
+        
       // pass these methods through to enclosed query's weight
-      public float getValue() { return weight.getValue(); }
-      public float sumOfSquaredWeights() throws IOException { return weight.sumOfSquaredWeights(); }
-      public void normalize (float v) { weight.normalize(v); }
+      public float getValue() { return value; }
+      public float sumOfSquaredWeights() throws IOException { 
+        return weight.sumOfSquaredWeights() * getBoost() * getBoost(); 
+      }
+      public void normalize (float v) { 
+        weight.normalize(v);
+        value = weight.getValue() * getBoost();
+      }
       public Explanation explain (IndexReader ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
+        inner.setValue(getBoost() * inner.getValue());
         Filter f = FilteredQuery.this.filter;
         BitSet matches = f.bits(ir);
         if (matches.get(i))
@@ -121,11 +128,13 @@ extends Query {
             return true;
            }
 
-          public float score() throws IOException { return scorer.score(); }
+          public float score() throws IOException { return getBoost() * scorer.score(); }
 
           // add an explanation about whether the document was filtered
           public Explanation explain (int i) throws IOException {
             Explanation exp = scorer.explain (i);
+            exp.setValue(getBoost() * exp.getValue());
+            
             if (bitset.get(i))
               exp.setDescription ("allowed by filter: "+exp.getDescription());
             else

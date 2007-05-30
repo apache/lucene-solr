@@ -119,12 +119,6 @@ public class TestSimpleExplanations extends TestExplanations {
     q.setBoost(1000);
     qtest(q, new int[] {3});
   }
-  public void testFQ7() throws Exception {
-    Query q = new FilteredQuery(qp.parse("xx"),
-                                new ItemizedFilter(new int[] {1,3}));
-    q.setBoost(0);
-    qtest(q, new int[] {3});
-  }
 
   /* ConstantScoreQueries */
   

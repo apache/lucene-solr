@@ -24,6 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.RAMDirectory;
 import java.util.BitSet;
 
@@ -116,7 +117,48 @@ extends TestCase {
     filteredquery = new FilteredQuery (new TermQuery (new Term ("field", "y")), filter);
     hits = searcher.search (filteredquery);
     assertEquals (0, hits.length());
-    QueryUtils.check(filteredquery,searcher);    
+    QueryUtils.check(filteredquery,searcher);
+    
+    // test boost
+    Filter f = new Filter() {
+      public BitSet bits (IndexReader reader) {
+        BitSet bitset = new BitSet(5);
+        bitset.set(0, 5);
+        return bitset;
+      }
+    };
+    
+    float boost = 2.5f;
+    BooleanQuery bq1 = new BooleanQuery();
+    TermQuery tq = new TermQuery (new Term ("field", "one"));
+    tq.setBoost(boost);
+    bq1.add(tq, Occur.MUST);
+    bq1.add(new TermQuery (new Term ("field", "five")), Occur.MUST);
+    
+    BooleanQuery bq2 = new BooleanQuery();
+    tq = new TermQuery (new Term ("field", "one"));
+    filteredquery = new FilteredQuery(tq, f);
+    filteredquery.setBoost(boost);
+    bq2.add(filteredquery, Occur.MUST);
+    bq2.add(new TermQuery (new Term ("field", "five")), Occur.MUST);
+    assertScoreEquals(bq1, bq2);
+    
+    assertEquals(boost, filteredquery.getBoost(), 0);
+    assertEquals(1.0f, tq.getBoost(), 0); // the boost value of the underlying query shouldn't have changed 
+  }
+  
+  /**
+   * Tests whether the scores of the two queries are the same.
+   */
+  public void assertScoreEquals(Query q1, Query q2) throws Exception {
+    Hits hits1 = searcher.search (q1);
+    Hits hits2 = searcher.search (q2);
+      
+    assertEquals(hits1.length(), hits2.length());
+    
+    for (int i = 0; i < hits1.length(); i++) {
+      assertEquals(hits1.score(i), hits2.score(i), 0.0000001f);
+    }
   }
 
   /**
@@ -145,4 +187,5 @@ extends TestCase {
     QueryUtils.check(query,searcher);    
   }
 }
+
 

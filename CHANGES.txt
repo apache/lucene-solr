@@ -147,6 +147,9 @@ Bug fixes
     anymore and ignored, but re-thrown. Some javadoc improvements.
     (Daniel Naber)
 
+19. LUCENE-698: FilteredQuery now takes the query boost into account for 
+    scoring. (Michael Busch)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.
