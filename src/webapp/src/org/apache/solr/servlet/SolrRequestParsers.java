@@ -117,7 +117,7 @@ public class SolrRequestParsers
     String[] strs = params.getParams( SolrParams.STREAM_URL );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
       }
       for( final String url : strs ) {
         ContentStreamBase stream = new ContentStreamBase.URLStream( new URL(url) );
@@ -132,7 +132,7 @@ public class SolrRequestParsers
     strs = params.getParams( SolrParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -303,7 +303,7 @@ class MultipartRequestParser implements SolrRequestParser
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     if( !ServletFileUpload.isMultipartContent(req) ) {
-      new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
     }
     
     MultiMapSolrParams params = SolrRequestParsers.parseQueryString( req.getQueryString() );
