@@ -109,7 +109,7 @@ start=`date +"%s"`
 logMessage started by $oldwhoami
 logMessage command: $0 $@
 
-rs=`curl ${curl_url} -s -d "<commit/>"`
+rs=`curl ${curl_url} -s -H 'Content-type:text/xml; charset=utf-8' -d "<commit/>"`
 if [[ $? != 0 ]]
 then
   logMessage failed to connect to Solr server at ${curl_url}
