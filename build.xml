@@ -384,17 +384,14 @@
     <attribute name="destdir"/>
     <sequential>
     
-      <condition property="javadoc-1-5-contrib">
-        <equals arg1="1.5" arg2="${ant.java.version}" />
-      </condition>
       <dirset dir="contrib/gdata-server/src/core/src/java" id="gdata-server-core">
-        <include name="**" if="javadoc-1-5-contrib" />
+        <include name="**" if="build-1-5-contrib" />
       </dirset>
       <dirset dir="contrib/gdata-server/src/gom/src/java" id="gdata-server-gom">
-        <include name="**" if="javadoc-1-5-contrib" />
+        <include name="**" if="build-1-5-contrib" />
       </dirset>
       <dirset dir="contrib/gdata-server/src/hivemind/src/java" id="gdata-server-hivemind">
-        <include name="**" if="javadoc-1-5-contrib" />
+        <include name="**" if="build-1-5-contrib" />
       </dirset>
 
       <javadoc

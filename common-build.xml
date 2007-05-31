@@ -45,6 +45,9 @@
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.excludes" value=""/>
 
+  <condition property="build-1-5-contrib">
+     <equals arg1="1.5" arg2="${ant.java.version}" />
+  </condition>
   
   <property name="clover.db.dir" location="${build.dir}/test/clover/db"/>
   <property name="clover.report.dir" location="${build.dir}/test/clover/reports"/>

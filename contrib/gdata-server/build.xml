@@ -21,6 +21,14 @@
 	<description>  
         Serverside Google Data API implementation  
     </description>
+        <!-- NOTE: attempting to import ../contrib-build.xml or
+             ../../common-build.xml breaks everything
+             whole build file should be cleaned up later if possible
+          -->
+        <condition property="build-1-5-contrib">
+           <equals arg1="1.5" arg2="${ant.java.version}" />
+        </condition>
+
 	<import file="gdata-build/get-dependencies.xml" />
 	<property name="javac.source" value="1.5" />
 	<property name="javac.target" value="1.5" />
@@ -76,46 +84,50 @@
 			</and>
 		</not>
 	</condition>
-	<target name="jar-core" description="Packages the JAR file">
+	<target name="jar-core" description="Packages the JAR file" depends="init" if="build-1-5-contrib">
 		<ant dir="src/core" target="jar-core" inheritRefs="true" />
 		<ant dir="src/hivemind" target="jar-core" inheritRefs="true" />
 		<ant dir="src/gom" target="jar-core" inheritRefs="true" />
 	</target>
 
 
-	<target name="test">
+	<target name="test" depends="init" if="build-1-5-contrib">
 		<ant dir="src/core" target="test" inheritRefs="true" />
 		<ant dir="src/gom" target="test" inheritRefs="true" />
 		<ant dir="src/hivemind" target="test" inheritRefs="true" />
 	</target>
 	
-	<target name="compile-core" depends="download">
+	<target name="compile-core" depends="init,download" if="build-1-5-contrib">
 		<ant dir="src/core" target="compile-core" inheritRefs="true" />
 		<ant dir="src/hivemind" target="compile-core" inheritRefs="true" />
 		<ant dir="src/gom" target="compile-core" inheritRefs="true" />
 	</target>
 
-	<target name="compile-test" depends="compile-core, download">
+	<target name="compile-test" depends="init,compile-core,download" if="build-1-5-contrib">
 		<ant dir="src/core" target="compile-test" inheritRefs="true" />
 		<ant dir="src/hivemind" target="compile-test" inheritRefs="true" />
 		<ant dir="src/gom" target="compile-test" inheritRefs="true" />
 	</target>
 
-	<target name="clean">
+	<target name="clean" depends="init" if="build-1-5-contrib">
 		<ant dir="src/core" target="clean" inheritRefs="true" />
 		<ant dir="src/hivemind" target="clean" inheritRefs="true" />
 		<ant dir="src/gom" target="clean" inheritRefs="true" />
 	</target>
 
-	<target name="war-gdata" depends="clean,jar-core">
+	<target name="war-gdata" depends="init,clean,jar-core" if="build-1-5-contrib">
 		<ant dir="src/core" target="war-gdata" inheritRefs="true" />
 	</target>
 	
-	 <target name="default" description="default" depends="download">
+	 <target name="default" description="default" depends="init,download" if="build-1-5-contrib">
 		<ant dir="src/core" target="default" inheritRefs="true" />
 		<ant dir="src/hivemind" target="default" inheritRefs="true" />
 		<ant dir="src/gom" target="default" inheritRefs="true" />	 	
 	 </target>
 
-
+  <target name="init" depends="check-1-5" />
+  <target name="check-1-5" unless="build-1-5-contrib" >
+     <echo>Java 1.5 support not availabble (or prohibited by explicitly set property) ... skipping task</echo>
+  </target>
+         
 </project>
