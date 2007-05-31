@@ -1,22 +1,23 @@
 package org.apache.lucene.search.spell;
 
 
-import junit.framework.*;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.util.English;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-
 import java.io.IOException;
 
+import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.English;
 
 
 /**
- * Test case
+ * Spell checker test case
  *
  * @author Nicolas Maisonneuve
  */
@@ -45,60 +46,54 @@ public class TestSpellChecker extends TestCase {
   }
 
 
-  public void testBuild() {
-    try {
-      IndexReader r = IndexReader.open(userindex);
+  public void testBuild() throws CorruptIndexException, IOException {
+    IndexReader r = IndexReader.open(userindex);
 
-      spellChecker.clearIndex();
+    spellChecker.clearIndex();
 
-      addwords(r, "field1");
-      int num_field1 = this.numdoc();
+    addwords(r, "field1");
+    int num_field1 = this.numdoc();
 
-      addwords(r, "field2");
-      int num_field2 = this.numdoc();
+    addwords(r, "field2");
+    int num_field2 = this.numdoc();
 
-      assertEquals(num_field2, num_field1 + 1);
+    assertEquals(num_field2, num_field1 + 1);
 
-      // test small word
-      String[] similar = spellChecker.suggestSimilar("fvie", 2);
-      assertEquals(1, similar.length);
-      assertEquals(similar[0], "five");
+    // test small word
+    String[] similar = spellChecker.suggestSimilar("fvie", 2);
+    assertEquals(1, similar.length);
+    assertEquals(similar[0], "five");
 
-      similar = spellChecker.suggestSimilar("five", 2);
-      assertEquals(1, similar.length);
-      assertEquals(similar[0], "nine");     // don't suggest a word for itself
+    similar = spellChecker.suggestSimilar("five", 2);
+    assertEquals(1, similar.length);
+    assertEquals(similar[0], "nine");     // don't suggest a word for itself
 
-      similar = spellChecker.suggestSimilar("fiv", 2);
-      assertEquals(1, similar.length);
-      assertEquals(similar[0], "five");
+    similar = spellChecker.suggestSimilar("fiv", 2);
+    assertEquals(1, similar.length);
+    assertEquals(similar[0], "five");
 
-      similar = spellChecker.suggestSimilar("ive", 2);
-      assertEquals(1, similar.length);
-      assertEquals(similar[0], "five");
+    similar = spellChecker.suggestSimilar("ive", 2);
+    assertEquals(1, similar.length);
+    assertEquals(similar[0], "five");
 
-      similar = spellChecker.suggestSimilar("fives", 2);
-      assertEquals(1, similar.length);
-      assertEquals(similar[0], "five");
+    similar = spellChecker.suggestSimilar("fives", 2);
+    assertEquals(1, similar.length);
+    assertEquals(similar[0], "five");
 
-      similar = spellChecker.suggestSimilar("fie", 2);
-      assertEquals(1, similar.length);
-      assertEquals(similar[0], "five");
+    similar = spellChecker.suggestSimilar("fie", 2);
+    assertEquals(1, similar.length);
+    assertEquals(similar[0], "five");
 
-      similar = spellChecker.suggestSimilar("fi", 2);
-      assertEquals(0, similar.length);
+    similar = spellChecker.suggestSimilar("fi", 2);
+    assertEquals(0, similar.length);
 
-      // test restraint to a field
-      similar = spellChecker.suggestSimilar("tousand", 10, r, "field1", false);
-      assertEquals(0, similar.length); // there isn't the term thousand in the field field1
+    // test restraint to a field
+    similar = spellChecker.suggestSimilar("tousand", 10, r, "field1", false);
+    assertEquals(0, similar.length); // there isn't the term thousand in the field field1
 
-      similar = spellChecker.suggestSimilar("tousand", 10, r, "field2", false);
-      assertEquals(1, similar.length); // there is the term thousand in the field field2
-    } catch (IOException e) {
-      e.printStackTrace();
-      fail();
-    }
+    similar = spellChecker.suggestSimilar("tousand", 10, r, "field2", false);
+    assertEquals(1, similar.length); // there is the term thousand in the field field2
   }
-
 
   private void addwords(IndexReader r, String field) throws IOException {
     long time = System.currentTimeMillis();
@@ -115,4 +110,5 @@ public class TestSpellChecker extends TestCase {
     rs.close();
     return num;
   }
+  
 }
