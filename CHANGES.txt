@@ -150,6 +150,9 @@ Bug fixes
 19. LUCENE-698: FilteredQuery now takes the query boost into account for 
     scoring. (Michael Busch)
 
+20. LUCENE-763: Spellchecker: LuceneDictionary used to skip first word in 
+    enumeration. (Christian Mallwitz via Daniel Naber)
+
 New features
 
  1. LUCENE-759: Added two n-gram-producing TokenFilters.

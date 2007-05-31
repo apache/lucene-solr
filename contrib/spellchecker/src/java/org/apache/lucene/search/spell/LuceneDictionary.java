@@ -30,7 +30,11 @@ import java.io.*;
  * Lucene Dictionary: terms taken from the given field
  * of a Lucene index.
  *
+ * When using IndexReader.terms(Term) the code must not call next() on TermEnum
+ * as the first call to TermEnum, see: http://issues.apache.org/jira/browse/LUCENE-6
+ *
  * @author Nicolas Maisonneuve
+ * @author Christian Mallwitz
  */
 public class LuceneDictionary implements Dictionary {
   private IndexReader reader;
@@ -64,6 +68,13 @@ public class LuceneDictionary implements Dictionary {
         hasNext();
       }
       hasNextCalled = false;
+
+      try {
+        termEnum.next();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
       return (actualTerm != null) ? actualTerm.text() : null;
     }
 
@@ -72,23 +83,23 @@ public class LuceneDictionary implements Dictionary {
         return actualTerm != null;
       }
       hasNextCalled = true;
-      try {
-        // if there are no more words
-        if (!termEnum.next()) {
-          actualTerm = null;
-          return false;
-        }
-        // if the next word is in the field
-        actualTerm = termEnum.term();
-        String currentField = actualTerm.field();
-        if (currentField != field) {
-          actualTerm = null;
-          return false;
-        }
-        return true;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+
+      actualTerm = termEnum.term();
+
+      // if there are no words return false
+      if (actualTerm == null) {
+        return false;
       }
+
+      String currentField = actualTerm.field();
+
+      // if the next word doesn't have the same field return false
+      if (currentField != field) {
+        actualTerm = null;
+        return false;
+      }
+
+      return true;
     }
 
     public void remove() {
