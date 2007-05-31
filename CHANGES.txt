@@ -21,7 +21,7 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-================== Release 1.2, 20070602 ==================
+================== Release 1.2, 20070603 ==================
 
 Upgrading from Solr 1.1
 -------------------------------------
