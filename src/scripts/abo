@@ -123,7 +123,7 @@ logMessage started by $oldwhoami
 logMessage command: $0 $@
 
 logMessage sending optimize to Solr server at ${curl_url}
-rs=`curl ${curl_url} -s -d "<optimize/>"`
+rs=`curl ${curl_url} -s -H 'Content-type:text/xml; charset=utf-8' -d "<optimize/>"`
 if [[ $? != 0 ]]
 then
   logMessage failed to connect to Solr server at ${curl_url}
