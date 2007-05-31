@@ -28,7 +28,7 @@ import org.apache.lucene.util.StringHelper;
 
 final class TermInfosWriter {
   /** The file format version, a negative number. */
-  public static final int FORMAT = -2;
+  public static final int FORMAT = -3;
 
   private FieldInfos fieldInfos;
   private IndexOutput output;
@@ -56,6 +56,11 @@ final class TermInfosWriter {
    * smaller values result in bigger indexes, less acceleration and more
    * accelerable cases. More detailed experiments would be useful here. */
   int skipInterval = 16;
+  
+  /** Expert: The maximum number of skip levels. Smaller values result in 
+   * slightly smaller indexes, but slower skipping in big posting lists.
+   */
+  int maxSkipLevels = 10;
 
   private long lastIndexPointer = 0;
   private boolean isIndex = false;
@@ -85,6 +90,7 @@ final class TermInfosWriter {
     output.writeLong(0);                          // leave space for size
     output.writeInt(indexInterval);             // write indexInterval
     output.writeInt(skipInterval);              // write skipInterval
+    output.writeInt(maxSkipLevels);              // write maxSkipLevels
   }
 
   /** Adds a new <Term, TermInfo> pair to the set.

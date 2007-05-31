@@ -37,6 +37,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
   long indexPointer = 0;
   int indexInterval;
   int skipInterval;
+  int maxSkipLevels;
   private int formatM1SkipInterval;
 
   SegmentTermEnum(IndexInput i, FieldInfos fis, boolean isi)
@@ -44,7 +45,8 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     input = i;
     fieldInfos = fis;
     isIndex = isi;
-
+    maxSkipLevels = 1; // use single-level skip lists for formats > -3 
+    
     int firstInt = input.readInt();
     if (firstInt >= 0) {
       // original-format file, without explicit format version number
@@ -54,7 +56,6 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
       // back-compatible settings
       indexInterval = 128;
       skipInterval = Integer.MAX_VALUE; // switch off skipTo optimization
-
     } else {
       // we have a format version number
       format = firstInt;
@@ -73,10 +74,13 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
         // switch off skipTo optimization for file format prior to 1.4rc2 in order to avoid a bug in 
         // skipTo implementation of these versions
         skipInterval = Integer.MAX_VALUE;
-      }
-      else{
+      } else {
         indexInterval = input.readInt();
         skipInterval = input.readInt();
+        if (format == -3) {
+          // this new format introduces multi-level skipping
+          maxSkipLevels = input.readInt();
+        }
       }
     }
 

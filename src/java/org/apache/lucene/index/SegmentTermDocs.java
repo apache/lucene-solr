@@ -31,16 +31,15 @@ class SegmentTermDocs implements TermDocs {
   int freq;
 
   private int skipInterval;
-  private int numSkips;
-  private int skipCount;
-  private IndexInput skipStream;
-  private int skipDoc;
-  private long freqPointer;
-  private long proxPointer;
+  private int maxSkipLevels;
+  private DefaultSkipListReader skipListReader;
+  
+  private long freqBasePointer;
+  private long proxBasePointer;
+
   private long skipPointer;
   private boolean haveSkipped;
   
-  private int payloadLengthAtLastSkip;
   protected boolean currentFieldStoresPayloads;
 
   protected SegmentTermDocs(SegmentReader parent) {
@@ -48,6 +47,7 @@ class SegmentTermDocs implements TermDocs {
     this.freqStream = (IndexInput) parent.freqStream.clone();
     this.deletedDocs = parent.deletedDocs;
     this.skipInterval = parent.tis.getSkipInterval();
+    this.maxSkipLevels = parent.tis.getMaxSkipLevels();
   }
 
   public void seek(Term term) throws IOException {
@@ -74,7 +74,6 @@ class SegmentTermDocs implements TermDocs {
 
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
-    payloadLengthAtLastSkip = 0;
     FieldInfo fi = parent.fieldInfos.fieldInfo(term.field);
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {
@@ -82,21 +81,18 @@ class SegmentTermDocs implements TermDocs {
     } else {
       df = ti.docFreq;
       doc = 0;
-      skipDoc = 0;
-      skipCount = 0;
-      numSkips = df / skipInterval;
-      freqPointer = ti.freqPointer;
-      proxPointer = ti.proxPointer;
-      skipPointer = freqPointer + ti.skipOffset;
-      freqStream.seek(freqPointer);
+      freqBasePointer = ti.freqPointer;
+      proxBasePointer = ti.proxPointer;
+      skipPointer = freqBasePointer + ti.skipOffset;
+      freqStream.seek(freqBasePointer);
       haveSkipped = false;
     }
   }
 
   public void close() throws IOException {
     freqStream.close();
-    if (skipStream != null)
-      skipStream.close();
+    if (skipListReader != null)
+      skipListReader.close();
   }
 
   public final int doc() { return doc; }
@@ -111,11 +107,11 @@ class SegmentTermDocs implements TermDocs {
         return false;
 
       int docCode = freqStream.readVInt();
-      doc += docCode >>> 1;			  // shift off low bit
-      if ((docCode & 1) != 0)			  // if low bit is set
-        freq = 1;				  // freq is one
+      doc += docCode >>> 1;       // shift off low bit
+      if ((docCode & 1) != 0)       // if low bit is set
+        freq = 1;         // freq is one
       else
-        freq = freqStream.readVInt();		  // else read freq
+        freq = freqStream.readVInt();     // else read freq
 
       count++;
 
@@ -135,11 +131,11 @@ class SegmentTermDocs implements TermDocs {
 
       // manually inlined call to next() for speed
       final int docCode = freqStream.readVInt();
-      doc += docCode >>> 1;			  // shift off low bit
-      if ((docCode & 1) != 0)			  // if low bit is set
-        freq = 1;				  // freq is one
+      doc += docCode >>> 1;       // shift off low bit
+      if ((docCode & 1) != 0)       // if low bit is set
+        freq = 1;         // freq is one
       else
-        freq = freqStream.readVInt();		  // else read freq
+        freq = freqStream.readVInt();     // else read freq
       count++;
 
       if (deletedDocs == null || !deletedDocs.get(doc)) {
@@ -157,64 +153,22 @@ class SegmentTermDocs implements TermDocs {
   /** Optimized implementation. */
   public boolean skipTo(int target) throws IOException {
     if (df >= skipInterval) {                      // optimized case
+      if (skipListReader == null)
+        skipListReader = new DefaultSkipListReader((IndexInput) freqStream.clone(), maxSkipLevels, skipInterval); // lazily clone
 
-      if (skipStream == null)
-        skipStream = (IndexInput) freqStream.clone(); // lazily clone
-
-      if (!haveSkipped) {                          // lazily seek skip stream
-        skipStream.seek(skipPointer);
+      if (!haveSkipped) {                          // lazily initialize skip stream
+        skipListReader.init(skipPointer, freqBasePointer, proxBasePointer, df, currentFieldStoresPayloads);
         haveSkipped = true;
       }
 
-      // scan skip data
-      int lastSkipDoc = skipDoc;
-      int lastPayloadLength = 0;
-      long lastFreqPointer = freqStream.getFilePointer();
-      long lastProxPointer = -1;
-      int numSkipped = -1 - (count % skipInterval);
+      int newCount = skipListReader.skipTo(target); 
+      if (newCount > count) {
+        freqStream.seek(skipListReader.getFreqPointer());
+        skipProx(skipListReader.getProxPointer(), skipListReader.getPayloadLength());
 
-      while (target > skipDoc) {
-        lastSkipDoc = skipDoc;
-        lastFreqPointer = freqPointer;
-        lastProxPointer = proxPointer;
-        lastPayloadLength = payloadLengthAtLastSkip;
-        
-        if (skipDoc != 0 && skipDoc >= doc)
-          numSkipped += skipInterval;
-        
-        if(skipCount >= numSkips)
-          break;
-
-        if (currentFieldStoresPayloads) {
-          // the current field stores payloads.
-          // if the doc delta is odd then we have
-          // to read the current payload length
-          // because it differs from the length of the
-          // previous payload
-          int delta = skipStream.readVInt();
-          if ((delta & 1) != 0) {
-            payloadLengthAtLastSkip = skipStream.readVInt();
-          }
-          delta >>>= 1;
-          skipDoc += delta;
-        } else {
-          skipDoc += skipStream.readVInt();
-        }
-        freqPointer += skipStream.readVInt();
-        proxPointer += skipStream.readVInt();
-
-        skipCount++;
-      }
-      
-      // if we found something to skip, then skip it
-      if (lastFreqPointer > freqStream.getFilePointer()) {
-        freqStream.seek(lastFreqPointer);
-        skipProx(lastProxPointer, lastPayloadLength);
-
-        doc = lastSkipDoc;
-        count += numSkipped;
-      }
-
+        doc = skipListReader.getDoc();
+        count = newCount;
+      }      
     }
 
     // done skipping, now just scan
@@ -224,5 +178,4 @@ class SegmentTermDocs implements TermDocs {
     } while (target > doc);
     return true;
   }
-
 }

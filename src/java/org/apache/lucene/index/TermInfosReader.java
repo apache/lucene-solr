@@ -64,7 +64,11 @@ final class TermInfosReader {
   public int getSkipInterval() {
     return origEnum.skipInterval;
   }
-
+  
+  public int getMaxSkipLevels() {
+    return origEnum.maxSkipLevels;
+  }
+  
   final void close() throws IOException {
     if (origEnum != null)
       origEnum.close();

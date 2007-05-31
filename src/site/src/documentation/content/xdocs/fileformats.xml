@@ -1139,7 +1139,7 @@
 
                         <p>
                             TermInfoFile (.tis)--&gt;
-                            TIVersion, TermCount, IndexInterval, SkipInterval, TermInfos
+                            TIVersion, TermCount, IndexInterval, SkipInterval, MaxSkipLevels, TermInfos
                         </p>
                         <p>TIVersion --&gt;
                             UInt32
@@ -1151,6 +1151,9 @@
                             UInt32
                         </p>
                         <p>SkipInterval --&gt;
+                            UInt32
+                        </p>
+                        <p>MaxSkipLevels --&gt;
                             UInt32
                         </p>
                         <p>TermInfos --&gt;
@@ -1209,7 +1212,8 @@
                             particular, it is the number of bytes
                             after TermFreqs that the SkipData starts.
                             In other words, it is the length of the
-                            TermFreq data.
+                            TermFreq data. SkipDelta is only stored 
+                            if DocFreq is not smaller than SkipInterval.
                         </p>
                     </li>
                     <li>
@@ -1233,7 +1237,7 @@
 
                         <p>
                             TermInfoIndex (.tii)--&gt;
-                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, TermIndices
+                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, MaxSkipLevels, TermIndices
                         </p>
                         <p>TIVersion --&gt;
                             UInt32
@@ -1261,8 +1265,11 @@
                         </p>
                         <p>SkipInterval is the fraction of TermDocs stored in skip tables. It is used to accelerate TermDocs.skipTo(int).
                             Larger values result in smaller indexes, greater acceleration, but fewer accelerable cases, while
-                            smaller values result in bigger indexes, less acceleration and more
+                            smaller values result in bigger indexes, less acceleration (in case of a small value for MaxSkipLevels) and more
                             accelerable cases.</p>
+                        <p>MaxSkipLevels is the max. number of skip levels stored for each term in the .frq file. A low value results in 
+                           smaller indexes but less acceleration, a larger value results in slighly larger indexes but greater acceleration.
+                           See format of .frq file for more information about skip levels.</p>
                     </li>
                 </ol>
             </section>
@@ -1286,14 +1293,22 @@
                     DocDelta, Freq?
                 </p>
                 <p>SkipData --&gt;
+                    &lt;&lt;SkipLevelLength, SkipLevel&gt;
+                    <sup>NumSkipLevels-1</sup>, SkipLevel&gt;
                     &lt;SkipDatum&gt;
-                    <sup>DocFreq/SkipInterval</sup>
+                </p>
+                <p>SkipLevel --&gt;
+                    &lt;SkipDatum&gt;
+                    <sup>DocFreq/(SkipInterval^(Level + 1))</sup>
                 </p>
                 <p>SkipDatum --&gt;
-                    DocSkip,PayloadLength?,FreqSkip,ProxSkip
+                    DocSkip,PayloadLength?,FreqSkip,ProxSkip,SkipChildLevelPointer?
                 </p>
                 <p>DocDelta,Freq,DocSkip,PayloadLength,FreqSkip,ProxSkip --&gt;
                     VInt
+                </p>
+                <p>SkipChildLevelPointer --&gt;
+                    VLong
                 </p>
                 <p>TermFreqs
                     are ordered by term (the term is implicit, from the .tis file).
@@ -1361,6 +1376,18 @@
                     bytes after that that the 32
                     <sup>nd</sup>
                     starts.
+                </p>
+                <p>Lucene 2.2 introduces the notion of skip levels. Each term can have multiple skip levels.
+                   The amount of skip levels for a term is NumSkipLevels = Min(MaxSkipLevels, floor(log(DocFreq/log(SkipInterval)))).
+                   The number of SkipData entries for a skip level is DocFreq/(SkipInterval^(Level + 1)), whereas the lowest skip
+                   level is Level=0. <br></br>
+                   Example: SkipInterval = 4, MaxSkipLevels = 2, DocFreq = 35. Then skip level 0 has 8 SkipData entries,
+                   containing the 3<sup>rd</sup>, 7<sup>th</sup>, 11<sup>th</sup>, 15<sup>th</sup>, 19<sup>th</sup>, 23<sup>rd</sup>,
+                   27<sup>th</sup>, and 31<sup>st</sup> document numbers in TermFreqs. Skip level 1 has 2 SkipData entries, containing the
+                   15<sup>th</sup> and 31<sup>st</sup> document numbers in TermFreqs. <br></br>
+                   The SkipData entries on all upper levels &gt; 0 contain a SkipChildLevelPointer referencing the corresponding SkipData
+                   entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
+                   to entry 31 on level 0.                   
                 </p>
 
             </section>

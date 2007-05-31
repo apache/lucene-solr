@@ -209,6 +209,12 @@ Optimizations
     BufferedIndexInput, but only when used during merging.  Together,
     these increases yield 10-18% overall performance gain vs the
     previous 1K defaults.  (Mike McCandless)
+
+ 7. LUCENE-866: Adds multi-level skip lists to the posting lists. This speeds 
+    up most queries that use skipTo(), especially on big indexes with large posting 
+    lists. For average AND queries the speedup is about 20%, for queries that 
+    contain very frequence and very unique terms the speedup can be over 80%.
+    (Michael Busch)
  
 Documentation
 
