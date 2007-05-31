@@ -1705,12 +1705,19 @@ public class IndexWriter {
 
   /** Expert:  Flushes all RAM-resident segments (buffered documents), then may merge segments. */
   private final synchronized void flushRamSegments() throws CorruptIndexException, IOException {
+    flushRamSegments(true);
+  }
+    
+  /** Expert:  Flushes all RAM-resident segments (buffered documents), 
+   *           then may merge segments if triggerMerge==true. */
+  protected final synchronized void flushRamSegments(boolean triggerMerge) 
+      throws CorruptIndexException, IOException {
     if (ramSegmentInfos.size() > 0 || bufferedDeleteTerms.size() > 0) {
       mergeSegments(ramSegmentInfos, 0, ramSegmentInfos.size());
-      maybeMergeSegments(minMergeDocs);
+      if (triggerMerge) maybeMergeSegments(minMergeDocs);
     }
   }
-
+  
   /**
    * Flush all in-memory buffered updates (adds and deletes)
    * to the Directory. 
