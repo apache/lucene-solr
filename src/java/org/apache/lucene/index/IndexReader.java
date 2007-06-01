@@ -150,17 +150,18 @@ public abstract class IndexReader {
 
   /** Returns an IndexReader reading the index in an FSDirectory in the named
    * path.
+   * @param path the path to the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @param path the path to the index directory */
+   */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true, null);
   }
 
   /** Returns an IndexReader reading the index in the given Directory.
+   * @param directory the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @param directory the index directory
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
     return open(directory, false, null);
@@ -539,16 +540,21 @@ public abstract class IndexReader {
     setNorm(doc, field, Similarity.encodeNorm(value));
   }
 
-  /** Returns an enumeration of all the terms in the index.
-   * The enumeration is ordered by Term.compareTo().  Each term
-   * is greater than all that precede it in the enumeration.
+  /** Returns an enumeration of all the terms in the index. The
+   * enumeration is ordered by Term.compareTo(). Each term is greater
+   * than all that precede it in the enumeration. Note that after
+   * calling terms(), {@link TermEnum#next()} must be called
+   * on the resulting enumeration before calling other methods such as
+   * {@link TermEnum#term()}.
    * @throws IOException if there is a low-level IO error
    */
   public abstract TermEnum terms() throws IOException;
 
-  /** Returns an enumeration of all terms after a given term.
-   * The enumeration is ordered by Term.compareTo().  Each term
-   * is greater than all that precede it in the enumeration.
+  /** Returns an enumeration of all terms starting at a given term. If
+   * the given term does not exist, the enumeration is positioned at the
+   * first term greater than the supplied therm. The enumeration is
+   * ordered by Term.compareTo(). Each term is greater than all that
+   * precede it in the enumeration.
    * @throws IOException if there is a low-level IO error
    */
   public abstract TermEnum terms(Term t) throws IOException;
