@@ -312,11 +312,21 @@
 
     List<Tok>[] arr = (List<Tok>[])map.values().toArray(new ArrayList[map.size()]);
 
+    /* Jetty 6.1.3 miscompiles this generics version...
     Arrays.sort(arr, new Comparator<List<Tok>>() {
       public int compare(List<Tok> toks, List<Tok> toks1) {
         return toks.get(0).pos - toks1.get(0).pos;
       }
     }
+    */
+
+    Arrays.sort(arr, new Comparator() {
+      public int compare(Object toks, Object toks1) {
+        return ((List<Tok>)toks).get(0).pos - ((List<Tok>)toks1).get(0).pos;
+      }
+    }
+
+
     );
 
     out.println("<table width=\"auto\" class=\"analysis\" border=\"1\">");
