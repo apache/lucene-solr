@@ -150,7 +150,7 @@
       destfile="${build.dir}/${final.name}.jar"
       basedir="${build.dir}/classes/java">
       <manifest>
-        <attribute name="Created-By" value="Apache Jakarta"/>
+        <attribute name="Created-By" value="Apache Lucene Java"/>
         <section name="org/apache/lucene/">
           <attribute name="Specification-Title" value="Lucene Search Engine"/>
           <attribute name="Specification-Version" value="${version}"/>
