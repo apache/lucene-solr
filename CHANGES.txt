@@ -245,6 +245,9 @@ Build
     "ant test-core" target can be used to run only the Core (non
     contrib) tests. 
     (Chris Hostetter)
+    
+ 3. LUCENE-900: "ant test" now enables Java assertions (in Luecene packages).
+    (Doron Cohen)
 
 ======================= Release 2.1.0 2007-02-14 =======================
 

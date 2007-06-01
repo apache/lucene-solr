@@ -192,6 +192,9 @@
     <junit printsummary="off" haltonfailure="no"
       errorProperty="tests.failed" failureProperty="tests.failed">
       <classpath refid="junit.classpath"/>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+      </assertions>
       <!-- TODO: create propertyset for test properties, so each project can have its own set -->
       <sysproperty key="dataDir" file="src/test"/>
       <sysproperty key="tempDir" file="${build.dir}/test"/>
