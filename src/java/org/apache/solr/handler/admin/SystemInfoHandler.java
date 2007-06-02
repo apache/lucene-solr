@@ -99,7 +99,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  private static SimpleOrderedMap<Object> getSystemInfo() throws Exception 
+  public static SimpleOrderedMap<Object> getSystemInfo() throws Exception 
   {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
@@ -183,7 +183,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get JVM Info - including memory info
    */
-  private static SimpleOrderedMap<Object> getJvmInfo()
+  public static SimpleOrderedMap<Object> getJvmInfo()
   {
     SimpleOrderedMap<Object> jvm = new SimpleOrderedMap<Object>();
     jvm.add( "version", System.getProperty("java.vm.version") );
