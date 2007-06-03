@@ -333,6 +333,11 @@
 
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest" >
+     <!-- If possible, include the svnversion -->
+     <exec dir="." executable="svnversion" outputproperty="svnversion" failifexecutionfails="false">
+      <arg line="."/>
+     </exec>
+     
      <!-- no description, don't advertise -->
      <mkdir dir="${dest}/META-INF/" />
      <manifest mode="replace" file="${dest}/META-INF/MANIFEST.MF">
@@ -369,7 +374,7 @@
                    value="org.apache.solr"/>
         <!-- impl version can be any string -->
         <attribute name="Implementation-Version" 
-                   value="${version} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+                   value="${version} ${svnversion} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
         <attribute name="Implementation-Vendor" 
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" 
