@@ -81,7 +81,7 @@ public class SolrDispatchFilter implements Filter
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter( sw );
       out.println( "Severe errors in solr configuration.\n" );
-      out.println( "Check your log files for more detailed infomation on what may be wrong.\n" );
+      out.println( "Check your log files for more detailed information on what may be wrong.\n" );
       out.println( "If you want solr to continue after configuration errors, change: \n");
       out.println( " <abortOnConfigurationError>false</abortOnConfigurationError>\n" );
       out.println( "in solrconfig.xml\n" );
@@ -92,8 +92,8 @@ public class SolrDispatchFilter implements Filter
       }
       out.flush();
       
-      // Servlet containers behave slightly differntly if you throw an exception durring 
-      // initalization.  Resin will display that error for every page, jetty prints it in
+      // Servlet containers behave slightly differently if you throw an exception during 
+      // initialization.  Resin will display that error for every page, jetty prints it in
       // the logs, but continues normally.  (We will see a 404 rather then the real error)
       // rather then leave the behavior undefined, lets cache the error and spit it out 
       // for every request.
