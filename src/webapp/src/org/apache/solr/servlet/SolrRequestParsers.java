@@ -108,7 +108,7 @@ public class SolrRequestParsers
     return sreq;
   }
   
-  SolrQueryRequest buildRequestFrom( SolrParams params, List<ContentStream> streams ) throws Exception
+  SolrQueryRequest buildRequestFrom( SolrParams params, Collection<ContentStream> streams ) throws Exception
   {
     // The content type will be applied to all streaming content
     String contentType = params.get( SolrParams.STREAM_CONTENTTYPE );
