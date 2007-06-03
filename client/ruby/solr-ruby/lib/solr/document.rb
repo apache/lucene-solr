@@ -37,7 +37,7 @@ class Solr::Document
     case fields
     when Hash
       fields.each_pair do |name,value|
-        if value.respond_to?(:each)
+        if value.respond_to?(:each) && !value.is_a?(String)
           value.each {|v| @fields << Solr::Field.new(name => v)}
         else
           @fields << Solr::Field.new(name => value)

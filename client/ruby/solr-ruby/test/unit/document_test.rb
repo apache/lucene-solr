@@ -62,4 +62,8 @@ class DocumentTest < Test::Unit::TestCase
     assert_match(/<doc boost=['"]300.28['"]>[\s]*<field name=['"]name['"]>McGrump<\/field>[\s]*<\/doc>/, doc.to_xml.to_s)
   end
 
+  def test_string_values
+    doc = Solr::Document.new :name => "multi\nline"
+    assert_match(/<doc>[\s]*<field name=['"]name['"]>multi\nline<\/field>[\s]*<\/doc>/, doc.to_xml.to_s)
+  end
 end
