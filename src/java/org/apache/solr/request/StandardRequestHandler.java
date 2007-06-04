@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.util.MoreLikeThisParams;
 import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.NamedList;
 import org.apache.solr.util.HighlightingUtils;
@@ -31,6 +32,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.search.*;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrException;
+import org.apache.solr.handler.MoreLikeThisHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 
 import static org.apache.solr.request.SolrParams.*;
@@ -131,6 +133,14 @@ public class StandardRequestHandler extends RequestHandlerBase {
 
       if (null != facetInfo) rsp.add("facet_counts", facetInfo);
 
+      // Include "More Like This" results for *each* result
+      if( p.getBool( MoreLikeThisParams.MLT, false ) ) {
+        MoreLikeThisHandler.MoreLikeThisHelper mlt 
+          = new MoreLikeThisHandler.MoreLikeThisHelper( p, s );
+        int mltcount = p.getInt( MoreLikeThisParams.DOC_COUNT, 5 );
+        rsp.add( "moreLikeThis", mlt.getMoreLikeThese(results.docList, mltcount, flags));
+      }
+      
       try {
         NamedList dbg = U.doStandardDebug(req, qstr, query, results.docList);
         if (null != dbg) {
@@ -199,6 +209,9 @@ public class StandardRequestHandler extends RequestHandlerBase {
     catch( MalformedURLException ex ) { return null; }
   }
 }
+
+
+
 
 
 

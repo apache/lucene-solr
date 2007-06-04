@@ -387,6 +387,12 @@
      
    </requestHandler>
 
+   <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
+     <lst name="defaults">
+       <str name="mlt.fl">manu,cat</str>
+       <int name="mlt.mindf">1</int>
+     </lst>
+   </requestHandler>
   
   <!-- Update request handler.  
   

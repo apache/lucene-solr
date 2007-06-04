@@ -29,7 +29,10 @@ Detailed Change List
 --------------------
 
 New Features
-
+ 1. SOLR-69: Adding MoreLikeThisHandler to search for similar documents using
+    lucene contrib/queries MoreLikeThis.  MoreLikeThis is also avaliable from
+    the StandardRequestHandler using ?mlt=true. (bdelacretaz, ryan)
+ 
 Changes in runtime behavior
 
 Optimizations

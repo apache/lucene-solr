@@ -237,6 +237,9 @@
        this field (this disables length normalization and index-time
        boosting for the field, and saves some memory).  Only full-text
        fields or fields that need an index-time boost need norms.
+     termVectors: [false] set to true to store the term vector for a given field.
+       When using MoreLikeThis, fields used for similarity should be stored for 
+       best performance.
    -->
 
    <field name="id" type="string" indexed="true" stored="true" required="true" /> 
@@ -245,7 +248,7 @@
    <field name="nameSort" type="string" indexed="true" stored="false"/>
    <field name="alphaNameSort" type="alphaOnlySort" indexed="true" stored="false"/>
    <field name="manu" type="text" indexed="true" stored="true" omitNorms="true"/>
-   <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true" omitNorms="true"/>
+   <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true" omitNorms="true" termVectors="true" />
    <field name="features" type="text" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text" indexed="true" stored="true"/>
 
