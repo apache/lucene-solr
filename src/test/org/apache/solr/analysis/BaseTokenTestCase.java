@@ -150,7 +150,6 @@ public abstract class BaseTokenTestCase extends TestCase
   // These may be useful beyond test cases...
   //------------------------------------------------------------------------
 
-  // This could probably be put in a utility class
   static List<Token> getTokens(TokenStream tstream) throws IOException {
     List<Token> tokens = new ArrayList<Token>();
     while (true) {
@@ -161,11 +160,13 @@ public abstract class BaseTokenTestCase extends TestCase
     return tokens;
   }
 
-  // This could probably be put in a utility class
   public static class IterTokenStream extends TokenStream {
     Iterator<Token> toks;
     public IterTokenStream(Token... toks) {
       this.toks = Arrays.asList(toks).iterator();
+    }
+    public IterTokenStream(Iterable<Token> toks) {
+      this.toks = toks.iterator();
     }
     public IterTokenStream(Iterator<Token> toks) {
       this.toks = toks;

@@ -32,7 +32,11 @@ New Features
  1. SOLR-69: Adding MoreLikeThisHandler to search for similar documents using
     lucene contrib/queries MoreLikeThis.  MoreLikeThis is also avaliable from
     the StandardRequestHandler using ?mlt=true. (bdelacretaz, ryan)
- 
+
+ 2. SOLR-253: Adding KeepWordFilter and KeepWordFilterFactory.  A TokenFilter
+    that keeps tokens with text in the registered keeplist.  This behaves like
+    the inverse of StopFilter. (ryan)
+
 Changes in runtime behavior
 
 Optimizations
