@@ -130,7 +130,7 @@ public class TestBoostingTermQuery extends TestCase {
       ScoreDoc doc = hits.scoreDocs[i];
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
-    CheckHits.checkExplanations(query, "field", searcher);
+    CheckHits.checkExplanations(query, "field", searcher, true);
     Spans spans = query.getSpans(searcher.getIndexReader());
     assertTrue("spans is null and it shouldn't be", spans != null);
     assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
@@ -170,7 +170,7 @@ public class TestBoostingTermQuery extends TestCase {
       }
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
-    CheckHits.checkExplanations(query, "field", searcher);
+    CheckHits.checkExplanations(query, "field", searcher, true);
     Spans spans = query.getSpans(searcher.getIndexReader());
     assertTrue("spans is null and it shouldn't be", spans != null);
     assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);

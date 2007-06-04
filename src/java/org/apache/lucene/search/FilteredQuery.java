@@ -79,7 +79,12 @@ extends Query {
       }
       public Explanation explain (IndexReader ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
-        inner.setValue(getBoost() * inner.getValue());
+        if (getBoost()!=1) {
+          Explanation preBoost = inner;
+          inner = new Explanation(inner.getValue()*getBoost(),"product of:");
+          inner.addDetail(new Explanation(getBoost(),"boost"));
+          inner.addDetail(preBoost);
+        }
         Filter f = FilteredQuery.this.filter;
         BitSet matches = f.bits(ir);
         if (matches.get(i))

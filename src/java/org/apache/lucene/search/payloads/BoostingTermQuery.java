@@ -166,7 +166,7 @@ public class BoostingTermQuery extends SpanTermQuery{
         //GSI: I suppose we could toString the payload, but I don't think that would be a good idea 
         payloadBoost.setDescription("scorePayload(...)");
         result.setValue(nonPayloadExpl.getValue() * avgPayloadScore);
-        result.setDescription("btq");
+        result.setDescription("btq, product of:");
         return result;
       }
     }

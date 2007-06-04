@@ -83,13 +83,14 @@ public class TestExplanations extends TestCase {
     return qp.parse(queryText);
   }
 
+  /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(String queryText, int[] expDocNrs) throws Exception {
     qtest(makeQuery(queryText), expDocNrs);
   }
+  
+  /** check the expDocNrs first, then check the query (and the explanations) */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
-    // check that the expDocNrs first, then check the explanations
     CheckHits.checkHitCollector(q, FIELD, searcher, expDocNrs);
-    CheckHits.checkExplanations(q, FIELD, searcher);
   }
 
   /**

@@ -152,6 +152,10 @@ Bug fixes
 
 20. LUCENE-763: Spellchecker: LuceneDictionary used to skip first word in 
     enumeration. (Christian Mallwitz via Daniel Naber)
+    
+21. LUCENE-903: FilteredQuery explanation inaccuracy with boost.
+    Explanation tests now "deep" check the explanation details.
+    (Chris Hostetter, Doron Cohen)
 
 New features
 

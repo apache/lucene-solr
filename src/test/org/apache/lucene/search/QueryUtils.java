@@ -64,15 +64,27 @@ public class QueryUtils {
     // happens, please change test to use a different example.
     TestCase.assertTrue(q1.hashCode() != q2.hashCode());
   }
-
-
-  /** various query sanity checks on a searcher */
+  
+  /** deep check that explanations of a query 'score' correctly */
+  public static void checkExplanations (final Query q, final Searcher s) throws IOException {
+    CheckHits.checkExplanations(q, null, s, true);
+  }
+  
+  /** 
+   * various query sanity checks on a searcher, including explanation checks.
+   * @see #checkExplanations
+   * @see #checkSkipTo
+   * @see #check(Query)
+   */
   public static void check(Query q1, Searcher s) {
     try {
       check(q1);
-      if (s!=null && s instanceof IndexSearcher) {
-        IndexSearcher is = (IndexSearcher)s;
-        checkSkipTo(q1,is);
+      if (s!=null) {
+        if (s instanceof IndexSearcher) {
+          IndexSearcher is = (IndexSearcher)s;
+          checkSkipTo(q1,is);
+        }
+        checkExplanations(q1,s);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

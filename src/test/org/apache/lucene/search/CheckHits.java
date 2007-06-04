@@ -29,6 +29,13 @@ import java.util.TreeSet;
 public class CheckHits {
   
   /**
+   * Some explains methods calculate their vlaues though a slightly
+   * differnet  order of operations from the acctaul scoring method ...
+   * this allows for a small amount of variation
+   */
+  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.00005f;
+    
+  /**
    * Tests that all documents up to maxDoc which are *not* in the
    * expected result set, have an explanation which indicates no match
    * (ie: Explanation value of 0.0f)
@@ -226,10 +233,13 @@ public class CheckHits {
   }
 
   /**
-   * Asserts that the score explanation for every document matching a
-   * query corrisponds with the true score.
+   * Asserts that the explanation value for every document matching a
+   * query corresponds with the true score. 
    *
    * @see ExplanationAsserter
+   * @see #checkExplanations(Query, String, Searcher, boolean) for a
+   * "deep" testing of the explanation details.
+   *   
    * @param query the query to test
    * @param searcher the searcher to test the query against
    * @param defaultFieldName used for displaing the query in assertion messages
@@ -237,16 +247,123 @@ public class CheckHits {
   public static void checkExplanations(Query query,
                                        String defaultFieldName,
                                        Searcher searcher) throws IOException {
+    checkExplanations(query, defaultFieldName, searcher, false);
+  }
+
+  /**
+   * Asserts that the explanation value for every document matching a
+   * query corresponds with the true score.  Optionally does "deep" 
+   * testing of the explanation details.
+   *
+   * @see ExplanationAsserter
+   * @param query the query to test
+   * @param searcher the searcher to test the query against
+   * @param defaultFieldName used for displaing the query in assertion messages
+   * @param deep indicates whether a deep comparison of sub-Explanation details should be executed
+   */
+  public static void checkExplanations(Query query,
+                                       String defaultFieldName,
+                                       Searcher searcher, 
+                                       boolean deep) throws IOException {
 
     searcher.search(query,
                     new ExplanationAsserter
-                    (query, defaultFieldName, searcher));
+                    (query, defaultFieldName, searcher, deep));
 
+  }
+
+  /** 
+   * Assert that an explanation has the expected score, and optionally that its
+   * sub-details max/sum/factor match to that score.
+   *
+   * @param q String representation of the query for assertion messages
+   * @param doc Document ID for assertion messages
+   * @param score Real score value of doc with query q
+   * @param deep indicates whether a deep comparison of sub-Explanation details should be executed
+   * @param expl The Explanation to match against score
+   */
+  public static void verifyExplanation(String q, 
+                                       int doc, 
+                                       float score,
+                                       boolean deep,
+                                       Explanation expl) {
+    float value = expl.getValue();
+    TestCase.assertEquals(q+": score(doc="+doc+")="+score+
+        " != explanationScore="+value+" Explanation: "+expl,
+        score,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
+
+    if (!deep) return;
+
+    Explanation detail[] = expl.getDetails();
+    if (detail!=null) {
+      if (detail.length==1) {
+        // simple containment, no matter what the description says, 
+        // just verify contained expl has same score
+        verifyExplanation(q,doc,score,deep,detail[0]);
+      } else {
+        // explanation must either:
+        // - end with one of: "product of:", "sum of:", "max of:", or
+        // - have "max plus <x> times others" (where <x> is float).
+        float x = 0;
+        String descr = expl.getDescription().toLowerCase();
+        boolean productOf = descr.endsWith("product of:");
+        boolean sumOf = descr.endsWith("sum of:");
+        boolean maxOf = descr.endsWith("max of:");
+        boolean maxTimesOthers = false;
+        if (!(productOf || sumOf || maxOf)) {
+          // maybe 'max plus x times others'
+          int k1 = descr.indexOf("max plus ");
+          if (k1>=0) {
+            k1 += "max plus ".length();
+            int k2 = descr.indexOf(" ",k1);
+            try {
+              x = Float.parseFloat(descr.substring(k1,k2).trim());
+              if (descr.substring(k2).trim().equals("times others of:")) {
+                maxTimesOthers = true;
+              }
+            } catch (NumberFormatException e) {
+            }
+          }
+        }
+        TestCase.assertTrue(
+            q+": multi valued explanation description=\""+descr
+            +"\" must be 'max of plus x times others' or end with 'prodoct of'"
+            +" or 'sum of:' or 'max of:' - "+expl,
+            productOf || sumOf || maxOf || maxTimesOthers);
+        float sum = 0;
+        float product = 1;
+        float max = 0;
+        for (int i=0; i<detail.length; i++) {
+          float dval = detail[i].getValue();
+          verifyExplanation(q,doc,dval,deep,detail[i]);
+          product *= dval;
+          sum += dval;
+          max = Math.max(max,dval);
+        }
+        float combined = 0;
+        if (productOf) {
+          combined = product;
+        } else if (sumOf) {
+          combined = sum;
+        } else if (maxOf) {
+          combined = max;
+        } else if (maxTimesOthers) {
+          combined = max + x * (sum - max);
+        } else {
+            TestCase.assertTrue("should never get here!",false);
+        }
+        TestCase.assertEquals(q+": actual subDetails combined=="+combined+
+            " != value="+value+" Explanation: "+expl,
+            combined,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
+      }
+    }
   }
 
   /**
    * an IndexSearcher that implicitly checks hte explanation of every match
-   * whenever it executes a search
+   * whenever it executes a search.
+   *
+   * @see ExplanationAsserter
    */
   public static class ExplanationAssertingSearcher extends IndexSearcher {
     public ExplanationAssertingSearcher(Directory d) throws IOException {
@@ -300,28 +417,37 @@ public class CheckHits {
     
   /**
    * Asserts that the score explanation for every document matching a
-   * query corrisponds with the true score.
+   * query corresponds with the true score.
    *
    * NOTE: this HitCollector should only be used with the Query and Searcher
    * specified at when it is constructed.
+   *
+   * @see CheckHits#verifyExplanation
    */
   public static class ExplanationAsserter extends HitCollector {
 
     /**
-     * Some explains methods calculate their vlaues though a slightly
-     * differnet  order of operations from the acctaul scoring method ...
-     * this allows for a small amount of variation
+     * @deprecated
+     * @see CheckHits#EXPLAIN_SCORE_TOLERANCE_DELTA
      */
     public static float SCORE_TOLERANCE_DELTA = 0.00005f;
-    
+
     Query q;
     Searcher s;
     String d;
+    boolean deep;
+    
+    /** Constructs an instance which does shallow tests on the Explanation */
     public ExplanationAsserter(Query q, String defaultFieldName, Searcher s) {
+      this(q,defaultFieldName,s,false);
+    }      
+    public ExplanationAsserter(Query q, String defaultFieldName, Searcher s, boolean deep) {
       this.q=q;
       this.s=s;
       this.d = q.toString(defaultFieldName);
+      this.deep=deep;
     }      
+
     public void collect(int doc, float score) {
       Explanation exp = null;
       
@@ -334,9 +460,7 @@ public class CheckHits {
       
       TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
-      TestCase.assertEquals("Score of [["+d+"]] for #"+doc+
-                            " does not match explanation: " + exp.toString(),
-                            score, exp.getValue(), SCORE_TOLERANCE_DELTA);
+      verifyExplanation(d,doc,score,deep,exp);
     }
     
   }
