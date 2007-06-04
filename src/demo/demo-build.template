@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+
+<project name="lucene-demo" default="compile-demo" basedir=".">
+  <dirname file="${ant.file.common}" property="common.dir"/>
+
+  <property name="version" value="@PLACEHOLDER_version@"/>
+  <property name="javac.source" value="@PLACEHOLDER_javac.source@"/>
+  <property name="javac.target" value="@PLACEHOLDER_javac.target@"/>
+	
+  <property name="build.dir" location="build"/>
+	
+	
+  <property name="core.name" value="lucene-core-${version}"/>
+  <property name="demo.name" value="lucene-demos-${version}"/>
+  <property name="demo.war.name" value="luceneweb"/>
+
+  <!-- Build classpath -->
+  <path id="classpath">
+    <pathelement location="${common.dir}/${core.name}.jar"/>
+  </path>
+
+  <path id="demo.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.dir}/classes/demo"/>
+  </path>
+	
+  <available
+    property="jar.core.present"
+	type="file"
+	file="${common.dir}/${core.name}.jar"
+  />
+
+  <target name="jar.core-check">
+    <fail unless="jar.core.present">
+	  ##################################################################
+	  ${common.dir}/${core.name}.jar not found.
+	  ##################################################################
+	</fail>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- J A R                                                              -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+
+  <target name="jar-demo" depends="compile-demo"
+	description="Build demo jar file">
+    <jar
+      destfile="${demo.name}.jar"
+      basedir="${build.dir}/classes/demo"
+      excludes="**/*.java"
+      />
+  </target>
+
+  <target name="war-demo" depends="jar-demo"	
+	description="Build demo war file">
+    <war destfile="${demo.war.name}.war"
+         webxml="src/jsp/WEB-INF/web.xml">
+      <fileset dir="src/jsp" excludes="WEB-INF/web.xml"/>
+      <lib dir="." includes="${demo.name}.jar"/>
+      <lib dir="." includes="${core.name}.jar"/>
+    </war>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- B U I L D  D E M O                                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="compile-demo" depends="jar.core-check"
+	description="Compile demo classes">
+    <mkdir dir="${build.dir}/classes/demo"/>
+
+    <compile
+      srcdir="src/demo"
+      destdir="${build.dir}/classes/demo">
+      <classpath refid="demo.classpath"/>
+    </compile>
+  </target>
+	
+  <target name="clean"
+    description="Removes contents of build directory">
+    <delete dir="${build.dir}"/>
+  </target>
+
+	
+  <!--+
+      | M A C R O S
+      +-->
+  <macrodef name="compile">
+    <attribute name="srcdir"/>
+    <attribute name="destdir"/>
+    <element name="nested" implicit="yes" optional="yes"/>
+
+    <sequential>
+      <mkdir dir="@{destdir}"/>
+      <javac
+        srcdir="@{srcdir}"
+        destdir="@{destdir}"
+        deprecation="off"
+        debug="on"
+        source="${javac.source}"
+        target="${javac.target}">
+        <nested/>
+      </javac>
+    </sequential>
+  </macrodef>
+
+</project>

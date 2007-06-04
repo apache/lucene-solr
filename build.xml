@@ -6,7 +6,7 @@
 
   <import file="common-build.xml"/>
 
-  
+  <property name="build.demo.template" value="src/demo/demo-build.template"/> 
 
   <property name="demo.name" value="lucene-demos-${version}"/>
   <property name="demo.war.name" value="luceneweb"/>
@@ -54,7 +54,8 @@
               includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar"
   />
   <patternset id="binary.root.dist.patterns"
-              includes="src/demo/,src/jsp/,build.xml,docs/,*.txt"
+              includes="src/demo/,src/jsp/,docs/,*.txt"
+              excludes="${build.demo.template}"
   />
 
 
@@ -159,7 +160,13 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package" depends="jar-core, javadocs, war-demo, build-contrib, init-dist">
-
+     <copy file="${build.demo.template}" tofile="${build.dir}/build-demo.xml">
+        <filterset begintoken="@PLACEHOLDER_" endtoken="@"> 
+	  <filter token="version" value="${version}"/>
+	  <filter token="javac.source" value="${javac.source}"/>
+	  <filter token="javac.target" value="${javac.target}"/>
+        </filterset>
+     </copy>
   </target>
 
   <target name="nightly" depends="test, package-tgz">
@@ -178,6 +185,7 @@
       <zipfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </zipfileset>
+      <zipfileset dir="${build.dir}" includes="build-demo.xml" fullpath="lucene-${version}/build.xml"/>
       <zipfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
@@ -198,6 +206,7 @@
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
+      <tarfileset dir="${build.dir}" includes="build-demo.xml" fullpath="lucene-${version}/build.xml"/>
       <tarfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
