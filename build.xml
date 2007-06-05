@@ -92,8 +92,12 @@
     <jar
       destfile="${build.dir}/${demo.name}.jar"
       basedir="${build.dir}/classes/demo"
-      excludes="**/*.java"
-      />
+      excludes="**/*.java">
+      <metainf dir="${common.dir}">
+        <include name="LICENSE.txt"/>
+        <include name="NOTICE.txt"/>
+      </metainf>
+    </jar>
   </target>
 
   <target name="war-demo" depends="jar-core,jar-demo">
@@ -102,6 +106,10 @@
       <fileset dir="src/jsp" excludes="WEB-INF/web.xml"/>
       <lib dir="${build.dir}" includes="${demo.name}.jar"/>
       <lib dir="${build.dir}" includes="${final.name}.jar"/>
+      <metainf dir="${common.dir}">
+        <include name="LICENSE.txt"/>
+        <include name="NOTICE.txt"/>
+      </metainf>
     </war>
   </target>
 

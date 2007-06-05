@@ -263,6 +263,9 @@ Build
  5. LUCENE-904: The "package" targets in build.xml now also generate .md5
     checksum files. (Chris Hostetter, Michael Busch)
 
+ 6. LUCENE-907: Include LICENSE.TXT and NOTICE.TXT in the META-INF dirs of
+    demo war, demo jar, and the contrib jars. (Michael Busch)
+
 ======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior

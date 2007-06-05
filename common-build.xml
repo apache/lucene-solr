@@ -160,7 +160,7 @@
           <attribute name="Implementation-Vendor" value="Lucene"/>
         </section>
       </manifest>
-      <metainf dir=".">
+      <metainf dir="${common.dir}">
         <include name="LICENSE.txt"/>
         <include name="NOTICE.txt"/>
       </metainf>
@@ -341,5 +341,6 @@
   </macrodef>
 
 </project>
+
 
 
