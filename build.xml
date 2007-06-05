@@ -12,6 +12,9 @@
   <property name="demo.war.name" value="luceneweb"/>
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
 
+  <!-- Type of checksum to compute for distribution files -->
+  <property name="checksum.algorithm" value="md5" />
+	
   <!-- Build classpath -->
   <path id="classpath">
     <pathelement location="${build.dir}/classes/java"/>
@@ -190,6 +193,7 @@
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
     </zip>
+	<lucene-checksum file="${dist.dir}/lucene-${version}.zip"/>
   </target>
 
   <!-- ================================================================== -->
@@ -215,6 +219,7 @@
     <gzip zipfile="${dist.dir}/lucene-${version}.tar.gz"
       src="${build.dir}/lucene-${version}.tar"
       />
+	<lucene-checksum file="${dist.dir}/lucene-${version}.tar.gz"/>
   </target>
 
   <!-- ================================================================== -->
@@ -253,6 +258,7 @@
         <patternset refid="src.dist.patterns"/>
       </zipfileset>
     </zip>
+	<lucene-checksum file="${dist.dir}/lucene-${version}-src.zip"/>
   </target>
 
   <!-- ================================================================== -->
@@ -274,6 +280,7 @@
     <gzip zipfile="${dist.dir}/lucene-${version}-src.tar.gz"
           src="${build.dir}/lucene-${version}-src.tar"
     />
+	<lucene-checksum file="${dist.dir}/lucene-${version}-src.tar.gz"/>
   </target>
 
   <!-- ================================================================== -->
@@ -492,6 +499,32 @@
 
    </sequential>
   </macrodef>
-
-
+	
+  <!-- Macro for building checksum files
+       This is only needed until the "format" option is supported
+       by ant's built in checksum task
+   -->
+  <macrodef name="lucene-checksum">
+    <attribute name="file"/>
+    <!-- NOTE: we use the value of @{file} in the names any properties
+         set because macro's don't have variables, and otherwise we
+         wouldn't be able to checksum more then one file per build
+      -->
+    <sequential>
+      <checksum file="@{file}"
+                property="@{file}.sum"
+                algorithm="${checksum.algorithm}" />
+      <basename file="@{file}" property="@{file}.base" />
+      <concat destfile="@{file}.${checksum.algorithm}"
+              force="yes"
+              append="false"
+              fixlastline="yes">
+        <header trimleading="yes">${@{file}.sum}  </header>
+        <!-- empty fileset to trick concat -->
+        <fileset dir="." excludes="**" />
+        <footer trimleading="yes">${@{file}.base}
+        </footer>
+      </concat>
+    </sequential>
+  </macrodef>
 </project>
