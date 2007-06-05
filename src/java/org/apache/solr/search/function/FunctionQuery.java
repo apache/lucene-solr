@@ -156,7 +156,7 @@ public class FunctionQuery extends Query {
   {
     float boost = getBoost();
     return (boost!=1.0?"(":"") + func.toString()
-            + (getBoost()==0 ? "" : ")^"+getBoost());
+            + (boost==1.0 ? "" : ")^"+boost);
   }
 
 
