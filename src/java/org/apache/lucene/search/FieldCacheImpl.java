@@ -131,18 +131,108 @@ implements FieldCache {
     }
   }
 
+  private static final ByteParser BYTE_PARSER = new ByteParser() {
+    public byte parseByte(String value) {
+      return Byte.parseByte(value);
+    }
+  };
+
+  private static final ShortParser SHORT_PARSER = new ShortParser() {
+    public short parseShort(String value) {
+      return Short.parseShort(value);
+    }
+  };
+
   private static final IntParser INT_PARSER = new IntParser() {
       public int parseInt(String value) {
         return Integer.parseInt(value);
       }
-    };
+  };
 
   private static final FloatParser FLOAT_PARSER = new FloatParser() {
       public float parseFloat(String value) {
         return Float.parseFloat(value);
       }
-    };
+  };
 
+  // inherit javadocs
+  public byte[] getBytes (IndexReader reader, String field) throws IOException {
+    return getBytes(reader, field, BYTE_PARSER);
+  }
+
+  // inherit javadocs
+  public byte[] getBytes(IndexReader reader, String field, ByteParser parser)
+      throws IOException {
+    return (byte[]) bytesCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache bytesCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      ByteParser parser = (ByteParser) entry.custom;
+      final byte[] retArray = new byte[reader.maxDoc()];
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          byte termval = parser.parseByte(term.text());
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
+          }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
+      }
+      return retArray;
+    }
+  };
+  
+  // inherit javadocs
+  public short[] getShorts (IndexReader reader, String field) throws IOException {
+    return getShorts(reader, field, SHORT_PARSER);
+  }
+
+  // inherit javadocs
+  public short[] getShorts(IndexReader reader, String field, ShortParser parser)
+      throws IOException {
+    return (short[]) shortsCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache shortsCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      ShortParser parser = (ShortParser) entry.custom;
+      final short[] retArray = new short[reader.maxDoc()];
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field, ""));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          short termval = parser.parseShort(term.text());
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
+          }
+        } while (termEnum.next());
+      } finally {
+        termDocs.close();
+        termEnum.close();
+      }
+      return retArray;
+    }
+  };
+  
   // inherit javadocs
   public int[] getInts (IndexReader reader, String field) throws IOException {
     return getInts(reader, field, INT_PARSER);

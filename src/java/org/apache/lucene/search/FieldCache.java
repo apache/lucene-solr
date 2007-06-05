@@ -53,6 +53,22 @@ public interface FieldCache {
     }
   }
 
+  /** Interface to parse bytes from document fields.
+   * @see FieldCache#getBytes(IndexReader, String, FieldCache.ByteParser)
+   */
+  public interface ByteParser {
+    /** Return a single Byte representation of this field's value. */
+    public byte parseByte(String string);
+  }
+
+  /** Interface to parse shorts from document fields.
+   * @see FieldCache#getShorts(IndexReader, String, FieldCache.ShortParser)
+   */
+  public interface ShortParser {
+    /** Return a short representation of this field's value. */
+    public short parseShort(String string);
+  }
+
   /** Interface to parse ints from document fields.
    * @see FieldCache#getInts(IndexReader, String, FieldCache.IntParser)
    */
@@ -71,6 +87,56 @@ public interface FieldCache {
 
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
+
+  /** Checks the internal cache for an appropriate entry, and if none is
+   * found, reads the terms in <code>field</code> as a single byte and returns an array
+   * of size <code>reader.maxDoc()</code> of the value each document
+   * has in the given field.
+   * @param reader  Used to get field values.
+   * @param field   Which field contains the single byte values.
+   * @return The values in the given field for each document.
+   * @throws IOException  If any error occurs.
+   */
+  public byte[] getBytes (IndexReader reader, String field)
+  throws IOException;
+
+  /** Checks the internal cache for an appropriate entry, and if none is found,
+   * reads the terms in <code>field</code> as bytes and returns an array of
+   * size <code>reader.maxDoc()</code> of the value each document has in the
+   * given field.
+   * @param reader  Used to get field values.
+   * @param field   Which field contains the bytes.
+   * @param parser  Computes byte for string values.
+   * @return The values in the given field for each document.
+   * @throws IOException  If any error occurs.
+   */
+  public byte[] getBytes (IndexReader reader, String field, ByteParser parser)
+  throws IOException;
+
+  /** Checks the internal cache for an appropriate entry, and if none is
+   * found, reads the terms in <code>field</code> as shorts and returns an array
+   * of size <code>reader.maxDoc()</code> of the value each document
+   * has in the given field.
+   * @param reader  Used to get field values.
+   * @param field   Which field contains the shorts.
+   * @return The values in the given field for each document.
+   * @throws IOException  If any error occurs.
+   */
+  public short[] getShorts (IndexReader reader, String field)
+  throws IOException;
+
+  /** Checks the internal cache for an appropriate entry, and if none is found,
+   * reads the terms in <code>field</code> as shorts and returns an array of
+   * size <code>reader.maxDoc()</code> of the value each document has in the
+   * given field.
+   * @param reader  Used to get field values.
+   * @param field   Which field contains the shorts.
+   * @param parser  Computes short for string values.
+   * @return The values in the given field for each document.
+   * @throws IOException  If any error occurs.
+   */
+  public short[] getShorts (IndexReader reader, String field, ShortParser parser)
+  throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as integers and returns an array

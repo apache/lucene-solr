@@ -186,6 +186,10 @@ New features
     on the remote side of the RMI connection.
     (Matt Ericson via Otis Gospodnetic)
 
+ 8. LUCENE-446: Added Solr's search.function for scores based on field 
+    values, plus CustomScoreQuery for simple score (post) customization.
+    (Yonik Seeley, Doron Cohen)
+ 
 Optimizations
 
  1. LUCENE-761: The proxStream is now cloned lazily in SegmentTermPositions
