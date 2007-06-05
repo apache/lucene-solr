@@ -174,12 +174,12 @@ final class FieldInfos {
    * @param omitNorms true if the norms for the indexed field should be omitted
    * @param storePayloads true if payloads should be stored for this field
    */
-  public void add(String name, boolean isIndexed, boolean storeTermVector,
-                  boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
-                  boolean omitNorms, boolean storePayloads) {
+  public FieldInfo add(String name, boolean isIndexed, boolean storeTermVector,
+                       boolean storePositionWithTermVector, boolean storeOffsetWithTermVector,
+                       boolean omitNorms, boolean storePayloads) {
     FieldInfo fi = fieldInfo(name);
     if (fi == null) {
-      addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads);
+      return addInternal(name, isIndexed, storeTermVector, storePositionWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads);
     } else {
       if (fi.isIndexed != isIndexed) {
         fi.isIndexed = true;                      // once indexed, always index
@@ -201,17 +201,18 @@ final class FieldInfos {
       }
 
     }
+    return fi;
   }
 
-
-  private void addInternal(String name, boolean isIndexed,
-                           boolean storeTermVector, boolean storePositionWithTermVector, 
-                           boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads) {
+  private FieldInfo addInternal(String name, boolean isIndexed,
+                                boolean storeTermVector, boolean storePositionWithTermVector, 
+                                boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads) {
     FieldInfo fi =
       new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
               storeOffsetWithTermVector, omitNorms, storePayloads);
     byNumber.add(fi);
     byName.put(name, fi);
+    return fi;
   }
 
   public int fieldNumber(String fieldName) {
