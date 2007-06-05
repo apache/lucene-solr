@@ -265,6 +265,8 @@ Build
 
  6. LUCENE-907: Include LICENSE.TXT and NOTICE.TXT in the META-INF dirs of
     demo war, demo jar, and the contrib jars. (Michael Busch)
+    
+ 7. LUCENE-909: Demo targets for running the demo. (Doron Cohen)
 
 ======================= Release 2.1.0 2007-02-14 =======================
 

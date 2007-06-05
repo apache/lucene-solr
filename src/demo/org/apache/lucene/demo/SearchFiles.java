@@ -111,13 +111,17 @@ public class SearchFiles {
       QueryParser parser = new QueryParser(field, analyzer);
     while (true) {
       if (queries == null)                        // prompt the user
-        System.out.print("Query: ");
+        System.out.println("Enter query: ");
 
       String line = in.readLine();
 
       if (line == null || line.length() == -1)
         break;
 
+      line = line.trim();
+      if (line.length() == 0)
+        break;
+      
       Query query = parser.parse(line);
       System.out.println("Searching for: " + query.toString(field));
 
@@ -161,7 +165,7 @@ public class SearchFiles {
           break;
         
         if (hits.length() > end) {
-          System.out.print("more (y/n) ? ");
+          System.out.println("more (y/n) ? ");
           line = in.readLine();
           if (line.length() == 0 || line.charAt(0) == 'n')
             break;
