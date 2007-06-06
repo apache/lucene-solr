@@ -75,7 +75,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <div onclick="SwitchMenu('menu_selected_1.2', 'skin/')" id="menu_selected_1.2Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Documentation</div>
 <div id="menu_selected_1.2" class="selectedmenuitemgroup" style="display: block;">
 <div class="menuitem">
-<a href="http://lucene.zones.apache.org:8080/hudson/job/Lucene-Nightly/javadoc/">API Docs</a>
+<a href="api/index.html">API Docs</a>
 </div>
 <div class="menuitem">
 <a href="benchmarks.html">Benchmarks</a>
@@ -1612,7 +1612,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         
 <p>
                             TermInfoFile (.tis)--&gt;
-                            TIVersion, TermCount, IndexInterval, SkipInterval, TermInfos
+                            TIVersion, TermCount, IndexInterval, SkipInterval, MaxSkipLevels, TermInfos
                         </p>
                         
 <p>TIVersion --&gt;
@@ -1628,6 +1628,10 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         </p>
                         
 <p>SkipInterval --&gt;
+                            UInt32
+                        </p>
+                        
+<p>MaxSkipLevels --&gt;
                             UInt32
                         </p>
                         
@@ -1700,7 +1704,8 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                             particular, it is the number of bytes
                             after TermFreqs that the SkipData starts.
                             In other words, it is the length of the
-                            TermFreq data.
+                            TermFreq data. SkipDelta is only stored 
+                            if DocFreq is not smaller than SkipInterval.
                         </p>
                     
 </li>
@@ -1730,7 +1735,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         
 <p>
                             TermInfoIndex (.tii)--&gt;
-                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, TermIndices
+                            TIVersion, IndexTermCount, IndexInterval, SkipInterval, MaxSkipLevels, TermIndices
                         </p>
                         
 <p>TIVersion --&gt;
@@ -1767,13 +1772,17 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         
 <p>SkipInterval is the fraction of TermDocs stored in skip tables. It is used to accelerate TermDocs.skipTo(int).
                             Larger values result in smaller indexes, greater acceleration, but fewer accelerable cases, while
-                            smaller values result in bigger indexes, less acceleration and more
+                            smaller values result in bigger indexes, less acceleration (in case of a small value for MaxSkipLevels) and more
                             accelerable cases.</p>
+                        
+<p>MaxSkipLevels is the max. number of skip levels stored for each term in the .frq file. A low value results in 
+                           smaller indexes but less acceleration, a larger value results in slighly larger indexes but greater acceleration.
+                           See format of .frq file for more information about skip levels.</p>
                     
 </li>
                 
 </ol>
-<a name="N1061D"></a><a name="Frequencies"></a>
+<a name="N10623"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -1794,15 +1803,23 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     DocDelta, Freq?
                 </p>
 <p>SkipData --&gt;
+                    &lt;&lt;SkipLevelLength, SkipLevel&gt;
+                    <sup>NumSkipLevels-1</sup>, SkipLevel&gt;
                     &lt;SkipDatum&gt;
-                    <sup>DocFreq/SkipInterval</sup>
+                </p>
+<p>SkipLevel --&gt;
+                    &lt;SkipDatum&gt;
+                    <sup>DocFreq/(SkipInterval^(Level + 1))</sup>
                 
 </p>
 <p>SkipDatum --&gt;
-                    DocSkip,PayloadLength?,FreqSkip,ProxSkip
+                    DocSkip,PayloadLength?,FreqSkip,ProxSkip,SkipChildLevelPointer?
                 </p>
 <p>DocDelta,Freq,DocSkip,PayloadLength,FreqSkip,ProxSkip --&gt;
                     VInt
+                </p>
+<p>SkipChildLevelPointer --&gt;
+                    VLong
                 </p>
 <p>TermFreqs
                     are ordered by term (the term is implicit, from the .tis file).
@@ -1871,7 +1888,19 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <sup>nd</sup>
                     starts.
                 </p>
-<a name="N10671"></a><a name="Positions"></a>
+<p>Lucene 2.2 introduces the notion of skip levels. Each term can have multiple skip levels.
+                   The amount of skip levels for a term is NumSkipLevels = Min(MaxSkipLevels, floor(log(DocFreq/log(SkipInterval)))).
+                   The number of SkipData entries for a skip level is DocFreq/(SkipInterval^(Level + 1)), whereas the lowest skip
+                   level is Level=0. <br>
+                   Example: SkipInterval = 4, MaxSkipLevels = 2, DocFreq = 35. Then skip level 0 has 8 SkipData entries,
+                   containing the 3<sup>rd</sup>, 7<sup>th</sup>, 11<sup>th</sup>, 15<sup>th</sup>, 19<sup>th</sup>, 23<sup>rd</sup>,
+                   27<sup>th</sup>, and 31<sup>st</sup> document numbers in TermFreqs. Skip level 1 has 2 SkipData entries, containing the
+                   15<sup>th</sup> and 31<sup>st</sup> document numbers in TermFreqs. <br>
+                   The SkipData entries on all upper levels &gt; 0 contain a SkipChildLevelPointer referencing the corresponding SkipData
+                   entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
+                   to entry 31 on level 0.                   
+                </p>
+<a name="N106A5"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -1937,7 +1966,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N106AD"></a><a name="Normalization Factors"></a>
+<a name="N106E1"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
 <p>
                     
@@ -2041,7 +2070,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <b>2.1 and above:</b>
                     Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<a name="N10716"></a><a name="Term Vectors"></a>
+<a name="N1074A"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <ol>
                     
@@ -2167,7 +2196,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N107A9"></a><a name="Deleted Documents"></a>
+<a name="N107DD"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2239,7 +2268,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 
         
-<a name="N107EC"></a><a name="Limitations"></a>
+<a name="N10820"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>There
