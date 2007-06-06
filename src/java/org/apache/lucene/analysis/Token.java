@@ -39,12 +39,10 @@ import org.apache.lucene.index.TermPositions;
   {@link TermPositions#getPayload(byte[], int)} to retrieve the payloads from the index.
   
   <br><br>
-  <b>
-  Warning: The status of the Payloads feature is experimental. The APIs
-  introduced here might change in the future and will not be supported anymore
-  in such a case. If you want to use this feature in a production environment
-  you should wait for an official release.
-  </b> 
+  <p><font color="#FF0000">
+  WARNING: The status of the <b>Payloads</b> feature is experimental. 
+  The APIs introduced here might change in the future and will not be 
+  supported anymore in such a case.</font>
 
   @see org.apache.lucene.index.Payload
   */
@@ -137,13 +135,10 @@ public class Token implements Cloneable {
 
   /** 
    * Sets this Token's payload.
-   * <p>
-   * <b>
-   * Warning: The status of the Payloads feature is experimental. The APIs
-   * introduced here might change in the future and will not be supported anymore
-   * in such a case. If you want to use this feature in a production environment
-   * you should wait for an official release.
-   * </b>  
+   * <p><font color="#FF0000">
+   * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+   * The APIs introduced here might change in the future and will not be 
+   * supported anymore in such a case.</font>
    */
   // TODO: Remove warning after API has been finalized
   public void setPayload(Payload payload) {
@@ -152,13 +147,10 @@ public class Token implements Cloneable {
   
   /** 
    * Returns this Token's payload. 
-   * <p>
-   * <b>
-   * Warning: The status of the Payloads feature is experimental. The APIs
-   * introduced here might change in the future and will not be supported anymore
-   * in such a case. If you want to use this feature in a production environment
-   * you should wait for an official release.
-   * </b>   
+   * <p><font color="#FF0000">
+   * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+   * The APIs introduced here might change in the future and will not be 
+   * supported anymore in such a case.</font>
    */
   // TODO: Remove warning after API has been finalized
   public Payload getPayload() {

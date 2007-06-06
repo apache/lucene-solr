@@ -34,12 +34,10 @@ import org.apache.lucene.analysis.TokenStream;
   *  to retrieve the payloads from the index.<br>
   *  <br>
   *  
-  *  <b>
-  *  Warning: The status of the Payloads feature is experimental. The APIs
-  *  introduced here might change in the future and will not be supported anymore
-  *  in such a case. If you want to use this feature in a production environment
-  *  you should wait for an official release.
-  *  </b>
+  * <p><font color="#FF0000">
+  * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+  * The APIs introduced here might change in the future and will not be 
+  * supported anymore in such a case.</font>
   */    
   // TODO: Remove warning after API has been finalized
   public class Payload implements Serializable {

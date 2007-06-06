@@ -44,12 +44,10 @@ public interface TermPositions
      * This is invalid until {@link #nextPosition()} is called for
      * the first time.<br>
      * <br>
-     * <b>
-     * Warning: The status of the Payloads feature is experimental. The APIs
-     * introduced here might change in the future and will not be supported anymore
-     * in such a case. If you want to use this feature in a production environment
-     * you should wait for an official release.
-     * </b> 
+     * <p><font color="#FF0000">
+     * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+     * The APIs introduced here might change in the future and will not be 
+     * supported anymore in such a case.</font>
      * @return length of the current payload in number of bytes
      */
     // TODO: Remove warning after API has been finalized
@@ -64,12 +62,10 @@ public interface TermPositions
      * so if the payload data for the current position is not needed,
      * this method may not be called at all for performance reasons.<br>
      * <br>
-     * <b>
-     * Warning: The status of the Payloads feature is experimental. The APIs
-     * introduced here might change in the future and will not be supported anymore
-     * in such a case. If you want to use this feature in a production environment
-     * you should wait for an official release.
-     * </b>
+     * <p><font color="#FF0000">
+     * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+     * The APIs introduced here might change in the future and will not be 
+     * supported anymore in such a case.</font>
      * 
      * @param data the array into which the data of this payload is to be
      *             stored, if it is big enough; otherwise, a new byte[] array
@@ -88,14 +84,12 @@ public interface TermPositions
    * Payloads can only be loaded once per call to 
    * {@link #nextPosition()}.
    * 
+   * <p><font color="#FF0000">
+   * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+   * The APIs introduced here might change in the future and will not be 
+   * supported anymore in such a case.</font>
+   * 
    * @return true if there is a payload available at this position that can be loaded
-   *
-   * * <b>
-   * Warning: The status of the Payloads feature is experimental. The APIs
-   * introduced here might change in the future and will not be supported anymore
-   * in such a case. If you want to use this feature in a production environment
-   * you should wait for an official release.
-   * </b>
    */
    // TODO: Remove warning after API has been finalized
     public boolean isPayloadAvailable();
