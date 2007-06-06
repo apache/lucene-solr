@@ -244,6 +244,9 @@ Documentation
     contrib jars configured for dynamic downloaded. (Note: when running
     behind firewall, a firewall prompt might pop up) (Doron Cohen)
 
+ 4. LUCENE-740: Added SNOWBALL-LICENSE.txt to the snowball package and a
+    remark about the license to NOTICE.TXT. (Steven Parkes via Michael Busch)
+
 Build
 
  1. LUCENE-802: Added LICENSE.TXT and NOTICE.TXT to Lucene jars.
