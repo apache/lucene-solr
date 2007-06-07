@@ -1,11 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta content="Apache Forrest" name="Generator">
-<meta name="Forrest-version" content="0.7">
+<meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="pelt">
-<title>Solr tutorial (version 1.1.2007.05.29.12.05.29)</title>
+<title>Solr tutorial (version 1.2.2007.06.04.13.41.39)</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="skin/print.css" rel="stylesheet">
@@ -16,43 +16,88 @@
 <body onload="init()">
 <script type="text/javascript">ndeSetTextSize();</script>
 <div id="top">
+<!--+
+    |breadtrail
+    +-->
 <div class="breadtrail">
 <a href="http://www.apache.org/">apache</a> &gt; <a href="http://lucene.apache.org/">lucene</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
 </div>
+<!--+
+    |header
+    +-->
 <div class="header">
+<!--+
+    |start group logo
+    +-->
 <div class="grouplogo">
 <a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="images/lucene_green_150.gif" title="Apache Lucene"></a>
 </div>
+<!--+
+    |end group logo
+    +-->
+<!--+
+    |start Project Logo
+    +-->
 <div class="projectlogo">
 <a href="http://lucene.apache.org/solr/"><img class="logoImage" alt="Solr" src="images/solr.png" title="Solr Description"></a>
 </div>
+<!--+
+    |end Project Logo
+    +-->
+<!--+
+    |start Search
+    +-->
 <div class="searchbox">
 <form action="http://www.google.com/search" method="get" class="roundtopsmall">
 <input value="lucene.apache.org" name="sitesearch" type="hidden"><input onFocus="getBlank (this, 'Search the site with google');" size="25" name="q" id="query" type="text" value="Search the site with google">&nbsp; 
-                    <input attr="value" name="Search" value="Search" type="submit">
+                    <input name="Search" value="Search" type="submit">
 </form>
 </div>
+<!--+
+    |end search
+    +-->
+<!--+
+    |start Tabs
+    +-->
 <ul id="tabs">
 <li class="current">
-<a class="base-selected" href="index.html">Main</a>
+<a class="selected" href="index.html">Main</a>
 </li>
 <li>
-<a class="base-not-selected" href="http://wiki.apache.org/solr">Wiki</a>
+<a class="unselected" href="http://wiki.apache.org/solr">Wiki</a>
 </li>
 </ul>
+<!--+
+    |end Tabs
+    +-->
 </div>
 </div>
 <div id="main">
 <div id="publishedStrip">
+<!--+
+    |start Subtabs
+    +-->
 <div id="level2tabs"></div>
+<!--+
+    |end Endtabs
+    +-->
 <script type="text/javascript"><!--
-document.write("<text>Last Published:</text> " + document.lastModified);
+document.write("Last Published: " + document.lastModified);
 //  --></script>
 </div>
+<!--+
+    |breadtrail
+    +-->
 <div class="breadtrail">
-             
+
              &nbsp;
            </div>
+<!--+
+    |start Menu, mainarea
+    +-->
+<!--+
+    |start Menu
+    +-->
 <div id="menu">
 <div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">About</div>
 <div id="menu_1.1" class="menuitemgroup">
@@ -107,12 +152,21 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 <div id="credit">
 <hr>
-      This document is for Apache Solr version 1.1.2007.05.29.12.05.29.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
+      This document is for Apache Solr version 1.2.2007.06.04.13.41.39.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
         </div>
 <div id="roundbottom">
 <img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<!--+
+  |alternative credits
+  +-->
 <div id="credit2"></div>
 </div>
+<!--+
+    |end Menu
+    +-->
+<!--+
+    |start content
+    +-->
 <div id="content">
 <div title="Portable Document Format" class="pdflink">
 <a class="dida" href="tutorial.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
@@ -120,7 +174,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 <h1>Solr tutorial</h1>
 <div id="motd-area">
-      This document is for Apache Solr version 1.1.2007.05.29.12.05.29.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
+      This document is for Apache Solr version 1.2.2007.06.04.13.41.39.  If you are using a different version of Solr, please consult the documentation that was distributed with the version you are using.
         </div>
 <div id="minitoc-area">
 <ul class="minitoc">
@@ -410,7 +464,7 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 <a href="http://localhost:8983/solr/select/?indent=on&q=video&fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video;price desc&fl=name,id">q=video&amp;sort=price desc&amp;fl=name,id</a>  (add sort specification: sort by price descending) </li>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price desc&fl=name,id">q=video&amp;sort=price desc&amp;fl=name,id</a>  (add sort specification: sort by price descending) </li>
     
 </ul>
 <p>
@@ -420,20 +474,21 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 <a name="N10152"></a><a name="Sorting"></a>
 <h3 class="boxed">Sorting</h3>
 <p>
-      Solr provides a simple extension to the Lucene QueryParser syntax for specifying sort options.  Use the 'sort' parameter to specify "field direction" pairs...
+      Solr provides a simple method to sort on one or more indexed fields.
+      Use the 'sort' parameter to specify "field direction" pairs...
     </p>
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+desc">video; price desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+desc">q=video&amp;sort=price desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+asc">video; price asc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=price+asc">q=video&amp;sort=price asc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc+price+desc">video; inStock asc, price desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc,price+desc">q=video&amp;sort=inStock asc, price desc</a>
 </li>
     
 </ul>
@@ -443,11 +498,11 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=score+desc">video; score desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=score+desc">q=video&amp;sort=score desc</a>
 </li>
       
 <li>
-<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc,score+desc">video; inStock asc, score desc</a>
+<a href="http://localhost:8983/solr/select/?indent=on&q=video&sort=inStock+asc,score+desc">q=video&amp;sort=inStock asc, score desc</a>
 </li>
     
 </ul>
@@ -552,18 +607,27 @@ Go ahead and edit the existing XML files to change some of the data, and re-run 
 
 
 </div>
+<!--+
+    |end content
+    +-->
 <div class="clearboth">&nbsp;</div>
 </div>
 <div id="footer">
+<!--+
+    |start bottomstrip
+    +-->
 <div class="lastmodified">
 <script type="text/javascript"><!--
-document.write("<text>Last Published:</text> " + document.lastModified);
+document.write("Last Published: " + document.lastModified);
 //  --></script>
 </div>
 <div class="copyright">
         Copyright &copy;
          2007 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
 </div>
+<!--+
+    |end bottomstrip
+    +-->
 </div>
 </body>
 </html>

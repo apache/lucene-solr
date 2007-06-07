@@ -1,9 +1,9 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta content="Apache Forrest" name="Generator">
-<meta name="Forrest-version" content="0.7">
+<meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="pelt">
 <title>Introduction to The Solr Enterprise Search Server</title>
 <link type="text/css" href="skin/basic.css" rel="stylesheet">
@@ -16,43 +16,88 @@
 <body onload="init()">
 <script type="text/javascript">ndeSetTextSize();</script>
 <div id="top">
+<!--+
+    |breadtrail
+    +-->
 <div class="breadtrail">
 <a href="http://www.apache.org/">apache</a> &gt; <a href="http://lucene.apache.org/">lucene</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
 </div>
+<!--+
+    |header
+    +-->
 <div class="header">
+<!--+
+    |start group logo
+    +-->
 <div class="grouplogo">
 <a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="images/lucene_green_150.gif" title="Apache Lucene"></a>
 </div>
+<!--+
+    |end group logo
+    +-->
+<!--+
+    |start Project Logo
+    +-->
 <div class="projectlogo">
 <a href="http://lucene.apache.org/solr/"><img class="logoImage" alt="Solr" src="images/solr.png" title="Solr Description"></a>
 </div>
+<!--+
+    |end Project Logo
+    +-->
+<!--+
+    |start Search
+    +-->
 <div class="searchbox">
 <form action="http://www.google.com/search" method="get" class="roundtopsmall">
 <input value="lucene.apache.org" name="sitesearch" type="hidden"><input onFocus="getBlank (this, 'Search the site with google');" size="25" name="q" id="query" type="text" value="Search the site with google">&nbsp; 
-                    <input attr="value" name="Search" value="Search" type="submit">
+                    <input name="Search" value="Search" type="submit">
 </form>
 </div>
+<!--+
+    |end search
+    +-->
+<!--+
+    |start Tabs
+    +-->
 <ul id="tabs">
 <li class="current">
-<a class="base-selected" href="index.html">Main</a>
+<a class="selected" href="index.html">Main</a>
 </li>
 <li>
-<a class="base-not-selected" href="http://wiki.apache.org/solr">Wiki</a>
+<a class="unselected" href="http://wiki.apache.org/solr">Wiki</a>
 </li>
 </ul>
+<!--+
+    |end Tabs
+    +-->
 </div>
 </div>
 <div id="main">
 <div id="publishedStrip">
+<!--+
+    |start Subtabs
+    +-->
 <div id="level2tabs"></div>
+<!--+
+    |end Endtabs
+    +-->
 <script type="text/javascript"><!--
-document.write("<text>Last Published:</text> " + document.lastModified);
+document.write("Last Published: " + document.lastModified);
 //  --></script>
 </div>
+<!--+
+    |breadtrail
+    +-->
 <div class="breadtrail">
-             
+
              &nbsp;
            </div>
+<!--+
+    |start Menu, mainarea
+    +-->
+<!--+
+    |start Menu
+    +-->
 <div id="menu">
 <div onclick="SwitchMenu('menu_1.1', 'skin/')" id="menu_1.1Title" class="menutitle">About</div>
 <div id="menu_1.1" class="menuitemgroup">
@@ -108,8 +153,17 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <div id="credit"></div>
 <div id="roundbottom">
 <img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<!--+
+  |alternative credits
+  +-->
 <div id="credit2"></div>
 </div>
+<!--+
+    |end Menu
+    +-->
+<!--+
+    |start content
+    +-->
 <div id="content">
 <div title="Portable Document Format" class="pdflink">
 <a class="dida" href="features.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
@@ -182,7 +236,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <div class="section">
 <ul>
     
-<li> A Real Data Schema, with Dynamic Fields, Unique Keys </li>
+<li> A Real Data Schema, with Numeric Types, Dynamic Fields, Unique Keys </li>
     
 <li> Powerful Extensions to the Lucene Query Language </li>
     
@@ -201,15 +255,17 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <li> Monitorable Logging </li>
     
 <li> Fast Incremental Updates and Snapshot Distribution </li>
+    
+<li> XML and CSV/delimited-text update formats </li>
   
 </ul>
 </div>
 
 
-<a name="N10057"></a><a name="Detailed+Features"></a>
+<a name="N1005A"></a><a name="Detailed+Features"></a>
 <h2 class="boxed">Detailed Features</h2>
 <div class="section">
-<a name="N1005D"></a><a name="Schema"></a>
+<a name="N10060"></a><a name="Schema"></a>
 <h3 class="boxed">Schema</h3>
 <ul>
       
@@ -219,35 +275,41 @@ document.write("<text>Last Published:</text> " + document.lastModified);
       
 <li>Declarative Lucene Analyzer specification</li>
       
-<li>Dynamic Fields enables on-the-fly addition of fields</li>
+<li>Dynamic Fields enables on-the-fly addition of new fields</li>
       
 <li>CopyField functionality allows indexing a single field multiple ways, or combining multiple fields into a single searchable field</li>
       
 <li>Explicit types eliminates the need for guessing types of fields</li>
       
 <li>External file-based configuration of stopword lists, synonym lists, and protected word lists</li>
+      
+<li>Many additional text analysis components including word splitting, regex and sounds-like filters</li>
     
 </ul>
-<a name="N1007B"></a><a name="Query"></a>
+<a name="N10081"></a><a name="Query"></a>
 <h3 class="boxed">Query</h3>
 <ul>
       
 <li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby)</li>
       
+<li>Sort by any number of fields</li>
+      
+<li>Advanced DisMax query parser for high relevancy results from user-entered queries</li> 
+      
 <li>Highlighted context snippets</li>
       
-<li>Faceted Searching based on field values and explicit queries</li>
-      
-<li>Sort specifications added to query language</li>
+<li>Faceted Searching based on unique field values and explicit queries</li>
       
 <li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
       
 <li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
       
+<li>Date Math - specify dates relative to "NOW" in queries and updates</li>
+      
 <li>Performance Optimizations</li>
     
 </ul>
-<a name="N10099"></a><a name="Core"></a>
+<a name="N100A5"></a><a name="Core"></a>
 <h3 class="boxed">Core</h3>
 <ul>
       
@@ -265,10 +327,10 @@ document.write("<text>Last Published:</text> " + document.lastModified);
       
 <li>Ability to control where docs with the sort field missing will be placed</li>
       
-<li>Support for dynamic grouping of search results</li>
+<li>"Luke" request handler for corpus information</li>
     
 </ul>
-<a name="N100BA"></a><a name="Caching"></a>
+<a name="N100C6"></a><a name="Caching"></a>
 <h3 class="boxed">Caching</h3>
 <ul>
       
@@ -302,7 +364,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <li>User level caching with autowarming support</li>
     
 </ul>
-<a name="N100DF"></a><a name="Replication"></a>
+<a name="N100EB"></a><a name="Replication"></a>
 <h3 class="boxed">Replication</h3>
 <ul>
       
@@ -313,7 +375,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <li>Configurable distribution interval allows tradeoff between timeliness and cache utilization</li>
     
 </ul>
-<a name="N100F1"></a><a name="Admin+Interface"></a>
+<a name="N100FD"></a><a name="Admin+Interface"></a>
 <h3 class="boxed">Admin Interface</h3>
 <ul>
       
@@ -339,18 +401,27 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 
 
 </div>
+<!--+
+    |end content
+    +-->
 <div class="clearboth">&nbsp;</div>
 </div>
 <div id="footer">
+<!--+
+    |start bottomstrip
+    +-->
 <div class="lastmodified">
 <script type="text/javascript"><!--
-document.write("<text>Last Published:</text> " + document.lastModified);
+document.write("Last Published: " + document.lastModified);
 //  --></script>
 </div>
 <div class="copyright">
         Copyright &copy;
          2007 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
 </div>
+<!--+
+    |end bottomstrip
+    +-->
 </div>
 </body>
 </html>
