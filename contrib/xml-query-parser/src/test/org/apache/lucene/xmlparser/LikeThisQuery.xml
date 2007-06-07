@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<LikeThisQuery percentTermsToMatch="5" stopWords="Reuter">
+<LikeThisQuery percentTermsToMatch="5" stopWords="Reuter" minDocFreq="2">
 IRAQI TROOPS REPORTED PUSHING BACK IRANIANS Iraq said today its troops were pushing Iranian forces out of 
 	positions they had initially occupied when they launched a new offensive near the southern port of 
 	Basra early yesterday.     A High Command communique said Iraqi troops had won a significant victory 

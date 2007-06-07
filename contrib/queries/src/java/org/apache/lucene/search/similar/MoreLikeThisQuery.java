@@ -31,6 +31,7 @@ public class MoreLikeThisQuery extends Query
     int minTermFrequency=1;
     int maxQueryTerms=5;
     Set stopWords=null;
+	int minDocFreq=-1;
     
     
     /**
@@ -50,6 +51,10 @@ public class MoreLikeThisQuery extends Query
         mlt.setFieldNames(moreLikeFields);
         mlt.setAnalyzer(analyzer);
         mlt.setMinTermFreq(minTermFrequency);
+        if(minDocFreq>=0)
+        {
+        	mlt.setMinDocFreq(minDocFreq);
+        }        
         mlt.setMaxQueryTerms(maxQueryTerms);
         mlt.setStopWords(stopWords);
         BooleanQuery bq= (BooleanQuery) mlt.like(new ByteArrayInputStream(likeText.getBytes()));        
@@ -130,4 +135,14 @@ public class MoreLikeThisQuery extends Query
     {
         this.stopWords = stopWords;
     }
+
+	public int getMinDocFreq()
+	{
+		return minDocFreq;
+	}
+
+	public void setMinDocFreq(int minDocFreq)
+	{
+		this.minDocFreq = minDocFreq;
+	}
 }

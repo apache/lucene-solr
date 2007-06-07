@@ -100,6 +100,11 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		mlt.setMinTermFrequency(DOMUtils.getAttribute(e,"minTermFrequency",defaultMinTermFrequency));
 		mlt.setPercentTermsToMatch(DOMUtils.getAttribute(e,"percentTermsToMatch",defaultPercentTermsToMatch)/100);
 		mlt.setStopWords(stopWordsSet);
+		int minDocFreq=DOMUtils.getAttribute(e,"minDocFreq",-1);
+		if(minDocFreq>=0)
+		{
+			mlt.setMinDocFreq(minDocFreq);
+		}
 
 		mlt.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 
