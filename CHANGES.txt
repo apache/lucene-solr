@@ -3,6 +3,25 @@
 $Id$
 
 ======================= Trunk (not yet released) =======================
+
+Changes in runtime behavior
+
+API Changes
+
+Bug fixes
+
+New features
+
+Optimizations
+
+Documentation
+
+Build
+
+Test Cases
+
+======================= Release 2.2.0 2007-06-19 =======================
+
 Changes in runtime behavior
 
 API Changes
