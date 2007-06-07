@@ -46,6 +46,7 @@
         a spell-check handler, sounds-like word filters, regex text filters,
         and more flexible plugins.
       </p>
+      <p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.2.0/CHANGES.txt">release notes</a> for more details.</p>
       </section>
 
       <section>
