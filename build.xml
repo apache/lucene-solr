@@ -93,6 +93,23 @@
       destfile="${build.dir}/${demo.name}.jar"
       basedir="${build.dir}/classes/demo"
       excludes="**/*.java">
+      <manifest>
+        <attribute name="Specification-Title" value="Lucene Search Engine: demos"/>
+        <!-- spec version must match "digit+{.digit+}*" -->
+        <attribute name="Specification-Version" value="${version}"/>
+        <attribute name="Specification-Vendor"
+                   value="The Apache Software Foundation"/>
+        <attribute name="Implementation-Title" value="org.apache.lucene"/>
+        <!-- impl version can be any string -->
+        <attribute name="Implementation-Version"
+                   value="${version}"/>
+        <attribute name="Implementation-Vendor"
+                   value="The Apache Software Foundation"/>
+        <attribute name="X-Compile-Source-JDK" 
+                   value="${javac.source}"/>
+        <attribute name="X-Compile-Target-JDK" 
+                   value="${javac.target}"/>
+	  </manifest>    	
       <metainf dir="${common.dir}">
         <include name="LICENSE.txt"/>
         <include name="NOTICE.txt"/>
@@ -106,12 +123,30 @@
       <fileset dir="src/jsp" excludes="WEB-INF/web.xml"/>
       <lib dir="${build.dir}" includes="${demo.name}.jar"/>
       <lib dir="${build.dir}" includes="${final.name}.jar"/>
+      <manifest>
+        <attribute name="Specification-Title" value="Lucene Search Engine: demos"/>
+        <!-- spec version must match "digit+{.digit+}*" -->
+        <attribute name="Specification-Version" value="${version}"/>
+        <attribute name="Specification-Vendor"
+                   value="The Apache Software Foundation"/>
+        <attribute name="Implementation-Title" value="org.apache.lucene"/>
+        <!-- impl version can be any string -->
+        <attribute name="Implementation-Version"
+                   value="${version}"/>
+        <attribute name="Implementation-Vendor"
+                   value="The Apache Software Foundation"/>
+        <attribute name="X-Compile-Source-JDK" 
+                   value="${javac.source}"/>
+        <attribute name="X-Compile-Target-JDK" 
+                   value="${javac.target}"/>
+	  </manifest>    	
       <metainf dir="${common.dir}">
         <include name="LICENSE.txt"/>
         <include name="NOTICE.txt"/>
       </metainf>
     </war>
   </target>
+
 
   <!-- ================================================================== -->
   <!-- B U I L D  D E M O                                                 -->

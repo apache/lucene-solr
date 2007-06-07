@@ -22,9 +22,11 @@
   <import file="../contrib-build.xml"/>
 
   <target name="jar" depends="compile" description="Create JAR">
-    <jar jarfile="${build.dir}/${final.name}.jar"
-         basedir="${build.dir}/classes/java"
-         manifest="META-INF/MANIFEST.MF"
-    />
+    <jarify>
+      <manifest-attributes>
+        <attribute name="Main-Class" value="lucli.Lucli" />
+        <attribute name="Class-Path" value="lib/jline.jar lib/lucene.jar" />
+      </manifest-attributes>
+    </jarify>
   </target>
 </project>

@@ -13,6 +13,9 @@
   <property name="snowball.root" value="snowball/website"/>
   <property name="bin.dir" location="bin"/>
 
+  <patternset id="metainf.includes">
+    <include name="SNOWBALL-LICENSE.txt"/>
+  </patternset>
 
   <!-- ====================================================== -->
   <!-- Download Snowball code                                 -->

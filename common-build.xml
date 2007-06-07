@@ -45,6 +45,10 @@
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.excludes" value=""/>
 
+  <patternset id="metainf.includes">
+  	<exclude name="**/*"/>
+  </patternset>
+	
   <condition property="build-1-5-contrib">
      <equals arg1="1.5" arg2="${ant.java.version}" />
   </condition>
@@ -146,26 +150,70 @@
 
   <target name="jar-core" depends="compile-core"
     description="Packages the JAR file">
-    <jar
-      destfile="${build.dir}/${final.name}.jar"
-      basedir="${build.dir}/classes/java">
-      <manifest>
-        <attribute name="Created-By" value="Apache Lucene Java"/>
-        <section name="org/apache/lucene/">
-          <attribute name="Specification-Title" value="Lucene Search Engine"/>
-          <attribute name="Specification-Version" value="${version}"/>
-          <attribute name="Specification-Vendor" value="Lucene"/>
-          <attribute name="Implementation-Title" value="org.apache.lucene"/>
-          <attribute name="Implementation-Version" value="build ${DSTAMP}"/>
-          <attribute name="Implementation-Vendor" value="Lucene"/>
-        </section>
-      </manifest>
-      <metainf dir="${common.dir}">
-        <include name="LICENSE.txt"/>
-        <include name="NOTICE.txt"/>
-      </metainf>
-    </jar>
+    <jarify />
   </target>
+
+  <macrodef name="jarify" description="Builds a JAR file">
+    <attribute name="title" default="Lucene Search Engine: ${ant.project.name}" />
+    <element name="manifest-attributes" optional="yes"/>
+    <sequential>
+      <!-- If possible, include the svnversion -->
+      <exec dir="." executable="svnversion"
+            outputproperty="svnversion" failifexecutionfails="false">
+        <arg line="."/>
+      </exec>
+     
+      <jar
+        destfile="${build.dir}/${final.name}.jar"
+        basedir="${build.dir}/classes/java">
+        <manifest>
+          <!--
+          http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
+          http://java.sun.com/j2se/1.5.0/docs/guide/versioning/spec/versioning2.html
+          http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Package.html
+          http://java.sun.com/j2se/1.5.0/docs/api/java/util/jar/package-summary.html
+          http://java.sun.com/developer/Books/javaprogramming/JAR/basics/manifest.html
+          -->
+          <!-- Don't set 'Manifest-Version' it identifies the version of the
+               manifest file format, and should allways be 1.0 (the default)
+  
+               Don't set 'Created-by' attribute, it's purpose is 
+               to identify the version of java used to build the jar,
+               which ant will do by default.
+  
+               Ant will happily override these with bogus strings if you
+               tell it to, so don't.
+  
+               NOTE: we don't use section info because all of our manifest data
+               applies to the entire jar/war ... no package specific info.
+          -->
+          <attribute name="Specification-Title" value="@{title}"/>
+          <!-- spec version must match "digit+{.digit+}*" -->
+          <attribute name="Specification-Version" value="${version}"/>
+          <attribute name="Specification-Vendor"
+                     value="The Apache Software Foundation"/>
+          <attribute name="Implementation-Title" value="org.apache.lucene"/>
+          <!-- impl version can be any string -->
+          <attribute name="Implementation-Version"
+                     value="${version} ${svnversion} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+          <attribute name="Implementation-Vendor"
+                     value="The Apache Software Foundation"/>
+          <attribute name="X-Compile-Source-JDK" 
+                     value="${javac.source}"/>
+          <attribute name="X-Compile-Target-JDK" 
+                     value="${javac.target}"/>
+          <manifest-attributes/>
+        </manifest>
+        <metainf dir="${common.dir}">
+          <include name="LICENSE.txt"/>
+          <include name="NOTICE.txt"/>
+        </metainf>
+        <metainf dir=".">
+          <patternset refid="metainf.includes"/>
+        </metainf>
+      </jar>
+    </sequential>
+  </macrodef>
 
   <target name="compile-test" depends="compile-core">
     <compile
@@ -341,6 +389,7 @@
   </macrodef>
 
 </project>
+
 
 
 
