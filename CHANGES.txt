@@ -2,7 +2,7 @@
 
 $Id$
 
-======================= Trunk (not yet released) =======================
+======================= Release 2.2.0 2007-06-19 =======================
 Changes in runtime behavior
 
 API Changes
