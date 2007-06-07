@@ -82,6 +82,7 @@ public class QueryUtils {
       if (s!=null) {
         if (s instanceof IndexSearcher) {
           IndexSearcher is = (IndexSearcher)s;
+          checkFirstSkipTo(q1,is);
           checkSkipTo(q1,is);
         }
         checkExplanations(q1,s);
@@ -96,14 +97,14 @@ public class QueryUtils {
    */
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
-   
-    if (BooleanQuery.getAllowDocsOutOfOrder()) return;  // 1.4 doesn't support skipTo
+    
+    if (BooleanQuery.getAllowDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
     final int next_op = 1;
     final int orders [][] = {
-        {skip_op},
         {next_op},
+        {skip_op},
         {skip_op, next_op},
         {next_op, skip_op},
         {skip_op, skip_op, next_op, next_op},
@@ -130,19 +131,24 @@ public class QueryUtils {
             boolean more = op==skip_op ? scorer.skipTo(sdoc[0]+1) : scorer.next();
             sdoc[0] = scorer.doc();
             float scorerScore = scorer.score();
+            float scorerScore2 = scorer.score();
             float scoreDiff = Math.abs(score-scorerScore);
-            if (more==false || doc != sdoc[0] || scoreDiff>maxDiff) {
+            float scorerDiff = Math.abs(scorerScore2-scorerScore);
+            if (!more || doc != sdoc[0] || scoreDiff>maxDiff || scorerDiff>maxDiff) {
               StringBuffer sbord = new StringBuffer();
               for (int i = 0; i < order.length; i++) 
                 sbord.append(order[i]==skip_op ? " skip()":" next()");
               throw new RuntimeException("ERROR matching docs:"
-                  +"\n\tscorer.more=" + more + " doc="+sdoc[0] + " scorerScore="+scorerScore
-                  +" scoreDiff="+scoreDiff + " maxDiff="+maxDiff
+                  +"\n\t"+(doc!=sdoc[0]?"--> ":"")+"doc="+sdoc[0]
+                  +"\n\t"+(!more?"--> ":"")+"tscorer.more=" + more 
+                  +"\n\t"+(scoreDiff>maxDiff?"--> ":"")+"scorerScore="+scorerScore+" scoreDiff="+scoreDiff + " maxDiff="+maxDiff
+                  +"\n\t"+(scorerDiff>maxDiff?"--> ":"")+"scorerScore2="+scorerScore2+" scorerDiff="+scorerDiff
                   +"\n\thitCollector.doc=" + doc + " score="+score
                   +"\n\t Scorer=" + scorer
-                  +"\n\t Query=" + q
+                  +"\n\t Query=" + q + "  "+q.getClass().getName()
                   +"\n\t Searcher=" + s
                   +"\n\t Order=" + sbord
+                  +"\n\t Op=" + (op==skip_op ? " skip()":" next()")
               );
             }
           } catch (IOException e) {
@@ -158,5 +164,35 @@ public class QueryUtils {
       TestCase.assertFalse(more);
     }
   }
-
+    
+  // check that first skip on just created scorers always goes to the right doc
+  private static void checkFirstSkipTo(final Query q, final IndexSearcher s) throws IOException {
+    //System.out.println("checkFirstSkipTo: "+q);
+    final float maxDiff = 1e-5f;
+    final int lastDoc[] = {-1};
+    s.search(q,new HitCollector() {
+      public void collect(int doc, float score) {
+        //System.out.println("doc="+doc);
+        try {
+          for (int i=lastDoc[0]+1; i<=doc; i++) {
+            Weight w = q.weight(s);
+            Scorer scorer = w.scorer(s.getIndexReader());
+            TestCase.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.skipTo(i));
+            TestCase.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.doc(),doc,scorer.doc());
+            float skipToScore = scorer.score();
+            TestCase.assertEquals("unstable skipTo("+i+") score!",skipToScore,scorer.score(),maxDiff); 
+            TestCase.assertEquals("query assigned doc "+doc+" a score of <"+score+"> but skipTo("+i+") has <"+skipToScore+">!",score,skipToScore,maxDiff);
+          }
+          lastDoc[0] = doc;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    });
+    Weight w = q.weight(s);
+    Scorer scorer = w.scorer(s.getIndexReader());
+    boolean more = scorer.skipTo(lastDoc[0]+1);
+    if (more) 
+      TestCase.assertFalse("query's last doc was "+lastDoc[0]+" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.doc(),more);
+  }
 }

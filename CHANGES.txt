@@ -160,6 +160,9 @@ Bug fixes
 22. LUCENE-912: DisjunctionMaxScorer first skipTo(target) call ignores the 
     skip target param and ends up at the first match.
     (Sudaakeran B. via Chris Hostetter & Doron Cohen)
+    
+23. LUCENE-913: Two consecutive score() calls return different 
+    scores for Boolean Queries. (Michael Busch, Doron Cohen)
 
 New features
 

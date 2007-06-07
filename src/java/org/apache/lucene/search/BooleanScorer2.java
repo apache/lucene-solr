@@ -154,7 +154,7 @@ class BooleanScorer2 extends Scorer {
       this.scorer = scorer;
     }
     public float score() throws IOException {
-      if (this.doc() > lastScoredDoc) {
+      if (this.doc() >= lastScoredDoc) {
         lastScoredDoc = this.doc();
         coordinator.nrMatchers++;
       }
@@ -181,7 +181,7 @@ class BooleanScorer2 extends Scorer {
     return new DisjunctionSumScorer(scorers, minNrShouldMatch) {
       private int lastScoredDoc = -1;
       public float score() throws IOException {
-        if (this.doc() > lastScoredDoc) {
+        if (this.doc() >= lastScoredDoc) {
           lastScoredDoc = this.doc();
           coordinator.nrMatchers += super.nrMatchers;
         }
@@ -199,7 +199,7 @@ class BooleanScorer2 extends Scorer {
       private int lastScoredDoc = -1;
 
       public float score() throws IOException {
-        if (this.doc() > lastScoredDoc) {
+        if (this.doc() >= lastScoredDoc) {
           lastScoredDoc = this.doc();
           coordinator.nrMatchers += requiredNrMatchers;
         }
