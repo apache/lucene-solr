@@ -271,7 +271,7 @@ Build
     
  7. LUCENE-909: Demo targets for running the demo. (Doron Cohen)
 
- 9. LUCENE-908: Improves content of MANIFEST file and makes it customizable
+ 8. LUCENE-908: Improves content of MANIFEST file and makes it customizable
     for the contribs. Adds SNOWBALL-LICENSE.txt to META-INF of the snowball
     jar and makes sure that the lucli jar contains LICENSE.txt and NOTICE.txt.
     (Chris Hostetter, Michael Busch)
