@@ -44,7 +44,7 @@
 <section>
 <title>Solr Uses the Lucene Search Library and Extends it!</title>
   <ul>
-    <li> A Real Data Schema, with Dynamic Fields, Unique Keys </li>
+    <li> A Real Data Schema, with Numeric Types, Dynamic Fields, Unique Keys </li>
     <li> Powerful Extensions to the Lucene Query Language </li>
     <li> Support for Dynamic Faceted Browsing and Filtering </li>
     <li> Advanced, Configurable Text Analysis </li>
@@ -54,6 +54,7 @@
     <li> An Administration Interface </li>
     <li> Monitorable Logging </li>
     <li> Fast Incremental Updates and Snapshot Distribution </li>
+    <li> XML and CSV/delimited-text update formats </li>
   </ul>
 </section>
 
@@ -65,21 +66,24 @@
       <li>Defines the field types and fields of documents</li>
       <li>Can drive more intelligent processing</li>
       <li>Declarative Lucene Analyzer specification</li>
-      <li>Dynamic Fields enables on-the-fly addition of fields</li>
+      <li>Dynamic Fields enables on-the-fly addition of new fields</li>
       <li>CopyField functionality allows indexing a single field multiple ways, or combining multiple fields into a single searchable field</li>
       <li>Explicit types eliminates the need for guessing types of fields</li>
       <li>External file-based configuration of stopword lists, synonym lists, and protected word lists</li>
+      <li>Many additional text analysis components including word splitting, regex and sounds-like filters</li>
     </ul>
   </section>
 
   <section><title>Query</title>
     <ul>
       <li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby)</li>
+      <li>Sort by any number of fields</li>
+      <li>Advanced DisMax query parser for high relevancy results from user-entered queries</li> 
       <li>Highlighted context snippets</li>
-      <li>Faceted Searching based on field values and explicit queries</li>
-      <li>Sort specifications added to query language</li>
+      <li>Faceted Searching based on unique field values and explicit queries</li>
       <li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
       <li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
+      <li>Date Math - specify dates relative to "NOW" in queries and updates</li>
       <li>Performance Optimizations</li>
     </ul>
   </section>
@@ -93,7 +97,7 @@
       <li>Searcher concurrency control</li>
       <li>Correct handling of numeric types for both sorting and range queries</li>
       <li>Ability to control where docs with the sort field missing will be placed</li>
-      <li>Support for dynamic grouping of search results</li>
+      <li>"Luke" request handler for corpus information</li>
     </ul>
   </section>
 
