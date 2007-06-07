@@ -38,6 +38,17 @@
       <title>News</title>
 
       <section>
+      <title>06 June 2007: Release 1.2 available</title>
+      <p>
+        This is the first release since Solr graduated from the Incubator,
+        bringing many new features, including CSV/delimited-text data
+        loading, time based autocommit, faster faceting, negative filters,
+        a spell-check handler, sounds-like word filters, regex text filters,
+        and more flexible plugins.
+      </p>
+      </section>
+
+      <section>
       <title>17 January 2007: Solr graduates from Incubator</title>
       <p>
         Solr has graduated from the Apache Incubator, and is now a sub-project of Lucene.
