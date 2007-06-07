@@ -156,6 +156,10 @@ Bug fixes
 21. LUCENE-903: FilteredQuery explanation inaccuracy with boost.
     Explanation tests now "deep" check the explanation details.
     (Chris Hostetter, Doron Cohen)
+    
+22. LUCENE-912: DisjunctionMaxScorer first skipTo(target) call ignores the 
+    skip target param and ends up at the first match.
+    (Sudaakeran B. via Chris Hostetter & Doron Cohen)
 
 New features
 

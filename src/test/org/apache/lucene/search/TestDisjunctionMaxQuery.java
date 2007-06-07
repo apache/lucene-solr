@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.text.DecimalFormat;
+import java.io.IOException;
 
 /**
  * Test of the DisjunctionMaxQuery.
@@ -124,6 +125,36 @@ public class TestDisjunctionMaxQuery extends TestCase{
         s = new IndexSearcher(r);
         s.setSimilarity(sim);
     }
+
+  public void testSkipToFirsttimeMiss() throws IOException {
+    final DisjunctionMaxQuery dq = new DisjunctionMaxQuery(0.0f);
+    dq.add(tq("id","d1"));
+    dq.add(tq("dek","DOES_NOT_EXIST"));
+
+    QueryUtils.check(dq,s);
+
+    final Weight dw = dq.weight(s);
+    final Scorer ds = dw.scorer(r);
+    final boolean skipOk = ds.skipTo(3);
+    if (skipOk) {
+      fail("firsttime skipTo found a match? ... " + 
+            r.document(ds.doc()).get("id"));
+    }
+  }
+
+  public void testSkipToFirsttimeHit() throws IOException {
+    final DisjunctionMaxQuery dq = new DisjunctionMaxQuery(0.0f);
+    dq.add(tq("dek","albino"));
+    dq.add(tq("dek","DOES_NOT_EXIST"));
+
+    QueryUtils.check(dq,s);
+
+    final Weight dw = dq.weight(s);
+    final Scorer ds = dw.scorer(r);
+    assertTrue("firsttime skipTo found no match", ds.skipTo(3));
+    assertEquals("found wrong docid", "d4", r.document(ds.doc()).get("id"));
+  }
+
 
 
     public void testSimpleEqualScores1() throws Exception {

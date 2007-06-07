@@ -117,7 +117,6 @@ class DisjunctionMaxScorer extends Scorer {
           if (!more) return false;
           heapify();
           firstTime = false;
-          return true;   // more would have been false if no subScorers had any docs
         }
 
         while (subScorers.size()>0 && ((Scorer)subScorers.get(0)).doc()<target) {
