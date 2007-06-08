@@ -27,7 +27,7 @@ import org.apache.lucene.store.IndexInput;
  * that stores positions and payloads.
  *
  */
-public class DefaultSkipListReader extends MultiLevelSkipListReader {
+class DefaultSkipListReader extends MultiLevelSkipListReader {
   private boolean currentFieldStoresPayloads;
   private long freqPointer[];
   private long proxPointer[];
