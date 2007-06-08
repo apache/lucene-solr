@@ -37,6 +37,9 @@ New Features
     that keeps tokens with text in the registered keeplist.  This behaves like
     the inverse of StopFilter. (ryan)
 
+ 3. SOLR-257: WordDelimiterFilter has a new parameter splitOnCaseChange,
+    which can be set to 0 to disable splitting "PowerShot" => "Power" "Shot"
+
 Changes in runtime behavior
 
 Optimizations

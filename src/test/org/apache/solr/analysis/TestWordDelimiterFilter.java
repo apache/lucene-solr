@@ -66,5 +66,20 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     assertU(adoc("id", "222", "numberpartfail", "123.123.123.123"));
   }
 
+  public void testIgnoreCaseChange() {
 
+    assertU(adoc("id",  "43",
+                 "wdf_nocase", "HellO WilliAM",
+                 "subword", "GoodBye JonEs"));
+    assertU(commit());
+    
+    assertQ("no case change",
+            req("wdf_nocase:(hell o am)")
+            ,"//result[@numFound=0]"
+    );
+    assertQ("case change",
+            req("subword:(good jon)")
+            ,"//result[@numFound=1]"
+    );
+  }
 }

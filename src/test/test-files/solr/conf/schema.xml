@@ -82,6 +82,15 @@
       </analyzer>
     </fieldtype>
 
+    <!-- Demonstrating ignoreCaseChange -->
+    <fieldtype name="wdf_nocase" class="solr.TextField">
+      <analyzer>
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="0" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="0"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
+
 
     <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
     <fieldtype name="highlittext" class="solr.TextField" compressThreshold="345" />
@@ -359,6 +368,7 @@
    <field name="custstopfilt" type="custstopfilt" indexed="true" stored="true"/>
    <field name="lengthfilt" type="lengthfilt" indexed="true" stored="true"/>
    <field name="dedup" type="dedup" indexed="true" stored="true"/>
+   <field name="wdf_nocase" type="wdf_nocase" indexed="true" stored="true"/>
 
    <field name="numberpartfail" type="failtype1" indexed="true" stored="true"/>
 

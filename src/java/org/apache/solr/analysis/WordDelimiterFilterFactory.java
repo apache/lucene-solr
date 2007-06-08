@@ -31,19 +31,22 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory {
   int catenateWords=0;
   int catenateNumbers=0;
   int catenateAll=0;
+  int splitOnCaseChange=0;
 
   public void init(Map<String, String> args) {
     super.init(args);
-    generateWordParts = getInt("generateWordParts",1);
-    generateNumberParts = getInt("generateNumberParts",1);
-    catenateWords = getInt("catenateWords",0);
-    catenateNumbers = getInt("catenateNumbers",0);
-    catenateAll = getInt("catenateAll",0);
+    generateWordParts = getInt("generateWordParts", 1);
+    generateNumberParts = getInt("generateNumberParts", 1);
+    catenateWords = getInt("catenateWords", 0);
+    catenateNumbers = getInt("catenateNumbers", 0);
+    catenateAll = getInt("catenateAll", 0);
+    splitOnCaseChange = getInt("splitOnCaseChange", 1);
   }
 
   public TokenStream create(TokenStream input) {
     return new WordDelimiterFilter(input,
-            generateWordParts, generateNumberParts,
-            catenateWords, catenateNumbers, catenateAll);
+                                   generateWordParts, generateNumberParts,
+                                   catenateWords, catenateNumbers, catenateAll,
+                                   splitOnCaseChange);
   }
 }

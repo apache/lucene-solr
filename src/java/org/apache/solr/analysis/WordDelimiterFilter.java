@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
@@ -61,6 +61,7 @@ import java.util.List;
  *  @author yonik
  *  @version $Id$
  */
+
 final class WordDelimiterFilter extends TokenFilter {
   private final byte[] charTypeTable;
 
@@ -128,6 +129,12 @@ final class WordDelimiterFilter extends TokenFilter {
   final int catenateAll;
 
   /**
+   * If 0, causes case changes to be ignored (subwords will only be generated
+   * given SUBWORD_DELIM tokens). (Defaults to 1)
+   */
+  final int splitOnCaseChange;
+
+  /**
    *
    * @param in Token stream to be filtered.
    * @param charTypeTable
@@ -136,27 +143,39 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param catenateWords  1, causes maximum runs of word parts to be catenated: "wi-fi" => "wifi"
    * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
    * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
+   * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
    */
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange) {
     super(in);
     this.generateWordParts = generateWordParts;
     this.generateNumberParts = generateNumberParts;
     this.catenateWords = catenateWords;
     this.catenateNumbers = catenateNumbers;
     this.catenateAll = catenateAll;
+    this.splitOnCaseChange = splitOnCaseChange;
     this.charTypeTable = charTypeTable;
   }
-
   /**
    * @param in Token stream to be filtered.
-   * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot" => "Power" "Shot"
+   * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot", "Power-Shot" => "Power" "Shot"
    * @param generateNumberParts If 1, causes number subwords to be generated: "500-42" => "500" "42"
    * @param catenateWords  1, causes maximum runs of word parts to be catenated: "wi-fi" => "wifi"
    * @param catenateNumbers If 1, causes maximum runs of number parts to be catenated: "500-42" => "50042"
    * @param catenateAll If 1, causes all subword parts to be catenated: "wi-fi-4000" => "wifi4000"
+   * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
    */
+  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange) {
+    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange);
+  }
+  /** Compatibility constructor */
+  @Deprecated
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
+    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1);
+  }
+  /** Compatibility constructor */
+  @Deprecated
   public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll);
+    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1);
   }
 
   int charType(int ch) {
@@ -289,7 +308,11 @@ final class WordDelimiterFilter extends TokenFilter {
             // It will also handle pluralization of
             // an uppercase word such as FOOs (won't split).
 
-            if ((lastType & UPPER)!=0 && (type & LOWER)!=0) {
+            if (splitOnCaseChange == 0 && 
+                (lastType & ALPHA) != 0 && (type & ALPHA) != 0) {
+              // ALPHA->ALPHA: always ignore if case isn't considered.
+
+            } else if ((lastType & UPPER)!=0 && (type & LOWER)!=0) {
               // UPPER->LOWER: Don't split
             } else {
               // NOTE: this code currently assumes that only one flag
