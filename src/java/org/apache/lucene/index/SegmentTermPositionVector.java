@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-public class SegmentTermPositionVector extends SegmentTermVector implements TermPositionVector {
+class SegmentTermPositionVector extends SegmentTermVector implements TermPositionVector {
   protected int[][] positions;
   protected TermVectorOffsetInfo[][] offsets;
   public static final int[] EMPTY_TERM_POS = new int[0];
