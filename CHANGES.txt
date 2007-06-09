@@ -89,6 +89,9 @@ API Changes
     BufferedIndexInput.setBufferSize(int) to change the buffer size.
     (Mike McCandless)
 
+13. LUCENE-923: Make SegmentTermPositionVector package-private. It does not need
+    to be public because it implements the public interface TermPositionVector.
+    (Michael Busch)
 
 Bug fixes
 
