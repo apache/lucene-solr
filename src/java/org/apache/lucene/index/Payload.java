@@ -41,10 +41,16 @@ import org.apache.lucene.analysis.TokenStream;
   */    
   // TODO: Remove warning after API has been finalized
   public class Payload implements Serializable {
+    /** the byte array containing the payload data */
     protected byte[] data;
+    
+    /** the offset within the byte array */
     protected int offset;
+    
+    /** the length of the payload data */
     protected int length;
     
+    /** Creates an empty payload and does not allocate a byte array. */
     protected Payload() {
       // no-arg constructor since this class implements Serializable
     }
@@ -74,6 +80,9 @@ import org.apache.lucene.analysis.TokenStream;
       this.length = length;
     }
     
+    /**
+     * Returns the length of the payload data. 
+     */
     public int length() {
       return this.length;
     }
