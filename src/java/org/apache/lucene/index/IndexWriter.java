@@ -252,7 +252,10 @@ public class IndexWriter {
   private boolean closed;
 
   /**
-   * @throws AlreadyClosedException if this IndexWriter is closed
+   * Used internally to throw an {@link
+   * AlreadyClosedException} if this IndexWriter has been
+   * closed.
+   * @throws AlreadyClosedException if this IndexWriter is
    */
   protected final void ensureOpen() throws AlreadyClosedException {
     if (closed) {
@@ -644,6 +647,8 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the largest number of documents allowed in a
+   * single segment.
    * @see #setMaxMergeDocs
    */
   public int getMaxMergeDocs() {
@@ -669,6 +674,8 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the maximum number of terms that will be
+   * indexed for a single field in a document.
    * @see #setMaxFieldLength
    */
   public int getMaxFieldLength() {
@@ -694,6 +701,8 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the number of buffered added documents that will
+   * trigger a flush.
    * @see #setMaxBufferedDocs
    */
   public int getMaxBufferedDocs() {
@@ -718,6 +727,8 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the number of buffered deleted terms that will
+   * trigger a flush.
    * @see #setMaxBufferedDeleteTerms
    */
   public int getMaxBufferedDeleteTerms() {
@@ -743,6 +754,9 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the number of segments that are merged at once
+   * and also controls the total number of segments allowed
+   * to accumulate in the index.
    * @see #setMergeFactor
    */
   public int getMergeFactor() {
@@ -759,6 +773,8 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the current default infoStream for newly
+   * instantiated IndexWriters.
    * @see #setDefaultInfoStream
    */
   public static PrintStream getDefaultInfoStream() {
@@ -776,6 +792,7 @@ public class IndexWriter {
   }
 
   /**
+   * Returns the current infoStream in use by this writer.
    * @see #setInfoStream
    */
   public PrintStream getInfoStream() {
@@ -793,6 +810,7 @@ public class IndexWriter {
   }
 
   /**
+   * Returns allowed timeout when acquiring the write lock.
    * @see #setWriteLockTimeout
    */
   public long getWriteLockTimeout() {
@@ -809,6 +827,8 @@ public class IndexWriter {
   }
 
   /**
+   * Returns default write lock timeout for newly
+   * instantiated IndexWriters.
    * @see #setDefaultWriteLockTimeout
    */
   public static long getDefaultWriteLockTimeout() {
@@ -1695,6 +1715,11 @@ public class IndexWriter {
     throws IOException {
   }
 
+  /**
+   * Used internally to trigger a flush if the number of
+   * buffered added documents or buffered deleted terms are
+   * large enough.
+   */
   protected final void maybeFlushRamSegments() throws CorruptIndexException, IOException {
     // A flush is triggered if enough new documents are buffered or
     // if enough delete terms are buffered
