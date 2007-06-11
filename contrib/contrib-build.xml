@@ -28,7 +28,10 @@
 
   <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
   <available property="lucene.jar.present" type="file" file="${lucene.jar}"/>
-
+  <available property="lucene.tests.present" type="dir"
+             file="${common.dir}/build/classes/test" />
+  <available property="contrib.has.tests" type="dir" file="src/test" />
+  
   <path id="classpath">
    <pathelement path="${lucene.jar}"/>
    <pathelement path="${project.classpath}"/>
@@ -48,9 +51,20 @@
   </path>
 
   <target name="build-lucene" unless="lucene.jar.present">
-    <!-- TODO: some tests need some of Lucene's own test classes too -->
-    <ant antfile="${common.dir}/build.xml" target="jar-core" inheritall="false"/>
+    <ant dir="${common.dir}" target="jar-core" inheritAll="false"/>
   </target>
 
+  <target name="build-lucene-tests" unless="lucene.tests.present">
+    <ant dir="${common.dir}" target="compile-test" inheritAll="false"/>
+  </target>
+
+  
   <target name="init" depends="common.init,build-lucene"/>
+  <target name="compile-test" depends="init" if="contrib.has.tests">
+    <antcall target="common.compile-test" inheritRefs="true" />
+  </target>
+  <target name="test" depends="init" if="contrib.has.tests">
+    <antcall target="common.test" inheritRefs="true" />
+  </target>
+  <target name="build-artifacts-and-tests" depends="jar, compile-test" />
 </project>

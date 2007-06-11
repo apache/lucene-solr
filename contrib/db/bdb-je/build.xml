@@ -34,5 +34,5 @@
   </target>
 
   <target name="check-and-get-je-jar" depends="get-je-jar" />
-  <target name="init" depends="common.init,check-and-get-je-jar" />
+  <target name="init" depends="contrib-build.init,check-and-get-je-jar" />
 </project>

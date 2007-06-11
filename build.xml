@@ -96,7 +96,7 @@
           description="Runs unit tests for the core Lucene code"
   />
   <target name="test" depends="test-core, test-contrib"
-          description="Runs all unit tests"
+          description="Runs all unit tests (including contribs)"
   />
   
   <!-- ================================================================== -->
@@ -435,14 +435,20 @@
     </sequential>
   </macrodef>
 
-  <target name="build-contrib" depends="compile-test">
-    <contrib-crawl/>
+  <target name="build-contrib"
+          description="Builds all contrib modules and their tests">
+    <contrib-crawl target="build-artifacts-and-tests"/>
   </target>
 
-  <target name="test-contrib" depends="compile-test">
-    <!-- don't fail on error, instead check for flag file so we run
+  <target name="test-contrib" depends="build-contrib">
+    <!-- Don't fail on error, instead check for flag file so we run
          all the tests possible and can "ant generate-test-reports"
-         for all of them
+         for all of them.
+
+         Because of this, we depend on "build-contrib" even though the
+         Individual contrib "test" targets probably have the
+         neccessary dependencies.  If they fail to compile, we won't
+         know about it.
      -->
     <contrib-crawl target="test" failonerror="false"/>
     <available property="contribs.failed" file="junitfailed.flag">

@@ -150,6 +150,6 @@
       </subant>
     </target> 
 
-    <target name="init" depends="common.init,compile-demo,check-files"/>
+    <target name="init" depends="contrib-build.init,compile-demo,check-files"/>
 
 </project>

@@ -90,8 +90,7 @@
 		<ant dir="src/gom" target="jar-core" inheritRefs="true" />
 	</target>
 
-
-	<target name="test" depends="init" if="build-1-5-contrib">
+	<target name="test" depends="compile-test" if="build-1-5-contrib">
 		<ant dir="src/core" target="test" inheritRefs="true" />
 		<ant dir="src/gom" target="test" inheritRefs="true" />
 		<ant dir="src/hivemind" target="test" inheritRefs="true" />
@@ -129,5 +128,6 @@
   <target name="check-1-5" unless="build-1-5-contrib" >
      <echo>Java 1.5 support not availabble (or prohibited by explicitly set property) ... skipping task</echo>
   </target>
-         
+
+  <target name="build-artifacts-and-tests" depends="default,compile-test" />        
 </project>

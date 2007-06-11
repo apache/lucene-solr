@@ -305,6 +305,10 @@ Build
     jar and makes sure that the lucli jar contains LICENSE.txt and NOTICE.txt.
     (Chris Hostetter, Michael Busch)
 
+ 9. LUCENE-930: Various contrib building improvements to ensure contrib
+    dependencies are met, and test compilation errors fail the build.
+    (Steven Parkes, Chris Hostetter)
+
 ======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior
