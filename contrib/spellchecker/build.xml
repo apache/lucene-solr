@@ -24,4 +24,6 @@
   </description>
 
   <import file="../contrib-build.xml"/>
+  <target name="compile-test"
+          depends="build-lucene-tests,contrib-build.compile-test" />
 </project>

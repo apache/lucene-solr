@@ -39,10 +39,19 @@
     <ant dir="bdb" target="clean" />
     <ant dir="bdb-je" target="clean" />
   </target>
-
+  <target name="compile-core">
+    <ant dir="bdb" target="compile-core" />
+    <ant dir="bdb-je" target="compile-core" />
+  </target>
+  <target name="compile-test">
+    <ant dir="bdb" target="compile-test" />
+    <ant dir="bdb-je" target="compile-test" />
+  </target>
   <target name="test">
     <ant dir="bdb" target="test" />
     <ant dir="bdb-je" target="test" />
   </target>
+
+  <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
 </project>

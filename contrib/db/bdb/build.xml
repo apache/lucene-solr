@@ -55,6 +55,6 @@
   </target>
 
   <target name="check-and-get-db-jar" depends="get-db-jar" />
-  <target name="init" depends="common.init,check-and-get-db-jar" />
+  <target name="init" depends="contrib-build.init,check-and-get-db-jar" />
 
 </project>
