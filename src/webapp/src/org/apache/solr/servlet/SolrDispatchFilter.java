@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -71,6 +72,7 @@ public class SolrDispatchFilter implements Filter
     }
     catch( Throwable t ) {
       // catch this so our filter still works
+      log.log(Level.SEVERE, "Could not start SOLR. Check solr/home property", t);
       SolrConfig.severeErrors.add( t );
       SolrCore.log( t );
     }
