@@ -41,7 +41,7 @@ New Features
     which can be set to 0 to disable splitting "PowerShot" => "Power" "Shot".
     (klaas)
     
- 3. SOLR-193: Adding SolrDocument and SolrInputDocument to represent documents
+ 4. SOLR-193: Adding SolrDocument and SolrInputDocument to represent documents
     outside of the lucene Document infrastructure.  This class will be used 
     by clients and for processing documents. (ryan) 
 
