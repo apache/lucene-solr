@@ -32,6 +32,18 @@ import java.util.Map;
 public class SolrInputDocument extends SolrDocument
 {
   private Map<String,Float> _boost = null;
+
+  /**
+   * Remove all fields and boosts from the document
+   */
+  @Override
+  public void clear()
+  {
+    super.clear();
+    if( _boost != null ) {
+      _boost.clear();
+    }
+  }
   
   /**
    * Set the document boost.  null will remove the boost

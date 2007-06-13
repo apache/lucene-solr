@@ -66,6 +66,15 @@ public class SolrDocument
   ///////////////////////////////////////////////////////////////////
 
   /**
+   * Remove all fields from the document
+   */
+  public void clear()
+  {
+    _fields.clear();
+  }
+  
+  
+  /**
    * Remove all fields with the name
    */
   public boolean removeFields(String name) 
