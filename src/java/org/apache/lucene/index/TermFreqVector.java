@@ -18,12 +18,14 @@ package org.apache.lucene.index;
  */
 
 /** Provides access to stored term vector of 
- *  a document field.
+ *  a document field.  The vector consists of the name of the field, an array of the terms tha occur in the field of the
+ * {@link org.apache.lucene.document.Document} and a parallel array of frequencies.  Thus, getTermFrequencies()[5] corresponds with the
+ * frequency of getTerms()[5], assuming there are at least 5 terms in the Document.
  */
 public interface TermFreqVector {
   /**
-   * 
-   * @return The field this vector is associated with.
+   * The {@link org.apache.lucene.document.Fieldable} name. 
+   * @return The name of the field this vector is associated with.
    * 
    */ 
   public String getField();
