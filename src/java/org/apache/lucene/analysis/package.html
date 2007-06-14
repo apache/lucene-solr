@@ -5,6 +5,90 @@
    <meta name="Author" content="Doug Cutting">
 </head>
 <body>
-API and code to convert text into indexable tokens.
+<p>API and code to convert text into indexable/searchable tokens.  Covers {@link org.apache.lucene.analysis.Analyzer} and related classes.</p>
+<h2>Parsing? Tokenization? Analysis!</h2>
+<p>
+Lucene, indexing and search library, accepts only plain text input.
+<p>
+<h2>Parsing</h2>
+<p>
+Applications that build their search capabilities upon Lucene may support documents in various formats - HTML, XML, PDF, Word - just to name a few.
+Lucene does not care about the <i>Parsing</i> of these and other document formats, and it is the responsibility of the 
+application using Lucene to use an appropriate <i>Parser</i> to convert the original format into plain text, before passing that plain text to Lucene.
+<p>
+<h2>Tokenization</h2>
+<p>
+Plain text passed to Lucene for indexing goes through a process generally called tokenization - namely breaking of the 
+input text into small indexing elements - <i>Tokens</i>. The way that the input text is broken into tokens very 
+much dictates the further search capabilities of the index into which that text was added. Sentences 
+beginnings and endings can be identified to provide for more accurate phrase and proximity searches 
+(though sentence identification is not provided by Lucene).
+<p>
+In some cases simply breaking the input text into tokens is not enough - a deeper <i>Analysis</i> is needed,
+providing for several functions, including (but not limited to):
+<ul>
+  <li>Stemming -- Replacing of words by their stems. For instance with English stemming "bikes" is replaced by "bike"; now query "bike" can find both documents containing "bike" 
+      and those containing "bikes". See <a href="http://en.wikipedia.org/wiki/Stemming">Wikipedia</a> for more information.</li>
+  <li>Stop words removal -- Common words like "the", "and" and "a" rarely add any value to a search.  Removing them shrinks the index size and increases performance.</li>
+  <li>Character normalization -- Stripping accents and other character markings can make for better searching.</li>
+  <li>Synonyms expansion -- Adding in synonyms at the same token position as the current word can mean better matching when a users search with words in the synonym set.</li>
+</ul> 
+<p>
+<h2>Core Analysis</h2>
+<p>
+  The analysis package provides the mechanism to convert Strings and Readers into tokens that can be indexed by Lucene.  There
+  are three main classes in the package from which all analysis processes are derived.  These are:
+  <ul>
+    <li>{@link org.apache.lucene.analysis.Analyzer} -- An Analyzer is responsible for building a TokenStream which can be consumed
+    by the indexing and searching processes.  See below for more information on implementing your own Analyzer.</li>
+    <li>{@link org.apache.lucene.analysis.Tokenizer} -- A Tokenizer is a {@link org.apache.lucene.analysis.TokenStream} and is responsible for breaking
+    up incoming text into {@link org.apache.lucene.analysis.Token}s.  In most cases, an Analyzer will use a Tokenizer as the first step in
+    the analysis process.</li>
+    <li>{@link org.apache.lucene.analysis.TokenFilter} -- A TokenFilter is also a {@link org.apache.lucene.analysis.TokenStream} and is responsible
+    for modifying {@link org.apache.lucene.analysis.Token}s that have been created by the Tokenizer.  Common modifications performed by a
+    TokenFilter are: deletion, stemming, synonym injection, and down casing.  Not all Analyzers require TokenFilters</li>
+  </ul>
+</p>
+<h2>Hints, Tips and Traps</h2>
+<p>
+   The synergy between {@link org.apache.lucene.analysis.Analyzer} and {@link org.apache.lucene.analysis.Tokenizer}
+   is sometimes confusing. To ease on this confusion, some clarifications:
+   <ul>
+      <li>The {@link org.apache.lucene.analysis.Analyzer} is responsible for the entire task of 
+          <u>creating</u> tokens out of the input text, while the {@link org.apache.lucene.analysis.Tokenizer}
+          is only responsible for <u>breaking</u> the input text into tokens. Very likely, tokens created 
+          by the {@link org.apache.lucene.analysis.Tokenizer} would be modified or even omitted 
+          by the {@link org.apache.lucene.analysis.Analyzer} before being returned.
+       </li>
+       <li>{@link org.apache.lucene.analysis.Tokenizer} is a {@link org.apache.lucene.analysis.TokenStream}, 
+           but {@link org.apache.lucene.analysis.Analyzer} is not.
+       </li>
+       <li>{@link org.apache.lucene.analysis.Analyzer} is "field aware", but 
+           {@link org.apache.lucene.analysis.Tokenizer} is not.
+       </li>
+   </ul>
+</p>
+<p>Lucene Java provides a number of analysis capabilities, the most commonly used one being the {@link
+  org.apache.lucene.analysis.standard.StandardAnalyzer}.  Many applications will have a long and industrious life with nothing more
+  than the StandardAnalyzer.  However, there are a few other classes/packages that are worth mentioning:
+  <ol>
+    <li>{@link org.apache.lucene.analysis.PerFieldAnalyzerWrapper} -- Most Analyzers perform the same operation on all
+      {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different Analyzer with different
+      {@link org.apache.lucene.document.Field}s.</li>
+    <li>The contrib/analyzers library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
+    of different problems related to searching.  Many of the Analyzers are designed to analyze non-English languages.</li>
+    <li>The contrib/snowball library located at the root of the Lucene distribution has Analyzer and TokenFilter implementations for a variety of Snowball stemmers.  See <a href="http://snowball.tartarus.org">http://snowball.tartarus.org</a> for more information.</li>
+    <li>There are a variety of Tokenizer and TokenFilter implementations in this package.  Take a look around, chances are someone has implemented what you need.</li>
+  </ol>
+</p>
+<p>Analysis is one of the main causes of performance degradation during indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
+  Perhaps your application would be just fine using the simple {@link org.apache.lucene.analysis.WhitespaceTokenizer} combined with a
+  {@link org.apache.lucene.analysis.StopFilter}.</p>
+<h2>Implementing your own Analyzer</h2>
+<p>Creating your own Analyzer is straightforward. It usually involves either wrapping an existing Tokenizer and  set of TokenFilters to create a new Analyzer
+or creating both the Analyzer and a Tokenizer or TokenFilter.  Before pursuing this approach, you may find it worthwhile
+to explore the contrib/analyzers library and/or ask on the java-user@lucene.apache.org mailing list first to see if what you need already exists.
+If you are still committed to creating your own Analyzer or TokenStream derivation (Tokenizer or TokenFilter) have a look at
+the source code of any one of the many samples located in this package.</p>
 </body>
 </html>
