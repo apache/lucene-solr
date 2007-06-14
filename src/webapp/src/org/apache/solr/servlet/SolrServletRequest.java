@@ -19,8 +19,8 @@ package org.apache.solr.servlet;
 
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.ServletSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.StrUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;

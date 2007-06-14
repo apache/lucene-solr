@@ -18,11 +18,8 @@
 package org.apache.solr.servlet;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -109,7 +106,7 @@ public class SolrRequestParsers
     return sreq;
   }
   
-  SolrQueryRequest buildRequestFrom( SolrParams params, Collection<ContentStream> streams ) throws Exception
+  public SolrQueryRequest buildRequestFrom( SolrParams params, Collection<ContentStream> streams ) throws Exception
   {
     // The content type will be applied to all streaming content
     String contentType = params.get( SolrParams.STREAM_CONTENTTYPE );

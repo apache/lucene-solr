@@ -21,6 +21,8 @@ import junit.framework.TestCase;
 
 import java.util.List;
 
+import org.apache.solr.common.util.StrUtils;
+
 /**
  * @author yonik
  * @version $Id$
