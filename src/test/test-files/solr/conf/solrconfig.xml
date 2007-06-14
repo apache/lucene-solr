@@ -262,8 +262,8 @@
     </lst>
   </requestHandler>
 
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
-  </requestHandler>
+  <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
+  <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >

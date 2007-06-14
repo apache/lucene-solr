@@ -228,7 +228,6 @@
     </solr-javac>
   </target>
 
-
   <target name="javadoc" depends="compile"
           description="Generates javadoc documentation.">
 
@@ -269,7 +268,57 @@
         <classpath refid="javadoc.classpath"/>
     </javadoc>
   </target>
-  
+
+  <!-- ========================================================================= -->
+  <!-- ===================== CLIENT: solrj         ============================= -->
+  <!-- ========================================================================= -->
+
+  <property name="solrj-dir" value="client/java/solrj" />
+
+  <path id="compile.classpath.solrj">
+    <fileset dir="${solrj-dir}/lib">
+      <include name="*.jar" />
+    </fileset>
+    <fileset dir="${lib}">
+      <include name="commons-io-*.jar" />
+    </fileset>
+    <pathelement location="${dest}/common"/>
+  </path>
+
+  <!-- This depend on all of solr -->
+  <path id="compile.classpath.solrj-embedded">
+    <path refid="compile.classpath.solrj" />
+    <path refid="compile.classpath" />
+    <pathelement location="${dest}/core"/>
+    
+    <!-- jetty -->
+    <fileset dir="example/lib">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+    
+  <target name="compile-solrj-core"
+          description="Compile the java client."
+          depends="compile-common">
+
+    <solr-javac destdir="${dest}/client/solrj"
+                classpathref="compile.classpath.solrj">
+      <src path="${solrj-dir}/src" />
+      <exclude name="org/apache/solr/client/solrj/embedded/**" />
+    </solr-javac>
+  </target>
+
+  <!-- solrj includes the embedded app -->
+  <target name="compile-solrj"
+          description="Compile the java client."
+          depends="compile,compile-solrj-core">
+
+    <solr-javac destdir="${dest}/client/solrj"
+                classpathref="compile.classpath.solrj-embedded">
+      <src path="${solrj-dir}/src/org/apache/solr/client/solrj/embedded" />
+    </solr-javac>
+  </target>
+
 
   <!-- ========================================================================= -->
   <!-- ===================== TESTING-RELATED TASKS ============================= -->
@@ -280,13 +329,19 @@
   <!-- For now, it's the same as main classpath.  Later it will have JUnit, Clover, etc. -->
   <path id="test.compile.classpath">
     <path refid="compile.classpath" />
+    <path refid="compile.classpath.solrj-embedded" />
+      
     <pathelement location="${dest}/common"/>
     <pathelement location="${dest}/core"/>
+    <pathelement location="${dest}/client/solrj"/> <!-- include solrj -->
   </path>
 
   <path id="test.run.classpath">
     <path refid="test.compile.classpath" />
-    <pathelement location="${dest}/tests"/>
+      <pathelement location="${dest}/tests"/>
+      
+      <!-- include the solrj classpath and jetty files included in example -->
+    <path refid="compile.classpath.solrj" />
   </path>
 
   <!-- Check that JUnit is present. -->
@@ -304,13 +359,14 @@
   <!-- Compile unit tests. -->
   <target name="compileTests"
           description="Compile unit tests."
-          depends="compile,checkJunitPresence">
+          depends="compile,compile-solrj,checkJunitPresence">
 
     <mkdir dir="${dest}/tests" />
     <solr-javac 
        destdir="${dest}/tests"
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
+      <src path="${solrj-dir}/test" />
     </solr-javac>
   </target>
 
@@ -340,6 +396,8 @@
       <formatter type="xml"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
         <fileset dir="src/test" includes="${junit.includes}"/>
+        <!-- this will start jetty and run some tests through HTTP -->
+        <fileset dir="${solrj-dir}/test/" includes="${junit.includes}" />
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test" includes="**/${testcase}.java"/>
@@ -348,7 +406,7 @@
 
     <fail if="tests.failed">Tests failed!</fail>
   </target>
-  
+      
   <target name="test-reports"
           description="Generates HTML test reports.">
     <mkdir dir="${junit.reports}"/>
@@ -369,7 +427,7 @@
   <!-- Creates the Solr distribution files. -->
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="init-forrest-entities, dist-war, dist-jar" />
+          depends="init-forrest-entities, dist-war, dist-solrj, dist-jar" />
 
   <!-- Creates a Manifest file for Jars and WARs -->
   <target name="make-manifest" >
@@ -460,6 +518,29 @@
          destfile="${dist}/${fullnamever}-common.jar"
          basedir="${dest}/common" />
     
+  </target>
+
+  <!-- Creates the solr jar. -->
+  <target name="dist-solrj"
+          description="Creates the Solr JAR Distribution file."
+          depends="compile-solrj, dist-jar">
+    <mkdir dir="${dist}" />
+    <solr-jar
+         destfile="${dist}/${fullnamever}-solrj.jar"
+         basedir="${dest}/client/solrj" />
+
+    <mkdir  dir="${dist}/solrj-lib" />
+    <copy todir="${dist}/solrj-lib">
+      <fileset dir="${lib}">
+        <include name="commons-codec-*.jar"/>
+        <include name="commons-io-*.jar"/>
+        <include name="stax-*.jar"/>
+      </fileset>
+      <fileset dir="${solrj-dir}/lib">
+        <include name="*.jar" />
+      </fileset>
+    </copy>
+      
   </target>
 
   <target name="example" 
