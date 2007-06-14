@@ -45,6 +45,10 @@ New Features
     outside of the lucene Document infrastructure.  This class will be used 
     by clients and for processing documents. (ryan) 
 
+ 5. SOLR-244: Added ModifiableSolrParams - a SolrParams implementation that 
+    help you change values after initialization. (ryan)
+
+
 Changes in runtime behavior
 
 Optimizations
