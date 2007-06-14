@@ -1,4 +1,4 @@
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,6 +18,7 @@ package org.apache.solr.util;
  */
 
 import java.util.*;
+
 
 /** <code>SimpleOrderedMap</code> is a {@link NamedList} where access by key is more
  * important than maintaining order when it comes to representing the

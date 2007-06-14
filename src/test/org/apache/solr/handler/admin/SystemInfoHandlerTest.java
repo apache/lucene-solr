@@ -22,7 +22,7 @@ import java.lang.management.OperatingSystemMXBean;
 
 import junit.framework.TestCase;
 
-import org.apache.solr.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 
 public class SystemInfoHandlerTest extends TestCase {

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.common.params;
 
 import java.util.Iterator;
 
-import org.apache.solr.util.IteratorChain;
+import org.apache.solr.common.util.IteratorChain;
 
 /**
  * @author yonik

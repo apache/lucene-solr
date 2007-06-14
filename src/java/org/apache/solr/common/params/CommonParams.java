@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.params;
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
-import org.apache.solr.util.NamedList;
-import org.apache.solr.request.SolrParams;
 
 
 

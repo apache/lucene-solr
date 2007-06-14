@@ -25,11 +25,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.XMLResponseWriter;
-import org.apache.solr.util.XML;
 
 /**
  * @author yonik

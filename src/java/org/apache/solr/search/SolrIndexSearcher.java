@@ -25,15 +25,15 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrInfoRegistry;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.OpenBitSet;
-import org.apache.solr.util.SimpleOrderedMap;
 
 import java.io.IOException;
 import java.net.URL;

@@ -17,6 +17,8 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;

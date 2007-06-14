@@ -18,10 +18,10 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.util.ContentStream;
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.StrUtils;

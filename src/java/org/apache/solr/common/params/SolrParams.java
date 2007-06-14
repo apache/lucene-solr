@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.common.params;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.solr.core.SolrException;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**  SolrParams hold request parameters.
  *

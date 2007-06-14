@@ -22,8 +22,8 @@ import org.w3c.dom.NodeList;
 
 import java.util.Map;
 
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.Config;
 

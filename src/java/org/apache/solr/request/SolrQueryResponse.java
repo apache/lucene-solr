@@ -17,8 +17,8 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 import java.util.*;
 

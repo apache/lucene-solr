@@ -17,8 +17,8 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.XML;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;

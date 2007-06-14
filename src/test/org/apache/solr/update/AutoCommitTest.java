@@ -21,14 +21,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
-import org.apache.solr.util.ContentStream;
-import org.apache.solr.request.MapSolrParams;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.ContentStreamBase;
 
 /**
  * 

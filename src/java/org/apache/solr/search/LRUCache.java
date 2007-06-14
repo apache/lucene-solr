@@ -17,10 +17,10 @@
 
 package org.apache.solr.search;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;

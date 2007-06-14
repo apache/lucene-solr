@@ -20,7 +20,7 @@ package org.apache.solr.request;
 import java.io.Writer;
 import java.io.IOException;
 
-import org.apache.solr.util.NamedList;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Implementations of <code>QueryResponseWriter</code> are used to format responses to query requests.

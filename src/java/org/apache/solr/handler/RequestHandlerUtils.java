@@ -20,12 +20,12 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.apache.solr.request.MapSolrParams;
-import org.apache.solr.request.SolrParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.UpdateParams;
 
 /**
  * Common helper functions for RequestHandlers

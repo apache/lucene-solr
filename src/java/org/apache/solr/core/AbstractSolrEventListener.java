@@ -17,8 +17,8 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.NamedList;
 
 /**
  * @author yonik

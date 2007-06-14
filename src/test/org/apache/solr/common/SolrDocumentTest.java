@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrInputDocument;
 
 import junit.framework.TestCase;
 

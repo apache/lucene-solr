@@ -31,6 +31,9 @@ import java.util.Date;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -38,9 +41,6 @@ import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
-import org.apache.solr.util.XML;
 
 
 /**

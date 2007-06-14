@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.params;
 
 /**
  * A collection of standard params used by Update handlers

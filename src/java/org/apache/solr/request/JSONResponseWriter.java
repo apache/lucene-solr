@@ -19,13 +19,13 @@ package org.apache.solr.request;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
 
 import java.io.IOException;
 import java.io.Writer;

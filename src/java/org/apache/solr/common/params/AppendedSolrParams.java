@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.common.params;
 
 /**
  * SolrParams wrapper which acts similar to DefaultSolrParams except that

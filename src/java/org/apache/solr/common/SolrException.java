@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.core;
+package org.apache.solr.common;
 
 import java.util.logging.Logger;
 import java.io.CharArrayWriter;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.common.params;
 
 import org.apache.solr.util.StrUtils;
 
@@ -27,63 +27,46 @@ import java.io.IOException;
  * @author yonik
  * @version $Id$
  */
-public class MultiMapSolrParams extends SolrParams {
-  protected final Map<String,String[]> map;
+public class MapSolrParams extends SolrParams {
+  protected final Map<String,String> map;
 
-  public static void addParam(String name, String val, Map<String,String[]> map) {
-      String[] arr = map.get(name);
-      if (arr ==null) {
-        arr =new String[]{val};
-      } else {
-        String[] newarr = new String[arr.length+1];
-        System.arraycopy(arr,0,newarr,0,arr.length);
-        newarr[arr.length]=val;
-        arr =newarr;
-      }
-      map.put(name, arr);
-  }
-
-  public MultiMapSolrParams(Map<String,String[]> map) {
+  public MapSolrParams(Map<String,String> map) {
     this.map = map;
   }
 
   public String get(String name) {
-    String[] arr = map.get(name);
-    return arr==null ? null : arr[0];
+    return map.get(name);
   }
 
   public String[] getParams(String name) {
-    return map.get(name);
+    String val = map.get(name);
+    return val==null ? null : new String[]{val};
   }
   
   public Iterator<String> getParameterNamesIterator() {
     return map.keySet().iterator();
   }
 
-  public Map<String,String[]> getMap() { return map; }
+  public Map<String,String> getMap() { return map; }
 
   public String toString() {
     StringBuilder sb = new StringBuilder(128);
     try {
       boolean first=true;
 
-      for (Map.Entry<String,String[]> entry : map.entrySet()) {
+      for (Map.Entry<String,String> entry : map.entrySet()) {
         String key = entry.getKey();
-        String[] valarr = entry.getValue();
+        String val = entry.getValue();
 
-        for (String val : valarr) {
-          if (!first) sb.append('&');
-          first=false;
-          sb.append(key);
-          sb.append('=');
-          StrUtils.partialURLEncodeVal(sb, val==null ? "" : val);
-        }
+        if (!first) sb.append('&');
+        first=false;
+        sb.append(key);
+        sb.append('=');
+        StrUtils.partialURLEncodeVal(sb, val==null ? "" : val);
       }
     }
     catch (IOException e) {throw new RuntimeException(e);}  // can't happen
 
     return sb.toString();
   }
-
-
 }

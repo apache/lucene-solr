@@ -26,8 +26,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;

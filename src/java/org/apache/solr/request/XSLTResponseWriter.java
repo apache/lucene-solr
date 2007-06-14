@@ -31,8 +31,9 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.xslt.TransformerProvider;
 
 /** QueryResponseWriter which captures the output of the XMLWriter

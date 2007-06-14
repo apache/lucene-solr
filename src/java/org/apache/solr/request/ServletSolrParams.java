@@ -19,6 +19,8 @@ package org.apache.solr.request;
 
 import javax.servlet.ServletRequest;
 
+import org.apache.solr.common.params.MultiMapSolrParams;
+
 /**
  * @author yonik
  * @version $Id$

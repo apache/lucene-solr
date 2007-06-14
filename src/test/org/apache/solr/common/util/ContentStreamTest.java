@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -28,6 +28,7 @@ import java.io.StringReader;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.util.ContentStreamBase;
 
 import junit.framework.TestCase;
 

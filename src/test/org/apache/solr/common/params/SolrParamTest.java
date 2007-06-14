@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.params;
 
 import junit.framework.TestCase;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.core.SolrException;
-import org.apache.solr.request.SolrParams;
-import org.apache.solr.request.MapSolrParams;
-import org.apache.solr.request.DefaultSolrParams;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.DefaultSolrParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * @author ryan

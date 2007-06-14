@@ -20,7 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
 import java.io.Reader;

@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.params;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.core.SolrException;
 
 import org.apache.solr.util.StrUtils;
-import org.apache.solr.util.NamedList;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;

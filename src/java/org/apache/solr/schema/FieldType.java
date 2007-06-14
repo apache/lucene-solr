@@ -30,7 +30,7 @@ import org.apache.solr.search.Sorting;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 
 import java.util.logging.Logger;
 import java.util.Map;

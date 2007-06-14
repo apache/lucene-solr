@@ -29,11 +29,11 @@ import java.util.logging.Level;
 import java.net.URL;
 
 import org.apache.solr.util.StrUtils;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.OpenBitSet;
 import org.apache.solr.search.*;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;

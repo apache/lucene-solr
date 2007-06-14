@@ -17,7 +17,7 @@
 
 package org.apache.solr.search;
 
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.OpenBitSet;
 
 import java.util.BitSet;

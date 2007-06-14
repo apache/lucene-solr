@@ -27,6 +27,11 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
+import org.apache.solr.common.params.DefaultSolrParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.*;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;

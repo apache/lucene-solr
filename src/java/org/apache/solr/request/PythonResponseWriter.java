@@ -20,7 +20,7 @@ package org.apache.solr.request;
 import java.io.Writer;
 import java.io.IOException;
 
-import org.apache.solr.util.NamedList;
+import org.apache.solr.common.util.NamedList;
 
 public class PythonResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PYTHON_ASCII="text/x-python;charset=US-ASCII";

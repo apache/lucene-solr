@@ -20,9 +20,9 @@ package org.apache.solr.core;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
-import org.apache.solr.util.DOMUtil;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;

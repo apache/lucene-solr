@@ -47,11 +47,11 @@ import java.net.URL;
 
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QueryParsing;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrException;
 
 /**
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added

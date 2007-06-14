@@ -17,7 +17,7 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.util.NamedList;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
 
 /**

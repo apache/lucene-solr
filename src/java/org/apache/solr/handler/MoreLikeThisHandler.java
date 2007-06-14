@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.request.SolrParams.DF;
-import static org.apache.solr.request.SolrParams.FACET;
-import static org.apache.solr.request.SolrParams.FQ;
+import static org.apache.solr.common.params.SolrParams.DF;
+import static org.apache.solr.common.params.SolrParams.FACET;
+import static org.apache.solr.common.params.SolrParams.FQ;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -39,10 +39,15 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similar.MoreLikeThis;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.MoreLikeThisParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.MoreLikeThisParams.TermStyle;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
 import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -51,12 +56,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.ContentStream;
-import org.apache.solr.util.MoreLikeThisParams;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.MoreLikeThisParams.TermStyle;
 
 /**
  * Solr MoreLikeThis --

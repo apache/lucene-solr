@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.handler;
 
 import org.apache.lucene.search.*;
 
@@ -24,18 +24,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.solr.util.MoreLikeThisParams;
 import org.apache.solr.util.StrUtils;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.HighlightingUtils;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.request.SimpleFacets;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.*;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.MoreLikeThisParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
-import org.apache.solr.handler.MoreLikeThisHandler;
-import org.apache.solr.handler.RequestHandlerBase;
 
-import static org.apache.solr.request.SolrParams.*;
+import static org.apache.solr.common.params.SolrParams.*;
 
 /**
  * @author yonik

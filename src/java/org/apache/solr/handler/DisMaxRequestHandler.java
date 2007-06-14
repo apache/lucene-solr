@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.handler;
 
-import static org.apache.solr.request.SolrParams.FACET;
-import static org.apache.solr.request.SolrParams.FQ;
-import static org.apache.solr.request.SolrParams.Q;
+import static org.apache.solr.common.params.SolrParams.FACET;
+import static org.apache.solr.common.params.SolrParams.FQ;
+import static org.apache.solr.common.params.SolrParams.Q;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -33,18 +33,21 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.DisMaxParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
-import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.SimpleFacets;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
-import org.apache.solr.util.DisMaxParams;
 import org.apache.solr.util.HighlightingUtils;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
     
 /**

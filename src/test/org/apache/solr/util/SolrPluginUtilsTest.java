@@ -17,8 +17,8 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrQueryParser;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 

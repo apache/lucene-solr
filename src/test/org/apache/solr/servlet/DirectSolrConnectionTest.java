@@ -17,7 +17,7 @@
 
 package org.apache.solr.servlet;
 
-import org.apache.solr.request.SolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 

@@ -21,14 +21,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrInfoRegistry;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
-import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.util.SimpleOrderedMap;
 
 /**
  * similar to "admin/registry.jsp" 

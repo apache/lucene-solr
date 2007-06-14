@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.util.ContentStream;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {

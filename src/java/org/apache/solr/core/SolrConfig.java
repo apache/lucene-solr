@@ -17,9 +17,9 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.NamedList;
 
 import org.xml.sax.SAXException;
 

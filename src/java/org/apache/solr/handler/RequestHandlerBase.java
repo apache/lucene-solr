@@ -19,16 +19,16 @@ package org.apache.solr.handler;
 
 import java.net.URL;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.request.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.SimpleOrderedMap;
 
 /**
  *

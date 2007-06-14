@@ -17,7 +17,9 @@
 
 package org.apache.solr.request;
 
-import org.apache.solr.util.NamedList;
+import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
 import java.util.Map;

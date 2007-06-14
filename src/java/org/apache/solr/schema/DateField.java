@@ -17,7 +17,7 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;

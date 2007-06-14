@@ -31,10 +31,11 @@ import java.util.Vector;
 import java.io.IOException;
 
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.*;
 
 import javax.xml.xpath.XPathConstants;

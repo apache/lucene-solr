@@ -17,8 +17,8 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.StandardRequestHandler;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 public class RequestHandlersTest extends AbstractSolrTestCase {

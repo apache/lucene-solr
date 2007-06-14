@@ -19,7 +19,7 @@ package org.apache.solr.request;
 import java.io.Writer;
 import java.io.IOException;
 
-import org.apache.solr.util.NamedList;
+import org.apache.solr.common.util.NamedList;
 
 public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";

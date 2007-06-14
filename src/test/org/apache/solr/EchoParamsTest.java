@@ -61,7 +61,7 @@ public class EchoParamsTest extends AbstractSolrTestCase {
        );
 
     assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='fl'][.='implicit']");
-    assertQ(req("foo"),HEADER_XPATH + "/str[@name='handler'][.='org.apache.solr.request.StandardRequestHandler']");
+    assertQ(req("foo"),HEADER_XPATH + "/str[@name='handler'][.='org.apache.solr.handler.StandardRequestHandler']");
   }
 
 }

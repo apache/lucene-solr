@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.common.params;
 
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 
 import java.util.Iterator;
 

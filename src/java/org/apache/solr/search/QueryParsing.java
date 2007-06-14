@@ -23,12 +23,12 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.request.SolrParams;
 
 import java.util.ArrayList;
 import java.util.List;

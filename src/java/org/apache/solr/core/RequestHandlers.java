@@ -26,13 +26,14 @@ import java.util.logging.Logger;
 
 import javax.xml.xpath.XPathConstants;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.StandardRequestHandler;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.NamedList;
-import org.apache.solr.util.SimpleOrderedMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 

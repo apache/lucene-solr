@@ -1,4 +1,4 @@
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 public interface MoreLikeThisParams 
 {

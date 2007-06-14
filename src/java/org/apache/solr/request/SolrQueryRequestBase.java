@@ -18,11 +18,12 @@
 package org.apache.solr.request;
 
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.ContentStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrException;
 
 import java.util.Iterator;
 import java.util.Map;

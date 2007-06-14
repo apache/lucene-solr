@@ -95,6 +95,43 @@
   <available property="junitPresent"
              classname="junit.framework.TestCase" />
 
+  <!-- Macro for compilation -->
+  <macrodef name="solr-javac">
+    <attribute name="destdir" />
+    <attribute name="classpathref" />
+    <element name="nested" optional="true" implicit="true" />
+    <sequential>
+      <mkdir dir="@{destdir}" />
+      <javac destdir="@{destdir}"
+             target="${java.compat.version}"
+             source="${java.compat.version}"
+             debug="on"
+             encoding="utf8"
+             classpathref="@{classpathref}">
+         <nested />
+      </javac>
+    </sequential>
+  </macrodef>
+
+  <!-- Macro for building Jars -->
+  <macrodef name="solr-jar">
+    <attribute name="destfile" />
+    <attribute name="basedir" />
+    <attribute name="includes" default="org/apache/**" />
+    <attribute name="manifest" default="${dest}/META-INF/MANIFEST.MF" />
+    <element name="nested" optional="true" implicit="true" />
+    <sequential>
+      <jar destfile="@{destfile}"
+           basedir="@{basedir}"
+           includes="@{includes}"
+           filesetmanifest="skip"
+           manifest="@{manifest}">
+        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
+        <nested />
+      </jar>
+    </sequential>
+  </macrodef>
+                 
   <!-- Macro for building checksum files
        This is only needed until the "format" option is supported
        by ant's built in checksum task
@@ -158,31 +195,37 @@
   <!-- ===================== COMPILATION-RELATED TASKS ========================= -->
   <!-- ========================================================================= -->
 
+  <!-- Compile common classes. -->
+  <target name="compile-common"
+          description="Compile the source code."
+          depends="init-forrest-entities,checkJunitPresence">
+
+    <solr-javac destdir="${dest}/common"
+                classpathref="compile.classpath">
+      <src path="${src}/java" />
+      <include name="org/apache/solr/common/**" />
+    </solr-javac>
+  </target>
 
   <!-- The compilation classpath -->
   <path id="compile.classpath">
     <fileset dir="${lib}">
       <include name="*.jar" />
     </fileset>
+    <pathelement location="${dest}/common"/>
   </path>
 
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="init-forrest-entities,checkJunitPresence">
+          depends="compile-common,init-forrest-entities,checkJunitPresence">
 
-    <mkdir dir="${dest}" />
-
-    <javac destdir="${dest}"
-           target="${java.compat.version}"
-           source="${java.compat.version}"
-           debug="on"
-           encoding="utf8"
-           classpathref="compile.classpath">
+    <solr-javac destdir="${dest}/core"
+                classpathref="compile.classpath">
       <src path="${src}/java" />
       <src path="${src}/webapp/src" />
-
-    </javac>
+      <exclude name="org/apache/solr/common/**" />
+    </solr-javac>
   </target>
 
 
@@ -237,7 +280,8 @@
   <!-- For now, it's the same as main classpath.  Later it will have JUnit, Clover, etc. -->
   <path id="test.compile.classpath">
     <path refid="compile.classpath" />
-    <pathelement location="${dest}"/>
+    <pathelement location="${dest}/common"/>
+    <pathelement location="${dest}/core"/>
   </path>
 
   <path id="test.run.classpath">
@@ -263,15 +307,11 @@
           depends="compile,checkJunitPresence">
 
     <mkdir dir="${dest}/tests" />
-    <javac 
+    <solr-javac 
        destdir="${dest}/tests"
-       target="${java.compat.version}"
-       source="${java.compat.version}"
-       debug="on"
-       encoding="utf8"
        classpathref="test.compile.classpath">
       <src path="${src}/test" />
-    </javac>
+    </solr-javac>
   </target>
 
   <!-- Run unit tests. -->
@@ -399,6 +439,7 @@
        </lib>
        <lib dir="${dist}">
          <include name="${fullnamever}.jar" />
+         <include name="${fullnamever}-common.jar" />
        </lib>
        <fileset dir="${src}/webapp/resources" />
        <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
@@ -410,13 +451,15 @@
           description="Creates the Solr JAR Distribution file."
           depends="compile, make-manifest">
     <mkdir dir="${dist}" />
-    <jar destfile="${dist}/${fullnamever}.jar"
-         basedir="${dest}"
-         includes="org/apache/**"
-         filesetmanifest="skip"
-         manifest="${dest}/META-INF/MANIFEST.MF">
-	 <metainf dir="${basedir}" includes="LICENSE.txt,NOTICE.txt"/>
-    </jar>
+    <solr-jar
+         destfile="${dist}/${fullnamever}.jar"
+         basedir="${dest}/core" />
+
+    <!-- package the common classes together -->
+    <solr-jar
+         destfile="${dist}/${fullnamever}-common.jar"
+         basedir="${dest}/common" />
+    
   </target>
 
   <target name="example" 
@@ -425,13 +468,15 @@
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
-         basedir="${dest}"
+         basedir="${dest}/core"
+         filesetmanifest="skip"
          includes="org/apache/solr/util/SimplePostTool*.class">
        <manifest>
           <attribute name="Main-Class"
                      value="org.apache.solr.util.SimplePostTool"/>
        </manifest>
     </jar>
+    
     <copy todir="${example}/solr/bin">
       <fileset dir="${src}/scripts">
         <exclude name="scripts.conf"/>

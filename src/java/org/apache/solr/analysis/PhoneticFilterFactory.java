@@ -26,7 +26,7 @@ import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.core.SolrException;
+import org.apache.solr.common.SolrException;
 
 /**
  * Create tokens based on phonetic encoders
