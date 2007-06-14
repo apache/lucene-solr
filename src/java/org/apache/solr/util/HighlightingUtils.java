@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.ListIterator;
 
 import org.apache.solr.common.params.DefaultSolrParams;
+import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -46,19 +47,8 @@ import org.apache.lucene.search.highlight.*;
 /**
  * Collection of Utility and Factory methods for Highlighting.
  */
-public class HighlightingUtils {
-   private static final String SIMPLE = "simple";
-   
-   private static final String HIGHLIGHT = "hl";
-   private static final String PREFIX = "hl.";
-   private static final String FIELDS = PREFIX+"fl";
-   private static final String SNIPPETS = PREFIX+"snippets";
-   private static final String FRAGSIZE = PREFIX+"fragsize";
-   private static final String FORMATTER = PREFIX+"formatter";
-   private static final String SIMPLE_PRE = PREFIX+SIMPLE+".pre";
-   private static final String SIMPLE_POST = PREFIX+SIMPLE+".post";
-   private static final String FIELD_MATCH = PREFIX+"requireFieldMatch";
-   
+public class HighlightingUtils implements HighlightParams {
+  
    private static SolrParams DEFAULTS = null;
    static {
       Map<String,String> map = new HashMap<String,String>();
