@@ -278,6 +278,8 @@ Documentation
 
  5. LUCENE-925: Added analysis package javadocs. (Grant Ingersoll and Doron Cohen)
 
+ 6. LUCENE-926: Added document package javadocs. (Grant Ingersoll)
+
 Build
 
  1. LUCENE-802: Added LICENSE.TXT and NOTICE.TXT to Lucene jars.
