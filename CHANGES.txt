@@ -52,7 +52,15 @@ Optimizations
 Bug Fixes
 
 Other Changes
-
+ 1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
+    build scripts to make two jars: apache-solr-1.3.jar and 
+    apache-solr-1.3-common.jar.  This common.jar can be used in client code; 
+    It does not have lucene or junit dependencies.  The original classes
+    have been replaced with a @Depricated extended class and are scheduled
+    to be removed in a later release.  While this change does not affect API
+    compatibility, it is recommended to update references to these
+    deprecated classes.  (ryan)
+     
 
 ================== Release 1.2, 20070602 ==================
 
