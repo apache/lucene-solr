@@ -110,9 +110,10 @@ public abstract class ContentStreamBase implements ContentStream
     }
 
     /**
-     * If an charset is defined (by the contentType) ues that, otherwise 
+     * If an charset is defined (by the contentType) use that, otherwise 
      * use a file reader
      */
+    @Override
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType( contentType );
       return charset == null 
@@ -143,9 +144,10 @@ public abstract class ContentStreamBase implements ContentStream
     }
 
     /**
-     * If an charset is defined (by the contentType) ues that, otherwise 
+     * If an charset is defined (by the contentType) use that, otherwise 
      * use a StringReader
      */
+    @Override
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType( contentType );
       return charset == null 

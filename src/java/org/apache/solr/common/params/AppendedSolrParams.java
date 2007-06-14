@@ -27,6 +27,7 @@ public class AppendedSolrParams extends DefaultSolrParams {
     super(main, extra);
   }
 
+  @Override
   public String[] getParams(String param) {
     String[] main = params.getParams(param);
     String[] extra = defaults.getParams(param);
@@ -42,6 +43,7 @@ public class AppendedSolrParams extends DefaultSolrParams {
     return result;
   }
 
+  @Override
   public String toString() {
     return "{main("+params+"),extra("+defaults+")}";
   }

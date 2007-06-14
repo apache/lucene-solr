@@ -17,27 +17,8 @@
 
 package org.apache.solr.common.params;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
-
-import org.apache.solr.util.StrUtils;
-
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.Handler;
-
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collection;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.regex.Pattern;
-import java.io.IOException;
 
     
 

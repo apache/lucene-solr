@@ -53,6 +53,7 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
     super(nameValuePairs);
   }
 
+  @Override
   public SimpleOrderedMap<T> clone() {
     ArrayList newList = new ArrayList(nvPairs.size());
     newList.addAll(nvPairs);

@@ -47,21 +47,25 @@ public class MultiMapSolrParams extends SolrParams {
     this.map = map;
   }
 
+  @Override
   public String get(String name) {
     String[] arr = map.get(name);
     return arr==null ? null : arr[0];
   }
 
+  @Override
   public String[] getParams(String name) {
     return map.get(name);
   }
-  
+
+  @Override
   public Iterator<String> getParameterNamesIterator() {
     return map.keySet().iterator();
   }
 
   public Map<String,String[]> getMap() { return map; }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(128);
     try {

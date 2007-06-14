@@ -34,16 +34,19 @@ public class DefaultSolrParams extends SolrParams {
     this.defaults = defaults;
   }
 
+  @Override
   public String get(String param) {
     String val = params.get(param);
     return val!=null ? val : defaults.get(param);
   }
 
+  @Override
   public String[] getParams(String param) {
     String[] vals = params.getParams(param);
     return vals!=null ? vals : defaults.getParams(param);
   }
-  
+
+  @Override
   public Iterator<String> getParameterNamesIterator() {
     final IteratorChain<String> c = new IteratorChain<String>();
     c.addIterator(defaults.getParameterNamesIterator());
@@ -51,6 +54,7 @@ public class DefaultSolrParams extends SolrParams {
     return c;
   }
 
+  @Override
   public String toString() {
     return "{params("+params+"),defaults("+defaults+")}";
   }

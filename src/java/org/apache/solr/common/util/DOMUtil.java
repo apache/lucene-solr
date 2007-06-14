@@ -17,18 +17,16 @@
 
 package org.apache.solr.common.util;
 
-import org.w3c.dom.Element;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.solr.common.SolrException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.apache.solr.common.SolrException;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Iterator;
 
 /**
  * @author yonik
@@ -116,6 +114,7 @@ public class DOMUtil {
   }
 
 
+  @SuppressWarnings("unchecked")
   public static void addToNamedList(Node nd, NamedList nlst, List arr) {
     // Nodes often include whitespace, etc... so just return if this
     // is not an Element.

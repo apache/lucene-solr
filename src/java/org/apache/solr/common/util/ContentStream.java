@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 
-import org.apache.commons.io.IOUtils;
-
 /**
  * @author ryan
  * @version $Id$
@@ -52,7 +50,7 @@ public interface ContentStream {
    *  </pre>
    *  
    * Only the first call to <code>getStream()</code> or <code>getReader()</code>
-   * is gaurenteed to work.  The runtime behavior for aditional calls is undefined.
+   * is guaranteed to work.  The runtime behavior for additional calls is undefined.
    */
   InputStream getStream() throws IOException;
 
@@ -70,7 +68,7 @@ public interface ContentStream {
    *  </pre>
    *  
    * Only the first call to <code>getStream()</code> or <code>getReader()</code>
-   * is gaurenteed to work.  The runtime behavior for aditional calls is undefined.
+   * is guaranteed to work.  The runtime behavior for additional calls is undefined.
    */
   Reader getReader() throws IOException;
 }

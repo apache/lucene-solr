@@ -34,21 +34,25 @@ public class MapSolrParams extends SolrParams {
     this.map = map;
   }
 
+  @Override
   public String get(String name) {
     return map.get(name);
   }
 
+  @Override
   public String[] getParams(String name) {
     String val = map.get(name);
     return val==null ? null : new String[]{val};
   }
-  
+
+  @Override
   public Iterator<String> getParameterNamesIterator() {
     return map.keySet().iterator();
   }
 
   public Map<String,String> getMap() { return map; }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(128);
     try {
