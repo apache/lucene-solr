@@ -2,9 +2,37 @@
 <html>
 <head>
    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-   <meta name="Author" content="Doug Cutting">
 </head>
 <body>
-The Document abstraction.
+<p>The logical representation of a {@link org.apache.lucene.document.Document} for indexing and searching.</p>
+<p>The document package provides the user level logical representation of content to be indexed and searched.  The
+package also provides utilities for working with {@link org.apache.lucene.document.Document}s and {@link org.apache.lucene.document.Fieldable}s.</p>
+<h2>Document and Fieldable</h2>
+<p>A {@link org.apache.lucene.document.Document} is a collection of {@link org.apache.lucene.document.Fieldable}s.  A
+  {@link org.apache.lucene.document.Fieldable} is a logical representation of a user's content that needs to be indexed or stored.
+  {@link org.apache.lucene.document.Fieldable}s have a number of properties that tell Lucene how to treat the content (like indexed, tokenized,
+  stored, etc.)  See the {@link org.apache.lucene.document.Field} implementation of {@link org.apache.lucene.document.Fieldable}
+  for specifics on these properties.
+</p>
+<p>Note: it is common to refer to {@link org.apache.lucene.document.Document}s having {@link org.apache.lucene.document.Field}s, even though technically they have
+{@link org.apache.lucene.document.Fieldable}s.</p>
+<h2>Working with Documents</h2>
+<p>First and foremost, a {@link org.apache.lucene.document.Document} is something created by the user application.  It is your job
+  to create Documents based on the content of the files you are working with in your application (Word, txt, PDF, Excel or any other format.)
+  How this is done is completely up to you.  That being said, there are many tools available in other projects that can make
+  the process of taking a file and converting it into a Lucene {@link org.apache.lucene.document.Document}.  To see an example of this,
+  take a look at the Lucene <a href="http://lucene.apache.org/java/docs/gettingstarted.html" target="top">demo</a> and the associated source code
+  for extracting content from HTML.
+</p>
+<p>The {@link org.apache.lucene.document.DateTools} and {@link org.apache.lucene.document.NumberTools} classes are utility
+classes to make dates, times and longs searchable (remember, Lucene only searches text).</p>
+<p>The {@link org.apache.lucene.document.FieldSelector} class provides a mechanism to tell Lucene how to load Documents from
+storage.  If no FieldSelector is used, all Fieldables on a Document will be loaded.  As an example of the FieldSelector usage, consider
+  the common use case of
+displaying search results on a web page and then having users click through to see the full document.  In this scenario, it is often
+  the case that there are many small fields and one or two large fields (containing the contents of the original file). Before the FieldSelector,
+the full Document had to be loaded, including the large fields, in order to display the results.  Now, using the FieldSelector, one
+can {@link org.apache.lucene.document.FieldSelectorResult#LAZY_LOAD} the large fields, thus only loading the large fields
+when a user clicks on the actual link to view the original content.</p>
 </body>
 </html>
