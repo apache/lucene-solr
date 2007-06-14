@@ -18,10 +18,8 @@
 package org.apache.solr.common.params;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 
-
-
+import java.util.logging.Logger;
 
 /**
  * A collection on common params, both for Plugin initialization and
@@ -30,6 +28,8 @@ import org.apache.solr.core.SolrCore;
 @Deprecated
 public class CommonParams {
 
+  public static Logger log = Logger.getLogger(CommonParams.class.getName());
+  
   @Deprecated
   public static String FL = "fl";
   /** default query field */
@@ -95,7 +95,7 @@ public class CommonParams {
       if (tmp instanceof String) {
         fl = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.FL);
+        log.severe("init param is not a str: " + SolrParams.FL);
       }
     }
 
@@ -104,7 +104,7 @@ public class CommonParams {
       if (tmp instanceof String) {
         df = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.DF);
+        log.severe("init param is not a str: " + SolrParams.DF);
       }
     }
 
@@ -113,7 +113,7 @@ public class CommonParams {
       if (tmp instanceof String) {
         debugQuery = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.DEBUG_QUERY);
+        log.severe("init param is not a str: " + SolrParams.DEBUG_QUERY);
       }
     }
 
@@ -122,7 +122,7 @@ public class CommonParams {
       if (tmp instanceof String) {
         explainOther = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + SolrParams.EXPLAIN_OTHER);
+        log.severe("init param is not a str: " + SolrParams.EXPLAIN_OTHER);
       }
     }
 

@@ -18,8 +18,8 @@
 package org.apache.solr.common.params;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 
+import java.util.logging.Logger;
     
 
 /**
@@ -28,6 +28,8 @@ import org.apache.solr.core.SolrCore;
  */
 public class DisMaxParams extends CommonParams {
   
+  public static Logger log = Logger.getLogger(CommonParams.class.getName());
+
   /** query and init param for tiebreaker value */
   public static String TIE = "tie";
   /** query and init param for query fields */
@@ -130,7 +132,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof Float) {
         tiebreaker = ((Float)tmp).floatValue();
       } else {
-        SolrCore.log.severe("init param is not a float: " + TIE);
+        log.severe("init param is not a float: " + TIE);
       }
     }
 
@@ -139,7 +141,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof String) {
         qf = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + QF);
+        log.severe("init param is not a str: " + QF);
       }
     }
 
@@ -148,7 +150,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof String) {
         pf = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + PF);
+        log.severe("init param is not a str: " + PF);
       }
     }
 
@@ -158,7 +160,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof String) {
         mm = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + MM);
+        log.severe("init param is not a str: " + MM);
       }
     }
         
@@ -167,7 +169,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof Integer) {
         pslop = ((Integer)tmp).intValue();
       } else {
-        SolrCore.log.severe("init param is not an int: " + PS);
+        log.severe("init param is not an int: " + PS);
       }
     }
 
@@ -176,7 +178,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof String) {
         bq = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + BQ);
+        log.severe("init param is not a str: " + BQ);
       }
     }
  
@@ -185,7 +187,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof String) {
         bf = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + BF);
+        log.severe("init param is not a str: " + BF);
       }
     }
  
@@ -194,7 +196,7 @@ public class DisMaxParams extends CommonParams {
       if (tmp instanceof String) {
         fq = tmp.toString();
       } else {
-        SolrCore.log.severe("init param is not a str: " + FQ);
+        log.severe("init param is not a str: " + FQ);
       }
     }
                 

@@ -107,6 +107,7 @@
              source="${java.compat.version}"
              debug="on"
              encoding="utf8"
+             sourcepath=""
              classpathref="@{classpathref}">
          <nested />
       </javac>
@@ -202,8 +203,11 @@
 
     <solr-javac destdir="${dest}/common"
                 classpathref="compile.classpath">
-      <src path="${src}/java" />
-      <include name="org/apache/solr/common/**" />
+      <src>
+        <dirset dir="${src}/java">
+          <include name="org/apache/solr/common/**" />
+        </dirset>
+      </src>
     </solr-javac>
   </target>
 
