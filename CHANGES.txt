@@ -48,6 +48,12 @@ New Features
  5. SOLR-244: Added ModifiableSolrParams - a SolrParams implementation that 
     help you change values after initialization. (ryan)
 
+ 6. SOLR-20: Added a java client interface with two implementations.  One 
+    implementation uses commons httpclient to connect to solr via HTTP.  The 
+    other connects to solr directly.  Check client/java/solrj.  This addition
+    also includes tests that start jetty and test a connection using the full
+    HTTP request cycle.  (Darren Erik Vengroff, Will Johnson, ryan)
+ 
 
 Changes in runtime behavior
 
