@@ -17,7 +17,7 @@
 
 package org.apache.solr.common.params;
 
-import org.apache.solr.util.StrUtils;
+import org.apache.solr.common.util.StrUtils;
 
 import java.util.Iterator;
 import java.util.Map;

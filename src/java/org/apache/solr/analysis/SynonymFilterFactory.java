@@ -18,9 +18,9 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.StrUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;

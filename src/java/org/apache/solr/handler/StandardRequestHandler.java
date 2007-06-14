@@ -24,7 +24,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.solr.util.StrUtils;
 import org.apache.solr.util.HighlightingUtils;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.request.SimpleFacets;
@@ -35,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 
 import static org.apache.solr.common.params.SolrParams.*;

@@ -25,10 +25,10 @@ import java.util.logging.Level;
 import java.io.IOException;
 import java.net.URL;
 
-import org.apache.solr.util.StrUtils;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrQueryResponse;
