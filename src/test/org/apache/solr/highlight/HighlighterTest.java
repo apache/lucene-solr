@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr;
-
-import org.apache.solr.request.*;
-import org.apache.solr.util.*;
-import org.apache.solr.schema.*;
+package org.apache.solr.highlight;
 
 import java.util.HashMap;
+
+import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.TestHarness;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -29,19 +28,21 @@ import java.util.HashMap;
  */
 public class HighlighterTest extends AbstractSolrTestCase {
 
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @Override public String getSchemaFile() { return "schema.xml"; }
+  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
 
+  @Override 
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
   }
+  
+  @Override 
   public void tearDown() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
-
   }
 
   public void testTermVecHighlight() {
