@@ -39,7 +39,7 @@ public class TestJettySolrRunner extends SolrExampleTestBase {
   {
     super.setUp();
     
-    int port = 8983;
+    int port = 8984; // not 8983
     String context = "/example";
     
     jetty = new JettySolrRunner( context, port );
