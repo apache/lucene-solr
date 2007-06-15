@@ -89,6 +89,11 @@ public class BoolField extends FieldType {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Boolean toObject(Fieldable f) {
+    return Boolean.valueOf( toExternal(f) );
+  }
+
   public String indexedToReadable(String indexedForm) {
     char ch = indexedForm.charAt(0);
     return ch=='T' ? "true" : "false";

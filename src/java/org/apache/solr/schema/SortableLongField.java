@@ -58,6 +58,11 @@ public class SortableLongField extends FieldType {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Long toObject(Fieldable f) {
+    return Long.valueOf( toExternal(f) );
+  }
+  
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     String sval = f.stringValue();
     xmlWriter.writeLong(name, NumberUtils.SortableStr2long(sval,0,sval.length()));

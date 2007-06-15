@@ -120,6 +120,16 @@ public class DateField extends FieldType {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Date toObject(Fieldable f) {
+    try {
+      return getThreadLocalDateFormat().parse( toExternal(f) );
+    }
+    catch( ParseException ex ) {
+      throw new RuntimeException( ex );
+    }
+  }
+
   public SortField getSortField(SchemaField field,boolean reverse) {
     return getStringSort(field,reverse);
   }

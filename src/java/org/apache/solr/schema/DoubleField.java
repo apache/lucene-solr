@@ -53,4 +53,10 @@ public class DoubleField extends FieldType {
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeDouble(name, f.stringValue());
   }
+  
+
+  @Override
+  public Double toObject(Fieldable f) {
+    return Double.valueOf( toExternal(f) );
+  }
 }

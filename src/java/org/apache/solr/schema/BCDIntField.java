@@ -43,11 +43,18 @@ public class BCDIntField extends FieldType {
   }
 
   public String toInternal(String val) {
+    // TODO? make sure each character is a digit?
     return BCDUtils.base10toBase10kSortableInt(val);
   }
 
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
+  }
+  
+  // Note, this can't return type 'Integer' because BCDStrField and BCDLong extend it
+  @Override
+  public Object toObject(Fieldable f) {
+    return Integer.valueOf( toExternal(f) );
   }
 
   public String indexedToReadable(String indexedForm) {
@@ -62,5 +69,8 @@ public class BCDIntField extends FieldType {
     writer.writeInt(name,toExternal(f));
   }
 }
+
+
+
 
 

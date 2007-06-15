@@ -54,6 +54,11 @@ public class SortableDoubleField extends FieldType {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Double toObject(Fieldable f) {
+    return Double.valueOf( toExternal(f) );
+  }
+  
   public String indexedToReadable(String indexedForm) {
     return NumberUtils.SortableStr2doubleStr(indexedForm);
   }
@@ -135,5 +140,8 @@ class SortableDoubleFieldSource extends FieldCacheSource {
     return hcode + super.hashCode() + ibits;
   };
 }
+
+
+
 
 

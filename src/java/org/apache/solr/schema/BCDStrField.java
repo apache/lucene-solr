@@ -29,4 +29,13 @@ public class BCDStrField extends BCDIntField {
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     xmlWriter.writeStr(name,toExternal(f));
   }
+
+  /**
+   * This only works for strings that represent an interger.  If the string
+   * is not an integer, it will not survive the base10k conversion!
+   */
+  @Override
+  public String toObject(Fieldable f) {
+    return toExternal(f);
+  }
 }

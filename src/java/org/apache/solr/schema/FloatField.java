@@ -50,4 +50,9 @@ public class FloatField extends FieldType {
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeFloat(name, f.stringValue());
   }
+
+  @Override
+  public Float toObject(Fieldable f) {
+    return Float.valueOf( toExternal(f) );
+  }
 }

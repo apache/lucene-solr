@@ -30,7 +30,7 @@ Detailed Change List
 
 New Features
  1. SOLR-69: Adding MoreLikeThisHandler to search for similar documents using
-    lucene contrib/queries MoreLikeThis.  MoreLikeThis is also avaliable from
+    lucene contrib/queries MoreLikeThis.  MoreLikeThis is also available from
     the StandardRequestHandler using ?mlt=true. (bdelacretaz, ryan)
 
  2. SOLR-253: Adding KeepWordFilter and KeepWordFilterFactory.  A TokenFilter
@@ -54,6 +54,10 @@ New Features
     also includes tests that start jetty and test a connection using the full
     HTTP request cycle.  (Darren Erik Vengroff, Will Johnson, ryan)
  
+ 7. SOLR-262: Added toObject( Fieldable ) to FieldType.  This lets the
+    DocumentBuilder convert lucene Document to a SolrDocument.  This patch
+    also lets the DocumentBuilder convert a SolrInputDocument to a lucene
+    Document.  (ryan)
 
 Changes in runtime behavior
 

@@ -54,6 +54,11 @@ public class SortableFloatField extends FieldType {
     return indexedToReadable(f.stringValue());
   }
 
+  @Override
+  public Float toObject(Fieldable f) {
+    return Float.valueOf( toExternal(f) );
+  }
+  
   public String indexedToReadable(String indexedForm) {
     return NumberUtils.SortableStr2floatStr(indexedForm);
   }
@@ -133,4 +138,7 @@ class SortableFloatFieldSource extends FieldCacheSource {
     return hcode + super.hashCode() + Float.floatToIntBits(defVal);
   };
 }
+
+
+
 

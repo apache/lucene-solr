@@ -50,4 +50,9 @@ public class IntField extends FieldType {
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeInt(name, f.stringValue());
   }
+
+  @Override
+  public Integer toObject(Fieldable f) {
+    return Integer.valueOf( toExternal(f) );
+  }
 }

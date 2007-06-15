@@ -18,12 +18,17 @@
 package org.apache.solr.update;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
@@ -63,6 +68,12 @@ public class DocumentBuilder {
                   + ": first='" + oldValue + "' second='" + val + "'");
         }
       }
+      
+      if( doc == null ) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
+            "must call startDoc() before adding fields!" );
+      }
+       
       // field.setBoost(boost);
       doc.add(field);
     }
@@ -139,5 +150,66 @@ public class DocumentBuilder {
     
     Document ret = doc; doc=null;
     return ret;
+  }
+  
+  /** 
+   * Build a lucene document from a SolrInputDocument
+   * 
+   * @since solr 1.3
+   */
+  public Document build( SolrInputDocument doc )
+  {
+    this.startDoc();
+    
+    for( String name : doc.getFieldNames() ) {
+      Float boost = doc.getBoost( name );
+      if( boost == null ) {
+        boost = new Float( 1 );
+      }
+      
+      for( Object v : doc.getFieldValues( name ) ) {
+        if( v instanceof Date ) {
+          // Make sure to format dates
+          SchemaField sfield = schema.getField(name);
+          if( sfield.getType() instanceof DateField ) {
+            DateField df = (DateField)sfield.getType();
+            this.addField( name, df.toInternal( (Date)v )+'Z', boost );
+            continue;
+          }
+        }
+        this.addField( name, v==null ? null : v.toString(), boost ); 
+      }
+    }
+  
+    // set the full document boost
+    Document luceneDoc = this.getDoc();
+    if( doc.getBoost( null ) != null ) {
+      luceneDoc.setBoost( doc.getBoost( null ) );
+    }
+    return luceneDoc;
+  }
+  
+  /**
+   * Add fields from the solr document
+   * 
+   * TODO: /!\ NOTE /!\ This semantics of this function are still in flux.  
+   * Something somewhere needs to be able to fill up a SolrDocument from
+   * a lucene document - this is one place that may happen.  It may also be
+   * moved to an independent function
+   * 
+   * @since solr 1.3
+   */
+  public SolrDocument loadStoredFields( SolrDocument doc, Document luceneDoc  )
+  {
+    for( Object f : luceneDoc.getFields() ) {
+      Fieldable field = (Fieldable)f;
+      if( field.isStored() ) {
+        SchemaField sf = schema.getField( field.name() );
+        if( !schema.isCopyFieldTarget( sf ) ) {
+          doc.addField( field.name(), sf.getType().toObject( field ) );
+        }
+      }
+    }
+    return doc;
   }
 }

@@ -121,7 +121,56 @@ public class SolrDocumentTest extends TestCase
     doc.addField( "v", c0 );
     assertEquals( arr.length, doc.getFieldValues("v").size() );
   }
+  
+  public void testOrderedDistinctFields()
+  {
+    List<String> c0 = new ArrayList<String>();
+    c0.add( "aaa" );
+    c0.add( "bbb" );
+    c0.add( "aaa" );
+    c0.add( "aaa" );
+    c0.add( "ccc" );
+    
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setKeepDuplicateFieldValues( null, false );
+    doc.addField( "v", c0 );
+    assertEquals( 3, doc.getFieldValues("v").size() );
+    
+    assertEquals( "[aaa, bbb, ccc]", doc.getFieldValues( "v" ).toString() );
+  }
+ 
+  public void testDuplicate() 
+  {
+    Float fval0 = new Float( 10.01f );
+    Float fval1 = new Float( 11.01f );
+    Float fval2 = new Float( 12.01f );
+    
+    // Set up a simple document
+    SolrInputDocument doc = new SolrInputDocument();
+    for( int i=0; i<5; i++ ) {
+      doc.addField( "f", fval0 );
+      doc.addField( "f", fval1 );
+      doc.addField( "f", fval2 );
+    }
+    assertEquals( (3*5), doc.getFieldValues("f").size() );
+    
+    try {
+      doc.setKeepDuplicateFieldValues( "f", false );
+      fail( "can't change distinct for an existing field" );
+    }
+    catch( Exception ex ) {}
+    
+    doc.removeFields( "f" );
+    doc.setKeepDuplicateFieldValues( "f", false );
+    for( int i=0; i<5; i++ ) {
+      doc.addField( "f", fval0 );
+      doc.addField( "f", fval1 );
+      doc.addField( "f", fval2 );
+    }
+    assertEquals( (3), doc.getFieldValues("f").size() );
+  }
 }
+
 
 
 

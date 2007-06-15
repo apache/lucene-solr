@@ -17,7 +17,10 @@
 
 package org.apache.solr.common;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 /**
@@ -25,6 +28,9 @@ import java.util.Map;
  * a Lucene Document.  Like the SolrDocument, the field values need to
  * match those specified in schema.xml 
  * 
+ * By default, this will keep every field value added to the document.  To only
+ * keep distinct values, use setKeepDuplicateFieldValues( "fieldname", false);
+ *
  * @author ryan
  * @version $Id$
  * @since solr 1.3
@@ -32,6 +38,22 @@ import java.util.Map;
 public class SolrInputDocument extends SolrDocument
 {
   private Map<String,Float> _boost = null;
+  private Map<String,Boolean> _keepDuplicates = null;
+ 
+   /**
+   * Return a base collection to manage the fields for a given value.  If
+   * the field is defined to be "distinct", the field will be backed as 
+   * a Set rather then a List.  Adding the same value multiple times will
+   * only keep a single instance of that value.
+   */
+  @Override
+  protected Collection<Object> getEmptyCollection( String name )
+  {
+    if( _keepDuplicates == null || Boolean.TRUE == _keepDuplicates.get( name )) {
+      return new ArrayList<Object>();
+    }
+    return new LinkedHashSet<Object>();  // keep the order? -- perhaps HashSet?
+  }
 
   /**
    * Remove all fields and boosts from the document
@@ -42,6 +64,9 @@ public class SolrInputDocument extends SolrDocument
     super.clear();
     if( _boost != null ) {
       _boost.clear();
+    }
+    if(_keepDuplicates != null ) {
+      _keepDuplicates.clear();
     }
   }
   
@@ -88,4 +113,34 @@ public class SolrInputDocument extends SolrDocument
     }
     return _boost.get( name );
   }
+  
+  
+  /**
+   * Should the Document be able to contain duplicate values for the same field?
+   * 
+   * By default, all field values are maintained.  If you only want to distinct values
+   * set setKeepDuplicateFieldValues( "fieldname", false );
+   * 
+   * To change the default behavior, use <code>null</code> as the fieldname.
+   * 
+   * NOTE: this must be called before adding any values to the given field.
+   */
+  public void setKeepDuplicateFieldValues( String name, boolean v )
+  {
+    if( this.getFieldValues( name ) != null ) {
+      // If it was not distinct and changed to distinct, we could, but this seems like a better rule
+      throw new RuntimeException( "You can't change a fields distinctness after it is initialized." );
+    }
+    
+    if( _keepDuplicates == null ) {
+      if( v == true ) {
+        // we only care about 'false'  we don't need to make a map unless 
+        // something does not want multiple values
+        return; 
+      }
+      _keepDuplicates = new HashMap<String, Boolean>();
+    }
+    _keepDuplicates.put( name, v );
+  }
+
 }

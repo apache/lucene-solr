@@ -55,4 +55,9 @@ public class LongField extends FieldType {
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     writer.writeLong(name, f.stringValue());
   }
+
+  @Override
+  public Long toObject(Fieldable f) {
+    return Long.valueOf( toExternal(f) );
+  }
 }

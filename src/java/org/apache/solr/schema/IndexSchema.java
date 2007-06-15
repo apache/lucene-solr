@@ -539,6 +539,7 @@ public final class IndexSchema {
             destArr = (SchemaField[])append(destArr,d);
           }
           copyFields.put(source,destArr);
+          copyFieldTarget.add( d );
         }
      }
 
@@ -898,6 +899,7 @@ public final class IndexSchema {
 
   private final Map<String, SchemaField[]> copyFields = new HashMap<String,SchemaField[]>();
   private DynamicCopy[] dynamicCopyFields;
+  private final Set<SchemaField> copyFieldTarget = new HashSet<SchemaField>();
 
   /**
    * Get all copy fields, both the static and the dynamic ones.
@@ -931,6 +933,16 @@ public final class IndexSchema {
 
     return results;
   }
+  
+  /**
+   * Check if a field is used as the destination of a copyField operation 
+   * 
+   * @since solr 1.3
+   */
+  public boolean isCopyFieldTarget( SchemaField f )
+  {
+    return copyFieldTarget.contains( f );
+  }
 
   /**
    * Is the given field name a wildcard?  I.e. does it begin or end with *?
@@ -942,6 +954,7 @@ public final class IndexSchema {
   }
 
 }
+
 
 
 

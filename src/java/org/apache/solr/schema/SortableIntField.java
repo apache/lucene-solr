@@ -61,6 +61,11 @@ public class SortableIntField extends FieldType {
     return NumberUtils.SortableStr2int(indexedForm);
   }
 
+  @Override
+  public Integer toObject(Fieldable f) {
+    return Integer.valueOf( toExternal(f) );
+  }
+  
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
     String sval = f.stringValue();
     // since writeInt an int instead of a String since that may be more efficient

@@ -235,6 +235,15 @@ public abstract class FieldType extends FieldProperties {
     return f.stringValue();
   }
 
+  /**
+   * Convert the stored-field format to an external object.  
+   * @see #toInternal
+   * @since solr 1.3
+   */
+  public Object toObject(Fieldable f) {
+    return toExternal(f); // by default use the string
+  }
+
   /** :TODO: document this method */
   public String indexedToReadable(String indexedForm) {
     return indexedForm;
