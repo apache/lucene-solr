@@ -43,6 +43,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
+  long totalTime = 0;
+  long handlerStart = System.currentTimeMillis();
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
@@ -71,7 +73,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
-
+    long start = System.currentTimeMillis();
     try {
       U.setDefaults(req,defaults,appends,invariants);
       handleRequestBody( req, rsp );
@@ -80,6 +82,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       rsp.setException(e);
       numErrors++;
     }
+    long stop = System.currentTimeMillis();
+    totalTime = totalTime + (stop-start);
   }
   
 
@@ -106,7 +110,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     NamedList lst = new SimpleOrderedMap();
     lst.add("requests", numRequests);
     lst.add("errors", numErrors);
+    lst.add("avgTimePerRequest", (float) totalTime / (float) this.numRequests);
+    lst.add("avgRequestsPerSecond", (float) numRequests*1000 / ((float)System.currentTimeMillis()-handlerStart));   
     return lst;
   }
+  
 }
+
 
