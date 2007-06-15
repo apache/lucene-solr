@@ -285,6 +285,7 @@
     </fileset>
     <fileset dir="${lib}">
       <include name="commons-io-*.jar" />
+      <include name="stax-*.jar" />
     </fileset>
     <pathelement location="${dest}/common"/>
   </path>
