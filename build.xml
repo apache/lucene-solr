@@ -203,11 +203,8 @@
 
     <solr-javac destdir="${dest}/common"
                 classpathref="compile.classpath">
-      <src>
-        <dirset dir="${src}/java">
-          <include name="org/apache/solr/common/**" />
-        </dirset>
-      </src>
+      <src path="${src}/java" />
+      <include name="org/apache/solr/common/**" />
     </solr-javac>
   </target>
 
