@@ -400,7 +400,15 @@
        The response format differs from solr1.1 formatting and returns a standard error code.
        
        To enable solr1.1 behavior, remove the /update handler or change its path
+       
+       "update.processor.class" is the class name for the UpdateRequestProcessor.  It is initalized
+       only once.  This can not be changed for each request.
     -->
+  <requestHandler name="/update/stax" class="solr.StaxUpdateRequestHandler" >
+    <!--
+    <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
+    -->
+  </requestHandler>
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
 
   <!-- CSV update handler, loaded on demand -->
