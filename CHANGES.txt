@@ -59,6 +59,12 @@ New Features
     also lets the DocumentBuilder convert a SolrInputDocument to a lucene
     Document.  (ryan)
 
+ 8. SOLR-133: Added StaxUpdateRequestHandler that uses StAX for XML parsing.
+    This implementation has much better error checking and lets you configure
+    a custom UpdateRequestProcessor that can selectively process update 
+    requests depending on the request attributes.  This class will likely 
+    replace XmlUpdateRequestHandler.  (Thorsten Scherler, ryan)
+
 Changes in runtime behavior
 
 Optimizations
