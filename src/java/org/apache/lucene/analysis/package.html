@@ -12,26 +12,40 @@ Lucene, indexing and search library, accepts only plain text input.
 <p>
 <h2>Parsing</h2>
 <p>
-Applications that build their search capabilities upon Lucene may support documents in various formats - HTML, XML, PDF, Word - just to name a few.
+Applications that build their search capabilities upon Lucene may support documents in various formats &ndash; HTML, XML, PDF, Word &ndash; just to name a few.
 Lucene does not care about the <i>Parsing</i> of these and other document formats, and it is the responsibility of the 
-application using Lucene to use an appropriate <i>Parser</i> to convert the original format into plain text, before passing that plain text to Lucene.
+application using Lucene to use an appropriate <i>Parser</i> to convert the original format into plain text before passing that plain text to Lucene.
 <p>
 <h2>Tokenization</h2>
 <p>
-Plain text passed to Lucene for indexing goes through a process generally called tokenization - namely breaking of the 
-input text into small indexing elements - <i>Tokens</i>. The way that the input text is broken into tokens very 
-much dictates the further search capabilities of the index into which that text was added. Sentences 
-beginnings and endings can be identified to provide for more accurate phrase and proximity searches 
-(though sentence identification is not provided by Lucene).
+Plain text passed to Lucene for indexing goes through a process generally called tokenization &ndash; namely breaking of the 
+input text into small indexing elements &ndash; 
+{@link org.apache.lucene.analysis.Token Tokens}.
+The way input text is broken into tokens very 
+much dictates further capabilities of search upon that text. 
+For instance, sentences beginnings and endings can be identified to provide for more accurate phrase 
+and proximity searches (though sentence identification is not provided by Lucene).
 <p>
-In some cases simply breaking the input text into tokens is not enough - a deeper <i>Analysis</i> is needed,
+In some cases simply breaking the input text into tokens is not enough &ndash; a deeper <i>Analysis</i> is needed,
 providing for several functions, including (but not limited to):
 <ul>
-  <li>Stemming -- Replacing of words by their stems. For instance with English stemming "bikes" is replaced by "bike"; now query "bike" can find both documents containing "bike" 
-      and those containing "bikes". See <a href="http://en.wikipedia.org/wiki/Stemming">Wikipedia</a> for more information.</li>
-  <li>Stop words removal -- Common words like "the", "and" and "a" rarely add any value to a search.  Removing them shrinks the index size and increases performance.</li>
-  <li>Character normalization -- Stripping accents and other character markings can make for better searching.</li>
-  <li>Synonyms expansion -- Adding in synonyms at the same token position as the current word can mean better matching when a users search with words in the synonym set.</li>
+  <li><a href="http://en.wikipedia.org/wiki/Stemming">Stemming</a> &ndash; 
+      Replacing of words by their stems. 
+      For instance with English stemming "bikes" is replaced by "bike"; 
+      now query "bike" can find both documents containing "bike" and those containing "bikes".
+  </li>
+  <li><a href="http://en.wikipedia.org/wiki/Stop_words">Stop Words Filtering</a> &ndash; 
+      Common words like "the", "and" and "a" rarely add any value to a search.
+      Removing them shrinks the index size and increases performance.
+      It may also reduce some "noise" and actually improve search quality.
+  </li>
+  <li><a href="http://en.wikipedia.org/wiki/Text_normalization">Text Normalization</a> &ndash; 
+      Stripping accents and other character markings can make for better searching.
+  </li>
+  <li><a href="http://en.wikipedia.org/wiki/Synonym">Synonym Expansion</a> &ndash; 
+      Adding in synonyms at the same token position as the current word can mean better 
+      matching when users search with words in the synonym set.
+  </li>
 </ul> 
 <p>
 <h2>Core Analysis</h2>
@@ -39,12 +53,12 @@ providing for several functions, including (but not limited to):
   The analysis package provides the mechanism to convert Strings and Readers into tokens that can be indexed by Lucene.  There
   are three main classes in the package from which all analysis processes are derived.  These are:
   <ul>
-    <li>{@link org.apache.lucene.analysis.Analyzer} -- An Analyzer is responsible for building a TokenStream which can be consumed
+    <li>{@link org.apache.lucene.analysis.Analyzer} &ndash; An Analyzer is responsible for building a {@link org.apache.lucene.analysis.TokenStream} which can be consumed
     by the indexing and searching processes.  See below for more information on implementing your own Analyzer.</li>
-    <li>{@link org.apache.lucene.analysis.Tokenizer} -- A Tokenizer is a {@link org.apache.lucene.analysis.TokenStream} and is responsible for breaking
+    <li>{@link org.apache.lucene.analysis.Tokenizer} &ndash; A Tokenizer is a {@link org.apache.lucene.analysis.TokenStream} and is responsible for breaking
     up incoming text into {@link org.apache.lucene.analysis.Token}s.  In most cases, an Analyzer will use a Tokenizer as the first step in
     the analysis process.</li>
-    <li>{@link org.apache.lucene.analysis.TokenFilter} -- A TokenFilter is also a {@link org.apache.lucene.analysis.TokenStream} and is responsible
+    <li>{@link org.apache.lucene.analysis.TokenFilter} &ndash; A TokenFilter is also a {@link org.apache.lucene.analysis.TokenStream} and is responsible
     for modifying {@link org.apache.lucene.analysis.Token}s that have been created by the Tokenizer.  Common modifications performed by a
     TokenFilter are: deletion, stemming, synonym injection, and down casing.  Not all Analyzers require TokenFilters</li>
   </ul>
@@ -58,7 +72,8 @@ providing for several functions, including (but not limited to):
           <u>creating</u> tokens out of the input text, while the {@link org.apache.lucene.analysis.Tokenizer}
           is only responsible for <u>breaking</u> the input text into tokens. Very likely, tokens created 
           by the {@link org.apache.lucene.analysis.Tokenizer} would be modified or even omitted 
-          by the {@link org.apache.lucene.analysis.Analyzer} before being returned.
+          by the {@link org.apache.lucene.analysis.Analyzer} (via one or more
+          {@link org.apache.lucene.analysis.TokenFilter}s) before being returned.
        </li>
        <li>{@link org.apache.lucene.analysis.Tokenizer} is a {@link org.apache.lucene.analysis.TokenStream}, 
            but {@link org.apache.lucene.analysis.Analyzer} is not.
@@ -68,27 +83,174 @@ providing for several functions, including (but not limited to):
        </li>
    </ul>
 </p>
-<p>Lucene Java provides a number of analysis capabilities, the most commonly used one being the {@link
+<p>
+  Lucene Java provides a number of analysis capabilities, the most commonly used one being the {@link
   org.apache.lucene.analysis.standard.StandardAnalyzer}.  Many applications will have a long and industrious life with nothing more
   than the StandardAnalyzer.  However, there are a few other classes/packages that are worth mentioning:
   <ol>
-    <li>{@link org.apache.lucene.analysis.PerFieldAnalyzerWrapper} -- Most Analyzers perform the same operation on all
+    <li>{@link org.apache.lucene.analysis.PerFieldAnalyzerWrapper} &ndash; Most Analyzers perform the same operation on all
       {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different Analyzer with different
       {@link org.apache.lucene.document.Field}s.</li>
     <li>The contrib/analyzers library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
     of different problems related to searching.  Many of the Analyzers are designed to analyze non-English languages.</li>
-    <li>The contrib/snowball library located at the root of the Lucene distribution has Analyzer and TokenFilter implementations for a variety of Snowball stemmers.  See <a href="http://snowball.tartarus.org">http://snowball.tartarus.org</a> for more information.</li>
+    <li>The {@link org.apache.lucene.analysis.snowball contrib/snowball library} 
+        located at the root of the Lucene distribution has Analyzer and TokenFilter 
+        implementations for a variety of Snowball stemmers.  
+        See <a href="http://snowball.tartarus.org">http://snowball.tartarus.org</a> 
+        for more information on Snowball stemmers.</li>
     <li>There are a variety of Tokenizer and TokenFilter implementations in this package.  Take a look around, chances are someone has implemented what you need.</li>
   </ol>
 </p>
-<p>Analysis is one of the main causes of performance degradation during indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
+<p>
+  Analysis is one of the main causes of performance degradation during indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
   Perhaps your application would be just fine using the simple {@link org.apache.lucene.analysis.WhitespaceTokenizer} combined with a
-  {@link org.apache.lucene.analysis.StopFilter}.</p>
+  {@link org.apache.lucene.analysis.StopFilter}. The contrib/benchmark library can be useful for testing out the speed of the analysis process.
+</p>
+<h2>Invoking the Analyzer</h2>
+<p>
+  Applications usually do not invoke analysis &ndash; Lucene does it for them:
+  <ul>
+    <li>At indexing, as a consequence of 
+        {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document) addDocument(doc)},
+        the Analyzer in effect for indexing is invoked for each indexed field of the added document.
+    </li>
+    <li>At search, as a consequence of
+        {@link org.apache.lucene.queryParser.QueryParser#parse(java.lang.String) QueryParser.parse(queryText)},
+        the QueryParser may invoke the Analyzer in effect.
+        Note that for some queries analysis does not take place, e.g. wildcard queries.
+    </li>
+  </ul>
+  However an application might invoke Analysis of any text for testing or for any other purpose, something like:
+  <PRE>
+      Analyzer analyzer = new StandardAnalyzer(); // or any other analyzer
+      TokenStream ts = analyzer.tokenStream("myfield",new StringReader("some text goes here"));
+      Token t = ts.next();
+      while (t!=null) {
+        System.out.println("token: "+t));
+        t = ts.next();
+      }
+  </PRE>
+</p>
+<h2>Indexing Analysis vs. Search Analysis</h2>
+<p>
+  Selecting the "correct" analyzer is crucial
+  for search quality, and can also affect indexing and search performance.
+  The "correct" analyzer differs between applications.
+  Lucene java's wiki page 
+  <a href="http://wiki.apache.org/lucene-java/AnalysisParalysis">AnalysisParalysis</a> 
+  provides some data on "analyzing your analyzer".
+  Here are some rules of thumb:
+  <ol>
+    <li>Test test test... (did we say test?)</li>
+    <li>Beware of over analysis &ndash; might hurt indexing performance.</li>
+    <li>Start with same analyzer for indexing and search, otherwise searches would not find what they are supposed to...</li>
+    <li>In some cases a different analyzer is required for indexing and search, for instance:
+        <ul>
+           <li>Certain searches require more stop words to be filtered. (I.e. more than those that were filtered at indexing.)</li>
+           <li>Query expansion by synonyms, acronyms, auto spell correction, etc.</li>
+        </ul>
+        This might sometimes require a modified analyzer &ndash; see the next section on how to do that.
+    </li>
+  </ol>
+</p>
 <h2>Implementing your own Analyzer</h2>
 <p>Creating your own Analyzer is straightforward. It usually involves either wrapping an existing Tokenizer and  set of TokenFilters to create a new Analyzer
 or creating both the Analyzer and a Tokenizer or TokenFilter.  Before pursuing this approach, you may find it worthwhile
 to explore the contrib/analyzers library and/or ask on the java-user@lucene.apache.org mailing list first to see if what you need already exists.
 If you are still committed to creating your own Analyzer or TokenStream derivation (Tokenizer or TokenFilter) have a look at
-the source code of any one of the many samples located in this package.</p>
+the source code of any one of the many samples located in this package.
+</p>
+<p>
+  The following sections discuss some aspects of implementing your own analyzer.
+</p>
+<h3>Field Section Boundaries</h2>
+<p>
+  When {@link org.apache.lucene.document.Document#add(org.apache.lucene.document.Fieldable) document.add(field)}
+  is called multiple times for the same field name, we could say that each such call creates a new 
+  section for that field in that document. 
+  In fact, a separate call to 
+  {@link org.apache.lucene.analysis.Analyzer#tokenStream(java.lang.String, java.io.Reader) tokenStream(field,reader)}
+  would take place for each of these so called "sections".
+  However, the default Analyzer behavior is to treat all these sections as one large section. 
+  This allows phrase search and proximity search to seamlessly cross 
+  boundaries between these "sections".
+  In other words, if a certain field "f" is added like this:
+  <PRE>
+      document.add(new Field("f","first ends",...);
+      document.add(new Field("f","starts two",...);
+      indexWriter.addDocument(document);
+  </PRE>
+  Then, a phrase search for "ends starts" would find that document.
+  Where desired, this behavior can be modified by introducing a "position gap" between consecutive field "sections", 
+  simply by overriding 
+  {@link org.apache.lucene.analysis.Analyzer#getPositionIncrementGap(java.lang.String) Analyzer.getPositionIncrementGap(fieldName)}:
+  <PRE>
+      Analyzer myAnalyzer = new StandardAnalyzer() {
+         public int getPositionIncrementGap(String fieldName) {
+           return 10;
+         }
+      };
+  </PRE>
+</p>
+<h3>Token Position Increments</h2>
+<p>
+   By default, all tokens created by Analyzers and Tokenizers have a 
+   {@link org.apache.lucene.analysis.Token#getPositionIncrement() position increment} of one.
+   This means that the position stored for that token in the index would be one more than
+   that of the previous token.
+   Recall that phrase and proximity searches rely on position info.
+</p>
+<p>
+   If the selected analyzer filters the stop words "is" and "the", then for a document 
+   containing the string "blue is the sky", only the tokens "blue", "sky" are indexed, 
+   with position("sky") = 1 + position("blue"). Now, a phrase query "blue is the sky"
+   would find that document, because the same analyzer filters the same stop words from
+   that query. But also the phrase query "blue sky" would find that document.
+</p>
+<p>   
+   If this behavior does not fit the application needs,
+   a modified analyzer can be used, that would increment further the positions of
+   tokens following a removed stop word, using
+   {@link org.apache.lucene.analysis.Token#setPositionIncrement(int)}.
+   This can be done with something like:
+   <PRE>
+      public TokenStream tokenStream(final String fieldName, Reader reader) {
+        final TokenStream ts = new SomeAnalyzer(fieldName, reader);
+        TokenStream res = new TokenStream() {
+          public Token next() throws IOException {
+            int extraIncrement = 0;
+            while (true) {
+              Token t = tf.next();
+              if (t!=null) {
+                if (stopwords.contains(t.termText())) {
+                  extraIncrement++; // filter this word
+                  continue;
+                } 
+                if (extraIncrement>0) {
+                  t.setPositionIncrement(t.getPositionIncrement()+extraIncrement);
+                }
+              }
+              return t;
+            }
+          };
+          return res;
+        }
+      }
+   </PRE>
+   Now, with this modified analyzer, the phrase query "blue sky" would find that document.
+   But note that this is yet not a perfect solution, because any phrase query "blue w1 w2 sky"
+   where both w1 and w2 are stop words would match that document.
+</p>
+<p>
+   Few more use cases for modifying position increments are:
+   <ol>
+     <li>Inhibiting phrase and proximity matches in sentence boundaries &ndash; for this, a tokenizer that 
+         identifies a new sentence can add 1 to the position increment of the first token of the new sentence.</li>
+     <li>Injecting synonyms &ndash; here, synonyms of a token should be added after that token, 
+         and their position increment should be set to 0.
+         As result, all synonyms of a token would be considered to appear in exactly the 
+         same position as that token, and so would they be seen by phrase and proximity searches.</li>
+   </ol>
+</p>
 </body>
 </html>
