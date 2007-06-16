@@ -73,7 +73,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests++;
-    long start = System.currentTimeMillis();
     try {
       U.setDefaults(req,defaults,appends,invariants);
       handleRequestBody( req, rsp );
@@ -82,8 +81,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       rsp.setException(e);
       numErrors++;
     }
-    long stop = System.currentTimeMillis();
-    totalTime = totalTime + (stop-start);
+    totalTime += rsp.getEndTime() - req.getStartTime();
   }
   
 
