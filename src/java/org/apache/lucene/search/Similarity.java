@@ -513,17 +513,16 @@ public abstract class Similarity implements Serializable {
    * what is in the byte array.
    * <p>
    * The default implementation returns 1.
+   * <br>
+   * <p><font color="#FF0000">
+   * WARNING: The status of the <b>Payloads</b> feature is experimental. 
+   * The APIs introduced here might change in the future and will not be 
+   * supported anymore in such a case.</font>
    *
    * @param payload The payload byte array to be scored
    * @param offset The offset into the payload array
    * @param length The length in the array
    * @return An implementation dependent float to be used as a scoring factor 
-   *  <b>
-   *  Warning: The status of the Payloads feature is experimental. The APIs
-   *  introduced here might change in the future and will not be supported anymore
-   *  in such a case. If you want to use this feature in a production environment
-   *  you should wait for an official release.
-   *  </b>
    */
   // TODO: Remove warning after API has been finalized
   public float scorePayload(byte [] payload, int offset, int length)
