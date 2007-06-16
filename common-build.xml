@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 	
-<project name="common">
+<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -55,6 +55,7 @@
   <property name="src.dir" location="src/java"/>
   <property name="build.dir" location="build"/>
   <property name="dist.dir" location="dist"/>
+  <property name="maven.dist.dir" location="dist/maven"/>
 
   <property name="javacc.home" location="${common.dir}"/>
 
@@ -97,6 +98,11 @@
     classname="junit.framework.TestCase"
     />
 
+  <available
+    property="maven.ant.tasks.present"
+    classname="org.apache.maven.artifact.ant.Pom"
+  />
+	
   <target name="clean"
     description="Removes contents of build and dist directories">
     <delete dir="${build.dir}"/>
@@ -151,8 +157,7 @@
     </fail>
 
   </target>
-
-
+	
   <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
     <compile
@@ -170,7 +175,36 @@
     description="Packages the JAR file">
     <jarify />
   </target>
+	
+  <target name="maven.ant.tasks-check">
+	<fail unless="maven.ant.tasks.present">
+	  ##################################################################
+      Maven ant tasks not found.
+      Please make sure the maven-ant-tasks jar is in ANT_HOME/lib, or made 
+      available to Ant using other mechanisms like -lib or CLASSPATH.
+      ##################################################################
+  	</fail>
+  </target>
 
+  <property name="pom.xml" value="pom.xml"/>
+
+  <macrodef name="m2-deploy" description="Builds a Maven artifact">
+    <attribute name="pom.xml" default="${pom.xml}"/>
+    <sequential>
+      <copy file="@{pom.xml}" tofile="${build.dir}/@{pom.xml}">
+        <filterset begintoken="@" endtoken="@"> 
+          <filter token="version" value="${version}"/>
+        </filterset>
+      </copy>
+      <artifact:pom id="maven.project" file="${build.dir}/@{pom.xml}" />
+      <artifact:install file="${build.dir}/${maven.project.build.finalName}.jar">
+        <localRepository location="${maven.dist.dir}"/>
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </macrodef>  	
+	
+	
   <macrodef name="jarify" description="Builds a JAR file">
     <attribute name="title" default="Lucene Search Engine: ${ant.project.name}" />
     <element name="manifest-attributes" optional="yes"/>
@@ -407,6 +441,7 @@
   </macrodef>
 
 </project>
+
 
 
 

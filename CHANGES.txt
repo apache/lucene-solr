@@ -313,6 +313,10 @@ Build
     dependencies are met, and test compilation errors fail the build.
     (Steven Parkes, Chris Hostetter)
 
+10. LUCENE-622: Add ant target and pom.xml files for building maven artifacts 
+    of the Lucene core and the contrib modules. 
+    (Sami Siren, Karl Wettin, Michael Busch)
+
 ======================= Release 2.1.0 2007-02-14 =======================
 
 Changes in runtime behavior

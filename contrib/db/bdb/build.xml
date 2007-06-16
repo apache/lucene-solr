@@ -19,6 +19,7 @@
 
   <property name="build.dir" location="../../../build/contrib/db/bdb" />
   <property name="dist.dir" location="../../../dist/contrib/db/bdb" />
+  <property name="maven.dist.dir" location="../../../dist/maven" />
 
   <import file="../../contrib-build.xml" />
 

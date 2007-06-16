@@ -54,4 +54,9 @@
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
+  <target name="dist-maven" depends="default">
+    <ant dir="bdb" target="dist-maven" />
+    <ant dir="bdb-je" target="dist-maven" />
+  </target>  	
+	
 </project>

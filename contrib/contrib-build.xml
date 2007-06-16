@@ -17,13 +17,14 @@
     limitations under the License.
  -->
 
-<project name="contrib-build">
+<project name="contrib-build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
   <echo>Building ${ant.project.name}...</echo>
 
   <!-- TODO: adjust build.dir/dist.dir appropriately when a contrib project is run individually -->
   <property name="build.dir" location="../../build/contrib/${ant.project.name}"/>
   <property name="dist.dir" location="../../dist/contrib/${ant.project.name}"/>
-
+  <property name="maven.dist.dir" location="../../dist/maven"/>
+	
   <import file="../common-build.xml"/>
 
   <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
@@ -67,4 +68,18 @@
     <antcall target="common.test" inheritRefs="true" />
   </target>
   <target name="build-artifacts-and-tests" depends="jar, compile-test" />
+	
+  <available 
+    type="file" 
+    file="${pom.xml}" 
+    property="pom.xml.present">
+  </available>
+			
+  <target name="dist-maven" if="pom.xml.present" depends="compile-core">
+    <artifact:pom file="${common.dir}/build/lucene-parent-pom.xml" id="maven.project"/>
+    <artifact:pom file="${common.dir}/build/lucene-core-pom.xml" id="maven.project"/>
+    <artifact:pom file="${common.dir}/build/lucene-contrib-pom.xml" id="maven.project"/>
+    <m2-deploy/>
+  </target>
+
 </project>
