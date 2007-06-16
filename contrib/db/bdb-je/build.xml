@@ -19,7 +19,8 @@
 
   <property name="build.dir" location="../../../build/contrib/db/bdb-je" />
   <property name="dist.dir" location="../../../dist/contrib/db/bdb-je" />
-
+  <property name="maven.dist.dir" location="../../../dist/maven" />
+	
   <import file="../../contrib-build.xml" />
 
   <target name="get-je-jar" unless="je.jar.exists">

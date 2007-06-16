@@ -130,4 +130,5 @@
   </target>
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />        
+  <target name="dist-maven"/>
 </project>

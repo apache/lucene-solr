@@ -305,6 +305,7 @@
         <!-- Package is not called first if packaging src standalone, so the dist.dir may not exist -->
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${maven.dist.dir}"/>
     </target>
   <!-- ================================================================== -->
   <!-- Packages the sources with zip                                      -->
@@ -360,6 +361,25 @@
 
   <target name="dist-all" depends="dist, dist-src"/>
 
+  <target name="generate-maven-artifacts" depends="maven.ant.tasks-check, package">
+    <sequential>
+      <m2-deploy pom.xml="lucene-parent-pom.xml"/>
+      <m2-deploy pom.xml="lucene-core-pom.xml"/>
+      <m2-deploy pom.xml="lucene-demos-pom.xml"/>
+      <m2-deploy pom.xml="lucene-contrib-pom.xml"/>
+      <contrib-crawl target="dist-maven"/>
+      <!-- do md5 checksums -->
+      <checksum forceOverwrite="yes" fileext=".md5">
+        <fileset dir="${maven.dist.dir}" excludes="**/*.md5"/>
+      </checksum>
+	
+      <!-- do sha1 checksums -->
+      <checksum forceOverwrite="yes" algorithm="SHA" fileext=".sha1">
+        <fileset dir="${maven.dist.dir}" excludes="**/*.sha1, **/*.md5"/>
+      </checksum>
+    </sequential>
+  </target>
+	
   <!-- ================================================================== -->
   <!-- Build the JavaCC files into the source tree                        -->
   <!-- ================================================================== -->
