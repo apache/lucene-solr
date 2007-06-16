@@ -55,7 +55,6 @@ public class UpdateRequestProcessor
   protected final SolrCore core;
   protected final IndexSchema schema;
   protected final UpdateHandler updateHandler;
-  protected final DocumentBuilder builder;
   protected final SchemaField uniqueKeyField;
   protected final long startTime;
   protected final NamedList<Object> response;
@@ -67,7 +66,6 @@ public class UpdateRequestProcessor
     core = req.getCore();
     schema = core.getSchema();
     updateHandler = core.getUpdateHandler();
-    builder = new DocumentBuilder( schema );
     uniqueKeyField = schema.getUniqueKeyField();
     startTime = System.currentTimeMillis();
     
@@ -126,7 +124,7 @@ public class UpdateRequestProcessor
     if (uniqueKeyField != null) {
       id = doc.getFieldValue( uniqueKeyField.getName() );
     }
-    cmd.doc = builder.build( doc );
+    cmd.doc = DocumentBuilder.toDocument( doc, schema );
     updateHandler.addDoc(cmd);
     response.add( "added", id );
 

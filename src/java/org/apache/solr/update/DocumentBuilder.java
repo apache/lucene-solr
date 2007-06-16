@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -152,42 +153,75 @@ public class DocumentBuilder {
     return ret;
   }
   
-  /** 
-   * Build a lucene document from a SolrInputDocument
+
+  /**
+   * Convert a SolrInputDocument to a lucene Document.
+   * 
+   * This function shoould go elsewhere.  This builds the Document without an
+   * extra Map<> checking for multiple values.  For more discussion, see:
+   * http://www.nabble.com/Re%3A-svn-commit%3A-r547493---in--lucene-solr-trunk%3A-.--src-java-org-apache-solr-common--src-java-org-apache-solr-schema--src-java-org-apache-solr-update--src-test-org-apache-solr-common--tf3931539.html
+   * 
+   * TODO: /!\ NOTE /!\ This semantics of this function are still in flux.  
+   * Something somewhere needs to be able to fill up a SolrDocument from
+   * a lucene document - this is one place that may happen.  It may also be
+   * moved to an independent function
    * 
    * @since solr 1.3
    */
-  public Document build( SolrInputDocument doc )
-  {
-    this.startDoc();
+  public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
+  {    
+    Document out = new Document();
     
+    // Load fields from SolrDocument to Document
     for( String name : doc.getFieldNames() ) {
-      Float boost = doc.getBoost( name );
-      if( boost == null ) {
-        boost = new Float( 1 );
+      SchemaField sfield = schema.getField(name);
+      Float b = doc.getBoost( name );
+      float boost = (b==null) ? 1.0f : b.floatValue();
+      
+      // Make sure it has the correct number
+      Collection<Object> vals = doc.getFieldValues( name );
+      if( vals.size() > 1 && !sfield.multiValued() ) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+            "ERROR: multiple values encountered for non multiValued field " + 
+              sfield.getName() + ": " +vals.toString() );
       }
       
-      for( Object v : doc.getFieldValues( name ) ) {
-        if( v instanceof Date ) {
-          // Make sure to format dates
-          SchemaField sfield = schema.getField(name);
-          if( sfield.getType() instanceof DateField ) {
-            DateField df = (DateField)sfield.getType();
-            this.addField( name, df.toInternal( (Date)v )+'Z', boost );
-            continue;
-          }
+      // load each field value
+      for( Object v : vals ) {
+        String val = null;
+        if( v instanceof Date && sfield.getType() instanceof DateField ) {
+          DateField df = (DateField)sfield.getType();
+          val = df.toInternal( (Date)v )+'Z';
         }
-        this.addField( name, v==null ? null : v.toString(), boost ); 
+        else if (v != null) {
+          val = v.toString();
+        }
+        out.add( sfield.createField( val, boost ) );
+      }
+    }
+    
+    // Now validate required fields or add default values
+    // fields with default values are defacto 'required'
+    for (SchemaField field : schema.getRequiredFields()) {
+      if (out.getField(field.getName() ) == null) {
+        if (field.getDefaultValue() != null) {
+          out.add( field.createField( field.getDefaultValue(), 1.0f ) );
+        } 
+        else {
+          String id = schema.printableUniqueKey( out );
+          String msg = "Document ["+id+"] missing required field: " + field.getName();
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, msg );
+        }
       }
     }
   
     // set the full document boost
-    Document luceneDoc = this.getDoc();
     if( doc.getBoost( null ) != null ) {
-      luceneDoc.setBoost( doc.getBoost( null ) );
-    }
-    return luceneDoc;
+      out.setBoost( doc.getBoost( null ) );
+    }  
+    return out;
   }
+
   
   /**
    * Add fields from the solr document
