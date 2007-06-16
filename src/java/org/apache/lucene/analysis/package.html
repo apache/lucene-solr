@@ -215,14 +215,14 @@ the source code of any one of the many samples located in this package.
    This can be done with something like:
    <PRE>
       public TokenStream tokenStream(final String fieldName, Reader reader) {
-        final TokenStream ts = new SomeAnalyzer(fieldName, reader);
+        final TokenStream ts = someAnalyzer.tokenStream(fieldName, reader);
         TokenStream res = new TokenStream() {
           public Token next() throws IOException {
             int extraIncrement = 0;
             while (true) {
-              Token t = tf.next();
+              Token t = ts.next();
               if (t!=null) {
-                if (stopwords.contains(t.termText())) {
+                if (stopWords.contains(t.termText())) {
                   extraIncrement++; // filter this word
                   continue;
                 } 
@@ -232,9 +232,9 @@ the source code of any one of the many samples located in this package.
               }
               return t;
             }
-          };
-          return res;
-        }
+          }
+        };
+        return res;
       }
    </PRE>
    Now, with this modified analyzer, the phrase query "blue sky" would find that document.
