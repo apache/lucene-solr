@@ -51,7 +51,7 @@ public class SolrDocument
    */
   protected Collection<Object> getEmptyCollection( String name )
   {
-    return new ArrayList<Object>();
+    return new ArrayList<Object>( 1 );
   }
 
   /**
