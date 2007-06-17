@@ -197,6 +197,12 @@ public class DocumentBuilder {
           val = v.toString();
         }
         out.add( sfield.createField( val, boost ) );
+        
+        // In lucene, the boost for a given field is the product of the 
+        // document boost and *all* boosts on values of that field. 
+        // For multi-valued fields, we only want to set the boost on the
+        // first field.
+        boost = 1.0f; 
       }
     }
     

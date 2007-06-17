@@ -354,7 +354,17 @@ public class StaxUpdateRequestHandler extends RequestHandlerBase
           if (!isNull) {
             doc.addField(name, text.toString() );
             if(boost != null) {
-              doc.setBoost( name, boost );
+              // The lucene API and solr XML field specification make it possible to set boosts
+              // on multi-value fields even though lucene indexing does not support this.
+              // To keep behavior consistent with what happens in the lucene index, we accumulate
+              // the product of all boosts specified for this field.
+              Float old = doc.getBoost( name );
+              if( old != null ) {
+                doc.setBoost( name, boost*old );
+              }
+              else {
+                doc.setBoost( name, boost );
+              }
             }
           }
         }
