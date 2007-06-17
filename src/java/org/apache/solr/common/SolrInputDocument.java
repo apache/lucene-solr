@@ -29,7 +29,7 @@ import java.util.Map;
  * match those specified in schema.xml 
  * 
  * By default, this will keep every field value added to the document.  To only
- * keep distinct values, use setKeepDuplicateFieldValues( "fieldname", false);
+ * keep distinct values, use setRemoveDuplicateFieldValues( "fieldname", true );
  *
  * @author ryan
  * @version $Id$
@@ -38,7 +38,7 @@ import java.util.Map;
 public class SolrInputDocument extends SolrDocument
 {
   private Map<String,Float> _boost = null;
-  private Map<String,Boolean> _keepDuplicates = null;
+  private Map<String,Boolean> _removeDuplicates = null;
  
    /**
    * Return a base collection to manage the fields for a given value.  If
@@ -49,7 +49,7 @@ public class SolrInputDocument extends SolrDocument
   @Override
   protected Collection<Object> getEmptyCollection( String name )
   {
-    if( _keepDuplicates == null || Boolean.TRUE == _keepDuplicates.get( name )) {
+    if( _removeDuplicates == null || Boolean.FALSE == _removeDuplicates.get( name )) {
       return new ArrayList<Object>();
     }
     return new LinkedHashSet<Object>();  // keep the order? -- perhaps HashSet?
@@ -65,8 +65,8 @@ public class SolrInputDocument extends SolrDocument
     if( _boost != null ) {
       _boost.clear();
     }
-    if(_keepDuplicates != null ) {
-      _keepDuplicates.clear();
+    if(_removeDuplicates != null ) {
+      _removeDuplicates.clear();
     }
   }
   
@@ -125,22 +125,22 @@ public class SolrInputDocument extends SolrDocument
    * 
    * NOTE: this must be called before adding any values to the given field.
    */
-  public void setKeepDuplicateFieldValues( String name, boolean v )
+  public void setRemoveDuplicateFieldValues( String name, boolean v )
   {
     if( this.getFieldValues( name ) != null ) {
       // If it was not distinct and changed to distinct, we could, but this seems like a better rule
       throw new RuntimeException( "You can't change a fields distinctness after it is initialized." );
     }
     
-    if( _keepDuplicates == null ) {
-      if( v == true ) {
-        // we only care about 'false'  we don't need to make a map unless 
+    if( _removeDuplicates == null ) {
+      if( v == false ) {
+        // we only care about 'true'  we don't need to make a map unless 
         // something does not want multiple values
         return; 
       }
-      _keepDuplicates = new HashMap<String, Boolean>();
+      _removeDuplicates = new HashMap<String, Boolean>();
     }
-    _keepDuplicates.put( name, v );
+    _removeDuplicates.put( name, v );
   }
 
 }
