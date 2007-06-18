@@ -92,6 +92,9 @@ public class ClientUtils
       Float boost = doc.getBoost( name );
       for( Object o : doc.getFieldValues( name ) ) {
         writeFieldValue(writer, name, boost, o );
+        // only write the boost for the first mulit-valued field
+        // otherwise, the used boost is the product of all the boost values
+        boost = null; 
       }
     }
     writer.write("</doc>");
