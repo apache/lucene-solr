@@ -49,10 +49,15 @@ public class SolrInputDocument extends SolrDocument
   @Override
   protected Collection<Object> getEmptyCollection( String name )
   {
-    if( _removeDuplicates == null || Boolean.FALSE == _removeDuplicates.get( name )) {
-      return new ArrayList<Object>();
+    boolean distint = false;
+    if( _removeDuplicates != null ) {
+      Boolean v = _removeDuplicates.get( name );
+      if( v == null ) {
+        v = _removeDuplicates.get( null );
+      }
+      distint = (v == Boolean.TRUE);
     }
-    return new LinkedHashSet<Object>();  // keep the order? -- perhaps HashSet?
+    return distint ? new LinkedHashSet<Object>() : new ArrayList<Object>(1);  // keep the order? -- perhaps HashSet?
   }
 
   /**
