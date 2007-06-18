@@ -109,6 +109,12 @@ public class ModifiableSolrParams extends SolrParams
     return vals.remove( name );
   }
   
+  /** clear all parameters */
+  public void clear()
+  {
+    vals.clear();
+  }
+  
   /** 
    * remove the given value for the given name
    * 
