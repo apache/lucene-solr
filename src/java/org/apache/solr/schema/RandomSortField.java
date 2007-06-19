@@ -58,7 +58,7 @@ public class RandomSortField extends FieldType
     final Random rand = new Random();
     
     public int compare (ScoreDoc i, ScoreDoc j) {
-      return (rand.nextBoolean()) ? 1 : -1; //rand.nextInt() >>> 31; ??
+      return (rand.nextInt() & 0x2) - 1; // (rand.nextBoolean()) ? 1 : -1; 
     }
     public Comparable sortValue (ScoreDoc i) {
       return new Float(rand.nextFloat());
