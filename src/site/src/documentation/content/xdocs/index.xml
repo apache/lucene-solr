@@ -29,6 +29,33 @@
         <section id="Lucene News">
           <title>Lucene News</title>
           <section>
+            <title>19 June 2007 - Release 2.2 available</title>
+
+            <p>This release has many improvements since release 2.1. New major features:
+			<ul>
+			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/index/IndexWriter.html">"Point-in-time" searching</a></li>
+			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/payloads/package-summary.html">Payloads</a></li>
+			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/function/package-summary.html">Funtion queries</a></li>
+			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/document/Field.html">New API for preanalyzed fields</a></li>
+			</ul>
+			In addition Lucene 2.2 has many performance
+              improvements, bug fixes, etc. See
+              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_2_0/CHANGES.txt">CHANGES.txt</a>
+              for details.
+            </p>
+
+            <p>Lucene 2.2 includes index format changes that are not readable
+              by older versions of Lucene.  Lucene 2.2 can both read and update
+              older Lucene indexes.  Adding to an index with an older format
+              will cause it to be converted to the newer format.
+            </p>
+
+            <p>Binary and source distributions are
+              available
+              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+            </p>
+          </section>
+          <section>
             <title>18 February 2007 - Lucene at ApacheCon Europe</title>
             <p>
               <a href="http://www.eu.apachecon.com"><img src="http://www.apache.org/ads/ApacheCon/2007-europe-125x125.png" style="float: left; padding: 3px;" alt="ApacheCon Europe logo" /></a>
