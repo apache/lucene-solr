@@ -1,0 +1,61 @@
+<benchmark>
+  <ul>
+  <p>
+  <b>Hardware Environment</b><br/>
+  <li><i>Dedicated machine for indexing</i>: Self-explanatory 
+(yes/no)</li>
+  <li><i>CPU</i>: Self-explanatory (Type, Speed and Quantity)</li>
+  <li><i>RAM</i>: Self-explanatory</li>
+  <li><i>Drive configuration</i>: Self-explanatory (IDE, SCSI, RAID-1, 
+RAID-5)</li>
+  </p>
+  <p>
+  <b>Software environment</b><br/>
+  <li><i>Lucene Version</i>: Self-explanatory</li>
+  <li><i>Java Version</i>: Version of Java SDK/JRE that is run </li>
+  <li><i>Java VM</i>: Server/client VM, Sun VM/JRockIt</li>
+  <li><i>OS Version</i>: Self-explanatory</li>
+  <li><i>Location of index</i>: Is the index stored in filesystem or 
+database? Is it on the same server (local) or 
+  over the network?</li>
+  </p>
+  <p>
+  <b>Lucene indexing variables</b><br/>
+  <li><i>Number of source documents</i>: Number of documents being 
+indexed</li>
+  <li><i>Total filesize of source documents</i>: Self-explanatory</li>
+  <li><i>Average filesize of source documents</i>: 
+Self-explanatory</li>
+  <li><i>Source documents storage location</i>: Where are the documents 
+being indexed located? 
+    Filesystem, DB, http,etc</li>
+  <li><i>File type of source documents</i>: Types of files being 
+indexed, e.g. HTML files, XML files, PDF files, etc.</li>
+  <li><i>Parser(s) used, if any</i>: Parsers used for parsing the 
+various files for indexing, 
+    e.g. XML parser, HTML parser, etc.</li>
+  <li><i>Analyzer(s) used</i>: Type of Lucene analyzer used</li>
+  <li><i>Number of fields per document</i>: Number of Fields each 
+Document contains</li>
+  <li><i>Type of fields</i>: Type of each field</li>
+  <li><i>Index persistence</i>: Where the index is stored, e.g. 
+FSDirectory, SqlDirectory, etc</li>
+  </p>
+  <p>
+  <b>Figures</b><br/>
+  <li><i>Time taken (in ms/s as an average of at least 3 indexing 
+runs)</i>: Time taken to index to index all files</li>
+  <li><i>Time taken / 1000 docs indexed</i>: Time taken to index 1000 
+files</li>
+  <li><i>Memory consumption</i>: Self-explanatory</li>
+  <li><i>Query speed</i>: average time a query takes, type
+    of queries (e.g. simple one-term query, phrase query),
+    not measuring any overhead outside Lucene</li>
+  </p>
+  <p>
+  <b>Notes</b><br/>
+  <li><i>Notes</i>: Any comments which don't belong in the above, 
+special tuning/strategies, etc</li>
+  </p>
+  </ul>
+</benchmark>

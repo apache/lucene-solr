@@ -1,9 +1,9 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta content="Apache Forrest" name="Generator">
-<meta name="Forrest-version" content="0.7">
+<meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="pelt">
 <title>
 	Apache Lucene - Overview
@@ -18,44 +18,89 @@
 <body onload="init()">
 <script type="text/javascript">ndeSetTextSize();</script>
 <div id="top">
+<!--+
+    |breadtrail
+    +-->
 <div class="breadtrail">
 <a href="http://www.apache.org/">Apache</a> &gt; <a href="http://lucene.apache.org/">Lucene</a><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script>
 </div>
+<!--+
+    |header
+    +-->
 <div class="header">
+<!--+
+    |start group logo
+    +-->
 <div class="grouplogo">
 <a href="http://lucene.apache.org/"><img class="logoImage" alt="Lucene" src="http://www.apache.org/images/asf_logo_simple.png" title="Apache Lucene"></a>
 </div>
+<!--+
+    |end group logo
+    +-->
+<!--+
+    |start Project Logo
+    +-->
 <div class="projectlogo">
 <a href="http://lucene.apache.org/java/"><img class="logoImage" alt="Lucene" src="http://lucene.apache.org/images/lucene_green_300.gif" title="Apache Lucene is a high-performance, full-featured text search engine library written entirely in
       Java. It is a technology suitable for nearly any application that requires full-text search, especially cross-platform."></a>
 </div>
+<!--+
+    |end Project Logo
+    +-->
+<!--+
+    |start Search
+    +-->
 <div class="searchbox">
 <form action="http://www.google.com/search" method="get" class="roundtopsmall">
 <input value="lucene.apache.org" name="sitesearch" type="hidden"><input onFocus="getBlank (this, 'Search the site with google');" size="25" name="q" id="query" type="text" value="Search the site with google">&nbsp; 
-                    <input attr="value" name="Search" value="Search" type="submit">
+                    <input name="Search" value="Search" type="submit">
 </form>
 </div>
+<!--+
+    |end search
+    +-->
+<!--+
+    |start Tabs
+    +-->
 <ul id="tabs">
 <li class="current">
-<a class="base-selected" href="index.html">Main</a>
+<a class="selected" href="index.html">Main</a>
 </li>
 <li>
-<a class="base-not-selected" href="http://wiki.apache.org/lucene-java">Wiki</a>
+<a class="unselected" href="http://wiki.apache.org/lucene-java">Wiki</a>
 </li>
 </ul>
+<!--+
+    |end Tabs
+    +-->
 </div>
 </div>
 <div id="main">
 <div id="publishedStrip">
+<!--+
+    |start Subtabs
+    +-->
 <div id="level2tabs"></div>
+<!--+
+    |end Endtabs
+    +-->
 <script type="text/javascript"><!--
-document.write("<text>Last Published:</text> " + document.lastModified);
+document.write("Last Published: " + document.lastModified);
 //  --></script>
 </div>
+<!--+
+    |breadtrail
+    +-->
 <div class="breadtrail">
-             
+
              &nbsp;
            </div>
+<!--+
+    |start Menu, mainarea
+    +-->
+<!--+
+    |start Menu
+    +-->
 <div id="menu">
 <div onclick="SwitchMenu('menu_selected_1.1', 'skin/')" id="menu_selected_1.1Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">About</div>
 <div id="menu_selected_1.1" class="selectedmenuitemgroup" style="display: block;">
@@ -146,6 +191,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <div class="menuitem">
 <a href="http://lucene.apache.org/java/2_1_0/">2.1.0</a>
 </div>
+<div class="menuitem">
+<a href="http://lucene.apache.org/java/2_2_0/">2.2.0</a>
+</div>
 </div>
 <div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Related Projects</div>
 <div id="menu_1.5" class="menuitemgroup">
@@ -174,8 +222,17 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 </div>
 <div id="roundbottom">
 <img style="display: none" class="corner" height="15" width="15" alt="" src="skin/images/rc-b-l-15-1body-2menu-3menu.png"></div>
+<!--+
+  |alternative credits
+  +-->
 <div id="credit2"></div>
 </div>
+<!--+
+    |end Menu
+    +-->
+<!--+
+    |start content
+    +-->
 <div id="content">
 <div title="Portable Document Format" class="pdflink">
 <a class="dida" href="index.pdf"><img alt="PDF -icon" src="skin/images/pdfdoc.gif" class="skin"><br>
@@ -192,6 +249,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <li>
 <a href="#Lucene News">Lucene News</a>
 <ul class="minitoc">
+<li>
+<a href="#19+June+2007+-+Release+2.2+available">19 June 2007 - Release 2.2 available</a>
+</li>
 <li>
 <a href="#18+February+2007+-+Lucene+at+ApacheCon+Europe">18 February 2007 - Lucene at ApacheCon Europe</a>
 </li>
@@ -258,7 +318,43 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 <a name="N10030"></a><a name="Lucene News"></a>
 <h2 class="boxed">Lucene News</h2>
 <div class="section">
-<a name="N10036"></a><a name="18+February+2007+-+Lucene+at+ApacheCon+Europe"></a>
+<a name="N10036"></a><a name="19+June+2007+-+Release+2.2+available"></a>
+<h3 class="boxed">19 June 2007 - Release 2.2 available</h3>
+<p>This release has many improvements since release 2.1. New major features:
+			<ul>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/index/IndexWriter.html">"Point-in-time" searching</a>
+</li>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/payloads/package-summary.html">Payloads</a>
+</li>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/function/package-summary.html">Funtion queries</a>
+</li>
+			  
+<li> 
+<a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/document/Field.html">New API for preanalyzed fields</a>
+</li>
+			
+</ul>
+			In addition Lucene 2.2 has many performance
+              improvements, bug fixes, etc. See
+              <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_2_2_0/CHANGES.txt">CHANGES.txt</a>
+              for details.
+            </p>
+<p>Lucene 2.2 includes index format changes that are not readable
+              by older versions of Lucene.  Lucene 2.2 can both read and update
+              older Lucene indexes.  Adding to an index with an older format
+              will cause it to be converted to the newer format.
+            </p>
+<p>Binary and source distributions are
+              available
+              <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
+            </p>
+<a name="N10069"></a><a name="18+February+2007+-+Lucene+at+ApacheCon+Europe"></a>
 <h3 class="boxed">18 February 2007 - Lucene at ApacheCon Europe</h3>
 <p>
               
@@ -272,7 +368,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
               Hadoop committer Owen O'Malley's <a href="http://www.eu.apachecon.com/program/talk/36">Introduction to Hadoop</a>.
             </p>
 <p>Registration is now open on the ApacheCon website.</p>
-<a name="N10069"></a><a name="17+February+2007+-+Release+2.1+available"></a>
+<a name="N1009C"></a><a name="17+February+2007+-+Release+2.1+available"></a>
 <h3 class="boxed">17 February 2007 - Release 2.1 available</h3>
 <p>This release has many improvements since release
               2.0, including new features, performance
@@ -289,24 +385,24 @@ document.write("<text>Last Published:</text> " + document.lastModified);
               available
               <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>.
             </p>
-<a name="N10081"></a><a name="3+January+2007+-+Nightly+Source+builds+available"></a>
+<a name="N100B4"></a><a name="3+January+2007+-+Nightly+Source+builds+available"></a>
 <h3 class="boxed">3 January 2007 - Nightly Source builds available</h3>
 <p>Nightly source builds of the current development version of Lucene
                     are now available at
                     <a href="http://people.apache.org/builds/lucene/java/nightly/">http://people.apache.org/builds/lucene/java/nightly/</a>.  Files are named lucene-DATE-src.tar.gz where DATE is the date of the build.
                 </p>
-<a name="N1008F"></a><a name="22+December+2006"></a>
+<a name="N100C2"></a><a name="22+December+2006"></a>
 <h3 class="boxed">22 December 2006</h3>
 <p>The Lucene Java main site is now based on the nightly build of the documentation contained in Subversion.
                     The <a href="api/">API documentation</a> is also
                     based on the nightly build of the source.  Previous released versions of this site (including API references) are available
                     under the "Site Versions" menu item on the left.
                 </p>
-<a name="N1009D"></a><a name="26+November+2006"></a>
+<a name="N100D0"></a><a name="26+November+2006"></a>
 <h3 class="boxed">26 November 2006</h3>
 <p>New <a href="http://forrest.apache.org">Forrest</a> based site released.  The Lucene Java website now has a consistent look and feel with its <a href="http://lucene.apache.org">Lucene</a> siblings.
 	    </p>
-<a name="N100AE"></a><a name="26+May+2006+-+Release+2.0.0+available"></a>
+<a name="N100E1"></a><a name="26+May+2006+-+Release+2.0.0+available"></a>
 <h3 class="boxed">26 May 2006 - Release 2.0.0 available</h3>
 <p>This is mostly a bugfix release from release 1.9.1.
                     Note however that deprecated 1.x features have now
@@ -323,7 +419,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>
                     .
                 </p>
-<a name="N100C3"></a><a name="2+March+2006+-+Release+1.9.1+available"></a>
+<a name="N100F6"></a><a name="2+March+2006+-+Release+1.9.1+available"></a>
 <h3 class="boxed">2 March 2006 - Release 1.9.1 available</h3>
 <p>This fixes a serious bug in release 1.9-final.
                     <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_1_9_1/CHANGES.txt">
@@ -335,7 +431,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>
                     .
                 </p>
-<a name="N100D8"></a><a name="27+February+2006+-+1.9+final+available"></a>
+<a name="N1010B"></a><a name="27+February+2006+-+1.9+final+available"></a>
 <h3 class="boxed">27 February 2006 - 1.9 final available</h3>
 <p>This release has many improvements since release
                     1.4.3, including new features, performance
@@ -356,7 +452,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">here</a>
                     .
                 </p>
-<a name="N100F0"></a><a name="26+January+2006+-+Nightly+builds+available"></a>
+<a name="N10123"></a><a name="26+January+2006+-+Nightly+builds+available"></a>
 <h3 class="boxed">26 January 2006 - Nightly builds available</h3>
 <p>Nightly builds of the current development version of Lucene, to be released as Lucene 1.9,
                     are now available at
@@ -364,7 +460,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                         http://cvs.apache.org/dist/lucene/java/nightly/</a>
                     .
                 </p>
-<a name="N100FE"></a><a name="28+October+2005+-+Lucene+at+ApacheCon"></a>
+<a name="N10131"></a><a name="28+October+2005+-+Lucene+at+ApacheCon"></a>
 <h3 class="boxed">28 October 2005 - Lucene at ApacheCon</h3>
 <p>
                     
@@ -403,13 +499,13 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     the fourth topic will provide a broader context for understanding when and where to use these
                     features.
                 </p>
-<a name="N1012C"></a><a name="14+February+2005+-+Lucene+moves+to+Apache+top-level"></a>
+<a name="N1015F"></a><a name="14+February+2005+-+Lucene+moves+to+Apache+top-level"></a>
 <h3 class="boxed">14 February 2005 - Lucene moves to Apache top-level</h3>
 <p>Lucene has migrated from Apache's Jakarta project to the top-level. Along with this migration,
                     the source code repository has been converted to Subversion. The migration is in progress with
                     some loose ends. Please stay tuned!
                 </p>
-<a name="N10136"></a><a name="December+2004+-"></a>
+<a name="N10169"></a><a name="December+2004+-"></a>
 <h3 class="boxed">December 2004 -
                     Lucene in Action
                     is published
@@ -424,7 +520,7 @@ document.write("<text>Last Published:</text> " + document.lastModified);
                     .
                 </p>
 <p style="clear: both;"></p>
-<a name="N10153"></a><a name="29+November+2004+-+Lucene+1.4.3+Released"></a>
+<a name="N10186"></a><a name="29+November+2004+-+Lucene+1.4.3+Released"></a>
 <h3 class="boxed">29 November 2004 - Lucene 1.4.3 Released</h3>
 <p>This fixes a few bugs in 1.4.2. See
                     <a href="http://svn.apache.org/repos/asf/lucene/java/tags/lucene_1_4_3/CHANGES.txt">
@@ -438,12 +534,18 @@ document.write("<text>Last Published:</text> " + document.lastModified);
 
     
 </div>
+<!--+
+    |end content
+    +-->
 <div class="clearboth">&nbsp;</div>
 </div>
 <div id="footer">
+<!--+
+    |start bottomstrip
+    +-->
 <div class="lastmodified">
 <script type="text/javascript"><!--
-document.write("<text>Last Published:</text> " + document.lastModified);
+document.write("Last Published: " + document.lastModified);
 //  --></script>
 </div>
 <div class="copyright">
@@ -451,6 +553,9 @@ document.write("<text>Last Published:</text> " + document.lastModified);
          2006 <a href="http://www.apache.org/licenses/">The Apache Software Foundation.</a>
 </div>
 <div id="logos"></div>
+<!--+
+    |end bottomstrip
+    +-->
 </div>
 </body>
 </html>
