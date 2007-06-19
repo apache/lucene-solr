@@ -65,6 +65,9 @@ New Features
     requests depending on the request attributes.  This class will likely 
     replace XmlUpdateRequestHandler.  (Thorsten Scherler, ryan)
 
+ 9. SOLR-264: Added RandomSortField, a utility field with a random sort order.
+    This field type should only be used for sorting. (ryan) 
+
 Changes in runtime behavior
 
 Optimizations
