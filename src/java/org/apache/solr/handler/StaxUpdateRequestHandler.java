@@ -61,7 +61,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
  *  </requestHandler>
  * 
  */
-public class StaxUpdateRequestHandler extends RequestHandlerBase
+public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
 {
   public static Logger log = Logger.getLogger(StaxUpdateRequestHandler.class.getName());
 

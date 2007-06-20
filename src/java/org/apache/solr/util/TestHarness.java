@@ -26,6 +26,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -68,7 +69,7 @@ public class TestHarness {
   private SolrCore core;
   private XPath xpath = XPathFactory.newInstance().newXPath();
   private DocumentBuilder builder;
-  XmlUpdateRequestHandler updater;
+  public XmlUpdateRequestHandler updater;
         
   /**
    * Assumes "solrconfig.xml" is the config file to use, and
@@ -126,7 +127,6 @@ public class TestHarness {
     StringWriter writer = new StringWriter(32000);
     
     updater.doLegacyUpdate(req, writer);
-    
     return writer.toString();
   }
   

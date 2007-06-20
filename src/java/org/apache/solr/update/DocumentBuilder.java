@@ -169,14 +169,15 @@ public class DocumentBuilder {
    * @since solr 1.3
    */
   public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
-  {    
+  { 
     Document out = new Document();
     
     // Load fields from SolrDocument to Document
     for( String name : doc.getFieldNames() ) {
-      SchemaField sfield = schema.getField(name);
+      SchemaField sfield = schema.getFieldOrNull(name);
       Float b = doc.getBoost( name );
       float boost = (b==null) ? 1.0f : b.floatValue();
+      boolean used = false;
       
       // Make sure it has the correct number
       Collection<Object> vals = doc.getFieldValues( name );
@@ -186,17 +187,45 @@ public class DocumentBuilder {
               sfield.getName() + ": " +vals.toString() );
       }
       
+      SchemaField[] destArr = schema.getCopyFields(name);
+      
       // load each field value
       for( Object v : vals ) {
         String val = null;
-        if( v instanceof Date && sfield.getType() instanceof DateField ) {
+        
+        // HACK -- date conversion
+        if( sfield != null && v instanceof Date && sfield.getType() instanceof DateField ) {
           DateField df = (DateField)sfield.getType();
           val = df.toInternal( (Date)v )+'Z';
         }
         else if (v != null) {
           val = v.toString();
         }
-        out.add( sfield.createField( val, boost ) );
+        
+        if( sfield != null ) {
+          used = true;
+          Field f = sfield.createField( val, boost );
+          if( f != null ) { // null fields are not added
+            out.add( f );
+          }
+        }
+        
+        // Add the copy fields
+        for( SchemaField sf : destArr ) {
+          
+          // check if the copy field is a multivalued or not
+          if( !sf.multiValued() && out.get( sf.getName() ) != null ) {
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                "ERROR: multiple values encountered for non multiValued copy field " + 
+                  sf.getName() + ": " +val ); 
+          }
+          
+          used = true;
+          Field f = sf.createField( val, boost );
+          if( f != null ) { // null fields are not added
+            out.add( f );
+          }
+        }
         
         // In lucene, the boost for a given field is the product of the 
         // document boost and *all* boosts on values of that field. 
@@ -204,8 +233,14 @@ public class DocumentBuilder {
         // first field.
         boost = 1.0f; 
       }
+      
+      // make sure the field was used somehow...
+      if( !used ) {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" + name + "'");
+      }
     }
     
+        
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'
     for (SchemaField field : schema.getRequiredFields()) {
