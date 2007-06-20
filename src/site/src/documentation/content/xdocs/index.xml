@@ -35,7 +35,7 @@
 			<ul>
 			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/index/IndexWriter.html">"Point-in-time" searching</a></li>
 			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/payloads/package-summary.html">Payloads</a></li>
-			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/function/package-summary.html">Funtion queries</a></li>
+			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/search/function/package-summary.html">Function queries</a></li>
 			  <li> <a href="http://lucene.apache.org/java/2_2_0/api/index.html?org/apache/lucene/document/Field.html">New API for preanalyzed fields</a></li>
 			</ul>
 			In addition Lucene 2.2 has many performance
