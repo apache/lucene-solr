@@ -66,7 +66,10 @@ New Features
     replace XmlUpdateRequestHandler.  (Thorsten Scherler, ryan)
 
  9. SOLR-264: Added RandomSortField, a utility field with a random sort order.
-    This field type should only be used for sorting. (ryan) 
+    The seed is based on a hash of the field name, so a dynamic field
+    of this type is useful for generating different random sequences.
+    This field type should only be used for sorting or as a value source
+    in a FunctionQuery (ryan, hossman, yonik) 
 
 Changes in runtime behavior
 
