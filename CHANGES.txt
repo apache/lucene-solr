@@ -76,6 +76,8 @@ Changes in runtime behavior
 Optimizations
 
 Bug Fixes
+ 1. Make TextField respect sortMissingFirst and sortMissingLast fields.
+    (J.J. Larrea via yonik)
 
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the

@@ -37,7 +37,7 @@ public class TextField extends CompressableField {
   }
 
   public SortField getSortField(SchemaField field, boolean reverse) {
-    return new SortField(field.name,SortField.STRING, reverse);
+    return getStringSort(field, reverse);
   }
 
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
