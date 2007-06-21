@@ -191,9 +191,8 @@ public class StrUtils {
       char ch = val.charAt(i);
       if (ch < 32) {
         dest.append('%');
-        // Hmmm, if we used StringBuilder rather than Appendable, it
-        // could add an integer more efficiently.
-        dest.append(Integer.toString(ch));
+        if (ch < 0x10) dest.append('0');
+        dest.append(Integer.toHexString(ch));
       } else {
         switch (ch) {
           case ' ': dest.append('+'); break;
