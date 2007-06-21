@@ -141,8 +141,8 @@ fi
 # install using hard links into temporary directory
 # remove original index and then atomically copy new one into place
 logMessage installing snapshot ${name}
-cp -lr ${name}/ ${data_dir}/index.tmp$$
-/bin/rm -rf ${data_dir}/index
+cp -lr ${name}/ ${data_dir}/index.tmp$$ && \
+/bin/rm -rf ${data_dir}/index && \
 mv -f ${data_dir}/index.tmp$$ ${data_dir}/index
 
 # update distribution stats
