@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -127,6 +128,9 @@ public class LukeRequestHandler extends RequestHandlerBase
       docinfo.add( "lucene", info );
       docinfo.add( "solr", doc );
       rsp.add( "doc", docinfo );
+    }
+    else if ( "schema".equals( params.get( "show" ) ) ) {
+      rsp.add( "schema", getSchemaInfo( req.getSchema() ) );
     }
     else {
       // If no doc is given, show all fields and top terms
@@ -335,6 +339,48 @@ public class LukeRequestHandler extends RequestHandlerBase
     return finfo;
   }
     
+  /**
+   * Return info from the index
+   */
+  private static SimpleOrderedMap<Object> getSchemaInfo( IndexSchema schema ) 
+  { 
+    Map<String, List<String>> typeusemap = new HashMap<String, List<String>>();
+    SimpleOrderedMap<Object> fields = new SimpleOrderedMap<Object>();
+    for( SchemaField f : schema.getFields().values() ) {
+      FieldType ft = f.getType();
+      SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
+      field.add( "type", ft.getTypeName() );
+      field.add( "flags", getFieldFlags(f) );
+      if( f.isRequired() ) {
+        field.add( "required", f.isRequired() );
+      }
+      if( f.getDefaultValue() != null ) {
+        field.add( "default", f.getDefaultValue() );
+      }
+      fields.add( f.getName(), field );
+      
+      List<String> v = typeusemap.get( ft.getTypeName() );
+      if( v == null ) {
+        v = new ArrayList<String>();
+      }
+      v.add( f.getName() );
+      typeusemap.put( ft.getTypeName(), v );
+    }
+
+    SimpleOrderedMap<Object> types = new SimpleOrderedMap<Object>();
+    for( FieldType ft : schema.getFieldTypes().values() ) {
+      SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
+      field.add( "fields", typeusemap.get( ft.getTypeName() ) );
+      field.add( "tokenized", ft.isTokenized() );
+      field.add( "analyzer", ft.getAnalyzer()+"" );
+      types.add( ft.getTypeName(), field );
+    }
+
+    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
+    finfo.add("fields", fields);
+    finfo.add("types", types);
+    return finfo;
+  }
   
   private static SimpleOrderedMap<Object> getIndexInfo( IndexReader reader, boolean countTerms ) throws IOException
   {
@@ -528,6 +574,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return info;
   }
 }
+
 
 
 
