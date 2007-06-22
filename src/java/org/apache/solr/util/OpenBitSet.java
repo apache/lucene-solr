@@ -246,6 +246,35 @@ public class OpenBitSet implements Cloneable, Serializable {
     bits[wordNum] |= bitmask;
   }
 
+  /** Sets a range of bits, expanding the set size if necessary
+   *
+   * @param startIndex lower index
+   * @param endIndex one-past the last bit to set
+   */
+  public void set(long startIndex, long endIndex) {
+    if (endIndex <= startIndex) return;
+
+    int startWord = (int)(startIndex>>6);
+
+    // since endIndex is one past the end, this is index of the last
+    // word to be changed.
+    int endWord   = expandingWordNum(endIndex-1);
+
+    long startmask = -1L << startIndex;
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
+
+    if (startWord == endWord) {
+      bits[startWord] |= (startmask & endmask);
+      return;
+    }
+
+    bits[startWord] |= startmask;
+    Arrays.fill(bits, startWord+1, endWord, -1L);
+    bits[endWord] |= endmask;
+  }
+
+
+
   protected int expandingWordNum(long index) {
     int wordNum = (int)(index >> 6);
     if (wordNum>=wlen) {
@@ -283,7 +312,7 @@ public class OpenBitSet implements Cloneable, Serializable {
     bits[wordNum] &= ~bitmask;
   }
 
-  /** clears a bit, allowing access beyond the current set size */
+  /** clears a bit, allowing access beyond the current set size without changing the size.*/
   public void clear(long index) {
     int wordNum = (int)(index >> 6); // div 64
     if (wordNum>=wlen) return;
@@ -291,6 +320,43 @@ public class OpenBitSet implements Cloneable, Serializable {
     long bitmask = 1L << bit;
     bits[wordNum] &= ~bitmask;
   }
+
+  /** Clears a range of bits.  Clearing past the end does not change the size of the set.
+   *
+   * @param startIndex lower index
+   * @param endIndex one-past the last bit to clear
+   */
+  public void clear(long startIndex, long endIndex) {
+    if (endIndex <= startIndex) return;
+
+    int startWord = (int)(startIndex>>6);
+
+    // since endIndex is one past the end, this is index of the last
+    // word to be changed.
+    int endWord   = (int)((endIndex-1)>>6);
+
+    long startmask = -1L << startIndex;
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
+
+    // invert masks since we are clearing
+    startmask = ~startmask;
+    endmask = ~endmask;
+
+    if (startWord == endWord) {
+      bits[startWord] &= (startmask | endmask);
+      return;
+    }
+
+    bits[startWord] &= startmask;
+
+    int middle = Math.min(wlen, endWord);
+    Arrays.fill(bits, startWord+1, middle, 0L);
+    if (endWord < wlen) {
+      bits[endWord] &= endmask;
+    }
+  }
+
+
 
   /** Sets a bit and returns the previous value.
    * The index should be less than the OpenBitSet size.
@@ -375,22 +441,21 @@ public class OpenBitSet implements Cloneable, Serializable {
     if (endIndex <= startIndex) return;
 
     int oldlen = wlen;
-    ensureCapacity(endIndex);
     int startWord = (int)(startIndex>>6);
-    int endWord   = (int)(endIndex>>6);
 
-    /*** Grrr, java shifting wraps around so -1L>>64 == -1
+    // since endIndex is one past the end, this is index of the last
+    // word to be changed.
+    int endWord   = expandingWordNum(endIndex-1);
+
+    /*** Grrr, java shifting wraps around so -1L>>>64 == -1
+     * for that reason, make sure not to use endmask if the bits to flip will
+     * be zero in the last word (redefine endWord to be the last changed...)
     long startmask = -1L << (startIndex & 0x3f);     // example: 11111...111000
     long endmask = -1L >>> (64-(endIndex & 0x3f));   // example: 00111...111111
     ***/
 
     long startmask = -1L << startIndex;
-    long endmask = (endIndex&0x3f)==0 ? 0 : -1L >>> (64-endIndex);
-
-    if (this.wlen <= endWord) {
-      this.wlen = endWord;
-      if (endmask!=0) this.wlen++;
-    }
+    long endmask = -1L >>> -endIndex;  // 64-endIndex is the same as -endIndex due to wrap
 
     if (startWord == endWord) {
       bits[startWord] ^= (startmask & endmask);
@@ -399,7 +464,7 @@ public class OpenBitSet implements Cloneable, Serializable {
 
     bits[startWord] ^= startmask;
 
-    int middle = Math.min(oldlen,endWord);
+    int middle = Math.min(oldlen, endWord);
     for (int i=startWord+1; i<middle; i++) {
       bits[i] = ~bits[i];
     }
@@ -408,9 +473,7 @@ public class OpenBitSet implements Cloneable, Serializable {
       Arrays.fill(bits,middle,endWord,-1L);
     }
 
-    if (endmask!=0) {
-      bits[endWord] ^= endmask;
-    }
+    bits[endWord] ^= endmask;
   }
 
 

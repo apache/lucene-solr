@@ -75,7 +75,28 @@ public class TestOpenBitSet extends TestCase {
       if (sz>0) {
         int nOper = rand.nextInt(sz);
         for (int j=0; j<nOper; j++) {
-          int idx;
+          int idx;         
+          int idx1,idx2;
+
+          idx1 = rand.nextInt(sz);
+          idx2 = rand.nextInt(sz);
+          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
+          a.set(idx1,idx2);
+          b.set(idx1,idx2);
+
+          idx1 = rand.nextInt(sz);
+          idx2 = rand.nextInt(sz);
+          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
+          a.clear(idx1,idx2);
+          b.clear(idx1,idx2);
+
+          idx1 = rand.nextInt(sz);
+          idx2 = rand.nextInt(sz);
+          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
+          a.flip(idx1,idx2);
+          b.flip(idx1,idx2);
+
+
           idx = rand.nextInt(sz);
           a.set(idx);
           b.fastSet(idx);
@@ -85,11 +106,6 @@ public class TestOpenBitSet extends TestCase {
           idx = rand.nextInt(sz);
           a.flip(idx);
           b.fastFlip(idx);
-          int idx1 = rand.nextInt(sz);
-          int idx2 = rand.nextInt(sz);
-          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
-          a.flip(idx1,idx2);
-          b.flip(idx1,idx2);
 
           boolean val = b.flipAndGet(idx);
           boolean val2 = b.flipAndGet(idx);
@@ -98,6 +114,7 @@ public class TestOpenBitSet extends TestCase {
           val = b.getAndSet(idx);
           assertTrue(val2 == val);
           assertTrue(b.get(idx));
+          
           if (!val) b.fastClear(idx);
           assertTrue(b.get(idx) == val);
         }
