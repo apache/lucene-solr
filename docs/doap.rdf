@@ -28,6 +28,11 @@
     <category rdf:resource="http://projects.apache.org/category/database" />
     <release>
       <Version>
+        <name>Lucene 2.2.0</name>
+        <created>2007-06-19</created>
+        <revision>2.2.0</revision>
+      </Version>
+      <Version>
         <name>Lucene 2.1.0</name>
         <created>2007-02-17</created>
         <revision>2.1.0</revision>
