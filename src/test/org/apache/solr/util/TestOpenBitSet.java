@@ -76,26 +76,6 @@ public class TestOpenBitSet extends TestCase {
         int nOper = rand.nextInt(sz);
         for (int j=0; j<nOper; j++) {
           int idx;         
-          int idx1,idx2;
-
-          idx1 = rand.nextInt(sz);
-          idx2 = rand.nextInt(sz);
-          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
-          a.set(idx1,idx2);
-          b.set(idx1,idx2);
-
-          idx1 = rand.nextInt(sz);
-          idx2 = rand.nextInt(sz);
-          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
-          a.clear(idx1,idx2);
-          b.clear(idx1,idx2);
-
-          idx1 = rand.nextInt(sz);
-          idx2 = rand.nextInt(sz);
-          if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
-          a.flip(idx1,idx2);
-          b.flip(idx1,idx2);
-
 
           idx = rand.nextInt(sz);
           a.set(idx);
@@ -122,15 +102,30 @@ public class TestOpenBitSet extends TestCase {
 
       // test that the various ways of accessing the bits are equivalent
       doGet(a,b);
-      doNextSetBit(a,b);
-      doIterate(a,b);
 
-      // test negation
-      int fromIndex = rand.nextInt(sz+80);
-      int toIndex = fromIndex + rand.nextInt((sz>>1)+1);
-      BitSet a_not = (BitSet)a.clone(); a_not.flip(fromIndex,toIndex);
-      OpenBitSet b_not = (OpenBitSet)b.clone(); b_not.flip(fromIndex,toIndex);
-      doIterate(a,b);
+      // test ranges, including possible extension
+      int fromIndex, toIndex;
+      fromIndex = rand.nextInt(sz+80);
+      toIndex = fromIndex + rand.nextInt((sz>>1)+1);
+      BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
+      OpenBitSet bb = (OpenBitSet)b.clone(); bb.flip(fromIndex,toIndex);
+
+      doIterate(aa,bb);   // a problem here is from flip or doIterate
+
+      fromIndex = rand.nextInt(sz+80);
+      toIndex = fromIndex + rand.nextInt((sz>>1)+1);
+      aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
+      bb = (OpenBitSet)b.clone(); bb.clear(fromIndex,toIndex);
+
+      doNextSetBit(aa,bb);  // a problem here is from clear() or nextSetBit
+
+      fromIndex = rand.nextInt(sz+80);
+      toIndex = fromIndex + rand.nextInt((sz>>1)+1);
+      aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
+      bb = (OpenBitSet)b.clone(); bb.set(fromIndex,toIndex);
+
+      doNextSetBit(aa,bb);  // a problem here is from set() or nextSetBit     
+
 
       if (a0 != null) {
         assertEquals( a.equals(a0), b.equals(b0));

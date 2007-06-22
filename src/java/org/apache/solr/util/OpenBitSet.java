@@ -330,6 +330,7 @@ public class OpenBitSet implements Cloneable, Serializable {
     if (endIndex <= startIndex) return;
 
     int startWord = (int)(startIndex>>6);
+    if (startWord >= wlen) return;
 
     // since endIndex is one past the end, this is index of the last
     // word to be changed.
@@ -439,7 +440,6 @@ public class OpenBitSet implements Cloneable, Serializable {
    */
   public void flip(long startIndex, long endIndex) {
     if (endIndex <= startIndex) return;
-
     int oldlen = wlen;
     int startWord = (int)(startIndex>>6);
 
@@ -455,7 +455,7 @@ public class OpenBitSet implements Cloneable, Serializable {
     ***/
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-endIndex is the same as -endIndex due to wrap
+    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex due to wrap
 
     if (startWord == endWord) {
       bits[startWord] ^= (startmask & endmask);
@@ -464,13 +464,8 @@ public class OpenBitSet implements Cloneable, Serializable {
 
     bits[startWord] ^= startmask;
 
-    int middle = Math.min(oldlen, endWord);
-    for (int i=startWord+1; i<middle; i++) {
+    for (int i=startWord+1; i<endWord; i++) {
       bits[i] = ~bits[i];
-    }
-
-    if (endWord>middle) {
-      Arrays.fill(bits,middle,endWord,-1L);
     }
 
     bits[endWord] ^= endmask;
