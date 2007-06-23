@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,7 +34,7 @@ import java.util.List;
  */
 public class CachingTokenFilter extends TokenFilter {
   private List cache;
-  private int index;
+  private Iterator iterator;
   
   public CachingTokenFilter(TokenStream input) {
     super(input);
@@ -44,18 +45,21 @@ public class CachingTokenFilter extends TokenFilter {
       // fill cache lazily
       cache = new LinkedList();
       fillCache();
+      iterator = cache.iterator();
     }
     
-    if (index == cache.size()) {
+    if (!iterator.hasNext()) {
       // the cache is exhausted, return null
       return null;
     }
     
-    return (Token) cache.get(index++);
+    return (Token) iterator.next();
   }
   
   public void reset() throws IOException {
-    index = 0;
+    if(cache != null) {
+    	iterator = cache.iterator();
+    }
   }
   
   private void fillCache() throws IOException {

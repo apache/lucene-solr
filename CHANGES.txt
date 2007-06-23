@@ -14,6 +14,11 @@ New features
 
 Optimizations
 
+ 1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 
+    Tokens that are cached in the LinkedList. This increases performance 
+    significantly, especially when the number of Tokens is large. 
+    (Mark Miller via Michael Busch)
+
 Documentation
 
 Build
