@@ -92,7 +92,9 @@ Other Changes
     to be removed in a later release.  While this change does not affect API
     compatibility, it is recommended to update references to these
     deprecated classes.  (ryan)
-     
+
+ 2. SOLR-268: Tweaks to post.jar so it prints the error message from Solr.
+    (Brian Whitman via hossman)
 
 ================== Release 1.2, 20070602 ==================
 

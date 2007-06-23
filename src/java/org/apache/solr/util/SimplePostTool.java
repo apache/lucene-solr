@@ -264,8 +264,10 @@ public class SimplePostTool {
       }
       
     } catch (IOException e) {
+      try {
+        fatal("Solr returned an error: " + urlc.getResponseMessage());
+      } catch (IOException f) { }
       fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
-      
     } finally {
       if(urlc!=null) urlc.disconnect();
     }
