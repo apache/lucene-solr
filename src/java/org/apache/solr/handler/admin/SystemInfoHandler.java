@@ -134,8 +134,8 @@ public class SystemInfoHandler extends RequestHandlerBase
   }
   
   /**
-   * Try to run a getter function.  This is usefull because java 1.6 has a few extra
-   * usefull functions on the <code>OperatingSystemMXBean</code>
+   * Try to run a getter function.  This is useful because java 1.6 has a few extra
+   * useful functions on the <code>OperatingSystemMXBean</code>
    * 
    * If you are running a sun jvm, there are nice functions in:
    * UnixOperatingSystemMXBean and com.sun.management.OperatingSystemMXBean
@@ -144,7 +144,7 @@ public class SystemInfoHandler extends RequestHandlerBase
    */
   static void addGetterIfAvaliable( Object obj, String getter, NamedList<Object> info )
   {
-    // This is a 1.6 functon, so lets do a little magic to *try* to make it work
+    // This is a 1.6 function, so lets do a little magic to *try* to make it work
     try {
       String n = Character.toUpperCase( getter.charAt(0) ) + getter.substring( 1 );
       Method m = obj.getClass().getMethod( "get" + n );
@@ -158,7 +158,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   
   
   /**
-   * Utility function to execute a funciton
+   * Utility function to execute a function
    */
   private static String execute( String cmd )
   {
