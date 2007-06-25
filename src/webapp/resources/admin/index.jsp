@@ -111,13 +111,8 @@
 	[<a href="http://issues.apache.org/jira/browse/SOLR">Issue Tracker</a>]
 	[<a href="mailto:solr-user@lucene.apache.org">Send Email</a>]
 	<br>
-        [<a href="http://lucene.apache.org/java/docs/queryparsersyntax.html">Lucene Query Syntax</a>]
+        [<a href="http://wiki.apache.org/solr/SolrQuerySyntax">Solr Query Syntax</a>]
   </td>
-<!--
-  <td rowspan="3">
-	<a href="http://incubator.apache.org/solr/"><img align="right" border=0 height="107" width="148" src="power.png"></a>
-  </td>
- -->
 </tr>
 <tr>
   <td>
