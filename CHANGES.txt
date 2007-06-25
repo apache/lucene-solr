@@ -83,6 +83,9 @@ Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
     (J.J. Larrea via yonik)
 
+ 2. autoCommit/maxDocs was not working properly when large autoCommit/maxTime
+    was specified (klaas)
+
 Other Changes
  1. SOLR-135: Moved common classes to org.apache.solr.common and altered the
     build scripts to make two jars: apache-solr-1.3.jar and 
