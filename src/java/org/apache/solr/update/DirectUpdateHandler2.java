@@ -579,6 +579,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
    */
   class CommitTracker implements Runnable 
   {  
+    // scheduler delay for maxDoc-triggered autocommits
+    public final int DOC_COMMIT_DELAY_MS = 250;
+
     // settings, not final so we can change them in testing
     int docsUpperBound;
     long timeUpperBound;
@@ -607,15 +610,27 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     public void addedDocument() {
       docsSinceCommit++;
       lastAddedTime = System.currentTimeMillis();
-      if( pending == null ) {  // Don't start a new event if one is already waiting 
-        if( timeUpperBound > 0 ) { 
-          pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
+      // maxDocs-triggered autoCommit
+      if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
+        if (pending != null && 
+            pending.getDelay(TimeUnit.MILLISECONDS) > DOC_COMMIT_DELAY_MS) {
+          // another commit is pending, but too far away (probably due to
+          // maxTime)
+          pending.cancel(false);
+          pending = null;
         }
-        else if( docsUpperBound > 0 && (docsSinceCommit > docsUpperBound) ) {
+        if (pending == null) {
           // 1/4 second seems fast enough for anyone using maxDocs
-          pending = scheduler.schedule( this, 250, TimeUnit.MILLISECONDS );
+          pending = scheduler.schedule(this, DOC_COMMIT_DELAY_MS, 
+                                       TimeUnit.MILLISECONDS);
         }
       }
+      // maxTime-triggered autoCommit
+      if( pending == null && timeUpperBound > 0 ) { 
+        // Don't start a new event if one is already waiting 
+        pending = scheduler.schedule( this, timeUpperBound, TimeUnit.MILLISECONDS );
+      }
+      
     }
 
     /** Inform tracker that a commit has occurred, cancel any pending commits */

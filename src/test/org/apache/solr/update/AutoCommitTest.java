@@ -58,7 +58,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     DirectUpdateHandler2 updater = (DirectUpdateHandler2)SolrCore.getSolrCore().getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
-    tracker.timeUpperBound = -1;
+    tracker.timeUpperBound = 100000;
     tracker.docsUpperBound = 14;
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
