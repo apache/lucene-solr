@@ -208,7 +208,10 @@ public class MultiFieldQueryParser extends QueryParser
     {
       QueryParser qp = new QueryParser(fields[i], analyzer);
       Query q = qp.parse(queries[i]);
-      bQuery.add(q, BooleanClause.Occur.SHOULD);
+      if (q!=null && // q never null, just being defensive
+          (!(q instanceof BooleanQuery) || ((BooleanQuery)q).getClauses().length>0)) {
+        bQuery.add(q, BooleanClause.Occur.SHOULD);
+      }
     }
     return bQuery;
   }
@@ -251,7 +254,10 @@ public class MultiFieldQueryParser extends QueryParser
     for (int i = 0; i < fields.length; i++) {
       QueryParser qp = new QueryParser(fields[i], analyzer);
       Query q = qp.parse(query);
-      bQuery.add(q, flags[i]);
+      if (q!=null && // q never null, just being defensive 
+          (!(q instanceof BooleanQuery) || ((BooleanQuery)q).getClauses().length>0)) {
+        bQuery.add(q, flags[i]);
+      }
     }
     return bQuery;
   }
@@ -297,7 +303,10 @@ public class MultiFieldQueryParser extends QueryParser
     {
       QueryParser qp = new QueryParser(fields[i], analyzer);
       Query q = qp.parse(queries[i]);
-      bQuery.add(q, flags[i]);
+      if (q!=null && // q never null, just being defensive
+          (!(q instanceof BooleanQuery) || ((BooleanQuery)q).getClauses().length>0)) {
+        bQuery.add(q, flags[i]);
+      }
     }
     return bQuery;
   }

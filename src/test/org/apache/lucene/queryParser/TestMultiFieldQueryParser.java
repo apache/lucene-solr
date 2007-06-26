@@ -26,9 +26,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -42,6 +44,32 @@ import java.util.Map;
  */
 public class TestMultiFieldQueryParser extends TestCase {
 
+  /** test stop words arsing for both the non static form, and for the 
+   * corresponding static form (qtxt, fields[]). */
+  public void tesStopwordsParsing() throws Exception {
+    assertStopQueryEquals("one", "b:one t:one");  
+    assertStopQueryEquals("one stop", "b:one t:one");  
+    assertStopQueryEquals("one (stop)", "b:one t:one");  
+    assertStopQueryEquals("one ((stop))", "b:one t:one");  
+    assertStopQueryEquals("stop", "");  
+    assertStopQueryEquals("(stop)", "");  
+    assertStopQueryEquals("((stop))", "");  
+  }
+
+  // verify parsing of query using a stopping analyzer  
+  private void assertStopQueryEquals (String qtxt, String expectedRes) throws Exception {
+    String[] fields = {"b", "t"};
+    Occur occur[] = {Occur.SHOULD, Occur.SHOULD};
+    TestQueryParser.QPTestAnalyzer a = new TestQueryParser.QPTestAnalyzer();
+    MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, a);
+    
+    Query q = mfqp.parse(qtxt);
+    assertEquals(expectedRes, q.toString());
+    
+    q = MultiFieldQueryParser.parse(qtxt, fields, occur, a);
+    assertEquals(expectedRes, q.toString());
+  }
+  
   public void testSimple() throws Exception {
     String[] fields = {"b", "t"};
     MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer());
@@ -151,6 +179,18 @@ public class TestMultiFieldQueryParser extends TestCase {
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
     }
+    
+    // check also with stop words for this static form (qtxts[], fields[]).
+    TestQueryParser.QPTestAnalyzer stopA = new TestQueryParser.QPTestAnalyzer();
+    
+    String[] queries6 = {"((+stop))", "+((stop))"};
+    q = MultiFieldQueryParser.parse(queries6, fields, stopA);
+    assertEquals("", q.toString());
+    
+    String[] queries7 = {"one ((+stop)) +more", "+((stop)) +two"};
+    q = MultiFieldQueryParser.parse(queries7, fields, stopA);
+    assertEquals("(b:one +b:more) (+t:two)", q.toString());
+
   }
 
   public void testStaticMethod2() throws ParseException {

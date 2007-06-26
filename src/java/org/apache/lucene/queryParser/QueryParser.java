@@ -143,7 +143,8 @@ public class QueryParser implements QueryParserConstants {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
           // TopLevelQuery is a Query followed by the end-of-input (EOF)
-      return TopLevelQuery(field);
+      Query res = TopLevelQuery(field);
+      return res!=null ? res : new BooleanQuery();
     }
     catch (ParseException tme) {
       // rethrow to include the original query:
@@ -614,9 +615,12 @@ public class QueryParser implements QueryParserConstants {
   protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
     throws ParseException
   {
+    if (clauses.size()==0) {
+      return null; // all clause words were filtered away by the analyzer.
+    }
     BooleanQuery query = new BooleanQuery(disableCoord);
     for (int i = 0; i < clauses.size(); i++) {
-  query.add((BooleanClause)clauses.elementAt(i));
+      query.add((BooleanClause)clauses.elementAt(i));
     }
     return query;
   }
@@ -1258,16 +1262,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  final private boolean jj_3_1() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_2()) {
-    jj_scanpos = xsp;
-    if (jj_3R_3()) return true;
-    }
-    return false;
-  }
-
   final private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1277,6 +1271,16 @@ public class QueryParser implements QueryParserConstants {
   final private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  final private boolean jj_3_1() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_2()) {
+    jj_scanpos = xsp;
+    if (jj_3R_3()) return true;
+    }
     return false;
   }
 

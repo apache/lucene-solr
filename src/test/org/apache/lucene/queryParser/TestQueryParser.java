@@ -365,15 +365,30 @@ public class TestQueryParser extends TestCase {
   }
 
   public void testQPA() throws Exception {
+    assertQueryEquals("term term^3.0 term", qpAnalyzer, "term term^3.0 term");
+    assertQueryEquals("term stop^3.0 term", qpAnalyzer, "term term");
+    
     assertQueryEquals("term term term", qpAnalyzer, "term term term");
     assertQueryEquals("term +stop term", qpAnalyzer, "term term");
     assertQueryEquals("term -stop term", qpAnalyzer, "term term");
+
+    assertQueryEquals("drop AND (stop) AND roll", qpAnalyzer, "+drop +roll");
+    assertQueryEquals("term +(stop) term", qpAnalyzer, "term term");
+    assertQueryEquals("term -(stop) term", qpAnalyzer, "term term");
+    
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
                       "term \"phrase1 phrase2\" term");
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
                       "+term -\"phrase1 phrase2\" term");
+    assertQueryEquals("stop^3", qpAnalyzer, "");
     assertQueryEquals("stop", qpAnalyzer, "");
+    assertQueryEquals("(stop)^3", qpAnalyzer, "");
+    assertQueryEquals("((stop))^3", qpAnalyzer, "");
+    assertQueryEquals("(stop^3)", qpAnalyzer, "");
+    assertQueryEquals("((stop)^3)", qpAnalyzer, "");
+    assertQueryEquals("(stop)", qpAnalyzer, "");
+    assertQueryEquals("((stop))", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
     assertTrue(getQuery("term +stop", qpAnalyzer) instanceof TermQuery);
   }

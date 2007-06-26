@@ -167,7 +167,8 @@ public class QueryParser {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
 	  // TopLevelQuery is a Query followed by the end-of-input (EOF)
-      return TopLevelQuery(field);
+      Query res = TopLevelQuery(field);
+      return res!=null ? res : new BooleanQuery();
     }
     catch (ParseException tme) {
       // rethrow to include the original query:
@@ -638,9 +639,12 @@ public class QueryParser {
   protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
     throws ParseException
   {
+    if (clauses.size()==0) {
+      return null; // all clause words were filtered away by the analyzer.
+    }
     BooleanQuery query = new BooleanQuery(disableCoord);
     for (int i = 0; i < clauses.size(); i++) {
-  query.add((BooleanClause)clauses.elementAt(i));
+      query.add((BooleanClause)clauses.elementAt(i));
     }
     return query;
   }

@@ -10,6 +10,10 @@ API Changes
 
 Bug fixes
 
+ 1. LUCENE-933: QueryParser fixed to not produce empty sub 
+    BooleanQueries "()" even if the Analyzer proudced no 
+    tokens for input. (Doron Cohen)
+    
 New features
 
 Optimizations
