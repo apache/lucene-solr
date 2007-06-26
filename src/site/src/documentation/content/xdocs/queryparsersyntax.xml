@@ -185,7 +185,7 @@
         <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document.</p>
         <p>To search for documents that must contain "jakarta" and may contain "lucene" use the query:</p>
 
-        <source>+jakarta apache</source>
+        <source>+jakarta lucene</source>
         </section>
 
         <section id="NOT">
