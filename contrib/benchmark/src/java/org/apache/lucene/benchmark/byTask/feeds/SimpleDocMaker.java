@@ -37,7 +37,10 @@ public class SimpleDocMaker extends BasicDocMaker {
     "right place at the right time with the right knowledge.";
   
   // return a new docid
-  private synchronized int newdocid() {
+  private synchronized int newdocid() throws NoMoreDataException {
+    if (docID>0 && !forever) {
+      throw new NoMoreDataException();
+    }
     return docID++;
   }
 
@@ -59,11 +62,9 @@ public class SimpleDocMaker extends BasicDocMaker {
   }
 
   protected DocData getNextDocData() throws NoMoreDataException {
-    if (docID>0 && !forever) {
-      throw new NoMoreDataException();
-    }
+    int id = newdocid();
     addBytes(DOC_TEXT.length());
-    return new DocData("doc"+newdocid(),DOC_TEXT, null, null, null);
+    return new DocData("doc"+id, DOC_TEXT, null, null, null);
   }
 
 }

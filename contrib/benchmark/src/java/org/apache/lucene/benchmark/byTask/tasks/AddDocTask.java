@@ -40,8 +40,9 @@ public class AddDocTask extends PerfTask {
     super(runData);
   }
 
-  private static int logStep = -1;
+  private int logStep = -1;
   private int docSize = 0;
+  int count = 0;
   
   // volatile data passed between setup(), doLogic(), tearDown().
   private Document doc = null;
@@ -64,8 +65,7 @@ public class AddDocTask extends PerfTask {
    * @see PerfTask#tearDown()
    */
   public void tearDown() throws Exception {
-    DocMaker docMaker = getRunData().getDocMaker();
-    log(docMaker.getCount());
+    log(++count);
     doc = null;
     super.tearDown();
   }
@@ -77,11 +77,11 @@ public class AddDocTask extends PerfTask {
 
   private void log (int count) {
     if (logStep<0) {
-      // avoid sync although race possible here
+      // init once per instance
       logStep = getRunData().getConfig().get("doc.add.log.step",DEFAULT_ADD_DOC_LOG_STEP);
     }
     if (logStep>0 && (count%logStep)==0) {
-      System.out.println("--> processed (add) "+count+" docs");
+      System.out.println("--> "+Thread.currentThread().getName()+" processed (add) "+count+" docs");
     }
   }
 

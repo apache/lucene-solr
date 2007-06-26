@@ -43,8 +43,8 @@ public class DeleteDocTask extends PerfTask {
     super(runData);
   }
 
-  private static int logStep = -1;
-  private static int deleteStep = -1;
+  private int logStep = -1;
+  private int deleteStep = -1;
   private static int numDeleted = 0;
   private static int lastDeleted = -1;
 

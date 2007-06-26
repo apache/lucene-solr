@@ -123,6 +123,34 @@ public class TestPerfTasksLogic extends TestCase {
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
   }
 
+  /**
+   * Test Parallel Doc Maker logic (for LUCENE-940)
+   */
+  public void testParallelDocMaker() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker",
+        "doc.add.log.step=2697",
+        "doc.term.vector=false",
+        "doc.maker.forever=false",
+        "directory=FSDirectory",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "# ----- alg ",
+        "CreateIndex",
+        "[ { AddDoc } : * ] : 4 ",
+        "CloseIndex",
+    };
+    
+    // 2. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    // 3. test number of docs in the index
+    IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
+    int ndocsExpected = 21578; // that's how many docs there are in the Reuters collecton.
+    assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
+  }
   
   // create the benchmark and execute it. 
   private Benchmark execBenchmark(String[] algLines) throws Exception {

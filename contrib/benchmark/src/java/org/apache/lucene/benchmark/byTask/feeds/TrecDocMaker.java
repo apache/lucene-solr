@@ -41,7 +41,7 @@ public class TrecDocMaker extends BasicDocMaker {
 
   private static final String newline = System.getProperty("line.separator");
   
-  private DateFormat dateFormat [];
+  private ThreadLocal dateFormat = new ThreadLocal();
   private File dataDir = null;
   private ArrayList inputFiles = new ArrayList();
   private int nextFile = 0;
@@ -66,12 +66,6 @@ public class TrecDocMaker extends BasicDocMaker {
     collectFiles(dataDir,inputFiles);
     if (inputFiles.size()==0) {
       throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());
-    }
-    // date format: 30-MAR-1987 14:22:36.87
-    dateFormat = new SimpleDateFormat[DATE_FORMATS.length];
-    for (int i = 0; i < dateFormat.length; i++) {
-      dateFormat[i] = new SimpleDateFormat(DATE_FORMATS[i],Locale.US);
-      dateFormat[i].setLenient(true);
     }
  }
 
@@ -177,17 +171,30 @@ public class TrecDocMaker extends BasicDocMaker {
     // this is the next document, so parse it 
     Date date = parseDate(dateStr);
     HTMLParser p = getHtmlParser();
-    DocData docData = p.parse(name, date, sb, dateFormat[0]);
+    DocData docData = p.parse(name, date, sb, getDateFormat(0));
     addBytes(sb.length()); // count char length of parsed html text (larger than the plain doc body text). 
     
     return docData;
   }
 
+  private DateFormat getDateFormat(int n) {
+    DateFormat df[] = (DateFormat[]) dateFormat.get();
+    if (df == null) {
+      df = new SimpleDateFormat[DATE_FORMATS.length];
+      for (int i = 0; i < df.length; i++) {
+        df[i] = new SimpleDateFormat(DATE_FORMATS[i],Locale.US);
+        df[i].setLenient(true);
+      }
+      dateFormat.set(df);
+    }
+    return df[n];
+  }
+
   private Date parseDate(String dateStr) {
     Date date = null;
-    for (int i=0; i<dateFormat.length; i++) {
+    for (int i=0; i<DATE_FORMATS.length; i++) {
       try {
-        date = dateFormat[i].parse(dateStr.trim());
+        date = getDateFormat(i).parse(dateStr.trim());
         return date;
       } catch (ParseException e) {
       }

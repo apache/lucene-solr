@@ -22,9 +22,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 import java.util.Properties;
 
 /**
@@ -32,11 +30,7 @@ import java.util.Properties;
  */
 public class DemoHTMLParser implements org.apache.lucene.benchmark.byTask.feeds.HTMLParser {
 
-  DateFormat dateFormat;
-  
   public DemoHTMLParser () {
-    dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy kk:mm:ss ",Locale.US);  //Tue, 09 Dec 2003 22:39:08 GMT
-    dateFormat.setLenient(true);
   }
 
   /*
@@ -74,8 +68,11 @@ public class DemoHTMLParser implements org.apache.lucene.benchmark.byTask.feeds.
     return new DocData(name, bodyBuf.toString(), title, props, date);
   }
 
+  /*
+   *  (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.feeds.HTMLParser#parse(java.lang.String, java.util.Date, java.lang.StringBuffer, java.text.DateFormat)
+   */
   public DocData parse(String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException {
-    // TODO Auto-generated method stub
     return parse(name, date, new StringReader(inputText.toString()), dateFormat);
   }
 
