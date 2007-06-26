@@ -73,6 +73,30 @@ public class RandomSortField extends FieldType {
     return key >>> 1; 
   }
 
+  /** 
+   * Given a field name and an IndexReader, get a random hash seed.  
+   * Using dynamic fields, you can force the random order to change 
+   */
+  private static int getSeed(String fieldName, IndexReader r) {
+    return (int) (fieldName.hashCode()^r.getVersion() );
+  }
+
+  @Override
+  public SortField getSortField(SchemaField field, boolean reverse) {
+    return new RandomSort(field.getName(), reverse);
+  }
+
+  @Override
+  public ValueSource getValueSource(SchemaField field) {
+    return new RandomValueSource(field.getName());
+  }
+
+  @Override
+  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException { }
+
+  @Override
+  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException { }
+
   private static class RandomComparator implements ScoreDocComparator {
     final int seed;
 
@@ -93,45 +117,45 @@ public class RandomSortField extends FieldType {
     }
   };
 
-  /** given a field name, get a random hash seed -- using dynamic fields, you can force the random order to change */
-  private static int getSeed(String fieldName) {
-    return fieldName.hashCode();      
-  }
-
   private static class RandomSort extends SortField {
     public RandomSort(String n, boolean reverse) {
       super(n, SortField.CUSTOM, reverse);
     }
+    
+    static class RandomComparatorSource implements SortComparatorSource {
+      final String field;
+      public RandomComparatorSource( String field ){
+        this.field = field;
+      }
+      public ScoreDocComparator newComparator(IndexReader reader, String fieldname) throws IOException {
+        return new RandomComparator( getSeed(field, reader) );
+      }
+      
+      @Override
+      public int hashCode() {
+        return field.hashCode();
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if( !(o instanceof RandomComparatorSource ) ) return false;
+        RandomComparatorSource other = (RandomComparatorSource)o;
+        if( !field.equals( other.field ) ) return false;
+        return true;
+      }
+    }
 
     @Override
     public SortComparatorSource getFactory() {
-      final int seed = getSeed(getField());
-      
-      return new SortComparatorSource() {
-        public ScoreDocComparator newComparator(IndexReader reader, String fieldname) throws IOException {
-          return new RandomComparator( (int)(seed^reader.getVersion()) );
-        }
-
-        @Override
-        public int hashCode() {
-          return getField().hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-          return (o instanceof RandomSort) && getField().equals(((RandomSort) o).getField());
-        }
-      };
+      return new RandomComparatorSource( getField() );
     }
   }
-
+  
   public class RandomValueSource extends ValueSource {
     private final String field;
-    final int seed;
 
     public RandomValueSource(String field) {
       this.field=field;
-      seed = getSeed(field);     
     }
 
     @Override
@@ -140,38 +164,39 @@ public class RandomSortField extends FieldType {
     }
 
     @Override
-    public DocValues getValues(IndexReader reader) throws IOException {
+    public DocValues getValues(final IndexReader reader) throws IOException {
       return new DocValues() {
-        @Override
-        public float floatVal(int doc) {
-          return (float)hash(doc+seed);
-        }
+          private final int seed = getSeed(field, reader);
+          @Override
+          public float floatVal(int doc) {
+            return (float)hash(doc+seed);
+          }
 
-        @Override
-        public int intVal(int doc) {
-          return (int)hash(doc+seed);
-        }
+          @Override
+          public int intVal(int doc) {
+            return (int)hash(doc+seed);
+          }
 
-        @Override
-        public long longVal(int doc) {
-          return (long)hash(doc+seed);
-        }
+          @Override
+          public long longVal(int doc) {
+            return (long)hash(doc+seed);
+          }
 
-        @Override
-        public double doubleVal(int doc) {
-          return (double)hash(doc+seed);
-        }
+          @Override
+          public double doubleVal(int doc) {
+            return (double)hash(doc+seed);
+          }
 
-        @Override
-        public String strVal(int doc) {
-          return Integer.toString(hash(doc+seed));
-        }
+          @Override
+          public String strVal(int doc) {
+            return Integer.toString(hash(doc+seed));
+          }
 
-        @Override
-        public String toString(int doc) {
-          return description() + '=' + intVal(doc);
-        }
-      };
+          @Override
+          public String toString(int doc) {
+            return description() + '=' + intVal(doc);
+          }
+        };
     }
 
     @Override
@@ -186,22 +211,6 @@ public class RandomSortField extends FieldType {
       return field.hashCode();
     };
   }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean reverse) {
-    return new RandomSort(field.getName(), reverse);
-  }
-
-  @Override
-  public ValueSource getValueSource(SchemaField field) {
-    return new RandomValueSource(field.getName());
-  }
-
-  @Override
-  public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException { }
-
-  @Override
-  public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException { }
 }
 
 
