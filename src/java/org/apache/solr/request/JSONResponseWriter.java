@@ -458,7 +458,6 @@ class JSONWriter extends TextResponseWriter {
 
 
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    writer.write('"');
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
     if (needsEscaping) {
@@ -471,33 +470,40 @@ class JSONWriter extends TextResponseWriter {
       characters (U+0000 through U+001F).
      */
 
+      StringBuilder sb = new StringBuilder(val.length()+8);
+      sb.append('"');
+
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
         switch(ch) {
           case '"':
           case '\\':
-            writer.write('\\');
-            writer.write(ch);
+            sb.append('\\');
+            sb.append(ch);
             break;
-          case '\r': writer.write("\\r"); break;
-          case '\n': writer.write("\\n"); break;
-          case '\t': writer.write("\\t"); break;
-          case '\b': writer.write("\\b"); break;
-          case '\f': writer.write("\\f"); break;
+          case '\r': sb.append('\\').append('r'); break;
+          case '\n': sb.append('\\').append('n'); break;
+          case '\t': sb.append('\\').append('t'); break;
+          case '\b': sb.append('\\').append('b'); break;
+          case '\f': sb.append('\\').append('f'); break;
           // case '/':
           default: {
             if (ch <= 0x1F) {
-              unicodeEscape(writer,ch);
+              unicodeEscape(sb,ch);
             } else {
-              writer.write(ch);
+              sb.append(ch);
             }
           }
         }
       }
+
+      sb.append('"');
+      writer.append(sb);
     } else {
+      writer.write('"');
       writer.write(val);
+      writer.write('"');
     }
-    writer.write('"');
   }
 
 

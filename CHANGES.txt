@@ -78,6 +78,7 @@ New Features
 Changes in runtime behavior
 
 Optimizations
+ 1.  SOLR-276: improve JSON writer speed. (yonik)
 
 Bug Fixes
  1. Make TextField respect sortMissingFirst and sortMissingLast fields.
