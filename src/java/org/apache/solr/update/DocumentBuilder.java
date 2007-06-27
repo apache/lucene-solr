@@ -43,7 +43,7 @@ import org.apache.solr.schema.SchemaField;
 public class DocumentBuilder {
   private final IndexSchema schema;
   private Document doc;
-  private HashMap<String,String> map = new HashMap<String,String>();
+  private HashMap<String,String> map;
 
   public DocumentBuilder(IndexSchema schema) {
     this.schema = schema;
@@ -51,7 +51,7 @@ public class DocumentBuilder {
 
   public void startDoc() {
     doc = new Document();
-    map.clear();
+    map = new HashMap<String,String>();
   }
 
   protected void addSingleField(SchemaField sfield, String val, float boost) {
@@ -68,11 +68,6 @@ public class DocumentBuilder {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
                   + ": first='" + oldValue + "' second='" + val + "'");
         }
-      }
-      
-      if( doc == null ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-            "must call startDoc() before adding fields!" );
       }
        
       // field.setBoost(boost);
@@ -122,18 +117,21 @@ public class DocumentBuilder {
     
     // Check for all required fields -- Note, all fields with a
     // default value are defacto 'required' fields.  
-    List<String> missingFields = new ArrayList<String>( schema.getRequiredFields().size() );
+    List<String> missingFields = null;
     for (SchemaField field : schema.getRequiredFields()) {
       if (doc.getField(field.getName() ) == null) {
         if (field.getDefaultValue() != null) {
           doc.add( field.createField( field.getDefaultValue(), 1.0f ) );
         } else {
+          if (missingFields==null) {
+            missingFields = new ArrayList<String>(1);
+          }
           missingFields.add(field.getName());
         }
       }
     }
   
-    if (missingFields.size() > 0) {
+    if (missingFields != null) {
       StringBuilder builder = new StringBuilder();
       // add the uniqueKey if possible
       if( schema.getUniqueKeyField() != null ) {
@@ -181,7 +179,7 @@ public class DocumentBuilder {
       
       // Make sure it has the correct number
       Collection<Object> vals = doc.getFieldValues( name );
-      if( vals.size() > 1 && !sfield.multiValued() ) {
+      if(vals.size() > 1 && sfield!=null && !sfield.multiValued() ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +vals.toString() );
