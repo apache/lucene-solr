@@ -48,6 +48,8 @@ import org.apache.lucene.benchmark.byTask.utils.FileUtils;
  *  <li>Analyzer.
  *  <li>Statistics data which updated during the run.
  * </ul>
+ * Config properties: work.dir=&lt;path to root of docs and index dirs| Default: work&gt;
+ * </ul>
  */
 public class PerfRunData {
 
@@ -117,7 +119,7 @@ public class PerfRunData {
     
     // directory (default is ram-dir).
     if ("FSDirectory".equals(config.get("directory","RAMDirectory"))) {
-      File workDir = new File("work");
+      File workDir = new File(config.get("work.dir","work"));
       File indexDir = new File(workDir,"index");
       if (eraseIndex && indexDir.exists()) {
         FileUtils.fullyDelete(indexDir);

@@ -36,6 +36,11 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
  * A DocMaker using the (compressed) Trec collection for its input.
+ * <p>
+ * Config properties:<ul>
+ * <li>work.dir=&lt;path to the root of docs and indexes dirs| Default: work&gt;</li>
+ * <li>docs.dir=&lt;path to the docs dir| Default: trec&gt;</li>
+ * </ul>
  */
 public class TrecDocMaker extends BasicDocMaker {
 
@@ -61,8 +66,9 @@ public class TrecDocMaker extends BasicDocMaker {
    */
   public void setConfig(Config config) {
     super.setConfig(config);
+    File workDir = new File(config.get("work.dir","work"));
     String d = config.get("docs.dir","trec");
-    dataDir = new File(new File("work"),d);
+    dataDir = new File(workDir,d);
     collectFiles(dataDir,inputFiles);
     if (inputFiles.size()==0) {
       throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());

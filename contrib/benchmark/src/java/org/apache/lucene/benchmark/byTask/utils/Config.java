@@ -29,9 +29,17 @@ import java.util.StringTokenizer;
 
 /**
  * Perf run configuration properties.
+ * <p>
  * Numeric peroperty containing ":", e.g. "10:100:5" is interpreted 
  * as array of numeric values. It is extracted once, on first use, and 
- * maintain an round number to return the appropriate value.   
+ * maintain a round number to return the appropriate value.
+ * <p>
+ * The config property "work.dir" tells where is the root of 
+ * docs data dirs and indexes dirs. It is set to either of: <ul>
+ * <li>value supplied for it in the alg file;</li>
+ * <li>otherwise, value of System property "benchmark.work.dir";</li>
+ * <li>otherwise, "work".</li>
+ * </ul>
  */
 public class Config {
 
@@ -70,6 +78,11 @@ public class Config {
     this.props = new Properties();
     props.load(new ByteArrayInputStream(sb.toString().getBytes()));
 
+    // make sure work dir is set properly 
+    if (props.get("work.dir")==null) {
+      props.setProperty("work.dir",System.getProperty("benchmark.work.dir","work"));
+    }
+    
     if (Boolean.valueOf(props.getProperty("print.props","true")).booleanValue()) {
       printProps();
     }

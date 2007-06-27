@@ -31,11 +31,11 @@ import java.util.Locale;
 
 /**
  * A DocMaker using the Reuters collection for its input.
- *
- * Config properties:
- * docs.dir=&lt;path to the docs dir| Default: reuters-out&gt;
-
- *
+ * <p>
+ * Config properties:<ul>
+ * <li>work.dir=&lt;path to the root of docs and indexes dirs| Default: work&gt;</li>
+ * <li>docs.dir=&lt;path to the docs dir| Default: reuters-out&gt;</li>
+ * </ul>
  */
 public class ReutersDocMaker extends BasicDocMaker {
 
@@ -50,9 +50,9 @@ public class ReutersDocMaker extends BasicDocMaker {
    */
   public void setConfig(Config config) {
     super.setConfig(config);
+    File workDir = new File(config.get("work.dir","work"));
     String d = config.get("docs.dir","reuters-out");
-    dataDir = new File(new File("work"),d);
-
+    dataDir = new File(workDir,d);
 
     collectFiles(dataDir,inputFiles);
     if (inputFiles.size()==0) {

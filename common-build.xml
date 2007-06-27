@@ -310,8 +310,9 @@
       <sysproperty key="docs.dir" file="src/test"/>
       <sysproperty key="index.dir" file="${build.dir}/test/index"/>
 
-      <!-- contrib/benchmark uses this system property to locate defined tasks -->
+      <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
       <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
+      <sysproperty key="benchmark.work.dir" file="${common.dir}/contrib/benchmark/work"/>
 
       <formatter type="xml"/>
       <formatter type="brief" usefile="false"/>

@@ -28,7 +28,6 @@
 
 
     <target name="check-files">
-
         <available file="temp/news20.tar.gz" property="news20.exists"/>
 
         <available file="${working.dir}/20_newsgroup" property="news20.expanded"/>
@@ -152,4 +151,9 @@
 
     <target name="init" depends="contrib-build.init,compile-demo,check-files"/>
 
+    <!-- make sure online collections (reuters) are first downloaded -->
+    <target name="test" depends="init,get-files">
+      <antcall target="common.test" inheritRefs="true" />
+    </target>
+    
 </project>

@@ -5,8 +5,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 $Id:$
 
 6/25/07
-- LUCENE-940: Multi-threaded issues fixed: SimpleDateFormat; 
-  logging for addDoc/deleteDoc tasks. (Doron Cohen)
+- LUCENE-940: Multi-threaded issues fixed: SimpleDateFormat; logging for addDoc/deleteDoc tasks.
+- LUCENE-945: tests fail to find data dirs. Added sys-prop benchmark.work.dir and cfg-prop work.dir.
+(Doron Cohen)
 
 4/17/07
 - LUCENE-863: Deprecated StandardBenchmarker in favour of byTask code.
