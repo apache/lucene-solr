@@ -98,6 +98,10 @@ public class TestHarness {
                      String confFile,
                      String schemaFile) {
     try {
+      // set some system properties for use by tests
+      System.setProperty("solr.test.sys.prop1", "propone");
+      System.setProperty("solr.test.sys.prop2", "proptwo");
+
       SolrConfig.initConfig(confFile);
       core = new SolrCore(dataDirectory, new IndexSchema(schemaFile));
       builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
