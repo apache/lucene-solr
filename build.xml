@@ -388,12 +388,6 @@
            dir="src/test/test-files/"
            >
       <formatter type="brief" usefile="false" if="junit.details"/>
-      <syspropertyset>
-        <propertyref prefix="solr" />
-      </syspropertyset>
-      <!-- solr.test.sys.prop1/2 used by TestConfig -->
-      <sysproperty key="solr.test.sys.prop1" value="propone"/>
-      <sysproperty key="solr.test.sys.prop2" value="proptwo"/>
       <classpath refid="test.run.classpath"/>
       <formatter type="xml"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
