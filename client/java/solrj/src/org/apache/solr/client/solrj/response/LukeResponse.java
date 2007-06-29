@@ -111,6 +111,9 @@ public class LukeResponse extends SolrResponseBase
     indexInfo = (NamedList<Object>)res.get( "index" );
     
     NamedList<Object> flds = (NamedList<Object>)res.get( "fields" );
+    if (flds==null) {
+    	flds = (NamedList<Object>) ((NamedList<Object>)res.get( "schema" )).get("fields");
+    }
     if( flds != null ) {
       fieldInfo = new HashMap<String,FieldInfo>( );
       for( Map.Entry<String, Object> field : flds ) {

@@ -39,6 +39,7 @@ public class LukeRequest extends RequestBase
 {
   private List<String> fields;
   private int count = -1;
+  private boolean showSchema = false;
   
   public LukeRequest()
   {
@@ -64,6 +65,14 @@ public class LukeRequest extends RequestBase
   //---------------------------------------------------------------------------------
   //---------------------------------------------------------------------------------
   
+  public boolean isShowSchema() {
+    return showSchema;
+  }
+
+  public void setShowSchema(boolean showSchema) {
+    this.showSchema = showSchema;
+  }
+
   public Collection<ContentStream> getContentStreams() {
     return null;
   }
@@ -75,6 +84,9 @@ public class LukeRequest extends RequestBase
     }
     if( count >= 0 ) {
       params.add( "count", count+"" );
+    }
+    if (showSchema) {
+    	params.add("show", "schema");
     }
     return params;
   }
