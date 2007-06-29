@@ -16,6 +16,9 @@ Bug fixes
     
 New features
 
+ 1. LUCENE-906: Elision filter for French.
+    (Mathieu Lecarme via Otis Gospodnetic)
+
 Optimizations
 
  1. LUCENE-937: CachingTokenFilter now uses an iterator to access the 
