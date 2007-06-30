@@ -15,7 +15,7 @@ import org.apache.solr.common.SolrInputDocument;
 public class XmlUpdateRequestHandlerTest extends TestCase 
 {
   private XMLInputFactory inputFactory = BaseXMLInputFactory.newInstance();
-  protected StaxUpdateRequestHandler handler = new StaxUpdateRequestHandler();
+  protected XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
 
   @Override 
   public void setUp() throws Exception {

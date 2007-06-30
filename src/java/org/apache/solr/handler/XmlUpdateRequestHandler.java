@@ -62,9 +62,9 @@ import org.apache.solr.update.DeleteUpdateCommand;
  *    </lst> 
  *  </requestHandler>
  */
-public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
+public class XmlUpdateRequestHandler extends RequestHandlerBase
 {
-  public static Logger log = Logger.getLogger(StaxUpdateRequestHandler.class.getName());
+  public static Logger log = Logger.getLogger(XmlUpdateRequestHandler.class.getName());
 
   public static final String UPDATE_PROCESSOR_FACTORY = "update.processor.factory";
   public static final String UPDATE_PROCESSOR_ARGS    = "update.processor.args";
