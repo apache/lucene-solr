@@ -29,11 +29,11 @@ import org.apache.lucene.analysis.TokenFilter;
 /**
  * Removes elisions from a token stream. For example, "l'avion" (the plane) will be
  * tokenized as "avion" (plane).
+ * <p>
+ * Note that StandardTokenizer sees " ' " as a space, and cuts it out.
  * 
- * @author Mathieu Lecarme<mlecarme@openwide.fr>
- * @see{http://fr.wikipedia.org/wiki/%C3%89lision}
- * 
- * Note that StandardTokenizer sees "’" as a space, and cuts it out.
+ * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a> 
+ * @author <a href="mailto:mlecarme@openwide.fr">Mathieu Lecarme</a>
  */
 public class ElisionFilter extends TokenFilter {
   private Set articles = null;
