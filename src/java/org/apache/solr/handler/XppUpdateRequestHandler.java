@@ -45,9 +45,15 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-public class XmlUpdateRequestHandler extends RequestHandlerBase
+/**
+ * This is an XPP implementaion of the XmlUpdateRequestHandler -- it is getting
+ * replaced with a more flexible StAX implementation.  This will be remove 
+ * before the next official release: solr 1.3
+ */
+@Deprecated
+public class XppUpdateRequestHandler extends RequestHandlerBase
 {
-  public static Logger log = Logger.getLogger(XmlUpdateRequestHandler.class.getName());
+  public static Logger log = Logger.getLogger(XppUpdateRequestHandler.class.getName());
 
   private XmlPullParserFactory factory;
 
