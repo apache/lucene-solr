@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -57,15 +56,18 @@ import org.apache.solr.update.DeleteUpdateCommand;
  * To change the UpdateRequestProcessor implementation, add the configuration parameter:
  * 
  *  <requestHandler name="/update" class="solr.StaxUpdateRequestHandler" >
- *   <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
+ *    <str name="update.processor.class">org.apache.solr.handler.UpdateRequestProcessor</str>
+ *    <lst name="update.processor.args">
+ *     ... (optionally pass in arguments to the factory init method) ...
+ *    </lst> 
  *  </requestHandler>
- * 
  */
 public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
 {
   public static Logger log = Logger.getLogger(StaxUpdateRequestHandler.class.getName());
 
-  public static final String UPDATE_PROCESSOR_CLASS = "update.processor.class";
+  public static final String UPDATE_PROCESSOR_FACTORY = "update.processor.factory";
+  public static final String UPDATE_PROCESSOR_ARGS    = "update.processor.args";
   
   // XML Constants
   public static final String ADD = "add";
@@ -82,7 +84,7 @@ public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
   public static final String ALLOW_DUPS = "allowDups"; 
   
   private XMLInputFactory inputFactory;
-  private Constructor<? extends UpdateRequestProcessor> processorConstructor;
+  private UpdateRequestProcessorFactory processorFactory;
   
   @SuppressWarnings("unchecked")
   @Override
@@ -90,44 +92,20 @@ public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
   {
     super.init(args);
     inputFactory = BaseXMLInputFactory.newInstance();
-    
-    Class<? extends UpdateRequestProcessor> clazz = null;
-    String className = null;
-    try {
-      if( args != null ) {
-        className = (String)args.get( UPDATE_PROCESSOR_CLASS );
-        if( className != null ) {
-          clazz = Config.findClass( className, new String[]{} );
-        }
-      }
-      if( clazz == null ) {
-        clazz = UpdateRequestProcessor.class;
-      }
-      processorConstructor = clazz.getConstructor( SolrQueryRequest.class );
-    }
-    catch (Exception e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-         "error initializing processor class: "+className, e );
-    }
-    if( processorConstructor == null ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          "invalid processor: " + clazz );
-    }
-  }
   
-  /**
-   * Let subclasses override what processor is used.  The default behavior is
-   * to use one configured through the init parameter "processor"
-   */
-  protected UpdateRequestProcessor getUpdateRequestProcessor( SolrQueryRequest req ) 
-  {
-    try {
-      return processorConstructor.newInstance( new Object[] {req} );
+    // Initialize the UpdateRequestProcessorFactory
+    NamedList<Object> factoryargs = null;
+    if( args != null ) {
+      String className = (String)args.get( UPDATE_PROCESSOR_FACTORY );
+      factoryargs = (NamedList<Object>)args.get( UPDATE_PROCESSOR_ARGS );
+      if( className != null ) {
+        processorFactory = (UpdateRequestProcessorFactory)Config.newInstance( className, new String[]{} );
+      }
     }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          "error making UpdateRequestProcessor", ex );
+    if( processorFactory == null ) {
+      processorFactory = new UpdateRequestProcessorFactory();
     }
+    processorFactory.init( factoryargs );
   }
   
   @Override
@@ -167,7 +145,7 @@ public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
           InstantiationException, IllegalAccessException,
           TransformerConfigurationException 
   {
-    UpdateRequestProcessor processor = getUpdateRequestProcessor( req );
+    UpdateRequestProcessor processor = processorFactory.getInstance( req );
     
     AddUpdateCommand addCmd = null;   
     while (true) {
@@ -352,7 +330,6 @@ public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
         } 
         else if ("field".equals(parser.getLocalName())) {
           if (!isNull) {
-            doc.addField(name, text.toString() );
             if(boost != null) {
               // The lucene API and solr XML field specification make it possible to set boosts
               // on multi-value fields even though lucene indexing does not support this.
@@ -366,6 +343,7 @@ public class StaxUpdateRequestHandler extends XmlUpdateRequestHandler
                 doc.setBoost( name, boost );
               }
             }
+            doc.addField(name, text.toString() );
           }
         }
         break;
