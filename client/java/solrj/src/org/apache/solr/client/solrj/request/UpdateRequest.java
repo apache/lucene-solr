@@ -66,6 +66,25 @@ public class UpdateRequest extends RequestBase
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   
+  /**
+   * clear the pending documents and delete commands
+   */
+  public void clear()
+  {
+    if( documents != null ) {
+      documents.clear();
+    }
+    if( deleteById != null ) {
+      deleteById.clear();
+    }
+    if( deleteQuery != null ) {
+      deleteQuery.clear();
+    }
+  }
+  
+  //---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  
   public UpdateRequest add( final SolrInputDocument doc )
   {
     if( documents == null ) {
