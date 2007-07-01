@@ -1,22 +1,4 @@
 <?xml version="1.0"?>
-
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
- 
-        http://www.apache.org/licenses/LICENSE-2.0
- 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
- -->
-
 <project name="benchmark" default="default">
 
     <description>
@@ -39,6 +21,34 @@
         <available file="${working.dir}/20news-18828" property="20news-18828.expanded"/>
         <available file="${working.dir}/mini_newsgroups" property="mini.expanded"/>
         
+        <available file="temp/enwiki-20070527-pages-articles.xml.bz2" property="enwiki.exists"/>
+        <available file="temp/enwiki-20070527-pages-articles.xml" property="enwiki.expanded"/>
+        <available file="${working.dir}/enwiki" property="enwiki.extracted"/>
+
+    </target>
+
+    <target name="enwiki-files" depends="check-files">
+        <mkdir dir="temp"/>
+        <antcall target="get-enwiki"/>
+        <antcall target="expand-enwiki"/>
+        <antcall target="extract-enwiki"/>
+    </target>
+
+    <target name="get-enwiki" unless="enwiki.exists">
+        <get src="http://people.apache.org/~gsingers/wikipedia/enwiki-20070527-pages-articles.xml.bz2"
+             dest="temp/enwiki-20070527-pages-articles.xml.bz2"/>
+    </target>
+
+    <target name="expand-enwiki"  unless="enwiki.expanded">
+        <bunzip2 src="temp/enwiki-20070527-pages-articles.xml.bz2" dest="temp"/>
+    </target>
+
+    <target name="extract-enwiki" depends="check-files" unless="enwiki.extracted">
+        <mkdir dir="${working.dir}/enwiki"/>
+        <java classname="org.apache.lucene.benchmark.utils.ExtractWikipedia" maxmemory="1024M" fork="true">
+            <classpath refid="run.classpath"/>
+            <arg line="temp/enwiki-20070527-pages-articles.xml ${working.dir}/enwiki"/>
+        </java>
     </target>
 
     <target name="get-news-20" unless="20news-18828.exists">
@@ -102,6 +112,8 @@
     <property name="collections.jar" value="commons-collections-3.1.jar"/>
     <property name="logging.jar" value="commons-logging-1.0.4.jar"/>
     <property name="bean-utils.jar" value="commons-beanutils-1.7.0.jar"/>
+    <property name="xercesImpl.jar" value="xerces-2.9.0.jar"/>
+    <property name="xml-apis.jar" value="xml-apis-2.9.0.jar"/>
 
     <path id="classpath">
         <pathelement path="${common.dir}/build/classes/java"/>
@@ -110,6 +122,8 @@
         <pathelement path="${basedir}/lib/${collections.jar}"/>
         <pathelement path="${basedir}/lib/${logging.jar}"/>
         <pathelement path="${basedir}/lib/${bean-utils.jar}"/>
+        <pathelement path="${basedir}/lib/${xercesImpl.jar}"/>
+        <pathelement path="${basedir}/lib/${xml-apis.jar}"/>
     </path>
     <path id="run.classpath">
         <path refid="classpath"/>
@@ -143,13 +157,24 @@
         </java>
     </target>
 
+    <target name="enwiki" depends="compile,check-files,enwiki-files">
+        <echo>Working Directory: ${working.dir}</echo>
+        <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="1024M" fork="true">
+            <assertions>
+              <enable/>
+            </assertions>
+            <classpath refid="run.classpath"/>
+            <arg line="conf/wikipedia.alg"/>
+        </java>
+    </target>
+
     <target name="compile-demo">
       <subant target="compile-demo">
          <fileset dir="${common.dir}" includes="build.xml"/>
       </subant>
     </target> 
 
-    <target name="init" depends="contrib-build.init,compile-demo,check-files"/>
+    <target name="init" depends="common.init,compile-demo,check-files"/>
 
     <!-- make sure online collections (reuters) are first downloaded -->
     <target name="test" depends="init,get-files">

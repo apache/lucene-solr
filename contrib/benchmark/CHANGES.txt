@@ -4,6 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+6/30/07
+  LUCENE-848: Added support for Wikipedia benchmarking.
+
 6/25/07
 - LUCENE-940: Multi-threaded issues fixed: SimpleDateFormat; logging for addDoc/deleteDoc tasks.
 - LUCENE-945: tests fail to find data dirs. Added sys-prop benchmark.work.dir and cfg-prop work.dir.

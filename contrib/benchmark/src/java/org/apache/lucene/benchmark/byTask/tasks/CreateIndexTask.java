@@ -17,19 +17,20 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+
+import java.io.IOException;
 
 
 /**
  * Create an index.
  * <br>Other side effects: index writer object in perfRunData is set.
- * <br>Relevant properties: <code>merge.factor , max.buffered</code>.
+ * <br>Relevant properties: <code>merge.factor, max.buffered,
+ *  max.field.length</code>.
  */
 public class CreateIndexTask extends PerfTask {
 
@@ -48,10 +49,12 @@ public class CreateIndexTask extends PerfTask {
     boolean cmpnd = config.get("compound",true);
     int mrgf = config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR);
     int mxbf = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
+    int mxfl = config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH);
 
     iw.setUseCompoundFile(cmpnd);
     iw.setMergeFactor(mrgf);
     iw.setMaxBufferedDocs(mxbf);
+    iw.setMaxFieldLength(mxfl);
 
     getRunData().setIndexWriter(iw);
     return 1;
