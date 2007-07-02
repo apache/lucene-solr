@@ -78,6 +78,11 @@ New Features
     within a single request.  For example, sending:
      <delete><id>1</id><id>2</id></delete> will delete both 1 and 2. (ryan)
 
+12. SOLR-269: Added UpdateRequestProcessor to the XmlUpdateRequestHandler.
+    This provides a reasonable place to pre-process documents after they are
+    parsed and before they are committed to the index.  This is a good place
+    for custom document manipulation or document based authorization. (ryan)
+
 Changes in runtime behavior
 
 Optimizations
