@@ -64,8 +64,8 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
     String docID = "1112211111";
-    doc.addField( "id", docID, null );
-    doc.addField( "name", "my name!", null );
+    doc.addField( "id", docID, 1.0f );
+    doc.addField( "name", "my name!", 1.0f );
     
     Assert.assertEquals( null, doc.getField("foo") );
     Assert.assertTrue(doc.getField("name").getValue() != null );
@@ -91,28 +91,28 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     // Now add a few docs for facet testing...
     List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "2", null );
-    doc2.addField( "inStock", true, null );
-    doc2.addField( "price", 2, null );
-    doc2.addField( "timestamp", new java.util.Date(), null );
+    doc2.addField( "id", "2", 1.0f );
+    doc2.addField( "inStock", true, 1.0f );
+    doc2.addField( "price", 2, 1.0f );
+    doc2.addField( "timestamp", new java.util.Date(), 1.0f );
     docs.add(doc2);
     SolrInputDocument doc3 = new SolrInputDocument();
-    doc3.addField( "id", "3", null );
-    doc3.addField( "inStock", false, null );
-    doc3.addField( "price", 3, null );
-    doc3.addField( "timestamp", new java.util.Date(), null );
+    doc3.addField( "id", "3", 1.0f );
+    doc3.addField( "inStock", false, 1.0f );
+    doc3.addField( "price", 3, 1.0f );
+    doc3.addField( "timestamp", new java.util.Date(), 1.0f );
     docs.add(doc3);
     SolrInputDocument doc4 = new SolrInputDocument();
-    doc4.addField( "id", "4", null );
-    doc4.addField( "inStock", true, null );
-    doc4.addField( "price", 4, null );
-    doc4.addField( "timestamp", new java.util.Date(), null );
+    doc4.addField( "id", "4", 1.0f );
+    doc4.addField( "inStock", true, 1.0f );
+    doc4.addField( "price", 4, 1.0f );
+    doc4.addField( "timestamp", new java.util.Date(), 1.0f );
     docs.add(doc4);
     SolrInputDocument doc5 = new SolrInputDocument();
-    doc5.addField( "id", "5", null );
-    doc5.addField( "inStock", false, null );
-    doc5.addField( "price", 5, null );
-    doc5.addField( "timestamp", new java.util.Date(), null );
+    doc5.addField( "id", "5", 1.0f );
+    doc5.addField( "inStock", false, 1.0f );
+    doc5.addField( "price", 5, 1.0f );
+    doc5.addField( "timestamp", new java.util.Date(), 1.0f );
     docs.add(doc5);
     
     upres = server.add( docs ); 
@@ -171,7 +171,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     SolrInputDocument[] doc = new SolrInputDocument[3];
     for( int i=0; i<3; i++ ) {
       doc[i] = new SolrInputDocument();
-      doc[i].setField( "id", i + " & 222", null );
+      doc[i].setField( "id", i + " & 222", 1.0f );
     }
     String id = (String) doc[0].getField( "id" ).getFirstValue();
     

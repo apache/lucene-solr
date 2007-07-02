@@ -43,8 +43,8 @@ public class SolrInputField implements Iterable<Object>
   /**
    * Set the value for a field.  Arrays will be converted to a collection.
    */
-  public void setValue(Object v, Float b) {
-    boost = (b==null) ? 1.0f : b.floatValue();
+  public void setValue(Object v, float b) {
+    boost = b;
 
     if( v instanceof Object[] ) {
       Object[] arr = (Object[])v;
@@ -64,7 +64,7 @@ public class SolrInputField implements Iterable<Object>
    * will be added individually
    */
   @SuppressWarnings("unchecked")
-  public void addValue(Object v, Float b) {
+  public void addValue(Object v, float b) {
     if( value == null ) {
       setValue(v, b);
       return;
@@ -74,9 +74,7 @@ public class SolrInputField implements Iterable<Object>
     // on multi-value fields even though lucene indexing does not support this.
     // To keep behavior consistent with what happens in the lucene index, we accumulate
     // the product of all boosts specified for this field.
-    if( b != null ) {
-      boost *= b.floatValue();
-    }
+    boost *= b;
     
     Collection<Object> vals = null;
     if( value instanceof Collection ) {

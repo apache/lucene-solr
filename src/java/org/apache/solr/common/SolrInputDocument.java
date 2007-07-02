@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Collection;
 
 /**
@@ -85,7 +84,7 @@ public class SolrInputDocument implements Iterable<SolrInputField>
    */
   public void addField(String name, Object value) 
   {
-    addField(name, value, null);
+    addField(name, value, 1.0f );
   }
   
   /** Get the first value for a field.
@@ -132,10 +131,10 @@ public class SolrInputDocument implements Iterable<SolrInputField>
    */
   public void setField(String name, Object value) 
   {
-    setField(name, value, null);
+    setField(name, value, 1.0f );
   }
   
-  public void setField(String name, Object value, Float boost ) 
+  public void setField(String name, Object value, float boost ) 
   {
     SolrInputField field = new SolrInputField( name );
     _fields.put( name, field );
@@ -151,7 +150,7 @@ public class SolrInputDocument implements Iterable<SolrInputField>
   /**
    * Remove all fields and boosts from the document
    */
-  public void addField(String name, Object value, Float boost ) 
+  public void addField(String name, Object value, float boost ) 
   {
     SolrInputField field = _fields.get( name );
     if( field == null || field.value == null ) {
