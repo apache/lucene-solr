@@ -26,6 +26,10 @@ Changes in runtime behavior
  1. SOLR-278:  Modify LukeRequest/Response to support SOLR-266 schema display.
     (Will Johnson via ryan)
 
+ 2. SOLR-280: Changed the SolrDocument / SolrInputDocument implementation.  
+    The API to build documents has changed -- you need to pass a boost 
+    (or null) with every field.  (ryan)
+
 Bug Fixes
 
 Other Changes

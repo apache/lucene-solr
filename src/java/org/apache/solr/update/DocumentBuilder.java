@@ -29,6 +29,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -169,29 +170,29 @@ public class DocumentBuilder {
   public static Document toDocument( SolrInputDocument doc, IndexSchema schema )
   { 
     Document out = new Document();
+    out.setBoost( doc.getDocumentBoost() );
     
     // Load fields from SolrDocument to Document
-    for( String name : doc.getFieldNames() ) {
+    for( SolrInputField field : doc ) {
+      String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
-      Float b = doc.getBoost( name );
-      float boost = (b==null) ? 1.0f : b.floatValue();
       boolean used = false;
+      float boost = field.getBoost();
       
       // Make sure it has the correct number
-      Collection<Object> vals = doc.getFieldValues( name );
-      if(vals.size() > 1 && sfield!=null && !sfield.multiValued() ) {
+      if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: multiple values encountered for non multiValued field " + 
-              sfield.getName() + ": " +vals.toString() );
+              sfield.getName() + ": " +field.getValue() );
       }
       
       SchemaField[] destArr = schema.getCopyFields(name);
       
       // load each field value
-      for( Object v : vals ) {
+      for( Object v : field ) {
         String val = null;
         
-        // HACK -- date conversion
+        // TODO!!! HACK -- date conversion
         if( sfield != null && v instanceof Date && sfield.getType() instanceof DateField ) {
           DateField df = (DateField)sfield.getType();
           val = df.toInternal( (Date)v )+'Z';
@@ -210,7 +211,6 @@ public class DocumentBuilder {
         
         // Add the copy fields
         for( SchemaField sf : destArr ) {
-          
           // check if the copy field is a multivalued or not
           if( !sf.multiValued() && out.get( sf.getName() ) != null ) {
             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
@@ -253,11 +253,6 @@ public class DocumentBuilder {
         }
       }
     }
-  
-    // set the full document boost
-    if( doc.getBoost( null ) != null ) {
-      out.setBoost( doc.getBoost( null ) );
-    }  
     return out;
   }
 

@@ -38,20 +38,11 @@ import java.util.Set;
  */
 public class SolrDocument 
 {
-  private Map<String,Collection<Object>> _fields = null;
+  private Map<String,Object> _fields = null;
   
   public SolrDocument()
   {
-    _fields = new HashMap<String,Collection<Object>>();
-  }
-
-  /**
-   * Let sub classes return something other then a List.  
-   * Perhaps a Set or LinkedHashSet
-   */
-  protected Collection<Object> getEmptyCollection( String name )
-  {
-    return new ArrayList<Object>( 1 );
+    _fields = new HashMap<String,Object>();
   }
 
   /**
@@ -73,7 +64,6 @@ public class SolrDocument
     _fields.clear();
   }
   
-  
   /**
    * Remove all fields with the name
    */
@@ -83,45 +73,61 @@ public class SolrDocument
   }
 
   /**
-   * Set a field with the given object.  If the object is an Array or Iterable, it will 
+   * Set a field with the given object.  If the object is an Array, it will 
    * set multiple fields with the included contents.  This will replace any existing 
    * field with the given name
    */
+  @SuppressWarnings("unchecked")
   public void setField(String name, Object value) 
   {
-    Collection<Object> existing = _fields.get( name );
-    if( existing != null ) {
-      existing.clear();
+    if( value instanceof Object[] ) {
+      Object[] arr = (Object[])value;
+      Collection<Object> c = new ArrayList<Object>( arr.length );
+      for( Object o : arr ) {
+        c.add( o );
+      }
+      value = c;
     }
-    this.addField(name, value);
+    _fields.put(name, value);
   }
-
+  
   /**
    * This will add a field to the document.  If fields already exist with this name
    * it will append the collection
    */
+  @SuppressWarnings("unchecked")
   public void addField(String name, Object value) 
   { 
-    Collection<Object> existing = _fields.get( name );
-    if( existing == null ) {
-      existing = getEmptyCollection(name);
-      _fields.put( name, existing );
+    Object existing = _fields.get(name);
+    if (existing == null) {
+      this.setField( name, value );
+      return;
     }
     
-    // Arrays are iterable?  They appear to be, but not in the docs...
+    Collection<Object> vals = null;
+    if( existing instanceof Collection ) {
+      vals = (Collection<Object>)existing;
+    }
+    else {
+      vals = new ArrayList<Object>( 3 );
+      vals.add( existing );
+    }
+    
+    // Add the values to the collection
     if( value instanceof Iterable ) {
-      for( Object o : (Iterable)value ) {
-        this.addField( name, o );  
+      for( Object o : (Iterable<Object>)value ) {
+        vals.add( o );
       }
     }
     else if( value instanceof Object[] ) {
       for( Object o : (Object[])value ) {
-        this.addField( name, o );  
+        vals.add( o );
       }
     }
     else {
-      existing.add( value );
+      vals.add( value );
     }
+    _fields.put( name, vals );
   }
 
   ///////////////////////////////////////////////////////////////////
@@ -129,57 +135,88 @@ public class SolrDocument
   ///////////////////////////////////////////////////////////////////
 
   /**
-   * returns the first value for this field
+   * returns the first value for a field
    */
-  public Object getFieldValue(String name) {
-    Collection v = _fields.get( name );
-    if( v != null && v.size() > 0 ) {
-      return v.iterator().next();
+  public Object getFirstValue(String name) {
+    Object v = _fields.get( name );
+    if (v == null || !(v instanceof Collection)) return v;
+    Collection c = (Collection)v;
+    if (c.size() > 0 ) {
+      return c.iterator().next();
     }
     return null;
   }
-
+  
   /**
-   * Get a collection or all the values for a given field name
+   * Get the value or collection of values for a given field.  
    */
-  public Collection<Object> getFieldValues(String name) {
+  public Object getFieldValue(String name) {
     return _fields.get( name );
   }
-  
-// TODO? should this be in the API?
-//  /**
-//   * Return a named list version
-//   */
-//  public NamedList<Object> toNamedList()
-//  {
-//    NamedList<Object> nl = new NamedList<Object>();
-//    for( Map.Entry<String, Collection<Object>> entry : _fields.entrySet() ) {
-//      Collection<Object> v = entry.getValue();
-//      if( v.size() == 0 ) {
-//        nl.add( entry.getKey(), null );
-//      }
-//      else if( v.size() > 1 ) {
-//        nl.add( entry.getKey(), v );
-//      }
-//      else { // Add a single value
-//        nl.add( entry.getKey(), v.iterator().next() );
-//      }
-//    }
-//    return nl;
-//  }
-  
+
+  /**
+   * Get a collection of values for a given field name
+   */
+  @SuppressWarnings("unchecked")
+  public Collection<Object> getFieldValues(String name) {
+    Object v = _fields.get( name );
+    if( v instanceof Collection ) {
+      return (Collection<Object>)v;
+    }
+    if( v != null ) {
+      ArrayList<Object> arr = new ArrayList<Object>(1);
+      arr.add( v );
+      return arr;
+    }
+    return null;
+  }
+    
   @Override
   public String toString()
   {
-    return "SolrDocument["+getFieldNames()+"]";
+    return "SolrDocument["+_fields.toString()+"]";
   }
+
+  //-----------------------------------------------------------------------------------------
+  // JSTL Helpers
+  //-----------------------------------------------------------------------------------------
   
   /**
    * Expose a Map interface to the solr field value collection.
    */
   public Map<String,Collection<Object>> getFieldValuesMap()
   {
-    return _fields;
+    return new Map<String,Collection<Object>>() {
+      /** Get the field Value */
+      public Collection<Object> get(Object key) { 
+        return getFieldValues( (String)key ); 
+      }
+      
+      /** Set the field Value */
+      public Collection<Object> put(String key, Collection<Object> value) {
+        setField( key, value );
+        return null;
+      }
+
+      /** Remove the field Value */
+      public Collection<Object> remove(Object key) {
+        removeFields( (String)key ); 
+        return null;
+      }
+      
+      // Easily Supported methods
+      public boolean containsKey(Object key) { return _fields.containsKey( key ); }
+      public Set<String>  keySet()           { return _fields.keySet();  }
+      public int          size()             { return _fields.size();    }
+      public boolean      isEmpty()          { return _fields.isEmpty(); }
+
+      // Unsupported operations.  These are not necessary for JSTL
+      public void clear() { throw new UnsupportedOperationException(); }
+      public boolean containsValue(Object value) {throw new UnsupportedOperationException();}
+      public Set<java.util.Map.Entry<String, Collection<Object>>> entrySet() {throw new UnsupportedOperationException();}
+      public void putAll(Map<? extends String, ? extends Collection<Object>> t) {throw new UnsupportedOperationException();}
+      public Collection<Collection<Object>> values() {throw new UnsupportedOperationException();}
+    };
   }
 
   /**
@@ -189,7 +226,7 @@ public class SolrDocument
     return new Map<String,Object>() {
       /** Get the field Value */
       public Object get(Object key) { 
-        return getFieldValue( (String)key ); 
+        return getFirstValue( (String)key ); 
       }
       
       /** Set the field Value */

@@ -33,6 +33,7 @@ import java.util.TimeZone;
 import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.httpclient.util.DateUtil;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -81,20 +82,15 @@ public class ClientUtils
   
   public static void writeXML( SolrInputDocument doc, Writer writer ) throws IOException
   {
-    if( doc.getBoost( null ) != null ) {
-      writer.write("<doc boost=\""+doc.getBoost( null )+"\">");
-    }
-    else {
-      writer.write("<doc>");
-    }
-
-    for( String name : doc.getFieldNames() ) {
-      Float boost = doc.getBoost( name );
-      for( Object o : doc.getFieldValues( name ) ) {
-        writeFieldValue(writer, name, boost, o );
-        // only write the boost for the first mulit-valued field
+    writer.write("<doc boost=\""+doc.getDocumentBoost()+"\">");
+   
+    for( SolrInputField field : doc ) {
+      float boost = field.getBoost();
+      for( Object o : field ) {
+        writeFieldValue(writer, field.getName(), boost, o );
+        // only write the boost for the first multi-valued field
         // otherwise, the used boost is the product of all the boost values
-        boost = null; 
+        boost = 1.0f; 
       }
     }
     writer.write("</doc>");

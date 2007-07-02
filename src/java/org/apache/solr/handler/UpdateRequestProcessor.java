@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -122,7 +123,10 @@ public class UpdateRequestProcessor
     long start = System.currentTimeMillis();
     Object id = null;
     if (uniqueKeyField != null) {
-      id = doc.getFieldValue( uniqueKeyField.getName() );
+      SolrInputField f = doc.getField( uniqueKeyField.getName() );
+      if( f != null ) {
+        id = f.getFirstValue();
+      }
     }
     cmd.doc = DocumentBuilder.toDocument( doc, schema );
     updateHandler.addDoc(cmd);

@@ -40,7 +40,7 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
     // undefined field
     try {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.setField( "unknown field", 12345 );
+      doc.setField( "unknown field", 12345, null );
       DocumentBuilder.toDocument( doc, core.getSchema() );
       fail( "should throw an error" );
     }

@@ -46,19 +46,18 @@ public class XmlUpdateRequestHandlerTest extends TestCase
     SolrInputDocument doc = handler.readDoc( parser );
     
     // Read boosts
-    assertEquals( new Float(5.5f), doc.getBoost(null) );
-    assertEquals( null, doc.getBoost( "name" ) );
-    assertEquals( new Float(2.2f), doc.getBoost( "id" ) );
-    assertEquals( null, doc.getBoost( "ab" ) );
+    assertEquals( 5.5f, doc.getDocumentBoost() );
+    assertEquals( 1.0f, doc.getField( "name" ).getBoost() );
+    assertEquals( 2.2f, doc.getField( "id" ).getBoost() );
     // Boost is the product of each value
-    assertEquals( new Float(3*4*5), doc.getBoost( "cat" ) );
+    assertEquals( (3*4*5.0f), doc.getField( "cat" ).getBoost() );
     
     // Read values
-    assertEquals( "12345", doc.getFieldValue( "id") );
-    assertEquals( "kitten", doc.getFieldValue( "name") );
-    assertEquals( "a&b", doc.getFieldValue( "ab") ); // read something with escaped characters
+    assertEquals( "12345", doc.getField( "id" ).getValue() );
+    assertEquals( "kitten", doc.getField( "name").getValue() );
+    assertEquals( "a&b", doc.getField( "ab").getValue() ); // read something with escaped characters
     
-    Collection<Object> out = doc.getFieldValues( "cat" );
+    Collection<Object> out = doc.getField( "cat" ).getValues();
     assertEquals( 3, out.size() );
     assertEquals( "[aaa, bbb, bbb]", out.toString() );
   }

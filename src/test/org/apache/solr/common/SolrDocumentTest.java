@@ -18,6 +18,7 @@
 package org.apache.solr.common;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,7 +46,9 @@ public class SolrDocumentTest extends TestCase
     doc.addField( "f", 100 ); // again, but something else
 
     // make sure we can pull values out of it
-    assertEquals( fval, doc.getFieldValue( "f" ) );
+    assertEquals( fval, doc.getFirstValue( "f" ) );
+    assertEquals( fval, doc.getFieldValues( "f" ).iterator().next() );
+    assertEquals( fval, ((Collection<Object>)doc.getFieldValue( "f" )).iterator().next() );
     assertEquals( bval, doc.getFieldValue( "b" ) );
     assertEquals( sval, doc.getFieldValue( "s" ) );
     assertEquals( 2, doc.getFieldValues( "f" ).size() );
@@ -74,17 +77,7 @@ public class SolrDocumentTest extends TestCase
     assertNull( doc.getFieldValue( "f" ) );
     assertNull( doc.getFieldValues( "f" ) );
   }
-  
-  public void testDocumentBoosts()
-  {
-    SolrInputDocument doc = new SolrInputDocument();
-    assertEquals( null, doc.getBoost( "aaa" ) );
-    doc.setBoost( "aaa", 10.0f );
-    assertEquals( 10.0f, doc.getBoost( "aaa" ) );
-    doc.setBoost( "aaa", null );
-    assertEquals( null, doc.getBoost( "aaa" ) );
-  }
-  
+    
   public void testUnsupportedStuff()
   {
     SolrDocument doc = new SolrDocument();
@@ -134,13 +127,13 @@ public class SolrDocumentTest extends TestCase
     SolrInputDocument doc = new SolrInputDocument();
     doc.setRemoveDuplicateFieldValues( "f1", true );
     doc.setRemoveDuplicateFieldValues( "f2", false );
-    doc.addField( "f1", c0 );
-    doc.addField( "f2", c0 );
-    assertEquals( 3, doc.getFieldValues("f1").size() );
-    assertEquals( 5, doc.getFieldValues("f2").size() );
+    doc.addField( "f1", c0, null );
+    doc.addField( "f2", c0, null );
+    assertEquals( 3, doc.getField("f1").getValueCount() );
+    assertEquals( 5, doc.getField("f2").getValueCount() );
 
-    assertEquals( "[aaa, bbb, ccc]", doc.getFieldValues( "f1" ).toString() );
-    assertEquals( "[aaa, bbb, aaa, aaa, ccc]", doc.getFieldValues( "f2" ).toString() );
+    assertEquals( "[aaa, bbb, ccc]", doc.getField( "f1" ).getValues().toString() );
+    assertEquals( "[aaa, bbb, aaa, aaa, ccc]", doc.getField( "f2" ).getValues().toString() );
   }
  
   public void testDuplicate() 
@@ -152,11 +145,11 @@ public class SolrDocumentTest extends TestCase
     // Set up a simple document
     SolrInputDocument doc = new SolrInputDocument();
     for( int i=0; i<5; i++ ) {
-      doc.addField( "f", fval0 );
-      doc.addField( "f", fval1 );
-      doc.addField( "f", fval2 );
+      doc.addField( "f", fval0, null );
+      doc.addField( "f", fval1, null );
+      doc.addField( "f", fval2, null );
     }
-    assertEquals( (3*5), doc.getFieldValues("f").size() );
+    assertEquals( (3*5), doc.getField("f").getValueCount() );
     
     try {
       doc.setRemoveDuplicateFieldValues( "f", true );
@@ -164,14 +157,14 @@ public class SolrDocumentTest extends TestCase
     }
     catch( Exception ex ) {}
     
-    doc.removeFields( "f" );
+    doc.removeField( "f" );
     doc.setRemoveDuplicateFieldValues( "f", true );
     for( int i=0; i<5; i++ ) {
-      doc.addField( "f", fval0 );
-      doc.addField( "f", fval1 );
-      doc.addField( "f", fval2 );
+      doc.addField( "f", fval0, null );
+      doc.addField( "f", fval1, null );
+      doc.addField( "f", fval2, null );
     }
-    assertEquals( (3), doc.getFieldValues("f").size() );
+    assertEquals( (3), doc.getField("f").getValueCount() );
   }
 }
 

@@ -17,15 +17,14 @@
 
 package org.apache.solr.common;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
 /**
  * Represent the field and boost information needed to construct and index
- * a Lucene Document.  Like the SolrDocument, the field values need to
+ * a Lucene Document.  Like the SolrDocument, the field values should
  * match those specified in schema.xml 
  * 
  * By default, this will keep every field value added to the document.  To only
@@ -35,90 +34,79 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrInputDocument extends SolrDocument
+public class SolrInputDocument implements Iterable<SolrInputField>
 {
-  private Map<String,Float> _boost = null;
+  private final Map<String,SolrInputField> _fields;
   private Map<String,Boolean> _removeDuplicates = null;
- 
-   /**
-   * Return a base collection to manage the fields for a given value.  If
-   * the field is defined to be "distinct", the field will be backed as 
-   * a Set rather then a List.  Adding the same value multiple times will
-   * only keep a single instance of that value.
-   */
-  @Override
-  protected Collection<Object> getEmptyCollection( String name )
-  {
-    boolean distint = false;
-    if( _removeDuplicates != null ) {
-      Boolean v = _removeDuplicates.get( name );
-      if( v == null ) {
-        v = _removeDuplicates.get( null );
-      }
-      distint = (v == Boolean.TRUE);
-    }
-    return distint ? new LinkedHashSet<Object>() : new ArrayList<Object>(1);  // keep the order? -- perhaps HashSet?
-  }
+  private float _documentBoost = 1.0f;
 
+  public SolrInputDocument()
+  {
+    _fields = new HashMap<String,SolrInputField>();
+  }
+  
   /**
    * Remove all fields and boosts from the document
    */
-  @Override
   public void clear()
   {
-    super.clear();
-    if( _boost != null ) {
-      _boost.clear();
+    if( _fields != null ) {
+      _fields.clear();
     }
     if(_removeDuplicates != null ) {
       _removeDuplicates.clear();
     }
   }
-  
-  /**
-   * Set the document boost.  null will remove the boost
-   */
-  public void setDocumentBoost( Float v )
+
+  ///////////////////////////////////////////////////////////////////
+  // Add / Set fields
+  ///////////////////////////////////////////////////////////////////
+
+  private boolean isDistinct( String name )
   {
-    this.setBoost( null, v );
-  }
-  
-  /**
-   * @return the document boost.  or null if not set
-   */
-  public Float getDocumentBoost()
-  {
-    return this.getBoost( null );
-  }
-  
-  /**
-   * Get the lucene document boost for a field.  Passing in <code>null</code> returns the
-   * document boost, not a field boost.  
-   */
-  public void setBoost(String name, Float boost) {
-    if( _boost == null ) {
-      _boost = new HashMap<String, Float>();
+    if( _removeDuplicates != null ) {
+      Boolean v = _removeDuplicates.get( name );
+      if( v == null ) {
+        v = _removeDuplicates.get( null );
+      }
+      return (v == Boolean.TRUE);
     }
-    if( boost == null ) {
-      _boost.remove( name );
+    return false;
+  }
+  
+  public void setField(String name, Object value, Float boost ) 
+  {
+    SolrInputField field = new SolrInputField( name );
+    _fields.put( name, field );
+    if( isDistinct( name ) ) {
+      field.value = new LinkedHashSet<Object>();
+      this.addField(name, value, boost);
     }
     else {
-      _boost.put( name, boost );
+      field.setValue( value, boost );
     }
   }
 
   /**
-   * Set the field boost.  All fields with the name will have the same boost.  
-   * Passing in <code>null</code> sets the document boost.
-   * @param boost
+   * Remove all fields and boosts from the document
    */
-  public Float getBoost(String name) {
-    if( _boost == null ) {
-      return null;
+  public void addField(String name, Object value, Float boost ) 
+  {
+    SolrInputField field = _fields.get( name );
+    if( field == null || field.value == null ) {
+      setField(name, value, boost);
     }
-    return _boost.get( name );
+    else {
+      field.addValue( value, boost );
+    }
   }
-  
+
+  public boolean removeField(String name) {
+    if( name != null ) {
+      return _fields.remove( name ) != null;
+    }
+    return false;
+  }
   
   /**
    * Should the Document be able to contain duplicate values for the same field?
@@ -132,7 +120,7 @@ public class SolrInputDocument extends SolrDocument
    */
   public void setRemoveDuplicateFieldValues( String name, boolean v )
   {
-    if( this.getFieldValues( name ) != null ) {
+    if( _fields.get( name ) != null ) {
       // If it was not distinct and changed to distinct, we could, but this seems like a better rule
       throw new RuntimeException( "You can't change a fields distinctness after it is initialized." );
     }
@@ -148,4 +136,30 @@ public class SolrInputDocument extends SolrDocument
     _removeDuplicates.put( name, v );
   }
 
+  ///////////////////////////////////////////////////////////////////
+  // Get the field values
+  ///////////////////////////////////////////////////////////////////
+
+  public SolrInputField getField( String field )
+  {
+    return _fields.get( field );
+  }
+
+  public Iterator<SolrInputField> iterator() {
+    return _fields.values().iterator();
+  }
+  
+  public float getDocumentBoost() {
+    return _documentBoost;
+  }
+
+  public void setDocumentBoost(float documentBoost) {
+    _documentBoost = documentBoost;
+  }
+  
+  @Override
+  public String toString()
+  {
+    return "SolrInputDocumnt["+_fields+"]";
+  }
 }

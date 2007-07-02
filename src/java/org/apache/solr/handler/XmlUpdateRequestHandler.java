@@ -309,7 +309,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
-        doc.setBoost( null, Float.parseFloat(parser.getAttributeValue(i)) );
+        doc.setDocumentBoost(  Float.parseFloat(parser.getAttributeValue(i)) );
       } else {
         log.warning("Unknown attribute doc/@" + attrName);
       }
@@ -317,7 +317,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
     
     StringBuilder text = new StringBuilder();
     String name = null;
-    Float boost = null;
+    float boost = 1.0f;
     boolean isNull = false;
     while (true) {
       int event = parser.next();
@@ -335,20 +335,8 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         } 
         else if ("field".equals(parser.getLocalName())) {
           if (!isNull) {
-            if(boost != null) {
-              // The lucene API and solr XML field specification make it possible to set boosts
-              // on multi-value fields even though lucene indexing does not support this.
-              // To keep behavior consistent with what happens in the lucene index, we accumulate
-              // the product of all boosts specified for this field.
-              Float old = doc.getBoost( name );
-              if( old != null ) {
-                doc.setBoost( name, boost*old );
-              }
-              else {
-                doc.setBoost( name, boost );
-              }
-            }
-            doc.addField(name, text.toString() );
+            doc.addField(name, text.toString(), boost );
+            boost = 1.0f;
           }
         }
         break;
@@ -361,7 +349,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
               "unexpected XML tag doc/" + localName);
         }
-        boost = null;
+        boost = 1.0f;
         String attrVal = "";
         for (int i = 0; i < parser.getAttributeCount(); i++) {
           attrName = parser.getAttributeLocalName(i);
