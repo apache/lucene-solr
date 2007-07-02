@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.Collection;
 
 /**
  * Represent the field and boost information needed to construct and index
@@ -74,6 +76,65 @@ public class SolrInputDocument implements Iterable<SolrInputField>
     return false;
   }
   
+  /** 
+   * Add a field with implied null value for boost.
+   * 
+   * @see addField(String, Object, Float)
+   * @param name name of the field to add
+   * @param value value of the field
+   */
+  public void addField(String name, Object value) 
+  {
+    addField(name, value, null);
+  }
+  
+  /** Get the first value for a field.
+   * 
+   * @param name name of the field to fetch
+   * @return first value of the field or null if not present
+   */
+  public Object getFieldValue(String name) 
+  {
+    SolrInputField field = getField(name);
+    Object o = null;
+    if (field!=null) o = field.getFirstValue();
+    return o;
+  }
+  
+  /** Get all the values for a field.
+   * 
+   * @param name name of the field to fetch
+   * @return value of the field or null if not set
+   */
+  public Collection<Object> getFieldValues(String name) 
+  {
+    SolrInputField field = getField(name);
+    if (field!=null) {
+      return field.getValues();
+    }
+    return null;
+  } 
+  
+  /** Get all field names.
+   * 
+   * @return Set of all field names.
+   */
+  public Collection<String> getFieldNames() 
+  {
+    return _fields.keySet();
+  }
+  
+  /** Set a field with implied null value for boost.
+   * 
+   * @see setField(String, Object, Float)
+   * @param name name of the field to set
+   * @param value value of the field
+   */
+  public void setField(String name, Object value) 
+  {
+    setField(name, value, null);
+  }
+  
   public void setField(String name, Object value, Float boost ) 
   {
     SolrInputField field = new SolrInputField( name );
@@ -101,11 +162,14 @@ public class SolrInputDocument implements Iterable<SolrInputField>
     }
   }
 
+  /**
+   * Remove a field
+   * 
+   * @param the field name
+   * @return true if a field was removed
+   */
   public boolean removeField(String name) {
-    if( name != null ) {
-      return _fields.remove( name ) != null;
-    }
-    return false;
+    return _fields.remove( name ) != null;
   }
   
   /**
