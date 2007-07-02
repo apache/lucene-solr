@@ -65,7 +65,11 @@
   <property name="junit.excludes" value=""/>
 
   <patternset id="metainf.includes">
-  	<exclude name="**/*"/>
+    <!-- use an explicit include to prevent expensive walking of subdirs
+         that default include triggers
+    -->
+    <include name="FIND_NOTHING"/>
+    <exclude name="**/*"/>
   </patternset>
 	
   <condition property="build-1-5-contrib">
