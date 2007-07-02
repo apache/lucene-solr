@@ -256,37 +256,42 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
         log.warning("unexpected attribute delete/@" + attrName);
       }
     }
-    
-    String val = null;
-    String mode = null;
+
+    StringBuilder text = new StringBuilder();
     while (true) {
       int event = parser.next();
       switch (event) {
       case XMLStreamConstants.START_ELEMENT:
-        mode = parser.getLocalName();
+        String mode = parser.getLocalName();
         if (!("id".equals(mode) || "query".equals(mode))) {
           log.warning("unexpected XML tag /delete/" + mode);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
               "unexpected XML tag /delete/" + mode);
         }
+        text.setLength( 0 );
         break;
         
       case XMLStreamConstants.END_ELEMENT:
         String currTag = parser.getLocalName();
         if ("id".equals(currTag)) {
-          deleteCmd.id = val;
+          deleteCmd.id = text.toString();
         } else if ("query".equals(currTag)) {
-          deleteCmd.query = val;
+          deleteCmd.query = text.toString();
+        } else if( "delete".equals( currTag ) ) {
+          return;
         } else {
           log.warning("unexpected XML tag /delete/" + currTag);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
               "unexpected XML tag /delete/" + currTag);
         }
         processor.processDelete( deleteCmd );
-        return;
-        
+        break;
+
+      // Add everything to the text
+      case XMLStreamConstants.SPACE:
+      case XMLStreamConstants.CDATA:
       case XMLStreamConstants.CHARACTERS:
-        val = parser.getText();
+        text.append( parser.getText() );
         break;
       }
     }

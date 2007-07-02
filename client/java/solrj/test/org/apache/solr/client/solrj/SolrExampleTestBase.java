@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj;
 
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,9 @@ import junit.framework.Assert;
 
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.XML;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
@@ -43,7 +47,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
   @Override public String getSolrConfigFile() { return "../../../example/solr/conf/solrconfig.xml"; }
   
   /**
-   * Subclasses need to initalize the server impl
+   * Subclasses need to initialize the server impl
    */
   protected abstract SolrServer getSolrServer();
   
@@ -147,5 +151,66 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(2, response.getResults().getNumFound() );
     Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
+  }
+  
+  protected void assertNumFound( String query, int num ) throws SolrServerException, IOException
+  {
+    QueryResponse rsp = getSolrServer().query( new SolrQuery( query ) );
+    if( num != rsp.getResults().getNumFound() ) {
+      fail( "expected: "+num +" but had: "+rsp.getResults().getNumFound() + " :: " + rsp.getResults() );
+    }
+  }
+
+  public void testAddDelete() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    
+    SolrInputDocument[] doc = new SolrInputDocument[3];
+    for( int i=0; i<3; i++ ) {
+      doc[i] = new SolrInputDocument();
+      doc[i].setField( "id", i + " & 222" );
+    }
+    String id = (String) doc[0].getFieldValue( "id" );
+    
+    server.add( doc[0] );
+    server.commit();
+    assertNumFound( "*:*", 1 ); // make sure it got in
+    
+    // make sure it got in there
+    server.deleteById( id );
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got out
+    
+    // add it back 
+    server.add( doc[0] );
+    server.commit();
+    assertNumFound( "*:*", 1 ); // make sure it got in
+    server.deleteByQuery( "id:\""+ClientUtils.escapeQueryChars(id)+"\"" );
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got out
+    
+    // Add two documents
+    for( SolrInputDocument d : doc ) {
+      server.add( d );
+    }
+    server.commit();
+    assertNumFound( "*:*", 3 ); // make sure it got in
+    
+    // should be able to handle multiple delete commands in a single go
+    StringWriter xml = new StringWriter();
+    xml.append( "<delete>" );
+    for( SolrInputDocument d : doc ) {
+      xml.append( "<id>" );
+      XML.escapeCharData( (String)d.getFieldValue( "id" ), xml );
+      xml.append( "</id>" );
+    }
+    xml.append( "</delete>" );
+    DirectXmlUpdateRequest up = new DirectXmlUpdateRequest( "/update", xml.toString() );
+    server.request( up );
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got out
   }
 }
