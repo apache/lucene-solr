@@ -74,6 +74,9 @@ New Features
 10. SOLR-266: Adding show=schema to LukeRequestHandler to show the parsed
     schema fields and field types.  (ryan)
 
+11. SOLR-133: The UpdateRequestHandler now accepts multiple delete options 
+    within a single request.  For example, sending:
+     <delete><id>1</id><id>2</id></delete> will delete both 1 and 2. (ryan)
 
 Changes in runtime behavior
 
