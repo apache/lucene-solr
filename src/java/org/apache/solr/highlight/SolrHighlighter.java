@@ -118,7 +118,10 @@ public class SolrHighlighter
            getFormatter(fieldName, params), 
            getQueryScorer(query, fieldName, request));
      highlighter.setTextFragmenter(getFragmenter(fieldName, params));
-     return highlighter;
+     highlighter.setMaxDocBytesToAnalyze(params.getFieldInt(
+           fieldName, HighlightParams.MAX_CHARS, 
+           Highlighter.DEFAULT_MAX_DOC_BYTES_TO_ANALYZE));
+       return highlighter;
   }
   
   /**

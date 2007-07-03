@@ -92,6 +92,8 @@ New Features
 14. SOLR-225: Enable pluggable highlighting classes.  Allow configurable
     highlighting formatters and Fragmenters.  (ryan)
 
+15. SOLR-273: Added hl.maxAnalyzedChars highlighting parameter, defaulting to
+    50k (klaas)
 
 Changes in runtime behavior
 

@@ -30,6 +30,8 @@ import java.util.HashMap;
  */
 public class HighlighterTest extends AbstractSolrTestCase {
 
+  private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all--we want two disjoint long fragments.";
+
   @Override public String getSchemaFile() { return "schema.xml"; }
   @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
 
@@ -78,7 +80,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
     
-    assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all--we want two disjoint long fragments.", 
+    assertU(adoc("tv_text", LONG_TEXT, 
                  "id", "1"));
     assertU(commit());
     assertU(optimize());
@@ -284,7 +286,33 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//lst[@name='1']/arr[@name='tv_text']/str"
             );
   }
-  
+
+  public void testMaxChars() {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("fl", "id score");
+    args.put("hl", "true");
+    args.put("hl.snippets", "10");
+    args.put("hl.fl", "t_text");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard", 0, 200, args);
+    
+
+    assertU(adoc("t_text", LONG_TEXT, "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("token at start of text",
+            sumLRF.makeRequest("t_text:disjoint"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[count(str)=1]"
+            );
+    args.put("hl.maxAnalyzedChars", "20");
+    sumLRF = h.getRequestFactory("standard", 0, 200, args);
+    assertQ("token at end of text",
+            sumLRF.makeRequest("t_text:disjoint"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1'][not(*)]"
+            );
+  }
   public void testVariableFragsize() {
      assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all", 
            "id", "1"));
