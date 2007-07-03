@@ -156,6 +156,13 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     // But not this one
     assertQ("should find none", req("id:530") ,"//result[@numFound=0]" );
     
+    // Delete the document
+    assertU( delI("529") );
+    assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
+    // Wait longer then the autocommit time
+    Thread.sleep( 1000 );
+    assertQ("deleted and time has passed", req("id:529") ,"//result[@numFound=0]" );
+    
     // now make the call 10 times really fast and make sure it 
     // only commits once
     req.setContentStreams( toContentStreams(
@@ -164,7 +171,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     	handler.handleRequest( req, rsp );
     }
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
-    assertEquals( 1, tracker.autoCommitCount );
+    assertEquals( 2, tracker.autoCommitCount );
     
     // Wait longer then the autocommit time
     Thread.sleep( 1000 );
@@ -173,6 +180,6 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
     assertQ("now it should", req("id:500") ,"//result[@numFound=1]" );
     assertQ("but not this", req("id:531") ,"//result[@numFound=0]" );
-    assertEquals( 2, tracker.autoCommitCount );
+    assertEquals( 3, tracker.autoCommitCount );
   }
 }

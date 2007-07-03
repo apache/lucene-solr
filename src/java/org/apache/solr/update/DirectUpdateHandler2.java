@@ -304,6 +304,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     } finally { 
       iwCommit.unlock(); 
     }
+    
+    if( tracker.timeUpperBound > 0 ) {
+      tracker.scheduleCommitWithin( tracker.timeUpperBound );
+    }
   }
 
   // why not return number of docs deleted?
@@ -351,6 +355,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
      }
      numDocsDeleted.getAndAdd(totDeleted);
      madeIt=true;
+
+     if( tracker.timeUpperBound > 0 ) {
+       tracker.scheduleCommitWithin( tracker.timeUpperBound );
+     }
     } finally {
       if (!madeIt) {
         numErrors.incrementAndGet();
@@ -568,7 +576,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
     log.info("closed " + this);
   }
-
+    
   /** Helper class for tracking autoCommit state.
    *
    * Note: This is purely an implementation detail of autoCommit and will
@@ -605,6 +613,23 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       SolrCore.log.info("AutoCommit: " + this);
     }
 
+    /** schedeule individual commits */
+    public synchronized void scheduleCommitWithin(long commitMaxTime) 
+    {
+      // Check if there is a commit already scheduled for longer then this time
+      if( pending != null && 
+          pending.getDelay(TimeUnit.MILLISECONDS) >= commitMaxTime ) 
+      {
+        pending.cancel(false);
+        pending = null;
+      }
+      
+      // schedule a new commit
+      if( pending == null ) {
+        pending = scheduler.schedule( this, commitMaxTime, TimeUnit.MILLISECONDS );
+      }
+    }
+    
     /** Indicate that documents have been added
      */
     public void addedDocument() {
