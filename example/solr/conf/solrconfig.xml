@@ -246,12 +246,14 @@
   
       
   <!-- requestHandler plugins... incoming queries will be dispatched to the
-     correct handler based on the qt (query type) param matching the
-     name of registered handlers.
-     The "standard" request handler is the default and will be used if qt
-     is not specified in the request.
+     correct handler based on the path or the qt (query type) param.
+     Names starting with a '/' are accessed with the a path equal to the 
+     registered name.  Names without a leading '/' are accessed with:
+      http://host/app/select?qt=name
+     If no qt is defined, the requestHandlere that declares default="true"
+     will be used.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true">
     <!-- default values for query parameters -->
      <lst name="defaults">
        <str name="echoParams">explicit</str>
@@ -459,11 +461,11 @@
   <!-- queryResponseWriter plugins... query responses will be written using the
     writer specified by the 'wt' request parameter matching the name of a registered
     writer.
-    The "standard" writer is the default and will be used if 'wt' is not specified 
+    The "default" writer is the default and will be used if 'wt' is not specified 
     in the request. XMLResponseWriter will be used if nothing is specified here.
     The json, python, and ruby writers are also available by default.
 
-    <queryResponseWriter name="standard" class="org.apache.solr.request.XMLResponseWriter"/>
+    <queryResponseWriter name="xml" class="org.apache.solr.request.XMLResponseWriter" default="true"/>
     <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
     <queryResponseWriter name="python" class="org.apache.solr.request.PythonResponseWriter"/>
     <queryResponseWriter name="ruby" class="org.apache.solr.request.RubyResponseWriter"/>
