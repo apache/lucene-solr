@@ -52,6 +52,13 @@ public class TestJettySolrRunner extends SolrExampleTestBase {
       ((CommonsHttpSolrServer)server).setDefaultMaxConnectionsPerHost(100);
       ((CommonsHttpSolrServer)server).setMaxTotalConnections(100);
   }
+
+  @Override public void tearDown() throws Exception 
+  {
+    super.tearDown();
+    jetty.stop();  // stop the server
+  }
+  
   
   @Override
   protected SolrServer getSolrServer()
