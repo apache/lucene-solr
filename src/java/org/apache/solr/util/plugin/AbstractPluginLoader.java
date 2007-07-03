@@ -19,7 +19,6 @@ package org.apache.solr.util.plugin;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.apache.solr.common.SolrException;
@@ -67,18 +66,16 @@ public abstract class AbstractPluginLoader<T>
   
   /**
    * Create a plugin from an XML configuration.  Plugins are defined using:
-   *   <plugin name="name1" class="solr.ClassName" arg1="val1">
+   *   <plugin name="name1" class="solr.ClassName">
    *      ...
    *   </plugin>
    * 
    * @param name - The registered name.  In the above example: "name1"
    * @param className - class name for requested plugin.  In the above example: "solr.ClassName"
-   * @param params - the parameters specified in the XML.  In the example above,
-   * this would be a map containing [name=name1, class=solr.ClassName, arg1=val1]
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( String name, String className, Map<String,String> params, Node node ) throws Exception
+  protected T create( String name, String className, Node node ) throws Exception
   {
     return (T) Config.newInstance( className, getDefaultPackages() );
   }
@@ -90,18 +87,12 @@ public abstract class AbstractPluginLoader<T>
   abstract protected T register( String name, T plugin ) throws Exception;
 
   /**
-   * Initialize the plugin.  For example, given the configuration:
-   * 
-   *   <plugin name="name1" class="solr.ClassName" arg1="val1">
-   *      ...
-   *   </plugin>
+   * Initialize the plugin.  
    * 
    * @param plugin - the plugin to initialize
-   * @param params - the parameters specified in the XML.  In the example above,
-   * this would be a map containing [name=name1, class=solr.ClassName, arg1=val1]
    * @param node - the XML node defining this plugin
    */
-  abstract protected void init( T plugin, Map<String,String> params, Node node ) throws Exception;
+  abstract protected void init( T plugin, Node node ) throws Exception;
 
   /**
    * Given a NodeList from XML in the form:
@@ -142,19 +133,16 @@ public abstract class AbstractPluginLoader<T>
           String name       = DOMUtil.getAttr(node,"name", type);
           String className  = DOMUtil.getAttr(node,"class", type);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
-          
-          Map<String,String> params = DOMUtil.toMapExcept( node.getAttributes(), 
-              "name","class" );
-  
-          T plugin = create(name, className, params, node );
+            
+          T plugin = create(name, className, node );
           log.info("created "+name+": " + plugin.getClass().getName() );
           
           // Either initialize now or wait till everything has been registered
           if( preRegister ) {
-            info.add( new PluginInitInfo( plugin, params, node ) );
+            info.add( new PluginInitInfo( plugin, node ) );
           }
           else {
-            init( plugin, params, node );
+            init( plugin, node );
           }
           
           T old = register( name, plugin );
@@ -181,7 +169,7 @@ public abstract class AbstractPluginLoader<T>
     // If everything needs to be registered *first*, this will initialize later
     for( PluginInitInfo pinfo : info ) {
       try {
-        init( pinfo.plugin, pinfo.params, pinfo.node );
+        init( pinfo.plugin, pinfo.node );
       }
       catch( Exception ex ) {
         SolrConfig.severeErrors.add( ex );
@@ -199,13 +187,11 @@ public abstract class AbstractPluginLoader<T>
   private class PluginInitInfo
   {
     final T plugin;
-    final Map<String,String> params;
     final Node node;
     
-    PluginInitInfo( T plugin, Map<String,String> params, Node node )
+    PluginInitInfo( T plugin, Node node )
     {
       this.plugin = plugin;
-      this.params = params;
       this.node = node;
     }
   }

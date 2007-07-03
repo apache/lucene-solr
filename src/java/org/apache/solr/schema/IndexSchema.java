@@ -312,7 +312,7 @@ public final class IndexSchema {
       AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType" ) {
 
         @Override
-        protected FieldType create( String name, String className, Map<String,String> params, Node node ) throws Exception
+        protected FieldType create( String name, String className, Node node ) throws Exception
         {
           FieldType ft = (FieldType)Config.newInstance(className);
           ft.setTypeName(name);
@@ -336,7 +336,8 @@ public final class IndexSchema {
         }
         
         @Override
-        protected void init(FieldType plugin, Map<String, String> params, Node node) throws Exception {
+        protected void init(FieldType plugin, Node node) throws Exception {
+          Map<String,String> params = DOMUtil.toMapExcept( node.getAttributes(), "name","class" );
           plugin.setArgs(schema, params );
         }
 

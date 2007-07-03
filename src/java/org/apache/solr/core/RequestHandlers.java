@@ -130,9 +130,9 @@ final class RequestHandlers {
       new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true )
     {
       @Override
-      protected SolrRequestHandler create( String name, String className, Map<String,String> params, Node node ) throws Exception
-      {
-        String startup = params.get( "startup" );
+      protected SolrRequestHandler create( String name, String className, Node node ) throws Exception
+      {    
+        String startup = DOMUtil.getAttr( node, "startup" );
         if( startup != null ) {
           if( "lazy".equals( startup ) ) {
             log.info("adding lazy requestHandler: " + className );
@@ -143,7 +143,7 @@ final class RequestHandlers {
             throw new Exception( "Unknown startup value: '"+startup+"' for: "+className );
           }
         }
-        return super.create( name, className, params, node );
+        return super.create( name, className, node );
       }
 
       @Override
@@ -152,7 +152,7 @@ final class RequestHandlers {
       }
       
       @Override
-      protected void init(SolrRequestHandler plugin, Map<String, String> params, Node node ) throws Exception {
+      protected void init(SolrRequestHandler plugin, Node node ) throws Exception {
         plugin.init( DOMUtil.childNodesToNamedList(node) );
       }      
     };

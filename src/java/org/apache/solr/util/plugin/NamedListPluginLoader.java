@@ -38,7 +38,7 @@ public class NamedListPluginLoader<T extends NamedListInitializedPlugin> extends
   }
 
   @Override
-  protected void init(T plugin, Map<String, String> params, Node node) throws Exception {
+  protected void init(T plugin,Node node) throws Exception {
     plugin.init( DOMUtil.childNodesToNamedList(node) );
   }
 
