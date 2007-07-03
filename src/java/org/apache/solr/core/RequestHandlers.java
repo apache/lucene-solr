@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -34,8 +33,9 @@ import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
-import org.w3c.dom.Node;
+import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
 
 /**
  * @author yonik
@@ -46,7 +46,7 @@ final class RequestHandlers {
   public static final String DEFAULT_HANDLER_NAME="standard";
 
   // Use a synchronized map - since the handlers can be changed at runtime, 
-  // the map implementaion should be thread safe
+  // the map implementation should be thread safe
   private final Map<String, SolrRequestHandler> handlers = Collections.synchronizedMap(
       new HashMap<String,SolrRequestHandler>() );
 
@@ -75,8 +75,8 @@ final class RequestHandlers {
   }
 
   /**
-   * Handlers must be initalized before calling this function.  As soon as this is
-   * called, the handler can immediatly accept requests.
+   * Handlers must be initialized before calling this function.  As soon as this is
+   * called, the handler can immediately accept requests.
    * 
    * This call is thread safe.
    * 
@@ -97,7 +97,7 @@ final class RequestHandlers {
   }
 
   /**
-   * Returns an unmodifieable Map containing the registered handlers
+   * Returns an unmodifiable Map containing the registered handlers
    */
   public Map<String,SolrRequestHandler> getRequestHandlers() {
     return Collections.unmodifiableMap( handlers );
@@ -110,96 +110,73 @@ final class RequestHandlers {
    * This function should <b>only</b> be called from the SolrCore constructor.  It is
    * not intended as a public API.
    * 
-   * While the normal runtime registration contract is that handlers MUST be initalizad 
+   * While the normal runtime registration contract is that handlers MUST be initialized 
    * before they are registered, this function does not do that exactly.
    * 
-   * This funciton registers all handlers first and then calls init() for each one.  
+   * This function registers all handlers first and then calls init() for each one.  
    * 
    * This is OK because this function is only called at startup and there is no chance that
-   * a handler could be asked to handle a request before it is initalized.
+   * a handler could be asked to handle a request before it is initialized.
    * 
    * The advantage to this approach is that handlers can know what path they are registered
-   * to and what other handlers are avaliable at startup.
+   * to and what other handlers are available at startup.
    * 
-   * Handlers will be registered and initalized in the order they appear in solrconfig.xml
+   * Handlers will be registered and initialized in the order they appear in solrconfig.xml
    */
-  @SuppressWarnings("unchecked")
   void initHandlersFromConfig( Config config )  
   {
-    NodeList nodes = (NodeList)config.evaluate("requestHandler", XPathConstants.NODESET);
-    
-    if (nodes !=null ) {
-      // make sure it only once/handler and that that handlers get initalized in the 
-      // order they were defined
-      Map<String,NamedList<Object>> names = new LinkedHashMap<String,NamedList<Object>>(); 
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-  
-        // In a production environment, we can tolerate an error in some request handlers, 
-        // still load the others, and have a working system.
-        try {
-          String name = DOMUtil.getAttr(node,"name","requestHandler config");
-          String className = DOMUtil.getAttr(node,"class","requestHandler config");
-          String startup = DOMUtil.getAttr(node,"startup", null );
-          NamedList<Object> args = DOMUtil.childNodesToNamedList(node);
-  
-          // Perhaps lazy load the request handler with a wrapper
-          SolrRequestHandler handler = null;
+    final RequestHandlers handlers = this;
+    AbstractPluginLoader<SolrRequestHandler> loader = 
+      new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true )
+    {
+      @Override
+      protected SolrRequestHandler create( String name, String className, Map<String,String> params, Node node ) throws Exception
+      {
+        String startup = params.get( "startup" );
+        if( startup != null ) {
           if( "lazy".equals( startup ) ) {
-            log.info("adding lazy requestHandler: " + name + "=" + className);
-            handler = new LazyRequestHandlerWrapper( className, args );
+            log.info("adding lazy requestHandler: " + className );
+            NamedList args = DOMUtil.childNodesToNamedList(node);
+            return new LazyRequestHandlerWrapper( className, args );
           }
           else {
-            Class<? extends SolrRequestHandler> clazz = Config.findClass( className, new String[]{} );
-            log.info("adding requestHandler: " + name + "=" + className);
-            handler = clazz.newInstance();
+            throw new Exception( "Unknown startup value: '"+startup+"' for: "+className );
           }
-          
-          SolrRequestHandler old = register( name, handler );
-          if( old != null ) {
-            String msg = "multiple handlers registered on the same path! ignoring: "+old;
-            Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
-            SolrConfig.severeErrors.add( t );
-            SolrException.logOnce(log,null,t);
-          }
-          names.put( name, args );
-        } 
-        catch (Exception e) {
-          SolrConfig.severeErrors.add( e );
-          SolrException.logOnce(log,null,e);
         }
+        return super.create( name, className, params, node );
+      }
+
+      @Override
+      protected SolrRequestHandler register(String name, SolrRequestHandler plugin) throws Exception {
+        return handlers.register( name, plugin );
       }
       
-      // Call init() on each handler after they have all been registered
-      for( Map.Entry<String, NamedList<Object>> reg : names.entrySet() ) {
-        try {
-          handlers.get( reg.getKey() ).init( reg.getValue() );
-        }
-        catch( Exception e ) {
-          SolrConfig.severeErrors.add( e );
-          SolrException.logOnce(log,null,e);
-        }
+      @Override
+      protected void init(SolrRequestHandler plugin, Map<String, String> params, Node node ) throws Exception {
+        plugin.init( DOMUtil.childNodesToNamedList(node) );
+      }      
+    };
+    
+    NodeList nodes = (NodeList)config.evaluate("requestHandler", XPathConstants.NODESET);
+    
+    // Load the handlers and get the default one
+    SolrRequestHandler defaultHandler = loader.load( nodes );
+    if( defaultHandler == null ) {
+      defaultHandler = get(RequestHandlers.DEFAULT_HANDLER_NAME);
+      if( defaultHandler == null ) {
+        defaultHandler = new StandardRequestHandler();
+        register(RequestHandlers.DEFAULT_HANDLER_NAME, defaultHandler);
       }
     }
-    
-    //
-    // Get the default handler and add it in the map under null and empty
-    // to act as the default.
-    //
-    SolrRequestHandler handler = get(RequestHandlers.DEFAULT_HANDLER_NAME);
-    if (handler == null) {
-      handler = new StandardRequestHandler();
-      register(RequestHandlers.DEFAULT_HANDLER_NAME, handler);
-    }
-    register(null, handler);
-    register("", handler);
+    register(null, defaultHandler);
+    register("", defaultHandler);
   }
     
 
   /**
    * The <code>LazyRequestHandlerWrapper</core> wraps any {@link SolrRequestHandler}.  
    * Rather then instanciate and initalize the handler on startup, this wrapper waits
-   * untill it is actually called.  This should only be used for handlers that are
+   * until it is actually called.  This should only be used for handlers that are
    * unlikely to be used in the normal lifecycle.
    * 
    * You can enable lazy loading in solrconfig.xml using:
@@ -227,7 +204,7 @@ final class RequestHandlers {
     {
       _className = className;
       _args = args;
-      _handler = null; // don't initalize
+      _handler = null; // don't initialize
     }
     
     /**
@@ -238,7 +215,7 @@ final class RequestHandlers {
     }
     
     /**
-     * Wait for the first request before initalizing the wrapped handler 
+     * Wait for the first request before initializing the wrapped handler 
      */
     public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp)  {
       getWrappedHandler().handleRequest( req, rsp );
@@ -319,11 +296,13 @@ final class RequestHandlers {
         return _handler.getStatistics();
       }
       NamedList<String> lst = new SimpleOrderedMap<String>();
-      lst.add("note", "not initaized yet" );
+      lst.add("note", "not initialized yet" );
       return lst;
     }
   }
 }
+
+
 
 
 

@@ -38,6 +38,7 @@ import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -356,20 +357,19 @@ public class DisMaxRequestHandler extends RequestHandlerBase  {
         }
 
       } catch (Exception e) {
-        SolrException.logOnce(SolrCore.log,
-                              "Exception during debug", e);
+        SolrException.logOnce(SolrCore.log, "Exception during debug", e);
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
 
       /* * * Highlighting/Summarizing  * * */
-      if(HighlightingUtils.isHighlightingEnabled(req) && parsedUserQuery != null) {
+      SolrHighlighter highlighter = req.getCore().getHighlighter();
+      if(highlighter.isHighlightingEnabled( params ) && parsedUserQuery != null) {
         String[] highFields = queryFields.keySet().toArray(new String[0]);
-        NamedList sumData =
-          HighlightingUtils.doHighlighting(
-	       results.docList, 
-	       parsedUserQuery.rewrite(req.getSearcher().getReader()), 
-	       req, 
-	       highFields);
+        NamedList sumData = highlighter.doHighlighting(
+  	       results.docList, 
+  	       parsedUserQuery.rewrite(req.getSearcher().getReader()), 
+  	       req, 
+  	       highFields);
         if(sumData != null)
           rsp.add("highlighting", sumData);
       }

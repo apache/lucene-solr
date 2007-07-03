@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import java.net.URL;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.*;
 
 /**
  * MBean interface for getting various ui friendly strings and URLs
@@ -32,7 +31,7 @@ import org.apache.solr.util.*;
  */
 public interface SolrInfoMBean {
 
-  public enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, OTHER };
+  public enum Category { CORE, QUERYHANDLER, UPDATEHANDLER, CACHE, HIGHLIGHTING, OTHER };
 
   /**
    * Simple common usage name, e.g. BasicQueryHandler,

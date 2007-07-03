@@ -31,6 +31,7 @@ import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -295,7 +296,7 @@ public final class IndexSchema {
 
       Config config = new Config("schema", getInputStream(), "/schema/");
       Document document = config.getDocument();
-      XPath xpath = config.getXPath();
+      final XPath xpath = config.getXPath();
 
       Node nd = (Node) xpath.evaluate("/schema/@name", document, XPathConstants.NODE);
       if (nd==null) {
@@ -307,50 +308,51 @@ public final class IndexSchema {
 
       version = config.getFloat("/schema/@version", 1.0f);
 
+      final IndexSchema schema = this;
+      AbstractPluginLoader<FieldType> loader = new AbstractPluginLoader<FieldType>( "[schema.xml] fieldType" ) {
+
+        @Override
+        protected FieldType create( String name, String className, Map<String,String> params, Node node ) throws Exception
+        {
+          FieldType ft = (FieldType)Config.newInstance(className);
+          ft.setTypeName(name);
+
+          String expression = "./analyzer[@type='query']";
+          Node anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+          Analyzer queryAnalyzer = readAnalyzer(anode);
+
+          // An analyzer without a type specified, or with type="index"
+          expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
+          anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
+          Analyzer analyzer = readAnalyzer(anode);
+
+          if (queryAnalyzer==null) queryAnalyzer=analyzer;
+          if (analyzer==null) analyzer=queryAnalyzer;
+          if (analyzer!=null) {
+            ft.setAnalyzer(analyzer);
+            ft.setQueryAnalyzer(queryAnalyzer);
+          }
+          return ft;
+        }
+        
+        @Override
+        protected void init(FieldType plugin, Map<String, String> params, Node node) throws Exception {
+          plugin.setArgs(schema, params );
+        }
+
+        @Override
+        protected FieldType register(String name, FieldType plugin) throws Exception {
+          log.finest("fieldtype defined: " + plugin );
+          return fieldTypes.put( name, plugin );
+        }
+      };
+      
+
       String expression = "/schema/types/fieldtype | /schema/types/fieldType";
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
+      loader.load( nodes );
 
-
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-        NamedNodeMap attrs = node.getAttributes();
-
-        String name = DOMUtil.getAttr(attrs,"name","fieldtype error");
-        log.finest("reading fieldtype "+name);
-        String clsName = DOMUtil.getAttr(attrs,"class", "fieldtype error");
-        FieldType ft = (FieldType)Config.newInstance(clsName);
-        ft.setTypeName(name);
-
-        expression = "./analyzer[@type='query']";
-        Node anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-        Analyzer queryAnalyzer = readAnalyzer(anode);
-
-        // An analyzer without a type specified, or with type="index"
-        expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
-        anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
-        Analyzer analyzer = readAnalyzer(anode);
-
-        if (queryAnalyzer==null) queryAnalyzer=analyzer;
-        if (analyzer==null) analyzer=queryAnalyzer;
-        if (analyzer!=null) {
-          ft.setAnalyzer(analyzer);
-          ft.setQueryAnalyzer(queryAnalyzer);
-        }
-
-
-        ft.setArgs(this, DOMUtil.toMapExcept(attrs,"name","class"));
-        FieldType old = fieldTypes.put(ft.typeName,ft);
-        if( old != null ) {
-          String msg = "[schema.xml] Duplicate fieldType definition for '"
-            + ft.typeName + "' ignoring: "+old.toString();
-          
-          Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
-          SolrException.logOnce(log,null,t);
-          SolrConfig.severeErrors.add( t );
-        }
-        log.finest("fieldtype defined: " + ft);
-      }
-
+      
 
       // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
       Map<String,Boolean> explicitRequiredProp = new HashMap<String, Boolean>();

@@ -21,6 +21,7 @@ import java.io.Writer;
 import java.io.IOException;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
  * Implementations of <code>QueryResponseWriter</code> are used to format responses to query requests.
@@ -41,7 +42,7 @@ import org.apache.solr.common.util.NamedList;
  * @author yonik
  * @version $Id$
  */
-public interface QueryResponseWriter {
+public interface QueryResponseWriter extends NamedListInitializedPlugin {
   public static String CONTENT_TYPE_XML_UTF8="text/xml; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_UTF8="text/plain; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_ASCII="text/plain; charset=US-ASCII";
@@ -68,7 +69,7 @@ public interface QueryResponseWriter {
    * <p>
    * QueryResponseWriter's must implement this method to return a valid 
    * HTTP Content-Type header for the request, that will logically 
-   * corrispond with the output produced by the write method.
+   * correspond with the output produced by the write method.
    * </p>
    * @return a Content-Type string, which may not be null.
    */
@@ -81,4 +82,6 @@ public interface QueryResponseWriter {
    */
   public void init(NamedList args);
 }
+
+
 

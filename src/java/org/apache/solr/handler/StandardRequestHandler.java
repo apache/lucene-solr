@@ -36,6 +36,7 @@ import org.apache.solr.common.util.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.highlight.SolrHighlighter;
 
 import static org.apache.solr.common.params.SolrParams.*;
 
@@ -161,7 +162,9 @@ public class StandardRequestHandler extends RequestHandlerBase {
         rsp.add("exception_during_debug", SolrException.toStr(e));
       }
       
-      NamedList sumData = HighlightingUtils.doHighlighting(
+
+      SolrHighlighter highlighter = req.getCore().getHighlighter();
+      NamedList sumData = highlighter.doHighlighting(
         results.docList, query.rewrite(req.getSearcher().getReader()), req, new String[]{defaultField});
       if(sumData != null)
         rsp.add("highlighting", sumData);

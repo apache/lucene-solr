@@ -83,6 +83,10 @@ New Features
     parsed and before they are committed to the index.  This is a good place
     for custom document manipulation or document based authorization. (ryan)
 
+13. SOLR-260: Converting to a standard PluginLoader framework.  This reworks
+    RequestHandlers, FieldTypes, and QueryResponseWriters to share the same
+    base code for loading and initalizing plugins. (ryan)
+
 Changes in runtime behavior
 
 Optimizations

@@ -17,7 +17,6 @@
 
 package org.apache.solr.util;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -25,13 +24,13 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AppendedSolrParams;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -39,7 +38,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -240,8 +238,9 @@ public class SolrPluginUtils {
       // copy return fields list
       fieldFilter = new HashSet<String>(returnFields);
       // add highlight fields
-      if(HighlightingUtils.isHighlightingEnabled(req)) {
-        for(String field: HighlightingUtils.getHighlightFields(query, req, null)) 
+      SolrHighlighter highligher = req.getCore().getHighlighter();
+      if(highligher.isHighlightingEnabled(req.getParams())) {
+        for(String field: highligher.getHighlightFields(query, req, null)) 
           fieldFilter.add(field);        
       }
       // fetch unique key if one exists.
@@ -866,6 +865,8 @@ public class SolrPluginUtils {
   }
 
 }
+
+
 
 
 

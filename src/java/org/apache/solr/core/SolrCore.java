@@ -42,6 +42,7 @@ import org.apache.solr.common.params.SolrParams.EchoParamStyle;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.request.PythonResponseWriter;
 import org.apache.solr.request.QueryResponseWriter;
@@ -57,7 +58,7 @@ import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RefCounted;
-import org.w3c.dom.Element;
+import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -79,7 +80,8 @@ public final class SolrCore {
   private final UpdateHandler updateHandler;
   private static final long startTime = System.currentTimeMillis();
   private final RequestHandlers reqHandlers = new RequestHandlers();
-
+  private final SolrHighlighter highlighter;
+  
   public long getStartTime() { return startTime; }
 
   public static SolrIndexConfig mainIndexConfig = new SolrIndexConfig("mainIndex");
@@ -211,6 +213,10 @@ public final class SolrCore {
       
       reqHandlers.initHandlersFromConfig( SolrConfig.config );
 
+      // TODO? could select the highlighter implementation
+      highlighter = new SolrHighlighter();
+      highlighter.initalize( SolrConfig.config );
+      
       try {
         // Open the searcher *before* the handler so we don't end up opening
         // one in the middle.
@@ -267,6 +273,13 @@ public final class SolrCore {
    */
   public Map<String,SolrRequestHandler> getRequestHandlers() {
     return reqHandlers.getRequestHandlers();
+  }
+
+  /**
+   * Get the SolrHighlighter
+   */
+  public SolrHighlighter getHighlighter() {
+    return highlighter;
   }
 
   /**
@@ -718,31 +731,18 @@ public final class SolrCore {
   private void initWriters() {
     String xpath = "queryResponseWriter";
     NodeList nodes = (NodeList) SolrConfig.config.evaluate(xpath, XPathConstants.NODESET);
-    int length = nodes.getLength();
-    for (int i=0; i<length; i++) {
-      Element elm = (Element) nodes.item(i);
-      
-      try {
-        String name = DOMUtil.getAttr(elm,"name", xpath+" config");
-        String className = DOMUtil.getAttr(elm,"class", xpath+" config");
-        log.info("adding queryResponseWriter "+name+"="+className);
-          
-        QueryResponseWriter writer = (QueryResponseWriter) Config.newInstance(className);
-        writer.init(DOMUtil.childNodesToNamedList(elm));
-        responseWriters.put(name, writer);
-      } catch (Exception ex) {
-        SolrConfig.severeErrors.add( ex );
-        SolrException.logOnce(log,null, ex);
-        // if a writer can't be created, skip it and continue
-      }
-    }
-
+    
+    NamedListPluginLoader<QueryResponseWriter> loader = 
+      new NamedListPluginLoader<QueryResponseWriter>( "[solrconfig.xml] "+xpath, responseWriters );
+    
+    defaultResponseWriter = loader.load( nodes );
+    
     // configure the default response writer; this one should never be null
-    if (responseWriters.containsKey("standard")) {
-      defaultResponseWriter = responseWriters.get("standard");
-    }
     if (defaultResponseWriter == null) {
-      defaultResponseWriter = new XMLResponseWriter();
+      defaultResponseWriter = responseWriters.get("standard");
+      if( defaultResponseWriter == null ) {
+        defaultResponseWriter = new XMLResponseWriter();
+      }
     }
 
     // make JSON response writers available by default
