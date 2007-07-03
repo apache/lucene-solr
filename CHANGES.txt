@@ -85,7 +85,9 @@ New Features
 
 13. SOLR-260: Converting to a standard PluginLoader framework.  This reworks
     RequestHandlers, FieldTypes, and QueryResponseWriters to share the same
-    base code for loading and initalizing plugins. (ryan)
+    base code for loading and initalizing plugins.  This adds a new 
+    configuration option to define the default RequestHandler and 
+    QueryResponseWriter in XML using default="true".  (ryan)
 
 14. SOLR-225: Enable pluggable highlighting classes.  Allow configurable
     highlighting formatters and Fragmenters.  (ryan)

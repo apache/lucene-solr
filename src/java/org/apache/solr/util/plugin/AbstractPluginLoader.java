@@ -32,7 +32,6 @@ import org.w3c.dom.NodeList;
 /**
  * An abstract super class that manages standard solr-style plugin configuration.
  * 
- * @author ryan
  * @version $Id$
  * @since solr 1.3
  */
@@ -67,9 +66,15 @@ public abstract class AbstractPluginLoader<T>
   }
   
   /**
-   * @param name - The registered name
-   * @param className - class name for requested plugin
-   * @param params - the parameters specified in the XML
+   * Create a plugin from an XML configuration.  Plugins are defined using:
+   *   <plugin name="name1" class="solr.ClassName" arg1="val1">
+   *      ...
+   *   </plugin>
+   * 
+   * @param name - The registered name.  In the above example: "name1"
+   * @param className - class name for requested plugin.  In the above example: "solr.ClassName"
+   * @param params - the parameters specified in the XML.  In the example above,
+   * this would be a map containing [name=name1, class=solr.ClassName, arg1=val1]
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
@@ -85,12 +90,42 @@ public abstract class AbstractPluginLoader<T>
   abstract protected T register( String name, T plugin ) throws Exception;
 
   /**
-   * Initialize the plugin
+   * Initialize the plugin.  For example, given the configuration:
+   * 
+   *   <plugin name="name1" class="solr.ClassName" arg1="val1">
+   *      ...
+   *   </plugin>
+   * 
+   * @param plugin - the plugin to initialize
+   * @param params - the parameters specified in the XML.  In the example above,
+   * this would be a map containing [name=name1, class=solr.ClassName, arg1=val1]
+   * @param node - the XML node defining this plugin
    */
   abstract protected void init( T plugin, Map<String,String> params, Node node ) throws Exception;
 
   /**
-   * Given a NodeList from XML, this will
+   * Given a NodeList from XML in the form:
+   * 
+   *  <plugins>
+   *    <plugin name="name1" class="solr.ClassName" >
+   *      ...
+   *    </plugin>
+   *    <plugin name="name2" class="solr.ClassName" >
+   *      ...
+   *    </plugin>
+   *  </plugins>
+   * 
+   * This will initialize and register each plugin from the list.  A class will 
+   * be generated for each class name and registered to the given name.
+   * 
+   * If 'preRegister' is true, each plugin will be registered *before* it is initialized
+   * This may be useful for implementations that need to inspect other registered 
+   * plugins at startup.
+   * 
+   * One (and only one) plugin may declare itself to be the 'default' plugin using:
+   *    <plugin name="name2" class="solr.ClassName" default="true">
+   * If a default element is defined, it will be returned from this function.
+   * 
    */
   public T load( NodeList nodes )
   {
