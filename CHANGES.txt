@@ -87,6 +87,10 @@ New Features
     RequestHandlers, FieldTypes, and QueryResponseWriters to share the same
     base code for loading and initalizing plugins. (ryan)
 
+14. SOLR-225: Enable pluggable highlighting classes.  Allow configurable
+    highlighting formatters and Fragmenters.  (ryan)
+
+
 Changes in runtime behavior
 
 Optimizations

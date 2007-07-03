@@ -27,14 +27,17 @@ public interface HighlightParams {
   
   public static final String SIMPLE = "simple";
   
-  public static final String HIGHLIGHT = "hl";
-  public static final String PREFIX = "hl.";
-  public static final String FIELDS = PREFIX+"fl";
-  public static final String SNIPPETS = PREFIX+"snippets";
-  public static final String FRAGSIZE = PREFIX+"fragsize";
-  public static final String FORMATTER = PREFIX+"formatter";
-  public static final String SIMPLE_PRE = PREFIX+SIMPLE+".pre";
+  public static final String HIGHLIGHT   = "hl";
+  public static final String PREFIX      = "hl.";
+  public static final String FIELDS      = PREFIX+"fl";
+  public static final String SNIPPETS    = PREFIX+"snippets";
+  public static final String FRAGSIZE    = PREFIX+"fragsize";
+  public static final String INCREMENT   = PREFIX+"increment";
+  public static final String SLOP        = PREFIX+"slop";
+  public static final String MAX_CHARS   = PREFIX+"maxAnalyzedChars";
+  public static final String FORMATTER   = PREFIX+"formatter";
+  public static final String FRAGMENTER  = PREFIX+"fragmenter";
+  public static final String SIMPLE_PRE  = PREFIX+SIMPLE+".pre";
   public static final String SIMPLE_POST = PREFIX+SIMPLE+".post";
   public static final String FIELD_MATCH = PREFIX+"requireFieldMatch";
-
 }

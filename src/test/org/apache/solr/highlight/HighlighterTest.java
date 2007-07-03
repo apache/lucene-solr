@@ -17,10 +17,12 @@
 
 package org.apache.solr.highlight;
 
-import java.util.HashMap;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.*;
+import org.apache.solr.util.*;
+import org.apache.solr.schema.*;
 
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.TestHarness;
+import java.util.HashMap;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
@@ -43,6 +45,27 @@ public class HighlighterTest extends AbstractSolrTestCase {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
+  }
+  
+  public void testConfig()
+  {
+    SolrHighlighter highlighter = SolrCore.getSolrCore().getHighlighter();
+    System.out.println( "highlighter" );
+
+    // Make sure we loaded the one formatter
+    SolrFormatter fmt1 = highlighter.formatters.get( null );
+    SolrFormatter fmt2 = highlighter.formatters.get( "" );
+    assertSame( fmt1, fmt2 );
+    assertTrue( fmt1 instanceof HtmlFormatter );
+    
+    
+    // Make sure we loaded the one formatter
+    SolrFragmenter gap = highlighter.fragmenters.get( "gap" );
+    SolrFragmenter regex = highlighter.fragmenters.get( "regex" );
+    SolrFragmenter frag = highlighter.fragmenters.get( null );
+    assertSame( gap, frag );
+    assertTrue( gap instanceof GapFragmenter );
+    assertTrue( regex instanceof RegexFragmenter );
   }
 
   public void testTermVecHighlight() {

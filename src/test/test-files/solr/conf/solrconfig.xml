@@ -265,6 +265,30 @@
   <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
 
+  <highlighting>
+   <!-- Configure the standard fragmenter -->
+   <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
+    <lst name="defaults">
+     <int name="hl.fragsize">100</int>
+    </lst>
+   </fragmenter>
+   
+   <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
+    <lst name="defaults">
+     <int name="hl.fragsize">70</int>
+    </lst>
+   </fragmenter>
+   
+   <!-- Configure the standard formatter -->
+   <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
+    <lst name="defaults">
+     <str name="hl.simple.pre"><![CDATA[<em>]]></str>
+     <str name="hl.simple.post"><![CDATA[</em>]]></str>
+    </lst>
+   </formatter>
+  </highlighting>
+
+
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >
     <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
