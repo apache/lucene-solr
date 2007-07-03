@@ -153,7 +153,7 @@ public class XmlUpdateRequestHandler extends RequestHandlerBase
       switch (event) {
         case XMLStreamConstants.END_DOCUMENT:
           parser.close();
-          return processor.getResponse();
+          return processor.finish();
 
         case XMLStreamConstants.START_ELEMENT:
           String currTag = parser.getLocalName();
