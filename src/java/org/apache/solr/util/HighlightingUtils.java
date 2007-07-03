@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.ListIterator;
@@ -135,7 +134,8 @@ public class HighlightingUtils implements HighlightParams {
    }
    
    private static boolean emptyArray(String[] arr) {
-      return (arr == null || arr.length == 0 || arr[0] == null || arr[0].trim().length() == 0);
+     return (arr == null || arr.length == 0 ||
+        (arr.length == 1 && (arr[0] == null || arr[0].trim().length() == 0))); 
    }
    
    /**
@@ -191,6 +191,7 @@ public class HighlightingUtils implements HighlightParams {
     * @return NamedList containing a NamedList for each document, which in
     * turns contains sets (field, summary) pairs.
     */
+   @SuppressWarnings("unchecked")
    public static NamedList doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
       if (!isHighlightingEnabled(req))
          return null;
@@ -257,7 +258,7 @@ public class HighlightingUtils implements HighlightParams {
                }
                summaries = fragTexts.toArray(new String[0]);
                if (summaries.length > 0) 
-		 docSummaries.add(fieldName, summaries);
+                 docSummaries.add(fieldName, summaries);
             }
          }
          String printId = searcher.getSchema().printableUniqueKey(doc);
@@ -298,6 +299,7 @@ class MultiValueTokenStream extends TokenStream {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
+  @Override
   public Token next() throws IOException {
     int extra = 0;
     if(currentStream == null) {
@@ -364,6 +366,7 @@ class GapFragmenter extends SimpleFragmenter {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */
+  @Override
   public void start(String originalText) {
     fragOffsetAccum = 0;
   }
@@ -371,6 +374,7 @@ class GapFragmenter extends SimpleFragmenter {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#isNewFragment(org.apache.lucene.analysis.Token)
    */
+  @Override
   public boolean isNewFragment(Token token) {
     boolean isNewFrag = 
       token.endOffset() >= fragOffsetAccum + getFragmentSize() ||
@@ -397,6 +401,7 @@ class TokenOrderingFilter extends TokenFilter {
     this.windowSize = windowSize;
   }
 
+  @Override
   public Token next() throws IOException {
     while (!done && queue.size() < windowSize) {
       Token newTok = input.next();
