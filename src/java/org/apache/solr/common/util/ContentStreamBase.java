@@ -140,7 +140,7 @@ public abstract class ContentStreamBase implements ContentStream
     }
 
     public InputStream getStream() throws IOException {
-      return new ByteArrayInputStream( str.getBytes() );
+      return new ByteArrayInputStream( str.getBytes(DEFAULT_CHARSET) );
     }
 
     /**
