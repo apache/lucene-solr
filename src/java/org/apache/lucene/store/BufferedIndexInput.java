@@ -84,8 +84,13 @@ public abstract class BufferedIndexInput extends IndexInput {
   }
 
   public void readBytes(byte[] b, int offset, int len) throws IOException {
+    readBytes(b, offset, len, true);
+  }
+
+  public void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
+
     if(len <= (bufferLength-bufferPosition)){
-      // the buffer contains enough data to satistfy this request
+      // the buffer contains enough data to satisfy this request
       if(len>0) // to allow b to be null if len is 0...
         System.arraycopy(buffer, bufferPosition, b, offset, len);
       bufferPosition+=len;
@@ -99,8 +104,9 @@ public abstract class BufferedIndexInput extends IndexInput {
         bufferPosition += available;
       }
       // and now, read the remaining 'len' bytes:
-      if(len<bufferSize){
-        // If the amount left to read is small enough, do it in the usual
+      if (useBuffer && len<bufferSize){
+        // If the amount left to read is small enough, and
+        // we are allowed to use our buffer, do it in the usual
         // buffered way: fill the buffer and copy from it:
         refill();
         if(bufferLength<len){
@@ -112,10 +118,13 @@ public abstract class BufferedIndexInput extends IndexInput {
           bufferPosition=len;
         }
       } else {
-        // The amount left to read is larger than the buffer - there's no
-        // performance reason not to read it all at once. Note that unlike
-        // the previous code of this function, there is no need to do a seek
-        // here, because there's no need to reread what we had in the buffer.
+        // The amount left to read is larger than the buffer
+        // or we've been asked to not use our buffer -
+        // there's no performance reason not to read it all
+        // at once. Note that unlike the previous code of
+        // this function, there is no need to do a seek
+        // here, because there's no need to reread what we
+        // had in the buffer.
         long after = bufferStart+bufferPosition+len;
         if(after > length())
           throw new IOException("read past EOF");

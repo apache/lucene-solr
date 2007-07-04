@@ -40,6 +40,25 @@ public abstract class IndexInput implements Cloneable {
   public abstract void readBytes(byte[] b, int offset, int len)
     throws IOException;
 
+  /** Reads a specified number of bytes into an array at the
+   * specified offset with control over whether the read
+   * should be buffered (callers who have their own buffer
+   * should pass in "false" for useBuffer).  Currently only
+   * {@link BufferedIndexInput} respects this parameter.
+   * @param b the array to read bytes into
+   * @param offset the offset in the array to start storing bytes
+   * @param len the number of bytes to read
+   * @param useBuffer set to false if the caller will handle
+   * buffering.
+   * @see IndexOutput#writeBytes(byte[],int)
+   */
+  public void readBytes(byte[] b, int offset, int len, boolean useBuffer)
+    throws IOException
+  {
+    // Default to ignoring useBuffer entirely
+    readBytes(b, offset, len);
+  }
+
   /** Reads four bytes and returns an int.
    * @see IndexOutput#writeInt(int)
    */

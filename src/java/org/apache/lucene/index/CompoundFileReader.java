@@ -237,7 +237,7 @@ class CompoundFileReader extends Directory {
               if(start + len > length)
                 throw new IOException("read past EOF");
               base.seek(fileOffset + start);
-              base.readBytes(b, offset, len);
+              base.readBytes(b, offset, len, false);
             }
         }
 

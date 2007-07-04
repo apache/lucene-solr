@@ -39,6 +39,9 @@ Optimizations
     postings per unique term and is directly flushed into a single
     segment.  (Mike McCandless)
  
+ 3. LUCENE-892: Fixed extra "buffer to buffer copy" that sometimes
+    takes place when using compound files.  (Mike McCandless)
+
 Documentation
 
 Build
